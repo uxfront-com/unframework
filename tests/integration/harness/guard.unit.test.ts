@@ -18,71 +18,71 @@ mkdirSync(join(caseDir, "__output__", "vue"), { recursive: true });
 writeFileSync(source, "export default function Greeting() {\n  return <p>Hello</p>;\n}\n");
 writeFileSync(join(caseDir, "__output__", "vue", "Greeting.vue"), golden);
 
-const guard = (target: string, files: { path: string; contents: string }[], file = source) =>
-  goldenGuard({ file, target, files }, root);
+const guard = (target: string, files: Array<{ path: string; contents: string }>, file = source) =>
+	goldenGuard({ file, target, files }, root);
 
 describe("goldenGuard", () => {
-  it("passes a compile that equals the golden files", () => {
-    expect(guard("vue", [{ path: "Greeting.vue", contents: golden }])).toBeUndefined();
-  });
+	it("passes a compile that equals the golden files", () => {
+		expect(guard("vue", [{ path: "Greeting.vue", contents: golden }])).toBeUndefined();
+	});
 
-  it("fails a difference with a diff and the command that updates the goldens", () => {
-    const message = guard("vue", [
-      { path: "Greeting.vue", contents: golden.replace("Hello", "Goodbye") },
-    ]);
-    expect(message).toMatch(
-      /^\[uf guard\] The vue output of cases\/area\/greeting\/Greeting\.uf\.tsx is not its golden output:/,
-    );
-    expect(message).toContain("cases/area/greeting/__output__/vue/Greeting.vue differs");
-    expect(message).toMatch(/^\+.*<p>Goodbye<\/p>$/m);
-    expect(message).toContain("pnpm test:update");
-  });
+	it("fails a difference with a diff and the command that updates the goldens", () => {
+		const message = guard("vue", [
+			{ path: "Greeting.vue", contents: golden.replace("Hello", "Goodbye") },
+		]);
+		expect(message).toMatch(
+			/^\[uf guard\] The vue output of cases\/area\/greeting\/Greeting\.uf\.tsx is not its golden output:/,
+		);
+		expect(message).toContain("cases/area/greeting/__output__/vue/Greeting.vue differs");
+		expect(message).toMatch(/^\+.*<p>Goodbye<\/p>$/m);
+		expect(message).toContain("pnpm test:update");
+	});
 
-  it("fails missing and extra files", () => {
-    const message = guard("vue", [{ path: "Other.vue", contents: "" }]);
-    expect(message).toContain(
-      "cases/area/greeting/__output__/vue/Greeting.vue is not produced by the compiler.",
-    );
-    expect(message).toContain("cases/area/greeting/__output__/vue/Other.vue is missing.");
-  });
+	it("fails missing and extra files", () => {
+		const message = guard("vue", [{ path: "Other.vue", contents: "" }]);
+		expect(message).toContain(
+			"cases/area/greeting/__output__/vue/Greeting.vue is not produced by the compiler.",
+		);
+		expect(message).toContain("cases/area/greeting/__output__/vue/Other.vue is missing.");
+	});
 
-  it("fails a target without golden files, and passes one that produces none", () => {
-    expect(guard("react", [{ path: "Greeting.tsx", contents: "" }])).toContain(
-      "cases/area/greeting/__output__/react/Greeting.tsx is missing.",
-    );
-    expect(guard("react", [])).toBeUndefined();
-  });
+	it("fails a target without golden files, and passes one that produces none", () => {
+		expect(guard("react", [{ path: "Greeting.tsx", contents: "" }])).toContain(
+			"cases/area/greeting/__output__/react/Greeting.tsx is missing.",
+		);
+		expect(guard("react", [])).toBeUndefined();
+	});
 
-  it("judges a compile of a case with several sources on the files it produced", () => {
-    const formDir = join(root, "cases", "area", "form");
-    mkdirSync(join(formDir, "__output__", "vue"), { recursive: true });
-    const form = join(formDir, "Form.uf.tsx");
-    writeFileSync(form, "");
-    writeFileSync(join(formDir, "Field.uf.tsx"), "");
-    writeFileSync(join(formDir, "__output__", "vue", "Form.vue"), golden);
-    writeFileSync(join(formDir, "__output__", "vue", "Field.vue"), golden);
-    expect(guard("vue", [{ path: "Form.vue", contents: golden }], form)).toBeUndefined();
-    const message = guard(
-      "vue",
-      [
-        { path: "Form.vue", contents: golden.replace("Hello", "Goodbye") },
-        { path: "Other.vue", contents: "" },
-      ],
-      form,
-    );
-    expect(message).toContain("cases/area/form/__output__/vue/Form.vue differs");
-    expect(message).toContain("cases/area/form/__output__/vue/Other.vue is missing.");
-    expect(message).not.toContain("Field.vue");
-  });
+	it("judges a compile of a case with several sources on the files it produced", () => {
+		const formDir = join(root, "cases", "area", "form");
+		mkdirSync(join(formDir, "__output__", "vue"), { recursive: true });
+		const form = join(formDir, "Form.uf.tsx");
+		writeFileSync(form, "");
+		writeFileSync(join(formDir, "Field.uf.tsx"), "");
+		writeFileSync(join(formDir, "__output__", "vue", "Form.vue"), golden);
+		writeFileSync(join(formDir, "__output__", "vue", "Field.vue"), golden);
+		expect(guard("vue", [{ path: "Form.vue", contents: golden }], form)).toBeUndefined();
+		const message = guard(
+			"vue",
+			[
+				{ path: "Form.vue", contents: golden.replace("Hello", "Goodbye") },
+				{ path: "Other.vue", contents: "" },
+			],
+			form,
+		);
+		expect(message).toContain("cases/area/form/__output__/vue/Form.vue differs");
+		expect(message).toContain("cases/area/form/__output__/vue/Other.vue is missing.");
+		expect(message).not.toContain("Field.vue");
+	});
 
-  it("judges a component beside a .uf.ts composable on the files it produced (ADR-0069)", () => {
-    const toggleDir = join(root, "cases", "area", "toggle");
-    mkdirSync(join(toggleDir, "__output__", "vue"), { recursive: true });
-    const toggle = join(toggleDir, "Toggle.uf.tsx");
-    writeFileSync(toggle, "");
-    writeFileSync(join(toggleDir, "useToggle.uf.ts"), "");
-    writeFileSync(join(toggleDir, "__output__", "vue", "Toggle.vue"), golden);
-    writeFileSync(join(toggleDir, "__output__", "vue", "useToggle.ts"), "export {};\n");
-    expect(guard("vue", [{ path: "Toggle.vue", contents: golden }], toggle)).toBeUndefined();
-  });
+	it("judges a component beside a .uf.ts composable on the files it produced (ADR-0069)", () => {
+		const toggleDir = join(root, "cases", "area", "toggle");
+		mkdirSync(join(toggleDir, "__output__", "vue"), { recursive: true });
+		const toggle = join(toggleDir, "Toggle.uf.tsx");
+		writeFileSync(toggle, "");
+		writeFileSync(join(toggleDir, "useToggle.uf.ts"), "");
+		writeFileSync(join(toggleDir, "__output__", "vue", "Toggle.vue"), golden);
+		writeFileSync(join(toggleDir, "__output__", "vue", "useToggle.ts"), "export {};\n");
+		expect(guard("vue", [{ path: "Toggle.vue", contents: golden }], toggle)).toBeUndefined();
+	});
 });

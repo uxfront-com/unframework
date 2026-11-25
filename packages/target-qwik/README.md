@@ -8,12 +8,12 @@ to ADR-0040).
 import { component$ } from "@qwik.dev/core";
 
 export interface BadgeProps {
-  label: string;
-  tone?: "info" | "warn";
+	label: string;
+	tone?: "info" | "warn";
 }
 
 export default component$<BadgeProps>(({ label, tone = "info" }) => {
-  return <p class={["badge", tone]}>{label}</p>;
+	return <p class={["badge", tone]}>{label}</p>;
 });
 ```
 

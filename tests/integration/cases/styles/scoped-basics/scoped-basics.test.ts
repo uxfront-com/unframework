@@ -7,10 +7,10 @@ import { expect } from "vitest";
 import Badge from "./Badge.uf.tsx";
 
 describeTargets("styles/scoped-basics", () => {
-  it("styles the badge, its label and its count", async () => {
-    const view = await mountScenario(Badge, "inbox");
-    await view.expectParity("inbox");
-    await expect.element(view.getByText("Inbox")).toBeVisible();
-    await expect.element(view.getByText("3")).toBeVisible();
-  });
+	it("styles the badge, its label and its count", async () => {
+		const view = await mountScenario(Badge, "inbox");
+		await view.expectParity("inbox");
+		await expect.element(view.getByText("Inbox")).toBeVisible();
+		await expect.element(view.getByText("3")).toBeVisible();
+	});
 });

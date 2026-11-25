@@ -1,19 +1,19 @@
 {
-  "description": "A keyed list whose rows narrow their item: an optional member, a discriminant in an attribute, and a branch whose handler reads what its test narrows.",
-  "ssr": {
-    "initial": {
-      "props": {
-        "sources": [
-          {
-            "kind": "link",
-            "id": "spec",
-            "title": "The HTML standard",
-            "href": "https://html.spec.whatwg.org/"
-          },
-          { "kind": "book", "id": "sicp", "title": "SICP", "note": "  chapter 3  " },
-          { "kind": "book", "id": "taocp", "title": "TAOCP" }
-        ]
-      }
-    }
-  }
+	"description": "A keyed list whose rows narrow their item: an optional member, a discriminant in an attribute, and a branch whose handler reads what its test narrows.",
+	"ssr": {
+		"initial": {
+			"props": {
+				"sources": [
+					{
+						"kind": "link",
+						"id": "spec",
+						"title": "The HTML standard",
+						"href": "https://html.spec.whatwg.org/"
+					},
+					{ "kind": "book", "id": "sicp", "title": "SICP", "note": "  chapter 3  " },
+					{ "kind": "book", "id": "taocp", "title": "TAOCP" }
+				]
+			}
+		}
+	}
 }

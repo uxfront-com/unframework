@@ -12,75 +12,75 @@
 import type { GeometrySnapshot, GeometryBox, GeometryNode } from "../visual-types.ts";
 
 /** The computed properties that explain how a box looks. Width and height come from the box. */
-export const GEOMETRY_STYLE_PROPERTIES: readonly string[] = [
-  "display",
-  "position",
-  "top",
-  "right",
-  "bottom",
-  "left",
-  "float",
-  "box-sizing",
-  "margin-top",
-  "margin-right",
-  "margin-bottom",
-  "margin-left",
-  "padding-top",
-  "padding-right",
-  "padding-bottom",
-  "padding-left",
-  "border-top-width",
-  "border-right-width",
-  "border-bottom-width",
-  "border-left-width",
-  "border-top-style",
-  "border-right-style",
-  "border-bottom-style",
-  "border-left-style",
-  "border-top-color",
-  "border-right-color",
-  "border-bottom-color",
-  "border-left-color",
-  "border-top-left-radius",
-  "border-top-right-radius",
-  "border-bottom-right-radius",
-  "border-bottom-left-radius",
-  "color",
-  "background-color",
-  "background-image",
-  "opacity",
-  "visibility",
-  "font-family",
-  "font-size",
-  "font-weight",
-  "font-style",
-  "line-height",
-  "letter-spacing",
-  "word-spacing",
-  "text-align",
-  "text-decoration-line",
-  "text-transform",
-  "text-shadow",
-  "white-space",
-  "vertical-align",
-  "overflow-x",
-  "overflow-y",
-  "z-index",
-  "transform",
-  "box-shadow",
-  "outline-style",
-  "outline-width",
-  "outline-color",
-  "outline-offset",
-  "list-style-type",
-  "flex-direction",
-  "flex-wrap",
-  "justify-content",
-  "align-items",
-  "row-gap",
-  "column-gap",
-  "grid-template-columns",
-  "grid-template-rows",
+export const GEOMETRY_STYLE_PROPERTIES: ReadonlyArray<string> = [
+	"display",
+	"position",
+	"top",
+	"right",
+	"bottom",
+	"left",
+	"float",
+	"box-sizing",
+	"margin-top",
+	"margin-right",
+	"margin-bottom",
+	"margin-left",
+	"padding-top",
+	"padding-right",
+	"padding-bottom",
+	"padding-left",
+	"border-top-width",
+	"border-right-width",
+	"border-bottom-width",
+	"border-left-width",
+	"border-top-style",
+	"border-right-style",
+	"border-bottom-style",
+	"border-left-style",
+	"border-top-color",
+	"border-right-color",
+	"border-bottom-color",
+	"border-left-color",
+	"border-top-left-radius",
+	"border-top-right-radius",
+	"border-bottom-right-radius",
+	"border-bottom-left-radius",
+	"color",
+	"background-color",
+	"background-image",
+	"opacity",
+	"visibility",
+	"font-family",
+	"font-size",
+	"font-weight",
+	"font-style",
+	"line-height",
+	"letter-spacing",
+	"word-spacing",
+	"text-align",
+	"text-decoration-line",
+	"text-transform",
+	"text-shadow",
+	"white-space",
+	"vertical-align",
+	"overflow-x",
+	"overflow-y",
+	"z-index",
+	"transform",
+	"box-shadow",
+	"outline-style",
+	"outline-width",
+	"outline-color",
+	"outline-offset",
+	"list-style-type",
+	"flex-direction",
+	"flex-wrap",
+	"justify-content",
+	"align-items",
+	"row-gap",
+	"column-gap",
+	"grid-template-columns",
+	"grid-template-rows",
 ];
 
 /** The pseudo-elements captured where their computed `content` is not `none`. */
@@ -88,18 +88,18 @@ const PSEUDO_ELEMENTS = ["::before", "::after"] as const;
 
 /** The captured properties of a computed style. */
 function styleOf(computed: CSSStyleDeclaration): Record<string, string> {
-  const style: Record<string, string> = {};
-  for (const property of GEOMETRY_STYLE_PROPERTIES) {
-    style[property] = computed.getPropertyValue(property);
-  }
-  return style;
+	const style: Record<string, string> = {};
+	for (const property of GEOMETRY_STYLE_PROPERTIES) {
+		style[property] = computed.getPropertyValue(property);
+	}
+	return style;
 }
 
 const toBox = (rect: DOMRect, origin: DOMRect): GeometryBox => [
-  rect.x - origin.x,
-  rect.y - origin.y,
-  rect.width,
-  rect.height,
+	rect.x - origin.x,
+	rect.y - origin.y,
+	rect.width,
+	rect.height,
 ];
 
 /**
@@ -108,61 +108,67 @@ const toBox = (rect: DOMRect, origin: DOMRect): GeometryBox => [
  * `uf:teleported[i]/`.
  */
 export function captureGeometry(
-  container: Element,
-  teleported: readonly Element[] = [],
+	container: Element,
+	teleported: ReadonlyArray<Element> = [],
 ): GeometrySnapshot {
-  const origin = container.getBoundingClientRect();
-  const nodes: Record<string, GeometryNode> = {};
+	const origin = container.getBoundingClientRect();
+	const nodes: Record<string, GeometryNode> = {};
 
-  const visit = (parent: Node, prefix: string) => visitNodes(flatten(parent), prefix);
-  const visitNodes = (children: readonly Node[], prefix: string) => {
-    const counters = new Map<string, number>();
-    const next = (key: string) => {
-      const index = counters.get(key) ?? 0;
-      counters.set(key, index + 1);
-      return `${prefix}${key}[${index}]`;
-    };
-    for (const child of children) {
-      if (child.nodeType === Node.TEXT_NODE) {
-        if (!child.textContent?.trim()) continue;
-        const range = document.createRange();
-        range.selectNodeContents(child);
-        nodes[next("#text")] = { box: [...range.getClientRects()].map((r) => toBox(r, origin)) };
-      } else if (child instanceof Element) {
-        const path = next(child.localName);
-        // The style before the box: reading it updates the style of content Chromium skips (a
-        // closed `<details>`'s), which the box then measures, as the committed geometry does.
-        const style = styleOf(getComputedStyle(child));
-        nodes[path] = { box: toBox(child.getBoundingClientRect(), origin), style };
-        for (const pseudo of PSEUDO_ELEMENTS) {
-          const computed = getComputedStyle(child, pseudo);
-          if (computed.content === "none") continue;
-          nodes[`${path}${pseudo}`] = {
-            style: { ...styleOf(computed), content: computed.content },
-          };
-        }
-        // A `<textarea>`'s text is its default value, which it shows as its value, never laid out:
-        // the box holds what it shows, and L7 compares the value (`uf:value`, ADR-0058's 4d).
-        if (child.localName !== "textarea") visit(child, `${path}/`);
-      }
-    }
-  };
-  visit(container, "");
-  for (const [index, element] of teleported.entries()) {
-    visitNodes([element], `uf:teleported[${index}]/`);
-  }
-  return { version: 1, nodes };
+	const visit = (parent: Node, prefix: string) => visitNodes(flatten(parent), prefix);
+	const visitNodes = (children: ReadonlyArray<Node>, prefix: string) => {
+		const counters = new Map<string, number>();
+		const next = (key: string) => {
+			const index = counters.get(key) ?? 0;
+			counters.set(key, index + 1);
+			return `${prefix}${key}[${index}]`;
+		};
+		for (const child of children) {
+			if (child.nodeType === Node.TEXT_NODE) {
+				if (!child.textContent?.trim()) {
+					continue;
+				}
+				const range = document.createRange();
+				range.selectNodeContents(child);
+				nodes[next("#text")] = { box: [...range.getClientRects()].map((r) => toBox(r, origin)) };
+			} else if (child instanceof Element) {
+				const path = next(child.localName);
+				// The style before the box: reading it updates the style of content Chromium skips (a
+				// closed `<details>`'s), which the box then measures, as the committed geometry does.
+				const style = styleOf(getComputedStyle(child));
+				nodes[path] = { box: toBox(child.getBoundingClientRect(), origin), style };
+				for (const pseudo of PSEUDO_ELEMENTS) {
+					const computed = getComputedStyle(child, pseudo);
+					if (computed.content === "none") {
+						continue;
+					}
+					nodes[`${path}${pseudo}`] = {
+						style: { ...styleOf(computed), content: computed.content },
+					};
+				}
+				// A `<textarea>`'s text is its default value, which it shows as its value, never laid out:
+				// the box holds what it shows, and L7 compares the value (`uf:value`, ADR-0058's 4d).
+				if (child.localName !== "textarea") {
+					visit(child, `${path}/`);
+				}
+			}
+		}
+	};
+	visit(container, "");
+	for (const [index, element] of teleported.entries()) {
+		visitNodes([element], `uf:teleported[${index}]/`);
+	}
+	return { version: 1, nodes };
 }
 
 /** The element and text children of a node, looking through `display: contents` wrappers. */
-function flatten(parent: Node): Node[] {
-  const out: Node[] = [];
-  for (const child of parent.childNodes) {
-    if (child instanceof Element && getComputedStyle(child).display === "contents") {
-      out.push(...flatten(child));
-    } else if (child.nodeType === Node.TEXT_NODE || child instanceof Element) {
-      out.push(child);
-    }
-  }
-  return out;
+function flatten(parent: Node): Array<Node> {
+	const out: Array<Node> = [];
+	for (const child of parent.childNodes) {
+		if (child instanceof Element && getComputedStyle(child).display === "contents") {
+			out.push(...flatten(child));
+		} else if (child.nodeType === Node.TEXT_NODE || child instanceof Element) {
+			out.push(child);
+		}
+	}
+	return out;
 }

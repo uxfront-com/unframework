@@ -12,19 +12,19 @@ export type SharedHelper = "scopeAttributes" | "styleObject";
 
 /** Exports the declaration of `name` in a helper's code: `function cx(` → `export function cx(`. */
 function exported(code: string, name: string): string {
-  return code.replace(new RegExp(`^function ${name}\\b`, "m"), `export function ${name}`);
+	return code.replace(new RegExp(`^function ${name}\\b`, "m"), `export function ${name}`);
 }
 
 /** Every module Astro shares: its file in `_unframework/`, and its text. */
 const MODULES: Readonly<Record<SharedHelper, { file: string; code: string }>> = {
-  scopeAttributes: {
-    file: "scopeAttributes.ts",
-    code: exported(scopeAttributesHelper("scopeAttributes"), "scopeAttributes"),
-  },
-  styleObject: {
-    file: "styleObject.ts",
-    code: exported(styleObjectHelper("styleObject"), "styleObject"),
-  },
+	scopeAttributes: {
+		file: "scopeAttributes.ts",
+		code: exported(scopeAttributesHelper("scopeAttributes"), "scopeAttributes"),
+	},
+	styleObject: {
+		file: "styleObject.ts",
+		code: exported(styleObjectHelper("styleObject"), "styleObject"),
+	},
 };
 
 /**
@@ -32,11 +32,11 @@ const MODULES: Readonly<Record<SharedHelper, { file: string; code: string }>> = 
  * specifier its frontmatter imports it by, without `.ts`, as Astro imports a `.ts` module.
  */
 export function sharedHelper(
-  helper: NonNullable<EmitContext["helper"]>,
-  from: string,
+	helper: NonNullable<EmitContext["helper"]>,
+	from: string,
 ): (name: SharedHelper) => string {
-  return (name) => {
-    const { file, code } = MODULES[name];
-    return helper(file, `${code}\n`, from).replace(/\.ts$/, "");
-  };
+	return (name) => {
+		const { file, code } = MODULES[name];
+		return helper(file, `${code}\n`, from).replace(/\.ts$/, "");
+	};
 }

@@ -13,110 +13,110 @@ export const MAX_DELTA_ROWS = 100;
 
 /** The views of a failed cell's overlay, in the order its switch offers them. */
 const VIEWS = [
-  { key: "reference", label: "Reference", file: "reference.png" },
-  { key: "actual", label: "Actual", file: "actual.png" },
-  { key: "diff", label: "Diff", file: "diff.png" },
-] as const satisfies readonly { key: keyof VisualImages; label: string; file: string }[];
+	{ key: "reference", label: "Reference", file: "reference.png" },
+	{ key: "actual", label: "Actual", file: "actual.png" },
+	{ key: "diff", label: "Diff", file: "diff.png" },
+] as const satisfies ReadonlyArray<{ key: keyof VisualImages; label: string; file: string }>;
 
 /** The HTML page of a run's report: a whole document, self-contained but for its images. */
 export function renderReport(report: VisualReport): string {
-  const cells = report.examples.flatMap((example) => example.cells);
-  const failed = cells.filter((cell) => cell.status === "failed").length;
-  const title = `Visual report: ${report.passed ? "passed" : "failed"}`;
-  const summary = cells.length
-    ? report.passed
-      ? `Every cell passed: ${count(report.examples.length, "example")} on ${count(report.targets.length, "target")}.`
-      : `${failed} of ${count(cells.length, "cell")} failed, across ${count(report.examples.length, "example")} on ${count(report.targets.length, "target")}.`
-    : "This run has no examples.";
-  return [
-    "<!doctype html>",
-    '<html lang="en">',
-    "<head>",
-    '<meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<title>${escapeHtml(title)}</title>`,
-    `<style>${STYLES}</style>`,
-    "</head>",
-    "<body>",
-    "<header>",
-    `<h1>Visual report <span class="status" data-status="${report.passed ? "passed" : "failed"}">${statusText(report.passed ? "passed" : "failed")}</span></h1>`,
-    `<p class="summary">${escapeHtml(summary)}</p>`,
-    '<dl class="facts">',
-    fact("Pixels", report.pixels === "live" ? "Live, against the reference" : "Baseline files"),
-    fact("Reference", report.reference),
-    fact("Targets", report.targets.join(", ") || "None"),
-    report.update ? fact("Baselines", "Written by this run") : "",
-    "</dl>",
-    "</header>",
-    "<main>",
-    ...report.examples.map((example, index) => renderExample(example, index)),
-    "</main>",
-    "</body>",
-    "</html>",
-    "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+	const cells = report.examples.flatMap((example) => example.cells);
+	const failed = cells.filter((cell) => cell.status === "failed").length;
+	const title = `Visual report: ${report.passed ? "passed" : "failed"}`;
+	const summary = cells.length
+		? report.passed
+			? `Every cell passed: ${count(report.examples.length, "example")} on ${count(report.targets.length, "target")}.`
+			: `${failed} of ${count(cells.length, "cell")} failed, across ${count(report.examples.length, "example")} on ${count(report.targets.length, "target")}.`
+		: "This run has no examples.";
+	return [
+		"<!doctype html>",
+		'<html lang="en">',
+		"<head>",
+		'<meta charset="utf-8">',
+		'<meta name="viewport" content="width=device-width, initial-scale=1">',
+		`<title>${escapeHtml(title)}</title>`,
+		`<style>${STYLES}</style>`,
+		"</head>",
+		"<body>",
+		"<header>",
+		`<h1>Visual report <span class="status" data-status="${report.passed ? "passed" : "failed"}">${statusText(report.passed ? "passed" : "failed")}</span></h1>`,
+		`<p class="summary">${escapeHtml(summary)}</p>`,
+		'<dl class="facts">',
+		fact("Pixels", report.pixels === "live" ? "Live, against the reference" : "Baseline files"),
+		fact("Reference", report.reference),
+		fact("Targets", report.targets.join(", ") || "None"),
+		report.update ? fact("Baselines", "Written by this run") : "",
+		"</dl>",
+		"</header>",
+		"<main>",
+		...report.examples.map((example, index) => renderExample(example, index)),
+		"</main>",
+		"</body>",
+		"</html>",
+		"",
+	]
+		.filter(Boolean)
+		.join("\n");
 }
 
 function renderExample(example: VisualExample, index: number): string {
-  const heading = `example-${index}`;
-  const failed = example.cells.filter((cell) => cell.status === "failed");
-  return [
-    `<section class="example" aria-labelledby="${heading}">`,
-    `<h2 id="${heading}">${escapeHtml(example.id)}</h2>`,
-    `<p class="file"><code>${escapeHtml(example.file)}</code></p>`,
-    `<ul class="grid" aria-label="${escapeHtml(`${example.id} on each target`)}">`,
-    ...example.cells.map((cell) => renderCell(example, index, cell)),
-    "</ul>",
-    ...failed.map((cell) => renderFailure(example, index, cell)),
-    "</section>",
-  ].join("\n");
+	const heading = `example-${index}`;
+	const failed = example.cells.filter((cell) => cell.status === "failed");
+	return [
+		`<section class="example" aria-labelledby="${heading}">`,
+		`<h2 id="${heading}">${escapeHtml(example.id)}</h2>`,
+		`<p class="file"><code>${escapeHtml(example.file)}</code></p>`,
+		`<ul class="grid" aria-label="${escapeHtml(`${example.id} on each target`)}">`,
+		...example.cells.map((cell) => renderCell(example, index, cell)),
+		"</ul>",
+		...failed.map((cell) => renderFailure(example, index, cell)),
+		"</section>",
+	].join("\n");
 }
 
 function renderCell(example: VisualExample, index: number, cell: VisualCell): string {
-  const image = cell.images.capture ?? cell.images.actual;
-  const alt = `${example.id} on ${cell.target}`;
-  const frame = image
-    ? `<a class="frame" href="${url(image)}"><img src="${url(image)}" alt="${escapeHtml(alt)}"></a>`
-    : `<div class="frame empty"><span>No capture</span></div>`;
-  const detail =
-    cell.status === "failed"
-      ? `<a class="more" href="#${failureId(index, cell)}">Details<span class="visually-hidden"> for ${escapeHtml(cell.target)}</span></a>`
-      : "";
-  return [
-    `<li class="cell" data-status="${cell.status}" data-target="${escapeHtml(cell.target)}">`,
-    frame,
-    '<p class="label">',
-    `<span class="target">${escapeHtml(cell.target)}</span>`,
-    cell.role === "reference" ? '<span class="role">reference</span>' : "",
-    `<span class="status" data-status="${cell.status}">${statusText(cell.status)}</span>`,
-    "</p>",
-    `<p class="outcome"><code>${escapeHtml(cell.outcome)}</code>${cell.diffPixels ? ` <span>${escapeHtml(`${count(cell.diffPixels, "pixel")} ${cell.diffPixels === 1 ? "differs" : "differ"}`)}</span>` : ""}</p>`,
-    detail,
-    "</li>",
-  ]
-    .filter(Boolean)
-    .join("\n");
+	const image = cell.images.capture ?? cell.images.actual;
+	const alt = `${example.id} on ${cell.target}`;
+	const frame = image
+		? `<a class="frame" href="${url(image)}"><img src="${url(image)}" alt="${escapeHtml(alt)}"></a>`
+		: `<div class="frame empty"><span>No capture</span></div>`;
+	const detail =
+		cell.status === "failed"
+			? `<a class="more" href="#${failureId(index, cell)}">Details<span class="visually-hidden"> for ${escapeHtml(cell.target)}</span></a>`
+			: "";
+	return [
+		`<li class="cell" data-status="${cell.status}" data-target="${escapeHtml(cell.target)}">`,
+		frame,
+		'<p class="label">',
+		`<span class="target">${escapeHtml(cell.target)}</span>`,
+		cell.role === "reference" ? '<span class="role">reference</span>' : "",
+		`<span class="status" data-status="${cell.status}">${statusText(cell.status)}</span>`,
+		"</p>",
+		`<p class="outcome"><code>${escapeHtml(cell.outcome)}</code>${cell.diffPixels ? ` <span>${escapeHtml(`${count(cell.diffPixels, "pixel")} ${cell.diffPixels === 1 ? "differs" : "differ"}`)}</span>` : ""}</p>`,
+		detail,
+		"</li>",
+	]
+		.filter(Boolean)
+		.join("\n");
 }
 
 function renderFailure(example: VisualExample, index: number, cell: VisualCell): string {
-  const id = failureId(index, cell);
-  const views = VIEWS.filter((view) => cell.images[view.key] !== undefined);
-  return [
-    `<section class="failure" id="${id}" aria-labelledby="${id}-heading">`,
-    `<h3 id="${id}-heading">${escapeHtml(`${example.id} on ${cell.target}`)}: <code>${escapeHtml(cell.outcome)}</code></h3>`,
-    cell.message ? `<pre class="message">${escapeHtml(cell.message)}</pre>` : "",
-    views.length ? renderOverlay(example, id, cell, views) : "",
-    renderAbsent(cell),
-    cell.images.geometry
-      ? `<p><a href="${url(cell.images.geometry)}">Open <code>geometry.actual.json</code></a></p>`
-      : "",
-    renderDeltas(id, cell.geometry),
-    "</section>",
-  ]
-    .filter(Boolean)
-    .join("\n");
+	const id = failureId(index, cell);
+	const views = VIEWS.filter((view) => cell.images[view.key] !== undefined);
+	return [
+		`<section class="failure" id="${id}" aria-labelledby="${id}-heading">`,
+		`<h3 id="${id}-heading">${escapeHtml(`${example.id} on ${cell.target}`)}: <code>${escapeHtml(cell.outcome)}</code></h3>`,
+		cell.message ? `<pre class="message">${escapeHtml(cell.message)}</pre>` : "",
+		views.length ? renderOverlay(example, id, cell, views) : "",
+		renderAbsent(cell),
+		cell.images.geometry
+			? `<p><a href="${url(cell.images.geometry)}">Open <code>geometry.actual.json</code></a></p>`
+			: "",
+		renderDeltas(id, cell.geometry),
+		"</section>",
+	]
+		.filter(Boolean)
+		.join("\n");
 }
 
 /**
@@ -125,29 +125,29 @@ function renderFailure(example: VisualExample, index: number, cell: VisualCell):
  * frame keeps the size of its largest image, so switching never moves the page.
  */
 function renderOverlay(
-  example: VisualExample,
-  id: string,
-  cell: VisualCell,
-  views: readonly (typeof VIEWS)[number][],
+	example: VisualExample,
+	id: string,
+	cell: VisualCell,
+	views: ReadonlyArray<(typeof VIEWS)[number]>,
 ): string {
-  const initial = views.at(-1)!.key;
-  return [
-    '<div class="overlay">',
-    '<fieldset class="switch">',
-    "<legend>Show</legend>",
-    ...views.map(
-      (view) =>
-        `<label><input type="radio" name="${id}-view" value="${view.key}"${view.key === initial ? " checked" : ""}>${view.label}</label>`,
-    ),
-    "</fieldset>",
-    '<div class="stack">',
-    ...views.map(
-      (view) =>
-        `<img data-view="${view.key}" src="${url(cell.images[view.key]!)}" alt="${escapeHtml(`${view.label}: ${example.id} on ${cell.target}`)}">`,
-    ),
-    "</div>",
-    "</div>",
-  ].join("\n");
+	const initial = views.at(-1)!.key;
+	return [
+		'<div class="overlay">',
+		'<fieldset class="switch">',
+		"<legend>Show</legend>",
+		...views.map(
+			(view) =>
+				`<label><input type="radio" name="${id}-view" value="${view.key}"${view.key === initial ? " checked" : ""}>${view.label}</label>`,
+		),
+		"</fieldset>",
+		'<div class="stack">',
+		...views.map(
+			(view) =>
+				`<img data-view="${view.key}" src="${url(cell.images[view.key]!)}" alt="${escapeHtml(`${view.label}: ${example.id} on ${cell.target}`)}">`,
+		),
+		"</div>",
+		"</div>",
+	].join("\n");
 }
 
 /**
@@ -155,60 +155,64 @@ function renderOverlay(
  * of a comparison that stopped part way, or that there was no comparison to leave any.
  */
 function renderAbsent(cell: VisualCell): string {
-  const files = [
-    ...VIEWS.map((view) => ({ name: view.file, present: cell.images[view.key] !== undefined })),
-    { name: "geometry.actual.json", present: cell.images.geometry !== undefined },
-  ];
-  const absent = files.filter((file) => !file.present).map((file) => `<code>${file.name}</code>`);
-  if (absent.length < files.length) {
-    return absent.length ? `<p class="absent">The run left no ${list(absent)}.</p>` : "";
-  }
-  return cell.images.capture
-    ? '<p class="absent">The run left only the capture in the grid, and no comparison files.</p>'
-    : '<p class="absent">The run left no image for this cell.</p>';
+	const files = [
+		...VIEWS.map((view) => ({ name: view.file, present: cell.images[view.key] !== undefined })),
+		{ name: "geometry.actual.json", present: cell.images.geometry !== undefined },
+	];
+	const absent = files.filter((file) => !file.present).map((file) => `<code>${file.name}</code>`);
+	if (absent.length < files.length) {
+		return absent.length ? `<p class="absent">The run left no ${list(absent)}.</p>` : "";
+	}
+	return cell.images.capture
+		? '<p class="absent">The run left only the capture in the grid, and no comparison files.</p>'
+		: '<p class="absent">The run left no image for this cell.</p>';
 }
 
-function renderDeltas(id: string, deltas: readonly GeometryDelta[]): string {
-  if (!deltas.length) return '<p class="no-deltas">No geometry or computed-style delta.</p>';
-  const shown = deltas.slice(0, MAX_DELTA_ROWS);
-  const caption =
-    shown.length < deltas.length
-      ? `Geometry deltas: the first ${shown.length} of ${deltas.length}`
-      : `Geometry deltas: ${deltas.length}`;
-  return [
-    `<div class="deltas" role="region" tabindex="0" aria-labelledby="${id}-deltas">`,
-    "<table>",
-    `<caption id="${id}-deltas">${escapeHtml(caption)}</caption>`,
-    '<thead><tr><th scope="col">Node</th><th scope="col">Property</th><th scope="col">Expected</th><th scope="col">Actual</th></tr></thead>',
-    "<tbody>",
-    ...shown.map(
-      (delta) =>
-        `<tr><td><code>${escapeHtml(delta.path)}</code></td><td><code>${escapeHtml(delta.property)}</code></td><td>${value(delta.expected)}</td><td>${value(delta.actual)}</td></tr>`,
-    ),
-    "</tbody>",
-    "</table>",
-    "</div>",
-  ].join("\n");
+function renderDeltas(id: string, deltas: ReadonlyArray<GeometryDelta>): string {
+	if (!deltas.length) {
+		return '<p class="no-deltas">No geometry or computed-style delta.</p>';
+	}
+	const shown = deltas.slice(0, MAX_DELTA_ROWS);
+	const caption =
+		shown.length < deltas.length
+			? `Geometry deltas: the first ${shown.length} of ${deltas.length}`
+			: `Geometry deltas: ${deltas.length}`;
+	return [
+		`<div class="deltas" role="region" tabindex="0" aria-labelledby="${id}-deltas">`,
+		"<table>",
+		`<caption id="${id}-deltas">${escapeHtml(caption)}</caption>`,
+		'<thead><tr><th scope="col">Node</th><th scope="col">Property</th><th scope="col">Expected</th><th scope="col">Actual</th></tr></thead>',
+		"<tbody>",
+		...shown.map(
+			(delta) =>
+				`<tr><td><code>${escapeHtml(delta.path)}</code></td><td><code>${escapeHtml(delta.property)}</code></td><td>${value(delta.expected)}</td><td>${value(delta.actual)}</td></tr>`,
+		),
+		"</tbody>",
+		"</table>",
+		"</div>",
+	].join("\n");
 }
 
 function fact(term: string, detail: string): string {
-  return `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(detail)}</dd></div>`;
+	return `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(detail)}</dd></div>`;
 }
 
 /** The status in words, after a mark that only repeats them. */
 function statusText(status: "passed" | "failed"): string {
-  return `<span aria-hidden="true">${status === "passed" ? "✓" : "✗"}</span> ${status === "passed" ? "Passed" : "Failed"}`;
+	return `<span aria-hidden="true">${status === "passed" ? "✓" : "✗"}</span> ${status === "passed" ? "Passed" : "Failed"}`;
 }
 
 /** A delta's value: a string as it is, anything else as JSON, and an absent one as such. */
 function value(item: unknown): string {
-  if (item === undefined || item === null) return '<span class="none">none</span>';
-  return `<code>${escapeHtml(typeof item === "string" ? item : JSON.stringify(item))}</code>`;
+	if (item === undefined || item === null) {
+		return '<span class="none">none</span>';
+	}
+	return `<code>${escapeHtml(typeof item === "string" ? item : JSON.stringify(item))}</code>`;
 }
 
 /** The id of a failed cell's section: an example's index and a target name, safe in a fragment. */
 function failureId(index: number, cell: VisualCell): string {
-  return `example-${index}-${cell.target.replaceAll(/[^A-Za-z0-9_-]/g, "_")}`;
+	return `example-${index}-${cell.target.replaceAll(/[^A-Za-z0-9_-]/g, "_")}`;
 }
 
 /**
@@ -216,28 +220,28 @@ function failureId(index: number, cell: VisualCell): string {
  * path can never become another scheme's URL.
  */
 function url(path: string): string {
-  return escapeHtml(path.split("/").map(encodeURIComponent).join("/"));
+	return escapeHtml(path.split("/").map(encodeURIComponent).join("/"));
 }
 
 function count(n: number, noun: string): string {
-  return `${NUMBER.format(n)} ${noun}${n === 1 ? "" : "s"}`;
+	return `${NUMBER.format(n)} ${noun}${n === 1 ? "" : "s"}`;
 }
 
 /** Thousands separated, in one locale, so the page is the same on every machine (P8). */
 const NUMBER = new Intl.NumberFormat("en");
 
 /** `a`, `a or b`, `a, b or c`. */
-function list(items: readonly string[]): string {
-  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items.at(-1)}`;
+function list(items: ReadonlyArray<string>): string {
+	return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items.at(-1)}`;
 }
 
 function escapeHtml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+	return text
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#39;");
 }
 
 /**
@@ -320,5 +324,5 @@ th { font-weight: 600; }
   .grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 }
 `
-  .trim()
-  .replaceAll(/\n\s*/g, "\n");
+	.trim()
+	.replaceAll(/\n\s*/g, "\n");

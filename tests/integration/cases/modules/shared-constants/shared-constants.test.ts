@@ -6,19 +6,19 @@ import { expect } from "vitest";
 import SizePicker from "./SizePicker.uf.tsx";
 
 describeTargets("modules/shared-constants", () => {
-  it("renders the shared sizes and the default", async () => {
-    const view = await mountScenario(SizePicker, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("status")).toHaveTextContent("Picked: Medium");
-    await expect
-      .element(view.getByRole("button", { name: "Large" }))
-      .toHaveAttribute("aria-pressed", "false");
-  });
+	it("renders the shared sizes and the default", async () => {
+		const view = await mountScenario(SizePicker, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("status")).toHaveTextContent("Picked: Medium");
+		await expect
+			.element(view.getByRole("button", { name: "Large" }))
+			.toHaveAttribute("aria-pressed", "false");
+	});
 
-  it("picks another shared size", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(SizePicker, "initial");
-    await view.user.click(view.getByRole("button", { name: "Small" }));
-    await view.expectParity("picked-small");
-    await expect.element(view.getByRole("status")).toHaveTextContent("Picked: Small");
-  });
+	it("picks another shared size", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(SizePicker, "initial");
+		await view.user.click(view.getByRole("button", { name: "Small" }));
+		await view.expectParity("picked-small");
+		await expect.element(view.getByRole("status")).toHaveTextContent("Picked: Small");
+	});
 });

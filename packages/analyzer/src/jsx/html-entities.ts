@@ -276,13 +276,13 @@ const LIST = `
 
 /** HTML's named character references that JSX does not decode, by name, with their text. */
 export const HTML_ONLY_ENTITIES: ReadonlyMap<string, string> = new Map(
-  LIST.split(/\s+/)
-    .filter(Boolean)
-    .map((entry) => {
-      const [name, codePoints] = entry.split(":") as [string, string];
-      return [
-        name,
-        String.fromCodePoint(...codePoints.split("+").map((hex) => Number.parseInt(hex, 16))),
-      ];
-    }),
+	LIST.split(/\s+/)
+		.filter(Boolean)
+		.map((entry) => {
+			const [name, codePoints] = entry.split(":") as [string, string];
+			return [
+				name,
+				String.fromCodePoint(...codePoints.split("+").map((hex) => Number.parseInt(hex, 16))),
+			];
+		}),
 );

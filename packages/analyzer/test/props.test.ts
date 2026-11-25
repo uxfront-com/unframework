@@ -3,798 +3,797 @@ import { describe, expect, it } from "vitest";
 import { applyAndRecheck, codes, component, only, problems, run, slices } from "./helpers.ts";
 
 describe("props", () => {
-  it("lowers destructured props, their types, defaults and bindings", () => {
-    const source = [
-      'export interface BadgeProps { label: string; tone?: "info" | "warn"; count?: number; pill?: boolean }',
-      'export default function Badge({ label, tone = "info", pill = false }: BadgeProps) {',
-      "  return <p>{label}</p>;",
-      "}",
-    ].join("\n");
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    const badge = only(module);
-    expect(badge.propsParameter).toEqual({
-      form: "destructured",
-      type: { code: "BadgeProps", span: expect.any(Object) },
-      span: expect.any(Object),
-    });
-    expect(
-      badge.props.map((prop) => [
-        prop.name,
-        prop.optional,
-        prop.type.code,
-        prop.default?.code,
-        prop.binding,
-      ]),
-    ).toEqual([
-      ["label", false, "string", undefined, `label@${source.indexOf("label,")}`],
-      ["tone", true, '"info" | "warn"', '"info"', `tone@${source.indexOf("tone =")}`],
-      // Left out of the pattern: no binding.
-      ["count", true, "number", undefined, undefined],
-      ["pill", true, "boolean", "false", `pill@${source.indexOf("pill =")}`],
-    ]);
-    expect(badge.bindings.map((binding) => binding.id)).toEqual([
-      `label@${source.indexOf("label,")}`,
-      `tone@${source.indexOf("tone =")}`,
-      `pill@${source.indexOf("pill =")}`,
-    ]);
-    expect(badge.types).toEqual(["BadgeProps"]);
-    expect(module!.types).toEqual([
-      {
-        name: "BadgeProps",
-        exported: true,
-        code: source.slice(source.indexOf("interface"), source.indexOf("}") + 1),
-        span: expect.any(Object),
-      },
-    ]);
-    // The reference spans the identifier, and names the binding.
-    expect(badge.render.kind === "Element" && badge.render.children[0]).toMatchObject({
-      kind: "Interpolation",
-      value: {
-        code: "label",
-        refs: [{ kind: "Binding", binding: `label@${source.indexOf("label,")}` }],
-      },
-    });
-  });
+	it("lowers destructured props, their types, defaults and bindings", () => {
+		const source = [
+			'export interface BadgeProps { label: string; tone?: "info" | "warn"; count?: number; pill?: boolean }',
+			'export default function Badge({ label, tone = "info", pill = false }: BadgeProps) {',
+			"  return <p>{label}</p>;",
+			"}",
+		].join("\n");
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		const badge = only(module);
+		expect(badge.propsParameter).toEqual({
+			form: "destructured",
+			type: { code: "BadgeProps", span: expect.any(Object) },
+			span: expect.any(Object),
+		});
+		expect(
+			badge.props.map((prop) => [
+				prop.name,
+				prop.optional,
+				prop.type.code,
+				prop.default?.code,
+				prop.binding,
+			]),
+		).toEqual([
+			["label", false, "string", undefined, `label@${source.indexOf("label,")}`],
+			["tone", true, '"info" | "warn"', '"info"', `tone@${source.indexOf("tone =")}`],
+			// Left out of the pattern: no binding.
+			["count", true, "number", undefined, undefined],
+			["pill", true, "boolean", "false", `pill@${source.indexOf("pill =")}`],
+		]);
+		expect(badge.bindings.map((binding) => binding.id)).toEqual([
+			`label@${source.indexOf("label,")}`,
+			`tone@${source.indexOf("tone =")}`,
+			`pill@${source.indexOf("pill =")}`,
+		]);
+		expect(badge.types).toEqual(["BadgeProps"]);
+		expect(module!.types).toEqual([
+			{
+				name: "BadgeProps",
+				exported: true,
+				code: source.slice(source.indexOf("interface"), source.indexOf("}") + 1),
+				span: expect.any(Object),
+			},
+		]);
+		// The reference spans the identifier, and names the binding.
+		expect(badge.render.kind === "Element" && badge.render.children[0]).toMatchObject({
+			kind: "Interpolation",
+			value: {
+				code: "label",
+				refs: [{ kind: "Binding", binding: `label@${source.indexOf("label,")}` }],
+			},
+		});
+	});
 
-  it("lowers the object form, with a binding for every prop at the parameter", () => {
-    const source =
-      "interface P { author: string; minutes?: number }\nexport function A(props: P) { return <p>{props.author} {props.minutes ?? 0}</p>; }";
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    const a = only(module);
-    const at = source.indexOf("props:");
-    expect(a.propsParameter).toMatchObject({ form: "object", name: "props" });
-    expect(a.bindings.map((binding) => binding.id)).toEqual([`author@${at}`, `minutes@${at}`]);
-    const render = a.render.kind === "Element" ? a.render : undefined;
-    const interpolations = render!.children.filter((child) => child.kind === "Interpolation");
-    // A reference spans the whole member read.
-    expect(
-      interpolations.map((child) =>
-        child.kind === "Interpolation"
-          ? child.value.refs.map((ref) => source.slice(ref.span.start, ref.span.end))
-          : [],
-      ),
-    ).toEqual([["props.author"], ["props.minutes"]]);
-  });
+	it("lowers the object form, with a binding for every prop at the parameter", () => {
+		const source =
+			"interface P { author: string; minutes?: number }\nexport function A(props: P) { return <p>{props.author} {props.minutes ?? 0}</p>; }";
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		const a = only(module);
+		const at = source.indexOf("props:");
+		expect(a.propsParameter).toMatchObject({ form: "object", name: "props" });
+		expect(a.bindings.map((binding) => binding.id)).toEqual([`author@${at}`, `minutes@${at}`]);
+		const render = a.render.kind === "Element" ? a.render : undefined;
+		const interpolations = render!.children.filter((child) => child.kind === "Interpolation");
+		// A reference spans the whole member read.
+		expect(
+			interpolations.map((child) =>
+				child.kind === "Interpolation"
+					? child.value.refs.map((ref) => source.slice(ref.span.start, ref.span.end))
+					: [],
+			),
+		).toEqual([["props.author"], ["props.minutes"]]);
+	});
 
-  it("follows local interfaces and aliases, and copies the types the props reach", () => {
-    const source = [
-      'type Availability = "in-stock" | "backorder";',
-      "interface Finish { sku: string }",
-      "export interface ProductProps { availability: Availability; finishes: Finish[]; size: { width: number } }",
-      "type Alias = ProductProps;",
-      "export function A({ availability, finishes, size }: Alias) {",
-      "  return <p>{availability} {finishes.length} {size.width}</p>;",
-      "}",
-    ].join("\n");
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    expect(only(module).types).toEqual(["Availability", "Finish", "ProductProps", "Alias"]);
-    expect(module!.types.map((type) => [type.name, type.exported])).toEqual([
-      ["Availability", false],
-      ["Finish", false],
-      ["ProductProps", true],
-      ["Alias", false],
-    ]);
-  });
+	it("follows local interfaces and aliases, and copies the types the props reach", () => {
+		const source = [
+			'type Availability = "in-stock" | "backorder";',
+			"interface Finish { sku: string }",
+			"export interface ProductProps { availability: Availability; finishes: Finish[]; size: { width: number } }",
+			"type Alias = ProductProps;",
+			"export function A({ availability, finishes, size }: Alias) {",
+			"  return <p>{availability} {finishes.length} {size.width}</p>;",
+			"}",
+		].join("\n");
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		expect(only(module).types).toEqual(["Availability", "Finish", "ProductProps", "Alias"]);
+		expect(module!.types.map((type) => [type.name, type.exported])).toEqual([
+			["Availability", false],
+			["Finish", false],
+			["ProductProps", true],
+			["Alias", false],
+		]);
+	});
 
-  it("takes an inline object type", () => {
-    const { module, diagnostics } = run(
-      "export function A({ a }: { a?: string }) { return <p>{a}</p>; }",
-    );
-    expect(diagnostics).toEqual([]);
-    expect(only(module).types).toEqual([]);
-    expect(only(module).props.map((prop) => prop.type.code)).toEqual(["string"]);
-  });
+	it("takes an inline object type", () => {
+		const { module, diagnostics } = run(
+			"export function A({ a }: { a?: string }) { return <p>{a}</p>; }",
+		);
+		expect(diagnostics).toEqual([]);
+		expect(only(module).types).toEqual([]);
+		expect(only(module).props.map((prop) => prop.type.code)).toEqual(["string"]);
+	});
 
-  it.each([
-    [
-      "export function A(props) { return <p />; }",
-      "props",
-      "The props parameter needs a type annotation.",
-    ],
-    [
-      "export function A({ a }) { return <p />; }",
-      "{ a }",
-      "The props parameter needs a type annotation.",
-    ],
-    [
-      "export function A(a: { a: string }, b: { b: string }) { return <p />; }",
-      "b: { b: string }",
-      "A component takes one parameter, its props.",
-    ],
-    [
-      "export function A(props: { a?: string } = {}) { return <p />; }",
-      "props: { a?: string } = {}",
-      "The props parameter cannot have a default: give each optional prop its own.",
-    ],
-    [
-      "export function A([a]: string[]) { return <p />; }",
-      "[a]: string[]",
-      "The props parameter is destructured as an object, or kept as one object.",
-    ],
-    [
-      "export function A(props?: { a: string }) { return <p />; }",
-      "props?: { a: string }",
-      "The props parameter cannot be optional: a component always receives its props.",
-    ],
-    [
-      "export function A({ a: b }: { a: string }) { return <p>{b}</p>; }",
-      "a: b",
-      "`a: b` renames a prop: destructure it by its own name, which the targets declare.",
-    ],
-    [
-      "export function A({ a: { b } }: { a: { b: string } }) { return <p>{b}</p>; }",
-      "{ b }",
-      "Nested patterns in the props are not supported: destructure `a`, and read its members (`a.member`).",
-    ],
-    [
-      'export function A({ ["a"]: a }: { a: string }) { return <p>{a}</p>; }',
-      '"a"',
-      "The props pattern destructures each prop by its name: no computed or string keys.",
-    ],
-    [
-      "export function A({ b }: { a: string }) { return <p />; }",
-      "b",
-      "`b` is not a member of the props type.",
-    ],
-    [
-      'export function A({ a = "x" }: { a: string }) { return <p>{a}</p>; }',
-      '"x"',
-      "`a` is required, so its default would never apply.",
-    ],
-    [
-      'export function A({ a = "x" }: { a?: string | null }) { return <p>{a}</p>; }',
-      '"x"',
-      "`a` can be `null`, and Qwik applies a destructured default to `null` too: its default can only be `null`.",
-    ],
-  ])("reports %s as invalid props (UF2001)", (source, at, message) => {
-    const { module, diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual([`UF2001 ${at}`]);
-    expect(diagnostics[0]!.message).toBe(message);
-    expect(module!.components).toEqual([]);
-  });
+	it.each([
+		[
+			"export function A(props) { return <p />; }",
+			"props",
+			"The props parameter needs a type annotation.",
+		],
+		[
+			"export function A({ a }) { return <p />; }",
+			"{ a }",
+			"The props parameter needs a type annotation.",
+		],
+		[
+			"export function A(a: { a: string }, b: { b: string }) { return <p />; }",
+			"b: { b: string }",
+			"A component takes one parameter, its props.",
+		],
+		[
+			"export function A(props: { a?: string } = {}) { return <p />; }",
+			"props: { a?: string } = {}",
+			"The props parameter cannot have a default: give each optional prop its own.",
+		],
+		[
+			"export function A([a]: string[]) { return <p />; }",
+			"[a]: string[]",
+			"The props parameter is destructured as an object, or kept as one object.",
+		],
+		[
+			"export function A(props?: { a: string }) { return <p />; }",
+			"props?: { a: string }",
+			"The props parameter cannot be optional: a component always receives its props.",
+		],
+		[
+			"export function A({ a: b }: { a: string }) { return <p>{b}</p>; }",
+			"a: b",
+			"`a: b` renames a prop: destructure it by its own name, which the targets declare.",
+		],
+		[
+			"export function A({ a: { b } }: { a: { b: string } }) { return <p>{b}</p>; }",
+			"{ b }",
+			"Nested patterns in the props are not supported: destructure `a`, and read its members (`a.member`).",
+		],
+		[
+			'export function A({ ["a"]: a }: { a: string }) { return <p>{a}</p>; }',
+			'"a"',
+			"The props pattern destructures each prop by its name: no computed or string keys.",
+		],
+		[
+			"export function A({ b }: { a: string }) { return <p />; }",
+			"b",
+			"`b` is not a member of the props type.",
+		],
+		[
+			'export function A({ a = "x" }: { a: string }) { return <p>{a}</p>; }',
+			'"x"',
+			"`a` is required, so its default would never apply.",
+		],
+		[
+			'export function A({ a = "x" }: { a?: string | null }) { return <p>{a}</p>; }',
+			'"x"',
+			"`a` can be `null`, and Qwik applies a destructured default to `null` too: its default can only be `null`.",
+		],
+	])("reports %s as invalid props (UF2001)", (source, at, message) => {
+		const { module, diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual([`UF2001 ${at}`]);
+		expect(diagnostics[0]!.message).toBe(message);
+		expect(module!.components).toEqual([]);
+	});
 
-  it("accepts a null default on a nullable prop", () => {
-    expect(
-      run("export function A({ a = null }: { a?: string | null }) { return <p>{a}</p>; }")
-        .diagnostics,
-    ).toEqual([]);
-  });
+	it("accepts a null default on a nullable prop", () => {
+		expect(
+			run("export function A({ a = null }: { a?: string | null }) { return <p>{a}</p>; }")
+				.diagnostics,
+		).toEqual([]);
+	});
 
-  it.each(["props", "props[name]", "props.missing", "String(props)"])(
-    "reports the object form's %s, which is not a member read (UF2001)",
-    (use) => {
-      const source = `export function A(props: { label: string; name: string }) { return <p>{${use}}</p>; }`;
-      const { diagnostics } = run(source);
-      expect(codes(diagnostics)).toContain("UF2001");
-    },
-  );
+	it.each(["props", "props[name]", "props.missing", "String(props)"])(
+		"reports the object form's %s, which is not a member read (UF2001)",
+		(use) => {
+			const source = `export function A(props: { label: string; name: string }) { return <p>{${use}}</p>; }`;
+			const { diagnostics } = run(source);
+			expect(codes(diagnostics)).toContain("UF2001");
+		},
+	);
 
-  it("reports a rest element, since fallthrough is `class` and `style` alone (ADR-0054)", () => {
-    const source =
-      "export function A({ a, ...rest }: { a: string; b: string }) { return <p>{a}</p>; }";
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF2001 ...rest"]);
-  });
+	it("reports a rest element, since fallthrough is `class` and `style` alone (ADR-0054)", () => {
+		const source =
+			"export function A({ a, ...rest }: { a: string; b: string }) { return <p>{a}</p>; }";
+		expect(problems(source, run(source).diagnostics)).toEqual(["UF2001 ...rest"]);
+	});
 
-  it.each([
-    ['"a"', true],
-    ["-1", true],
-    ["1.5", true],
-    ["true", true],
-    ["null", true],
-    ["`text`", true],
-    ['["a", 1, { b: [true] }]', true],
-    ['{ name: "x", "kebab-key": null }', true],
-    ["undefined", false],
-    ["Number.MAX_SAFE_INTEGER", false],
-    ["`a${1}`", false],
-    ["[...xs]", false],
-    ["{ [k]: 1 }", false],
-    ["{ a }", false],
-    ["{ ...o }", false],
-    ["/re/", false],
-    ["1n", false],
-    ["+1", false],
-    ["[ , 1]", false],
-  ])("reads the default %s as static: %s", (value, valid) => {
-    const source = `export function A({ a = ${value} }: { a?: unknown }) { return <p />; }`;
-    const diagnostics = run(source).diagnostics.filter(
-      (diagnostic) => diagnostic.code === "UF2002",
-    );
-    expect(diagnostics.length).toBe(valid ? 0 : 1);
-  });
+	it.each([
+		['"a"', true],
+		["-1", true],
+		["1.5", true],
+		["true", true],
+		["null", true],
+		["`text`", true],
+		['["a", 1, { b: [true] }]', true],
+		['{ name: "x", "kebab-key": null }', true],
+		["undefined", false],
+		["Number.MAX_SAFE_INTEGER", false],
+		["`a${1}`", false],
+		["[...xs]", false],
+		["{ [k]: 1 }", false],
+		["{ a }", false],
+		["{ ...o }", false],
+		["/re/", false],
+		["1n", false],
+		["+1", false],
+		["[ , 1]", false],
+	])("reads the default %s as static: %s", (value, valid) => {
+		const source = `export function A({ a = ${value} }: { a?: unknown }) { return <p />; }`;
+		const diagnostics = run(source).diagnostics.filter(
+			(diagnostic) => diagnostic.code === "UF2002",
+		);
+		expect(diagnostics.length).toBe(valid ? 0 : 1);
+	});
 
-  it("reports a default holding </script, which would end a script block", () => {
-    const source =
-      'export function A({ a = "<\\/x></SCRIPT>" }: { a?: string }) { return <p>{a}</p>; }';
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF1002 </SCRIPT"]);
-  });
+	it("reports a default holding </script, which would end a script block", () => {
+		const source = String.raw`export function A({ a = "<\/x></SCRIPT>" }: { a?: string }) { return <p>{a}</p>; }`;
+		expect(problems(source, run(source).diagnostics)).toEqual(["UF1002 </SCRIPT"]);
+	});
 
-  it.each([
-    ["key", "`key` is the frameworks' list identity, not a prop."],
-    ["class", "`class` falls through to a component's root on every target."],
-    ["as", "`as` is a keyword in Angular's template expressions."],
-    ["typeof", "`typeof` is a reserved word in JavaScript's strict mode."],
-    [
-      "Math",
-      "`Math` is a global expressions may read, which the Angular target declares as a member.",
-    ],
-    [
-      "onClick",
-      "`onClick` is an event's name: a component declares its events with `defineEmits`, and the targets name their props by them (ADR-0012).",
-    ],
-    ["ngModel", "`ngModel` is a name Angular reserves for its directives."],
-    [
-      "Fragment",
-      "Astro's output renders `<>` with the `Fragment` it imports, which the prop would hide.",
-    ],
-    [
-      "ref_key",
-      "`ref_key` is not ASCII letters and digits starting with a letter, which every target can declare.",
-    ],
-  ])("reports the prop name %s (UF2003)", (name, reason) => {
-    const source = `interface P { ${name}: string }\nexport function A(props: P) { return <p />; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual([`UF2003 ${name}`]);
-    expect(diagnostics[0]!.message).toBe(`\`${name}\` cannot be a prop's name: ${reason}`);
-  });
+	it.each([
+		["key", "`key` is the frameworks' list identity, not a prop."],
+		["class", "`class` falls through to a component's root on every target."],
+		["as", "`as` is a keyword in Angular's template expressions."],
+		["typeof", "`typeof` is a reserved word in JavaScript's strict mode."],
+		[
+			"Math",
+			"`Math` is a global expressions may read, which the Angular target declares as a member.",
+		],
+		[
+			"onClick",
+			"`onClick` is an event's name: a component declares its events with `defineEmits`, and the targets name their props by them (ADR-0012).",
+		],
+		["ngModel", "`ngModel` is a name Angular reserves for its directives."],
+		[
+			"Fragment",
+			"Astro's output renders `<>` with the `Fragment` it imports, which the prop would hide.",
+		],
+		[
+			"ref_key",
+			"`ref_key` is not ASCII letters and digits starting with a letter, which every target can declare.",
+		],
+	])("reports the prop name %s (UF2003)", (name, reason) => {
+		const source = `interface P { ${name}: string }\nexport function A(props: P) { return <p />; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual([`UF2003 ${name}`]);
+		expect(diagnostics[0]!.message).toBe(`\`${name}\` cannot be a prop's name: ${reason}`);
+	});
 
-  it("reports a prop name once, for every component that shares its type", () => {
-    const source = [
-      "interface P { key: string }",
-      "export function A(props: P) { return <p />; }",
-      "export function B(props: P) { return <p />; }",
-    ].join("\n");
-    expect(codes(run(source).diagnostics)).toEqual(["UF2003"]);
-  });
+	it("reports a prop name once, for every component that shares its type", () => {
+		const source = [
+			"interface P { key: string }",
+			"export function A(props: P) { return <p />; }",
+			"export function B(props: P) { return <p />; }",
+		].join("\n");
+		expect(codes(run(source).diagnostics)).toEqual(["UF2003"]);
+	});
 
-  // Vue declares such a prop `[Boolean, String]`, and casts `""` and the prop's kebab-case name
-  // to `true`.
-  it.each([
-    ["flag?: boolean | string", "boolean | string"],
-    ['flag?: true | ""', 'true | ""'],
-    ['flag?: boolean | "flag"', 'boolean | "flag"'],
-    ['isOpen?: boolean | "is-open"', 'boolean | "is-open"'],
-    ["flag?: Mixed", "Mixed"],
-  ])("reports %s, a string of which Vue reads as true", (member, at) => {
-    const mixed = member.includes("Mixed") ? 'type Mixed = boolean | "" | "on";\n' : "";
-    const source = `${mixed}interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual([`UF1002 ${at}`]);
-    expect(diagnostics[0]!.message).toContain("both a boolean and any string");
-  });
+	// Vue declares such a prop `[Boolean, String]`, and casts `""` and the prop's kebab-case name
+	// to `true`.
+	it.each([
+		["flag?: boolean | string", "boolean | string"],
+		['flag?: true | ""', 'true | ""'],
+		['flag?: boolean | "flag"', 'boolean | "flag"'],
+		['isOpen?: boolean | "is-open"', 'boolean | "is-open"'],
+		["flag?: Mixed", "Mixed"],
+	])("reports %s, a string of which Vue reads as true", (member, at) => {
+		const mixed = member.includes("Mixed") ? 'type Mixed = boolean | "" | "on";\n' : "";
+		const source = `${mixed}interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual([`UF1002 ${at}`]);
+		expect(diagnostics[0]!.message).toContain("both a boolean and any string");
+	});
 
-  it("accepts a boolean beside string literals Vue does not cast, as tri-state ARIA takes", () => {
-    const source =
-      'type Tri = boolean | "mixed";\ninterface P { pressed: Tri; checked?: false | "mixed" }\nexport function A({ pressed, checked }: P) { return <button type="button" aria-pressed={pressed} aria-checked={checked}>x</button>; }';
-    expect(run(source).diagnostics).toEqual([]);
-  });
+	it("accepts a boolean beside string literals Vue does not cast, as tri-state ARIA takes", () => {
+		const source =
+			'type Tri = boolean | "mixed";\ninterface P { pressed: Tri; checked?: false | "mixed" }\nexport function A({ pressed, checked }: P) { return <button type="button" aria-pressed={pressed} aria-checked={checked}>x</button>; }';
+		expect(run(source).diagnostics).toEqual([]);
+	});
 });
 
 describe("props types", () => {
-  // Every props type is read from its shape (ADR-0067): what the default oracle cannot evaluate
-  // is named as written.
-  it.each([
-    ["a: () => void", "UF1002 () => void", "Function types are not supported in props"],
-    ["a(): void", "UF1002 a(): void", "Function types are not supported in props"],
-    [
-      "[key: string]: string",
-      "UF6002 [key: string]: string",
-      "An index signature needs a type checker",
-    ],
-    ["a: any", "UF6002 any", "`any` is not a type a prop can take"],
-    ["a: unknown", "UF6002 unknown", "`unknown`"],
-    ["a: object", "UF6002 object", "`object`"],
-    ["a: {}", "UF6002 {}", "The empty object type `{}`"],
-    ["a: symbol", "UF6002 symbol", "`symbol`"],
-    ["a: bigint", "UF6002 bigint", "`bigint`"],
-    ["a: [string, number]", "UF6002 [string, number]", "A tuple type"],
-    ["a: `x-${string}`", "UF6002 `x-${string}`", "A template literal type needs a type checker"],
-    [
-      "a: Record<string, string>",
-      "UF6002 Record<string, string>",
-      "`Record<string, string>` needs a type checker",
-    ],
-    ["a: Date", "UF6001 Date", "`Date` is neither declared nor imported by this module"],
-    ["a: keyof X", "UF6002 keyof X", "`keyof X` needs a type checker"],
-  ])("reports the member %s", (member, problem, message) => {
-    const source = `interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)[0]).toBe(problem);
-    expect(diagnostics[0]!.message).toContain(message);
-  });
+	// Every props type is read from its shape (ADR-0067): what the default oracle cannot evaluate
+	// is named as written.
+	it.each([
+		["a: () => void", "UF1002 () => void", "Function types are not supported in props"],
+		["a(): void", "UF1002 a(): void", "Function types are not supported in props"],
+		[
+			"[key: string]: string",
+			"UF6002 [key: string]: string",
+			"An index signature needs a type checker",
+		],
+		["a: any", "UF6002 any", "`any` is not a type a prop can take"],
+		["a: unknown", "UF6002 unknown", "`unknown`"],
+		["a: object", "UF6002 object", "`object`"],
+		["a: {}", "UF6002 {}", "The empty object type `{}`"],
+		["a: symbol", "UF6002 symbol", "`symbol`"],
+		["a: bigint", "UF6002 bigint", "`bigint`"],
+		["a: [string, number]", "UF6002 [string, number]", "A tuple type"],
+		["a: `x-${string}`", "UF6002 `x-${string}`", "A template literal type needs a type checker"],
+		[
+			"a: Record<string, string>",
+			"UF6002 Record<string, string>",
+			"`Record<string, string>` needs a type checker",
+		],
+		["a: Date", "UF6001 Date", "`Date` is neither declared nor imported by this module"],
+		["a: keyof X", "UF6002 keyof X", "`keyof X` needs a type checker"],
+	])("reports the member %s", (member, problem, message) => {
+		const source = `interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)[0]).toBe(problem);
+		expect(diagnostics[0]!.message).toContain(message);
+	});
 
-  it.each([
-    "a: string; b?: number; c: boolean; d: null; e: undefined",
-    'a: "x" | "y"; b: 1 | -2; c: true; d: string | null',
-    "a: string[]; b: readonly number[]; c: Array<{ d: string }>; e: ReadonlyArray<Item>",
-    'a: { b: { c: "x" } }; d: Item; "e": string',
-  ])("accepts the members %s", (members) => {
-    const source = `interface Item { name: string; items?: Item[] }\ninterface P { ${members}; item?: Item }\nexport function A(props: P) { return <p />; }`;
-    expect(run(source).diagnostics).toEqual([]);
-  });
+	it.each([
+		"a: string; b?: number; c: boolean; d: null; e: undefined",
+		'a: "x" | "y"; b: 1 | -2; c: true; d: string | null',
+		"a: string[]; b: readonly number[]; c: Array<{ d: string }>; e: ReadonlyArray<Item>",
+		'a: { b: { c: "x" } }; d: Item; "e": string',
+	])("accepts the members %s", (members) => {
+		const source = `interface Item { name: string; items?: Item[] }\ninterface P { ${members}; item?: Item }\nexport function A(props: P) { return <p />; }`;
+		expect(run(source).diagnostics).toEqual([]);
+	});
 
-  it.each([
-    ["interface I { a: string }\ntype P = I;", "P"],
-    ["type Q = { a: string };\ntype P = (Q);", "P"],
-    ["interface P { a: string }", "(P)"],
-  ])("keeps the members of %s as the props type's own, without `declaredBy`", (before, type) => {
-    const source = `${before}\nexport function A(props: ${type}) { return <p>{props.a}</p>; }`;
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    const [prop] = only(module).props;
-    expect(prop!.declaredBy).toBeUndefined();
-    expect(source.slice(prop!.span.start, prop!.span.end)).toBe("a: string");
-    expect(prop!.type.code).toBe("string");
-  });
+	it.each([
+		["interface I { a: string }\ntype P = I;", "P"],
+		["type Q = { a: string };\ntype P = (Q);", "P"],
+		["interface P { a: string }", "(P)"],
+	])("keeps the members of %s as the props type's own, without `declaredBy`", (before, type) => {
+		const source = `${before}\nexport function A(props: ${type}) { return <p>{props.a}</p>; }`;
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		const [prop] = only(module).props;
+		expect(prop!.declaredBy).toBeUndefined();
+		expect(source.slice(prop!.span.start, prop!.span.end)).toBe("a: string");
+		expect(prop!.type.code).toBe("string");
+	});
 
-  it.each([
-    ['["b"]: string', 'UF6002 "b"', "A computed key needs a type checker"],
-    ["(): void", "UF1002 (): void;", "Function types are not supported in props"],
-    ["new (): P", "UF1002 new (): P;", "Function types are not supported in props"],
-  ])("reports the member %s of a local props type", (member, problem, message) => {
-    const source = `interface P { a: string; ${member}; }\nexport function A(props: P) { return <p />; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual([problem]);
-    expect(diagnostics[0]!.message).toContain(message);
-  });
+	it.each([
+		['["b"]: string', 'UF6002 "b"', "A computed key needs a type checker"],
+		["(): void", "UF1002 (): void;", "Function types are not supported in props"],
+		["new (): P", "UF1002 new (): P;", "Function types are not supported in props"],
+	])("reports the member %s of a local props type", (member, problem, message) => {
+		const source = `interface P { a: string; ${member}; }\nexport function A(props: P) { return <p />; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual([problem]);
+		expect(diagnostics[0]!.message).toContain(message);
+	});
 
-  // The oracle keeps a brand's object part and reports its primitive part: one problem, at the
-  // intersection, and no uses that read the member as an object.
-  it.each([
-    [
-      'type Size = "sm" | "md" | (string & {});\ninterface P { size: Size }',
-      "<p title={props.size}>{props.size}</p>",
-      "UF6002 string & {}",
-    ],
-    [
-      'type Id = number & { __brand: "id" };\ninterface P { id: Id }',
-      "<p>{props.id}</p>",
-      'UF6002 number & { __brand: "id" }',
-    ],
-  ])("reports a branded member once: %s", (types, jsx, problem) => {
-    const source = `${types}\nexport function A(props: P) { return ${jsx}; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual([problem]);
-    expect(diagnostics[0]!.message).toBe(
-      "An intersection with a part the default type oracle cannot read as an object type is not a type a prop can take.",
-    );
-  });
+	// The oracle keeps a brand's object part and reports its primitive part: one problem, at the
+	// intersection, and no uses that read the member as an object.
+	it.each([
+		[
+			'type Size = "sm" | "md" | (string & {});\ninterface P { size: Size }',
+			"<p title={props.size}>{props.size}</p>",
+			"UF6002 string & {}",
+		],
+		[
+			'type Id = number & { __brand: "id" };\ninterface P { id: Id }',
+			"<p>{props.id}</p>",
+			'UF6002 number & { __brand: "id" }',
+		],
+	])("reports a branded member once: %s", (types, jsx, problem) => {
+		const source = `${types}\nexport function A(props: P) { return ${jsx}; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual([problem]);
+		expect(diagnostics[0]!.message).toBe(
+			"An intersection with a part the default type oracle cannot read as an object type is not a type a prop can take.",
+		);
+	});
 
-  // Another member's unresolved type stops no member's own check.
-  it.each([
-    [
-      'import type { Foo } from "./missing.ts";\ninterface P { a: Foo; c: {} }',
-      ["UF6002 {}", "UF6001 Foo"],
-    ],
-    [
-      "interface X { y: string }\ninterface P { b: keyof X; c: {} }",
-      ["UF6002 keyof X", "UF6002 {}"],
-    ],
-    ['interface P { s: "a" | (string & {}); c: {} }', ["UF6002 string & {}", "UF6002 {}"]],
-    [
-      'type Size = "sm" | (string & {});\ninterface P { s: string; c: Size | {} }',
-      ["UF6002 {}", "UF6002 string & {}"],
-    ],
-    [
-      "type B = string & {};\ninterface P { c: { b: B; e: {} } }",
-      ["UF6002 {}", "UF6002 string & {}"],
-    ],
-    ["interface P { c: {}[] }", ["UF6002 {}"]],
-  ])("reports a written `{}` beside another member's problem: %s", (types, expected) => {
-    const source = `${types}\nexport function A(props: P) { return <p />; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(expected);
-  });
+	// Another member's unresolved type stops no member's own check.
+	it.each([
+		[
+			'import type { Foo } from "./missing.ts";\ninterface P { a: Foo; c: {} }',
+			["UF6002 {}", "UF6001 Foo"],
+		],
+		[
+			"interface X { y: string }\ninterface P { b: keyof X; c: {} }",
+			["UF6002 keyof X", "UF6002 {}"],
+		],
+		['interface P { s: "a" | (string & {}); c: {} }', ["UF6002 string & {}", "UF6002 {}"]],
+		[
+			'type Size = "sm" | (string & {});\ninterface P { s: string; c: Size | {} }',
+			["UF6002 {}", "UF6002 string & {}"],
+		],
+		[
+			"type B = string & {};\ninterface P { c: { b: B; e: {} } }",
+			["UF6002 {}", "UF6002 string & {}"],
+		],
+		["interface P { c: {}[] }", ["UF6002 {}"]],
+	])("reports a written `{}` beside another member's problem: %s", (types, expected) => {
+		const source = `${types}\nexport function A(props: P) { return <p />; }`;
+		expect(problems(source, run(source).diagnostics)).toEqual(expected);
+	});
 
-  // What this module writes is reported where it is written, as the syntax gives it.
-  it.each([
-    // R1: an alias of `{}`, wherever a member reaches it.
-    ["type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
-    ["type E = {};\ninterface P { a: E | string; b: { c: E }; d: E[] }", ["UF6002 {}"]],
-    ["type F = {};\ntype E = F;\ninterface P { a: E }", ["UF6002 {}"]],
-    ["export type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
-    // R2: a problem an alias writes, once, at the alias.
-    ["type K = object;\ninterface P { m: K; n: K }", ["UF6002 object"]],
-    ["type K = () => void;\ninterface P { m: K }", ["UF1002 () => void"]],
-    ["type K = [string, number];\ninterface P { m: K }", ["UF6002 [string, number]"]],
-    ["type K = string | {};\ninterface P { m: K }", ["UF6002 {}"]],
-    // R3: a `{}` that is no prop's own type.
-    ["interface P { f: (x: {}) => void }", ["UF1002 (x: {}) => void"]],
-    ["interface P { r: Record<string, {}> }", ["UF6002 Record<string, {}>"]],
-    ["interface P { k: keyof {} }", ["UF6002 keyof {}"]],
-    // A utility type is the shape's to resolve: one that leaves no member is `{}`.
-    ['interface X { y: string }\ninterface P { m: Omit<X, "y"> }', ['UF6002 Omit<X, "y">']],
-    [
-      'interface X { y: string }\ninterface P { m: { inner: Omit<X, "y"> } }',
-      ['UF6002 Omit<X, "y">'],
-    ],
-    // R4: an object type with signatures and no properties.
-    ["interface P { m: { [k: string]: string } }", ["UF6002 [k: string]: string"]],
-    ["interface P { m: { (): void } }", ["UF1002 (): void"]],
-    // The getter: a function, as on the base.
-    ["interface P { get m(): string }", ["UF1002 get m(): string"]],
-  ])("reports what %s writes where it is written", (types, expected) => {
-    const source = `${types}\nexport function A(props: P) { return <p />; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(expected);
-  });
+	// What this module writes is reported where it is written, as the syntax gives it.
+	it.each([
+		// R1: an alias of `{}`, wherever a member reaches it.
+		["type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
+		["type E = {};\ninterface P { a: E | string; b: { c: E }; d: E[] }", ["UF6002 {}"]],
+		["type F = {};\ntype E = F;\ninterface P { a: E }", ["UF6002 {}"]],
+		["export type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
+		// R2: a problem an alias writes, once, at the alias.
+		["type K = object;\ninterface P { m: K; n: K }", ["UF6002 object"]],
+		["type K = () => void;\ninterface P { m: K }", ["UF1002 () => void"]],
+		["type K = [string, number];\ninterface P { m: K }", ["UF6002 [string, number]"]],
+		["type K = string | {};\ninterface P { m: K }", ["UF6002 {}"]],
+		// R3: a `{}` that is no prop's own type.
+		["interface P { f: (x: {}) => void }", ["UF1002 (x: {}) => void"]],
+		["interface P { r: Record<string, {}> }", ["UF6002 Record<string, {}>"]],
+		["interface P { k: keyof {} }", ["UF6002 keyof {}"]],
+		// A utility type is the shape's to resolve: one that leaves no member is `{}`.
+		['interface X { y: string }\ninterface P { m: Omit<X, "y"> }', ['UF6002 Omit<X, "y">']],
+		[
+			'interface X { y: string }\ninterface P { m: { inner: Omit<X, "y"> } }',
+			['UF6002 Omit<X, "y">'],
+		],
+		// R4: an object type with signatures and no properties.
+		["interface P { m: { [k: string]: string } }", ["UF6002 [k: string]: string"]],
+		["interface P { m: { (): void } }", ["UF1002 (): void"]],
+		// The getter: a function, as on the base.
+		["interface P { get m(): string }", ["UF1002 get m(): string"]],
+	])("reports what %s writes where it is written", (types, expected) => {
+		const source = `${types}\nexport function A(props: P) { return <p />; }`;
+		expect(problems(source, run(source).diagnostics)).toEqual(expected);
+	});
 
-  // What a utility or a generic builds is the shape's: only the members that survive it.
-  it.each([
-    ['interface Base { a: string; b: object }\ntype P = Omit<Base, "b">;', []],
-    ['interface Base { a: string; onClick(): void }\ntype P = Pick<Base, "a">;', []],
-    ['type F = () => void;\ninterface Base { a: string; b: F }\ntype P = Omit<Base, "b">;', []],
-    ['interface Base { a: string; b: object }\ninterface P extends Omit<Base, "b"> {}', []],
-    ['type P = Omit<{ a: string; b: object }, "b">;', []],
-    ["type P = Partial<{ m: {} }>;", ["UF6002 {}"]],
-    ["type P = Readonly<{ m: () => void }>;", ["UF1002 () => void"]],
-    ["type P = Required<{ m?: object }>;", ["UF6002 object"]],
-    ["interface P extends Partial<{ m: Date }> {}", ["UF6001 Date"]],
-    // A member written twice is the syntax's UF2001, inside an intersection too.
-    ["interface P { m: { a: string; a: number } & {} }", ["UF2001 a"]],
-    ["type P = Partial<{ m: { (): void } }>;", ["UF1002 (): void"]],
-    ["type P = Readonly<{ m: { [k: string]: string } }>;", ["UF6002 [k: string]: string"]],
-    // An intersection of empty object types is `{}`.
-    ["interface P { m: {} & {} }", ["UF6002 {} & {}"]],
-    // A props type that is no object is reported once, as a whole.
-    ["type P = object;", ["UF6004 P"]],
-    ["type P = () => void;", ["UF6004 P"]],
-    ["type P = Missing;", ["UF6001 P"]],
-  ])("reports %s as the shape gives it", (types, expected) => {
-    const source = `${types}\nexport function A(props: P) { return <p />; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(expected);
-  });
+	// What a utility or a generic builds is the shape's: only the members that survive it.
+	it.each([
+		['interface Base { a: string; b: object }\ntype P = Omit<Base, "b">;', []],
+		['interface Base { a: string; onClick(): void }\ntype P = Pick<Base, "a">;', []],
+		['type F = () => void;\ninterface Base { a: string; b: F }\ntype P = Omit<Base, "b">;', []],
+		['interface Base { a: string; b: object }\ninterface P extends Omit<Base, "b"> {}', []],
+		['type P = Omit<{ a: string; b: object }, "b">;', []],
+		["type P = Partial<{ m: {} }>;", ["UF6002 {}"]],
+		["type P = Readonly<{ m: () => void }>;", ["UF1002 () => void"]],
+		["type P = Required<{ m?: object }>;", ["UF6002 object"]],
+		["interface P extends Partial<{ m: Date }> {}", ["UF6001 Date"]],
+		// A member written twice is the syntax's UF2001, inside an intersection too.
+		["interface P { m: { a: string; a: number } & {} }", ["UF2001 a"]],
+		["type P = Partial<{ m: { (): void } }>;", ["UF1002 (): void"]],
+		["type P = Readonly<{ m: { [k: string]: string } }>;", ["UF6002 [k: string]: string"]],
+		// An intersection of empty object types is `{}`.
+		["interface P { m: {} & {} }", ["UF6002 {} & {}"]],
+		// A props type that is no object is reported once, as a whole.
+		["type P = object;", ["UF6004 P"]],
+		["type P = () => void;", ["UF6004 P"]],
+		["type P = Missing;", ["UF6001 P"]],
+	])("reports %s as the shape gives it", (types, expected) => {
+		const source = `${types}\nexport function A(props: P) { return <p />; }`;
+		expect(problems(source, run(source).diagnostics)).toEqual(expected);
+	});
 
-  // An alias the props type is built from is a part of its object, not a prop's type.
-  it.each([
-    ["type E = {};\ninterface P extends E { a: string }", []],
-    ["type E = {} & {};\ninterface P extends E { a: string }", []],
-    ["type E = {};\ntype P = E & { a: string };", []],
-    ["type E = {};\ntype P = { a: string } & E;", []],
-    ["type E = object;\ninterface P extends E { a: string }", ["UF6002 E"]],
-    ["type E = object;\ntype P = E & { a: string };", ["UF6002 E"]],
-    ["type P = {};", ["UF6002 {}"]],
-    ["type P = {} & {};", []],
-    // A generic's type argument is reported where it is written, at each use.
-    ["interface G<T> { v: T }\ninterface P { g: G<object> }", ["UF6002 G<object>"]],
-    [
-      "interface G<T> { v: T }\ninterface P { g: G<object>; h: G<{}> }",
-      ["UF6002 G<object>", "UF6002 G<{}>"],
-    ],
-    ["type G<T> = Partial<{ v: T }>;\ninterface P { m: G<() => void> }", ["UF1002 G<() => void>"]],
-  ])("reports %s as the base does", (types, expected) => {
-    const source = `${types}\nexport function A(props: P) { return <p />; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(expected);
-  });
+	// An alias the props type is built from is a part of its object, not a prop's type.
+	it.each([
+		["type E = {};\ninterface P extends E { a: string }", []],
+		["type E = {} & {};\ninterface P extends E { a: string }", []],
+		["type E = {};\ntype P = E & { a: string };", []],
+		["type E = {};\ntype P = { a: string } & E;", []],
+		["type E = object;\ninterface P extends E { a: string }", ["UF6002 E"]],
+		["type E = object;\ntype P = E & { a: string };", ["UF6002 E"]],
+		["type P = {};", ["UF6002 {}"]],
+		["type P = {} & {};", []],
+		// A generic's type argument is reported where it is written, at each use.
+		["interface G<T> { v: T }\ninterface P { g: G<object> }", ["UF6002 G<object>"]],
+		[
+			"interface G<T> { v: T }\ninterface P { g: G<object>; h: G<{}> }",
+			["UF6002 G<object>", "UF6002 G<{}>"],
+		],
+		["type G<T> = Partial<{ v: T }>;\ninterface P { m: G<() => void> }", ["UF1002 G<() => void>"]],
+	])("reports %s as the base does", (types, expected) => {
+		const source = `${types}\nexport function A(props: P) { return <p />; }`;
+		expect(problems(source, run(source).diagnostics)).toEqual(expected);
+	});
 
-  it("reports an enum a member names as the oracle does", () => {
-    const source =
-      "enum E { A }\ninterface P { e: E }\nexport function A(props: P) { return <p />; }";
-    expect(problems(source, run(source).diagnostics)).toContain("UF6002 E");
-  });
+	it("reports an enum a member names as the oracle does", () => {
+		const source =
+			"enum E { A }\ninterface P { e: E }\nexport function A(props: P) { return <p />; }";
+		expect(problems(source, run(source).diagnostics)).toContain("UF6002 E");
+	});
 
-  it("reports a nested conflict at the innermost intersection", () => {
-    const source =
-      "type P = { m: { a: string } & { a: number } } & { s: string };\nexport function A(props: P) { return <p />; }";
-    expect(problems(source, run(source).diagnostics)).toEqual([
-      "UF6005 { a: string } & { a: number }",
-    ]);
-  });
+	it("reports a nested conflict at the innermost intersection", () => {
+		const source =
+			"type P = { m: { a: string } & { a: number } } & { s: string };\nexport function A(props: P) { return <p />; }";
+		expect(problems(source, run(source).diagnostics)).toEqual([
+			"UF6005 { a: string } & { a: number }",
+		]);
+	});
 
-  // R5: a conflict in a member's intersection names the member, where it is written.
-  it("reports a conflict in a member's intersection where it is written", () => {
-    const source =
-      "interface P { m: { a: string } & { a: number } }\nexport function A(props: P) { return <p />; }";
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF6005 { a: string } & { a: number }"]);
-    expect(diagnostics[0]!.message).toContain("`a` is declared with different types");
-  });
+	// R5: a conflict in a member's intersection names the member, where it is written.
+	it("reports a conflict in a member's intersection where it is written", () => {
+		const source =
+			"interface P { m: { a: string } & { a: number } }\nexport function A(props: P) { return <p />; }";
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual(["UF6005 { a: string } & { a: number }"]);
+		expect(diagnostics[0]!.message).toContain("`a` is declared with different types");
+	});
 
-  it("reports a problem of a type several members reach once, where it is written", () => {
-    const source = [
-      "interface Item { run(): void }",
-      "interface Sub { x: any; f: () => void }",
-      "interface P { a: Item; b: Item; c: Sub; d?: Sub }",
-      "interface Q { e: Sub }",
-      "export function A(props: P) { return <p />; }",
-      "export function B(props: Q) { return <p />; }",
-    ].join("\n");
-    expect(problems(source, run(source).diagnostics)).toEqual([
-      "UF1002 run(): void",
-      "UF6002 any",
-      "UF1002 () => void",
-    ]);
-  });
+	it("reports a problem of a type several members reach once, where it is written", () => {
+		const source = [
+			"interface Item { run(): void }",
+			"interface Sub { x: any; f: () => void }",
+			"interface P { a: Item; b: Item; c: Sub; d?: Sub }",
+			"interface Q { e: Sub }",
+			"export function A(props: P) { return <p />; }",
+			"export function B(props: Q) { return <p />; }",
+		].join("\n");
+		expect(problems(source, run(source).diagnostics)).toEqual([
+			"UF1002 run(): void",
+			"UF6002 any",
+			"UF1002 () => void",
+		]);
+	});
 
-  it("accepts a member typed by an intersection of object types, as an imported one is", () => {
-    const source =
-      "interface P { a: { b: string } & { c: string } }\nexport function A(props: P) { return <p />; }";
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    expect(only(module).props[0]!.type.code).toBe("{ b: string } & { c: string }");
-  });
+	it("accepts a member typed by an intersection of object types, as an imported one is", () => {
+		const source =
+			"interface P { a: { b: string } & { c: string } }\nexport function A(props: P) { return <p />; }";
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		expect(only(module).props[0]!.type.code).toBe("{ b: string } & { c: string }");
+	});
 
-  it.each([
-    ["export function A(props: Imported) { return <p />; }", "UF6001 Imported"],
-    [
-      "export function A(props: { a: string } | { b: string }) { return <p />; }",
-      "UF6004 { a: string } | { b: string }",
-    ],
-    ['type U = "a" | "b";\nexport function A(props: U) { return <p />; }', "UF6004 U"],
-    [
-      'type M = { [K in "a"]: string };\nexport function A(props: M) { return <p />; }',
-      'UF6002 { [K in "a"]: string }',
-    ],
-    [
-      "interface L { x: string }\ninterface C { x: number }\nexport function A(props: L & C) { return <p />; }",
-      "UF6005 L & C",
-    ],
-  ])("reports the props type in %s", (source, problem) => {
-    expect(problems(source, run(source).diagnostics)).toEqual([problem]);
-  });
+	it.each([
+		["export function A(props: Imported) { return <p />; }", "UF6001 Imported"],
+		[
+			"export function A(props: { a: string } | { b: string }) { return <p />; }",
+			"UF6004 { a: string } | { b: string }",
+		],
+		['type U = "a" | "b";\nexport function A(props: U) { return <p />; }', "UF6004 U"],
+		[
+			'type M = { [K in "a"]: string };\nexport function A(props: M) { return <p />; }',
+			'UF6002 { [K in "a"]: string }',
+		],
+		[
+			"interface L { x: string }\ninterface C { x: number }\nexport function A(props: L & C) { return <p />; }",
+			"UF6005 L & C",
+		],
+	])("reports the props type in %s", (source, problem) => {
+		expect(problems(source, run(source).diagnostics)).toEqual([problem]);
+	});
 
-  it.each([
-    [
-      "interface P { a: string }\ninterface P { b: string }\nexport function A(props: P) { return <p />; }",
-      "UF1002 P",
-      "`P` is declared twice: TypeScript merges the declarations, which the outputs would not.",
-    ],
-    [
-      'interface P { a: "</script>" }\nexport function A(props: P) { return <p />; }',
-      "UF1002 </script",
-      "A type declaration cannot hold `</script`: it would end the Vue or Svelte script block it is copied into.",
-    ],
-    [
-      "interface P {\n  a: string;\n  /*\n---\n  */\n}\nexport function A(props: P) { return <p />; }",
-      "UF1002 ---",
-      "A type declaration cannot hold a line that is only `---`: it would end the Astro frontmatter it is copied into.",
-    ],
-    [
-      "interface Unused { a: string }\nexport function A() { return <p />; }",
-      "UF1002 Unused",
-      "`Unused` is neither exported nor used by any component, so no output would declare it.",
-    ],
-    [
-      "interface CSSProperties { a: string }\nexport function A(props: CSSProperties) { return <p />; }",
-      "UF2003 CSSProperties",
-      "A local type cannot be named `CSSProperties`: the outputs declare a type of that name for style objects.",
-    ],
-    [
-      "interface Record { a: string }\nexport function A(props: Record) { return <p />; }",
-      "UF2003 Record",
-      "A local type cannot be named `Record`: Solid's output spreads the attributes its types lack from a TypeScript `Record`, which it would hide.",
-    ],
-    [
-      "interface Partial { a: string }\nexport function A(props: Partial) { return <p />; }",
-      "UF2003 Partial",
-      "A local type cannot be named `Partial`: Solid's output checks its defaults with TypeScript's `Partial`, which it would hide.",
-    ],
-    [
-      "interface Pick { x: number }\ninterface P { pick?: Pick }\nexport function A(props: P) { return <p />; }",
-      "UF2003 Pick",
-      "A local type cannot be named `Pick`: Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide.",
-    ],
-    [
-      "interface Required { x: number }\ninterface P { need?: Required }\nexport function A(props: P) { return <p />; }",
-      "UF2003 Required",
-      "A local type cannot be named `Required`: Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide.",
-    ],
-    [
-      "interface Exclude { x: number }\ninterface P { extra?: Exclude }\nexport function A(props: P) { return <p />; }",
-      "UF2003 Exclude",
-      "A local type cannot be named `Exclude`: Angular's output types an input with a default as TypeScript's `Exclude<…, undefined>`, which it would hide.",
-    ],
-    [
-      "interface Component { a: string }\nexport function A(props: Component) { return <p />; }",
-      "UF2003 Component",
-      "A local type cannot be named `Component`: Angular's output imports its `Component` decorator, which is also a type, by that name.",
-    ],
-    [
-      "interface Props { a: string }\ninterface P { b: Props }\nexport function A(props: P) { return <p />; }",
-      "UF2003 Props",
-      "A local type cannot be named `Props`: the outputs declare a type of that name for a component's props.",
-    ],
-  ])("reports the declaration in %j", (source, problem, message) => {
-    const { module, diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toContain(problem);
-    expect(diagnostics.find((diagnostic) => diagnostic.message === message)).toBeDefined();
-    expect(module).toBeUndefined();
-  });
+	it.each([
+		[
+			"interface P { a: string }\ninterface P { b: string }\nexport function A(props: P) { return <p />; }",
+			"UF1002 P",
+			"`P` is declared twice: TypeScript merges the declarations, which the outputs would not.",
+		],
+		[
+			'interface P { a: "</script>" }\nexport function A(props: P) { return <p />; }',
+			"UF1002 </script",
+			"A type declaration cannot hold `</script`: it would end the Vue or Svelte script block it is copied into.",
+		],
+		[
+			"interface P {\n  a: string;\n  /*\n---\n  */\n}\nexport function A(props: P) { return <p />; }",
+			"UF1002 ---",
+			"A type declaration cannot hold a line that is only `---`: it would end the Astro frontmatter it is copied into.",
+		],
+		[
+			"interface Unused { a: string }\nexport function A() { return <p />; }",
+			"UF1002 Unused",
+			"`Unused` is neither exported nor used by any component, so no output would declare it.",
+		],
+		[
+			"interface CSSProperties { a: string }\nexport function A(props: CSSProperties) { return <p />; }",
+			"UF2003 CSSProperties",
+			"A local type cannot be named `CSSProperties`: the outputs declare a type of that name for style objects.",
+		],
+		[
+			"interface Record { a: string }\nexport function A(props: Record) { return <p />; }",
+			"UF2003 Record",
+			"A local type cannot be named `Record`: Solid's output spreads the attributes its types lack from a TypeScript `Record`, which it would hide.",
+		],
+		[
+			"interface Partial { a: string }\nexport function A(props: Partial) { return <p />; }",
+			"UF2003 Partial",
+			"A local type cannot be named `Partial`: Solid's output checks its defaults with TypeScript's `Partial`, which it would hide.",
+		],
+		[
+			"interface Pick { x: number }\ninterface P { pick?: Pick }\nexport function A(props: P) { return <p />; }",
+			"UF2003 Pick",
+			"A local type cannot be named `Pick`: Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide.",
+		],
+		[
+			"interface Required { x: number }\ninterface P { need?: Required }\nexport function A(props: P) { return <p />; }",
+			"UF2003 Required",
+			"A local type cannot be named `Required`: Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide.",
+		],
+		[
+			"interface Exclude { x: number }\ninterface P { extra?: Exclude }\nexport function A(props: P) { return <p />; }",
+			"UF2003 Exclude",
+			"A local type cannot be named `Exclude`: Angular's output types an input with a default as TypeScript's `Exclude<…, undefined>`, which it would hide.",
+		],
+		[
+			"interface Component { a: string }\nexport function A(props: Component) { return <p />; }",
+			"UF2003 Component",
+			"A local type cannot be named `Component`: Angular's output imports its `Component` decorator, which is also a type, by that name.",
+		],
+		[
+			"interface Props { a: string }\ninterface P { b: Props }\nexport function A(props: P) { return <p />; }",
+			"UF2003 Props",
+			"A local type cannot be named `Props`: the outputs declare a type of that name for a component's props.",
+		],
+	])("reports the declaration in %j", (source, problem, message) => {
+		const { module, diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toContain(problem);
+		expect(diagnostics.find((diagnostic) => diagnostic.message === message)).toBeDefined();
+		expect(module).toBeUndefined();
+	});
 
-  // The outputs copy an inline props type as written, as they copy a declaration.
-  it.each([
-    [
-      'export function A(props: { a: "</SCRIPT>" }) { return <p />; }',
-      "UF1002 </SCRIPT",
-      "A props type cannot hold `</script`: it would end the Vue or Svelte script block it is copied into.",
-    ],
-    [
-      "export function A({ a }: {\n  a: string;\n  /*\n---\n  */\n}) { return <p>{a}</p>; }",
-      "UF1002 ---",
-      "A props type cannot hold a line that is only `---`: it would end the Astro frontmatter it is copied into.",
-    ],
-  ])("reports the inline props type in %j", (source, problem, message) => {
-    const { module, diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual([problem]);
-    expect(diagnostics[0]!.message).toBe(message);
-    expect(module?.components ?? []).toEqual([]);
-  });
+	// The outputs copy an inline props type as written, as they copy a declaration.
+	it.each([
+		[
+			'export function A(props: { a: "</SCRIPT>" }) { return <p />; }',
+			"UF1002 </SCRIPT",
+			"A props type cannot hold `</script`: it would end the Vue or Svelte script block it is copied into.",
+		],
+		[
+			"export function A({ a }: {\n  a: string;\n  /*\n---\n  */\n}) { return <p>{a}</p>; }",
+			"UF1002 ---",
+			"A props type cannot hold a line that is only `---`: it would end the Astro frontmatter it is copied into.",
+		],
+	])("reports the inline props type in %j", (source, problem, message) => {
+		const { module, diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual([problem]);
+		expect(diagnostics[0]!.message).toBe(message);
+		expect(module?.components ?? []).toEqual([]);
+	});
 
-  it("accepts `Props` as a component's own props type", () => {
-    expect(
-      run("interface Props { a: string }\nexport function A(props: Props) { return <p />; }")
-        .diagnostics,
-    ).toEqual([]);
-  });
+	it("accepts `Props` as a component's own props type", () => {
+		expect(
+			run("interface Props { a: string }\nexport function A(props: Props) { return <p />; }")
+				.diagnostics,
+		).toEqual([]);
+	});
 
-  // Astro's output declares a `Props` of its own for a component whose props type is another,
-  // beside the copied one: a duplicate (TS2300), or two interfaces TypeScript merges.
-  it.each([
-    "interface Props { label: string }\ntype BProps = Props;\nexport function A(props: Props) { return <p />; }\nexport function B({ label }: BProps) { return <p>{label}</p>; }",
-    "interface Props { label: string }\nexport function A(props: Props) { return <p />; }\nexport function B({ inner }: { inner: Props }) { return <p>{inner.label}</p>; }",
-  ])("reports `Props` that another component's props reach (UF2003): %j", (source) => {
-    const { module, diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF2003 Props"]);
-    const [problem] = diagnostics;
-    expect(problem!.message).toBe(
-      "A local type cannot be named `Props`: the outputs declare a type of that name for a component's props.",
-    );
-    expect(problem!.related!.map(({ span }) => source.slice(span.start, span.end))).toEqual([
-      source.includes("BProps)") ? "BProps" : "{ inner: Props }",
-    ]);
-    expect(module).toBeUndefined();
-  });
+	// Astro's output declares a `Props` of its own for a component whose props type is another,
+	// beside the copied one: a duplicate (TS2300), or two interfaces TypeScript merges.
+	it.each([
+		"interface Props { label: string }\ntype BProps = Props;\nexport function A(props: Props) { return <p />; }\nexport function B({ label }: BProps) { return <p>{label}</p>; }",
+		"interface Props { label: string }\nexport function A(props: Props) { return <p />; }\nexport function B({ inner }: { inner: Props }) { return <p>{inner.label}</p>; }",
+	])("reports `Props` that another component's props reach (UF2003): %j", (source) => {
+		const { module, diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual(["UF2003 Props"]);
+		const [problem] = diagnostics;
+		expect(problem!.message).toBe(
+			"A local type cannot be named `Props`: the outputs declare a type of that name for a component's props.",
+		);
+		expect(problem!.related!.map(({ span }) => source.slice(span.start, span.end))).toEqual([
+			source.includes("BProps)") ? "BProps" : "{ inner: Props }",
+		]);
+		expect(module).toBeUndefined();
+	});
 
-  it("accepts `Props` as the props type of two components, beside one that does not reach it", () => {
-    const source = [
-      "interface Props { label: string }",
-      "interface Other { b: string }",
-      "export function A(props: Props) { return <p>{props.label}</p>; }",
-      "export function B({ label }: Props) { return <p>{label}</p>; }",
-      "export function C({ b }: Other) { return <p>{b}</p>; }",
-    ].join("\n");
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    expect(module!.components.map((component) => component.types)).toEqual([
-      ["Props"],
-      ["Props"],
-      ["Other"],
-    ]);
-  });
+	it("accepts `Props` as the props type of two components, beside one that does not reach it", () => {
+		const source = [
+			"interface Props { label: string }",
+			"interface Other { b: string }",
+			"export function A(props: Props) { return <p>{props.label}</p>; }",
+			"export function B({ label }: Props) { return <p>{label}</p>; }",
+			"export function C({ b }: Other) { return <p>{b}</p>; }",
+		].join("\n");
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		expect(module!.components.map((component) => component.types)).toEqual([
+			["Props"],
+			["Props"],
+			["Other"],
+		]);
+	});
 
-  // TypeScript rejects a member declared twice (TS2300), and the props would be declared twice.
-  it.each([
-    "interface Props { label: string; label?: number }\nexport function A({ label }: Props) { return <p>{label}</p>; }",
-    "export function A(props: { label: string; 'label'?: string }) { return <p>{props.label}</p>; }",
-    "interface P { label: string; label: string }\nexport function A({ label }: P) { return <p>{label}</p>; }\nexport function B({ label }: P) { return <p>{label}</p>; }",
-    "export function A({ user }: { user: { name: string; name: string } }) { return <p>{user.name}</p>; }",
-  ])("reports a member declared twice (UF2001), once: %j", (source) => {
-    const { module, diagnostics } = run(source);
-    expect(codes(diagnostics)).toEqual(["UF2001"]);
-    expect(diagnostics[0]!.message).toMatch(/^`(label|name)` is declared twice in this type/);
-    expect(source.slice(diagnostics[0]!.span.start, diagnostics[0]!.span.end)).toMatch(
-      /^'?(label|name)'?$/,
-    );
-    expect(diagnostics[0]!.span.start).toBeGreaterThan(
-      source.indexOf(source.match(/label|name/)![0]),
-    );
-    expect(module?.components ?? []).toEqual([]);
-  });
+	// TypeScript rejects a member declared twice (TS2300), and the props would be declared twice.
+	it.each([
+		"interface Props { label: string; label?: number }\nexport function A({ label }: Props) { return <p>{label}</p>; }",
+		"export function A(props: { label: string; 'label'?: string }) { return <p>{props.label}</p>; }",
+		"interface P { label: string; label: string }\nexport function A({ label }: P) { return <p>{label}</p>; }\nexport function B({ label }: P) { return <p>{label}</p>; }",
+		"export function A({ user }: { user: { name: string; name: string } }) { return <p>{user.name}</p>; }",
+	])("reports a member declared twice (UF2001), once: %j", (source) => {
+		const { module, diagnostics } = run(source);
+		expect(codes(diagnostics)).toEqual(["UF2001"]);
+		expect(diagnostics[0]!.message).toMatch(/^`(label|name)` is declared twice in this type/);
+		expect(source.slice(diagnostics[0]!.span.start, diagnostics[0]!.span.end)).toMatch(
+			/^'?(label|name)'?$/,
+		);
+		expect(diagnostics[0]!.span.start).toBeGreaterThan(
+			source.indexOf(source.match(/label|name/)![0]),
+		);
+		expect(module?.components ?? []).toEqual([]);
+	});
 
-  // Astro's compiled component declares `$$props`, `$$result`, `$$slots` and `$$render` where its
-  // output declares the props object: a redeclaration, or a template tag the object hides.
-  it.each(["$$props", "$$result", "$$render", "$$p"])(
-    "reports the props parameter named %s (UF2001)",
-    (name) => {
-      const source = `export function A(${name}: { a: string }) { return <p>{${name}.a}</p>; }`;
-      const { module, diagnostics } = run(source);
-      expect(problems(source, diagnostics)).toEqual([`UF2001 ${name}`]);
-      expect(diagnostics[0]!.message).toContain("Astro's compiled component declares");
-      expect(module?.components ?? []).toEqual([]);
-    },
-  );
+	// Astro's compiled component declares `$$props`, `$$result`, `$$slots` and `$$render` where its
+	// output declares the props object: a redeclaration, or a template tag the object hides.
+	it.each(["$$props", "$$result", "$$render", "$$p"])(
+		"reports the props parameter named %s (UF2001)",
+		(name) => {
+			const source = `export function A(${name}: { a: string }) { return <p>{${name}.a}</p>; }`;
+			const { module, diagnostics } = run(source);
+			expect(problems(source, diagnostics)).toEqual([`UF2001 ${name}`]);
+			expect(diagnostics[0]!.message).toContain("Astro's compiled component declares");
+			expect(module?.components ?? []).toEqual([]);
+		},
+	);
 
-  // A prop's reference spans `props.label`, which the targets splice as the object's name and
-  // the member: parentheses around the object would leave the IR invalid.
-  it.each([
-    ["{(props).label}", "{props.label}"],
-    ["{(props /* p */)?.label}", "{props.label}"],
-  ])("reports the parenthesised object in %s (UF2001), and the fix removes it", (read, fixed) => {
-    const source = `export function A(props: { label: string }) { return <p>{${read.slice(1, -1)}}</p>; }`;
-    const { diagnostics } = run(source);
-    expect(codes(diagnostics)[0]).toBe("UF2001");
-    expect(diagnostics[0]!.message).toBe(
-      "`props` is read without parentheses: a prop is `props.label`.",
-    );
-    expect(applyAndRecheck(source, diagnostics)).toContain(`<p>${fixed}</p>`);
-  });
+	// A prop's reference spans `props.label`, which the targets splice as the object's name and
+	// the member: parentheses around the object would leave the IR invalid.
+	it.each([
+		["{(props).label}", "{props.label}"],
+		["{(props /* p */)?.label}", "{props.label}"],
+	])("reports the parenthesised object in %s (UF2001), and the fix removes it", (read, fixed) => {
+		const source = `export function A(props: { label: string }) { return <p>{${read.slice(1, -1)}}</p>; }`;
+		const { diagnostics } = run(source);
+		expect(codes(diagnostics)[0]).toBe("UF2001");
+		expect(diagnostics[0]!.message).toBe(
+			"`props` is read without parentheses: a prop is `props.label`.",
+		);
+		expect(applyAndRecheck(source, diagnostics)).toContain(`<p>${fixed}</p>`);
+	});
 
-  it("accepts a props parameter named `$`, which Svelte's output renames", () => {
-    expect(run("export function A($: { a: string }) { return <p>{$.a}</p>; }").diagnostics).toEqual(
-      [],
-    );
-  });
+	it("accepts a props parameter named `$`, which Svelte's output renames", () => {
+		expect(run("export function A($: { a: string }) { return <p>{$.a}</p>; }").diagnostics).toEqual(
+			[],
+		);
+	});
 
-  it("still checks the components when a declaration is reported, and drops the module", () => {
-    const source =
-      'interface Unused { a: string }\nexport function A() { return <p className="x" />; }';
-    const { module, diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF1002 Unused", "UF3004 className"]);
-    expect(module).toBeUndefined();
-  });
+	it("still checks the components when a declaration is reported, and drops the module", () => {
+		const source =
+			'interface Unused { a: string }\nexport function A() { return <p className="x" />; }';
+		const { module, diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual(["UF1002 Unused", "UF3004 className"]);
+		expect(module).toBeUndefined();
+	});
 
-  it("reports a lint directive in a copied type, with a fix that removes it", () => {
-    const { source, diagnostics } = component("<p />", {
-      props: "// eslint-disable-next-line\na: string",
-      pattern: "props",
-    });
-    expect(problems(source, diagnostics)).toEqual(["UF1002 // eslint-disable-next-line"]);
-    expect(applyAndRecheck(source, diagnostics)).not.toContain("eslint");
-  });
+	it("reports a lint directive in a copied type, with a fix that removes it", () => {
+		const { source, diagnostics } = component("<p />", {
+			props: "// eslint-disable-next-line\na: string",
+			pattern: "props",
+		});
+		expect(problems(source, diagnostics)).toEqual(["UF1002 // eslint-disable-next-line"]);
+		expect(applyAndRecheck(source, diagnostics)).not.toContain("eslint");
+	});
 });
 
 describe("the module's type declarations", () => {
-  it("copies exactly the declarations the lowered components use", () => {
-    const source = [
-      "interface A { a: string }",
-      "interface B { b: string }",
-      "export function One(props: A) { return <p>{props.a}</p>; }",
-      "export function Two(props: B) { return <p>{lable}</p>; }",
-    ].join("\n");
-    const { module } = run(source);
-    expect(module!.components.map((component) => component.name)).toEqual(["One"]);
-    expect(module!.types.map((type) => type.name)).toEqual(["A"]);
-  });
+	it("copies exactly the declarations the lowered components use", () => {
+		const source = [
+			"interface A { a: string }",
+			"interface B { b: string }",
+			"export function One(props: A) { return <p>{props.a}</p>; }",
+			"export function Two(props: B) { return <p>{lable}</p>; }",
+		].join("\n");
+		const { module } = run(source);
+		expect(module!.components.map((component) => component.name)).toEqual(["One"]);
+		expect(module!.types.map((type) => type.name)).toEqual(["A"]);
+	});
 
-  it("reads recursive types lazily", () => {
-    const source = [
-      "interface Tree { label: string; children: Tree[] }",
-      "export function A({ tree }: { tree: Tree }) {",
-      "  return <ul>{tree.children.map((child) => <li key={child.label}>{child.children.length}</li>)}</ul>;",
-      "}",
-    ].join("\n");
-    expect(run(source).diagnostics).toEqual([]);
-  });
+	it("reads recursive types lazily", () => {
+		const source = [
+			"interface Tree { label: string; children: Tree[] }",
+			"export function A({ tree }: { tree: Tree }) {",
+			"  return <ul>{tree.children.map((child) => <li key={child.label}>{child.children.length}</li>)}</ul>;",
+			"}",
+		].join("\n");
+		expect(run(source).diagnostics).toEqual([]);
+	});
 });
 
 describe("slices", () => {
-  it("are exact for a pattern in a multi-line parameter", () => {
-    const source =
-      "export function A({\n  a,\n  b = 1,\n}: {\n  a: string;\n  b: number;\n}) { return <p>{a}{b}</p>; }";
-    expect(slices(source, run(source).diagnostics)).toEqual(["1"]);
-  });
+	it("are exact for a pattern in a multi-line parameter", () => {
+		const source =
+			"export function A({\n  a,\n  b = 1,\n}: {\n  a: string;\n  b: number;\n}) { return <p>{a}{b}</p>; }";
+		expect(slices(source, run(source).diagnostics)).toEqual(["1"]);
+	});
 });
 
 describe("names every target writes", () => {
-  it("reports a type or a props parameter not named in ASCII", () => {
-    const type = run(
-      "interface Étiquette { a: string }\nexport function A(props: Étiquette) { return <p />; }",
-    );
-    expect(codes(type.diagnostics)).toEqual(["UF1002"]);
-    const parameter = run(
-      "export function A(données: { a: string }) { return <p>{données.a}</p>; }",
-    );
-    expect(codes(parameter.diagnostics)).toContain("UF1002");
-  });
+	it("reports a type or a props parameter not named in ASCII", () => {
+		const type = run(
+			"interface Étiquette { a: string }\nexport function A(props: Étiquette) { return <p />; }",
+		);
+		expect(codes(type.diagnostics)).toEqual(["UF1002"]);
+		const parameter = run(
+			"export function A(données: { a: string }) { return <p>{données.a}</p>; }",
+		);
+		expect(codes(parameter.diagnostics)).toContain("UF1002");
+	});
 });

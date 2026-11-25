@@ -9,8 +9,8 @@ import type { UnframeworkOptions } from "./plugin.ts";
  * `post` turns a module that `onCompile` failed into `throw new Error(message)`. Place it before
  * the framework's plugins. With no `target`, the framework's plugin decides it (ADR-0075).
  */
-export default function unframework(options?: UnframeworkOptions): Plugin[] {
-  return unframeworkUnplugin.vite(options);
+export default function unframework(options?: UnframeworkOptions): Array<Plugin> {
+	return unframeworkUnplugin.vite(options);
 }
 
 export type { CompileEvent, UnframeworkApi, UnframeworkOptions } from "./plugin.ts";

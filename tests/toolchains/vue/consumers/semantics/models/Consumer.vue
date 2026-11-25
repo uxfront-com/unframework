@@ -7,6 +7,6 @@ const open = ref(false);
 </script>
 
 <template>
-  <Disclosure v-model:open="open" title="Shipping" />
-  <Disclosure title="Returns" />
+	<Disclosure v-model:open="open" title="Shipping" />
+	<Disclosure title="Returns" />
 </template>

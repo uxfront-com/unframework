@@ -3,5 +3,5 @@ import Menu from "../../../../../integration/cases/components/list-item-root/__o
 </script>
 
 <template>
-  <Menu :entries="['Home']" />
+	<Menu :entries="['Home']" />
 </template>

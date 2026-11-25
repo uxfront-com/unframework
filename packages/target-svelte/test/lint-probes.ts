@@ -9,7 +9,7 @@
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.svelte": `<svelte:options runes={true} preserveWhitespace={false} />
+	"Badge.svelte": `<svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
   export interface BadgeProps {
@@ -46,7 +46,7 @@ export const M1_SHAPES: Readonly<Record<string, string>> = {
   ></span
 >
 `,
-  "LinkCard.svelte": `<svelte:options runes={true} preserveWhitespace={false} />
+	"LinkCard.svelte": `<svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
   interface LinkAttrs {
@@ -71,7 +71,7 @@ export const M1_SHAPES: Readonly<Record<string, string>> = {
   ><p id={props.extra?.id} role={props.extra?.role}>More</p>
 </div>
 `,
-  "TodoList.svelte": `<svelte:options runes={true} preserveWhitespace={false} />
+	"TodoList.svelte": `<svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
   interface Todo {
@@ -105,12 +105,12 @@ export const M1_SHAPES: Readonly<Record<string, string>> = {
  * values, watchers, effects and lifecycle hooks, listeners and attachments, template refs and
  * ids, and an object form's callback props.
  */
-export const M2_FIXTURES: readonly string[] = [
-  "Stepper.svelte",
-  "Pager.svelte",
-  "Ticker.svelte",
-  "Panel.svelte",
-  "Disclosure.svelte",
-  "Chip.svelte",
-  "WatchEdges.svelte",
+export const M2_FIXTURES: ReadonlyArray<string> = [
+	"Stepper.svelte",
+	"Pager.svelte",
+	"Ticker.svelte",
+	"Panel.svelte",
+	"Disclosure.svelte",
+	"Chip.svelte",
+	"WatchEdges.svelte",
 ];

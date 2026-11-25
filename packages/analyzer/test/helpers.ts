@@ -2,13 +2,13 @@ import { applyFixes } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { checkInvariants } from "@unframework.dev/ir";
 import type {
-  BindingReference,
-  Code,
-  CodeReference,
-  ElementNode,
-  FunctionCode,
-  UfComponent,
-  UfModule,
+	BindingReference,
+	Code,
+	CodeReference,
+	ElementNode,
+	FunctionCode,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 import { parseModule } from "@unframework.dev/parser";
 
@@ -21,34 +21,34 @@ import type { AnalyzeOptions, AnalyzeResult } from "../src/index.ts";
  * survives a JSON round trip unchanged, as snapshots and plugins see it.
  */
 export function run(
-  source: string,
-  file = "Test.uf.tsx",
-  options: AnalyzeOptions = {},
+	source: string,
+	file = "Test.uf.tsx",
+	options: AnalyzeOptions = {},
 ): AnalyzeResult {
-  const result = analyze(parseModule(file, source), options);
-  if (result.module) {
-    const broken = checkInvariants(result.module);
-    if (broken.length) {
-      throw new Error(`The IR of ${JSON.stringify(source)} breaks: ${JSON.stringify(broken)}`);
-    }
-    const undefinedAt = undefinedKey(result.module, "");
-    if (undefinedAt !== undefined) {
-      throw new Error(`The IR of ${JSON.stringify(source)} sets ${undefinedAt} to undefined.`);
-    }
-  }
-  for (const diagnostic of result.diagnostics) {
-    if (typeof diagnostic.message !== "string") {
-      throw new TypeError(`A ${diagnostic.code} of ${JSON.stringify(source)} has no message.`);
-    }
-    for (const at of [diagnostic.span, ...(diagnostic.related ?? []).map((item) => item.span)]) {
-      if (at.start < 0 || at.start > at.end || at.end > source.length) {
-        throw new RangeError(
-          `A ${diagnostic.code} of ${JSON.stringify(source)} points outside it.`,
-        );
-      }
-    }
-  }
-  return result;
+	const result = analyze(parseModule(file, source), options);
+	if (result.module) {
+		const broken = checkInvariants(result.module);
+		if (broken.length) {
+			throw new Error(`The IR of ${JSON.stringify(source)} breaks: ${JSON.stringify(broken)}`);
+		}
+		const undefinedAt = undefinedKey(result.module, "");
+		if (undefinedAt !== undefined) {
+			throw new Error(`The IR of ${JSON.stringify(source)} sets ${undefinedAt} to undefined.`);
+		}
+	}
+	for (const diagnostic of result.diagnostics) {
+		if (typeof diagnostic.message !== "string") {
+			throw new TypeError(`A ${diagnostic.code} of ${JSON.stringify(source)} has no message.`);
+		}
+		for (const at of [diagnostic.span, ...(diagnostic.related ?? []).map((item) => item.span)]) {
+			if (at.start < 0 || at.start > at.end || at.end > source.length) {
+				throw new RangeError(
+					`A ${diagnostic.code} of ${JSON.stringify(source)} points outside it.`,
+				);
+			}
+		}
+	}
+	return result;
 }
 
 /**
@@ -56,193 +56,212 @@ export function run(
  * builders leave an absent optional field out (ADR-0032).
  */
 function undefinedKey(value: unknown, path: string): string | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  for (const [key, item] of Object.entries(value)) {
-    if (item === undefined) return `${path}/${key}`;
-    const found = undefinedKey(item, `${path}/${key}`);
-    if (found !== undefined) return found;
-  }
-  return undefined;
+	if (!value || typeof value !== "object") {
+		return undefined;
+	}
+	for (const [key, item] of Object.entries(value)) {
+		if (item === undefined) {
+			return `${path}/${key}`;
+		}
+		const found = undefinedKey(item, `${path}/${key}`);
+		if (found !== undefined) {
+			return found;
+		}
+	}
+	return undefined;
 }
 
 /** What a test component declares besides its returned JSX. */
 export interface ComponentOptions {
-  /**
-   * The members of its props type (`label: string; tone?: "a" | "b"`), declared as `Props` and
-   * destructured whole, or with `pattern` when given.
-   */
-  props?: string;
-  /** The destructuring pattern, or the parameter as written (`props`), for `props`. */
-  pattern?: string;
-  /** Declarations before the component: types, other components. */
-  before?: string;
-  /** Setup statements before the return. */
-  setup?: string;
+	/**
+	 * The members of its props type (`label: string; tone?: "a" | "b"`), declared as `Props` and
+	 * destructured whole, or with `pattern` when given.
+	 */
+	props?: string;
+	/** The destructuring pattern, or the parameter as written (`props`), for `props`. */
+	pattern?: string;
+	/** Declarations before the component: types, other components. */
+	before?: string;
+	/** Setup statements before the return. */
+	setup?: string;
 }
 
 /** Analyses a component `A` that returns `jsx`, with the props and setup the options give. */
 export function component(
-  jsx: string,
-  options: ComponentOptions = {},
+	jsx: string,
+	options: ComponentOptions = {},
 ): { source: string } & AnalyzeResult {
-  const { props, before = "", setup = "" } = options;
-  const parameter =
-    props === undefined
-      ? ""
-      : `${options.pattern ?? `{ ${memberNames(props).join(", ")} }`}: Props`;
-  const types = props === undefined ? "" : `interface Props { ${props} }\n`;
-  const source = `${before}${types}export function A(${parameter}) { ${setup}return ${jsx}; }`;
-  return { source, ...run(source) };
+	const { props, before = "", setup = "" } = options;
+	const parameter =
+		props === undefined
+			? ""
+			: `${options.pattern ?? `{ ${memberNames(props).join(", ")} }`}: Props`;
+	const types = props === undefined ? "" : `interface Props { ${props} }\n`;
+	const source = `${before}${types}export function A(${parameter}) { ${setup}return ${jsx}; }`;
+	return { source, ...run(source) };
 }
 
 /** The names of an object type's members, at its top level. */
-function memberNames(members: string): string[] {
-  const names: string[] = [];
-  let depth = 0;
-  let start = 0;
-  for (let index = 0; index <= members.length; index++) {
-    const character = members[index];
-    if (character === "{" || character === "(" || character === "[" || character === "<") depth++;
-    else if (character === "}" || character === ")" || character === "]" || character === ">")
-      depth--;
-    else if ((character === ";" || character === undefined) && depth === 0) {
-      const name = /^\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)\??\s*:/.exec(
-        members.slice(start, index),
-      )?.[1];
-      if (name) names.push(name);
-      start = index + 1;
-    }
-  }
-  return names;
+function memberNames(members: string): Array<string> {
+	const names: Array<string> = [];
+	let depth = 0;
+	let start = 0;
+	for (let index = 0; index <= members.length; index++) {
+		const character = members[index];
+		if (character === "{" || character === "(" || character === "[" || character === "<") {
+			depth++;
+		} else if (character === "}" || character === ")" || character === "]" || character === ">") {
+			depth--;
+		} else if ((character === ";" || character === undefined) && depth === 0) {
+			const name = /^\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)\??\s*:/.exec(
+				members.slice(start, index),
+			)?.[1];
+			if (name) {
+				names.push(name);
+			}
+			start = index + 1;
+		}
+	}
+	return names;
 }
 
 /** The one component of a module. */
 export function only(module: UfModule | undefined): UfComponent {
-  if (module?.components.length !== 1) throw new Error("Expected exactly one component.");
-  return module.components[0]!;
+	if (module?.components.length !== 1) {
+		throw new Error("Expected exactly one component.");
+	}
+	return module.components[0]!;
 }
 
 /** The root element of a module's one component. */
 export function root(module: UfModule | undefined): ElementNode {
-  const { render } = only(module);
-  if (render.kind !== "Element") throw new Error(`Expected an element root, got ${render.kind}.`);
-  return render;
+	const { render } = only(module);
+	if (render.kind !== "Element") {
+		throw new Error(`Expected an element root, got ${render.kind}.`);
+	}
+	return render;
 }
 
-export function codes(diagnostics: readonly Diagnostic[]): string[] {
-  return diagnostics.map((diagnostic) => diagnostic.code);
+export function codes(diagnostics: ReadonlyArray<Diagnostic>): Array<string> {
+	return diagnostics.map((diagnostic) => diagnostic.code);
 }
 
-export function slices(source: string, diagnostics: readonly Diagnostic[]): string[] {
-  return diagnostics.map((diagnostic) => source.slice(diagnostic.span.start, diagnostic.span.end));
+export function slices(source: string, diagnostics: ReadonlyArray<Diagnostic>): Array<string> {
+	return diagnostics.map((diagnostic) => source.slice(diagnostic.span.start, diagnostic.span.end));
 }
 
 /** Each diagnostic as `code text-under-its-span`. */
-export function problems(source: string, diagnostics: readonly Diagnostic[]): string[] {
-  return diagnostics.map(
-    (diagnostic) =>
-      `${diagnostic.code} ${source.slice(diagnostic.span.start, diagnostic.span.end)}`,
-  );
+export function problems(source: string, diagnostics: ReadonlyArray<Diagnostic>): Array<string> {
+	return diagnostics.map(
+		(diagnostic) =>
+			`${diagnostic.code} ${source.slice(diagnostic.span.start, diagnostic.span.end)}`,
+	);
 }
 
 /**
  * Applies every fix and analyses the result, as the harness's L1 does: the diagnostics that
  * had no fix must be exactly what remains. Returns the fixed source.
  */
-export function applyAndRecheck(source: string, diagnostics: readonly Diagnostic[]): string {
-  const fixable = diagnostics.filter((diagnostic) => diagnostic.fixes?.length);
-  const fixed = applyFixes(
-    source,
-    fixable.flatMap((diagnostic) => diagnostic.fixes ?? []),
-  );
-  const key = (diagnostic: Diagnostic) => `${diagnostic.code} ${diagnostic.message}`;
-  const remaining = diagnostics.filter((diagnostic) => !fixable.includes(diagnostic)).map(key);
-  const after = run(fixed).diagnostics.map(key);
-  if (after.join("\n") !== remaining.join("\n")) {
-    throw new Error(
-      `The fixes do not recompile clean.\nFixed source: ${fixed}\nExpected:\n${remaining.join("\n")}\nGot:\n${after.join("\n")}`,
-    );
-  }
-  return fixed;
+export function applyAndRecheck(source: string, diagnostics: ReadonlyArray<Diagnostic>): string {
+	const fixable = diagnostics.filter((diagnostic) => diagnostic.fixes?.length);
+	const fixed = applyFixes(
+		source,
+		fixable.flatMap((diagnostic) => diagnostic.fixes ?? []),
+	);
+	const key = (diagnostic: Diagnostic) => `${diagnostic.code} ${diagnostic.message}`;
+	const remaining = diagnostics.filter((diagnostic) => !fixable.includes(diagnostic)).map(key);
+	const after = run(fixed).diagnostics.map(key);
+	if (after.join("\n") !== remaining.join("\n")) {
+		throw new Error(
+			`The fixes do not recompile clean.\nFixed source: ${fixed}\nExpected:\n${remaining.join("\n")}\nGot:\n${after.join("\n")}`,
+		);
+	}
+	return fixed;
 }
 
 /** Every authoring API M2 lowers, imported as a component writes it. */
 export const API: string =
-  'import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";\n';
+	'import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";\n';
 
 /** A component with the API imported, the props and the setup given, returning `jsx`. */
 export function setupOf(
-  setup: string,
-  jsx = "<p />",
-  props?: string,
+	setup: string,
+	jsx = "<p />",
+	props?: string,
 ): { source: string } & AnalyzeResult {
-  return component(jsx, { before: API, setup, ...(props === undefined ? {} : { props }) });
+	return component(jsx, { before: API, setup, ...(props === undefined ? {} : { props }) });
 }
 
 /** A piece of code as `text [refs]`, each reference by kind and the text it spans. */
 export function codeOf(source: string, code: Code): string {
-  return `${code.code} [${code.refs.map((ref) => referenceOf(source, ref)).join(", ")}]`;
+	return `${code.code} [${code.refs.map((ref) => referenceOf(source, ref)).join(", ")}]`;
 }
 
 /** A reference, compactly: its kind, what it names and the text it spans. */
 export function referenceOf(source: string, ref: CodeReference): string {
-  const at = (span: { start: number; end: number }) => source.slice(span.start, span.end);
-  switch (ref.kind) {
-    case "Binding":
-      return `${ref.binding.split("@")[0]}${ref.call ? "()" : ""}:${at(ref.span)}`;
-    case "Global":
-      return `global:${ref.name}`;
-    case "Write":
-      return `write ${ref.binding.split("@")[0]} ${ref.operator} ${at(ref.span)}${ref.arrowBody ? " (body)" : ""}`;
-    case "Emit":
-      return `emit ${ref.event}(${ref.arguments.map(at).join(", ")})`;
-    case "Api":
-      return `api:${ref.api}`;
-    case "Event":
-      return `event.${ref.member}${ref.call ? "()" : ""}`;
-    case "Slot":
-      return `slot:${ref.slot}`;
-    case "Import":
-      return `import:${ref.name}`;
-    case "Dev":
-      return `dev:${at(ref.span)}`;
-  }
+	const at = (span: { start: number; end: number }) => source.slice(span.start, span.end);
+	switch (ref.kind) {
+		case "Binding":
+			return `${ref.binding.split("@")[0]}${ref.call ? "()" : ""}:${at(ref.span)}`;
+		case "Global":
+			return `global:${ref.name}`;
+		case "Write":
+			return `write ${ref.binding.split("@")[0]} ${ref.operator} ${at(ref.span)}${ref.arrowBody ? " (body)" : ""}`;
+		case "Emit":
+			return `emit ${ref.event}(${ref.arguments.map(at).join(", ")})`;
+		case "Api":
+			return `api:${ref.api}`;
+		case "Event":
+			return `event.${ref.member}${ref.call ? "()" : ""}`;
+		case "Slot":
+			return `slot:${ref.slot}`;
+		case "Import":
+			return `import:${ref.name}`;
+		case "Dev":
+			return `dev:${at(ref.span)}`;
+	}
 }
 
 /** A function, compactly: its parameters and its body. */
 export function functionOf(source: string, fn: FunctionCode): string {
-  const parameters = fn.parameters.map(
-    (parameter) =>
-      `${parameter.rest ? "..." : ""}${parameter.name ?? parameter.pattern!.code}${parameter.optional ? "?" : ""}${parameter.type ? `: ${parameter.type.code}` : ""}${parameter.default ? ` = ${parameter.default.code}` : ""}${parameter.event ? ` <${parameter.event}>` : ""}`,
-  );
-  return `${fn.async ? "async " : ""}(${parameters.join(", ")})${fn.returnType ? `: ${fn.returnType.code}` : ""} => ${codeOf(source, fn.body)}`;
+	const parameters = fn.parameters.map(
+		(parameter) =>
+			`${parameter.rest ? "..." : ""}${parameter.name ?? parameter.pattern!.code}${parameter.optional ? "?" : ""}${parameter.type ? `: ${parameter.type.code}` : ""}${parameter.default ? ` = ${parameter.default.code}` : ""}${parameter.event ? ` <${parameter.event}>` : ""}`,
+	);
+	return `${fn.async ? "async " : ""}(${parameters.join(", ")})${fn.returnType ? `: ${fn.returnType.code}` : ""} => ${codeOf(source, fn.body)}`;
 }
 
 /**
  * Every narrowed path of a module's reads (ADR-0046), in source order, as `text (scope)`: the
  * text the path spans, and where the condition that narrows it is.
  */
-export function narrowedPaths(source: string, module: UfModule | undefined): string[] {
-  const found: { start: number; end: number; text: string }[] = [];
-  const visit = (value: unknown): void => {
-    if (!value || typeof value !== "object") return;
-    if (Array.isArray(value)) {
-      for (const item of value) visit(item);
-      return;
-    }
-    const node = value as Partial<BindingReference>;
-    if (node.kind === "Binding" && node.narrowed) {
-      for (const path of node.narrowed) {
-        const { start, end } = path.span;
-        found.push({ start, end, text: `${source.slice(start, end)} (${path.scope})` });
-      }
-    }
-    for (const item of Object.values(value)) visit(item);
-  };
-  visit(module);
-  // A reference is reached once from its code, and once more from a copy (a handler's code).
-  const unique = new Map(found.map((item) => [`${item.start}:${item.end}`, item]));
-  return [...unique.values()]
-    .toSorted((a, b) => a.start - b.start || a.end - b.end)
-    .map((item) => item.text);
+export function narrowedPaths(source: string, module: UfModule | undefined): Array<string> {
+	const found: Array<{ start: number; end: number; text: string }> = [];
+	const visit = (value: unknown): void => {
+		if (!value || typeof value !== "object") {
+			return;
+		}
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				visit(item);
+			}
+			return;
+		}
+		const node = value as Partial<BindingReference>;
+		if (node.kind === "Binding" && node.narrowed) {
+			for (const path of node.narrowed) {
+				const { start, end } = path.span;
+				found.push({ start, end, text: `${source.slice(start, end)} (${path.scope})` });
+			}
+		}
+		for (const item of Object.values(value)) {
+			visit(item);
+		}
+	};
+	visit(module);
+	// A reference is reached once from its code, and once more from a copy (a handler's code).
+	const unique = new Map(found.map((item) => [`${item.start}:${item.end}`, item]));
+	return [...unique.values()]
+		.toSorted((a, b) => a.start - b.start || a.end - b.end)
+		.map((item) => item.text);
 }

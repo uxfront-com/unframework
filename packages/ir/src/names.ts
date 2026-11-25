@@ -7,7 +7,7 @@ import { words } from "./tables.ts";
  * (`Card.vue`, `card.ts`), so nothing else is both.
  */
 export function isComponentName(name: string): boolean {
-  return /^[A-Z][A-Za-z0-9]*$/.test(name);
+	return /^[A-Z][A-Za-z0-9]*$/.test(name);
 }
 
 /**
@@ -15,7 +15,7 @@ export function isComponentName(name: string): boolean {
  * digits. An element applies `vFocusTrap` as `v-focus-trap`.
  */
 export function isDirectiveName(name: string): boolean {
-  return /^v[A-Z][A-Za-z0-9]*$/.test(name);
+	return /^v[A-Z][A-Za-z0-9]*$/.test(name);
 }
 
 /**
@@ -23,7 +23,7 @@ export function isDirectiveName(name: string): boolean {
  * can import and use as a tag.
  */
 export function isExportName(name: string): boolean {
-  return name === "default" || /^[\p{ID_Start}$_][\p{ID_Continue}$‌‍]*$/u.test(name);
+	return name === "default" || /^[\p{ID_Start}$_][\p{ID_Continue}$‌‍]*$/u.test(name);
 }
 
 /**
@@ -31,7 +31,7 @@ export function isExportName(name: string): boolean {
  * Angular's expression lexer reads no other letter (ADR-0035).
  */
 export function isIdentifier(name: string): boolean {
-  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
+	return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
 
 /**
@@ -53,8 +53,8 @@ export const ALLOWED_GLOBALS: ReadonlySet<string> = words(`
  * deterministic, and Qwik serialises what they build (`new Map()`, `new Set()`).
  */
 export const PURE_GLOBALS: ReadonlySet<string> = new Set([
-  ...ALLOWED_GLOBALS,
-  ...words("Map Set WeakMap WeakSet Symbol Error TypeError RangeError structuredClone"),
+	...ALLOWED_GLOBALS,
+	...words("Map Set WeakMap WeakSet Symbol Error TypeError RangeError structuredClone"),
 ]);
 
 /**
@@ -83,13 +83,13 @@ const RUNTIME_GLOBALS: ReadonlySet<string> = words("console Promise Date Intl pe
  * some read the rendered DOM ({@link readsDom}).
  */
 export const BROWSER_GLOBALS: ReadonlySet<string> = new Set(
-  [...LIB_DOM_GLOBALS].filter(
-    (name) =>
-      !WINDOW_MEMBER_GLOBALS.has(name) &&
-      !SCHEDULING_GLOBALS.has(name) &&
-      !PURE_GLOBALS.has(name) &&
-      !RUNTIME_GLOBALS.has(name),
-  ),
+	[...LIB_DOM_GLOBALS].filter(
+		(name) =>
+			!WINDOW_MEMBER_GLOBALS.has(name) &&
+			!SCHEDULING_GLOBALS.has(name) &&
+			!PURE_GLOBALS.has(name) &&
+			!RUNTIME_GLOBALS.has(name),
+	),
 );
 
 /**
@@ -102,10 +102,10 @@ export const BROWSER_GLOBALS: ReadonlySet<string> = new Set(
  * `window`.
  */
 export const CLIENT_GLOBALS: ReadonlySet<string> = new Set([
-  ...PURE_GLOBALS,
-  ...BROWSER_GLOBALS,
-  ...SCHEDULING_GLOBALS,
-  ...RUNTIME_GLOBALS,
+	...PURE_GLOBALS,
+	...BROWSER_GLOBALS,
+	...SCHEDULING_GLOBALS,
+	...RUNTIME_GLOBALS,
 ]);
 
 /** The globals whose every read sees the rendered DOM, or may (UF2018, ADR-0048). */
@@ -130,11 +130,17 @@ const DOCUMENT_OTHER_MEMBERS: ReadonlySet<string> = words(`
  * `location`, `fetch`, the timers and the observers read nothing a render changes.
  */
 export function readsDom(name: string, following: string): boolean {
-  if (DOM_GLOBALS.has(name)) return true;
-  if (name !== "document" && name !== "window") return false;
-  const member = /^\s*\??\.\s*([A-Za-z_$][\w$]*)/.exec(following)?.[1];
-  if (name === "document") return member === undefined || !DOCUMENT_OTHER_MEMBERS.has(member);
-  return member === undefined || WINDOW_DOM_MEMBERS.has(member);
+	if (DOM_GLOBALS.has(name)) {
+		return true;
+	}
+	if (name !== "document" && name !== "window") {
+		return false;
+	}
+	const member = /^\s*\??\.\s*([A-Za-z_$][\w$]*)/.exec(following)?.[1];
+	if (name === "document") {
+		return member === undefined || !DOCUMENT_OTHER_MEMBERS.has(member);
+	}
+	return member === undefined || WINDOW_DOM_MEMBERS.has(member);
 }
 
 /**
@@ -154,26 +160,26 @@ const RESERVED_WORDS: ReadonlySet<string> = words(`
  * read at all (`@for (as of items; …)` does not parse).
  */
 export const ANGULAR_KEYWORDS: ReadonlySet<string> = words(
-  "var let as null undefined true false if else this typeof void in instanceof",
+	"var let as null undefined true false if else this typeof void in instanceof",
 );
 
 /** Names a target reads as its own, or declares beside the props, and why. */
 const RESERVED_NAMES: Readonly<Record<string, string>> = {
-  key: "`key` is the frameworks' list identity, not a prop.",
-  ref: "`ref` gives the frameworks a component instance, not a prop.",
-  children: "`children` is React's, Svelte's and Solid's default slot content.",
-  class: "`class` falls through to a component's root on every target.",
-  style: "`style` falls through to a component's root on every target.",
-  slot: "`slot` places a component into a slot on Vue, Svelte and Astro.",
-  is: "`is` is template syntax: Vue resolves `vue:` values as components.",
-  props: "`props` names the props object the Solid and object-form outputs declare.",
-  rawProps: "`rawProps` names the props object the Solid output merges defaults into.",
-  Astro: "`Astro` is the global an Astro component reads its props from.",
-  Fragment:
-    "Astro's output renders `<>` with the `Fragment` it imports, which the prop would hide.",
-  constructor: "`constructor` would be the Angular component class's constructor.",
-  ref_for: "`ref_for` is a prop Vue reserves for template refs.",
-  ref_key: "`ref_key` is a prop Vue reserves for template refs.",
+	key: "`key` is the frameworks' list identity, not a prop.",
+	ref: "`ref` gives the frameworks a component instance, not a prop.",
+	children: "`children` is React's, Svelte's and Solid's default slot content.",
+	class: "`class` falls through to a component's root on every target.",
+	style: "`style` falls through to a component's root on every target.",
+	slot: "`slot` places a component into a slot on Vue, Svelte and Astro.",
+	is: "`is` is template syntax: Vue resolves `vue:` values as components.",
+	props: "`props` names the props object the Solid and object-form outputs declare.",
+	rawProps: "`rawProps` names the props object the Solid output merges defaults into.",
+	Astro: "`Astro` is the global an Astro component reads its props from.",
+	Fragment:
+		"Astro's output renders `<>` with the `Fragment` it imports, which the prop would hide.",
+	constructor: "`constructor` would be the Angular component class's constructor.",
+	ref_for: "`ref_for` is a prop Vue reserves for template refs.",
+	ref_key: "`ref_key` is a prop Vue reserves for template refs.",
 };
 
 /**
@@ -184,20 +190,20 @@ const RESERVED_NAMES: Readonly<Record<string, string>> = {
  * reports them (UF2003), and no IR holds one; `reservedPropName` also reads the patterns.
  */
 export const RESERVED_PROP_NAMES: ReadonlyMap<string, string> = new Map([
-  ...[...ALLOWED_GLOBALS].map(
-    (name) =>
-      [
-        name,
-        `\`${name}\` is a global expressions may read, which the Angular target declares as a member.`,
-      ] as const,
-  ),
-  ...[...ANGULAR_KEYWORDS].map(
-    (name) => [name, `\`${name}\` is a keyword in Angular's template expressions.`] as const,
-  ),
-  ...[...RESERVED_WORDS].map(
-    (name) => [name, `\`${name}\` is a reserved word in JavaScript's strict mode.`] as const,
-  ),
-  ...Object.entries(RESERVED_NAMES),
+	...[...ALLOWED_GLOBALS].map(
+		(name) =>
+			[
+				name,
+				`\`${name}\` is a global expressions may read, which the Angular target declares as a member.`,
+			] as const,
+	),
+	...[...ANGULAR_KEYWORDS].map(
+		(name) => [name, `\`${name}\` is a keyword in Angular's template expressions.`] as const,
+	),
+	...[...RESERVED_WORDS].map(
+		(name) => [name, `\`${name}\` is a reserved word in JavaScript's strict mode.`] as const,
+	),
+	...Object.entries(RESERVED_NAMES),
 ]);
 
 /**
@@ -214,16 +220,20 @@ export const PROP_NAME_PATTERN: RegExp = /^[A-Za-z][A-Za-z0-9]*$/;
  * ending in `$`, which Qwik reads as a QRL.)
  */
 export function reservedPropName(name: string): string | undefined {
-  if (!PROP_NAME_PATTERN.test(name)) {
-    return `\`${name}\` is not ASCII letters and digits starting with a letter, which every target can declare.`;
-  }
-  const reserved = RESERVED_PROP_NAMES.get(name);
-  if (reserved) return reserved;
-  if (/^on[A-Z]/.test(name)) {
-    return `\`${name}\` is an event's name: a component declares its events with \`defineEmits\`, and the targets name their props by them (ADR-0012).`;
-  }
-  if (/^ng[A-Z]/.test(name)) return `\`${name}\` is a name Angular reserves for its directives.`;
-  return undefined;
+	if (!PROP_NAME_PATTERN.test(name)) {
+		return `\`${name}\` is not ASCII letters and digits starting with a letter, which every target can declare.`;
+	}
+	const reserved = RESERVED_PROP_NAMES.get(name);
+	if (reserved) {
+		return reserved;
+	}
+	if (/^on[A-Z]/.test(name)) {
+		return `\`${name}\` is an event's name: a component declares its events with \`defineEmits\`, and the targets name their props by them (ADR-0012).`;
+	}
+	if (/^ng[A-Z]/.test(name)) {
+		return `\`${name}\` is a name Angular reserves for its directives.`;
+	}
+	return undefined;
 }
 
 /**
@@ -237,11 +247,12 @@ export function reservedPropName(name: string): string | undefined {
  * every other target's prop (`onDelete`) may take it.
  */
 export function reservedEventName(name: string): string | undefined {
-  if (ANGULAR_KEYWORDS.has(name))
-    return `\`${name}\` is a keyword in Angular's template expressions.`;
-  return name === "constructor" || ALLOWED_GLOBALS.has(name)
-    ? RESERVED_PROP_NAMES.get(name)
-    : undefined;
+	if (ANGULAR_KEYWORDS.has(name)) {
+		return `\`${name}\` is a keyword in Angular's template expressions.`;
+	}
+	return name === "constructor" || ALLOWED_GLOBALS.has(name)
+		? RESERVED_PROP_NAMES.get(name)
+		: undefined;
 }
 
 /**
@@ -251,9 +262,9 @@ export function reservedEventName(name: string): string | undefined {
  * with `$$` too. (Svelte's output renames a props object Svelte reserves, `$` included.)
  */
 export function reservedPropsParameterName(name: string): string | undefined {
-  return name.startsWith("$$")
-    ? "Astro's compiled component declares the names starting with `$$` (`$$props`, `$$result`, `$$slots`, `$$render`) where its output declares the props object"
-    : undefined;
+	return name.startsWith("$$")
+		? "Astro's compiled component declares the names starting with `$$` (`$$props`, `$$result`, `$$slots`, `$$render`) where its output declares the props object"
+		: undefined;
 }
 
 /**
@@ -267,15 +278,25 @@ export function reservedPropsParameterName(name: string): string | undefined {
  * object form's parameter or of a loop variable around it either.
  */
 export function reservedParameterName(name: string): string | undefined {
-  if (ALLOWED_GLOBALS.has(name)) return `it would shadow the global \`${name}\``;
-  if (name === "props" || name === "rawProps") return `some outputs declare \`${name}\``;
-  if (name === "Fragment") return "Astro's output renders `<>` with the `Fragment` it imports";
-  if (name.startsWith("$")) return "Angular's `@for` declares the names starting with `$`";
-  if (name.length > 1 && name.startsWith("_")) {
-    return "Vue's compiled render functions declare names starting with `_` (`_ctx`, `__props`)";
-  }
-  if (ANGULAR_KEYWORDS.has(name)) return "it is a keyword in Angular's template expressions";
-  return undefined;
+	if (ALLOWED_GLOBALS.has(name)) {
+		return `it would shadow the global \`${name}\``;
+	}
+	if (name === "props" || name === "rawProps") {
+		return `some outputs declare \`${name}\``;
+	}
+	if (name === "Fragment") {
+		return "Astro's output renders `<>` with the `Fragment` it imports";
+	}
+	if (name.startsWith("$")) {
+		return "Angular's `@for` declares the names starting with `$`";
+	}
+	if (name.length > 1 && name.startsWith("_")) {
+		return "Vue's compiled render functions declare names starting with `_` (`_ctx`, `__props`)";
+	}
+	if (ANGULAR_KEYWORDS.has(name)) {
+		return "it is a keyword in Angular's template expressions";
+	}
+	return undefined;
 }
 
 /**
@@ -291,21 +312,29 @@ export function reservedParameterName(name: string): string | undefined {
  * binding's: `checkInvariants` checks that.
  */
 export function reservedSetupName(name: string): string | undefined {
-  if (!isIdentifier(name)) {
-    return "it is not an ASCII identifier, which Angular's expression lexer reads";
-  }
-  const parameter = reservedParameterName(name);
-  if (parameter) return parameter;
-  if (RESERVED_WORDS.has(name)) return "it is a reserved word in JavaScript's strict mode";
-  if (name === "constructor") return "Angular's output declares the component class's constructor";
-  if (/^ng[A-Z]/.test(name)) {
-    return "Angular reserves the names starting with `ng` and a capital for its lifecycle hooks (`ngOnInit`) and directives";
-  }
-  if (/^use[A-Z0-9]/.test(name)) {
-    return "React's lint rules read a name starting with `use` and a capital as a hook, which a handler cannot call";
-  }
-  if (name.endsWith("$")) return "Qwik's optimizer reads a name ending in `$` as a QRL";
-  return undefined;
+	if (!isIdentifier(name)) {
+		return "it is not an ASCII identifier, which Angular's expression lexer reads";
+	}
+	const parameter = reservedParameterName(name);
+	if (parameter) {
+		return parameter;
+	}
+	if (RESERVED_WORDS.has(name)) {
+		return "it is a reserved word in JavaScript's strict mode";
+	}
+	if (name === "constructor") {
+		return "Angular's output declares the component class's constructor";
+	}
+	if (/^ng[A-Z]/.test(name)) {
+		return "Angular reserves the names starting with `ng` and a capital for its lifecycle hooks (`ngOnInit`) and directives";
+	}
+	if (/^use[A-Z0-9]/.test(name)) {
+		return "React's lint rules read a name starting with `use` and a capital as a hook, which a handler cannot call";
+	}
+	if (name.endsWith("$")) {
+		return "Qwik's optimizer reads a name ending in `$` as a QRL";
+	}
+	return undefined;
 }
 
 /**
@@ -317,30 +346,30 @@ export function reservedSetupName(name: string): string | undefined {
  * with it, and Angular's compiler no longer reads the class's signal inputs (NG8110).
  */
 export const RESERVED_TYPE_NAMES: ReadonlyMap<string, string> = new Map([
-  ["Props", "the outputs declare a type of that name for a component's props"],
-  ["CSSProperties", "the outputs declare a type of that name for style objects"],
-  [
-    "Component",
-    "Angular's output imports its `Component` decorator, which is also a type, by that name",
-  ],
-  [
-    "Partial",
-    "Solid's output checks its defaults with TypeScript's `Partial`, which it would hide",
-  ],
-  [
-    "Record",
-    "Solid's output spreads the attributes its types lack from a TypeScript `Record`, which it would hide",
-  ],
-  [
-    "Required",
-    "Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide",
-  ],
-  [
-    "Pick",
-    "Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide",
-  ],
-  [
-    "Exclude",
-    "Angular's output types an input with a default as TypeScript's `Exclude<…, undefined>`, which it would hide",
-  ],
+	["Props", "the outputs declare a type of that name for a component's props"],
+	["CSSProperties", "the outputs declare a type of that name for style objects"],
+	[
+		"Component",
+		"Angular's output imports its `Component` decorator, which is also a type, by that name",
+	],
+	[
+		"Partial",
+		"Solid's output checks its defaults with TypeScript's `Partial`, which it would hide",
+	],
+	[
+		"Record",
+		"Solid's output spreads the attributes its types lack from a TypeScript `Record`, which it would hide",
+	],
+	[
+		"Required",
+		"Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide",
+	],
+	[
+		"Pick",
+		"Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide",
+	],
+	[
+		"Exclude",
+		"Angular's output types an input with a default as TypeScript's `Exclude<…, undefined>`, which it would hide",
+	],
 ]);

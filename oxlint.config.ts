@@ -2,79 +2,303 @@ import vue from "@uxfront/oxlint-config/vue";
 import { defineConfig } from "oxlint";
 
 export default defineConfig({
-  extends: [vue],
-  options: {
-    typeAware: true,
-  },
-  ignorePatterns: [
-    // Golden outputs are linted by each target's own toolchain (L5), not by the repo's rules.
-    "tests/integration/cases/**/__output__/**",
-    // Diagnostic cases are deliberately wrong.
-    "tests/integration/cases/diagnostics/**",
-    // Third-party types vendored verbatim (see packages/unframework/scripts/vendor-jsx.ts).
-    "packages/unframework/src/vendor/**",
-  ],
-  overrides: [
-    {
-      // A component's event handler may be async: every target discards a handler's return value,
-      // its promise included (ADR-0047). The rule's other checks stay on.
-      files: ["**/*.uf.tsx", "packages/target-*/test/fixtures/**"],
-      rules: {
-        "typescript/no-misused-promises": ["error", { checksVoidReturn: { attributes: false } }],
-      },
-    },
-    {
-      // An element applies a directive by its name in kebab case, `v-focus-trap` for `vFocusTrap`
-      // (ADR-0099), which no JSX rule reads as a use of the name.
-      files: ["**/*.uf.tsx"],
-      rules: {
-        "no-unused-vars": [
-          "error",
-          { varsIgnorePattern: "^(?:_|v[A-Z][A-Za-z0-9]*$)", argsIgnorePattern: "^_" },
-        ],
-      },
-    },
-    {
-      // A corpus spec uses the public API of @unframework.dev/testing and nothing else, as a
-      // project's own specs do (ADR-0085): its root entry, never a subpath, no other
-      // @unframework.dev package, and nothing of the harness's. `ignorePatterns` keeps this rule
-      // off diagnostics/, which holds no spec. oxlint merges a rule's `group` patterns into one
-      // list, so a negated group would let the subpaths through, and its regular expressions
-      // have no lookahead: the subpath pattern is a regular expression, and only the package
-      // pattern negates.
-      // The sample design system's tests and examples are a project's own (ADR-0086, ADR-0087),
-      // held to the same API.
-      files: [
-        "tests/integration/cases/**/*.{ts,tsx}",
-        "tests/e2e/design-system/test/**/*.{ts,tsx}",
-        "tests/e2e/design-system/examples/**/*.{ts,tsx}",
-      ],
-      rules: {
-        "no-restricted-imports": [
-          "error",
-          {
-            patterns: [
-              {
-                regex: "^@unframework\\.dev/testing/",
-                message:
-                  "A spec imports the public API from the root of @unframework.dev/testing; its subpaths are the harness's (ADR-0085).",
-              },
-              {
-                group: ["@unframework.dev/*", "!@unframework.dev/testing"],
-                message:
-                  "A spec imports @unframework.dev/testing and the case's own sources, no other @unframework.dev package (ADR-0085).",
-              },
-              {
-                // A `harness`, `scripts` or `packages` segment anywhere in a relative path: the
-                // harness's code, or a package's source reached around its entries.
-                regex: "^\\.\\.?/(.*/)?(harness|scripts|packages)(/|$)",
-                message:
-                  "A spec never imports the harness's code or a package's source by path: use the public API of @unframework.dev/testing (ADR-0085).",
-              },
-            ],
-          },
-        ],
-      },
-    },
-  ],
+	extends: [vue],
+	// oxlint reads `env` and `ignorePatterns` from the root config only, so they're restated here.
+	env: vue.env,
+	options: {
+		typeAware: true,
+	},
+	ignorePatterns: [
+		...vue.ignorePatterns,
+		// Golden outputs are linted by each target's own toolchain (L5), not by the repo's rules.
+		"tests/integration/cases/**/__output__/**",
+		// Diagnostic cases are deliberately wrong.
+		"tests/integration/cases/diagnostics/**",
+		// Third-party types vendored verbatim (see packages/unframework/scripts/vendor-jsx.ts).
+		"packages/unframework/src/vendor/**",
+	],
+	rules: {
+		// A catch names what it caught, like `cleanup` beside the render's `error`, or a `failure`
+		// sent on as a reply's field. The rule's fix renames such shorthand properties too, which
+		// changes the object it builds.
+		"unicorn/catch-error-name": "off",
+		// The rule reads every "utf-8" as an encoding name, but here they're HTML `charset` values,
+		// which HTML spells "utf-8", in the rendered markup that tests expect.
+		"unicorn/text-encoding-identifier-case": "off",
+		// Hexadecimal numbers here are code points and hash constants, written as their standards
+		// write them (`0xd800`, `0x811c9dc5`), so the rule groups only those already grouped, by four.
+		"unicorn/numeric-separators-style": [
+			"error",
+			{ hexadecimal: { onlyIfContainsSeparator: true, groupLength: 4 } },
+		],
+		// Cases that share a body are grouped, with a comment between them for the cases it explains.
+		// Such a case is empty, and falls through to nothing of its own.
+		"no-fallthrough": ["error", { allowEmptyCase: true }],
+		// A namespace import names a module's whole API as one value: the ESTree types
+		// (`AST.Expression`), a compiler a toolchain loads lazily, typed as its module, and the
+		// exports a test checks one by one.
+		"import/no-namespace": "off",
+		// `instanceof` is how this code narrows its own classes (`ImportSet`, `NameScope`, an internal
+		// error), the platform's collections (`Map`, `Set`) and DOM nodes and events, each in the realm
+		// that made it. The union parameters it narrows are public, like `formatDiagnostics`' sources.
+		"@nkzw/no-instanceof": "off",
+		// The IR is plain JSON (P5), checked against its schema, so a field with no value is left out
+		// rather than set to `undefined`. A node built in one expression leaves a field out with a
+		// conditional spread, and the rule's alternative, a mutable object filled statement by
+		// statement, gives up the readonly node types.
+		"quality/no-conditional-empty-object-spread": "off",
+		// `isolatedDeclarations` needs an explicit type on every export, and the code writes its return
+		// types out as the contract it keeps, anonymous object types included.
+		"quality/no-known-value-widening": "off",
+		// The compiler and the harness carry values whose shape belongs to someone else: a component's
+		// props, case.json, a plugin's options, a framework's globals. `Record<string, unknown>` says
+		// so, and each reader checks what it reads.
+		"quality/no-unsafe-dictionary-type": "off",
+		// What a loaded module, a component's handler or a framework hook returns is the caller's own
+		// business, so the harness and the toolchains hand it on as `unknown` for the caller to check.
+		"quality/no-unknown-returns": "off",
+		// `object` is the right type where any non-primitive will do: a `WeakMap` key, a scope
+		// manager's declaration, the options a bundler's plugin takes.
+		"quality/no-object-parameters": "off",
+		// The analyser reads one tree through two type systems, oxc's AST and the scope manager's
+		// ESTree, and a node passes between them through `unknown`.
+		"quality/no-chained-type-assertions": "off",
+		// A `filter` with a type guard narrows what its `map` reads, which a single `flatMap` loses,
+		// and the lists are a component's nodes or a file's names, tens of items.
+		"quality/no-array-filter-map": "off",
+		// A nested function here often can't move: the preview writes `controlKit` and its own scripts
+		// into a page with `toString()`, so their helpers must sit inside them, and a component's
+		// functions belong to its setup, as its outputs' do. Elsewhere a helper sits beside the one
+		// test or step that uses it.
+		"unicorn/consistent-function-scoping": "off",
+		// `noUncheckedIndexedAccess` types every index and key read as possibly `undefined`, and the
+		// compiler reads its arrays and maps at indexes and keys its own structures guarantee: a node's
+		// children, a plan's functions by id, a regular expression's groups. Each `!` marks such a
+		// read, where a runtime check would be a branch no input reaches (the IR's invariants check
+		// the structures, ADR-0032).
+		"typescript/no-non-null-assertion": "off",
+		// The analyser and the targets narrow oxc's AST by a node's `type` or `kind`, and walk it as
+		// records, which TypeScript can't follow through the scope manager's types. JSON and modules
+		// the code loads are asserted once to the shape it reads. Each assertion stands for a check
+		// or a contract the type system can't see.
+		"typescript/no-unsafe-type-assertion": "off",
+	},
+	overrides: [
+		{
+			// A component's event handler may be async: every target discards a handler's return value,
+			// its promise included (ADR-0047). The rule's other checks stay on.
+			files: ["**/*.uf.tsx", "packages/target-*/test/fixtures/**"],
+			rules: {
+				"typescript/no-misused-promises": ["error", { checksVoidReturn: { attributes: false } }],
+			},
+		},
+		{
+			// An element applies a directive by its name in kebab case, `v-focus-trap` for `vFocusTrap`
+			// (ADR-0099), which no JSX rule reads as a use of the name.
+			files: ["**/*.uf.tsx"],
+			rules: {
+				"no-unused-vars": [
+					"error",
+					{ varsIgnorePattern: "^(?:_|v[A-Z][A-Za-z0-9]*$)", argsIgnorePattern: "^_" },
+				],
+			},
+		},
+		{
+			// A corpus spec uses the public API of @unframework.dev/testing and nothing else, as a
+			// project's own specs do (ADR-0085): its root entry, never a subpath, no other
+			// @unframework.dev package, and nothing of the harness's. `ignorePatterns` keeps this rule
+			// off diagnostics/, which holds no spec. oxlint merges a rule's `group` patterns into one
+			// list, so a negated group would let the subpaths through, and its regular expressions
+			// have no lookahead: the subpath pattern is a regular expression, and only the package
+			// pattern negates.
+			// The sample design system's tests and examples are a project's own (ADR-0086, ADR-0087),
+			// held to the same API.
+			files: [
+				"tests/integration/cases/**/*.{ts,tsx}",
+				"tests/e2e/design-system/test/**/*.{ts,tsx}",
+				"tests/e2e/design-system/examples/**/*.{ts,tsx}",
+			],
+			rules: {
+				"no-restricted-imports": [
+					"error",
+					{
+						patterns: [
+							{
+								regex: String.raw`^@unframework\.dev/testing/`,
+								message:
+									"A spec imports the public API from the root of @unframework.dev/testing; its subpaths are the harness's (ADR-0085).",
+							},
+							{
+								group: ["@unframework.dev/*", "!@unframework.dev/testing"],
+								message:
+									"A spec imports @unframework.dev/testing and the case's own sources, no other @unframework.dev package (ADR-0085).",
+							},
+							{
+								// A `harness`, `scripts` or `packages` segment anywhere in a relative path: the
+								// harness's code, or a package's source reached around its entries.
+								regex: String.raw`^\.\.?/(.*/)?(harness|scripts|packages)(/|$)`,
+								message:
+									"A spec never imports the harness's code or a package's source by path: use the public API of @unframework.dev/testing (ADR-0085).",
+							},
+						],
+					},
+				],
+			},
+		},
+		{
+			// A component's source keeps the form its author wrote, since every output follows it: the
+			// corpus's golden outputs on seven targets, and the docs pages that quote them verbatim. A
+			// target's fixtures are the outputs its tests compare byte for byte. So a style rule
+			// doesn't rewrite either.
+			files: ["**/*.uf.{ts,tsx}", "packages/*/test/fixtures/**", "packages/*/probes/fixtures/**"],
+			rules: {
+				// The compiler must keep lowering the braceless `if` that authors write.
+				curly: "off",
+				// Prop types reach every output as written, and `T[]` is the form most authors use.
+				"typescript/array-type": "off",
+				// Numbers in a component reach its outputs as written.
+				"unicorn/numeric-separators-style": "off",
+				// Strings in a component reach its outputs as written.
+				"unicorn/prefer-string-raw": "off",
+				// Calls in a component reach its outputs as written.
+				"unicorn/prefer-string-replace-all": "off",
+				// Imports in a component reach its outputs as written, and a target's fixtures keep the
+				// inline `type` specifiers its output uses.
+				"import/consistent-type-specifier-style": "off",
+				// An assertion that the source's types don't need can be one an output's framework types
+				// need, like an event's target, and it reaches every output as written.
+				"typescript/no-unnecessary-type-assertion": "off",
+				// A target's fixtures compare with `null` as its output does, `!= null`.
+				eqeqeq: "off",
+				// A component's promise reaches its outputs as written.
+				"no-promise-executor-return": "off",
+			},
+		},
+		{
+			// The authoring types are TypeScript's JSX contract and the public API of
+			// `@uxfront/unframework`: `ElementChildrenAttribute` is `{ children: {} }`, a component type
+			// takes `any` props so that every component's props are assignable to it, and `ModelRef` is
+			// a name of its own for `Ref`.
+			files: ["packages/unframework/src/index.ts", "packages/unframework/src/jsx-runtime.ts"],
+			rules: {
+				// Function parameters are contravariant, so only `any` accepts every component's props.
+				"typescript/no-explicit-any": "off",
+				// `{}` is the type TypeScript reads `children` from, and `ModelRef` is public.
+				"typescript/no-empty-object-type": "off",
+			},
+		},
+		{
+			// Tests read what a framework sets outside any type, like React's
+			// `IS_REACT_ACT_ENVIRONMENT`, Angular's `ng` or Qwik's flags, to check what it did.
+			files: ["**/test/**"],
+			rules: {
+				// The globals and fields read have no declared type to read them through.
+				"quality/no-reflect-get": "off",
+			},
+		},
+		{
+			// These tests send a value through JSON to check that it's plain JSON (P5), which
+			// `structuredClone` would carry through whatever it is.
+			files: [
+				"packages/ir/test/**",
+				"packages/type-oracle/test/**",
+				"packages/type-oracle/src/contract.ts",
+				"packages/visual/test/**",
+			],
+			rules: {
+				// A JSON round trip is the check itself.
+				"unicorn/prefer-structured-clone": "off",
+			},
+		},
+		{
+			// Angular's toolchain mounts on domino, Angular's own DOM, in its server render and in its
+			// Node tests, and domino has `appendChild` but not `append`.
+			files: ["packages/target-angular/src/toolchain/**", "packages/target-angular/test/**"],
+			rules: {
+				// domino has no `append`.
+				"unicorn/prefer-dom-node-append": "off",
+			},
+		},
+		{
+			// The console is what these files work with: the harness and the toolchains capture what a
+			// framework logs (L13), tests and their fixtures log on purpose to check that, components
+			// warn in development as their authors' do, and scripts print their report.
+			files: [
+				"**/*.uf.{ts,tsx}",
+				"**/scripts/**",
+				"**/test/**",
+				"packages/*/src/toolchain/**",
+				"packages/testing/src/**",
+				"tests/integration/harness/**",
+			],
+			rules: {
+				// Each of these reads, replaces or writes the console on purpose.
+				"no-console": "off",
+			},
+		},
+		{
+			// The type-aware rules read types that aren't there. The e2e apps install their frameworks
+			// only in their copies outside the repository (ADR-0079), so here every import from one is
+			// unresolved. A component is checked against the authoring types, whose JSX contract hands
+			// its callbacks `any` (`jsx-runtime.ts`), and some components, like the Qwik target's
+			// behaviour fixtures, sit outside any project the type-aware linter reads.
+			files: ["tests/e2e/apps/**", "**/*.uf.{ts,tsx}"],
+			rules: {
+				// Values from unresolved imports and the JSX contract are `error` or `any` typed here.
+				"typescript/no-unsafe-argument": "off",
+				// Values from unresolved imports and the JSX contract are `error` or `any` typed here.
+				"typescript/no-unsafe-assignment": "off",
+				// Values from unresolved imports and the JSX contract are `error` or `any` typed here.
+				"typescript/no-unsafe-call": "off",
+				// Values from unresolved imports and the JSX contract are `error` or `any` typed here.
+				"typescript/no-unsafe-member-access": "off",
+				// Values from unresolved imports and the JSX contract are `error` or `any` typed here.
+				"typescript/no-unsafe-return": "off",
+			},
+		},
+		{
+			// Cloudflare's config turns these off in test files, named `*.test.ts`. Here tests also keep
+			// their helpers in `test/` directories, the corpus's harness and scripts live under
+			// `tests/`, and they read JSON, loaded modules and framework internals as tests do.
+			files: ["**/test/**", "tests/**", "**/scripts/**"],
+			rules: {
+				// Tests read JSON, loaded modules and framework internals, as Cloudflare allows in tests.
+				"typescript/no-unsafe-argument": "off",
+				// Tests read JSON, loaded modules and framework internals, as Cloudflare allows in tests.
+				"typescript/no-unsafe-assignment": "off",
+				// Tests read JSON, loaded modules and framework internals, as Cloudflare allows in tests.
+				"typescript/no-unsafe-member-access": "off",
+			},
+		},
+		{
+			// A target's fixtures are its outputs, and the toolchains' consumers are hand-written users
+			// of the outputs that each framework's own checker reads (L4), some misusing a component on
+			// purpose. Their types are the framework's, which these rules can't resolve from here.
+			files: ["packages/*/test/fixtures/**", "tests/toolchains/*/consumers/**"],
+			rules: {
+				// The values are typed by frameworks the root project doesn't resolve.
+				"typescript/no-unsafe-argument": "off",
+				// The values are typed by frameworks the root project doesn't resolve.
+				"typescript/no-unsafe-assignment": "off",
+				// The values are typed by frameworks the root project doesn't resolve.
+				"typescript/no-unsafe-call": "off",
+				// The values are typed by frameworks the root project doesn't resolve.
+				"typescript/no-unsafe-member-access": "off",
+				// The values are typed by frameworks the root project doesn't resolve.
+				"typescript/no-unsafe-return": "off",
+			},
+		},
+		{
+			// The root's scripts belong to no TypeScript project, so the type-aware linter infers one for
+			// them, and Node's types reach it on some runs and not on others: `process` is then `error`
+			// typed, and the result changes from run to run.
+			files: ["scripts/**"],
+			rules: {
+				// Calls on Node's globals, whose types don't always resolve here.
+				"typescript/no-unsafe-call": "off",
+				// Node's types don't always resolve for these scripts.
+				"typescript/no-unsafe-return": "off",
+			},
+		},
+	],
 });

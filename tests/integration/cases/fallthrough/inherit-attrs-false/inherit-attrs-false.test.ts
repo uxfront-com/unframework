@@ -6,10 +6,10 @@ import { expect } from "vitest";
 import Form from "./Form.uf.tsx";
 
 describeTargets("fallthrough/inherit-attrs-false", () => {
-  it("renders the fields", async () => {
-    const view = await mount(Form);
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("textbox", { name: "Email" })).toBeVisible();
-    await expect.element(view.getByRole("textbox", { name: "Name" })).toBeVisible();
-  });
+	it("renders the fields", async () => {
+		const view = await mount(Form);
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("textbox", { name: "Email" })).toBeVisible();
+		await expect.element(view.getByRole("textbox", { name: "Name" })).toBeVisible();
+	});
 });

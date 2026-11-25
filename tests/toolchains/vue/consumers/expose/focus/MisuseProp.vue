@@ -3,6 +3,6 @@ import SearchField from "../../../../../integration/cases/expose/focus/__output_
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 SearchField.prop:label -->
-  <SearchField :label="null" />
+	<!-- @uf-expect TS2322 SearchField.prop:label -->
+	<SearchField :label="null" />
 </template>

@@ -6,17 +6,17 @@ import { codeKind, codeNames, collectNames, expressionNames } from "./rewrite.ts
 
 /** `HelloWorld` → `hello-world`; also splits acronyms: `HTMLView` → `html-view`. */
 export function kebabCase(name: string): string {
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
-    .toLowerCase();
+	return name
+		.replaceAll(/([a-z0-9])([A-Z])/g, "$1-$2")
+		.replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+		.toLowerCase();
 }
 
 /** `hello-world` or `helloWorld` → `HelloWorld`. */
 export function pascalCase(name: string): string {
-  return name
-    .replace(/[-_\s]+(.)?/g, (_, next: string | undefined) => (next ? next.toUpperCase() : ""))
-    .replace(/^./, (first) => first.toUpperCase());
+	return name
+		.replaceAll(/[-_\s]+(.)?/g, (_, next: string | undefined) => (next ? next.toUpperCase() : ""))
+		.replace(/^./, (first) => first.toUpperCase());
 }
 
 /**
@@ -27,40 +27,44 @@ export function pascalCase(name: string): string {
  * stays deterministic (P8).
  */
 export class NameScope {
-  readonly #taken: Set<string>;
-  /** The base each name is claimed from where it isn't the name itself (see {@link rebase}). */
-  readonly #bases = new Map<string, string>();
+	readonly #taken: Set<string>;
+	/** The base each name is claimed from where it isn't the name itself (see {@link rebase}). */
+	readonly #bases = new Map<string, string>();
 
-  constructor(reserved: Iterable<string> = []) {
-    this.#taken = new Set(reserved);
-  }
+	constructor(reserved: Iterable<string> = []) {
+		this.#taken = new Set(reserved);
+	}
 
-  /** Marks names as taken, as they are: the source's own names, which never change. */
-  reserve(...names: string[]): void {
-    for (const name of names) this.#taken.add(name);
-  }
+	/** Marks names as taken, as they are: the source's own names, which never change. */
+	reserve(...names: Array<string>): void {
+		for (const name of names) {
+			this.#taken.add(name);
+		}
+	}
 
-  /** Whether a name is taken. */
-  has(name: string): boolean {
-    return this.#taken.has(name);
-  }
+	/** Whether a name is taken. */
+	has(name: string): boolean {
+		return this.#taken.has(name);
+	}
 
-  /**
-   * Claims `name` from `base` from now on, `base` or `base_1`…: a helper printed inline takes a
-   * base of its own in each component of a module (see {@link moduleHelperName}).
-   */
-  rebase(name: string, base: string): void {
-    this.#bases.set(name, base);
-  }
+	/**
+	 * Claims `name` from `base` from now on, `base` or `base_1`…: a helper printed inline takes a
+	 * base of its own in each component of a module (see {@link moduleHelperName}).
+	 */
+	rebase(name: string, base: string): void {
+		this.#bases.set(name, base);
+	}
 
-  /** Takes `name`, or `name_1`, `name_2`… when it is taken. Returns the name taken. */
-  claim(name: string): string {
-    const base = this.#bases.get(name) ?? name;
-    let local = base;
-    for (let suffix = 1; this.#taken.has(local); suffix++) local = `${base}_${suffix}`;
-    this.#taken.add(local);
-    return local;
-  }
+	/** Takes `name`, or `name_1`, `name_2`… when it is taken. Returns the name taken. */
+	claim(name: string): string {
+		const base = this.#bases.get(name) ?? name;
+		let local = base;
+		for (let suffix = 1; this.#taken.has(local); suffix++) {
+			local = `${base}_${suffix}`;
+		}
+		this.#taken.add(local);
+		return local;
+	}
 }
 
 /**
@@ -75,16 +79,26 @@ export class NameScope {
  * components declare one name.
  */
 export function moduleHelperName(
-  helper: string,
-  reserved: readonly Iterable<string>[],
-  index: number,
-): { base: string; others: string[] } {
-  const own = new RegExp(`^${helper}(?:_\\d+)*$`);
-  const others = new Set<string>();
-  for (const names of reserved) for (const name of names) if (own.test(name)) others.add(name);
-  const base = (each: number) => (each ? `${helper}_${each}` : helper);
-  for (let each = 0; each < reserved.length; each++) if (each !== index) others.add(base(each));
-  return { base: base(index), others: [...others] };
+	helper: string,
+	reserved: ReadonlyArray<Iterable<string>>,
+	index: number,
+): { base: string; others: Array<string> } {
+	const own = new RegExp(`^${helper}(?:_\\d+)*$`);
+	const others = new Set<string>();
+	for (const names of reserved) {
+		for (const name of names) {
+			if (own.test(name)) {
+				others.add(name);
+			}
+		}
+	}
+	const base = (each: number) => (each ? `${helper}_${each}` : helper);
+	for (let each = 0; each < reserved.length; each++) {
+		if (each !== index) {
+			others.add(base(each));
+		}
+	}
+	return { base: base(index), others: [...others] };
 }
 
 /**
@@ -98,36 +112,58 @@ export function moduleHelperName(
  * before it claims a name of its own (ADR-0035, ADR-0045).
  */
 export function sourceNames(component: UfComponent, module: UfModule): Set<string> {
-  const names = new Set<string>([component.name]);
-  const add = (found: Iterable<string>) => {
-    for (const name of found) names.add(name);
-  };
-  for (const declaration of module.types) names.add(declaration.name);
-  if (component.propsParameter?.name) names.add(component.propsParameter.name);
-  for (const binding of component.bindings) names.add(binding.name);
-  for (const { expression } of expressionsOf(component)) add(expressionNames(expression.code));
-  for (const { code } of codeOf(component)) {
-    add(codeNames(withoutDevTests(code), codeKind(code, component)));
-  }
-  for (const { function: fn } of functionsOf(component)) {
-    for (const parameter of fn.parameters) {
-      if (parameter.name !== undefined) names.add(parameter.name);
-      add(parameter.pattern?.names ?? []);
-      if (parameter.default) add(expressionNames(parameter.default.code));
-      if (parameter.type) add(typeNames(parameter.type));
-    }
-    if (fn.returnType) add(typeNames(fn.returnType));
-  }
-  for (const item of component.setup) {
-    if ("type" in item && item.type) add(typeNames(item.type));
-  }
-  if (component.emits) {
-    add(typeNames(component.emits.type));
-    for (const event of component.emits.events) {
-      for (const parameter of event.parameters) add(typeNames(parameter.type));
-    }
-  }
-  return names;
+	const names = new Set<string>([component.name]);
+	const add = (found: Iterable<string>) => {
+		for (const name of found) {
+			names.add(name);
+		}
+	};
+	for (const declaration of module.types) {
+		names.add(declaration.name);
+	}
+	if (component.propsParameter?.name) {
+		names.add(component.propsParameter.name);
+	}
+	for (const binding of component.bindings) {
+		names.add(binding.name);
+	}
+	for (const { expression } of expressionsOf(component)) {
+		add(expressionNames(expression.code));
+	}
+	for (const { code } of codeOf(component)) {
+		add(codeNames(withoutDevTests(code), codeKind(code, component)));
+	}
+	for (const { function: fn } of functionsOf(component)) {
+		for (const parameter of fn.parameters) {
+			if (parameter.name !== undefined) {
+				names.add(parameter.name);
+			}
+			add(parameter.pattern?.names ?? []);
+			if (parameter.default) {
+				add(expressionNames(parameter.default.code));
+			}
+			if (parameter.type) {
+				add(typeNames(parameter.type));
+			}
+		}
+		if (fn.returnType) {
+			add(typeNames(fn.returnType));
+		}
+	}
+	for (const item of component.setup) {
+		if ("type" in item && item.type) {
+			add(typeNames(item.type));
+		}
+	}
+	if (component.emits) {
+		add(typeNames(component.emits.type));
+		for (const event of component.emits.events) {
+			for (const parameter of event.parameters) {
+				add(typeNames(parameter.type));
+			}
+		}
+	}
+	return names;
 }
 
 /**
@@ -137,13 +173,13 @@ export function sourceNames(component: UfComponent, module: UfModule): Set<strin
  * `asserts value`), whose parameter is no type name.
  */
 export function typeNames(type: TypeText | string): Set<string> {
-  const code = typeof type === "string" ? type : type.code;
-  const [statement] = parseStatementsSource(`function value(): ${code} {}`).statements;
-  const names = new Set<string>();
-  if (statement?.type === "FunctionDeclaration") {
-    collectNames(statement.returnType?.typeAnnotation, names);
-  }
-  return names;
+	const code = typeof type === "string" ? type : type.code;
+	const [statement] = parseStatementsSource(`function value(): ${code} {}`).statements;
+	const names = new Set<string>();
+	if (statement?.type === "FunctionDeclaration") {
+		collectNames(statement.returnType?.typeAnnotation, names);
+	}
+	return names;
 }
 
 /**
@@ -152,12 +188,14 @@ export function typeNames(type: TypeText | string): Set<string> {
  * framework's `isDev` under that name.
  */
 function withoutDevTests(code: Code): string {
-  let text = code.code;
-  for (const reference of code.refs) {
-    if (reference.kind !== "Dev") continue;
-    const start = reference.span.start - code.span.start;
-    const end = reference.span.end - code.span.start;
-    text = `${text.slice(0, start)}${"0".padEnd(end - start)}${text.slice(end)}`;
-  }
-  return text;
+	let text = code.code;
+	for (const reference of code.refs) {
+		if (reference.kind !== "Dev") {
+			continue;
+		}
+		const start = reference.span.start - code.span.start;
+		const end = reference.span.end - code.span.start;
+		text = `${text.slice(0, start)}${"0".padEnd(end - start)}${text.slice(end)}`;
+	}
+	return text;
 }

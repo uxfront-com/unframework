@@ -36,6 +36,12 @@ pnpm install   # also installs the Chromium build the browser tests run in
 pnpm dev
 ```
 
+`.git-blame-ignore-revs` lists commits that only reformat the code. GitHub's blame skips them already. To make `git blame` skip them too, run this once in your clone:
+
+```sh
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 ## Scripts
 
 | Command                        | Does                                                                                     |
@@ -70,7 +76,9 @@ code (plan P1). Before you open a pull request:
 2. `pnpm test:full`. It runs what CI's test jobs run: every package's tests, the whole corpus, the
    `bench` project, the e2e apps, the sample design system's tests and visual suite from
    tarballs, and the canaries when the branch changes a path on
-   `CANARY_PATHS` (`tests/integration/scripts/canary-paths.ts`). It leaves out the CI jobs it
+   `CANARY_PATHS` (`tests/integration/scripts/canary-paths.ts`). CI runs those canaries in the
+   merge queue, and on a pull request only when it changes the harness itself (`HARNESS_PATHS`,
+   ADR-0123), so run them here before review when your change can break one. It leaves out the CI jobs it
    can't stand in for, and `pnpm test:full --list` names each with its reason. The `bench` step
    measures each case's compile time against `basics/hello` in the same run, so run `test:full`
    with nothing else busy on the machine.
@@ -80,6 +88,7 @@ code (plan P1). Before you open a pull request:
    - `baselines`: it needs Docker. See step 4.
    - `parity`: it merges CI's artefacts. The corpus's own summary judges the local run.
    - `build` and `lighthouse`: they build and audit the docs site, not tests.
+   - `gate`: `Merge gate` reads the other jobs' results. It isn't a test.
 3. When a change is meant to change the output, run `pnpm test:update` and review every changed
    file under `tests/integration/cases`: the golden outputs and expectations are reviewed like
    code.

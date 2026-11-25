@@ -3,6 +3,6 @@ import Tag from "../../../../../integration/cases/fallthrough/class-and-style/__
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Tag.prop:label -->
-  <Tag :label="[]" />
+	<!-- @uf-expect TS2322 Tag.prop:label -->
+	<Tag :label="[]" />
 </template>

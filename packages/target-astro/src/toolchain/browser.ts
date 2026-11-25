@@ -19,20 +19,22 @@ import { recordAstroSource } from "./sources.ts";
  * Outside Vitest, as in the preview (ADR-0088), the hook never runs, and nothing starts early.
  */
 export function astroBrowserRef(context?: Pick<ToolchainContext, "root" | "plugins">): Plugin {
-  return {
-    name: "unframework:astro-browser-ref",
-    enforce: "pre",
-    transform: {
-      filter: { id: ASTRO_VIRTUAL_ID },
-      handler(source, id) {
-        const ref = astroComponentRef(id);
-        recordAstroSource(ref.id, source);
-        return { code: `export default ${JSON.stringify(ref)};\n`, map: null, moduleType: "js" };
-      },
-    },
-    configureVitest({ vitest }) {
-      vitest.onClose(closeAstroRenderServers);
-      if (context) startAstroRenderServer(context.root, context.plugins);
-    },
-  };
+	return {
+		name: "unframework:astro-browser-ref",
+		enforce: "pre",
+		transform: {
+			filter: { id: ASTRO_VIRTUAL_ID },
+			handler(source, id) {
+				const ref = astroComponentRef(id);
+				recordAstroSource(ref.id, source);
+				return { code: `export default ${JSON.stringify(ref)};\n`, map: null, moduleType: "js" };
+			},
+		},
+		configureVitest({ vitest }) {
+			vitest.onClose(closeAstroRenderServers);
+			if (context) {
+				startAstroRenderServer(context.root, context.plugins);
+			}
+		},
+	};
 }

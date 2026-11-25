@@ -22,34 +22,37 @@ const BOX = "display: block; height: 20px; border: 1px solid #767676; border-rad
  * not native buttons: their rendering is the same on every platform.
  */
 const ROWS = [0, 1, 2, 3, 4, 5, 6, 7]
-  .map(
-    (eighth) =>
-      `<div style="display: flex; margin-bottom: 4px"><span style="${BOX}; width: ${20 + eighth / 8}px; background: #efefef"></span><span class="repainted" style="${BOX}; width: 30px; background: #efefef"></span></div>`,
-  )
-  .join("");
+	.map(
+		(eighth) =>
+			`<div style="display: flex; margin-bottom: 4px"><span style="${BOX}; width: ${20 + eighth / 8}px; background: #efefef"></span><span class="repainted" style="${BOX}; width: 30px; background: #efefef"></span></div>`,
+	)
+	.join("");
 
 /** The container's pixels, as a PNG in base64. */
 async function capture(view: View): Promise<string> {
-  await view.settle();
-  // Not saved, a screenshot is returned as base64.
-  return page.screenshot({ element: view.container, save: false });
+	await view.settle();
+	// Not saved, a screenshot is returned as base64.
+	return page.screenshot({ element: view.container, save: false });
 }
 
 describeTargets("stub/raster", () => {
-  it("captures the same DOM in the same pixels, whatever Chromium repainted last", async () => {
-    const view = await mount({ html: ROWS });
-    const fresh = await capture(view);
-    const boxes = [...view.container.querySelectorAll<HTMLElement>(".repainted")];
-    expect(boxes).toHaveLength(8);
-    // Each right box alone, repainted and then restored, as a hover in and out repaints a button.
-    for (const [index, box] of boxes.entries()) {
-      box.style.background = "#e5e5e5";
-      // The repaint is real and inside the capture: the pixels change while it lasts.
-      if (index === 0) expect(await capture(view)).not.toBe(fresh);
-      else await view.settle();
-      box.style.background = "#efefef";
-      await view.settle();
-    }
-    expect((await capture(view)) === fresh, "the capture after the repaints").toBe(true);
-  });
+	it("captures the same DOM in the same pixels, whatever Chromium repainted last", async () => {
+		const view = await mount({ html: ROWS });
+		const fresh = await capture(view);
+		const boxes = [...view.container.querySelectorAll<HTMLElement>(".repainted")];
+		expect(boxes).toHaveLength(8);
+		// Each right box alone, repainted and then restored, as a hover in and out repaints a button.
+		for (const [index, box] of boxes.entries()) {
+			box.style.background = "#e5e5e5";
+			// The repaint is real and inside the capture: the pixels change while it lasts.
+			if (index === 0) {
+				expect(await capture(view)).not.toBe(fresh);
+			} else {
+				await view.settle();
+			}
+			box.style.background = "#efefef";
+			await view.settle();
+		}
+		expect((await capture(view)) === fresh, "the capture after the repaints").toBe(true);
+	});
 });

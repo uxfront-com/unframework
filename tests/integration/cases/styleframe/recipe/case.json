@@ -1,10 +1,10 @@
 {
-  "description": "A Styleframe recipe called in a `class`: every output keeps its import as written, and Styleframe's runtime gives the recipe's utility classes.",
-  "ssr": {
-    "default": {
-      "props": {
-        "label": "New"
-      }
-    }
-  }
+	"description": "A Styleframe recipe called in a `class`: every output keeps its import as written, and Styleframe's runtime gives the recipe's utility classes.",
+	"ssr": {
+		"default": {
+			"props": {
+				"label": "New"
+			}
+		}
+	}
 }

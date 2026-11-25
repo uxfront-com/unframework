@@ -12,12 +12,12 @@ import type { ElementNode, EventAttribute } from "@unframework.dev/ir";
 
 /** How React declares an event's listener prop, where it has one that keeps the DOM's semantics. */
 export interface ReactEventProp {
-  /** The prop for the bubble phase: `onClick`, `onDoubleClick`, `onKeyDown`. */
-  prop: string;
-  /** Whether @types/react declares a capture-phase prop (`onClickCapture`). */
-  capture: boolean;
-  /** The element the prop is declared on, when only one has it (`<dialog>`'s `onCancel`). */
-  element?: string;
+	/** The prop for the bubble phase: `onClick`, `onDoubleClick`, `onKeyDown`. */
+	prop: string;
+	/** Whether @types/react declares a capture-phase prop (`onClickCapture`). */
+	capture: boolean;
+	/** The element the prop is declared on, when only one has it (`<dialog>`'s `onCancel`). */
+	element?: string;
 }
 
 /**
@@ -30,108 +30,108 @@ export interface ReactEventProp {
  * none of their own).
  */
 export const REACT_EVENTS: ReadonlyMap<string, ReactEventProp | null> = new Map(
-  Object.entries({
-    abort: prop("onAbort"),
-    animationcancel: null,
-    animationend: prop("onAnimationEnd"),
-    animationiteration: prop("onAnimationIteration"),
-    animationstart: prop("onAnimationStart"),
-    auxclick: prop("onAuxClick"),
-    beforeinput: null,
-    beforetoggle: prop("onBeforeToggle", false),
-    blur: prop("onBlur"),
-    cancel: prop("onCancel", false, "dialog"),
-    canplay: prop("onCanPlay"),
-    canplaythrough: prop("onCanPlayThrough"),
-    change: prop("onChange"),
-    click: prop("onClick"),
-    close: prop("onClose", false, "dialog"),
-    command: null,
-    compositionend: prop("onCompositionEnd"),
-    compositionstart: prop("onCompositionStart"),
-    compositionupdate: prop("onCompositionUpdate"),
-    contextmenu: prop("onContextMenu"),
-    copy: prop("onCopy"),
-    cut: prop("onCut"),
-    dblclick: prop("onDoubleClick"),
-    drag: prop("onDrag"),
-    dragend: prop("onDragEnd"),
-    dragenter: prop("onDragEnter"),
-    dragleave: prop("onDragLeave"),
-    dragover: prop("onDragOver"),
-    dragstart: prop("onDragStart"),
-    drop: prop("onDrop"),
-    durationchange: prop("onDurationChange"),
-    emptied: prop("onEmptied"),
-    encrypted: prop("onEncrypted"),
-    ended: prop("onEnded"),
-    error: prop("onError"),
-    focus: prop("onFocus"),
-    focusin: null,
-    focusout: null,
-    formdata: null,
-    fullscreenchange: null,
-    fullscreenerror: null,
-    gotpointercapture: prop("onGotPointerCapture"),
-    input: prop("onInput"),
-    invalid: prop("onInvalid"),
-    keydown: prop("onKeyDown"),
-    keypress: prop("onKeyPress"),
-    keyup: prop("onKeyUp"),
-    load: prop("onLoad"),
-    loadeddata: prop("onLoadedData"),
-    loadedmetadata: prop("onLoadedMetadata"),
-    loadstart: prop("onLoadStart"),
-    lostpointercapture: prop("onLostPointerCapture"),
-    mousedown: prop("onMouseDown"),
-    mouseenter: prop("onMouseEnter", false),
-    mouseleave: prop("onMouseLeave", false),
-    mousemove: prop("onMouseMove"),
-    mouseout: prop("onMouseOut"),
-    mouseover: prop("onMouseOver"),
-    mouseup: prop("onMouseUp"),
-    paste: prop("onPaste"),
-    pause: prop("onPause"),
-    play: prop("onPlay"),
-    playing: prop("onPlaying"),
-    pointercancel: prop("onPointerCancel"),
-    pointerdown: prop("onPointerDown"),
-    pointerenter: prop("onPointerEnter", false),
-    pointerleave: prop("onPointerLeave", false),
-    pointermove: prop("onPointerMove"),
-    pointerout: prop("onPointerOut"),
-    pointerover: prop("onPointerOver"),
-    pointerup: prop("onPointerUp"),
-    progress: prop("onProgress"),
-    ratechange: prop("onRateChange"),
-    reset: prop("onReset"),
-    scroll: prop("onScroll"),
-    scrollend: prop("onScrollEnd"),
-    securitypolicyviolation: null,
-    seeked: prop("onSeeked"),
-    seeking: prop("onSeeking"),
-    select: null,
-    stalled: prop("onStalled"),
-    submit: prop("onSubmit"),
-    suspend: prop("onSuspend"),
-    timeupdate: prop("onTimeUpdate"),
-    toggle: prop("onToggle", false),
-    touchcancel: prop("onTouchCancel"),
-    touchend: prop("onTouchEnd"),
-    touchmove: prop("onTouchMove"),
-    touchstart: prop("onTouchStart"),
-    transitioncancel: prop("onTransitionCancel"),
-    transitionend: prop("onTransitionEnd"),
-    transitionrun: prop("onTransitionRun"),
-    transitionstart: prop("onTransitionStart"),
-    volumechange: prop("onVolumeChange"),
-    waiting: prop("onWaiting"),
-    wheel: prop("onWheel"),
-  }),
+	Object.entries({
+		abort: prop("onAbort"),
+		animationcancel: null,
+		animationend: prop("onAnimationEnd"),
+		animationiteration: prop("onAnimationIteration"),
+		animationstart: prop("onAnimationStart"),
+		auxclick: prop("onAuxClick"),
+		beforeinput: null,
+		beforetoggle: prop("onBeforeToggle", false),
+		blur: prop("onBlur"),
+		cancel: prop("onCancel", false, "dialog"),
+		canplay: prop("onCanPlay"),
+		canplaythrough: prop("onCanPlayThrough"),
+		change: prop("onChange"),
+		click: prop("onClick"),
+		close: prop("onClose", false, "dialog"),
+		command: null,
+		compositionend: prop("onCompositionEnd"),
+		compositionstart: prop("onCompositionStart"),
+		compositionupdate: prop("onCompositionUpdate"),
+		contextmenu: prop("onContextMenu"),
+		copy: prop("onCopy"),
+		cut: prop("onCut"),
+		dblclick: prop("onDoubleClick"),
+		drag: prop("onDrag"),
+		dragend: prop("onDragEnd"),
+		dragenter: prop("onDragEnter"),
+		dragleave: prop("onDragLeave"),
+		dragover: prop("onDragOver"),
+		dragstart: prop("onDragStart"),
+		drop: prop("onDrop"),
+		durationchange: prop("onDurationChange"),
+		emptied: prop("onEmptied"),
+		encrypted: prop("onEncrypted"),
+		ended: prop("onEnded"),
+		error: prop("onError"),
+		focus: prop("onFocus"),
+		focusin: null,
+		focusout: null,
+		formdata: null,
+		fullscreenchange: null,
+		fullscreenerror: null,
+		gotpointercapture: prop("onGotPointerCapture"),
+		input: prop("onInput"),
+		invalid: prop("onInvalid"),
+		keydown: prop("onKeyDown"),
+		keypress: prop("onKeyPress"),
+		keyup: prop("onKeyUp"),
+		load: prop("onLoad"),
+		loadeddata: prop("onLoadedData"),
+		loadedmetadata: prop("onLoadedMetadata"),
+		loadstart: prop("onLoadStart"),
+		lostpointercapture: prop("onLostPointerCapture"),
+		mousedown: prop("onMouseDown"),
+		mouseenter: prop("onMouseEnter", false),
+		mouseleave: prop("onMouseLeave", false),
+		mousemove: prop("onMouseMove"),
+		mouseout: prop("onMouseOut"),
+		mouseover: prop("onMouseOver"),
+		mouseup: prop("onMouseUp"),
+		paste: prop("onPaste"),
+		pause: prop("onPause"),
+		play: prop("onPlay"),
+		playing: prop("onPlaying"),
+		pointercancel: prop("onPointerCancel"),
+		pointerdown: prop("onPointerDown"),
+		pointerenter: prop("onPointerEnter", false),
+		pointerleave: prop("onPointerLeave", false),
+		pointermove: prop("onPointerMove"),
+		pointerout: prop("onPointerOut"),
+		pointerover: prop("onPointerOver"),
+		pointerup: prop("onPointerUp"),
+		progress: prop("onProgress"),
+		ratechange: prop("onRateChange"),
+		reset: prop("onReset"),
+		scroll: prop("onScroll"),
+		scrollend: prop("onScrollEnd"),
+		securitypolicyviolation: null,
+		seeked: prop("onSeeked"),
+		seeking: prop("onSeeking"),
+		select: null,
+		stalled: prop("onStalled"),
+		submit: prop("onSubmit"),
+		suspend: prop("onSuspend"),
+		timeupdate: prop("onTimeUpdate"),
+		toggle: prop("onToggle", false),
+		touchcancel: prop("onTouchCancel"),
+		touchend: prop("onTouchEnd"),
+		touchmove: prop("onTouchMove"),
+		touchstart: prop("onTouchStart"),
+		transitioncancel: prop("onTransitionCancel"),
+		transitionend: prop("onTransitionEnd"),
+		transitionrun: prop("onTransitionRun"),
+		transitionstart: prop("onTransitionStart"),
+		volumechange: prop("onVolumeChange"),
+		waiting: prop("onWaiting"),
+		wheel: prop("onWheel"),
+	}),
 );
 
 function prop(name: string, capture = true, element?: string): ReactEventProp {
-  return element ? { prop: name, capture, element } : { prop: name, capture };
+	return element ? { prop: name, capture, element } : { prop: name, capture };
 }
 
 /**
@@ -149,38 +149,38 @@ const ROOT_PASSIVE = new Set(["wheel", "touchstart", "touchmove"]);
  * `mouseenter`, `mouseleave`, `pointerenter`, `pointerleave` and `scroll` to their target itself.
  */
 const NON_BUBBLING = new Set([
-  "abort",
-  "beforetoggle",
-  "blur",
-  "cancel",
-  "canplay",
-  "canplaythrough",
-  "close",
-  "durationchange",
-  "emptied",
-  "encrypted",
-  "ended",
-  "error",
-  "focus",
-  "invalid",
-  "load",
-  "loadeddata",
-  "loadedmetadata",
-  "loadstart",
-  "pause",
-  "play",
-  "playing",
-  "progress",
-  "ratechange",
-  "scrollend",
-  "seeked",
-  "seeking",
-  "stalled",
-  "suspend",
-  "timeupdate",
-  "toggle",
-  "volumechange",
-  "waiting",
+	"abort",
+	"beforetoggle",
+	"blur",
+	"cancel",
+	"canplay",
+	"canplaythrough",
+	"close",
+	"durationchange",
+	"emptied",
+	"encrypted",
+	"ended",
+	"error",
+	"focus",
+	"invalid",
+	"load",
+	"loadeddata",
+	"loadedmetadata",
+	"loadstart",
+	"pause",
+	"play",
+	"playing",
+	"progress",
+	"ratechange",
+	"scrollend",
+	"seeked",
+	"seeking",
+	"stalled",
+	"suspend",
+	"timeupdate",
+	"toggle",
+	"volumechange",
+	"waiting",
 ]);
 
 /** Elements whose descendants are never the target of a non-bubbling event a listener hears. */
@@ -195,25 +195,39 @@ const CHILDLESS_TARGETS = new Set(["input", "select", "textarea", "option"]);
  * listener only of a root-passive event, and a non-passive one only of any other.
  */
 export function synthetic(listener: EventAttribute, element: ElementNode): boolean {
-  const entry = REACT_EVENTS.get(listener.event);
-  if (!entry) return false;
-  if (entry.element && entry.element !== element.tag) return false;
-  if (listener.capture && !entry.capture) return false;
-  if (ROOT_PASSIVE.has(listener.event) !== Boolean(listener.passive)) return false;
-  if (listener.event === "change") return changeCommits(element);
-  return true;
+	const entry = REACT_EVENTS.get(listener.event);
+	if (!entry) {
+		return false;
+	}
+	if (entry.element && entry.element !== element.tag) {
+		return false;
+	}
+	if (listener.capture && !entry.capture) {
+		return false;
+	}
+	if (ROOT_PASSIVE.has(listener.event) !== Boolean(listener.passive)) {
+		return false;
+	}
+	if (listener.event === "change") {
+		return changeCommits(element);
+	}
+	return true;
 }
 
 /** Whether React's `onChange` fires on this element from the DOM's `change`, and only then. */
 function changeCommits(element: ElementNode): boolean {
-  if (element.tag === "select") return true;
-  if (element.tag !== "input") return false;
-  const type = element.attributes.find(
-    (attribute) => attribute.kind === "Static" && attribute.name === "type",
-  );
-  return (
-    type?.kind === "Static" && typeof type.value === "string" && type.value.toLowerCase() === "file"
-  );
+	if (element.tag === "select") {
+		return true;
+	}
+	if (element.tag !== "input") {
+		return false;
+	}
+	const type = element.attributes.find(
+		(attribute) => attribute.kind === "Static" && attribute.name === "type",
+	);
+	return (
+		type?.kind === "Static" && typeof type.value === "string" && type.value.toLowerCase() === "file"
+	);
 }
 
 /**
@@ -221,19 +235,21 @@ function changeCommits(element: ElementNode): boolean {
  * event does not bubble in the DOM, and the element may have a descendant that is its target.
  */
 export function targetGuarded(listener: EventAttribute, element: ElementNode): boolean {
-  return (
-    !listener.capture &&
-    NON_BUBBLING.has(listener.event) &&
-    !isVoidElement(element.tag) &&
-    !CHILDLESS_TARGETS.has(element.tag)
-  );
+	return (
+		!listener.capture &&
+		NON_BUBBLING.has(listener.event) &&
+		!isVoidElement(element.tag) &&
+		!CHILDLESS_TARGETS.has(element.tag)
+	);
 }
 
 /** A synthetic listener's prop: `onKeyDown`, `onClickCapture`. */
 export function reactProp(listener: EventAttribute): string {
-  const entry = REACT_EVENTS.get(listener.event);
-  if (!entry) throw new Error(`React has no prop for the \`${listener.event}\` event.`);
-  return listener.capture ? `${entry.prop}Capture` : entry.prop;
+	const entry = REACT_EVENTS.get(listener.event);
+	if (!entry) {
+		throw new Error(`React has no prop for the \`${listener.event}\` event.`);
+	}
+	return listener.capture ? `${entry.prop}Capture` : entry.prop;
 }
 
 /**
@@ -242,22 +258,22 @@ export function reactProp(listener: EventAttribute): string {
  * annotated with React's where React hands it a synthetic event: the DOM's fails L4 (TS2322).
  */
 const REACT_EVENT_TYPES: ReadonlyMap<string, string> = new Map([
-  ["Event", "SyntheticEvent"],
-  ["UIEvent", "UIEvent"],
-  ["MouseEvent", "MouseEvent"],
-  ["PointerEvent", "PointerEvent"],
-  ["DragEvent", "DragEvent"],
-  ["WheelEvent", "WheelEvent"],
-  ["KeyboardEvent", "KeyboardEvent"],
-  ["FocusEvent", "FocusEvent"],
-  ["InputEvent", "InputEvent"],
-  ["CompositionEvent", "CompositionEvent"],
-  ["TouchEvent", "TouchEvent"],
-  ["AnimationEvent", "AnimationEvent"],
-  ["TransitionEvent", "TransitionEvent"],
-  ["ClipboardEvent", "ClipboardEvent"],
-  ["SubmitEvent", "SubmitEvent"],
-  ["ToggleEvent", "ToggleEvent"],
+	["Event", "SyntheticEvent"],
+	["UIEvent", "UIEvent"],
+	["MouseEvent", "MouseEvent"],
+	["PointerEvent", "PointerEvent"],
+	["DragEvent", "DragEvent"],
+	["WheelEvent", "WheelEvent"],
+	["KeyboardEvent", "KeyboardEvent"],
+	["FocusEvent", "FocusEvent"],
+	["InputEvent", "InputEvent"],
+	["CompositionEvent", "CompositionEvent"],
+	["TouchEvent", "TouchEvent"],
+	["AnimationEvent", "AnimationEvent"],
+	["TransitionEvent", "TransitionEvent"],
+	["ClipboardEvent", "ClipboardEvent"],
+	["SubmitEvent", "SubmitEvent"],
+	["ToggleEvent", "ToggleEvent"],
 ]);
 
 /**
@@ -265,10 +281,12 @@ const REACT_EVENT_TYPES: ReadonlyMap<string, string> = new Map([
  * nearest interface it extends that React has (`ErrorEvent` → `SyntheticEvent`).
  */
 export function reactEventType(domInterface: string): string {
-  for (let current: string | null | undefined = domInterface; current;) {
-    const type = REACT_EVENT_TYPES.get(current);
-    if (type) return type;
-    current = EVENT_INTERFACES.get(current);
-  }
-  return "SyntheticEvent";
+	for (let current: string | null | undefined = domInterface; current;) {
+		const type = REACT_EVENT_TYPES.get(current);
+		if (type) {
+			return type;
+		}
+		current = EVENT_INTERFACES.get(current);
+	}
+	return "SyntheticEvent";
 }

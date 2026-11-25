@@ -3,8 +3,8 @@ import Notice from "../../../../../integration/cases/slots/fallback/__output__/v
 </script>
 
 <template>
-  <Notice label="Build">
-    <!-- @uf-expect TS2493 Notice.slot:action -->
-    <template #action="props">Content</template>
-  </Notice>
+	<Notice label="Build">
+		<!-- @uf-expect TS2493 Notice.slot:action -->
+		<template #action="props">Content</template>
+	</Notice>
 </template>

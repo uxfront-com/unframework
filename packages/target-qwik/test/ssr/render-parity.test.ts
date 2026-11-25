@@ -21,26 +21,26 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Compiles and server-renders the parity component, as the `ssr:qwik` project would. */
 async function render(suite: ParitySuite, format: boolean): Promise<string> {
-  const [file] = await emitParity(target, suite, { format });
-  const path = join(scratch, `${randomUUID()}.tsx`);
-  writeFileSync(path, file!.contents);
-  return renderToString(((await import(path)) as { default: unknown }).default, {
-    props: parityProps(suite),
-  });
+	const [file] = await emitParity(target, suite, { format });
+	const path = join(scratch, `${randomUUID()}.tsx`);
+	writeFileSync(path, file!.contents);
+	return renderToString(((await import(path)) as { default: unknown }).default, {
+		props: parityProps(suite),
+	});
 }
 
 /** Qwik's own bookkeeping on rendered elements (`:`, `q:key`, `q:*`). */
 const qwikAttribute = (name: string) => name === ":" || name.startsWith("q:");
 
 describe.each([true, false])("qwik output (formatted: %s), rendered by Qwik", (format) => {
-  it.each(paritySuites())(
-    "renders $title exactly as the reference describes them",
-    async (suite) => {
-      const html = await render(suite, format);
-      const rendered = parseHtml(html, { ignoreAttribute: qwikAttribute });
-      for (const { name, expected, actual } of compareCases(rendered, suite)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    },
-  );
+	it.each(paritySuites())(
+		"renders $title exactly as the reference describes them",
+		async (suite) => {
+			const html = await render(suite, format);
+			const rendered = parseHtml(html, { ignoreAttribute: qwikAttribute });
+			for (const { name, expected, actual } of compareCases(rendered, suite)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		},
+	);
 });

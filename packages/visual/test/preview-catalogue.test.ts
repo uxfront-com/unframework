@@ -19,411 +19,411 @@ const EXAMPLE_CONTROLS = fileURLToPath(new URL("fixtures/example-controls", impo
 const EXAMPLE_TWINS = fileURLToPath(new URL("fixtures/example-twins", import.meta.url));
 
 function project(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), "uf-preview-"));
-  for (const [path, contents] of Object.entries(files)) {
-    mkdirSync(dirname(join(root, path)), { recursive: true });
-    writeFileSync(join(root, path), contents);
-  }
-  return root;
+	const root = mkdtempSync(join(tmpdir(), "uf-preview-"));
+	for (const [path, contents] of Object.entries(files)) {
+		mkdirSync(dirname(join(root, path)), { recursive: true });
+		writeFileSync(join(root, path), contents);
+	}
+	return root;
 }
 
-const member = (type: string, extra: { optional?: boolean; literals?: string[] } = {}) => ({
-  name: "p",
-  optional: extra.optional ?? false,
-  type,
-  ...(extra.literals ? { literals: extra.literals } : {}),
+const member = (type: string, extra: { optional?: boolean; literals?: Array<string> } = {}) => ({
+	name: "p",
+	optional: extra.optional ?? false,
+	type,
+	...(extra.literals ? { literals: extra.literals } : {}),
 });
 
 describe("controlOf", () => {
-  it("gives boolean, string and number props their controls", () => {
-    expect(controlOf(member("boolean"))).toEqual({
-      name: "p",
-      optional: false,
-      kind: "boolean",
-      initial: false,
-    });
-    expect(controlOf(member("string", { optional: true }))).toMatchObject({
-      kind: "string",
-      optional: true,
-      initial: "",
-    });
-    expect(controlOf(member("number"))).toMatchObject({ kind: "number", initial: 0 });
-    expect(controlOf(member("true | false"))).toMatchObject({ kind: "boolean" });
-  });
+	it("gives boolean, string and number props their controls", () => {
+		expect(controlOf(member("boolean"))).toEqual({
+			name: "p",
+			optional: false,
+			kind: "boolean",
+			initial: false,
+		});
+		expect(controlOf(member("string", { optional: true }))).toMatchObject({
+			kind: "string",
+			optional: true,
+			initial: "",
+		});
+		expect(controlOf(member("number"))).toMatchObject({ kind: "number", initial: 0 });
+		expect(controlOf(member("true | false"))).toMatchObject({ kind: "boolean" });
+	});
 
-  it("gives a union of string literals a select, as written or resolved from an alias", () => {
-    expect(controlOf(member(`"primary" | 'secondary'`))).toMatchObject({
-      kind: "select",
-      options: ["primary", "secondary"],
-      initial: "primary",
-    });
-    expect(
-      controlOf(member("ButtonVariant", { optional: true, literals: ['"a"', '"b"'] })),
-    ).toMatchObject({ kind: "select", optional: true, options: ["a", "b"] });
-  });
+	it("gives a union of string literals a select, as written or resolved from an alias", () => {
+		expect(controlOf(member(`"primary" | 'secondary'`))).toMatchObject({
+			kind: "select",
+			options: ["primary", "secondary"],
+			initial: "primary",
+		});
+		expect(
+			controlOf(member("ButtonVariant", { optional: true, literals: ['"a"', '"b"'] })),
+		).toMatchObject({ kind: "select", optional: true, options: ["a", "b"] });
+	});
 
-  it("reads `| undefined` as an optional prop", () => {
-    expect(controlOf(member("string | undefined"))).toMatchObject({
-      kind: "string",
-      optional: true,
-    });
-    expect(controlOf(member(`"x" | "y" | undefined`))).toMatchObject({
-      kind: "select",
-      optional: true,
-      options: ["x", "y"],
-    });
-  });
+	it("reads `| undefined` as an optional prop", () => {
+		expect(controlOf(member("string | undefined"))).toMatchObject({
+			kind: "string",
+			optional: true,
+		});
+		expect(controlOf(member(`"x" | "y" | undefined`))).toMatchObject({
+			kind: "select",
+			optional: true,
+			options: ["x", "y"],
+		});
+	});
 
-  it.each([
-    "() => void",
-    "string[]",
-    "Record<string, number>",
-    "{ a: string }",
-    "Tone",
-    "1 | 2",
-    `"a" | number`,
-    "string | number",
-    "`x-${string}`",
-    `"a|b`,
-    "null",
-  ])("names %s as not controllable", (type) => {
-    expect(controlOf(member(type))).toEqual(expect.stringContaining(type));
-  });
+	it.each([
+		"() => void",
+		"string[]",
+		"Record<string, number>",
+		"{ a: string }",
+		"Tone",
+		"1 | 2",
+		`"a" | number`,
+		"string | number",
+		"`x-${string}`",
+		`"a|b`,
+		"null",
+	])("names %s as not controllable", (type) => {
+		expect(controlOf(member(type))).toEqual(expect.stringContaining(type));
+	});
 
-  it("splits a union only at its top level, and keeps a literal's own bar", () => {
-    expect(unionMembers(`"a|b" | "c"`)).toEqual([`"a|b"`, `"c"`]);
-    expect(unionMembers(`| "a" | "b"`)).toEqual([`"a"`, `"b"`]);
-    expect(unionMembers("Array<a | b>")).toBeUndefined();
-    expect(unionMembers("a ||")).toBeUndefined();
-    expect(stringLiteral(`"say \\"hi\\""`)).toBe('say "hi"');
-    expect(stringLiteral(`'it\\'s'`)).toBe("it's");
-    expect(stringLiteral(`"open`)).toBeUndefined();
-    expect(stringLiteral("primary")).toBeUndefined();
-  });
+	it("splits a union only at its top level, and keeps a literal's own bar", () => {
+		expect(unionMembers(`"a|b" | "c"`)).toEqual([`"a|b"`, `"c"`]);
+		expect(unionMembers(`| "a" | "b"`)).toEqual([`"a"`, `"b"`]);
+		expect(unionMembers("Array<a | b>")).toBeUndefined();
+		expect(unionMembers("a ||")).toBeUndefined();
+		expect(stringLiteral(`"say \\"hi\\""`)).toBe('say "hi"');
+		expect(stringLiteral(`'it\\'s'`)).toBe("it's");
+		expect(stringLiteral(`"open`)).toBeUndefined();
+		expect(stringLiteral("primary")).toBeUndefined();
+	});
 
-  it("keeps the members in order, and splits the uncontrolled out with the reason", () => {
-    const { controls, uncontrolled } = propControls([
-      { name: "label", optional: false, type: "string" },
-      { name: "onPick", optional: true, type: "(id: string) => void" },
-      { name: "size", optional: true, type: `"s" | "m"` },
-    ]);
-    expect(controls.map((each) => each.name)).toEqual(["label", "size"]);
-    expect(uncontrolled).toEqual([
-      {
-        name: "onPick",
-        type: "(id: string) => void",
-        reason: expect.stringContaining("(id: string) => void"),
-      },
-    ]);
-  });
+	it("keeps the members in order, and splits the uncontrolled out with the reason", () => {
+		const { controls, uncontrolled } = propControls([
+			{ name: "label", optional: false, type: "string" },
+			{ name: "onPick", optional: true, type: "(id: string) => void" },
+			{ name: "size", optional: true, type: `"s" | "m"` },
+		]);
+		expect(controls.map((each) => each.name)).toEqual(["label", "size"]);
+		expect(uncontrolled).toEqual([
+			{
+				name: "onPick",
+				type: "(id: string) => void",
+				reason: expect.stringContaining("(id: string) => void"),
+			},
+		]);
+	});
 });
 
 describe("readCatalogue", () => {
-  it("lists the design system's examples and its components, with their controls", async () => {
-    const catalogue = await readCatalogue(DESIGN_SYSTEM, join(DESIGN_SYSTEM, "src"));
-    expect(catalogue.examples.map((each) => each.id)).toEqual([
-      "examples/Buttons",
-      "examples/Card",
-      "examples/TextField",
-    ]);
-    expect(catalogue.components.map((each) => [each.id, each.name])).toEqual([
-      ["src/Button", "Button"],
-      ["src/Card", "Card"],
-      ["src/Counter", "Counter"],
-      ["src/TextField", "TextField"],
-    ]);
-    const byId = Object.fromEntries(catalogue.components.map((each) => [each.id, each]));
-    // `variant?: ButtonVariant`, an alias imported from `./types`: the oracle resolves it.
-    expect(byId["src/Button"]!.controls).toEqual([
-      {
-        name: "variant",
-        optional: true,
-        kind: "select",
-        options: ["primary", "secondary"],
-        initial: "primary",
-      },
-    ]);
-    expect(byId["src/Counter"]!.controls.map((each) => [each.name, each.kind])).toEqual([
-      ["initial", "number"],
-      ["step", "number"],
-    ]);
-    expect(byId["src/TextField"]!.controls).toEqual([
-      { name: "label", optional: false, kind: "string", initial: "" },
-    ]);
-    expect(byId["src/Card"]!.controls).toEqual([]);
-    for (const entry of [...catalogue.examples, ...catalogue.components]) {
-      expect(entry.file.startsWith(DESIGN_SYSTEM), entry.file).toBe(true);
-    }
-  });
+	it("lists the design system's examples and its components, with their controls", async () => {
+		const catalogue = await readCatalogue(DESIGN_SYSTEM, join(DESIGN_SYSTEM, "src"));
+		expect(catalogue.examples.map((each) => each.id)).toEqual([
+			"examples/Buttons",
+			"examples/Card",
+			"examples/TextField",
+		]);
+		expect(catalogue.components.map((each) => [each.id, each.name])).toEqual([
+			["src/Button", "Button"],
+			["src/Card", "Card"],
+			["src/Counter", "Counter"],
+			["src/TextField", "TextField"],
+		]);
+		const byId = Object.fromEntries(catalogue.components.map((each) => [each.id, each]));
+		// `variant?: ButtonVariant`, an alias imported from `./types`: the oracle resolves it.
+		expect(byId["src/Button"]!.controls).toEqual([
+			{
+				name: "variant",
+				optional: true,
+				kind: "select",
+				options: ["primary", "secondary"],
+				initial: "primary",
+			},
+		]);
+		expect(byId["src/Counter"]!.controls.map((each) => [each.name, each.kind])).toEqual([
+			["initial", "number"],
+			["step", "number"],
+		]);
+		expect(byId["src/TextField"]!.controls).toEqual([
+			{ name: "label", optional: false, kind: "string", initial: "" },
+		]);
+		expect(byId["src/Card"]!.controls).toEqual([]);
+		for (const entry of [...catalogue.examples, ...catalogue.components]) {
+			expect(entry.file.startsWith(DESIGN_SYSTEM), entry.file).toBe(true);
+		}
+	});
 
-  it("gives the design system's examples the category and title their paths give", async () => {
-    const catalogue = await readCatalogue(DESIGN_SYSTEM, join(DESIGN_SYSTEM, "src"));
-    expect(catalogue.examples.map(({ category, title }) => [category, title])).toEqual([
-      [["Examples"], "Buttons"],
-      [["Examples"], "Card"],
-      [["Examples"], "Text Field"],
-    ]);
-    expect(catalogue.diagnostics).toEqual([]);
-  });
+	it("gives the design system's examples the category and title their paths give", async () => {
+		const catalogue = await readCatalogue(DESIGN_SYSTEM, join(DESIGN_SYSTEM, "src"));
+		expect(catalogue.examples.map(({ category, title }) => [category, title])).toEqual([
+			[["Examples"], "Buttons"],
+			[["Examples"], "Card"],
+			[["Examples"], "Text Field"],
+		]);
+		expect(catalogue.diagnostics).toEqual([]);
+	});
 
-  it("reads an example's doc comment, and reports UF7012 at a malformed tag", async () => {
-    const catalogue = await readCatalogue(METADATA, join(METADATA, "src"));
-    expect(catalogue.examples).toEqual([
-      {
-        kind: "example",
-        key: "example:examples/Badge",
-        id: "examples/Badge",
-        file: join(METADATA, "examples/Badge.example.uf.tsx"),
-        controls: [],
-        category: ["Components", "Feedback"],
-        title: "New badge",
-        description: "A badge on every target.",
-        layout: {
-          display: "flex",
-          direction: "column",
-          justify: "center",
-          align: "center",
-          wrap: false,
-          gap: "4px",
-        },
-      },
-    ]);
-    expect(catalogue.diagnostics).toHaveLength(1);
-    const [diagnostic] = catalogue.diagnostics;
-    expect(diagnostic).toMatchObject({
-      code: "UF7012",
-      severity: "warning",
-      file: "examples/Badge.example.uf.tsx",
-    });
-    const source = readFileSync(join(METADATA, "examples/Badge.example.uf.tsx"), "utf8");
-    expect(source.slice(diagnostic!.span.start, diagnostic!.span.end)).toBe("@order two");
-  });
+	it("reads an example's doc comment, and reports UF7012 at a malformed tag", async () => {
+		const catalogue = await readCatalogue(METADATA, join(METADATA, "src"));
+		expect(catalogue.examples).toEqual([
+			{
+				kind: "example",
+				key: "example:examples/Badge",
+				id: "examples/Badge",
+				file: join(METADATA, "examples/Badge.example.uf.tsx"),
+				controls: [],
+				category: ["Components", "Feedback"],
+				title: "New badge",
+				description: "A badge on every target.",
+				layout: {
+					display: "flex",
+					direction: "column",
+					justify: "center",
+					align: "center",
+					wrap: false,
+					gap: "4px",
+				},
+			},
+		]);
+		expect(catalogue.diagnostics).toHaveLength(1);
+		const [diagnostic] = catalogue.diagnostics;
+		expect(diagnostic).toMatchObject({
+			code: "UF7012",
+			severity: "warning",
+			file: "examples/Badge.example.uf.tsx",
+		});
+		const source = readFileSync(join(METADATA, "examples/Badge.example.uf.tsx"), "utf8");
+		expect(source.slice(diagnostic!.span.start, diagnostic!.span.end)).toBe("@order two");
+	});
 
-  it("sorts the examples by order, those without one last, then by title, then by id", async () => {
-    const example = (comment: string) =>
-      `${comment}\nexport default function Ex() {\n  return <p>Ex</p>;\n}\n`;
-    const root = project({
-      "examples/A.example.uf.tsx": example("/** @title Zed */"),
-      "examples/B.example.uf.tsx": example("/** @order 10 */"),
-      "examples/C.example.uf.tsx": example("/** @order -1 */"),
-      "examples/D.example.uf.tsx": example("/** @order 2 */"),
-      "examples/E.example.uf.tsx": example("/** @title Same */"),
-      "other/E.example.uf.tsx": example("/** @title Same */"),
-      "examples/F.example.uf.tsx": example("/** @order two */"),
-      "examples/G.example.uf.tsx": example("/** @order 2\n * @title Alpha */"),
-    });
-    const catalogue = await readCatalogue(root, join(root, "src"));
-    expect(catalogue.examples.map((each) => each.id)).toEqual([
-      "examples/C",
-      "examples/G",
-      "examples/D",
-      "examples/B",
-      "examples/F",
-      "examples/E",
-      "other/E",
-      "examples/A",
-    ]);
-    expect(catalogue.diagnostics.map((each) => each.file)).toEqual(["examples/F.example.uf.tsx"]);
-  });
-  it("leaves out an example, a file with no default export and one that does not compile", async () => {
-    const root = project({
-      "src/Shown.uf.tsx": "export default function Shown() {\n  return <p>Shown</p>;\n}\n",
-      "src/Named.uf.tsx": "export function Named() {\n  return <p>Named</p>;\n}\n",
-      "src/Broken.uf.tsx": "export default function Broken() {\n  return <p>{</p>;\n}\n",
-      "src/Shown.example.uf.tsx": "export default function Ex() {\n  return <p>Ex</p>;\n}\n",
-      "src/node_modules/Dep.uf.tsx": "export default function Dep() {\n  return <p/>;\n}\n",
-      "src/.cache/Hidden.uf.tsx": "export default function Hidden() {\n  return <p/>;\n}\n",
-    });
-    const catalogue = await readCatalogue(root, join(root, "src"));
-    expect(catalogue.components.map((each) => each.id)).toEqual(["src/Shown"]);
-    expect(catalogue.examples.map((each) => each.id)).toEqual(["src/Shown"]);
-    // The example beside its component shares its id, so each is keyed by its kind too.
-    expect(catalogue.examples.map((each) => [each.key, each.file])).toEqual([
-      ["example:src/Shown", join(root, "src/Shown.example.uf.tsx")],
-    ]);
-    expect(catalogue.components.map((each) => [each.key, each.file])).toEqual([
-      ["component:src/Shown", join(root, "src/Shown.uf.tsx")],
-    ]);
-  });
+	it("sorts the examples by order, those without one last, then by title, then by id", async () => {
+		const example = (comment: string) =>
+			`${comment}\nexport default function Ex() {\n  return <p>Ex</p>;\n}\n`;
+		const root = project({
+			"examples/A.example.uf.tsx": example("/** @title Zed */"),
+			"examples/B.example.uf.tsx": example("/** @order 10 */"),
+			"examples/C.example.uf.tsx": example("/** @order -1 */"),
+			"examples/D.example.uf.tsx": example("/** @order 2 */"),
+			"examples/E.example.uf.tsx": example("/** @title Same */"),
+			"other/E.example.uf.tsx": example("/** @title Same */"),
+			"examples/F.example.uf.tsx": example("/** @order two */"),
+			"examples/G.example.uf.tsx": example("/** @order 2\n * @title Alpha */"),
+		});
+		const catalogue = await readCatalogue(root, join(root, "src"));
+		expect(catalogue.examples.map((each) => each.id)).toEqual([
+			"examples/C",
+			"examples/G",
+			"examples/D",
+			"examples/B",
+			"examples/F",
+			"examples/E",
+			"other/E",
+			"examples/A",
+		]);
+		expect(catalogue.diagnostics.map((each) => each.file)).toEqual(["examples/F.example.uf.tsx"]);
+	});
+	it("leaves out an example, a file with no default export and one that does not compile", async () => {
+		const root = project({
+			"src/Shown.uf.tsx": "export default function Shown() {\n  return <p>Shown</p>;\n}\n",
+			"src/Named.uf.tsx": "export function Named() {\n  return <p>Named</p>;\n}\n",
+			"src/Broken.uf.tsx": "export default function Broken() {\n  return <p>{</p>;\n}\n",
+			"src/Shown.example.uf.tsx": "export default function Ex() {\n  return <p>Ex</p>;\n}\n",
+			"src/node_modules/Dep.uf.tsx": "export default function Dep() {\n  return <p/>;\n}\n",
+			"src/.cache/Hidden.uf.tsx": "export default function Hidden() {\n  return <p/>;\n}\n",
+		});
+		const catalogue = await readCatalogue(root, join(root, "src"));
+		expect(catalogue.components.map((each) => each.id)).toEqual(["src/Shown"]);
+		expect(catalogue.examples.map((each) => each.id)).toEqual(["src/Shown"]);
+		// The example beside its component shares its id, so each is keyed by its kind too.
+		expect(catalogue.examples.map((each) => [each.key, each.file])).toEqual([
+			["example:src/Shown", join(root, "src/Shown.example.uf.tsx")],
+		]);
+		expect(catalogue.components.map((each) => [each.key, each.file])).toEqual([
+			["component:src/Shown", join(root, "src/Shown.uf.tsx")],
+		]);
+	});
 });
 
 describe("an example's controls", () => {
-  const tone = {
-    optional: true,
-    kind: "select",
-    options: ["info", "warn", "error"],
-    initial: "info",
-  };
+	const tone = {
+		optional: true,
+		kind: "select",
+		options: ["info", "warn", "error"],
+		initial: "info",
+	};
 
-  it("groups them by component, in the order each first renders, with keys across the example", async () => {
-    const catalogue = await readCatalogue(EXAMPLE_CONTROLS, join(EXAMPLE_CONTROLS, "src"));
-    // The catalogue lists its components by id, which is not the example's order.
-    expect(catalogue.components.map((each) => each.id)).toEqual([
-      "src/Badge",
-      "src/Box",
-      "src/Flag",
-      "src/Plain",
-    ]);
-    const [flags] = catalogue.examples;
-    expect(flags!.id).toBe("examples/Flags");
-    // No group for `Box`, whose only member is a slot, or `Plain`, whose prop no control can set.
-    // `Flag`'s `tone` is live, since one instance leaves it unset, and every one sets `label`.
-    expect(flags!.controls).toEqual([
-      {
-        component: "src/Badge",
-        name: "Badge",
-        controls: [{ name: "tone", ...tone, key: "ufControl0" }],
-        setByExample: ["text"],
-        uncontrolled: [],
-      },
-      {
-        component: "src/Flag",
-        name: "Flag",
-        controls: [
-          { name: "on", optional: true, kind: "boolean", initial: false, key: "ufControl1" },
-          { name: "tone", ...tone, key: "ufControl2" },
-          { name: "size", optional: true, kind: "number", initial: 0, key: "ufControl3" },
-        ],
-        setByExample: ["label"],
-        uncontrolled: [],
-      },
-    ]);
-  });
+	it("groups them by component, in the order each first renders, with keys across the example", async () => {
+		const catalogue = await readCatalogue(EXAMPLE_CONTROLS, join(EXAMPLE_CONTROLS, "src"));
+		// The catalogue lists its components by id, which is not the example's order.
+		expect(catalogue.components.map((each) => each.id)).toEqual([
+			"src/Badge",
+			"src/Box",
+			"src/Flag",
+			"src/Plain",
+		]);
+		const [flags] = catalogue.examples;
+		expect(flags!.id).toBe("examples/Flags");
+		// No group for `Box`, whose only member is a slot, or `Plain`, whose prop no control can set.
+		// `Flag`'s `tone` is live, since one instance leaves it unset, and every one sets `label`.
+		expect(flags!.controls).toEqual([
+			{
+				component: "src/Badge",
+				name: "Badge",
+				controls: [{ name: "tone", ...tone, key: "ufControl0" }],
+				setByExample: ["text"],
+				uncontrolled: [],
+			},
+			{
+				component: "src/Flag",
+				name: "Flag",
+				controls: [
+					{ name: "on", optional: true, kind: "boolean", initial: false, key: "ufControl1" },
+					{ name: "tone", ...tone, key: "ufControl2" },
+					{ name: "size", optional: true, kind: "number", initial: 0, key: "ufControl3" },
+				],
+				setByExample: ["label"],
+				uncontrolled: [],
+			},
+		]);
+	});
 
-  it("keeps two components of one name apart, by their ids", async () => {
-    const catalogue = await readCatalogue(EXAMPLE_TWINS, join(EXAMPLE_TWINS, "src"));
-    expect(catalogue.examples[0]!.controls.map((group) => [group.component, group.name])).toEqual([
-      ["src/Badge", "Badge"],
-      ["src/status/Badge", "Badge"],
-    ]);
-    expect(
-      catalogue.examples[0]!.controls.flatMap((group) => group.controls.map((each) => each.key)),
-    ).toEqual(["ufControl0", "ufControl1"]);
-  });
+	it("keeps two components of one name apart, by their ids", async () => {
+		const catalogue = await readCatalogue(EXAMPLE_TWINS, join(EXAMPLE_TWINS, "src"));
+		expect(catalogue.examples[0]!.controls.map((group) => [group.component, group.name])).toEqual([
+			["src/Badge", "Badge"],
+			["src/status/Badge", "Badge"],
+		]);
+		expect(
+			catalogue.examples[0]!.controls.flatMap((group) => group.controls.map((each) => each.key)),
+		).toEqual(["ufControl0", "ufControl1"]);
+	});
 
-  it("names a prop every instance sets as set by the example, and lists the uncontrolled", async () => {
-    const root = project({
-      "src/Tag.uf.tsx":
-        "export default function Tag({ label, tone, tags }: { label: string; tone?: string; tags?: string[] }) {\n  return <p data-tone={tone}>{label}{tags}</p>;\n}\n",
-      "examples/Tags.example.uf.tsx":
-        'import Tag from "../src/Tag.uf.tsx";\n\nexport default function Tags() {\n  return (\n    <div>\n      <Tag label="a" tone="x" />\n      <Tag label="b" tone="y" />\n    </div>\n  );\n}\n',
-    });
-    const catalogue = await readCatalogue(root, join(root, "src"));
-    expect(catalogue.examples[0]!.controls).toEqual([
-      {
-        component: "src/Tag",
-        name: "Tag",
-        controls: [],
-        setByExample: ["label", "tone"],
-        uncontrolled: [
-          {
-            name: "tags",
-            type: "string[]",
-            reason: "its type, string[], is not one the preview can set",
-          },
-        ],
-      },
-    ]);
-  });
+	it("names a prop every instance sets as set by the example, and lists the uncontrolled", async () => {
+		const root = project({
+			"src/Tag.uf.tsx":
+				"export default function Tag({ label, tone, tags }: { label: string; tone?: string; tags?: string[] }) {\n  return <p data-tone={tone}>{label}{tags}</p>;\n}\n",
+			"examples/Tags.example.uf.tsx":
+				'import Tag from "../src/Tag.uf.tsx";\n\nexport default function Tags() {\n  return (\n    <div>\n      <Tag label="a" tone="x" />\n      <Tag label="b" tone="y" />\n    </div>\n  );\n}\n',
+		});
+		const catalogue = await readCatalogue(root, join(root, "src"));
+		expect(catalogue.examples[0]!.controls).toEqual([
+			{
+				component: "src/Tag",
+				name: "Tag",
+				controls: [],
+				setByExample: ["label", "tone"],
+				uncontrolled: [
+					{
+						name: "tags",
+						type: "string[]",
+						reason: "its type, string[], is not one the preview can set",
+					},
+				],
+			},
+		]);
+	});
 
-  it("gives none to an example that declares props, does not compile or renders no component", async () => {
-    const tag =
-      "export default function Tag({ tone }: { tone?: string }) {\n  return <p>{tone}</p>;\n}\n";
-    const example = (name: string, parameter: string, body: string) =>
-      `import Tag from "../src/Tag.uf.tsx";\n\nexport default function ${name}(${parameter}) {\n  return ${body};\n}\n`;
-    const root = project({
-      "src/Tag.uf.tsx": tag,
-      "examples/Props.example.uf.tsx": example("Props", "{ x }: { x?: string }", "<Tag />"),
-      "examples/Broken.example.uf.tsx": example("Broken", "", "<Tag tone={1} nope />"),
-      "examples/Bare.example.uf.tsx": example("Bare", "", "<p>Bare</p>"),
-      "examples/Own.example.uf.tsx":
-        "function Tag({ tone }: { tone?: string }) {\n  return <p>{tone}</p>;\n}\n\nexport default function Own() {\n  return <Tag />;\n}\n",
-    });
-    const catalogue = await readCatalogue(root, join(root, "src"));
-    expect(catalogue.examples.map((each) => [each.id, each.controls])).toEqual([
-      ["examples/Bare", []],
-      ["examples/Broken", []],
-      ["examples/Own", []],
-      ["examples/Props", []],
-    ]);
-  });
+	it("gives none to an example that declares props, does not compile or renders no component", async () => {
+		const tag =
+			"export default function Tag({ tone }: { tone?: string }) {\n  return <p>{tone}</p>;\n}\n";
+		const example = (name: string, parameter: string, body: string) =>
+			`import Tag from "../src/Tag.uf.tsx";\n\nexport default function ${name}(${parameter}) {\n  return ${body};\n}\n`;
+		const root = project({
+			"src/Tag.uf.tsx": tag,
+			"examples/Props.example.uf.tsx": example("Props", "{ x }: { x?: string }", "<Tag />"),
+			"examples/Broken.example.uf.tsx": example("Broken", "", "<Tag tone={1} nope />"),
+			"examples/Bare.example.uf.tsx": example("Bare", "", "<p>Bare</p>"),
+			"examples/Own.example.uf.tsx":
+				"function Tag({ tone }: { tone?: string }) {\n  return <p>{tone}</p>;\n}\n\nexport default function Own() {\n  return <Tag />;\n}\n",
+		});
+		const catalogue = await readCatalogue(root, join(root, "src"));
+		expect(catalogue.examples.map((each) => [each.id, each.controls])).toEqual([
+			["examples/Bare", []],
+			["examples/Broken", []],
+			["examples/Own", []],
+			["examples/Props", []],
+		]);
+	});
 });
 
 describe("entryKey", () => {
-  // The frame names an example's entry with the prefix, since it can't import this Node module.
-  it("starts an example's key with the prefix a standalone frame reads (ADR-0112)", () => {
-    expect(entryKey("example", "examples/Card")).toBe(`${EXAMPLE_KEY_PREFIX}examples/Card`);
-  });
+	// The frame names an example's entry with the prefix, since it can't import this Node module.
+	it("starts an example's key with the prefix a standalone frame reads (ADR-0112)", () => {
+		expect(entryKey("example", "examples/Card")).toBe(`${EXAMPLE_KEY_PREFIX}examples/Card`);
+	});
 });
 
 describe("compareExamples", () => {
-  it("compares by code unit, the same on every machine", () => {
-    const sorted = [
-      { id: "b", title: "a" },
-      { id: "a", title: "B" },
-      { id: "c", title: "Ä" },
-      { id: "d", title: "a", order: 0 },
-    ].toSorted(compareExamples);
-    expect(sorted.map((each) => each.id)).toEqual(["d", "a", "b", "c"]);
-  });
+	it("compares by code unit, the same on every machine", () => {
+		const sorted = [
+			{ id: "b", title: "a" },
+			{ id: "a", title: "B" },
+			{ id: "c", title: "Ä" },
+			{ id: "d", title: "a", order: 0 },
+		].toSorted(compareExamples);
+		expect(sorted.map((each) => each.id)).toEqual(["d", "a", "b", "c"]);
+	});
 });
 
 describe("parsePreviewArguments", () => {
-  it("reads targets and the port", () => {
-    expect(parsePreviewArguments([])).toEqual({ targets: [] });
-    expect(
-      parsePreviewArguments(["--target", "react", "--target=vue", "--target", "react", "--port=0"]),
-    ).toEqual({ targets: ["react", "vue"], port: 0 });
-    expect(parsePreviewArguments(["--port", "5173"])).toEqual({ targets: [], port: 5173 });
-  });
+	it("reads targets and the port", () => {
+		expect(parsePreviewArguments([])).toEqual({ targets: [] });
+		expect(
+			parsePreviewArguments(["--target", "react", "--target=vue", "--target", "react", "--port=0"]),
+		).toEqual({ targets: ["react", "vue"], port: 0 });
+		expect(parsePreviewArguments(["--port", "5173"])).toEqual({ targets: [], port: 5173 });
+	});
 
-  it("parses unframework preview --target solid@2 to solid2, once beside solid2 (ADR-0102)", () => {
-    expect(parsePreviewArguments(["--target", "solid@2", "--target=solid2"])).toEqual({
-      targets: ["solid2"],
-    });
-  });
+	it("parses unframework preview --target solid@2 to solid2, once beside solid2 (ADR-0102)", () => {
+		expect(parsePreviewArguments(["--target", "solid@2", "--target=solid2"])).toEqual({
+			targets: ["solid2"],
+		});
+	});
 
-  it("reads build, its targets and --out", () => {
-    expect(parsePreviewArguments(["build"])).toEqual({ build: true, targets: [] });
-    expect(
-      parsePreviewArguments([
-        "build",
-        "--target",
-        "astro",
-        "--target=vue",
-        "--out",
-        "dist/preview",
-      ]),
-    ).toEqual({ build: true, targets: ["astro", "vue"], out: "dist/preview" });
-    expect(parsePreviewArguments(["build", "--out=site"])).toEqual({
-      build: true,
-      targets: [],
-      out: "site",
-    });
-    expect(parsePreviewArguments([]).build).toBeUndefined();
-  });
+	it("reads build, its targets and --out", () => {
+		expect(parsePreviewArguments(["build"])).toEqual({ build: true, targets: [] });
+		expect(
+			parsePreviewArguments([
+				"build",
+				"--target",
+				"astro",
+				"--target=vue",
+				"--out",
+				"dist/preview",
+			]),
+		).toEqual({ build: true, targets: ["astro", "vue"], out: "dist/preview" });
+		expect(parsePreviewArguments(["build", "--out=site"])).toEqual({
+			build: true,
+			targets: [],
+			out: "site",
+		});
+		expect(parsePreviewArguments([]).build).toBeUndefined();
+	});
 
-  it.each([
-    [["--target", "preact"], "unknown target preact"],
-    [["--target"], "--target needs a value"],
-    [["--port", "--target"], "--port needs a value"],
-    [["--port="], "--port needs a value"],
-    [["--port", "80.5"], "--port takes a whole number"],
-    [["--port", "65536"], "--port takes a whole number"],
-    [["--port", "1", "--port", "2"], "--port is given twice"],
-    [["--watch"], 'unknown argument "--watch"'],
-    [["--out", "site"], "--out is preview build's"],
-    [["--target", "vue", "build"], "build comes first"],
-    [["build", "build"], "build comes first"],
-    [["build", "--port", "5173"], "--port is the served preview's"],
-    [["build", "--out"], "--out needs a value"],
-    [["build", "--out="], "--out needs a value"],
-    [["build", "--out", "--target", "vue"], "--out needs a value"],
-    [["build", "--out", "a", "--out", "b"], "--out is given twice"],
-    [["build", "--target", "preact"], "unknown target preact"],
-    [["build", "site"], 'unknown argument "site"'],
-  ])("refuses %j", (args, message) => {
-    expect(() => parsePreviewArguments(args)).toThrow(VisualUsageError);
-    expect(() => parsePreviewArguments(args)).toThrow(message);
-  });
+	it.each([
+		[["--target", "preact"], "unknown target preact"],
+		[["--target"], "--target needs a value"],
+		[["--port", "--target"], "--port needs a value"],
+		[["--port="], "--port needs a value"],
+		[["--port", "80.5"], "--port takes a whole number"],
+		[["--port", "65536"], "--port takes a whole number"],
+		[["--port", "1", "--port", "2"], "--port is given twice"],
+		[["--watch"], 'unknown argument "--watch"'],
+		[["--out", "site"], "--out is preview build's"],
+		[["--target", "vue", "build"], "build comes first"],
+		[["build", "build"], "build comes first"],
+		[["build", "--port", "5173"], "--port is the served preview's"],
+		[["build", "--out"], "--out needs a value"],
+		[["build", "--out="], "--out needs a value"],
+		[["build", "--out", "--target", "vue"], "--out needs a value"],
+		[["build", "--out", "a", "--out", "b"], "--out is given twice"],
+		[["build", "--target", "preact"], "unknown target preact"],
+		[["build", "site"], 'unknown argument "site"'],
+	])("refuses %j", (args, message) => {
+		expect(() => parsePreviewArguments(args)).toThrow(VisualUsageError);
+		expect(() => parsePreviewArguments(args)).toThrow(message);
+	});
 });

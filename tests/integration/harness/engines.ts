@@ -8,12 +8,12 @@ import { FIXTURE_ENGINE_DECLARATIONS, fixtureEnginePlugin } from "./fixture-engi
 import { STYLEFRAME_DECLARATIONS, styleframePlugin } from "./styleframe.ts";
 
 /** The declarations of every engine's virtual modules, which the checkers read beside the outputs. */
-export const ENGINE_DECLARATIONS: readonly string[] = [
-  STYLEFRAME_DECLARATIONS,
-  FIXTURE_ENGINE_DECLARATIONS,
+export const ENGINE_DECLARATIONS: ReadonlyArray<string> = [
+	STYLEFRAME_DECLARATIONS,
+	FIXTURE_ENGINE_DECLARATIONS,
 ];
 
 /** A fresh set of every engine's Vite plugins, listed before the unplugin's. */
-export async function enginePlugins(): Promise<Plugin[]> {
-  return [...(await styleframePlugin()), fixtureEnginePlugin()];
+export async function enginePlugins(): Promise<Array<Plugin>> {
+	return [...(await styleframePlugin()), fixtureEnginePlugin()];
 }

@@ -102,16 +102,16 @@ For example, this child and parent, from the corpus case `fallthrough/dynamic-ro
 
 ```tsx
 export default function Base({ href, text }: { href?: string; text: string }) {
-  return (
-    <component is={href ? "a" : "button"} href={href} class="base" title="Base">
-      {text}
-    </component>
-  );
+	return (
+		<component is={href ? "a" : "button"} href={href} class="base" title="Base">
+			{text}
+		</component>
+	);
 }
 
 export default function Page() {
-  const direct = useTemplateRef<HTMLAnchorElement | HTMLButtonElement>();
-  return <Base href="#direct" text="Direct" id="direct" title="Go" onClick={go} ref={direct} />;
+	const direct = useTemplateRef<HTMLAnchorElement | HTMLButtonElement>();
+	return <Base href="#direct" text="Direct" id="direct" title="Go" onClick={go} ref={direct} />;
 }
 ```
 

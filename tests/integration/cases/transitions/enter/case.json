@@ -1,8 +1,8 @@
 {
-  "description": "`<Transition>` with the default name, `v`, around a conditional element: once it enters, it carries `v-enter-from` and `v-enter-active` before it is first painted, then `v-enter-to` without `v-enter-from`, then no class of the transition.",
-  "ssr": {
-    "closed": {
-      "props": {}
-    }
-  }
+	"description": "`<Transition>` with the default name, `v`, around a conditional element: once it enters, it carries `v-enter-from` and `v-enter-active` before it is first painted, then `v-enter-to` without `v-enter-from`, then no class of the transition.",
+	"ssr": {
+		"closed": {
+			"props": {}
+		}
+	}
 }

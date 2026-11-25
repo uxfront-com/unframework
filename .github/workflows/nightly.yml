@@ -6,9 +6,10 @@ name: Nightly
 # (ci.yml). Each engine's parity matrix goes to the job summary and to an artefact. A difference
 # fails its engine's job, and becomes an issue, never a quarantine entry.
 #
-# Every canary too (ADR-0073), in Chromium: a pull request runs them only when it changes a path
-# that can change a canary's answer (ci.yml), and this is the backstop for one that changes it
-# anyway.
+# Every canary too (ADR-0073), in Chromium: the merge queue runs them only when a group changes a
+# path that can change a canary's answer, and a pull request only when it changes the harness
+# (ci.yml, ADR-0123). This is the backstop for a change that changes one anyway, and for a merge
+# that bypasses the queue.
 on:
   schedule:
     - cron: "23 3 * * *"

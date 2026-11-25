@@ -11,14 +11,14 @@ const update = process.argv.includes("--update");
 const args = process.argv.slice(2).filter((arg) => arg !== "--update" && arg !== "--");
 
 if (update && isCI(process.env)) {
-  console.error("[uf] CI never writes artefacts: refusing `pnpm test:update` while CI is set.");
-  process.exit(1);
+	console.error("[uf] CI never writes artefacts: refusing `pnpm test:update` while CI is set.");
+	process.exit(1);
 }
 if (update && process.env.UF_CANARY) {
-  console.error(
-    "[uf] A canary run never writes artefacts: unset UF_CANARY for `pnpm test:update`.",
-  );
-  process.exit(1);
+	console.error(
+		"[uf] A canary run never writes artefacts: unset UF_CANARY for `pnpm test:update`.",
+	);
+	process.exit(1);
 }
 
 const env = { ...process.env, ...(update ? { UF_UPDATE: "1" } : {}) };

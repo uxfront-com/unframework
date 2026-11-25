@@ -2,7 +2,7 @@
 
 /** A set from a space-separated list, for the long vocabularies. */
 export function words(list: string): ReadonlySet<string> {
-  return new Set(list.split(/\s+/).filter(Boolean));
+	return new Set(list.split(/\s+/).filter(Boolean));
 }
 
 /**
@@ -11,5 +11,5 @@ export function words(list: string): ReadonlySet<string> {
  * its prototype.
  */
 export function table<T>(entries: Readonly<Record<string, T>>): ReadonlyMap<string, T> {
-  return new Map(Object.entries(entries));
+	return new Map(Object.entries(entries));
 }

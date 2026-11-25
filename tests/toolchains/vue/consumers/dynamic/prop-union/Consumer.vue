@@ -3,5 +3,5 @@ import Heading from "../../../../../integration/cases/dynamic/prop-union/__outpu
 </script>
 
 <template>
-  <Heading tag="h2" text="Setup" />
+	<Heading tag="h2" text="Setup" />
 </template>

@@ -5,11 +5,11 @@ import { NgTemplateOutlet } from "@angular/common";
 import { Component } from "@angular/core";
 
 @Component({
-  selector: "uf-outlet",
-  host: { style: "display: contents" },
-  imports: [NgTemplateOutlet],
-  template: `<ng-container *ngTemplateOutlet="content" /><ng-template #content
-      ><p>x</p></ng-template
-    >`,
+	selector: "uf-outlet",
+	host: { style: "display: contents" },
+	imports: [NgTemplateOutlet],
+	template: `<ng-container *ngTemplateOutlet="content" /><ng-template #content
+			><p>x</p></ng-template
+		>`,
 })
 export default class Outlet {}

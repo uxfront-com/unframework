@@ -8,27 +8,27 @@ import { expect } from "vitest";
 import Notice from "./Notice.uf.tsx";
 
 describeTargets("teleport/basic", () => {
-  it("mounts the notice at the end of body", { requires: ["teleport"] }, async () => {
-    const view = await mountScenario(Notice, "default");
-    await view.expectParity("default");
-    const notice = view.getByRole("status");
-    await expect.element(notice).toHaveTextContent("Your changes are saved (0)");
-    // The view's queries reach what the notice holds; the notice itself is the last of `body`.
-    expect(document.body.lastElementChild?.classList.contains("notice")).toBe(true);
-    expect(view.container.querySelector(".notice")).toBeNull();
-  });
+	it("mounts the notice at the end of body", { requires: ["teleport"] }, async () => {
+		const view = await mountScenario(Notice, "default");
+		await view.expectParity("default");
+		const notice = view.getByRole("status");
+		await expect.element(notice).toHaveTextContent("Your changes are saved (0)");
+		// The view's queries reach what the notice holds; the notice itself is the last of `body`.
+		expect(document.body.lastElementChild?.classList.contains("notice")).toBe(true);
+		expect(view.container.querySelector(".notice")).toBeNull();
+	});
 
-  it(
-    "updates the state shown in place from a click inside the notice",
-    { requires: ["teleport", "interactivity"] },
-    async () => {
-      const view = await mountScenario(Notice, "default");
-      await view.user.click(view.getByRole("button", { name: "Dismiss" }));
-      await view.expectParity("dismissed");
-      await expect.element(view.getByText("Dismissed 1 times")).toBeVisible();
-      await expect
-        .element(view.getByRole("status"))
-        .toHaveTextContent("Your changes are saved (1)");
-    },
-  );
+	it(
+		"updates the state shown in place from a click inside the notice",
+		{ requires: ["teleport", "interactivity"] },
+		async () => {
+			const view = await mountScenario(Notice, "default");
+			await view.user.click(view.getByRole("button", { name: "Dismiss" }));
+			await view.expectParity("dismissed");
+			await expect.element(view.getByText("Dismissed 1 times")).toBeVisible();
+			await expect
+				.element(view.getByRole("status"))
+				.toHaveTextContent("Your changes are saved (1)");
+		},
+	);
 });

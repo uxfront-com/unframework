@@ -3,4 +3,4 @@
 import type { QuarantineEntry } from "@unframework.dev/testing/node";
 
 /** Empty: every live layer is green on Vue. */
-export const QUARANTINE: readonly QuarantineEntry[] = [];
+export const QUARANTINE: ReadonlyArray<QuarantineEntry> = [];

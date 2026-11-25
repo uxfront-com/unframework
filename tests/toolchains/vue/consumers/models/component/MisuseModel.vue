@@ -7,6 +7,6 @@ const cups = ref("two");
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Stepper.model:value -->
-  <Stepper v-model:value="cups" label="Cups" />
+	<!-- @uf-expect TS2322 Stepper.model:value -->
+	<Stepper v-model:value="cups" label="Cups" />
 </template>

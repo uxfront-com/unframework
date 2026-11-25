@@ -1,46 +1,46 @@
 import {
-  addPassThroughImports,
-  addTypeImports,
-  componentTypes,
-  defineTarget,
-  directiveSpecifier,
-  hookQueueCode,
-  importedDirectives,
-  ownDirectives,
-  moduleHelperName,
-  exportDeclaration,
-  exportsOf,
-  ImportSet,
-  js,
-  jsxContext,
-  jsxNode,
-  NameScope,
-  Placeholders,
-  printComponentModule,
-  sourceNames,
-  typeExportsCode,
+	addPassThroughImports,
+	addTypeImports,
+	componentTypes,
+	defineTarget,
+	directiveSpecifier,
+	hookQueueCode,
+	importedDirectives,
+	ownDirectives,
+	moduleHelperName,
+	exportDeclaration,
+	exportsOf,
+	ImportSet,
+	js,
+	jsxContext,
+	jsxNode,
+	NameScope,
+	Placeholders,
+	printComponentModule,
+	sourceNames,
+	typeExportsCode,
 } from "@unframework.dev/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type { Span, TypeDeclaration, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import {
-  addComposableImports,
-  emitComposable,
-  moduleReads,
-  moduleValueNames,
+	addComposableImports,
+	emitComposable,
+	moduleReads,
+	moduleValueNames,
 } from "./composable.ts";
 import { SolidComposition } from "./composition.ts";
 import { emitDirective, factoryCode, QUEUE_HELPER } from "./directive.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, REF_HELPER, STATE_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import {
-  CLASS_HELPER,
-  ENUMERATED_HELPER,
-  KEYED_HELPER,
-  SCOPE_HELPER,
-  solidJsx,
-  STYLE_HELPER,
-  TELEPORT_HELPER,
+	CLASS_HELPER,
+	ENUMERATED_HELPER,
+	KEYED_HELPER,
+	SCOPE_HELPER,
+	solidJsx,
+	STYLE_HELPER,
+	TELEPORT_HELPER,
 } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
 import { ModelHelpers, modelRef } from "./models.ts";
@@ -50,11 +50,11 @@ import { forSolid } from "./render.ts";
 import { SolidCode, solidSetup } from "./setup.ts";
 import type { SolidResource } from "./setup.ts";
 import {
-  printHelper,
-  reserveSharedNames,
-  SHARED_HELPER_NAMES,
-  sharedName,
-  SharedHelpers,
+	printHelper,
+	reserveSharedNames,
+	SHARED_HELPER_NAMES,
+	sharedName,
+	SharedHelpers,
 } from "./shared-names.ts";
 import { importShared } from "./shared.ts";
 
@@ -67,373 +67,387 @@ type Statement = Parameters<typeof js.blockStatement>[0][number];
  * they are.
  */
 export const solid2: Target = defineTarget({
-  name: "solid2",
-  framework: { package: "solid-js", range: ">=2 <3" },
-  capabilities: {
-    element: { support: "native" },
-    text: { support: "native" },
-    "static-attribute": { support: "native" },
-    listbox: { support: "native" },
-    // Solid 2 lets a read see a write only once it flushes, which an effect's callback or
-    // `onSettled` cannot ask for: state goes through a shared helper, `createState`, whose read
-    // returns the last write. A watcher and a `watchEffect` go through inline helpers whose
-    // scheduler calls each back once per synchronous run of client code, with Vue's previous
-    // value, change test and cleanup timing (ADR-0048, ADR-0102).
-    interactivity: {
-      support: "emulated",
-      helper: WATCHER_HELPER,
-      note: "Solid 2 lets a read see a write only once it flushes, so state goes through a shared helper, createState, a signal whose read returns the last value written, inline where the component has watchers, since its write requests their flush; derived values are functions, listeners event props and hooks onSettled, and a template ref is emptied with its element through a shared clearedRef, as Solid 2 refuses onCleanup in a ref callback. A watcher and a watchEffect go through inline helpers over createReaction, whose scheduler is queued at the write and calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
-    },
-    // A listener with an option is a native listener with its options (`on:click={{ … }}`).
-    "event-capture": { support: "native" },
-    "event-once": { support: "native" },
-    "event-passive": { support: "native" },
-    // Solid's compiler delegates 22 events (`click`, `input`, `keydown`…) to one listener on the
-    // document, which walks the event's path from its target, so their order and
-    // `stopPropagation()` hold among them; it listens natively to every other event (`focus`,
-    // `blur`, `change`, `submit`), which keeps its own DOM semantics. Where a component also
-    // listens natively to a delegated event after its target, all its listeners of that event
-    // are native (src/listeners.ts, ADR-0047).
-    "event-semantics": { support: "native" },
-    // Listeners run their handlers as the event is dispatched, controls and calls included.
-    "conditional-event-control": { support: "native" },
-    "use-id": { support: "native" },
-    // Solid 2 applies writes on a microtask, which queues the watchers' run.
-    "next-tick": {
-      support: "emulated",
-      helper: NEXT_TICK_HELPER,
-      note: "Solid has no nextTick: it applies writes on a microtask queued at the first write, which queues the watchers' run, so a shared helper resolves a promise two microtasks on.",
-    },
-    // The props proxy reads each key live, whatever keys a parent passes.
-    "late-prop": { support: "native" },
-    props: { support: "native" },
-    interpolation: { support: "native" },
-    conditional: { support: "native" },
-    list: { support: "native" },
-    fragment: { support: "native" },
-    // Solid 2 writes a boolean as the attribute's presence; Vue writes an enumerated attribute's
-    // boolean as its name, `aria-expanded="false"` (ADR-0102).
-    "bound-attribute": {
-      support: "emulated",
-      helper: ENUMERATED_HELPER,
-      note: 'Solid 2 writes a boolean as an attribute\'s presence, where Vue writes the boolean of an ARIA attribute and of contenteditable, draggable and spellcheck as its name. So such a value goes through a shared helper, enumeratedValue, that writes "true" or "false" and passes any other value as it is.',
-    },
-    // Static names and toggles print as Solid 2's own `class` array, and a shared helper joins
-    // dynamic parts into one string, as a component's `class` prop takes it (ADR-0038).
-    "class-binding": {
-      support: "emulated",
-      helper: CLASS_HELPER,
-      note: "Static names and toggles print as Solid 2's own class array, class={[\"a b\", { on: active() }]}; a dynamic part goes through a helper shared in the tree's _unframework/ that joins them into one string, as a component's class prop takes it.",
-    },
-    "style-binding": {
-      support: "emulated",
-      helper: STYLE_HELPER,
-      note: "Solid's style takes kebab-case keys, so a style bound to a value goes through a shared helper, `styleProperties`, that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
-    },
-    "attribute-spread": {
-      support: "emulated",
-      helper: ENUMERATED_HELPER,
-      note: "A spread is written out per key, and an ARIA or enumerated key goes through enumeratedValue, as a bound one does, so a boolean is written as its name.",
-    },
-    "raw-html": { support: "native" },
-    svg: { support: "native" },
-    component: { support: "native" },
-    "component-event": { support: "native" },
-    "default-slot": { support: "native" },
-    "named-slot": { support: "native" },
-    "scoped-slot": { support: "native" },
-    "slot-fallback": { support: "native" },
-    "default-slot-presence": { support: "native" },
-    "slot-forwarding": { support: "native" },
-    model: { support: "native" },
-    "two-way-binding": { support: "native" },
-    "model-array": {
-      support: "emulated",
-      helper: "toggle",
-      note: "A checkbox group's array goes through an inline helper, `toggle`, a multiple select's through an inline `selectedValues`, and the options of a select that a component, a slot or an interpolation renders through a shared `selectOptions`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
-    },
-    "model-modifiers": {
-      support: "emulated",
-      helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
-    },
-    // Solid 2's `omit` leaves what a component declares out of its props, and its root spreads
-    // the others after its own attributes, its own listeners calling the consumer's (ADR-0118,
-    // src/fallthrough.ts).
-    fallthrough: { support: "native" },
-    "contextual-root": { support: "native" },
-    // `props.ref?.(api)` in `untrack`, and on a component that exposes nothing, the root element:
-    // Solid passes `ref` as a prop, which the root's spread hands the element (ADR-0118).
-    expose: { support: "native" },
-    context: { support: "native" },
-    "reactive-context": {
-      support: "emulated",
-      helper: "refObject",
-      note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
-    },
-    "dynamic-component": { support: "native" },
-    "scoped-styles": { support: "native" },
-    // The child's root picks its styled parents' `data-uf-*` attributes out of its props
-    // (ADR-0063): their names are the parents', which the child cannot know.
-    "child-root-scope": {
-      support: "emulated",
-      helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so a root that takes what falls through takes them with it, and a shared helper, `scopeAttributes`, picks them out of its props by name for any other root: each branch of a root conditional, a root <component is>, and the root of a component that spreads the props' rest on another element, whose rest leaves them out by rule with Solid 2's `omit`, as Vue's fallthrough reaches them.",
-    },
-    "slotted-styles": { support: "native" },
-    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
-    "sheet-order": { support: "native" },
-    "generic-components": { support: "native" },
-    "generic-slot-props": { support: "native" },
-    composables: { support: "native" },
-    // A composable's module has its own watcher queue (ADR-0069).
-    "composable-effect-order": {
-      support: "unsupported",
-      code: "UF4005",
-      severity: "info",
-      reason:
-        "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
-    },
-    hydration: { support: "native" },
-    // One async `createMemo` runs the awaits, and the rest of the setup and the template wait for
-    // it in a keyed `<Show>` callback inside `<Loading>` (ADR-0101, ADR-0102). Declared on the
-    // targets page: Solid 2 hydrates the subtree in place with the values its server render
-    // serializes, so after hydration the awaits don't run again; the rest of the setup does.
-    "async-setup": { support: "native" },
-    // `<For>` follows the items themselves, so a list goes through a shared helper whose rows
-    // follow the source's key (ADR-0096).
-    "keyed-identity": {
-      support: "emulated",
-      helper: KEYED_HELPER,
-      note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through a shared helper, `KeyedFor`, over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
-    },
-    // `<Portal>` throws on the server and renders where it is created (ADR-0098, ADR-0102).
-    // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through a shared queue
-    // in Vue's order: Solid runs a parent's ref before its children's (ADR-0099).
-    directive: {
-      support: "emulated",
-      helper: QUEUE_HELPER,
-      note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
-    },
-    // Solid's transitions are a package of their own, which no output imports (P7, ADR-0100).
-    transition: {
-      support: "emulated",
-      helper: "Transition",
-      note: "A `<Transition>` is a shared component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
-    },
-    teleport: {
-      support: "emulated",
-      helper: TELEPORT_HELPER,
-      note: "Solid 2's <Portal> inserts its content with no wrapper, but throws on the server and renders where it is created, so a `<Teleport>` goes through an inline helper, `Teleport`, that renders a <Portal> into `to` once the component has mounted, the teleports in the order they rendered (ADR-0098).",
-    },
-  },
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // Every name the source declares or reads is taken before the output claims its own
-    // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035); so is
-    // every name the module declares for its components to read, which keep theirs (ADR-0070).
-    const names = sourceNames(component, context.module);
-    for (const name of freeNames(component, names)) names.delete(name);
-    for (const name of moduleValueNames(context.module)) names.add(name);
-    // With `helper`, the helpers one text serves are shared modules (ADR-0121); without it, inline.
-    // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-    // the helpers it prints inline from bases of its own (`cx_1`), past the names any other
-    // component declares.
-    const shared = context.helper ? new SharedHelpers() : undefined;
-    const watches = component.setup.some(
-      (item) => item.kind === "Watch" || item.kind === "WatchEffect",
-    );
-    const index = context.module.components.findIndex((each) => each.name === component.name);
-    const reserved = context.module.components.map((each) => {
-      const taken = sourceNames(each, context.module);
-      for (const name of freeNames(each, taken)) taken.delete(name);
-      return taken;
-    });
-    const bases = [
-      CLASS_HELPER,
-      ENUMERATED_HELPER,
-      SCOPE_HELPER,
-      STYLE_HELPER,
-      KEYED_HELPER,
-      TELEPORT_HELPER,
-      QUEUE_HELPER,
-      STATE_HELPER,
-      REF_HELPER,
-    ]
-      .filter(
-        (helper) =>
-          !shared || !SHARED_HELPER_NAMES.includes(helper) || (helper === STATE_HELPER && watches),
-      )
-      .map((helper) => {
-        const { base, others } = moduleHelperName(helper, reserved, index);
-        for (const name of others) names.add(name);
-        return [helper, base] as const;
-      });
-    // A shared helper (ADR-0121) is imported by every component of the source under one name,
-    // the module's own unless a component declares it, so their imports are one line in the join.
-    if (shared) reserveSharedNames(names, reserved);
-    // A component with watchers prints its own `createState`, whose write requests their flush
-    // (R1): from its base, past the name the others import the shared one under, where the
-    // source has others.
-    if (shared && watches && reserved.length > 1) {
-      names.add(sharedName(STATE_HELPER, reserved, moduleValueNames(context.module)));
-    }
-    const scope = new NameScope(names);
-    for (const [helper, base] of bases) scope.rebase(helper, base);
-    const imports = new ImportSet(scope);
-    // The imports that pass through, which the render reads as written (ADR-0064).
-    addPassThroughImports(component, context.module, imports);
-    // The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
-    addTypeImports(component, context.module, imports, (name) => name);
-    // The composables it calls, from their outputs (ADR-0069).
-    addComposableImports(component, context.module, imports);
-    // The directives it applies from `.uf.ts` modules, from their outputs (ADR-0099).
-    for (const { specifier, imported, local } of importedDirectives(component, context.module)) {
-      imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
-    }
-    const placeholders = new Placeholders();
-    const composition = new SolidComposition(component, context.module, imports);
-    const props = solidProps(component, imports, placeholders, {
-      types: composition.parameterTypes(),
-      reads: composition.reads,
-    });
-    const code = new SolidCode(component, imports, props, composition, shared);
-    const setup = solidSetup(code, placeholders);
-    const types = componentTypes(component, context.module);
-    // The branch callbacks around what prints, which listeners read through too.
-    const narrowings = new Narrowings(
-      imports,
-      names,
-      component,
-      new BindingTypes(component, context.module.types),
-    );
-    const models = new ModelHelpers(imports, shared);
-    // What falls through (ADR-0118): the props but what the component declares and what the
-    // element that takes them merges itself, `const others = omit(props, "title");`.
-    const { plan } = composition;
-    const split = plan?.target && (plan.split.length || plan.unscoped) ? plan.split : undefined;
-    // The elements that spread what falls through render through `ssrElement`.
-    const spreads = [
-      ...(plan?.target ? [plan.target.span] : []),
-      ...(plan?.root && plan.rootScope ? [plan.root.span] : []),
-    ];
-    const others = split ? imports.claim(plan!.rest ? "rest" : "others") : props.object;
-    // Where the rest's element is not the root, it leaves out the styled parents' scope
-    // attributes too, by rule: no name lists them (ADR-0063). `solid/reactivity` reads a view
-    // `omit` returns only through a variable.
-    const omit = () => code.solid("omit");
-    const named = split?.length
-      ? `${omit()}(${props.object!}, ${split.map((name) => JSON.stringify(name)).join(", ")})`
-      : props.object!;
-    const splitStatements = split
-      ? [
-          placeholders.statements(
-            `const ${others} = ${plan!.unscoped ? `${omit()}(${named}, (name) => String(name).startsWith("data-uf-"))` : named};\n`,
-          ),
-        ]
-      : [];
-    const listeners = solidListeners(
-      code,
-      imports,
-      placeholders,
-      narrowings,
-      (element, context) => modelRef(element, context, code, models),
-      // A root element that takes the consumer's `ref` beside its own callback (ADR-0118).
-      (element) =>
-        plan?.root?.kind === "Element" &&
-        plan.root.span.start === element.span.start &&
-        plan.root.span.end === element.span.end
-          ? `${props.object!}.ref`
-          : undefined,
-    );
-    const { dialect, helpers } = solidJsx(
-      imports,
-      narrowings,
-      [component.propsParameter?.type.code ?? "", ...types.map((declaration) => declaration.code)],
-      listeners,
-      { code, composition, object: props.object, models, others },
-    );
-    const jsx = jsxContext({
-      component,
-      module: context.module,
-      dialect,
-      rules: code.rules,
-      placeholders,
-      includeKeys: false,
-    });
-    const object = props.object ?? "";
-    const exposed = composition.expose(object);
-    const body = [
-      ...composition.statements(object).map((text) => placeholders.statements(text)),
-      ...setup.statements,
-      ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
-      js.returnStatement(rendered(component, code, narrowings.types, jsx, spreads)),
-    ];
-    const { resource } = setup;
-    const fn = js.functionDeclaration(component.name, props.parameters, [
-      ...props.statements,
-      ...splitStatements,
-      ...(resource
-        ? [...resource.statements, js.returnStatement(pending(resource, body, code))]
-        : body),
-    ]);
-    // A generic component is a generic function, `function List<T>(…)` (ADR-0068).
-    fn.typeParameters = typeParameterDeclaration(component, placeholders);
-    const statements = exportDeclaration(
-      component.name,
-      fn,
-      exportsOf(component.name, context.module.exports),
-    );
-    const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
-    // The module's own directives it applies, as ref factories, with the queue they run their
-    // hooks through (ADR-0099).
-    const own = ownDirectives(component, context.module);
-    const queue = own.length ? { name: scope.claim(QUEUE_HELPER) } : undefined;
-    const directives = queue
-      ? own.map((directive) =>
-          placeholders.statements(
-            `${factoryCode(directive, { solid: (name) => code.solid(name), queue: queue.name })}\n`,
-          ),
-        )
-      : [];
-    // What it reads of its module: its imported values and its constants (ADR-0070).
-    const reads = moduleReads(component.name, context.module, imports, placeholders);
-    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
-    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
-    // component's style after its script.
-    const file = context.module.file;
-    const sheet = component.styles
-      ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
-      : [];
-    const printed = [
-      ...helpers(),
-      ...code.helpers(),
-      ...(queue ? printHelper(shared, QUEUE_HELPER, queue.name, hookQueueCode) : []),
-    ];
-    const path = `${component.name}.tsx`;
-    if (context.helper && shared) importShared(context.helper, path, imports, shared.used);
-    return [
-      {
-        path,
-        contents: printComponentModule(
-          {
-            types: [
-              ...moduleTypes(component, context.module, [...types, ...reads.types]),
-              ...(props.events ? [props.events] : []),
-              ...composition.types,
-            ],
-            body: [...keys, ...reads.constants, ...directives, ...setup.hoisted, ...statements],
-            helpers: [...printed],
-            // Collected last: the helpers import what they call.
-            imports: [...imports.toDeclarations(), ...sheet],
-            placeholders,
-          },
-          { jsx: true },
-        ),
-      },
-    ];
-  },
-  emitComposable,
-  emitDirective,
+	name: "solid2",
+	framework: { package: "solid-js", range: ">=2 <3" },
+	capabilities: {
+		element: { support: "native" },
+		text: { support: "native" },
+		"static-attribute": { support: "native" },
+		listbox: { support: "native" },
+		// Solid 2 lets a read see a write only once it flushes, which an effect's callback or
+		// `onSettled` cannot ask for: state goes through a shared helper, `createState`, whose read
+		// returns the last write. A watcher and a `watchEffect` go through inline helpers whose
+		// scheduler calls each back once per synchronous run of client code, with Vue's previous
+		// value, change test and cleanup timing (ADR-0048, ADR-0102).
+		interactivity: {
+			support: "emulated",
+			helper: WATCHER_HELPER,
+			note: "Solid 2 lets a read see a write only once it flushes, so state goes through a shared helper, createState, a signal whose read returns the last value written, inline where the component has watchers, since its write requests their flush; derived values are functions, listeners event props and hooks onSettled, and a template ref is emptied with its element through a shared clearedRef, as Solid 2 refuses onCleanup in a ref callback. A watcher and a watchEffect go through inline helpers over createReaction, whose scheduler is queued at the write and calls each back once per synchronous run of client code, with Vue's previous value, change test and cleanup timing.",
+		},
+		// A listener with an option is a native listener with its options (`on:click={{ … }}`).
+		"event-capture": { support: "native" },
+		"event-once": { support: "native" },
+		"event-passive": { support: "native" },
+		// Solid's compiler delegates 22 events (`click`, `input`, `keydown`…) to one listener on the
+		// document, which walks the event's path from its target, so their order and
+		// `stopPropagation()` hold among them; it listens natively to every other event (`focus`,
+		// `blur`, `change`, `submit`), which keeps its own DOM semantics. Where a component also
+		// listens natively to a delegated event after its target, all its listeners of that event
+		// are native (src/listeners.ts, ADR-0047).
+		"event-semantics": { support: "native" },
+		// Listeners run their handlers as the event is dispatched, controls and calls included.
+		"conditional-event-control": { support: "native" },
+		"use-id": { support: "native" },
+		// Solid 2 applies writes on a microtask, which queues the watchers' run.
+		"next-tick": {
+			support: "emulated",
+			helper: NEXT_TICK_HELPER,
+			note: "Solid has no nextTick: it applies writes on a microtask queued at the first write, which queues the watchers' run, so a shared helper resolves a promise two microtasks on.",
+		},
+		// The props proxy reads each key live, whatever keys a parent passes.
+		"late-prop": { support: "native" },
+		props: { support: "native" },
+		interpolation: { support: "native" },
+		conditional: { support: "native" },
+		list: { support: "native" },
+		fragment: { support: "native" },
+		// Solid 2 writes a boolean as the attribute's presence; Vue writes an enumerated attribute's
+		// boolean as its name, `aria-expanded="false"` (ADR-0102).
+		"bound-attribute": {
+			support: "emulated",
+			helper: ENUMERATED_HELPER,
+			note: 'Solid 2 writes a boolean as an attribute\'s presence, where Vue writes the boolean of an ARIA attribute and of contenteditable, draggable and spellcheck as its name. So such a value goes through a shared helper, enumeratedValue, that writes "true" or "false" and passes any other value as it is.',
+		},
+		// Static names and toggles print as Solid 2's own `class` array, and a shared helper joins
+		// dynamic parts into one string, as a component's `class` prop takes it (ADR-0038).
+		"class-binding": {
+			support: "emulated",
+			helper: CLASS_HELPER,
+			note: "Static names and toggles print as Solid 2's own class array, class={[\"a b\", { on: active() }]}; a dynamic part goes through a helper shared in the tree's _unframework/ that joins them into one string, as a component's class prop takes it.",
+		},
+		"style-binding": {
+			support: "emulated",
+			helper: STYLE_HELPER,
+			note: "Solid's style takes kebab-case keys, so a style bound to a value goes through a shared helper, `styleProperties`, that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+		},
+		"attribute-spread": {
+			support: "emulated",
+			helper: ENUMERATED_HELPER,
+			note: "A spread is written out per key, and an ARIA or enumerated key goes through enumeratedValue, as a bound one does, so a boolean is written as its name.",
+		},
+		"raw-html": { support: "native" },
+		svg: { support: "native" },
+		component: { support: "native" },
+		"component-event": { support: "native" },
+		"default-slot": { support: "native" },
+		"named-slot": { support: "native" },
+		"scoped-slot": { support: "native" },
+		"slot-fallback": { support: "native" },
+		"default-slot-presence": { support: "native" },
+		"slot-forwarding": { support: "native" },
+		model: { support: "native" },
+		"two-way-binding": { support: "native" },
+		"model-array": {
+			support: "emulated",
+			helper: "toggle",
+			note: "A checkbox group's array goes through an inline helper, `toggle`, a multiple select's through an inline `selectedValues`, and the options of a select that a component, a slot or an interpolation renders through a shared `selectOptions`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
+		},
+		"model-modifiers": {
+			support: "emulated",
+			helper: "modelText",
+			note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
+		},
+		// Solid 2's `omit` leaves what a component declares out of its props, and its root spreads
+		// the others after its own attributes, its own listeners calling the consumer's (ADR-0118,
+		// src/fallthrough.ts).
+		fallthrough: { support: "native" },
+		"contextual-root": { support: "native" },
+		// `props.ref?.(api)` in `untrack`, and on a component that exposes nothing, the root element:
+		// Solid passes `ref` as a prop, which the root's spread hands the element (ADR-0118).
+		expose: { support: "native" },
+		context: { support: "native" },
+		"reactive-context": {
+			support: "emulated",
+			helper: "refObject",
+			note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
+		},
+		"dynamic-component": { support: "native" },
+		"scoped-styles": { support: "native" },
+		// The child's root picks its styled parents' `data-uf-*` attributes out of its props
+		// (ADR-0063): their names are the parents', which the child cannot know.
+		"child-root-scope": {
+			support: "emulated",
+			helper: SCOPE_HELPER,
+			note: "A child cannot know the scope attributes its styled parents pass, so a root that takes what falls through takes them with it, and a shared helper, `scopeAttributes`, picks them out of its props by name for any other root: each branch of a root conditional, a root <component is>, and the root of a component that spreads the props' rest on another element, whose rest leaves them out by rule with Solid 2's `omit`, as Vue's fallthrough reaches them.",
+		},
+		"slotted-styles": { support: "native" },
+		// A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+		"sheet-order": { support: "native" },
+		"generic-components": { support: "native" },
+		"generic-slot-props": { support: "native" },
+		composables: { support: "native" },
+		// A composable's module has its own watcher queue (ADR-0069).
+		"composable-effect-order": {
+			support: "unsupported",
+			code: "UF4005",
+			severity: "info",
+			reason:
+				"A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
+		},
+		hydration: { support: "native" },
+		// One async `createMemo` runs the awaits, and the rest of the setup and the template wait for
+		// it in a keyed `<Show>` callback inside `<Loading>` (ADR-0101, ADR-0102). Declared on the
+		// targets page: Solid 2 hydrates the subtree in place with the values its server render
+		// serializes, so after hydration the awaits don't run again; the rest of the setup does.
+		"async-setup": { support: "native" },
+		// `<For>` follows the items themselves, so a list goes through a shared helper whose rows
+		// follow the source's key (ADR-0096).
+		"keyed-identity": {
+			support: "emulated",
+			helper: KEYED_HELPER,
+			note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through a shared helper, `KeyedFor`, over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
+		},
+		// `<Portal>` throws on the server and renders where it is created (ADR-0098, ADR-0102).
+		// A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through a shared queue
+		// in Vue's order: Solid runs a parent's ref before its children's (ADR-0099).
+		directive: {
+			support: "emulated",
+			helper: QUEUE_HELPER,
+			note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+		},
+		// Solid's transitions are a package of their own, which no output imports (P7, ADR-0100).
+		transition: {
+			support: "emulated",
+			helper: "Transition",
+			note: "A `<Transition>` is a shared component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
+		},
+		teleport: {
+			support: "emulated",
+			helper: TELEPORT_HELPER,
+			note: "Solid 2's <Portal> inserts its content with no wrapper, but throws on the server and renders where it is created, so a `<Teleport>` goes through an inline helper, `Teleport`, that renders a <Portal> into `to` once the component has mounted, the teleports in the order they rendered (ADR-0098).",
+		},
+	},
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
+		// Every name the source declares or reads is taken before the output claims its own
+		// (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035); so is
+		// every name the module declares for its components to read, which keep theirs (ADR-0070).
+		const names = sourceNames(component, context.module);
+		for (const name of freeNames(component, names)) {
+			names.delete(name);
+		}
+		for (const name of moduleValueNames(context.module)) {
+			names.add(name);
+		}
+		// With `helper`, the helpers one text serves are shared modules (ADR-0121); without it, inline.
+		// A source's components are joined into one module where it is loaded (ADR-0053): each claims
+		// the helpers it prints inline from bases of its own (`cx_1`), past the names any other
+		// component declares.
+		const shared = context.helper ? new SharedHelpers() : undefined;
+		const watches = component.setup.some(
+			(item) => item.kind === "Watch" || item.kind === "WatchEffect",
+		);
+		const index = context.module.components.findIndex((each) => each.name === component.name);
+		const reserved = context.module.components.map((each) => {
+			const taken = sourceNames(each, context.module);
+			for (const name of freeNames(each, taken)) {
+				taken.delete(name);
+			}
+			return taken;
+		});
+		const bases = [
+			CLASS_HELPER,
+			ENUMERATED_HELPER,
+			SCOPE_HELPER,
+			STYLE_HELPER,
+			KEYED_HELPER,
+			TELEPORT_HELPER,
+			QUEUE_HELPER,
+			STATE_HELPER,
+			REF_HELPER,
+		]
+			.filter(
+				(helper) =>
+					!shared || !SHARED_HELPER_NAMES.includes(helper) || (helper === STATE_HELPER && watches),
+			)
+			.map((helper) => {
+				const { base, others } = moduleHelperName(helper, reserved, index);
+				for (const name of others) {
+					names.add(name);
+				}
+				return [helper, base] as const;
+			});
+		// A shared helper (ADR-0121) is imported by every component of the source under one name,
+		// the module's own unless a component declares it, so their imports are one line in the join.
+		if (shared) {
+			reserveSharedNames(names, reserved);
+		}
+		// A component with watchers prints its own `createState`, whose write requests their flush
+		// (R1): from its base, past the name the others import the shared one under, where the
+		// source has others.
+		if (shared && watches && reserved.length > 1) {
+			names.add(sharedName(STATE_HELPER, reserved, moduleValueNames(context.module)));
+		}
+		const scope = new NameScope(names);
+		for (const [helper, base] of bases) {
+			scope.rebase(helper, base);
+		}
+		const imports = new ImportSet(scope);
+		// The imports that pass through, which the render reads as written (ADR-0064).
+		addPassThroughImports(component, context.module, imports);
+		// The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
+		addTypeImports(component, context.module, imports, (name) => name);
+		// The composables it calls, from their outputs (ADR-0069).
+		addComposableImports(component, context.module, imports);
+		// The directives it applies from `.uf.ts` modules, from their outputs (ADR-0099).
+		for (const { specifier, imported, local } of importedDirectives(component, context.module)) {
+			imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+		}
+		const placeholders = new Placeholders();
+		const composition = new SolidComposition(component, context.module, imports);
+		const props = solidProps(component, imports, placeholders, {
+			types: composition.parameterTypes(),
+			reads: composition.reads,
+		});
+		const code = new SolidCode(component, imports, props, composition, shared);
+		const setup = solidSetup(code, placeholders);
+		const types = componentTypes(component, context.module);
+		// The branch callbacks around what prints, which listeners read through too.
+		const narrowings = new Narrowings(
+			imports,
+			names,
+			component,
+			new BindingTypes(component, context.module.types),
+		);
+		const models = new ModelHelpers(imports, shared);
+		// What falls through (ADR-0118): the props but what the component declares and what the
+		// element that takes them merges itself, `const others = omit(props, "title");`.
+		const { plan } = composition;
+		const split = plan?.target && (plan.split.length || plan.unscoped) ? plan.split : undefined;
+		// The elements that spread what falls through render through `ssrElement`.
+		const spreads = [
+			...(plan?.target ? [plan.target.span] : []),
+			...(plan?.root && plan.rootScope ? [plan.root.span] : []),
+		];
+		const others = split ? imports.claim(plan!.rest ? "rest" : "others") : props.object;
+		// Where the rest's element is not the root, it leaves out the styled parents' scope
+		// attributes too, by rule: no name lists them (ADR-0063). `solid/reactivity` reads a view
+		// `omit` returns only through a variable.
+		const omit = () => code.solid("omit");
+		const named = split?.length
+			? `${omit()}(${props.object!}, ${split.map((name) => JSON.stringify(name)).join(", ")})`
+			: props.object!;
+		const splitStatements = split
+			? [
+					placeholders.statements(
+						`const ${others} = ${plan!.unscoped ? `${omit()}(${named}, (name) => String(name).startsWith("data-uf-"))` : named};\n`,
+					),
+				]
+			: [];
+		const listeners = solidListeners(
+			code,
+			imports,
+			placeholders,
+			narrowings,
+			(element, context) => modelRef(element, context, code, models),
+			// A root element that takes the consumer's `ref` beside its own callback (ADR-0118).
+			(element) =>
+				plan?.root?.kind === "Element" &&
+				plan.root.span.start === element.span.start &&
+				plan.root.span.end === element.span.end
+					? `${props.object!}.ref`
+					: undefined,
+		);
+		const { dialect, helpers } = solidJsx(
+			imports,
+			narrowings,
+			[component.propsParameter?.type.code ?? "", ...types.map((declaration) => declaration.code)],
+			listeners,
+			{ code, composition, object: props.object, models, others },
+		);
+		const jsx = jsxContext({
+			component,
+			module: context.module,
+			dialect,
+			rules: code.rules,
+			placeholders,
+			includeKeys: false,
+		});
+		const object = props.object ?? "";
+		const exposed = composition.expose(object);
+		const body = [
+			...composition.statements(object).map((text) => placeholders.statements(text)),
+			...setup.statements,
+			...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
+			js.returnStatement(rendered(component, code, narrowings.types, jsx, spreads)),
+		];
+		const { resource } = setup;
+		const fn = js.functionDeclaration(component.name, props.parameters, [
+			...props.statements,
+			...splitStatements,
+			...(resource
+				? [...resource.statements, js.returnStatement(pending(resource, body, code))]
+				: body),
+		]);
+		// A generic component is a generic function, `function List<T>(…)` (ADR-0068).
+		fn.typeParameters = typeParameterDeclaration(component, placeholders);
+		const statements = exportDeclaration(
+			component.name,
+			fn,
+			exportsOf(component.name, context.module.exports),
+		);
+		const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
+		// The module's own directives it applies, as ref factories, with the queue they run their
+		// hooks through (ADR-0099).
+		const own = ownDirectives(component, context.module);
+		const queue = own.length ? { name: scope.claim(QUEUE_HELPER) } : undefined;
+		const directives = queue
+			? own.map((directive) =>
+					placeholders.statements(
+						`${factoryCode(directive, { solid: (name) => code.solid(name), queue: queue.name })}\n`,
+					),
+				)
+			: [];
+		// What it reads of its module: its imported values and its constants (ADR-0070).
+		const reads = moduleReads(component.name, context.module, imports, placeholders);
+		// The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+		// the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+		// component's style after its script.
+		const file = context.module.file;
+		const sheet = component.styles
+			? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
+			: [];
+		const printed = [
+			...helpers(),
+			...code.helpers(),
+			...(queue ? printHelper(shared, QUEUE_HELPER, queue.name, hookQueueCode) : []),
+		];
+		const path = `${component.name}.tsx`;
+		if (context.helper && shared) {
+			importShared(context.helper, path, imports, shared.used);
+		}
+		return [
+			{
+				path,
+				contents: printComponentModule(
+					{
+						types: [
+							...moduleTypes(component, context.module, [...types, ...reads.types]),
+							...(props.events ? [props.events] : []),
+							...composition.types,
+						],
+						body: [...keys, ...reads.constants, ...directives, ...setup.hoisted, ...statements],
+						helpers: [...printed],
+						// Collected last: the helpers import what they call.
+						imports: [...imports.toDeclarations(), ...sheet],
+						placeholders,
+					},
+					{ jsx: true },
+				),
+			},
+		];
+	},
+	emitComposable,
+	emitDirective,
 });
 
 /**
@@ -442,36 +456,38 @@ export const solid2: Target = defineTarget({
  * as it is, not in a fragment.
  */
 function rendered(
-  component: UfComponent,
-  code: SolidCode,
-  types: BindingTypes,
-  context: JsxContext,
-  spreads: readonly Span[],
+	component: UfComponent,
+	code: SolidCode,
+	types: BindingTypes,
+	context: JsxContext,
+	spreads: ReadonlyArray<Span>,
 ): JsxExpression {
-  const render = forSolid(component, code.rules, types, spreads);
-  const [only] = render.children;
-  const root =
-    render.kind === "Fragment" &&
-    render.children.length === 1 &&
-    (only?.kind === "Component" || only?.kind === "Dynamic")
-      ? only
-      : render;
-  let wrapped: JsxExpression = jsxNode(root, context);
-  for (const item of component.setup.toReversed()) {
-    if (item.kind !== "Provide") continue;
-    const value = context.placeholders.expression(code.provided(item.key, item.value));
-    // Solid 2's context is its own provider, `<ThemeKey value={…}>`.
-    wrapped = js.jsxElement(
-      item.key,
-      [js.jsxAttribute("value", js.jsxExpressionContainer(value))],
-      [
-        wrapped.type === "JSXElement" || wrapped.type === "JSXFragment"
-          ? wrapped
-          : js.jsxExpressionContainer(wrapped),
-      ],
-    );
-  }
-  return wrapped;
+	const render = forSolid(component, code.rules, types, spreads);
+	const [only] = render.children;
+	const root =
+		render.kind === "Fragment" &&
+		render.children.length === 1 &&
+		(only?.kind === "Component" || only?.kind === "Dynamic")
+			? only
+			: render;
+	let wrapped: JsxExpression = jsxNode(root, context);
+	for (const item of component.setup.toReversed()) {
+		if (item.kind !== "Provide") {
+			continue;
+		}
+		const value = context.placeholders.expression(code.provided(item.key, item.value));
+		// Solid 2's context is its own provider, `<ThemeKey value={…}>`.
+		wrapped = js.jsxElement(
+			item.key,
+			[js.jsxAttribute("value", js.jsxExpressionContainer(value))],
+			[
+				wrapped.type === "JSXElement" || wrapped.type === "JSXFragment"
+					? wrapped
+					: js.jsxExpressionContainer(wrapped),
+			],
+		);
+	}
+	return wrapped;
 }
 
 /**
@@ -481,24 +497,24 @@ function rendered(
  * `<Show>` callback, not an inner component: the rest of the setup closes over `props`, which an
  * inner component would read through props of its own, and `solid/reactivity` (L5) reports.
  */
-function pending(resource: SolidResource, body: Statement[], code: SolidCode): JsxExpression {
-  // Keyed: the child takes the record itself, which Solid 2 reads nowhere but where it tracks.
-  const show = js.jsxElement(
-    code.solid("Show"),
-    [
-      js.jsxAttribute(
-        "when",
-        js.jsxExpressionContainer(js.callExpression(js.identifier(resource.accessor), [])),
-      ),
-      js.jsxAttribute("keyed", null),
-    ],
-    [
-      js.jsxExpressionContainer(
-        js.arrowFunction([js.bindingIdentifier(resource.parameter)], [resource.bindings, ...body]),
-      ),
-    ],
-  );
-  return js.jsxElement(code.solid("Loading"), [], [show]);
+function pending(resource: SolidResource, body: Array<Statement>, code: SolidCode): JsxExpression {
+	// Keyed: the child takes the record itself, which Solid 2 reads nowhere but where it tracks.
+	const show = js.jsxElement(
+		code.solid("Show"),
+		[
+			js.jsxAttribute(
+				"when",
+				js.jsxExpressionContainer(js.callExpression(js.identifier(resource.accessor), [])),
+			),
+			js.jsxAttribute("keyed", null),
+		],
+		[
+			js.jsxExpressionContainer(
+				js.arrowFunction([js.bindingIdentifier(resource.parameter)], [resource.bindings, ...body]),
+			),
+		],
+	);
+	return js.jsxElement(code.solid("Loading"), [], [show]);
 }
 
 /**
@@ -507,17 +523,17 @@ function pending(resource: SolidResource, body: Statement[], code: SolidCode): J
  * statement of its own, `export type { Tone } from "./types";`, that the module prints as it is.
  */
 function moduleTypes(
-  component: UfComponent,
-  module: UfModule,
-  types: readonly TypeDeclaration[],
-): TypeDeclaration[] {
-  const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
-    name: "",
-    exported: false,
-    code,
-    span,
-  }));
-  return [...types, ...exports].toSorted((a, b) => a.span.start - b.span.start);
+	component: UfComponent,
+	module: UfModule,
+	types: ReadonlyArray<TypeDeclaration>,
+): Array<TypeDeclaration> {
+	const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
+		name: "",
+		exported: false,
+		code,
+		span,
+	}));
+	return [...types, ...exports].toSorted((a, b) => a.span.start - b.span.start);
 }
 
 /**
@@ -527,9 +543,9 @@ function moduleTypes(
  * a parameter or a local, which shadows the module's own where it is declared, or the API's call;
  * a component's binding of either name keeps it taken.
  */
-function freeNames(component: UfComponent, names: ReadonlySet<string>): string[] {
-  const bindings = new Set(component.bindings.map((binding) => binding.name));
-  return ["onCleanup", NEXT_TICK_HELPER].filter((name) => names.has(name) && !bindings.has(name));
+function freeNames(component: UfComponent, names: ReadonlySet<string>): Array<string> {
+	const bindings = new Set(component.bindings.map((binding) => binding.name));
+	return ["onCleanup", NEXT_TICK_HELPER].filter((name) => names.has(name) && !bindings.has(name));
 }
 
 export default solid2;

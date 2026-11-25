@@ -3,6 +3,6 @@ import FileRow from "../../../../../integration/cases/events/emit-payloads/__out
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 FileRow.prop:path -->
-  <FileRow :path="42" :size="12" />
+	<!-- @uf-expect TS2322 FileRow.prop:path -->
+	<FileRow :path="42" :size="12" />
 </template>

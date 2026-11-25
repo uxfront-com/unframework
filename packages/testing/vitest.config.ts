@@ -14,8 +14,8 @@ import { hydrateParityProject } from "./test/parity/project.ts";
  * rooted at the Astro target, whose dependencies hold Astro.
  */
 const astroContext = {
-  root: fileURLToPath(new URL("../target-astro", import.meta.url)),
-  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/astro", import.meta.url)),
+	root: fileURLToPath(new URL("../target-astro", import.meta.url)),
+	toolchainDir: fileURLToPath(new URL("../../tests/toolchains/astro", import.meta.url)),
 };
 const astroBrowser = await astro.vite("browser", astroContext);
 
@@ -26,38 +26,38 @@ const astroBrowser = await astro.vite("browser", astroContext);
  * Vitest.
  */
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          environment: "node",
-          include: ["test/**/*.test.ts"],
-          exclude: [...configDefaults.exclude, "test/fixtures/**", "test/**/*.browser.test.ts"],
-        },
-      },
-      {
-        plugins: astroBrowser.plugins ?? [],
-        test: {
-          name: "browser",
-          include: ["test/**/*.browser.test.ts"],
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            // Always headless: headed runs inherit the host's device pixel ratio.
-            headless: true,
-            // Named, or Vitest calls the project "browser (chromium)".
-            instances: [{ browser: "chromium", name: "browser" }],
-            screenshotFailures: false,
-            commands: astro.browserCommands?.(astroContext) ?? {},
-          },
-        },
-      },
-      // L12's sub-checks on the stub target (test/parity/cases/hydrate), with the harness context
-      // a hydrate project's mount reads.
-      hydrateParityProject(),
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					environment: "node",
+					include: ["test/**/*.test.ts"],
+					exclude: [...configDefaults.exclude, "test/fixtures/**", "test/**/*.browser.test.ts"],
+				},
+			},
+			{
+				plugins: astroBrowser.plugins ?? [],
+				test: {
+					name: "browser",
+					include: ["test/**/*.browser.test.ts"],
+					browser: {
+						enabled: true,
+						provider: playwright(),
+						// Always headless: headed runs inherit the host's device pixel ratio.
+						headless: true,
+						// Named, or Vitest calls the project "browser (chromium)".
+						instances: [{ browser: "chromium", name: "browser" }],
+						screenshotFailures: false,
+						commands: astro.browserCommands?.(astroContext) ?? {},
+					},
+				},
+			},
+			// L12's sub-checks on the stub target (test/parity/cases/hydrate), with the harness context
+			// a hydrate project's mount reads.
+			hydrateParityProject(),
+		],
+	},
 });
 
 export default config;

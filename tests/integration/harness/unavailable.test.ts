@@ -14,18 +14,20 @@ const { project, layers, message } = inject("ufUnavailable");
 const browser = project.startsWith("browser:");
 
 describe(`${project} (unavailable)`, () => {
-  for (const info of listCases(harness.casesDir)) {
-    // The cases this project would verify: the browser projects run the specs, ssr projects
-    // every case with output.
-    if (browser ? !info.spec : errorState(info, target) === true) continue;
-    it(`${info.id} › ${target}`, ({ task }) => {
-      for (const layer of layers as LayerName[]) {
-        recordLayer(task, { case: info.id, target, quarantine: harness.quarantine }, layer, {
-          status: "fail",
-          message: `${project} could not start: ${message.split("\n")[0]}`,
-        });
-      }
-      throw new Error(`${project} could not start:\n${message}`);
-    });
-  }
+	for (const info of listCases(harness.casesDir)) {
+		// The cases this project would verify: the browser projects run the specs, ssr projects
+		// every case with output.
+		if (browser ? !info.spec : errorState(info, target) === true) {
+			continue;
+		}
+		it(`${info.id} › ${target}`, ({ task }) => {
+			for (const layer of layers as Array<LayerName>) {
+				recordLayer(task, { case: info.id, target, quarantine: harness.quarantine }, layer, {
+					status: "fail",
+					message: `${project} could not start: ${message.split("\n")[0]}`,
+				});
+			}
+			throw new Error(`${project} could not start:\n${message}`);
+		});
+	}
 });

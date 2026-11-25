@@ -21,19 +21,19 @@
 import { functionSource, rewriteCode, rewriteExpression } from "@unframework.dev/codegen";
 import type { CodeKind, RewriteSite } from "@unframework.dev/codegen";
 import type {
-  AwaitItem,
-  BindingId,
-  Code,
-  CodeReference,
-  FunctionCode,
-  FunctionItem,
-  LifecycleItem,
-  ModelItem,
-  Parameter,
-  SetupItem,
-  UseItem,
-  WatchEffectItem,
-  WatchItem,
+	AwaitItem,
+	BindingId,
+	Code,
+	CodeReference,
+	FunctionCode,
+	FunctionItem,
+	LifecycleItem,
+	ModelItem,
+	Parameter,
+	SetupItem,
+	UseItem,
+	WatchEffectItem,
+	WatchItem,
 } from "@unframework.dev/ir";
 import { codeOf, expressionsOf, summarizeTracked } from "@unframework.dev/ir";
 
@@ -43,101 +43,107 @@ import { moduleTypeParameters } from "./generics.ts";
 import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
 import {
-  argumentCode,
-  eventCallees,
-  hooksReadByOtherCalls,
-  inlinedAt,
-  isPredicate,
-  isReactiveBinding,
-  readsReactive,
-  referencedIds,
-  unreachable,
+	argumentCode,
+	eventCallees,
+	hooksReadByOtherCalls,
+	inlinedAt,
+	isPredicate,
+	isReactiveBinding,
+	readsReactive,
+	referencedIds,
+	unreachable,
 } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
 
 /** A statement of the component's body, before its `return`. */
 interface Statement {
-  code: string;
-  /** Whether it is a one-line declaration, which sits with its neighbours without a blank line. */
-  declaration: boolean;
+	code: string;
+	/** Whether it is a one-line declaration, which sits with its neighbours without a blank line. */
+	declaration: boolean;
 }
 
 /** A setup item's statements, with what it declares and what it captures. */
 interface Entry {
-  index: number;
-  statements: Statement[];
-  declares: BindingId[];
-  captures: Set<BindingId>;
-  /** Whether it is an `onUnmounted` hook. */
-  unmounted: boolean;
+	index: number;
+	statements: Array<Statement>;
+	declares: Array<BindingId>;
+	captures: Set<BindingId>;
+	/** Whether it is an `onUnmounted` hook. */
+	unmounted: boolean;
 }
 
 /** The output of a component's setup. */
 export interface SetupOutput {
-  /** Module-level declarations, before the component, in source order. */
-  hoisted: string[];
-  /** The component body's code before its `return`: empty when there is none. */
-  body: string;
+	/** Module-level declarations, before the component, in source order. */
+	hoisted: Array<string>;
+	/** The component body's code before its `return`: empty when there is none. */
+	body: string;
 }
 
 /** Prints a component's setup (see the module comment). */
 export function printSetup(plan: SetupPlan): SetupOutput {
-  const hoisted: string[] = [];
-  const entries: Entry[] = [];
-  for (const [index, item] of plan.component.setup.entries()) {
-    const module = moduleCode(plan, item);
-    if (module !== undefined) {
-      if (module !== "") hoisted.push(module);
-      continue;
-    }
-    const statements = itemStatements(plan, item);
-    if (!statements.length) continue;
-    entries.push({
-      index,
-      statements,
-      declares:
-        "binding" in item
-          ? [item.binding]
-          : item.kind === "Use"
-            ? item.members.map(({ binding }) => binding)
-            : [],
-      captures: withCallees(plan, captured(plan, item)),
-      unmounted: item.kind === "Lifecycle" && item.hook === "unmounted",
-    });
-  }
-  // The holder of the functions that reference each other, first (./plan.ts `StablePlan`).
-  const { holder } = plan.stable;
-  if (holder) {
-    const members = holder.members
-      .map((id) => {
-        const name = plan.functions.get(id)!.qrl;
-        return `${name}: typeof ${name}`;
-      })
-      .join("; ");
-    entries.unshift({
-      index: -1,
-      statements: [
-        block(
-          `// Functions that reference each other: a QRL captures what it reads when it is created, so each\n// reads the other from here once both exist.\nconst ${holder.name} = ${plan.names.core("useConstant")}(() => ({}) as { ${members} });`,
-        ),
-      ],
-      declares: [],
-      captures: new Set(),
-      unmounted: false,
-    });
-  }
-  // An `onUnmounted` hook is a visible task whose cleanup runs it, and Qwik runs the cleanups of a
-  // removed component's visible tasks in their order: the hooks come last, so every watcher's and
-  // effect's cleanup runs before them, as the source's do (ADR-0048).
-  const ordered = order(entries).toSorted((a, b) => Number(a.unmounted) - Number(b.unmounted));
-  let body = "";
-  let previous: Statement | undefined;
-  for (const statement of ordered.flatMap((entry) => entry.statements)) {
-    if (previous) body += previous.declaration && statement.declaration ? "\n" : "\n\n";
-    body += statement.code;
-    previous = statement;
-  }
-  return { hoisted, body };
+	const hoisted: Array<string> = [];
+	const entries: Array<Entry> = [];
+	for (const [index, item] of plan.component.setup.entries()) {
+		const module = moduleCode(plan, item);
+		if (module !== undefined) {
+			if (module !== "") {
+				hoisted.push(module);
+			}
+			continue;
+		}
+		const statements = itemStatements(plan, item);
+		if (!statements.length) {
+			continue;
+		}
+		entries.push({
+			index,
+			statements,
+			declares:
+				"binding" in item
+					? [item.binding]
+					: item.kind === "Use"
+						? item.members.map(({ binding }) => binding)
+						: [],
+			captures: withCallees(plan, captured(plan, item)),
+			unmounted: item.kind === "Lifecycle" && item.hook === "unmounted",
+		});
+	}
+	// The holder of the functions that reference each other, first (./plan.ts `StablePlan`).
+	const { holder } = plan.stable;
+	if (holder) {
+		const members = holder.members
+			.map((id) => {
+				const name = plan.functions.get(id)!.qrl;
+				return `${name}: typeof ${name}`;
+			})
+			.join("; ");
+		entries.unshift({
+			index: -1,
+			statements: [
+				block(
+					`// Functions that reference each other: a QRL captures what it reads when it is created, so each\n// reads the other from here once both exist.\nconst ${holder.name} = ${plan.names.core("useConstant")}(() => ({}) as { ${members} });`,
+				),
+			],
+			declares: [],
+			captures: new Set(),
+			unmounted: false,
+		});
+	}
+	// An `onUnmounted` hook is a visible task whose cleanup runs it, and Qwik runs the cleanups of a
+	// removed component's visible tasks in their order: the hooks come last, so every watcher's and
+	// effect's cleanup runs before them, as the source's do (ADR-0048).
+	const ordered = order(entries).toSorted((a, b) => Number(a.unmounted) - Number(b.unmounted));
+	let body = "";
+	let previous: Statement | undefined;
+	for (const statement of ordered.flatMap((entry) => entry.statements)) {
+		if (previous) {
+			body += previous.declaration && statement.declaration ? "\n" : "\n\n";
+		}
+		body += statement.code;
+		previous = statement;
+	}
+	return { hoisted, body };
 }
 
 /**
@@ -148,25 +154,35 @@ export function printSetup(plan: SetupPlan): SetupOutput {
  * runs their tasks in (ADR-0048). The analyser rejects recursion, so the captures form no cycle;
  * one would keep the rest in source order.
  */
-function order(entries: readonly Entry[]): Entry[] {
-  const declaredBy = new Map<BindingId, Entry>();
-  for (const entry of entries) for (const id of entry.declares) declaredBy.set(id, entry);
-  const placed = new Set<Entry>();
-  const visiting = new Set<Entry>();
-  const result: Entry[] = [];
-  const place = (entry: Entry): void => {
-    if (placed.has(entry) || visiting.has(entry)) return;
-    visiting.add(entry);
-    for (const id of entry.captures) {
-      const declaring = declaredBy.get(id);
-      if (declaring !== undefined && declaring !== entry) place(declaring);
-    }
-    visiting.delete(entry);
-    placed.add(entry);
-    result.push(entry);
-  };
-  for (const entry of entries) place(entry);
-  return result;
+function order(entries: ReadonlyArray<Entry>): Array<Entry> {
+	const declaredBy = new Map<BindingId, Entry>();
+	for (const entry of entries) {
+		for (const id of entry.declares) {
+			declaredBy.set(id, entry);
+		}
+	}
+	const placed = new Set<Entry>();
+	const visiting = new Set<Entry>();
+	const result: Array<Entry> = [];
+	const place = (entry: Entry): void => {
+		if (placed.has(entry) || visiting.has(entry)) {
+			return;
+		}
+		visiting.add(entry);
+		for (const id of entry.captures) {
+			const declaring = declaredBy.get(id);
+			if (declaring !== undefined && declaring !== entry) {
+				place(declaring);
+			}
+		}
+		visiting.delete(entry);
+		placed.add(entry);
+		result.push(entry);
+	};
+	for (const entry of entries) {
+		place(entry);
+	}
+	return result;
 }
 
 /**
@@ -174,116 +190,131 @@ function order(entries: readonly Entry[]): Entry[] {
  * written in place puts the function's body in the code (./inline.ts).
  */
 function withCallees(plan: SetupPlan, captures: Set<BindingId>): Set<BindingId> {
-  const found = new Set(captures);
-  const queue = [...captures];
-  for (let id = queue.pop(); id !== undefined; id = queue.pop()) {
-    const fn = plan.functions.get(id);
-    if (!fn) continue;
-    for (const next of referencedIds(captures_(plan, fn.item.function.body.refs))) {
-      if (!found.has(next)) {
-        found.add(next);
-        queue.push(next);
-      }
-    }
-  }
-  return found;
+	const found = new Set(captures);
+	const queue = [...captures];
+	for (let id = queue.pop(); id !== undefined; id = queue.pop()) {
+		const fn = plan.functions.get(id);
+		if (!fn) {
+			continue;
+		}
+		for (const next of referencedIds(captures_(plan, fn.item.function.body.refs))) {
+			if (!found.has(next)) {
+				found.add(next);
+				queue.push(next);
+			}
+		}
+	}
+	return found;
 }
 
 /** The references a `$` scope captures: all but those it reads through the holder. */
-function captures_(plan: SetupPlan, refs: readonly CodeReference[]): CodeReference[] {
-  return refs.filter((reference) => !plan.stable.lazy.has(reference.span.start));
+function captures_(plan: SetupPlan, refs: ReadonlyArray<CodeReference>): Array<CodeReference> {
+	return refs.filter((reference) => !plan.stable.lazy.has(reference.span.start));
 }
 
 /** What an item's code references: the bindings its `$` scopes capture. */
 function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
-  const found = new Set<BindingId>();
-  const add = (code: Code | undefined) => {
-    if (code) for (const id of referencedIds(captures_(plan, code.refs))) found.add(id);
-  };
-  switch (item.kind) {
-    case "State":
-    case "Variable":
-      add(item.initial);
-      break;
-    case "Const":
-    case "Await":
-      add(item.value);
-      break;
-    case "Derived":
-      add(item.getter.body);
-      break;
-    case "Function":
-      add(item.function.body);
-      break;
-    case "Watch":
-      for (const source of item.sources) {
-        if (source.kind === "Ref") found.add(source.binding);
-        else add(source.getter.body);
-      }
-      add(item.callback.body);
-      break;
-    case "WatchEffect":
-      add(item.effect.body);
-      break;
-    case "Lifecycle":
-      add(item.callback.body);
-      break;
-    case "Provide":
-      add(item.value);
-      break;
-    case "Inject":
-      add(item.fallback);
-      break;
-    case "DevCheck":
-      add(item.code);
-      break;
-    case "TemplateRef":
-    case "Id":
-    case "Model":
-      break;
-    case "Use":
-      for (const argument of item.arguments) add(argumentCode(argument));
-      break;
-    default:
-      unreachable(item);
-  }
-  return found;
+	const found = new Set<BindingId>();
+	const add = (code: Code | undefined) => {
+		if (code) {
+			for (const id of referencedIds(captures_(plan, code.refs))) {
+				found.add(id);
+			}
+		}
+	};
+	switch (item.kind) {
+		case "State":
+		case "Variable":
+			add(item.initial);
+			break;
+		case "Const":
+		case "Await":
+			add(item.value);
+			break;
+		case "Derived":
+			add(item.getter.body);
+			break;
+		case "Function":
+			add(item.function.body);
+			break;
+		case "Watch":
+			for (const source of item.sources) {
+				if (source.kind === "Ref") {
+					found.add(source.binding);
+				} else {
+					add(source.getter.body);
+				}
+			}
+			add(item.callback.body);
+			break;
+		case "WatchEffect":
+			add(item.effect.body);
+			break;
+		case "Lifecycle":
+			add(item.callback.body);
+			break;
+		case "Provide":
+			add(item.value);
+			break;
+		case "Inject":
+			add(item.fallback);
+			break;
+		case "DevCheck":
+			add(item.code);
+			break;
+		case "TemplateRef":
+		case "Id":
+		case "Model":
+			break;
+		case "Use":
+			for (const argument of item.arguments) {
+				add(argumentCode(argument));
+			}
+			break;
+		default:
+			unreachable(item);
+	}
+	return found;
 }
 
 /** An item that moves to module scope, as the source writes it: `undefined` for any other. */
 function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
-  if (item.kind === "Const" && plan.consts.get(item.binding) === "module") {
-    const name = plan.functions.get(item.binding)?.binding.name ?? bindingName(plan, item.binding);
-    const type = item.type ? `: ${item.type.code}` : "";
-    return `const ${name}${type} = ${rewritten(plan, item.value, "expression", undefined, "pure")};`;
-  }
-  if (item.kind === "Function" && plan.functions.get(item.binding)?.form === "module") {
-    // A function whose whole body moved to its listeners (./handlers.ts) is not declared.
-    if (plan.functionCode(item.binding) === null) return "";
-    const declared = functionDeclaration(plan, item, "pure");
-    // A function typed by the component's `T` takes its own (src/generics.ts, ADR-0068).
-    // Its parameters follow the declaration's `function name` or the arrow's `const name = `.
-    const { name } = plan.functions.get(item.binding)!.binding;
-    const head = [
-      `async function ${name}`,
-      `function ${name}`,
-      `const ${name} = async `,
-      `const ${name} = `,
-    ].find((each) => declared.startsWith(each))!;
-    const parameters = moduleTypeParameters(
-      plan.component,
-      item.function,
-      head.startsWith("const"),
-    );
-    return `${head}${parameters}${declared.slice(head.length)}`;
-  }
-  return undefined;
+	if (item.kind === "Const" && plan.consts.get(item.binding) === "module") {
+		const name = plan.functions.get(item.binding)?.binding.name ?? bindingName(plan, item.binding);
+		const type = item.type ? `: ${item.type.code}` : "";
+		return `const ${name}${type} = ${rewritten(plan, item.value, "expression", undefined, "pure")};`;
+	}
+	if (item.kind === "Function" && plan.functions.get(item.binding)?.form === "module") {
+		// A function whose whole body moved to its listeners (./handlers.ts) is not declared.
+		if (plan.functionCode(item.binding) === null) {
+			return "";
+		}
+		const declared = functionDeclaration(plan, item, "pure");
+		// A function typed by the component's `T` takes its own (src/generics.ts, ADR-0068).
+		// Its parameters follow the declaration's `function name` or the arrow's `const name = `.
+		const { name } = plan.functions.get(item.binding)!.binding;
+		const head = [
+			`async function ${name}`,
+			`function ${name}`,
+			`const ${name} = async `,
+			`const ${name} = `,
+		].find((each) => declared.startsWith(each))!;
+		const parameters = moduleTypeParameters(
+			plan.component,
+			item.function,
+			head.startsWith("const"),
+		);
+		return `${head}${parameters}${declared.slice(head.length)}`;
+	}
+	return undefined;
 }
 
 function bindingName(plan: SetupPlan, id: BindingId): string {
-  const binding = plan.component.bindings.find((candidate) => candidate.id === id);
-  if (!binding) throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
-  return binding.name;
+	const binding = plan.component.bindings.find((candidate) => candidate.id === id);
+	if (!binding) {
+		throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
+	}
+	return binding.name;
 }
 
 /**
@@ -291,125 +322,129 @@ function bindingName(plan: SetupPlan, id: BindingId): string {
  * getter argument reading its signal (./composable.ts).
  */
 function rewritten(
-  plan: SetupPlan,
-  code: Code,
-  kind: CodeKind,
-  event: string | undefined,
-  site: RewriteSite,
+	plan: SetupPlan,
+	code: Code,
+	kind: CodeKind,
+	event: string | undefined,
+	site: RewriteSite,
 ): string {
-  const getters = new Set<string>();
-  for (const parameter of plan.arguments.values()) {
-    if (parameter.kind === "getter") getters.add(parameter.name);
-  }
-  return readGetters(rewriteCode(code, plan.component, plan.rules(event), site), kind, getters);
+	const getters = new Set<string>();
+	for (const parameter of plan.arguments.values()) {
+		if (parameter.kind === "getter") {
+			getters.add(parameter.name);
+		}
+	}
+	return readGetters(rewriteCode(code, plan.component, plan.rules(event), site), kind, getters);
 }
 
 /** An item's statements in the component's body. */
-function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
-  const { names } = plan;
-  const pure = (code: Code) => rewritten(plan, code, "expression", undefined, "pure");
-  switch (item.kind) {
-    case "State":
-    case "Variable": {
-      const name = bindingName(plan, item.binding);
-      const type = item.type ? `<${item.type.code}>` : "";
-      const initial = item.initial ? pure(item.initial) : "";
-      return [declaration(`const ${name} = ${names.core("useSignal")}${type}(${initial});`)];
-    }
-    case "TemplateRef": {
-      const name = bindingName(plan, item.binding);
-      const statements = [
-        declaration(
-          `const ${name} = ${names.core("useSignal")}<${item.type?.code ?? "Element"}>();`,
-        ),
-      ];
-      // On a root component that takes the consumer's ref in its place (./fallthrough.ts), it
-      // holds the element the consumer's does, before the component's own visible tasks run.
-      const { passed } = plan.composition;
-      if (passed?.forwarded === item) {
-        const ref = passed.ref();
-        statements.push(
-          block(
-            `${names.core("useVisibleTask$")}(({ track }) => {\nif (${ref}) ${name}.value = track(${ref});\n}, { strategy: "document-ready" });`,
-          ),
-          declaration(`const ${passed.rootSignal()} = ${ref} ?? ${name};`),
-        );
-      }
-      return statements;
-    }
-    case "Id":
-      return [
-        declaration(
-          `const ${bindingName(plan, item.binding)} = "uf-id-" + ${names.core("useId")}();`,
-        ),
-      ];
-    case "Const": {
-      const name = bindingName(plan, item.binding);
-      const type = item.type ? `: ${item.type.code}` : "";
-      const value = pure(item.value);
-      return [
-        declaration(
-          plan.consts.get(item.binding) === "constant"
-            ? `const ${name}${type} = ${names.core("useConstant")}(() => ${arrowBody(value)});`
-            : `const ${name}${type} = ${value};`,
-        ),
-      ];
-    }
-    case "Derived": {
-      const name = bindingName(plan, item.binding);
-      const type = item.type ? `<${item.type.code}>` : "";
-      const getter = getterSource(plan, item.getter);
-      return [declaration(`const ${name} = ${names.core("useComputed$")}${type}(${getter});`)];
-    }
-    case "Function":
-      return functionStatements(plan, item);
-    case "Watch":
-      return watchStatements(plan, item);
-    case "WatchEffect":
-      return [block(watchEffectCode(plan, item))];
-    case "Lifecycle":
-      return [block(lifecycleCode(plan, item))];
-    case "Model":
-      return modelStatements(plan, item);
-    case "Provide":
-      return [block(`${names.core("useContextProvider")}(${item.key}, ${pure(item.value)});`)];
-    case "Inject": {
-      // Qwik 2.0.0-rc.5's `useContext` throws where no ancestor provides the key, unless its
-      // default is not `undefined`, and calls a function default with the provided value: so it
-      // takes a function, which gives the fallback, or `undefined` without one (ADR-0054), and
-      // never mistakes a function fallback for one. Its optional parameter is the key's type or
-      // `undefined`, typed by the key alone, whose type may come from another module.
-      const provided = names.once("provided");
-      const value = item.fallback
-        ? `(${provided} === undefined ? ${pure(item.fallback)} : ${provided})`
-        : provided;
-      return [
-        declaration(
-          `const ${bindingName(plan, item.binding)} = ${names.core("useContext")}(${item.key}, (${provided}?) => ${value});`,
-        ),
-      ];
-    }
-    case "Use":
-      return [declaration(useStatement(plan, item))];
-    case "Await":
-      return awaitStatements(plan, item);
-    // In the `component$` body, which runs where the setup does (ADR-0117).
-    // In the `component$` body, untracked where it reads a prop or a signal, so it subscribes
-    // the component to nothing and runs where the body does (ADR-0117).
-    case "DevCheck": {
-      const text = rewritten(plan, item.code, "statements", undefined, "pure");
-      const kinds = new Map(plan.component.bindings.map((each) => [each.id, each.kind]));
-      const reactive = item.code.refs.some(
-        (ref) =>
-          ref.kind === "Binding" &&
-          ["prop", "state", "derived", "model"].includes(kinds.get(ref.binding) ?? ""),
-      );
-      if (!reactive) return [block(text)];
-      return [block(`${plan.names.core("untrack")}(() => {\n${text}\n});`)];
-    }
-    default:
-      return unreachable(item);
-  }
+function itemStatements(plan: SetupPlan, item: SetupItem): Array<Statement> {
+	const { names } = plan;
+	const pure = (code: Code) => rewritten(plan, code, "expression", undefined, "pure");
+	switch (item.kind) {
+		case "State":
+		case "Variable": {
+			const name = bindingName(plan, item.binding);
+			const type = item.type ? `<${item.type.code}>` : "";
+			const initial = item.initial ? pure(item.initial) : "";
+			return [declaration(`const ${name} = ${names.core("useSignal")}${type}(${initial});`)];
+		}
+		case "TemplateRef": {
+			const name = bindingName(plan, item.binding);
+			const statements = [
+				declaration(
+					`const ${name} = ${names.core("useSignal")}<${item.type?.code ?? "Element"}>();`,
+				),
+			];
+			// On a root component that takes the consumer's ref in its place (./fallthrough.ts), it
+			// holds the element the consumer's does, before the component's own visible tasks run.
+			const { passed } = plan.composition;
+			if (passed?.forwarded === item) {
+				const ref = passed.ref();
+				statements.push(
+					block(
+						`${names.core("useVisibleTask$")}(({ track }) => {\nif (${ref}) ${name}.value = track(${ref});\n}, { strategy: "document-ready" });`,
+					),
+					declaration(`const ${passed.rootSignal()} = ${ref} ?? ${name};`),
+				);
+			}
+			return statements;
+		}
+		case "Id":
+			return [
+				declaration(
+					`const ${bindingName(plan, item.binding)} = "uf-id-" + ${names.core("useId")}();`,
+				),
+			];
+		case "Const": {
+			const name = bindingName(plan, item.binding);
+			const type = item.type ? `: ${item.type.code}` : "";
+			const value = pure(item.value);
+			return [
+				declaration(
+					plan.consts.get(item.binding) === "constant"
+						? `const ${name}${type} = ${names.core("useConstant")}(() => ${arrowBody(value)});`
+						: `const ${name}${type} = ${value};`,
+				),
+			];
+		}
+		case "Derived": {
+			const name = bindingName(plan, item.binding);
+			const type = item.type ? `<${item.type.code}>` : "";
+			const getter = getterSource(plan, item.getter);
+			return [declaration(`const ${name} = ${names.core("useComputed$")}${type}(${getter});`)];
+		}
+		case "Function":
+			return functionStatements(plan, item);
+		case "Watch":
+			return watchStatements(plan, item);
+		case "WatchEffect":
+			return [block(watchEffectCode(plan, item))];
+		case "Lifecycle":
+			return [block(lifecycleCode(plan, item))];
+		case "Model":
+			return modelStatements(plan, item);
+		case "Provide":
+			return [block(`${names.core("useContextProvider")}(${item.key}, ${pure(item.value)});`)];
+		case "Inject": {
+			// Qwik 2.0.0-rc.5's `useContext` throws where no ancestor provides the key, unless its
+			// default is not `undefined`, and calls a function default with the provided value: so it
+			// takes a function, which gives the fallback, or `undefined` without one (ADR-0054), and
+			// never mistakes a function fallback for one. Its optional parameter is the key's type or
+			// `undefined`, typed by the key alone, whose type may come from another module.
+			const provided = names.once("provided");
+			const value = item.fallback
+				? `(${provided} === undefined ? ${pure(item.fallback)} : ${provided})`
+				: provided;
+			return [
+				declaration(
+					`const ${bindingName(plan, item.binding)} = ${names.core("useContext")}(${item.key}, (${provided}?) => ${value});`,
+				),
+			];
+		}
+		case "Use":
+			return [declaration(useStatement(plan, item))];
+		case "Await":
+			return awaitStatements(plan, item);
+		// In the `component$` body, which runs where the setup does (ADR-0117).
+		// In the `component$` body, untracked where it reads a prop or a signal, so it subscribes
+		// the component to nothing and runs where the body does (ADR-0117).
+		case "DevCheck": {
+			const text = rewritten(plan, item.code, "statements", undefined, "pure");
+			const kinds = new Map(plan.component.bindings.map((each) => [each.id, each.kind]));
+			const reactive = item.code.refs.some(
+				(ref) =>
+					ref.kind === "Binding" &&
+					["prop", "state", "derived", "model"].includes(kinds.get(ref.binding) ?? ""),
+			);
+			if (!reactive) {
+				return [block(text)];
+			}
+			return [block(`${plan.names.core("untrack")}(() => {\n${text}\n});`)];
+		}
+		default:
+			return unreachable(item);
+	}
 }
 
 /**
@@ -420,19 +455,19 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
  * `useComputed$(…).value` to `computed$`, and two such bindings that a later `$` scope
  * captures make a module that declares `computed$` twice.
  */
-function awaitStatements(plan: SetupPlan, item: AwaitItem): Statement[] {
-  const { names } = plan;
-  const name = bindingName(plan, item.binding);
-  const load = names.fresh(`${name}Load`);
-  const type = item.type ? `: ${item.type.code}` : "";
-  const value = rewritten(plan, item.value, "expression", undefined, "pure");
-  const computed = readsReactive(item.value, plan.component, plan.arguments)
-    ? `${names.core("untrack")}(() => ${value})`
-    : value;
-  return [
-    declaration(`const ${load} = ${names.core("useComputed$")}(() => ${arrowBody(computed)});`),
-    declaration(`const ${name}${type} = ${load}.value;`),
-  ];
+function awaitStatements(plan: SetupPlan, item: AwaitItem): Array<Statement> {
+	const { names } = plan;
+	const name = bindingName(plan, item.binding);
+	const load = names.fresh(`${name}Load`);
+	const type = item.type ? `: ${item.type.code}` : "";
+	const value = rewritten(plan, item.value, "expression", undefined, "pure");
+	const computed = readsReactive(item.value, plan.component, plan.arguments)
+		? `${names.core("untrack")}(() => ${value})`
+		: value;
+	return [
+		declaration(`const ${load} = ${names.core("useComputed$")}(() => ${arrowBody(computed)});`),
+		declaration(`const ${name}${type} = ${load}.value;`),
+	];
 }
 
 /**
@@ -443,63 +478,73 @@ function awaitStatements(plan: SetupPlan, item: AwaitItem): Statement[] {
  * `useComputed$` makes of it; a callback as the QRL `$()` makes of it, which the hook calls.
  */
 function useStatement(plan: SetupPlan, item: UseItem): string {
-  const { names } = plan;
-  for (const entry of plan.module.imports ?? []) {
-    const name = entry.names.find(
-      (each) => each.kind === "Composable" && each.local === item.composable,
-    );
-    if (!name) continue;
-    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
-    names.imports.add(`${directory}${name.imported}`, name.imported, {
-      local: item.composable,
-      exact: true,
-    });
-  }
-  const parts = item.arguments.map((argument) => {
-    switch (argument.kind) {
-      case "Value":
-        return rewritten(plan, argument.value, "expression", undefined, "pure");
-      case "Getter":
-        return `${names.core("useComputed$")}(${getterSource(plan, argument.getter)})`;
-      case "Callback":
-        return `${names.core("$")}(${printFunction(plan, argument.callback, "client").text})`;
-      default:
-        return unreachable(argument);
-    }
-  });
-  const read = readBindings(plan);
-  const members = item.members.flatMap(({ member, binding }) => {
-    if (!read.has(binding)) return [];
-    const local = bindingName(plan, binding);
-    return [member === local ? local : `${member}: ${local}`];
-  });
-  const call = `${item.composable}(${parts.join(", ")});`;
-  if (!members.length) return call;
-  // Qwik's optimizer captures a destructured call's members through an object it names after the
-  // hook. Where one call's argument reads another call's members, itself or through the setup's
-  // declarations, it can name two calls of one hook alike, and the argument captures the wrong one, or the server build declares the name
-  // twice. So once any call of a hook is read so, every call of that hook is a named object,
-  // destructured after it, and the optimizer names none of them.
-  if (hooksReadByOtherCalls(plan.component).has(item.composable)) {
-    const result = names.fresh(lowerFirst(item.composable.replace(/^use/, "")));
-    return `const ${result} = ${call}\nconst { ${members.join(", ")} } = ${result};`;
-  }
-  return `const { ${members.join(", ")} } = ${call}`;
+	const { names } = plan;
+	for (const entry of plan.module.imports ?? []) {
+		const name = entry.names.find(
+			(each) => each.kind === "Composable" && each.local === item.composable,
+		);
+		if (!name) {
+			continue;
+		}
+		const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+		names.imports.add(`${directory}${name.imported}`, name.imported, {
+			local: item.composable,
+			exact: true,
+		});
+	}
+	const parts = item.arguments.map((argument) => {
+		switch (argument.kind) {
+			case "Value":
+				return rewritten(plan, argument.value, "expression", undefined, "pure");
+			case "Getter":
+				return `${names.core("useComputed$")}(${getterSource(plan, argument.getter)})`;
+			case "Callback":
+				return `${names.core("$")}(${printFunction(plan, argument.callback, "client").text})`;
+			default:
+				return unreachable(argument);
+		}
+	});
+	const read = readBindings(plan);
+	const members = item.members.flatMap(({ member, binding }) => {
+		if (!read.has(binding)) {
+			return [];
+		}
+		const local = bindingName(plan, binding);
+		return [member === local ? local : `${member}: ${local}`];
+	});
+	const call = `${item.composable}(${parts.join(", ")});`;
+	if (!members.length) {
+		return call;
+	}
+	// Qwik's optimizer captures a destructured call's members through an object it names after the
+	// hook. Where one call's argument reads another call's members, itself or through the setup's
+	// declarations, it can name two calls of one hook alike, and the argument captures the wrong one, or the server build declares the name
+	// twice. So once any call of a hook is read so, every call of that hook is a named object,
+	// destructured after it, and the optimizer names none of them.
+	if (hooksReadByOtherCalls(plan.component).has(item.composable)) {
+		const result = names.fresh(lowerFirst(item.composable.replace(/^use/, "")));
+		return `const ${result} = ${call}\nconst { ${members.join(", ")} } = ${result};`;
+	}
+	return `const { ${members.join(", ")} } = ${call}`;
 }
 
 function lowerFirst(name: string): string {
-  return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+	return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
 }
 
 /** The bindings the component's code reads anywhere: its setup's and its render's. */
 function readBindings(plan: SetupPlan): Set<BindingId> {
-  const found = new Set<BindingId>();
-  const codes = [
-    ...codeOf(plan.component).map(({ code }) => code),
-    ...expressionsOf(plan.component).map(({ expression }) => expression),
-  ];
-  for (const code of codes) for (const id of referencedIds(code.refs)) found.add(id);
-  return found;
+	const found = new Set<BindingId>();
+	const codes = [
+		...codeOf(plan.component).map(({ code }) => code),
+		...expressionsOf(plan.component).map(({ expression }) => expression),
+	];
+	for (const code of codes) {
+		for (const id of referencedIds(code.refs)) {
+			found.add(id);
+		}
+	}
+	return found;
 }
 
 /**
@@ -507,30 +552,30 @@ function readBindings(plan: SetupPlan): Set<BindingId> {
  * value the component reads, and the setter its writes call, which writes the signal while
  * unbound and asks the consumer through its callback, awaited.
  */
-function modelStatements(plan: SetupPlan, item: ModelItem): Statement[] {
-  const { names } = plan;
-  const model = plan.composition.models.get(item.binding)!;
-  const type = item.type ? `<${item.type.code}>` : "";
-  const initial = item.default
-    ? rewriteExpression(item.default, plan.component, plan.rules(), "pure")
-    : "";
-  const statements = [
-    declaration(`const ${model.local} = ${names.core("useSignal")}${type}(${initial});`),
-    declaration(
-      `const ${model.binding.name} = ${names.core("useComputed$")}(() => (${model.prop} === undefined ? ${model.local}.value : ${model.prop}));`,
-    ),
-  ];
-  if (model.written) {
-    const taken = [model.prop, model.local, model.callback];
-    const next = taken.includes("next") ? "nextValue" : "next";
-    const valueType = item.type?.code ?? `typeof ${model.local}.value`;
-    statements.push(
-      block(
-        `const ${model.setter} = ${names.core("$")}(async (${next}: ${valueType}) => {\nif (${model.prop} === undefined) ${model.local}.value = ${next};\nawait ${model.callback}?.(${next});\n});`,
-      ),
-    );
-  }
-  return statements;
+function modelStatements(plan: SetupPlan, item: ModelItem): Array<Statement> {
+	const { names } = plan;
+	const model = plan.composition.models.get(item.binding)!;
+	const type = item.type ? `<${item.type.code}>` : "";
+	const initial = item.default
+		? rewriteExpression(item.default, plan.component, plan.rules(), "pure")
+		: "";
+	const statements = [
+		declaration(`const ${model.local} = ${names.core("useSignal")}${type}(${initial});`),
+		declaration(
+			`const ${model.binding.name} = ${names.core("useComputed$")}(() => (${model.prop} === undefined ? ${model.local}.value : ${model.prop}));`,
+		),
+	];
+	if (model.written) {
+		const taken = [model.prop, model.local, model.callback];
+		const next = taken.includes("next") ? "nextValue" : "next";
+		const valueType = item.type?.code ?? `typeof ${model.local}.value`;
+		statements.push(
+			block(
+				`const ${model.setter} = ${names.core("$")}(async (${next}: ${valueType}) => {\nif (${model.prop} === undefined) ${model.local}.value = ${next};\nawait ${model.callback}?.(${next});\n});`,
+			),
+		);
+	}
+	return statements;
 }
 
 /**
@@ -538,23 +583,25 @@ function modelStatements(plan: SetupPlan, item: ModelItem): Statement[] {
  * component's render on, and is emptied when the component goes (`exposeRef`, ./index.ts).
  */
 export function exposeStatement(plan: SetupPlan): string | undefined {
-  const { exposes } = plan.component;
-  const expose = plan.composition.expose;
-  if (!exposes || !expose) return undefined;
-  const members = exposes.functions.map((id) => {
-    const fn = plan.functions.get(id)!;
-    return fn.binding.name === fn.qrl ? fn.qrl : `${fn.binding.name}: ${fn.qrl}`;
-  });
-  const cleanup = plan.names.once("cleanup");
-  const parameter = cleanup === "cleanup" ? "{ cleanup }" : `{ cleanup: ${cleanup} }`;
-  const exposeRef = plan.names.once("exposeRef");
-  // Filled as the component renders, before any visible task runs: a consumer's `onMounted`
-  // finds it filled, as Vue's does. A server render keeps it in the state it serialises; it is
-  // emptied in the browser only, as the component goes.
-  return [
-    `${plan.names.core("useTask$")}(() => {\n${exposeRef}(${expose.ref}, { ${members.join(", ")} });\n});`,
-    `${plan.names.core("useVisibleTask$")}((${parameter}) => {\n${cleanup}(() => ${exposeRef}(${expose.ref}, undefined));\n}, { strategy: "document-ready" });`,
-  ].join("\n");
+	const { exposes } = plan.component;
+	const expose = plan.composition.expose;
+	if (!exposes || !expose) {
+		return undefined;
+	}
+	const members = exposes.functions.map((id) => {
+		const fn = plan.functions.get(id)!;
+		return fn.binding.name === fn.qrl ? fn.qrl : `${fn.binding.name}: ${fn.qrl}`;
+	});
+	const cleanup = plan.names.once("cleanup");
+	const parameter = cleanup === "cleanup" ? "{ cleanup }" : `{ cleanup: ${cleanup} }`;
+	const exposeRef = plan.names.once("exposeRef");
+	// Filled as the component renders, before any visible task runs: a consumer's `onMounted`
+	// finds it filled, as Vue's does. A server render keeps it in the state it serialises; it is
+	// emptied in the browser only, as the component goes.
+	return [
+		`${plan.names.core("useTask$")}(() => {\n${exposeRef}(${expose.ref}, { ${members.join(", ")} });\n});`,
+		`${plan.names.core("useVisibleTask$")}((${parameter}) => {\n${cleanup}(() => ${exposeRef}(${expose.ref}, undefined));\n}, { strategy: "document-ready" });`,
+	].join("\n");
 }
 
 const declaration = (code: string): Statement => ({ code, declaration: true });
@@ -562,69 +609,73 @@ const block = (code: string): Statement => ({ code, declaration: false });
 
 /** An expression as an arrow's body: an object literal in parentheses. */
 function arrowBody(code: string): string {
-  return code.trimStart().startsWith("{") ? `(${code})` : code;
+	return code.trimStart().startsWith("{") ? `(${code})` : code;
 }
 
 /** A setup function as the source declares it: `function name(…) {…}` or `const name = …;`. */
 function functionDeclaration(plan: SetupPlan, item: FunctionItem, site: RewriteSite): string {
-  const { binding } = plan.functions.get(item.binding)!;
-  const fn = plan.functionCode(item.binding) ?? item.function;
-  if (item.form === "declaration" && site === "pure") {
-    return printFunction(plan, fn, site, { name: binding.name }).text;
-  }
-  return `const ${binding.name} = ${printFunction(plan, fn, site).text};`;
+	const { binding } = plan.functions.get(item.binding)!;
+	const fn = plan.functionCode(item.binding) ?? item.function;
+	if (item.form === "declaration" && site === "pure") {
+		return printFunction(plan, fn, site, { name: binding.name }).text;
+	}
+	return `const ${binding.name} = ${printFunction(plan, fn, site).text};`;
 }
 
 /** A setup function in the component: plain, a `$()` QRL, or both (./plan.ts). */
-function functionStatements(plan: SetupPlan, item: FunctionItem): Statement[] {
-  const fnPlan = plan.functions.get(item.binding)!;
-  // One whose only plain callers are getters is declared in each of them instead
-  // ({@link getterSource}): client code calls its QRL.
-  const plain = !fnPlan.gettersOnly || !plan.component.typeParameters?.length;
-  const fn = plan.functionCode(item.binding);
-  // A function whose whole body moved to its listeners (./listeners.ts) is not declared.
-  if (fn === null) return [];
-  const qrl = () => {
-    const created = `${plan.names.core("$")}(${printFunction(plan, fn ?? item.function, "client").text})`;
-    if (!plan.stable.functions.has(item.binding)) return `const ${fnPlan.qrl} = ${created};`;
-    // One QRL for the instance's life (./plan.ts `StablePlan`), in the holder where it is one.
-    const useConstant = plan.names.core("useConstant");
-    const holder = plan.stable.holder;
-    if (!holder?.members.includes(item.binding)) {
-      return `const ${fnPlan.qrl} = ${useConstant}(() => ${created});`;
-    }
-    const local = plan.names.once("created");
-    return `const ${fnPlan.qrl} = ${useConstant}(() => {\nconst ${local} = ${created};\n${holder.name}.${fnPlan.qrl} = ${local};\nreturn ${local};\n});`;
-  };
-  // A function client code only calls in place (./inline.ts) has no QRL.
-  const declared = plan.declared.has(item.binding);
-  switch (fnPlan.form) {
-    case "render":
-      return plain ? [block(functionDeclaration(plan, item, "pure"))] : [];
-    case "qrl":
-      return declared ? [block(qrl())] : [];
-    case "both":
-      return [
-        ...(plain ? [block(functionDeclaration(plan, item, "pure"))] : []),
-        ...(declared ? [block(qrl())] : []),
-      ];
-    case "module":
-      return [];
-    default:
-      return unreachable(fnPlan.form);
-  }
+function functionStatements(plan: SetupPlan, item: FunctionItem): Array<Statement> {
+	const fnPlan = plan.functions.get(item.binding)!;
+	// One whose only plain callers are getters is declared in each of them instead
+	// ({@link getterSource}): client code calls its QRL.
+	const plain = !fnPlan.gettersOnly || !plan.component.typeParameters?.length;
+	const fn = plan.functionCode(item.binding);
+	// A function whose whole body moved to its listeners (./listeners.ts) is not declared.
+	if (fn === null) {
+		return [];
+	}
+	const qrl = () => {
+		const created = `${plan.names.core("$")}(${printFunction(plan, fn ?? item.function, "client").text})`;
+		if (!plan.stable.functions.has(item.binding)) {
+			return `const ${fnPlan.qrl} = ${created};`;
+		}
+		// One QRL for the instance's life (./plan.ts `StablePlan`), in the holder where it is one.
+		const useConstant = plan.names.core("useConstant");
+		const holder = plan.stable.holder;
+		if (!holder?.members.includes(item.binding)) {
+			return `const ${fnPlan.qrl} = ${useConstant}(() => ${created});`;
+		}
+		const local = plan.names.once("created");
+		return `const ${fnPlan.qrl} = ${useConstant}(() => {\nconst ${local} = ${created};\n${holder.name}.${fnPlan.qrl} = ${local};\nreturn ${local};\n});`;
+	};
+	// A function client code only calls in place (./inline.ts) has no QRL.
+	const declared = plan.declared.has(item.binding);
+	switch (fnPlan.form) {
+		case "render":
+			return plain ? [block(functionDeclaration(plan, item, "pure"))] : [];
+		case "qrl":
+			return declared ? [block(qrl())] : [];
+		case "both":
+			return [
+				...(plain ? [block(functionDeclaration(plan, item, "pure"))] : []),
+				...(declared ? [block(qrl())] : []),
+			];
+		case "module":
+			return [];
+		default:
+			return unreachable(fnPlan.form);
+	}
 }
 
 /** How {@link printFunction} prints. */
 export interface PrintOptions {
-  /** A `function` declaration's name; an arrow otherwise. */
-  name?: string;
-  /** The parameters to print instead of the function's own. */
-  parameters?: readonly Parameter[];
-  /** The body to print instead of the function's own (a `Code` with control statements removed). */
-  body?: Code;
-  /** Whether client code runs its calls of local functions in place (./inline.ts). */
-  synchronous?: boolean;
+	/** A `function` declaration's name; an arrow otherwise. */
+	name?: string;
+	/** The parameters to print instead of the function's own. */
+	parameters?: ReadonlyArray<Parameter>;
+	/** The body to print instead of the function's own (a `Code` with control statements removed). */
+	body?: Code;
+	/** Whether client code runs its calls of local functions in place (./inline.ts). */
+	synchronous?: boolean;
 }
 
 /**
@@ -633,39 +684,39 @@ export interface PrintOptions {
  * becomes a `Promise` of it.
  */
 export function printFunction(
-  plan: SetupPlan,
-  fn: FunctionCode,
-  site: RewriteSite,
-  options: PrintOptions = {},
+	plan: SetupPlan,
+	fn: FunctionCode,
+	site: RewriteSite,
+	options: PrintOptions = {},
 ): { text: string; async: boolean } {
-  const parameters = options.parameters ?? fn.parameters;
-  const event = parameters.find((parameter) => parameter.event !== undefined)?.name;
-  const body = options.body ?? fn.body;
-  const kind = fn.expression ? "expression" : "statements";
-  const code = passEvent(plan, rewritten(plan, body, kind, event, site), kind, body, event);
-  const awaited =
-    site === "client"
-      ? clientCode(plan, code, kind, options.synchronous === true)
-      : { code, async: false };
-  const async = fn.async === true || awaited.async;
-  const returnType =
-    async && fn.async !== true && fn.returnType
-      ? { ...fn.returnType, code: `Promise<${promised(fn)}>` }
-      : fn.returnType;
-  const printed: FunctionCode = {
-    ...fn,
-    parameters: [...parameters],
-    ...(async ? { async: true as const } : {}),
-    ...(returnType ? { returnType } : {}),
-  };
-  return {
-    text: functionSource(
-      printed,
-      awaited.code,
-      options.name === undefined ? {} : { name: options.name },
-    ),
-    async,
-  };
+	const parameters = options.parameters ?? fn.parameters;
+	const event = parameters.find((parameter) => parameter.event !== undefined)?.name;
+	const body = options.body ?? fn.body;
+	const kind = fn.expression ? "expression" : "statements";
+	const code = passEvent(plan, rewritten(plan, body, kind, event, site), kind, body, event);
+	const awaited =
+		site === "client"
+			? clientCode(plan, code, kind, options.synchronous === true)
+			: { code, async: false };
+	const async = fn.async === true || awaited.async;
+	const returnType =
+		async && fn.async !== true && fn.returnType
+			? { ...fn.returnType, code: `Promise<${promised(fn)}>` }
+			: fn.returnType;
+	const printed: FunctionCode = {
+		...fn,
+		parameters: [...parameters],
+		...(async ? { async: true as const } : {}),
+		...(returnType ? { returnType } : {}),
+	};
+	return {
+		text: functionSource(
+			printed,
+			awaited.code,
+			options.name === undefined ? {} : { name: options.name },
+		),
+		async,
+	};
 }
 
 /**
@@ -673,9 +724,11 @@ export function printFunction(
  * type predicate or an assertion, which no promise carries, `boolean` or `void`.
  */
 function promised(fn: FunctionCode): string {
-  const type = fn.returnType!.code.trim();
-  if (!isPredicate(fn)) return type;
-  return type.startsWith("asserts") ? "void" : "boolean";
+	const type = fn.returnType!.code.trim();
+	if (!isPredicate(fn)) {
+		return type;
+	}
+	return type.startsWith("asserts") ? "void" : "boolean";
 }
 
 /**
@@ -686,22 +739,22 @@ function promised(fn: FunctionCode): string {
  * for a handler's expression body, whose value nothing reads.
  */
 export function clientCode(
-  plan: SetupPlan,
-  code: string,
-  kind: CodeKind,
-  synchronous: boolean,
-  discarded = false,
+	plan: SetupPlan,
+	code: string,
+	kind: CodeKind,
+	synchronous: boolean,
+	discarded = false,
 ): { code: string; kind: CodeKind; async: boolean; locals: ReadonlySet<string> } {
-  const inlined = inlineCalls(code, kind, inliner(plan, synchronous), { discarded });
-  const local = (names: ReadonlySet<string>) =>
-    new Set([...names].filter((name) => !inlined.locals.has(name)));
-  const awaited = awaitQrlCalls(
-    inlined.code,
-    inlined.kind,
-    local(plan.qrls),
-    local(plan.promiseQrls),
-  );
-  return { code: awaited.code, kind: inlined.kind, async: awaited.async, locals: inlined.locals };
+	const inlined = inlineCalls(code, kind, inliner(plan, synchronous), { discarded });
+	const local = (names: ReadonlySet<string>) =>
+		new Set([...names].filter((name) => !inlined.locals.has(name)));
+	const awaited = awaitQrlCalls(
+		inlined.code,
+		inlined.kind,
+		local(plan.qrls),
+		local(plan.promiseQrls),
+	);
+	return { code: awaited.code, kind: inlined.kind, async: awaited.async, locals: inlined.locals };
 }
 
 /**
@@ -712,74 +765,85 @@ export function clientCode(
  * scope captures only what that function reads.
  */
 function getterSource(plan: SetupPlan, getter: FunctionCode): string {
-  const kind: CodeKind = getter.expression ? "expression" : "statements";
-  const code = rewritten(plan, getter.body, kind, undefined, "pure");
-  const inlined = inlineCalls(code, kind, keptFunctions(plan), { keep: true });
-  if (!inlined.locals.size) return printFunction(plan, getter, "pure").text;
-  return functionSource(asKind(getter, inlined.kind), inlined.code);
+	const kind: CodeKind = getter.expression ? "expression" : "statements";
+	const code = rewritten(plan, getter.body, kind, undefined, "pure");
+	const inlined = inlineCalls(code, kind, keptFunctions(plan), { keep: true });
+	if (!inlined.locals.size) {
+		return printFunction(plan, getter, "pure").text;
+	}
+	return functionSource(asKind(getter, inlined.kind), inlined.code);
 }
 
 /** A function whose body is now of `kind`: an expression body may have become a block. */
 function asKind(fn: FunctionCode, kind: CodeKind): FunctionCode {
-  if (kind === "expression" || !fn.expression) return fn;
-  const block = { ...fn };
-  delete block.expression;
-  return block;
+	if (kind === "expression" || !fn.expression) {
+		return fn;
+	}
+	const block = { ...fn };
+	delete block.expression;
+	return block;
 }
 
 /** The setup functions a getter declares where it calls them: those not at module scope. */
 function keptFunctions(plan: SetupPlan): Inliner {
-  const kept = new Map<string, InlineFunction>();
-  const inliner: Inliner = {
-    target(name) {
-      const found = kept.get(name);
-      if (found) return found;
-      const fnPlan = [...plan.functions.values()].find(
-        (each) => each.form !== "module" && each.binding.name === name,
-      );
-      if (!fnPlan) return undefined;
-      const fn = plan.functionCode(fnPlan.item.binding) ?? fnPlan.item.function;
-      const kind: CodeKind = fn.expression ? "expression" : "statements";
-      const code = rewritten(plan, fn.body, kind, undefined, "pure");
-      // Its own calls of such functions are declared in it too.
-      const body = inlineCalls(code, kind, inliner, { keep: true });
-      const target: InlineFunction = {
-        fn: asKind(fn, body.kind),
-        declaration: fnPlan.item.form === "declaration",
-        parameters: fn.parameters,
-        body: body.code,
-        locals: new Set(),
-      };
-      kept.set(name, target);
-      return target;
-    },
-  };
-  return inliner;
+	const kept = new Map<string, InlineFunction>();
+	const inliner: Inliner = {
+		target(name) {
+			const found = kept.get(name);
+			if (found) {
+				return found;
+			}
+			const fnPlan = [...plan.functions.values()].find(
+				(each) => each.form !== "module" && each.binding.name === name,
+			);
+			if (!fnPlan) {
+				return undefined;
+			}
+			const fn = plan.functionCode(fnPlan.item.binding) ?? fnPlan.item.function;
+			const kind: CodeKind = fn.expression ? "expression" : "statements";
+			const code = rewritten(plan, fn.body, kind, undefined, "pure");
+			// Its own calls of such functions are declared in it too.
+			const body = inlineCalls(code, kind, inliner, { keep: true });
+			const target: InlineFunction = {
+				fn: asKind(fn, body.kind),
+				declaration: fnPlan.item.form === "declaration",
+				parameters: fn.parameters,
+				body: body.code,
+				locals: new Set(),
+			};
+			kept.set(name, target);
+			return target;
+		},
+	};
+	return inliner;
 }
 
 const inlineFunctions = new WeakMap<SetupPlan, Map<BindingId, InlineFunction>>();
 
 /** The calls client code writes in place (./inline.ts), as ./plan.ts `inlinedAt` decides. */
 export function inliner(plan: SetupPlan, synchronous: boolean): Inliner {
-  return {
-    target(name, site) {
-      const id = plan.qrlFunctions.get(name);
-      if (
-        id === undefined ||
-        !inlinedAt(plan.functions.get(id)!.item.function, site, synchronous)
-      ) {
-        return undefined;
-      }
-      let known = inlineFunctions.get(plan);
-      if (!known) inlineFunctions.set(plan, (known = new Map()));
-      let found = known.get(id);
-      if (!found) {
-        found = inlineFunction(plan, id);
-        known.set(id, found);
-      }
-      return found;
-    },
-  };
+	return {
+		target(name, site) {
+			const id = plan.qrlFunctions.get(name);
+			if (
+				id === undefined ||
+				!inlinedAt(plan.functions.get(id)!.item.function, site, synchronous)
+			) {
+				return undefined;
+			}
+			let known = inlineFunctions.get(plan);
+			if (!known) {
+				known = new Map();
+				inlineFunctions.set(plan, known);
+			}
+			let found = known.get(id);
+			if (!found) {
+				found = inlineFunction(plan, id);
+				known.set(id, found);
+			}
+			return found;
+		},
+	};
 }
 
 /**
@@ -787,42 +851,44 @@ export function inliner(plan: SetupPlan, synchronous: boolean): Inliner {
  * place too, so the fill's `$` scope captures no plain function and renders at once.
  */
 export function fillFunction(plan: SetupPlan, id: BindingId, name: string): string {
-  return localDeclaration(name, inlineFunction(plan, id));
+	return localDeclaration(name, inlineFunction(plan, id));
 }
 
 /** A client function as it is written in place: its own calls in place too. */
 function inlineFunction(plan: SetupPlan, id: BindingId): InlineFunction {
-  const { item } = plan.functions.get(id)!;
-  const fn = plan.functionCode(id) ?? item.function;
-  const event = fn.parameters.find((parameter) => parameter.event !== undefined)?.name;
-  const kind: CodeKind = fn.expression ? "expression" : "statements";
-  const code = passEvent(
-    plan,
-    rewritten(plan, fn.body, kind, event, "client"),
-    kind,
-    fn.body,
-    event,
-  );
-  const settled = clientCode(plan, code, kind, true);
-  // A body that now awaits a call makes the function async, and its return type a promise.
-  const async = settled.async && fn.async !== true;
-  const printed: FunctionCode = async
-    ? {
-        ...fn,
-        async: true,
-        ...(fn.returnType
-          ? { returnType: { ...fn.returnType, code: `Promise<${promised(fn)}>` } }
-          : {}),
-      }
-    : { ...fn };
-  if (settled.kind !== kind) delete printed.expression;
-  return {
-    fn: printed,
-    declaration: item.form === "declaration",
-    parameters: fn.parameters,
-    body: settled.code,
-    locals: settled.locals,
-  };
+	const { item } = plan.functions.get(id)!;
+	const fn = plan.functionCode(id) ?? item.function;
+	const event = fn.parameters.find((parameter) => parameter.event !== undefined)?.name;
+	const kind: CodeKind = fn.expression ? "expression" : "statements";
+	const code = passEvent(
+		plan,
+		rewritten(plan, fn.body, kind, event, "client"),
+		kind,
+		fn.body,
+		event,
+	);
+	const settled = clientCode(plan, code, kind, true);
+	// A body that now awaits a call makes the function async, and its return type a promise.
+	const async = settled.async && fn.async !== true;
+	const printed: FunctionCode = async
+		? {
+				...fn,
+				async: true,
+				...(fn.returnType
+					? { returnType: { ...fn.returnType, code: `Promise<${promised(fn)}>` } }
+					: {}),
+			}
+		: { ...fn };
+	if (settled.kind !== kind) {
+		delete printed.expression;
+	}
+	return {
+		fn: printed,
+		declaration: item.form === "declaration",
+		parameters: fn.parameters,
+		body: settled.code,
+		locals: settled.locals,
+	};
 }
 
 /**
@@ -830,21 +896,25 @@ function inlineFunction(plan: SetupPlan, id: BindingId): InlineFunction {
  * it passes its event to that take it (./calls.ts `passElement`).
  */
 export function passEvent(
-  plan: SetupPlan,
-  code: string,
-  kind: CodeKind,
-  body: Code,
-  event: string | undefined,
+	plan: SetupPlan,
+	code: string,
+	kind: CodeKind,
+	body: Code,
+	event: string | undefined,
 ): string {
-  if (event === undefined) return code;
-  const callees = new Set(
-    eventCallees(body.refs, plan.eventFunctions).flatMap((id) => {
-      if (!plan.eventFunctions.get(id)?.element) return [];
-      const fn = plan.functions.get(id)!;
-      return [fn.form === "both" ? fn.qrl : fn.binding.name];
-    }),
-  );
-  return passElement(code, kind, callees, event, plan.names.once("element"));
+	if (event === undefined) {
+		return code;
+	}
+	const callees = new Set(
+		eventCallees(body.refs, plan.eventFunctions).flatMap((id) => {
+			if (!plan.eventFunctions.get(id)?.element) {
+				return [];
+			}
+			const fn = plan.functions.get(id)!;
+			return [fn.form === "both" ? fn.qrl : fn.binding.name];
+		}),
+	);
+	return passElement(code, kind, callees, event, plan.names.once("element"));
 }
 
 /**
@@ -852,25 +922,25 @@ export function passEvent(
  * body's statements, or an expression body as a statement. Awaits QRL calls in client code.
  */
 function bodyStatements(
-  plan: SetupPlan,
-  fn: FunctionCode,
-  event?: string,
+	plan: SetupPlan,
+	fn: FunctionCode,
+	event?: string,
 ): { code: string; async: boolean } {
-  const kind: CodeKind = fn.expression ? "expression" : "statements";
-  // A task's calls of local functions run in place: an awaited QRL call would leave the rest of
-  // the callback until after the tasks Qwik runs next, out of their source order.
-  const awaited = clientCode(
-    plan,
-    rewritten(plan, fn.body, kind, event, "client"),
-    kind,
-    true,
-    true,
-  );
-  const code =
-    awaited.kind === "expression"
-      ? `${/^(?:\{|function\b|class\b|let\s*\[)/.test(awaited.code) ? `(${awaited.code})` : awaited.code};`
-      : awaited.code.trim().slice(1, -1).trim();
-  return { code, async: fn.async === true || awaited.async };
+	const kind: CodeKind = fn.expression ? "expression" : "statements";
+	// A task's calls of local functions run in place: an awaited QRL call would leave the rest of
+	// the callback until after the tasks Qwik runs next, out of their source order.
+	const awaited = clientCode(
+		plan,
+		rewritten(plan, fn.body, kind, event, "client"),
+		kind,
+		true,
+		true,
+	);
+	const code =
+		awaited.kind === "expression"
+			? `${/^(?:\{|function\b|class\b|let\s*\[)/.test(awaited.code) ? `(${awaited.code})` : awaited.code};`
+			: awaited.code.trim().slice(1, -1).trim();
+	return { code, async: fn.async === true || awaited.async };
 }
 
 /**
@@ -878,19 +948,21 @@ function bodyStatements(
  * the callback's code and parameters leave it free and no binding of the component takes it.
  */
 function localName(plan: SetupPlan, name: string, fn: FunctionCode): string {
-  const taken =
-    uses(fn, name) ||
-    fn.parameters.some(
-      (parameter) => parameter.name === name || parameter.pattern?.names.includes(name),
-    ) ||
-    plan.component.bindings.some((binding) => binding.name === name) ||
-    plan.component.propsParameter?.name === name;
-  return taken ? plan.names.fresh(name) : name;
+	const taken =
+		uses(fn, name) ||
+		fn.parameters.some(
+			(parameter) => parameter.name === name || parameter.pattern?.names.includes(name),
+		) ||
+		plan.component.bindings.some((binding) => binding.name === name) ||
+		plan.component.propsParameter?.name === name;
+	return taken ? plan.names.fresh(name) : name;
 }
 
 /** Whether a function's body reads one of its parameters, by the names it holds. */
 function uses(fn: FunctionCode, name: string): boolean {
-  return new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}(?![\\w$])`).test(fn.body.code);
+	return new RegExp(`(?<![\\w$.])${name.replaceAll("$", String.raw`\$`)}(?![\\w$])`).test(
+		fn.body.code,
+	);
 }
 
 /**
@@ -898,201 +970,207 @@ function uses(fn: FunctionCode, name: string): boolean {
  * gives its value, and that value's type where `typeof` of the read can't name it.
  */
 function tracked(
-  plan: SetupPlan,
-  id: BindingId,
-  track: string,
+	plan: SetupPlan,
+	id: BindingId,
+	track: string,
 ): { tracked: string; read: string; type?: string } {
-  const binding = plan.component.bindings.find((candidate) => candidate.id === id)!;
-  // A composable's getter argument is a read-only signal (./composable.ts), which `track` reads
-  // through a function: it infers a value only from a writable one. An optional one is read
-  // where the caller passed it, and its type names the signal's value, since `typeof` takes no
-  // optional chain.
-  const parameter = plan.arguments.get(id);
-  if (parameter?.kind === "getter") {
-    const read = `${binding.name}${parameter.optional ? "?." : "."}value`;
-    return {
-      tracked: `${track}(() => ${read})`,
-      read,
-      ...(parameter.optional
-        ? { type: `NonNullable<typeof ${binding.name}>["value"] | undefined` }
-        : {}),
-    };
-  }
-  switch (binding.kind) {
-    // A model is read through its computed (./composition.ts).
-    case "state":
-    case "derived":
-    case "model":
-    // A composable's state or derived value is its hook's signal (ADR-0069).
-    case "usedState":
-    case "usedDerived":
-      return { tracked: `${track}(${binding.name})`, read: `${binding.name}.value` };
-    case "prop": {
-      const read =
-        plan.component.propsParameter?.form === "object"
-          ? `${plan.component.propsParameter.name}.${binding.name}`
-          : binding.name;
-      return { tracked: `${track}(() => ${read})`, read };
-    }
-    case "loopVar":
-    case "templateRef":
-    case "localConst":
-    case "awaited":
-    case "localFn":
-    case "localVar":
-    case "emit":
-      // The analyser lets a watcher or `watchEffect` read none of them (UF2010, UF2020).
-      throw new Error(`A ${binding.kind} is no reactive value a task can track.`);
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    // A value or a callback argument: the analyser lets a watcher read neither as a source, nor
-    // a module's value, nor a composable's function or constant.
-    case "argument":
-    case "moduleConst":
-    case "import":
-    case "usedFn":
-    case "usedConst":
-      throw new Error(`A ${binding.kind} is not tracked yet.`);
-    default:
-      return unreachable(binding.kind);
-  }
+	const binding = plan.component.bindings.find((candidate) => candidate.id === id)!;
+	// A composable's getter argument is a read-only signal (./composable.ts), which `track` reads
+	// through a function: it infers a value only from a writable one. An optional one is read
+	// where the caller passed it, and its type names the signal's value, since `typeof` takes no
+	// optional chain.
+	const parameter = plan.arguments.get(id);
+	if (parameter?.kind === "getter") {
+		const read = `${binding.name}${parameter.optional ? "?." : "."}value`;
+		return {
+			tracked: `${track}(() => ${read})`,
+			read,
+			...(parameter.optional
+				? { type: `NonNullable<typeof ${binding.name}>["value"] | undefined` }
+				: {}),
+		};
+	}
+	switch (binding.kind) {
+		// A model is read through its computed (./composition.ts).
+		case "state":
+		case "derived":
+		case "model":
+		// A composable's state or derived value is its hook's signal (ADR-0069).
+		case "usedState":
+		case "usedDerived":
+			return { tracked: `${track}(${binding.name})`, read: `${binding.name}.value` };
+		case "prop": {
+			const read =
+				plan.component.propsParameter?.form === "object"
+					? `${plan.component.propsParameter.name}.${binding.name}`
+					: binding.name;
+			return { tracked: `${track}(() => ${read})`, read };
+		}
+		case "loopVar":
+		case "templateRef":
+		case "localConst":
+		case "awaited":
+		case "localFn":
+		case "localVar":
+		case "emit":
+			// The analyser lets a watcher or `watchEffect` read none of them (UF2010, UF2020).
+			throw new Error(`A ${binding.kind} is no reactive value a task can track.`);
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		// A value or a callback argument: the analyser lets a watcher read neither as a source, nor
+		// a module's value, nor a composable's function or constant.
+		case "argument":
+		case "moduleConst":
+		case "import":
+		case "usedFn":
+		case "usedConst":
+			throw new Error(`A ${binding.kind} is not tracked yet.`);
+		default:
+			return unreachable(binding.kind);
+	}
 }
 
 /** The ctx parameter of a task: `{ track, cleanup: onCleanup }`, with only what it uses. */
 function taskContext(
-  plan: SetupPlan,
-  options: { track: boolean; cleanup?: string },
+	plan: SetupPlan,
+	options: { track: boolean; cleanup?: string },
 ): { parameter: string; track: string } {
-  const track = plan.names.once("track");
-  const parts: string[] = [];
-  if (options.track) parts.push(track === "track" ? "track" : `track: ${track}`);
-  if (options.cleanup !== undefined) {
-    parts.push(options.cleanup === "cleanup" ? "cleanup" : `cleanup: ${options.cleanup}`);
-  }
-  return { parameter: parts.length ? `{ ${parts.join(", ")} }` : "", track };
+	const track = plan.names.once("track");
+	const parts: Array<string> = [];
+	if (options.track) {
+		parts.push(track === "track" ? "track" : `track: ${track}`);
+	}
+	if (options.cleanup !== undefined) {
+		parts.push(options.cleanup === "cleanup" ? "cleanup" : `cleanup: ${options.cleanup}`);
+	}
+	return { parameter: parts.length ? `{ ${parts.join(", ")} }` : "", track };
 }
 
 /** A watcher's statements: see the module comment. */
-function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
-  const { names } = plan;
-  // The task with the computed and the signals it reads, together.
-  const statements: string[] = [];
-  const track = names.once("track");
-  const [valueParameter, previousParameter, cleanupParameter] = item.callback.parameters;
-  const valueName = valueParameter?.name;
-  // Each source as a tracked expression, and as a read for the previous value's start.
-  const sources = item.sources.map((source) => {
-    if (source.kind === "Ref") return tracked(plan, source.binding, track);
-    const single = singleRead(plan, source.getter);
-    if (single !== undefined) return tracked(plan, single, track);
-    const name = names.fresh(`${valueName ?? "watched"}Source`);
-    const getter = getterSource(plan, source.getter);
-    statements.push(`const ${name} = ${names.core("useComputed$")}(${getter});`);
-    return { tracked: `${track}(${name})`, read: `${name}.value` };
-  });
-  const reads = sources.map((source) => source.read);
-  const types = sources.map(
-    (source) => ("type" in source && source.type) || `typeof ${source.read}`,
-  );
-  // An array source's values are a mutable tuple, as Vue gives them to the callback: a function
-  // that takes an array takes them (a readonly tuple would fail TS4104).
-  const tuple = `[${types.join(", ")}]`;
-  const value = item.array
-    ? `[${sources.map((source) => source.tracked).join(", ")}]`
-    : sources[0]!.tracked;
-  const usesPrevious =
-    previousParameter !== undefined &&
-    (previousParameter.name === undefined || uses(item.callback, previousParameter.name));
-  const cleanup =
-    cleanupParameter?.name !== undefined && uses(item.callback, cleanupParameter.name)
-      ? cleanupParameter.name
-      : undefined;
-  const base = previousBase(plan, item, valueName);
-  const local = valueName ?? localName(plan, item.array ? "values" : "value", item.callback);
-  const lines: string[] = [];
-  const valueType =
-    valueName !== undefined && valueParameter?.type
-      ? `: ${valueParameter.type.code}`
-      : item.array
-        ? `: ${tuple}`
-        : "";
-  lines.push(`const ${local}${valueType} = ${value};`);
-  const same = (other: string) =>
-    item.array
-      ? `${local}.every((item, index) => Object.is(item, ${other}[index]))`
-      : `Object.is(${local}, ${other})`;
-  // The value at the callback's last run: the source's at creation, or, for an immediate watcher,
-  // none until its first run, which always calls back.
-  const previous = names.fresh(`previous${capitalized(base)}`);
-  const useSignal = names.core("useSignal");
-  if (item.immediate) {
-    const type = item.array ? tuple : types[0];
-    statements.push(`const ${previous} = ${useSignal}<{ value: ${type} }>();`);
-    const last = localName(plan, "last", item.callback);
-    lines.push(
-      `const ${last} = ${previous}.value;`,
-      `if (${last} && ${same(`${last}.value`)}) return;`,
-      `${previous}.value = { ${local === "value" ? "value" : `value: ${local}`} };`,
-    );
-    if (usesPrevious && previousParameter) {
-      lines.push(
-        `const ${parameterBinding(previousParameter)}${previousType(previousParameter)} = ${last}?.value${item.array ? " ?? []" : ""};`,
-      );
-    }
-  } else {
-    statements.push(
-      item.array
-        ? `const ${previous} = ${useSignal}<${tuple}>(() => [${reads.join(", ")}]);`
-        : `const ${previous} = ${useSignal}(() => ${reads[0]});`,
-    );
-    if (usesPrevious && previousParameter) {
-      lines.push(
-        `const ${parameterBinding(previousParameter)}${previousType(previousParameter)} = ${previous}.value;`,
-      );
-    }
-    const compared =
-      usesPrevious && previousParameter?.name !== undefined
-        ? previousParameter.name
-        : `${previous}.value`;
-    lines.push(`if (${same(compared)}) return;`, `${previous}.value = ${local};`);
-  }
-  if (valueParameter && valueName === undefined) {
-    lines.push(`const ${parameterBinding(valueParameter)} = ${local};`);
-  }
-  // Qwik runs a task's `cleanup` before each of its runs, one that finds its sources unchanged
-  // included (a write and its undoing in one handler): a watcher's `onCleanup` callbacks wait in
-  // a list for its next callback, and for the component's unmount (ADR-0048).
-  let cleanups: string | undefined;
-  if (cleanup !== undefined) {
-    cleanups = names.fresh(`${base}Cleanups`);
-    const noSerialize = names.core("noSerialize");
-    statements.push(
-      `const ${cleanups} = ${names.core("useConstant")}(() => ${noSerialize}<(() => void)[]>([]));`,
-    );
-    lines.push(
-      `for (const callback of ${cleanups}?.splice(0) ?? []) callback();`,
-      `const ${cleanup} = (callback: () => void) => void ${cleanups}?.push(callback);`,
-    );
-  }
-  const body = bodyStatements(plan, item.callback);
-  lines.push(floated(body));
-  const context = taskContext(plan, { track: true });
-  const fn = `(${context.parameter}) => {\n${lines.join("\n")}\n}`;
-  statements.push(
-    item.post
-      ? `${names.core("useVisibleTask$")}(${fn}, { strategy: "document-ready" });`
-      : `${names.core("useTask$")}(${fn}, { deferUpdates: false });`,
-  );
-  if (cleanups !== undefined) {
-    const unmount = names.once("cleanup");
-    const parameter = unmount === "cleanup" ? "{ cleanup }" : `{ cleanup: ${unmount} }`;
-    statements.push(
-      `${names.core("useVisibleTask$")}((${parameter}) => {\n${unmount}(() => {\nfor (const callback of ${cleanups}?.splice(0) ?? []) callback();\n});\n}, { strategy: "document-ready" });`,
-    );
-  }
-  return [block(statements.join("\n"))];
+function watchStatements(plan: SetupPlan, item: WatchItem): Array<Statement> {
+	const { names } = plan;
+	// The task with the computed and the signals it reads, together.
+	const statements: Array<string> = [];
+	const track = names.once("track");
+	const [valueParameter, previousParameter, cleanupParameter] = item.callback.parameters;
+	const valueName = valueParameter?.name;
+	// Each source as a tracked expression, and as a read for the previous value's start.
+	const sources = item.sources.map((source) => {
+		if (source.kind === "Ref") {
+			return tracked(plan, source.binding, track);
+		}
+		const single = singleRead(plan, source.getter);
+		if (single !== undefined) {
+			return tracked(plan, single, track);
+		}
+		const name = names.fresh(`${valueName ?? "watched"}Source`);
+		const getter = getterSource(plan, source.getter);
+		statements.push(`const ${name} = ${names.core("useComputed$")}(${getter});`);
+		return { tracked: `${track}(${name})`, read: `${name}.value` };
+	});
+	const reads = sources.map((source) => source.read);
+	const types = sources.map(
+		(source) => ("type" in source && source.type) || `typeof ${source.read}`,
+	);
+	// An array source's values are a mutable tuple, as Vue gives them to the callback: a function
+	// that takes an array takes them (a readonly tuple would fail TS4104).
+	const tuple = `[${types.join(", ")}]`;
+	const value = item.array
+		? `[${sources.map((source) => source.tracked).join(", ")}]`
+		: sources[0]!.tracked;
+	const usesPrevious =
+		previousParameter !== undefined &&
+		(previousParameter.name === undefined || uses(item.callback, previousParameter.name));
+	const cleanup =
+		cleanupParameter?.name !== undefined && uses(item.callback, cleanupParameter.name)
+			? cleanupParameter.name
+			: undefined;
+	const base = previousBase(plan, item, valueName);
+	const local = valueName ?? localName(plan, item.array ? "values" : "value", item.callback);
+	const lines: Array<string> = [];
+	const valueType =
+		valueName !== undefined && valueParameter?.type
+			? `: ${valueParameter.type.code}`
+			: item.array
+				? `: ${tuple}`
+				: "";
+	lines.push(`const ${local}${valueType} = ${value};`);
+	const same = (other: string) =>
+		item.array
+			? `${local}.every((item, index) => Object.is(item, ${other}[index]))`
+			: `Object.is(${local}, ${other})`;
+	// The value at the callback's last run: the source's at creation, or, for an immediate watcher,
+	// none until its first run, which always calls back.
+	const previous = names.fresh(`previous${capitalized(base)}`);
+	const useSignal = names.core("useSignal");
+	if (item.immediate) {
+		const type = item.array ? tuple : types[0];
+		statements.push(`const ${previous} = ${useSignal}<{ value: ${type} }>();`);
+		const last = localName(plan, "last", item.callback);
+		lines.push(
+			`const ${last} = ${previous}.value;`,
+			`if (${last} && ${same(`${last}.value`)}) return;`,
+			`${previous}.value = { ${local === "value" ? "value" : `value: ${local}`} };`,
+		);
+		if (usesPrevious && previousParameter) {
+			lines.push(
+				`const ${parameterBinding(previousParameter)}${previousType(previousParameter)} = ${last}?.value${item.array ? " ?? []" : ""};`,
+			);
+		}
+	} else {
+		statements.push(
+			item.array
+				? `const ${previous} = ${useSignal}<${tuple}>(() => [${reads.join(", ")}]);`
+				: `const ${previous} = ${useSignal}(() => ${reads[0]});`,
+		);
+		if (usesPrevious && previousParameter) {
+			lines.push(
+				`const ${parameterBinding(previousParameter)}${previousType(previousParameter)} = ${previous}.value;`,
+			);
+		}
+		const compared =
+			usesPrevious && previousParameter?.name !== undefined
+				? previousParameter.name
+				: `${previous}.value`;
+		lines.push(`if (${same(compared)}) return;`, `${previous}.value = ${local};`);
+	}
+	if (valueParameter && valueName === undefined) {
+		lines.push(`const ${parameterBinding(valueParameter)} = ${local};`);
+	}
+	// Qwik runs a task's `cleanup` before each of its runs, one that finds its sources unchanged
+	// included (a write and its undoing in one handler): a watcher's `onCleanup` callbacks wait in
+	// a list for its next callback, and for the component's unmount (ADR-0048).
+	let cleanups: string | undefined;
+	if (cleanup !== undefined) {
+		cleanups = names.fresh(`${base}Cleanups`);
+		const noSerialize = names.core("noSerialize");
+		statements.push(
+			`const ${cleanups} = ${names.core("useConstant")}(() => ${noSerialize}<(() => void)[]>([]));`,
+		);
+		lines.push(
+			`for (const callback of ${cleanups}?.splice(0) ?? []) callback();`,
+			`const ${cleanup} = (callback: () => void) => void ${cleanups}?.push(callback);`,
+		);
+	}
+	const body = bodyStatements(plan, item.callback);
+	lines.push(floated(body));
+	const context = taskContext(plan, { track: true });
+	const fn = `(${context.parameter}) => {\n${lines.join("\n")}\n}`;
+	statements.push(
+		item.post
+			? `${names.core("useVisibleTask$")}(${fn}, { strategy: "document-ready" });`
+			: `${names.core("useTask$")}(${fn}, { deferUpdates: false });`,
+	);
+	if (cleanups !== undefined) {
+		const unmount = names.once("cleanup");
+		const parameter = unmount === "cleanup" ? "{ cleanup }" : `{ cleanup: ${unmount} }`;
+		statements.push(
+			`${names.core("useVisibleTask$")}((${parameter}) => {\n${unmount}(() => {\nfor (const callback of ${cleanups}?.splice(0) ?? []) callback();\n});\n}, { strategy: "document-ready" });`,
+		);
+	}
+	return [block(statements.join("\n"))];
 }
 
 /**
@@ -1100,30 +1178,36 @@ function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
  * (`previousQuery`, `previousTitle`), the callback's value parameter, or `values` for an array.
  */
 function previousBase(plan: SetupPlan, item: WatchItem, valueName: string | undefined): string {
-  if (item.array) return "values";
-  const [source] = item.sources;
-  if (source?.kind === "Ref") return bindingName(plan, source.binding);
-  if (source?.kind === "Getter") {
-    const single = singleRead(plan, source.getter);
-    if (single !== undefined) return bindingName(plan, single);
-  }
-  return valueName ?? "value";
+	if (item.array) {
+		return "values";
+	}
+	const [source] = item.sources;
+	if (source?.kind === "Ref") {
+		return bindingName(plan, source.binding);
+	}
+	if (source?.kind === "Getter") {
+		const single = singleRead(plan, source.getter);
+		if (single !== undefined) {
+			return bindingName(plan, single);
+		}
+	}
+	return valueName ?? "value";
 }
 
 function capitalized(name: string): string {
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+	return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
 /** A parameter's annotation as a local's: `: number`, `: string | undefined` when optional. */
 function previousType(parameter: Parameter): string {
-  return parameter.type
-    ? `: ${parameter.type.code}${parameter.optional ? " | undefined" : ""}`
-    : "";
+	return parameter.type
+		? `: ${parameter.type.code}${parameter.optional ? " | undefined" : ""}`
+		: "";
 }
 
 /** A parameter's binding as a declaration's left side: its name, or its pattern. */
 function parameterBinding(parameter: Parameter): string {
-  return parameter.name ?? parameter.pattern!.code;
+	return parameter.name ?? parameter.pattern!.code;
 }
 
 /**
@@ -1131,22 +1215,28 @@ function parameterBinding(parameter: Parameter): string {
  * value (`() => title`, `() => count.value`): a task tracks it as it is, without a computed.
  */
 function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefined {
-  if (!getter.expression || getter.body.refs.length !== 1) return undefined;
-  const [reference] = getter.body.refs;
-  if (reference?.kind !== "Binding") return undefined;
-  const code = getter.body.code
-    .trim()
-    .replace(/^\(([\s\S]*)\)$/, "$1")
-    .trim();
-  const written = getter.body.code.slice(
-    reference.span.start - getter.body.span.start,
-    reference.span.end - getter.body.span.start,
-  );
-  // A composable's getter argument is read by a call (`() => price()`).
-  const isGetter = plan.arguments.get(reference.binding)?.kind === "getter";
-  if (code !== (isGetter ? `${written}()` : written)) return undefined;
-  const binding = plan.component.bindings.find((each) => each.id === reference.binding);
-  return binding && isReactiveBinding(binding, plan.arguments) ? reference.binding : undefined;
+	if (!getter.expression || getter.body.refs.length !== 1) {
+		return undefined;
+	}
+	const [reference] = getter.body.refs;
+	if (reference?.kind !== "Binding") {
+		return undefined;
+	}
+	const code = getter.body.code
+		.trim()
+		.replace(/^\(([\s\S]*)\)$/, "$1")
+		.trim();
+	const written = getter.body.code.slice(
+		reference.span.start - getter.body.span.start,
+		reference.span.end - getter.body.span.start,
+	);
+	// A composable's getter argument is read by a call (`() => price()`).
+	const isGetter = plan.arguments.get(reference.binding)?.kind === "getter";
+	if (code !== (isGetter ? `${written}()` : written)) {
+		return undefined;
+	}
+	const binding = plan.component.bindings.find((each) => each.id === reference.binding);
+	return binding && isReactiveBinding(binding, plan.arguments) ? reference.binding : undefined;
 }
 
 /**
@@ -1162,67 +1252,67 @@ function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefine
  * `cleanup` would run before the skipped run too).
  */
 function watchEffectCode(plan: SetupPlan, item: WatchEffectItem): string {
-  const { names } = plan;
-  const track = names.once("track");
-  // What the effect hands on to run later (a timer's callback, marked `later`) is not tracked.
-  const summary = summarizeTracked(item.effect.body, plan.component);
-  const dependencies = [...summary.reads].filter((id) => {
-    const binding = plan.component.bindings.find((each) => each.id === id);
-    return binding !== undefined && isReactiveBinding(binding, plan.arguments);
-  });
-  const [cleanupParameter] = item.effect.parameters;
-  const cleanup =
-    cleanupParameter?.name !== undefined && uses(item.effect, cleanupParameter.name)
-      ? cleanupParameter.name
-      : undefined;
-  const body = bodyStatements(plan, item.effect);
-  const visibleTask = names.core("useVisibleTask$");
-  if (!dependencies.length) {
-    // It runs once: nothing tracked can make it run again.
-    const context = taskContext(plan, {
-      track: false,
-      ...(cleanup === undefined ? {} : { cleanup }),
-    });
-    return `${visibleTask}((${context.parameter}) => {\n${floated(body)}\n}, { strategy: "document-ready" });`;
-  }
-  const statements: string[] = [];
-  const sources = dependencies.map((id) => tracked(plan, id, track));
-  const tuple = `[${sources.map((source) => source.type ?? `typeof ${source.read}`).join(", ")}]`;
-  const previous = names.fresh("previousEffect");
-  const values = localName(plan, "values", item.effect);
-  const last = localName(plan, "last", item.effect);
-  statements.push(`const ${previous} = ${names.core("useSignal")}<${tuple}>();`);
-  const lines = [
-    `const ${values}: ${tuple} = [${sources.map((source) => source.tracked).join(", ")}];`,
-    `const ${last} = ${previous}.value;`,
-    `if (${last} && ${values}.every((item, index) => Object.is(item, ${last}[index]))) return;`,
-    `${previous}.value = ${values};`,
-  ];
-  let cleanups: string | undefined;
-  if (cleanup !== undefined) {
-    cleanups = names.fresh("effectCleanups");
-    const noSerialize = names.core("noSerialize");
-    statements.push(
-      `const ${cleanups} = ${names.core("useConstant")}(() => ${noSerialize}<(() => void)[]>([]));`,
-    );
-    lines.push(
-      `for (const callback of ${cleanups}?.splice(0) ?? []) callback();`,
-      `const ${cleanup} = (callback: () => void) => void ${cleanups}?.push(callback);`,
-    );
-  }
-  lines.push(floated(body));
-  const context = taskContext(plan, { track: true });
-  statements.push(
-    `${visibleTask}((${context.parameter}) => {\n${lines.join("\n")}\n}, { strategy: "document-ready" });`,
-  );
-  if (cleanups !== undefined) {
-    const unmount = names.once("cleanup");
-    const parameter = unmount === "cleanup" ? "{ cleanup }" : `{ cleanup: ${unmount} }`;
-    statements.push(
-      `${visibleTask}((${parameter}) => {\n${unmount}(() => {\nfor (const callback of ${cleanups}?.splice(0) ?? []) callback();\n});\n}, { strategy: "document-ready" });`,
-    );
-  }
-  return statements.join("\n");
+	const { names } = plan;
+	const track = names.once("track");
+	// What the effect hands on to run later (a timer's callback, marked `later`) is not tracked.
+	const summary = summarizeTracked(item.effect.body, plan.component);
+	const dependencies = [...summary.reads].filter((id) => {
+		const binding = plan.component.bindings.find((each) => each.id === id);
+		return binding !== undefined && isReactiveBinding(binding, plan.arguments);
+	});
+	const [cleanupParameter] = item.effect.parameters;
+	const cleanup =
+		cleanupParameter?.name !== undefined && uses(item.effect, cleanupParameter.name)
+			? cleanupParameter.name
+			: undefined;
+	const body = bodyStatements(plan, item.effect);
+	const visibleTask = names.core("useVisibleTask$");
+	if (!dependencies.length) {
+		// It runs once: nothing tracked can make it run again.
+		const context = taskContext(plan, {
+			track: false,
+			...(cleanup === undefined ? {} : { cleanup }),
+		});
+		return `${visibleTask}((${context.parameter}) => {\n${floated(body)}\n}, { strategy: "document-ready" });`;
+	}
+	const statements: Array<string> = [];
+	const sources = dependencies.map((id) => tracked(plan, id, track));
+	const tuple = `[${sources.map((source) => source.type ?? `typeof ${source.read}`).join(", ")}]`;
+	const previous = names.fresh("previousEffect");
+	const values = localName(plan, "values", item.effect);
+	const last = localName(plan, "last", item.effect);
+	statements.push(`const ${previous} = ${names.core("useSignal")}<${tuple}>();`);
+	const lines = [
+		`const ${values}: ${tuple} = [${sources.map((source) => source.tracked).join(", ")}];`,
+		`const ${last} = ${previous}.value;`,
+		`if (${last} && ${values}.every((item, index) => Object.is(item, ${last}[index]))) return;`,
+		`${previous}.value = ${values};`,
+	];
+	let cleanups: string | undefined;
+	if (cleanup !== undefined) {
+		cleanups = names.fresh("effectCleanups");
+		const noSerialize = names.core("noSerialize");
+		statements.push(
+			`const ${cleanups} = ${names.core("useConstant")}(() => ${noSerialize}<(() => void)[]>([]));`,
+		);
+		lines.push(
+			`for (const callback of ${cleanups}?.splice(0) ?? []) callback();`,
+			`const ${cleanup} = (callback: () => void) => void ${cleanups}?.push(callback);`,
+		);
+	}
+	lines.push(floated(body));
+	const context = taskContext(plan, { track: true });
+	statements.push(
+		`${visibleTask}((${context.parameter}) => {\n${lines.join("\n")}\n}, { strategy: "document-ready" });`,
+	);
+	if (cleanups !== undefined) {
+		const unmount = names.once("cleanup");
+		const parameter = unmount === "cleanup" ? "{ cleanup }" : `{ cleanup: ${unmount} }`;
+		statements.push(
+			`${visibleTask}((${parameter}) => {\n${unmount}(() => {\nfor (const callback of ${cleanups}?.splice(0) ?? []) callback();\n});\n}, { strategy: "document-ready" });`,
+		);
+	}
+	return statements.join("\n");
 }
 
 /**
@@ -1233,20 +1323,20 @@ function watchEffectCode(plan: SetupPlan, item: WatchEffectItem): string {
  * (ADR-0048).
  */
 function floated(body: { code: string; async: boolean }): string {
-  return body.async ? `void (async () => {\n${body.code}\n})();` : body.code;
+	return body.async ? `void (async () => {\n${body.code}\n})();` : body.code;
 }
 
 /** `onMounted` and `onUnmounted` as visible tasks (see the module comment). */
 function lifecycleCode(plan: SetupPlan, item: LifecycleItem): string {
-  const { names } = plan;
-  const visibleTask = names.core("useVisibleTask$");
-  if (item.hook === "mounted") {
-    const body = bodyStatements(plan, item.callback);
-    return `${visibleTask}(${body.async ? "async " : ""}() => {\n${body.code}\n}, { strategy: "document-ready" });`;
-  }
-  // The cleanup discards what the callback returns: its body as statements, its calls in place.
-  const cleanup = names.once("cleanup");
-  const body = bodyStatements(plan, item.callback);
-  const context = cleanup === "cleanup" ? "{ cleanup }" : `{ cleanup: ${cleanup} }`;
-  return `${visibleTask}((${context}) => {\n${cleanup}(${body.async ? "async " : ""}() => {\n${body.code}\n});\n}, { strategy: "document-ready" });`;
+	const { names } = plan;
+	const visibleTask = names.core("useVisibleTask$");
+	if (item.hook === "mounted") {
+		const body = bodyStatements(plan, item.callback);
+		return `${visibleTask}(${body.async ? "async " : ""}() => {\n${body.code}\n}, { strategy: "document-ready" });`;
+	}
+	// The cleanup discards what the callback returns: its body as statements, its calls in place.
+	const cleanup = names.once("cleanup");
+	const body = bodyStatements(plan, item.callback);
+	const context = cleanup === "cleanup" ? "{ cleanup }" : `{ cleanup: ${cleanup} }`;
+	return `${visibleTask}((${context}) => {\n${cleanup}(${body.async ? "async " : ""}() => {\n${body.code}\n});\n}, { strategy: "document-ready" });`;
 }

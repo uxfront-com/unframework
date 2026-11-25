@@ -11,12 +11,12 @@ import type { MarkupOptions } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import {
-  canonical,
-  compareSuite,
-  MARKUP_CASES,
-  passedProps,
-  ROOT_CASES,
-  suite,
+	canonical,
+	compareSuite,
+	MARKUP_CASES,
+	passedProps,
+	ROOT_CASES,
+	suite,
 } from "../../codegen/test/markup-cases.ts";
 import type { Suite } from "../../codegen/test/markup-cases.ts";
 import { toolchain } from "../src/toolchain/index.ts";
@@ -29,71 +29,71 @@ afterAll(() => scratch.remove());
 
 /** A component: the props read from `Astro.props` in the frontmatter, then the markup. */
 function wrap(markup: string, { props }: Suite): string {
-  return [
-    "---",
-    `const { ${props.map(({ name }) => name).join(", ")} } = Astro.props;`,
-    "---",
-    "",
-    markup,
-    "",
-  ].join("\n");
+	return [
+		"---",
+		`const { ${props.map(({ name }) => name).join(", ")} } = Astro.props;`,
+		"---",
+		"",
+		markup,
+		"",
+	].join("\n");
 }
 
 /** The suite's component and each root case's, printed with `layout`. */
-function components(layout: MarkupOptions): { cases: Suite; source: string }[] {
-  return [suite(MARKUP_CASES), ...ROOT_CASES.map((each) => suite([each], "self"))].map((cases) => ({
-    cases,
-    source: wrap(
-      printMarkup(cases.component.render, astroDialect, {
-        ...layout,
-        component: cases.component,
-        rewrite: cases.rules(false),
-      }),
-      cases,
-    ),
-  }));
+function components(layout: MarkupOptions): Array<{ cases: Suite; source: string }> {
+	return [suite(MARKUP_CASES), ...ROOT_CASES.map((each) => suite([each], "self"))].map((cases) => ({
+		cases,
+		source: wrap(
+			printMarkup(cases.component.render, astroDialect, {
+				...layout,
+				component: cases.component,
+				rewrite: cases.rules(false),
+			}),
+			cases,
+		),
+	}));
 }
 
 /** Compiles (failing on any diagnostic) and renders a component on the server. */
 async function render(source: string, props: Record<string, unknown>): Promise<string> {
-  return renderToString(await loadAstroComponent(scratch.path, source), { props });
+	return renderToString(await loadAstroComponent(scratch.path, source), { props });
 }
 
 let linted = 0;
 
 describe.each<MarkupOptions>([{}, { printWidth: 30 }])(
-  "astro markup (print width $printWidth)",
-  (layout) => {
-    it("renders every case as the render contract says", async () => {
-      const { cases, source } = components(layout)[0]!;
-      const html = await render(source, passedProps(cases.props));
-      for (const { name, expected, actual } of compareSuite(canonical(html), cases.cases)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    });
+	"astro markup (print width $printWidth)",
+	(layout) => {
+		it("renders every case as the render contract says", async () => {
+			const { cases, source } = components(layout)[0]!;
+			const html = await render(source, passedProps(cases.props));
+			for (const { name, expected, actual } of compareSuite(canonical(html), cases.cases)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		});
 
-    it.each(ROOT_CASES.map((each, index) => [each.name, index + 1] as const))(
-      "renders %s",
-      async (_, index) => {
-        const { cases, source } = components(layout)[index]!;
-        const html = await render(source, passedProps(cases.props));
-        expect(canonical(html)).toEqual(canonical(ROOT_CASES[index - 1]!.expected));
-      },
-    );
+		it.each(ROOT_CASES.map((each, index) => [each.name, index + 1] as const))(
+			"renders %s",
+			async (_, index) => {
+				const { cases, source } = components(layout)[index]!;
+				const html = await render(source, passedProps(cases.props));
+				expect(canonical(html)).toEqual(canonical(ROOT_CASES[index - 1]!.expected));
+			},
+		);
 
-    it("prints shapes the Astro linters accept (L5)", { timeout: 60_000 }, async () => {
-      const directory = join(scratch.path, `lint-${linted++}`);
-      mkdirSync(directory, { recursive: true });
-      const files = components(layout).map(({ source }, index) => {
-        const path = join(directory, `Case${index}.astro`);
-        writeFileSync(path, source);
-        return path;
-      });
-      const found = await toolchain.lint(files, { toolchainDir, root: integrationRoot });
-      const messages = [...found].flatMap(([file, each]) =>
-        each.map(({ code, message }) => `${file.split("/").at(-1)}: ${code ?? message}`),
-      );
-      expect(messages).toEqual([]);
-    });
-  },
+		it("prints shapes the Astro linters accept (L5)", { timeout: 60_000 }, async () => {
+			const directory = join(scratch.path, `lint-${linted++}`);
+			mkdirSync(directory, { recursive: true });
+			const files = components(layout).map(({ source }, index) => {
+				const path = join(directory, `Case${index}.astro`);
+				writeFileSync(path, source);
+				return path;
+			});
+			const found = await toolchain.lint(files, { toolchainDir, root: integrationRoot });
+			const messages = [...found].flatMap(([file, each]) =>
+				each.map(({ code, message }) => `${file.split("/").at(-1)}: ${code ?? message}`),
+			);
+			expect(messages).toEqual([]);
+		});
+	},
 );

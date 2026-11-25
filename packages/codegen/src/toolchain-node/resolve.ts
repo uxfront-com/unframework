@@ -9,14 +9,14 @@ import { dirname, join, resolve } from "node:path";
 
 /** The fields of a package manifest the toolchains read. */
 export interface PackageManifest {
-  version?: string;
-  bin?: string | Record<string, string>;
+	version?: string;
+	bin?: string | Record<string, string>;
 }
 
 /** A package installed for a directory: its manifest, and where that manifest is. */
 export interface InstalledPackage {
-  manifestPath: string;
-  manifest: PackageManifest;
+	manifestPath: string;
+	manifest: PackageManifest;
 }
 
 /**
@@ -25,12 +25,12 @@ export interface InstalledPackage {
  * them installs the package.
  */
 export function resolveInstalled(directory: string, specifier: string): string | undefined {
-  const parts = specifier.split("/");
-  const name = specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0]!;
-  const from = installedFrom(directory, name);
-  return from === undefined
-    ? undefined
-    : createRequire(join(from, "package.json")).resolve(specifier);
+	const parts = specifier.split("/");
+	const name = specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0]!;
+	const from = installedFrom(directory, name);
+	return from === undefined
+		? undefined
+		: createRequire(join(from, "package.json")).resolve(specifier);
 }
 
 /**
@@ -38,11 +38,13 @@ export function resolveInstalled(directory: string, specifier: string): string |
  * read directly: a package's `exports` need not expose its `package.json`.
  */
 export function findInstalled(directory: string, name: string): InstalledPackage | undefined {
-  const from = installedFrom(directory, name);
-  if (from === undefined) return undefined;
-  const manifestPath = join(from, "node_modules", name, "package.json");
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as PackageManifest;
-  return { manifestPath, manifest };
+	const from = installedFrom(directory, name);
+	if (from === undefined) {
+		return undefined;
+	}
+	const manifestPath = join(from, "node_modules", name, "package.json");
+	const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as PackageManifest;
+	return { manifestPath, manifest };
 }
 
 /**
@@ -50,23 +52,29 @@ export function findInstalled(directory: string, name: string): InstalledPackage
  * installed. Throws when the package is not installed there or declares no such bin.
  */
 export function resolveToolBin(toolchainDir: string, pkg: string, bin: string): string {
-  const installed = findInstalled(toolchainDir, pkg);
-  if (!installed) {
-    throw new Error(
-      `${pkg} is not installed in ${toolchainDir}: the toolchain directory must provide it ` +
-        `(in this repo, tests/toolchains/<target> lists it as a devDependency).`,
-    );
-  }
-  const { manifestPath, manifest } = installed;
-  const relative = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.[bin];
-  if (!relative) throw new Error(`${pkg} at ${dirname(manifestPath)} has no "${bin}" bin.`);
-  return join(dirname(manifestPath), relative);
+	const installed = findInstalled(toolchainDir, pkg);
+	if (!installed) {
+		throw new Error(
+			`${pkg} is not installed in ${toolchainDir}: the toolchain directory must provide it ` +
+				`(in this repo, tests/toolchains/<target> lists it as a devDependency).`,
+		);
+	}
+	const { manifestPath, manifest } = installed;
+	const relative = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.[bin];
+	if (!relative) {
+		throw new Error(`${pkg} at ${dirname(manifestPath)} has no "${bin}" bin.`);
+	}
+	return join(dirname(manifestPath), relative);
 }
 
 /** The nearest directory, from `directory` upwards, whose `node_modules` holds package `name`. */
 function installedFrom(directory: string, name: string): string | undefined {
-  for (let current = resolve(directory); ; current = dirname(current)) {
-    if (existsSync(join(current, "node_modules", name, "package.json"))) return current;
-    if (dirname(current) === current) return undefined;
-  }
+	for (let current = resolve(directory); ; current = dirname(current)) {
+		if (existsSync(join(current, "node_modules", name, "package.json"))) {
+			return current;
+		}
+		if (dirname(current) === current) {
+			return undefined;
+		}
+	}
 }

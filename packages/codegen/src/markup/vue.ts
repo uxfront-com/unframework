@@ -6,37 +6,37 @@ import type { Attribute, ComponentAttribute } from "@unframework.dev/ir";
 // Vue is the reference target (ADR-0014): whatever it renders becomes every target's expectation.
 import type { CodeKind } from "../parse.ts";
 import {
-  isIdentifierName,
-  escapeHtmlAttribute,
-  escapeHtmlText,
-  escapeReferences,
-  mapCode,
-  quotedAttribute,
-  separateClosingBraces,
-  stringLiteral,
+	isIdentifierName,
+	escapeHtmlAttribute,
+	escapeHtmlText,
+	escapeReferences,
+	mapCode,
+	quotedAttribute,
+	separateClosingBraces,
+	stringLiteral,
 } from "./escape.ts";
 import {
-  classArrayItems,
-  guardsOf,
-  directiveAttributeName,
-  isRoot,
-  keepsWhitespace,
-  onlyGuards,
-  staticClassValue,
-  staticStyleValue,
-  toggleObject,
-  withoutEmptyBranches,
+	classArrayItems,
+	guardsOf,
+	directiveAttributeName,
+	isRoot,
+	keepsWhitespace,
+	onlyGuards,
+	staticClassValue,
+	staticStyleValue,
+	toggleObject,
+	withoutEmptyBranches,
 } from "./printer.ts";
 import type {
-  ClassPart,
-  MarkupDialect,
-  MarkupPiece,
-  PrintedAttribute,
-  PrintedEvent,
-  PrintedFill,
-  PrintedSlotOutlet,
-  StylePart,
-  TextPosition,
+	ClassPart,
+	MarkupDialect,
+	MarkupPiece,
+	PrintedAttribute,
+	PrintedEvent,
+	PrintedFill,
+	PrintedSlotOutlet,
+	StylePart,
+	TextPosition,
 } from "./printer.ts";
 
 /** Whitespace Vue's `condense` mode rewrites: tabs, breaks and runs (Vue's `isWhitespace` set). */
@@ -45,8 +45,11 @@ const VUE_WHITESPACE_ONLY = /^[\t\n\f\r ]+$/;
 
 /** A string literal in single quotes, escaped as the value of a double-quoted attribute binding. */
 function boundLiteral(value: string): string {
-  const body = stringLiteral(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'");
-  return escapeHtmlAttribute(`'${body}'`);
+	const body = stringLiteral(value)
+		.slice(1, -1)
+		.replaceAll(String.raw`\"`, '"')
+		.replaceAll("'", String.raw`\'`);
+	return escapeHtmlAttribute(`'${body}'`);
 }
 
 /**
@@ -54,7 +57,7 @@ function boundLiteral(value: string): string {
  * decodes character references in it before parsing the expression.
  */
 export function vueInterpolationCode(code: string): string {
-  return escapeReferences(separateClosingBraces(code));
+	return escapeReferences(separateClosingBraces(code));
 }
 
 /**
@@ -64,24 +67,26 @@ export function vueInterpolationCode(code: string): string {
  * expression by default; a listener's value may be statements (`@click="a(); b()"`).
  */
 export function vueAttributeCode(code: string, kind: CodeKind = "expression"): string {
-  const requoted = code.includes('"')
-    ? mapCode(code, { string: (raw) => (raw.startsWith('"') ? singleQuoted(raw) : raw) }, kind)
-    : code;
-  return escapeReferences(requoted).replace(/"/g, "&quot;");
+	const requoted = code.includes('"')
+		? mapCode(code, { string: (raw) => (raw.startsWith('"') ? singleQuoted(raw) : raw) }, kind)
+		: code;
+	return escapeReferences(requoted).replaceAll('"', "&quot;");
 }
 
 /** A double-quoted string literal's raw text, in single quotes with the same escapes. */
 function singleQuoted(raw: string): string {
-  let body = "";
-  for (let index = 1; index < raw.length - 1; index++) {
-    const character = raw[index]!;
-    if (character === "\\") {
-      const next = raw[index + 1]!;
-      body += next === '"' ? '"' : `\\${next}`;
-      index++;
-    } else body += character === "'" ? "\\'" : character;
-  }
-  return `'${body}'`;
+	let body = "";
+	for (let index = 1; index < raw.length - 1; index++) {
+		const character = raw[index]!;
+		if (character === "\\") {
+			const next = raw[index + 1]!;
+			body += next === '"' ? '"' : `\\${next}`;
+			index++;
+		} else {
+			body += character === "'" ? String.raw`\'` : character;
+		}
+	}
+	return `'${body}'`;
 }
 
 /**
@@ -89,12 +94,16 @@ function singleQuoted(raw: string): string {
  * part alone, an object of toggles alone, or an array of both in source order, consecutive
  * toggles in one object.
  */
-export function vueClassValue(parts: readonly ClassPart[]): string {
-  const bound = parts.filter((part) => part.kind !== "Static");
-  const [only, ...more] = bound;
-  if (only?.kind === "Dynamic" && more.length === 0) return only.value;
-  if (bound.every((part) => part.kind === "Toggle")) return toggleObject(bound);
-  return `[${classArrayItems(bound, false).join(", ")}]`;
+export function vueClassValue(parts: ReadonlyArray<ClassPart>): string {
+	const bound = parts.filter((part) => part.kind !== "Static");
+	const [only, ...more] = bound;
+	if (only?.kind === "Dynamic" && more.length === 0) {
+		return only.value;
+	}
+	if (bound.every((part) => part.kind === "Toggle")) {
+		return toggleObject(bound);
+	}
+	return `[${classArrayItems(bound, false).join(", ")}]`;
 }
 
 /**
@@ -106,7 +115,7 @@ export function vueClassValue(parts: readonly ClassPart[]): string {
  * the declaration before it. A value with none of those keeps itself and its neighbours whole.
  */
 function vueReadsStatic(value: string): boolean {
-  return !value.includes("/*") && !/;(?![^(]*\))/.test(value) && !/^[^()]*\)/.test(value);
+	return !value.includes("/*") && !/;(?![^(]*\))/.test(value) && !/^[^()]*\)/.test(value);
 }
 
 /**
@@ -116,28 +125,28 @@ function vueReadsStatic(value: string): boolean {
  * root's hyphenated declaration beside it, which a nullish value then never removes, and which
  * the server renders twice.
  */
-function styleObject(parts: readonly StylePart[]): string {
-  return `{ ${parts
-    .flatMap((part) =>
-      part.kind === "Bound"
-        ? [
-            `${isIdentifierName(part.property) ? part.property : JSON.stringify(part.property)}: ${part.value}`,
-          ]
-        : [],
-    )
-    .join(", ")} }`;
+function styleObject(parts: ReadonlyArray<StylePart>): string {
+	return `{ ${parts
+		.flatMap((part) =>
+			part.kind === "Bound"
+				? [
+						`${isIdentifierName(part.property) ? part.property : JSON.stringify(part.property)}: ${part.value}`,
+					]
+				: [],
+		)
+		.join(", ")} }`;
 }
 
 /** Vue's own directives, which `vue/attributes-order` places in groups of their own. */
 const BUILT_IN_DIRECTIVES = new Set([
-  "v-show",
-  "v-cloak",
-  "v-once",
-  "v-pre",
-  "v-text",
-  "v-html",
-  "v-slot",
-  "v-bind",
+	"v-show",
+	"v-cloak",
+	"v-once",
+	"v-pre",
+	"v-text",
+	"v-html",
+	"v-slot",
+	"v-bind",
 ]);
 
 /**
@@ -148,19 +157,35 @@ const BUILT_IN_DIRECTIVES = new Set([
  * order.
  */
 function vueRank({ name }: PrintedAttribute): number {
-  if (name === ":is") return -1;
-  if (name === "v-for") return 0;
-  if (name === "v-if" || name === "v-else-if" || name === "v-else") return 1;
-  if (name === "id") return 2;
-  if (name === "key" || name === "ref") return 3;
-  if (name === "v-model" || name.startsWith("v-model:")) return 3.5;
-  // Content, which comes after the listeners.
-  if (name === "v-html") return 6;
-  if (/^v-[a-z]/.test(name) && !BUILT_IN_DIRECTIVES.has(name) && !name.startsWith("v-on:")) {
-    return 3.75;
-  }
-  if (name.startsWith("@") || name.startsWith("v-on:")) return 5;
-  return 4;
+	if (name === ":is") {
+		return -1;
+	}
+	if (name === "v-for") {
+		return 0;
+	}
+	if (name === "v-if" || name === "v-else-if" || name === "v-else") {
+		return 1;
+	}
+	if (name === "id") {
+		return 2;
+	}
+	if (name === "key" || name === "ref") {
+		return 3;
+	}
+	if (name === "v-model" || name.startsWith("v-model:")) {
+		return 3.5;
+	}
+	// Content, which comes after the listeners.
+	if (name === "v-html") {
+		return 6;
+	}
+	if (/^v-[a-z]/.test(name) && !BUILT_IN_DIRECTIVES.has(name) && !name.startsWith("v-on:")) {
+		return 3.75;
+	}
+	if (name.startsWith("@") || name.startsWith("v-on:")) {
+		return 5;
+	}
+	return 4;
 }
 
 /**
@@ -168,11 +193,11 @@ function vueRank({ name }: PrintedAttribute): number {
  * event options apply as the DOM's `addEventListener` options.
  */
 function modifiers({ attribute }: PrintedEvent): string {
-  return [
-    attribute.capture ? ".capture" : "",
-    attribute.once ? ".once" : "",
-    attribute.passive ? ".passive" : "",
-  ].join("");
+	return [
+		attribute.capture ? ".capture" : "",
+		attribute.once ? ".once" : "",
+		attribute.passive ? ".passive" : "",
+	].join("");
 }
 
 /**
@@ -195,198 +220,204 @@ function modifiers({ attribute }: PrintedEvent): string {
  * any other value.
  */
 export const vueDialect: MarkupDialect = {
-  name: "vue",
-  escapeText: (text, position) => {
-    const condensed = keepsWhitespace(position)
-      ? text.includes("\r")
-      : VUE_CONDENSED.test(text) ||
-        ((position.first || position.last) && VUE_WHITESPACE_ONLY.test(text)) ||
-        atRootEdge(position);
-    if (condensed) return `{{ ${stringLiteral(text)} }}`;
-    const escaped = escapeHtmlText(text).replace(/\{\{/g, "{&#123;");
-    // A `{` right before an interpolation would open it early (`{{{ x }}`).
-    return position.next === "Interpolation" && escaped.endsWith("{")
-      ? `${escaped.slice(0, -1)}&#123;`
-      : escaped;
-  },
-  attribute: (name, value) =>
-    value.includes("\r") ? `:${name}="${boundLiteral(value)}"` : quotedAttribute(name, value),
-  voidElement: "self-closing",
-  stripsWhitespaceBetweenElements: true,
-  stripsEdgeWhitespace: true,
-  interpolation: (code) => `{{ ${vueInterpolationCode(code)} }}`,
-  boundAttribute: (name, code) => `:${name}="${vueAttributeCode(code)}"`,
-  classAttribute: (parts) => {
-    const value = staticClassValue(parts);
-    const printed: PrintedAttribute[] = value
-      ? [{ name: "class", text: vueDialect.attribute("class", value, "") }]
-      : [];
-    if (parts.some((part) => part.kind !== "Static")) {
-      printed.push({ name: "class", text: `:class="${vueAttributeCode(vueClassValue(parts))}"` });
-    }
-    return printed;
-  },
-  styleAttribute: (written) => {
-    // A whole style, an object or a declaration list, is Vue's own `:style` (ADR-0065).
-    const whole = written.find((part) => part.property === "");
-    if (whole) return [{ name: "style", text: `:style="${vueAttributeCode(whole.value)}"` }];
-    // A static declaration Vue would misread joins the bound ones, whose values it takes whole.
-    const parts = written.map((part): StylePart =>
-      part.kind === "Static" && !vueReadsStatic(part.value)
-        ? { kind: "Bound", property: part.property, value: JSON.stringify(part.value) }
-        : part,
-    );
-    const value = staticStyleValue(parts);
-    const printed: PrintedAttribute[] = value
-      ? [{ name: "style", text: vueDialect.attribute("style", value, "") }]
-      : [];
-    if (parts.some((part) => part.kind === "Bound")) {
-      printed.push({ name: "style", text: `:style="${vueAttributeCode(styleObject(parts))}"` });
-    }
-    return printed;
-  },
-  conditional: (branches) =>
-    withoutEmptyBranches(branches).map(({ condition, branch }, index): MarkupPiece => {
-      const name = index === 0 ? "v-if" : condition === undefined ? "v-else" : "v-else-if";
-      const directive: PrintedAttribute = {
-        name,
-        text: condition === undefined ? name : `${name}="${vueAttributeCode(condition)}"`,
-      };
-      const [only, ...more] = branch.children;
-      if (only?.kind === "Component" && more.length === 0) {
-        return { kind: "component", component: only, directives: [directive] };
-      }
-      return only?.kind === "Element" && more.length === 0
-        ? { kind: "element", element: only, directives: [directive] }
-        : {
-            kind: "wrapper",
-            tag: "template",
-            attributes: [directive],
-            content: { kind: "nodes", nodes: branch.children, container: branch },
-          };
-    }),
-  list: ({ node, source, item, index, key }) => {
-    const directives: PrintedAttribute[] = [
-      {
-        name: "v-for",
-        text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
-      },
-      { name: "key", text: `:key="${vueAttributeCode(key)}"` },
-    ];
-    return [
-      node.body.kind === "Component"
-        ? { kind: "component", component: node.body, directives }
-        : { kind: "element", element: node.body, directives },
-    ];
-  },
-  // A handler's code is a function Vue calls with the event (a setup function's name, an
-  // arrow), or the statements a target supplies, which Vue runs with `$event` in scope.
-  eventAttribute: (event) => {
-    const name = `@${event.attribute.event}`;
-    const code =
-      event.statement === undefined
-        ? vueAttributeCode(event.handler)
-        : vueAttributeCode(event.statement, "statements");
-    return [{ name, text: `${name}${modifiers(event)}="${code}"` }];
-  },
-  // The name `useTemplateRef("…")` reads the element by, which the Vue target keys by the
-  // binding's name.
-  refAttribute: ({ name }) => [{ name: "ref", text: quotedAttribute("ref", name) }],
-  // A custom directive (ADR-0099), which `<script setup>` resolves by its `vFocusTrap` name.
-  directiveAttribute: ({ attribute, value }) => {
-    const name = `v-${directiveAttributeName(attribute.name)}`;
-    return [{ name, text: `${name}="${vueAttributeCode(value)}"` }];
-  },
-  rawHtmlAttribute: (code) => [{ name: "v-html", text: `v-html="${vueAttributeCode(code)}"` }],
-  orderAttributes: (attributes) =>
-    attributes
-      .map((attribute, index) => ({ attribute, index }))
-      .toSorted((a, b) => vueRank(a.attribute) - vueRank(b.attribute) || a.index - b.index)
-      .map(({ attribute }) => attribute),
-  // A component's props and events are hyphenated in a template, as `vue/attribute-hyphenation`
-  // and `vue/v-on-event-hyphenation` ask, the way Vue camelises them back (ADR-0053).
-  propAttribute: ({ name, code, literal }) => {
-    const attribute = hyphenate(name);
-    return [
-      {
-        name: attribute,
-        text:
-          literal !== undefined && !literal.includes("\r")
-            ? quotedAttribute(attribute, literal)
-            : `:${attribute}="${vueAttributeCode(code)}"`,
-      },
-    ];
-  },
-  componentEvent: (listener) => {
-    const name = `@${hyphenate(listener.attribute.event)}`;
-    return [{ name, text: `${name}="${vueAttributeCode(listener.handler)}"` }];
-  },
-  fills: (fills) => {
-    const [only] = fills;
-    if (
-      fills.length === 1 &&
-      only!.fill.slot === "default" &&
-      only!.fill.forward === undefined &&
-      only!.parameter === undefined
-    ) {
-      return [{ kind: "nodes", nodes: only!.fill.children, container: only!.fill }];
-    }
-    return fills.map(slotTemplate);
-  },
-  slotOutlet: (outlet) => [slotElement(outlet)],
-  // Vue's own `v-model`. Its `vModelText` casts a number input's value as `.number` does, but
-  // not a range input's, which the contract casts too (ADR-0054): that one takes `.number`.
-  modelAttribute: ({ attribute, value }, { element }) => {
-    const type = element.attributes.find((each) => each.kind === "Static" && each.name === "type");
-    const cast =
-      attribute.number ||
-      (attribute.control === "number" && !(type?.kind === "Static" && type.value === "number"));
-    const modifiers = [
-      attribute.lazy ? ".lazy" : "",
-      cast ? ".number" : "",
-      attribute.trim ? ".trim" : "",
-    ].join("");
-    return [{ name: "v-model", text: `v-model${modifiers}="${vueAttributeCode(value)}"` }];
-  },
-  modelBinding: ({ attribute, value }) => {
-    const name = `v-model:${attribute.model}`;
-    return [{ name, text: `${name}="${vueAttributeCode(value)}"` }];
-  },
-  // `<component :is>`, with the candidates' attributes and content as an element's (tags) or a
-  // component's (components).
-  dynamic: ({ node, is }) => {
-    const directives: PrintedAttribute[] = [{ name: ":is", text: `:is="${vueAttributeCode(is)}"` }];
-    if (node.candidates.every((candidate) => candidate.kind === "Tag")) {
-      return [
-        {
-          kind: "element",
-          element: {
-            kind: "Element",
-            tag: "component",
-            attributes: node.attributes as Attribute[],
-            children: node.children,
-            span: node.span,
-          },
-          directives,
-          // An attribute only some tags take renders on those (ADR-0119).
-          ...guardsOf(onlyGuards(node, is)),
-        },
-      ];
-    }
-    return [
-      {
-        kind: "component",
-        component: {
-          kind: "Component",
-          component: "component",
-          attributes: node.attributes as ComponentAttribute[],
-          fills: node.fills ?? [],
-          span: node.span,
-        },
-        directives,
-      },
-    ];
-  },
+	name: "vue",
+	escapeText: (text, position) => {
+		const condensed = keepsWhitespace(position)
+			? text.includes("\r")
+			: VUE_CONDENSED.test(text) ||
+				((position.first || position.last) && VUE_WHITESPACE_ONLY.test(text)) ||
+				atRootEdge(position);
+		if (condensed) {
+			return `{{ ${stringLiteral(text)} }}`;
+		}
+		const escaped = escapeHtmlText(text).replaceAll("{{", "{&#123;");
+		// A `{` right before an interpolation would open it early (`{{{ x }}`).
+		return position.next === "Interpolation" && escaped.endsWith("{")
+			? `${escaped.slice(0, -1)}&#123;`
+			: escaped;
+	},
+	attribute: (name, value) =>
+		value.includes("\r") ? `:${name}="${boundLiteral(value)}"` : quotedAttribute(name, value),
+	voidElement: "self-closing",
+	stripsWhitespaceBetweenElements: true,
+	stripsEdgeWhitespace: true,
+	interpolation: (code) => `{{ ${vueInterpolationCode(code)} }}`,
+	boundAttribute: (name, code) => `:${name}="${vueAttributeCode(code)}"`,
+	classAttribute: (parts) => {
+		const value = staticClassValue(parts);
+		const printed: Array<PrintedAttribute> = value
+			? [{ name: "class", text: vueDialect.attribute("class", value, "") }]
+			: [];
+		if (parts.some((part) => part.kind !== "Static")) {
+			printed.push({ name: "class", text: `:class="${vueAttributeCode(vueClassValue(parts))}"` });
+		}
+		return printed;
+	},
+	styleAttribute: (written) => {
+		// A whole style, an object or a declaration list, is Vue's own `:style` (ADR-0065).
+		const whole = written.find((part) => part.property === "");
+		if (whole) {
+			return [{ name: "style", text: `:style="${vueAttributeCode(whole.value)}"` }];
+		}
+		// A static declaration Vue would misread joins the bound ones, whose values it takes whole.
+		const parts = written.map((part): StylePart =>
+			part.kind === "Static" && !vueReadsStatic(part.value)
+				? { kind: "Bound", property: part.property, value: JSON.stringify(part.value) }
+				: part,
+		);
+		const value = staticStyleValue(parts);
+		const printed: Array<PrintedAttribute> = value
+			? [{ name: "style", text: vueDialect.attribute("style", value, "") }]
+			: [];
+		if (parts.some((part) => part.kind === "Bound")) {
+			printed.push({ name: "style", text: `:style="${vueAttributeCode(styleObject(parts))}"` });
+		}
+		return printed;
+	},
+	conditional: (branches) =>
+		withoutEmptyBranches(branches).map(({ condition, branch }, index): MarkupPiece => {
+			const name = index === 0 ? "v-if" : condition === undefined ? "v-else" : "v-else-if";
+			const directive: PrintedAttribute = {
+				name,
+				text: condition === undefined ? name : `${name}="${vueAttributeCode(condition)}"`,
+			};
+			const [only, ...more] = branch.children;
+			if (only?.kind === "Component" && more.length === 0) {
+				return { kind: "component", component: only, directives: [directive] };
+			}
+			return only?.kind === "Element" && more.length === 0
+				? { kind: "element", element: only, directives: [directive] }
+				: {
+						kind: "wrapper",
+						tag: "template",
+						attributes: [directive],
+						content: { kind: "nodes", nodes: branch.children, container: branch },
+					};
+		}),
+	list: ({ node, source, item, index, key }) => {
+		const directives: Array<PrintedAttribute> = [
+			{
+				name: "v-for",
+				text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
+			},
+			{ name: "key", text: `:key="${vueAttributeCode(key)}"` },
+		];
+		return [
+			node.body.kind === "Component"
+				? { kind: "component", component: node.body, directives }
+				: { kind: "element", element: node.body, directives },
+		];
+	},
+	// A handler's code is a function Vue calls with the event (a setup function's name, an
+	// arrow), or the statements a target supplies, which Vue runs with `$event` in scope.
+	eventAttribute: (event) => {
+		const name = `@${event.attribute.event}`;
+		const code =
+			event.statement === undefined
+				? vueAttributeCode(event.handler)
+				: vueAttributeCode(event.statement, "statements");
+		return [{ name, text: `${name}${modifiers(event)}="${code}"` }];
+	},
+	// The name `useTemplateRef("…")` reads the element by, which the Vue target keys by the
+	// binding's name.
+	refAttribute: ({ name }) => [{ name: "ref", text: quotedAttribute("ref", name) }],
+	// A custom directive (ADR-0099), which `<script setup>` resolves by its `vFocusTrap` name.
+	directiveAttribute: ({ attribute, value }) => {
+		const name = `v-${directiveAttributeName(attribute.name)}`;
+		return [{ name, text: `${name}="${vueAttributeCode(value)}"` }];
+	},
+	rawHtmlAttribute: (code) => [{ name: "v-html", text: `v-html="${vueAttributeCode(code)}"` }],
+	orderAttributes: (attributes) =>
+		attributes
+			.map((attribute, index) => ({ attribute, index }))
+			.toSorted((a, b) => vueRank(a.attribute) - vueRank(b.attribute) || a.index - b.index)
+			.map(({ attribute }) => attribute),
+	// A component's props and events are hyphenated in a template, as `vue/attribute-hyphenation`
+	// and `vue/v-on-event-hyphenation` ask, the way Vue camelises them back (ADR-0053).
+	propAttribute: ({ name, code, literal }) => {
+		const attribute = hyphenate(name);
+		return [
+			{
+				name: attribute,
+				text:
+					literal !== undefined && !literal.includes("\r")
+						? quotedAttribute(attribute, literal)
+						: `:${attribute}="${vueAttributeCode(code)}"`,
+			},
+		];
+	},
+	componentEvent: (listener) => {
+		const name = `@${hyphenate(listener.attribute.event)}`;
+		return [{ name, text: `${name}="${vueAttributeCode(listener.handler)}"` }];
+	},
+	fills: (fills) => {
+		const [only] = fills;
+		if (
+			fills.length === 1 &&
+			only!.fill.slot === "default" &&
+			only!.fill.forward === undefined &&
+			only!.parameter === undefined
+		) {
+			return [{ kind: "nodes", nodes: only!.fill.children, container: only!.fill }];
+		}
+		return fills.map(slotTemplate);
+	},
+	slotOutlet: (outlet) => [slotElement(outlet)],
+	// Vue's own `v-model`. Its `vModelText` casts a number input's value as `.number` does, but
+	// not a range input's, which the contract casts too (ADR-0054): that one takes `.number`.
+	modelAttribute: ({ attribute, value }, { element }) => {
+		const type = element.attributes.find((each) => each.kind === "Static" && each.name === "type");
+		const cast =
+			attribute.number ||
+			(attribute.control === "number" && !(type?.kind === "Static" && type.value === "number"));
+		const modifiers = [
+			attribute.lazy ? ".lazy" : "",
+			cast ? ".number" : "",
+			attribute.trim ? ".trim" : "",
+		].join("");
+		return [{ name: "v-model", text: `v-model${modifiers}="${vueAttributeCode(value)}"` }];
+	},
+	modelBinding: ({ attribute, value }) => {
+		const name = `v-model:${attribute.model}`;
+		return [{ name, text: `${name}="${vueAttributeCode(value)}"` }];
+	},
+	// `<component :is>`, with the candidates' attributes and content as an element's (tags) or a
+	// component's (components).
+	dynamic: ({ node, is }) => {
+		const directives: Array<PrintedAttribute> = [
+			{ name: ":is", text: `:is="${vueAttributeCode(is)}"` },
+		];
+		if (node.candidates.every((candidate) => candidate.kind === "Tag")) {
+			return [
+				{
+					kind: "element",
+					element: {
+						kind: "Element",
+						tag: "component",
+						attributes: node.attributes as Array<Attribute>,
+						children: node.children,
+						span: node.span,
+					},
+					directives,
+					// An attribute only some tags take renders on those (ADR-0119).
+					...guardsOf(onlyGuards(node, is)),
+				},
+			];
+		}
+		return [
+			{
+				kind: "component",
+				component: {
+					kind: "Component",
+					component: "component",
+					attributes: node.attributes as Array<ComponentAttribute>,
+					fills: node.fills ?? [],
+					span: node.span,
+				},
+				directives,
+			},
+		];
+	},
 };
 
 /**
@@ -395,41 +426,41 @@ export const vueDialect: MarkupDialect = {
  * the child sees no fill where the parent got none.
  */
 function slotTemplate({ fill, parameter, presence, forwardsProps }: PrintedFill): MarkupPiece {
-  const slot = `#${fill.slot}`;
-  if (fill.forward !== undefined) {
-    const props = forwardsProps ? "slotProps" : undefined;
-    return {
-      kind: "tag",
-      tag: "template",
-      attributes: [
-        { name: "v-if", text: `v-if="${vueAttributeCode(presence!)}"` },
-        { name: slot, text: props ? `${slot}="${props}"` : slot },
-      ],
-      content: [
-        {
-          kind: "tag",
-          tag: "slot",
-          attributes: [
-            ...(fill.forward === "default"
-              ? []
-              : [{ name: "name", text: quotedAttribute("name", fill.forward) }]),
-            ...(props ? [{ name: "v-bind", text: `v-bind="${props}"` }] : []),
-          ],
-        },
-      ],
-    };
-  }
-  return {
-    kind: "tag",
-    tag: "template",
-    attributes: [
-      {
-        name: slot,
-        text: parameter === undefined ? slot : `${slot}="${vueAttributeCode(parameter)}"`,
-      },
-    ],
-    content: [{ kind: "nodes", nodes: fill.children, container: fill }],
-  };
+	const slot = `#${fill.slot}`;
+	if (fill.forward !== undefined) {
+		const props = forwardsProps ? "slotProps" : undefined;
+		return {
+			kind: "tag",
+			tag: "template",
+			attributes: [
+				{ name: "v-if", text: `v-if="${vueAttributeCode(presence!)}"` },
+				{ name: slot, text: props ? `${slot}="${props}"` : slot },
+			],
+			content: [
+				{
+					kind: "tag",
+					tag: "slot",
+					attributes: [
+						...(fill.forward === "default"
+							? []
+							: [{ name: "name", text: quotedAttribute("name", fill.forward) }]),
+						...(props ? [{ name: "v-bind", text: `v-bind="${props}"` }] : []),
+					],
+				},
+			],
+		};
+	}
+	return {
+		kind: "tag",
+		tag: "template",
+		attributes: [
+			{
+				name: slot,
+				text: parameter === undefined ? slot : `${slot}="${vueAttributeCode(parameter)}"`,
+			},
+		],
+		content: [{ kind: "nodes", nodes: fill.children, container: fill }],
+	};
 }
 
 /**
@@ -437,32 +468,32 @@ function slotTemplate({ fill, parameter, presence, forwardsProps }: PrintedFill)
  * (camelCase, as the slot's fill reads them), and its fallback as its content.
  */
 function slotElement({ node, props }: PrintedSlotOutlet): MarkupPiece {
-  const attributes: PrintedAttribute[] = [];
-  if (node.slot !== "default") {
-    attributes.push({ name: "name", text: quotedAttribute("name", node.slot) });
-  }
-  // Key by key where Vue passes each as written: `name` names the slot, and Vue camelises a
-  // hyphenated key (`data-id` reaches the fill as `dataId`). Otherwise as one object.
-  if (props?.entries?.every(({ key }) => key !== "name" && camelize(key) === key)) {
-    for (const { key, value } of props.entries) {
-      attributes.push({ name: key, text: `:${key}="${vueAttributeCode(value)}"` });
-    }
-  } else if (props) {
-    attributes.push({ name: "v-bind", text: `v-bind="${vueAttributeCode(props.code)}"` });
-  }
-  return {
-    kind: "tag",
-    tag: "slot",
-    attributes,
-    ...(node.fallback.length
-      ? { content: [{ kind: "nodes", nodes: node.fallback, container: node }] }
-      : {}),
-  };
+	const attributes: Array<PrintedAttribute> = [];
+	if (node.slot !== "default") {
+		attributes.push({ name: "name", text: quotedAttribute("name", node.slot) });
+	}
+	// Key by key where Vue passes each as written: `name` names the slot, and Vue camelises a
+	// hyphenated key (`data-id` reaches the fill as `dataId`). Otherwise as one object.
+	if (props?.entries?.every(({ key }) => key !== "name" && camelize(key) === key)) {
+		for (const { key, value } of props.entries) {
+			attributes.push({ name: key, text: `:${key}="${vueAttributeCode(value)}"` });
+		}
+	} else if (props) {
+		attributes.push({ name: "v-bind", text: `v-bind="${vueAttributeCode(props.code)}"` });
+	}
+	return {
+		kind: "tag",
+		tag: "slot",
+		attributes,
+		...(node.fallback.length
+			? { content: [{ kind: "nodes", nodes: node.fallback, container: node }] }
+			: {}),
+	};
 }
 
 /** Whether text sits at an edge of the root, where the target's own line breaks meet it. */
 function atRootEdge(position: TextPosition): boolean {
-  return isRoot(position.container) && (position.first || position.last);
+	return isRoot(position.container) && (position.first || position.last);
 }
 
 /**
@@ -471,10 +502,10 @@ function atRootEdge(position: TextPosition): boolean {
  * camelises back to `imageURL`.
  */
 function hyphenate(name: string): string {
-  return name.replace(/\B([A-Z])/g, "-$1").toLowerCase();
+	return name.replaceAll(/\B([A-Z])/g, "-$1").toLowerCase();
 }
 
 /** Vue's camelisation of a hyphenated name (`camelize` in `@vue/shared`). */
 function camelize(name: string): string {
-  return name.replace(/-(\w)/g, (_, character: string) => character.toUpperCase());
+	return name.replaceAll(/-(\w)/g, (_, character: string) => character.toUpperCase());
 }

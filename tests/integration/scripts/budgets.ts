@@ -45,78 +45,82 @@ const WARMUP_ITERATIONS = 5;
 
 /** A target's output size, in bytes. */
 export interface OutputSize {
-  raw: number;
-  gzip: number;
+	raw: number;
+	gzip: number;
 }
 
 /** What a case costs. */
 export interface CaseCost {
-  /** Its compile on all seven targets, as a ratio of {@link CALIBRATION}'s. */
-  time: number;
-  /** Its size on each target it has output for. */
-  sizes: Partial<Record<TargetName, OutputSize>>;
+	/** Its compile on all seven targets, as a ratio of {@link CALIBRATION}'s. */
+	time: number;
+	/** Its size on each target it has output for. */
+	sizes: Partial<Record<TargetName, OutputSize>>;
 }
 
 /** The contents of `budgets.json`. */
 export interface Budgets {
-  cases: Record<string, CaseCost>;
+	cases: Record<string, CaseCost>;
 }
 
 /** The budgets on disk. A missing file fails each cell that reads it, with what to run. */
 export function readBudgets(file: string = BUDGETS_FILE): Budgets {
-  try {
-    return JSON.parse(readFileSync(file, "utf8")) as Budgets;
-  } catch (cause) {
-    throw new Error(`${file} cannot be read. Run \`pnpm test:budgets:update\` to write it.`, {
-      cause,
-    });
-  }
+	try {
+		return JSON.parse(readFileSync(file, "utf8")) as Budgets;
+	} catch (cause) {
+		throw new Error(`${file} cannot be read. Run \`pnpm test:budgets:update\` to write it.`, {
+			cause,
+		});
+	}
 }
 
 /** Every way a compile time and a target's size break their budgets. */
 export function budgetProblems(
-  budget: CaseCost | undefined,
-  target: TargetName,
-  time: number,
-  size: OutputSize,
-): string[] {
-  const limit = budget?.sizes[target];
-  if (!budget || !limit) return ["No budget for this cell. Run `pnpm test:budgets:update`."];
-  const update = "Run `pnpm test:budgets:update` if the change is intended.";
-  const problems: string[] = [];
-  if (time > budget.time * TIME_MARGIN) {
-    problems.push(
-      `compile time ${time.toFixed(2)} × ${CALIBRATION} is above ${TIME_MARGIN} × its budget of ${budget.time}. ${update}`,
-    );
-  }
-  for (const kind of ["raw", "gzip"] as const) {
-    if (size[kind] > limit[kind] * (1 + SIZE_MARGIN)) {
-      problems.push(
-        `${kind} size ${size[kind]} B is above its budget of ${limit[kind]} B plus ${SIZE_MARGIN * 100}%. ${update}`,
-      );
-    }
-  }
-  return problems;
+	budget: CaseCost | undefined,
+	target: TargetName,
+	time: number,
+	size: OutputSize,
+): Array<string> {
+	const limit = budget?.sizes[target];
+	if (!budget || !limit) {
+		return ["No budget for this cell. Run `pnpm test:budgets:update`."];
+	}
+	const update = "Run `pnpm test:budgets:update` if the change is intended.";
+	const problems: Array<string> = [];
+	if (time > budget.time * TIME_MARGIN) {
+		problems.push(
+			`compile time ${time.toFixed(2)} × ${CALIBRATION} is above ${TIME_MARGIN} × its budget of ${budget.time}. ${update}`,
+		);
+	}
+	for (const kind of ["raw", "gzip"] as const) {
+		if (size[kind] > limit[kind] * (1 + SIZE_MARGIN)) {
+			problems.push(
+				`${kind} size ${size[kind]} B is above its budget of ${limit[kind]} B plus ${SIZE_MARGIN * 100}%. ${update}`,
+			);
+		}
+	}
+	return problems;
 }
 
 /**
  * What `budgets.json` holds that no cell reads: a case the corpus has left or that has output on
  * no target, and a target of a case that has no output there.
  */
-export function staleBudgets(budgets: Budgets, cases: readonly CaseInfo[]): string[] {
-  const known = new Map(cases.map((info) => [info.id, info]));
-  return Object.entries(budgets.cases).flatMap(([id, budget]) => {
-    const info = known.get(id);
-    if (!info) return [id];
-    return Object.keys(budget.sizes)
-      .filter((target) => errorState(info, target) !== false)
-      .map((target) => `${id} › ${target}`);
-  });
+export function staleBudgets(budgets: Budgets, cases: ReadonlyArray<CaseInfo>): Array<string> {
+	const known = new Map(cases.map((info) => [info.id, info]));
+	return Object.entries(budgets.cases).flatMap(([id, budget]) => {
+		const info = known.get(id);
+		if (!info) {
+			return [id];
+		}
+		return Object.keys(budget.sizes)
+			.filter((target) => errorState(info, target) !== false)
+			.map((target) => `${id} › ${target}`);
+	});
 }
 
 /** The cases a budget can judge: a case with output on no target has no cell to fail. */
-export function budgetedCases(cases: readonly CaseInfo[]): CaseInfo[] {
-  return cases.filter((info) => TARGET_NAMES.some((target) => errorState(info, target) === false));
+export function budgetedCases(cases: ReadonlyArray<CaseInfo>): Array<CaseInfo> {
+	return cases.filter((info) => TARGET_NAMES.some((target) => errorState(info, target) === false));
 }
 
 /**
@@ -126,39 +130,43 @@ export function budgetedCases(cases: readonly CaseInfo[]): CaseInfo[] {
  * compile of all, so one run alone is noisy, and the run's first would still be warming up.
  */
 export async function measureTimes(
-  cases: readonly CaseInfo[],
-  casesDir: string,
-  plugins: () => readonly CompilerPlugin[] = () => [],
+	cases: ReadonlyArray<CaseInfo>,
+	casesDir: string,
+	plugins: () => ReadonlyArray<CompilerPlugin> = () => [],
 ): Promise<Map<string, number>> {
-  const bench = new Bench({
-    iterations: ITERATIONS,
-    time: 0,
-    warmup: true,
-    warmupIterations: WARMUP_ITERATIONS,
-    warmupTime: 0,
-    throws: true,
-    now: cpuTime,
-  });
-  const calibration = cases.find((info) => info.id === CALIBRATION);
-  if (!calibration) throw new Error(`The corpus has no ${CALIBRATION}, which every time divides.`);
-  const measured = cases.filter((info) => info !== calibration);
-  const before = (id: string) => `${CALIBRATION} before ${id}`;
-  for (const info of measured) {
-    bench.add(before(info.id), compileCase(calibration, casesDir, plugins));
-    bench.add(info.id, compileCase(info, casesDir, plugins));
-  }
-  await bench.run();
-  const median = (name: string): number => {
-    const result = bench.getTask(name)?.result;
-    if (result?.state !== "completed") throw new Error(`The compile "${name}" did not complete.`);
-    return result.latency.p50;
-  };
-  const calibrations = measured.map((info) => median(before(info.id))).toSorted((a, b) => a - b);
-  const divisor = calibrations[calibrations.length >> 1]!;
-  return new Map([
-    [CALIBRATION, 1],
-    ...measured.map((info) => [info.id, median(info.id) / divisor] as const),
-  ]);
+	const bench = new Bench({
+		iterations: ITERATIONS,
+		time: 0,
+		warmup: true,
+		warmupIterations: WARMUP_ITERATIONS,
+		warmupTime: 0,
+		throws: true,
+		now: cpuTime,
+	});
+	const calibration = cases.find((info) => info.id === CALIBRATION);
+	if (!calibration) {
+		throw new Error(`The corpus has no ${CALIBRATION}, which every time divides.`);
+	}
+	const measured = cases.filter((info) => info !== calibration);
+	const before = (id: string) => `${CALIBRATION} before ${id}`;
+	for (const info of measured) {
+		bench.add(before(info.id), compileCase(calibration, casesDir, plugins));
+		bench.add(info.id, compileCase(info, casesDir, plugins));
+	}
+	await bench.run();
+	const median = (name: string): number => {
+		const result = bench.getTask(name)?.result;
+		if (result?.state !== "completed") {
+			throw new Error(`The compile "${name}" did not complete.`);
+		}
+		return result.latency.p50;
+	};
+	const calibrations = measured.map((info) => median(before(info.id))).toSorted((a, b) => a - b);
+	const divisor = calibrations[calibrations.length >> 1]!;
+	return new Map([
+		[CALIBRATION, 1],
+		...measured.map((info) => [info.id, median(info.id) / divisor] as const),
+	]);
 }
 
 /**
@@ -169,36 +177,36 @@ export async function measureTimes(
  * oxfmt formats on a native thread, so this clock counts almost none of it (ADR-0078).
  */
 export function cpuTime(): number {
-  const { user, system } = process.threadCpuUsage();
-  return (user + system) / 1000;
+	const { user, system } = process.threadCpuUsage();
+	return (user + system) / 1000;
 }
 
 /** One compile of every source of a case, to all seven targets with formatting. */
 function compileCase(
-  info: CaseInfo,
-  casesDir: string,
-  plugins: () => readonly CompilerPlugin[],
+	info: CaseInfo,
+	casesDir: string,
+	plugins: () => ReadonlyArray<CompilerPlugin>,
 ): () => Promise<void> {
-  const sources = info.sources.map((source) => ({
-    source,
-    text: readFileSync(source.source, "utf8"),
-  }));
-  return async () => {
-    for (const { source, text } of sources) {
-      const typeOracle = caseOracle(info, casesDir, { filename: source.filename, text });
-      try {
-        await compile(text, {
-          filename: source.filename,
-          targets: TARGET_NAMES,
-          plugins: plugins(),
-          resolve: caseResolver(info, casesDir, typeOracle),
-          typeOracle,
-        });
-      } finally {
-        await typeOracle.dispose();
-      }
-    }
-  };
+	const sources = info.sources.map((source) => ({
+		source,
+		text: readFileSync(source.source, "utf8"),
+	}));
+	return async () => {
+		for (const { source, text } of sources) {
+			const typeOracle = caseOracle(info, casesDir, { filename: source.filename, text });
+			try {
+				await compile(text, {
+					filename: source.filename,
+					targets: TARGET_NAMES,
+					plugins: plugins(),
+					resolve: caseResolver(info, casesDir, typeOracle),
+					typeOracle,
+				});
+			} finally {
+				await typeOracle.dispose();
+			}
+		}
+	};
 }
 
 /**
@@ -207,23 +215,23 @@ function compileCase(
  * external. A size doesn't depend on where the checkout lives, so it holds on any machine.
  */
 export async function measureSize(
-  toolchain: Toolchain,
-  target: string,
-  files: readonly string[],
+	toolchain: Toolchain,
+	target: string,
+	files: ReadonlyArray<string>,
 ): Promise<OutputSize> {
-  if (!files.length) {
-    throw new Error(`There's no ${target} output to measure. Run \`pnpm test:update\`.`);
-  }
-  const contents: ToolchainFile[] = files.map((path) => ({
-    path,
-    contents: readFileSync(path, "utf8"),
-  }));
-  const emitted = await toolchain.frameworkEmit(contents, {
-    toolchainDir: toolchainDir(target),
-    root: ROOT,
-    declarations: ENGINE_DECLARATIONS,
-  });
-  return bundleSize(files.map((path) => emitted.get(path) ?? []));
+	if (!files.length) {
+		throw new Error(`There's no ${target} output to measure. Run \`pnpm test:update\`.`);
+	}
+	const contents: Array<ToolchainFile> = files.map((path) => ({
+		path,
+		contents: readFileSync(path, "utf8"),
+	}));
+	const emitted = await toolchain.frameworkEmit(contents, {
+		toolchainDir: toolchainDir(target),
+		root: ROOT,
+		declarations: ENGINE_DECLARATIONS,
+	});
+	return bundleSize(files.map((path) => emitted.get(path) ?? []));
 }
 
 /** A shared helper module's path (ADR-0121), which no case's bundle takes as an entry. */
@@ -240,91 +248,101 @@ const moduleKey = (path: string) => path.replace(/\.[cm]?[jt]sx?$/, "");
  * stylesheet, rejects: the bundle would be missing what the module needs.
  */
 export async function bundleSize(
-  lists: readonly (readonly ToolchainFile[])[],
+	lists: ReadonlyArray<ReadonlyArray<ToolchainFile>>,
 ): Promise<OutputSize> {
-  const modules = new Map(lists.flat().map((module) => [moduleKey(module.path), module] as const));
-  const memory: Plugin = {
-    name: "uf-budgets:memory",
-    resolveId(source, importer) {
-      if (!importer && modules.has(moduleKey(source))) return moduleKey(source);
-      if (!/^\.\.?\//.test(source) || /\.css(?:\?|$)/.test(source)) {
-        return { id: source, external: true };
-      }
-      const key = moduleKey(posix.join(dirname(importer ?? ""), source));
-      if (modules.has(key)) return key;
-      throw new Error(`${importer ?? ""} imports ${source}, which no module of the case provides.`);
-    },
-    load(id) {
-      const module = modules.get(id);
-      if (!module) return undefined;
-      const moduleType = /\.[jt]sx$/.test(module.path) ? "tsx" : "ts";
-      return { code: module.contents, moduleType };
-    },
-  };
-  const bundle = await rolldown({
-    input: lists.flatMap((list) =>
-      list[0] && !HELPER_MODULE.test(list[0].path) ? [list[0].path] : [],
-    ),
-    plugins: [memory],
-    logLevel: "silent",
-    tsconfig: false,
-    transform: {
-      jsx: { runtime: "automatic" },
-      // What a production build of the frameworks replaces, whose branches then drop out.
-      define: { "process.env.NODE_ENV": '"production"', ngDevMode: "false" },
-    },
-  });
-  try {
-    const { output } = await bundle.generate({ format: "es", minify: true });
-    const chunks = output.flatMap((file) => (file.type === "chunk" ? [file.code] : []));
-    return {
-      raw: chunks.reduce((sum, code) => sum + Buffer.byteLength(code), 0),
-      gzip: chunks.reduce((sum, code) => sum + gzipSync(code, { level: 9 }).length, 0),
-    };
-  } finally {
-    await bundle.close();
-  }
+	const modules = new Map(lists.flat().map((module) => [moduleKey(module.path), module] as const));
+	const memory: Plugin = {
+		name: "uf-budgets:memory",
+		resolveId(source, importer) {
+			if (!importer && modules.has(moduleKey(source))) {
+				return moduleKey(source);
+			}
+			if (!/^\.\.?\//.test(source) || /\.css(?:\?|$)/.test(source)) {
+				return { id: source, external: true };
+			}
+			const key = moduleKey(posix.join(dirname(importer ?? ""), source));
+			if (modules.has(key)) {
+				return key;
+			}
+			throw new Error(`${importer ?? ""} imports ${source}, which no module of the case provides.`);
+		},
+		load(id) {
+			const module = modules.get(id);
+			if (!module) {
+				return undefined;
+			}
+			const moduleType = /\.[jt]sx$/.test(module.path) ? "tsx" : "ts";
+			return { code: module.contents, moduleType };
+		},
+	};
+	const bundle = await rolldown({
+		input: lists.flatMap((list) =>
+			list[0] && !HELPER_MODULE.test(list[0].path) ? [list[0].path] : [],
+		),
+		plugins: [memory],
+		logLevel: "silent",
+		tsconfig: false,
+		transform: {
+			jsx: { runtime: "automatic" },
+			// What a production build of the frameworks replaces, whose branches then drop out.
+			define: { "process.env.NODE_ENV": '"production"', ngDevMode: "false" },
+		},
+	});
+	try {
+		const { output } = await bundle.generate({ format: "es", minify: true });
+		const chunks = output.flatMap((file) => (file.type === "chunk" ? [file.code] : []));
+		return {
+			raw: chunks.reduce((sum, code) => sum + Buffer.byteLength(code), 0),
+			gzip: chunks.reduce((sum, code) => sum + gzipSync(code, { level: 9 }).length, 0),
+		};
+	} finally {
+		await bundle.close();
+	}
 }
 
 /** Measures every cell and writes `budgets.json`: the baseline, which the margins sit on. */
 async function update(): Promise<void> {
-  const cases = budgetedCases(listCases());
-  const times = await measureTimes(cases, join(ROOT, "cases"));
-  const budgets: Budgets = { cases: {} };
-  for (const info of cases) {
-    // Two decimals, rounded up: more would only record the noise.
-    const time = Math.ceil(times.get(info.id)! * 100) / 100;
-    budgets.cases[info.id] = { time, sizes: {} };
-  }
-  for (const target of TARGET_NAMES) {
-    const toolchain = await loadToolchain(target);
-    for (const info of cases) {
-      if (errorState(info, target) !== false) continue;
-      const files = committedOutputFiles(info, target);
-      budgets.cases[info.id]!.sizes[target] = await measureSize(toolchain, target, files);
-    }
-  }
-  writeFileSync(BUDGETS_FILE, `${JSON.stringify(budgets, null, 2)}\n`);
-  process.stdout.write(`[uf:budgets] ${cases.length} case(s) measured → ${BUDGETS_FILE}\n`);
+	const cases = budgetedCases(listCases());
+	const times = await measureTimes(cases, join(ROOT, "cases"));
+	const budgets: Budgets = { cases: {} };
+	for (const info of cases) {
+		// Two decimals, rounded up: more would only record the noise.
+		const time = Math.ceil(times.get(info.id)! * 100) / 100;
+		budgets.cases[info.id] = { time, sizes: {} };
+	}
+	for (const target of TARGET_NAMES) {
+		const toolchain = await loadToolchain(target);
+		for (const info of cases) {
+			if (errorState(info, target) !== false) {
+				continue;
+			}
+			const files = committedOutputFiles(info, target);
+			budgets.cases[info.id]!.sizes[target] = await measureSize(toolchain, target, files);
+		}
+	}
+	writeFileSync(BUDGETS_FILE, `${JSON.stringify(budgets, null, 2)}\n`);
+	process.stdout.write(`[uf:budgets] ${cases.length} case(s) measured → ${BUDGETS_FILE}\n`);
 }
 
 async function main(): Promise<number> {
-  if (!process.argv.includes("--update")) {
-    const started = new Date();
-    const { status } = runVitest(["--project", "bench"], process.env);
-    const summary = runSummary(process.env, { since: started, requireComplete: false });
-    return status || summary;
-  }
-  if (isCI(process.env) || process.env.UF_CANARY) {
-    console.error("[uf] `pnpm test:budgets:update` refuses to run in CI or under a canary.");
-    return 1;
-  }
-  if (selectTargets(process.env.UF_TARGETS).length !== TARGET_NAMES.length) {
-    console.error("[uf] `pnpm test:budgets:update` measures every target: unset UF_TARGETS.");
-    return 1;
-  }
-  await update();
-  return 0;
+	if (!process.argv.includes("--update")) {
+		const started = new Date();
+		const { status } = runVitest(["--project", "bench"], process.env);
+		const summary = runSummary(process.env, { since: started, requireComplete: false });
+		return status || summary;
+	}
+	if (isCI(process.env) || process.env.UF_CANARY) {
+		console.error("[uf] `pnpm test:budgets:update` refuses to run in CI or under a canary.");
+		return 1;
+	}
+	if (selectTargets(process.env.UF_TARGETS).length !== TARGET_NAMES.length) {
+		console.error("[uf] `pnpm test:budgets:update` measures every target: unset UF_TARGETS.");
+		return 1;
+	}
+	await update();
+	return 0;
 }
 
-if (import.meta.main) process.exitCode = await main();
+if (import.meta.main) {
+	process.exitCode = await main();
+}

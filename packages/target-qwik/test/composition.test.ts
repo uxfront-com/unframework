@@ -14,8 +14,8 @@ import { emitSource, lower } from "./lower.ts";
 
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
 const context = {
-  toolchainDir: `${repo}tests/toolchains/qwik`,
-  root: `${repo}tests/integration`,
+	toolchainDir: `${repo}tests/toolchains/qwik`,
+	root: `${repo}tests/integration`,
 };
 /**
  * The timeout of a test that runs a checker (tsgo, oxlint or the optimizer): CI's `Unit tests`
@@ -30,27 +30,27 @@ const scratch = mkdtempSync(join(scratchRoot, "composition-test-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 describe("qwik target: components and fallthrough", () => {
-  it("merges a consumer's class and style after the root's own", async () => {
-    const contents = await emitSource(
-      `export default function Tag({ label }: { label: string }) {
+	it("merges a consumer's class and style after the root's own", async () => {
+		const contents = await emitSource(
+			`export default function Tag({ label }: { label: string }) {
   return <span class="tag" style={{ color: "red" }}>{label}</span>;
 }`,
-      { fallthrough: true },
-    );
-    expect(contents).toContain(
-      '{ label: string } & Omit<PropsOf<"span">, "label" | "class" | "style"> & {',
-    );
-    expect(contents).toContain("({ label, class: className, style, ...attributes })");
-    // The rest, spread last, holds the scope attributes too (ADR-0118).
-    expect(contents).toContain(
-      '<span class={["tag", className]} style={{ color: "red", ...style }} {...attributes}>',
-    );
-    expect(contents).not.toContain("scopeAttributes");
-  });
+			{ fallthrough: true },
+		);
+		expect(contents).toContain(
+			'{ label: string } & Omit<PropsOf<"span">, "label" | "class" | "style"> & {',
+		);
+		expect(contents).toContain("({ label, class: className, style, ...attributes })");
+		// The rest, spread last, holds the scope attributes too (ADR-0118).
+		expect(contents).toContain(
+			'<span class={["tag", className]} style={{ color: "red", ...style }} {...attributes}>',
+		);
+		expect(contents).not.toContain("scopeAttributes");
+	});
 
-  it("writes a child's event as its QRL prop, and a function it names as a QRL", async () => {
-    const contents = await emitSource(
-      `import { defineEmits, ref } from "@uxfront/unframework";
+	it("writes a child's event as its QRL prop, and a function it names as a QRL", async () => {
+		const contents = await emitSource(
+			`import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Form() {
   const cleared = ref("");
@@ -64,112 +64,112 @@ function Field() {
   const emit = defineEmits<{ clear: [label: string] }>();
   return <button type="button" onClick={() => emit("clear", "x")}>Clear</button>;
 }`,
-    );
-    expect(contents).toContain('import { Field } from "./Field";');
-    expect(contents).toContain("const clear = $((label: string) => {");
-    expect(contents).toContain("<Field onClear$={clear} />");
-  });
+		);
+		expect(contents).toContain('import { Field } from "./Field";');
+		expect(contents).toContain("const clear = $((label: string) => {");
+		expect(contents).toContain("<Field onClear$={clear} />");
+	});
 });
 
 // What falls through (ADR-0118, ./src/fallthrough.ts): attributes and listeners as the props'
 // rest, a ref on a child that exposes nothing as its root element.
 describe("qwik target: attributes, listeners and refs that fall through", () => {
-  const chip = `import { defineEmits } from "@uxfront/unframework";
+	const chip = `import { defineEmits } from "@uxfront/unframework";
 
 export default function Chip({ label, tone }: { label: string; tone?: string }) {
   const emit = defineEmits<{ pick: [label: string]; click: [] }>();
   return <button type="button" class="chip" onClick={() => emit("pick", label)}>{label}</button>;
 }`;
 
-  it("spreads the rest last on the root, without a prop the component declares", async () => {
-    const contents = await emitSource(chip, { fallthrough: true });
-    // The element's attributes, but for the declared names, `click` among them (an emit).
-    expect(contents).toContain(
-      'Omit<PropsOf<"button">, "label" | "tone" | "onPick$" | "onClick$" | "class" | "style">',
-    );
-    // Every declared prop is named, so none falls through: an unread one as `_name`.
-    expect(lines(contents)).toContain(
-      lines(`label,
+	it("spreads the rest last on the root, without a prop the component declares", async () => {
+		const contents = await emitSource(chip, { fallthrough: true });
+		// The element's attributes, but for the declared names, `click` among them (an emit).
+		expect(contents).toContain(
+			'Omit<PropsOf<"button">, "label" | "tone" | "onPick$" | "onClick$" | "class" | "style">',
+		);
+		// Every declared prop is named, so none falls through: an unread one as `_name`.
+		expect(lines(contents)).toContain(
+			lines(`label,
         onPick$,
         class: className,
         style,
         tone: _tone,
         onClick$: _onClick$,
         ...attributes`),
-    );
-    expect(lines(contents)).toContain(
-      lines(`class={["chip", className]}
+		);
+		expect(lines(contents)).toContain(
+			lines(`class={["chip", className]}
         onClick$={() => onPick$?.(label)}
         style={style}
         {...attributes}`),
-    );
-  });
+		);
+	});
 
-  it("runs a consumer's listener of an event the root listens to after the root's own", async () => {
-    const contents = await emitSource(
-      `export default function Chip({ label }: { label: string }) {
+	it("runs a consumer's listener of an event the root listens to after the root's own", async () => {
+		const contents = await emitSource(
+			`export default function Chip({ label }: { label: string }) {
   function note() {}
   return <button type="button" onClick={note} onFocus={() => note()}>{label}</button>;
 }`,
-      { fallthrough: true },
-    );
-    expect(contents).toContain(
-      "({ label, class: className, style, onClick$, onFocus$, ...attributes })",
-    );
-    expect(contents).toContain("onClick$={[$(note), onClick$]}");
-    expect(contents).toContain("onFocus$={[$(() => note()), onFocus$]}");
-  });
+			{ fallthrough: true },
+		);
+		expect(contents).toContain(
+			"({ label, class: className, style, onClick$, onFocus$, ...attributes })",
+		);
+		expect(contents).toContain("onClick$={[$(note), onClick$]}");
+		expect(contents).toContain("onFocus$={[$(() => note()), onFocus$]}");
+	});
 
-  it("spreads the rest on the element that spreads the source's, and keeps the scope on the root", async () => {
-    const contents = await emitSource(
-      `import { defineOptions } from "@uxfront/unframework";
+	it("spreads the rest on the element that spreads the source's, and keeps the scope on the root", async () => {
+		const contents = await emitSource(
+			`import { defineOptions } from "@uxfront/unframework";
 
 export default function Field({ label, ...rest }: { label: string }) {
   defineOptions({ inheritAttrs: false });
   return <label class="field">{label} <input {...rest} class="input" name="x" /></label>;
 }`,
-    );
-    expect(contents).toContain('<label class="field" {...scopeAttributes(attributes)} ref={ref}>');
-    expect(contents).toContain(
-      '<input class={["input", className]} name="x" style={style} {...restAttributes(attributes)} />',
-    );
-    expect(contents).toContain(
-      'function restAttributes(attributes: PropsOf<"input">): PropsOf<"input"> {',
-    );
-    expect(contents).toContain("ref?: Signal<Element | undefined>");
-  });
+		);
+		expect(contents).toContain('<label class="field" {...scopeAttributes(attributes)} ref={ref}>');
+		expect(contents).toContain(
+			'<input class={["input", className]} name="x" style={style} {...restAttributes(attributes)} />',
+		);
+		expect(contents).toContain(
+			'function restAttributes(attributes: PropsOf<"input">): PropsOf<"input"> {',
+		);
+		expect(contents).toContain("ref?: Signal<Element | undefined>");
+	});
 
-  it("fills a consumer's ref of the root beside the root's own template ref", async () => {
-    const contents = await emitSource(
-      `import { useTemplateRef } from "@uxfront/unframework";
+	it("fills a consumer's ref of the root beside the root's own template ref", async () => {
+		const contents = await emitSource(
+			`import { useTemplateRef } from "@uxfront/unframework";
 
 export default function Name() {
   const input = useTemplateRef<HTMLInputElement>();
   return <input ref={input} aria-label="Name" />;
 }`,
-      { fallthrough: true },
-    );
-    expect(contents).toContain("({ class: className, style, ref, ...attributes })");
-    expect(lines(contents)).toContain(
-      lines(`ref={(element) => {
+			{ fallthrough: true },
+		);
+		expect(contents).toContain("({ class: className, style, ref, ...attributes })");
+		expect(lines(contents)).toContain(
+			lines(`ref={(element) => {
         input.value = element;
         if (ref) ref.value = element;
       }}`),
-    );
-    // Without a ref of its own, the root takes the consumer's in the rest.
-    const plain = await emitSource(
-      `export default function Name() {
+		);
+		// Without a ref of its own, the root takes the consumer's in the rest.
+		const plain = await emitSource(
+			`export default function Name() {
   return <input aria-label="Name" />;
 }`,
-      { fallthrough: true },
-    );
-    expect(plain).toContain("({ class: className, style, ...attributes })");
-    expect(plain).not.toContain("ref");
-  });
+			{ fallthrough: true },
+		);
+		expect(plain).toContain("({ class: className, style, ...attributes })");
+		expect(plain).not.toContain("ref");
+	});
 
-  it("passes a parent's attributes and listeners as the child's element takes them", async () => {
-    const contents = await emitSource(
-      `import { defineEmits } from "@uxfront/unframework";
+	it("passes a parent's attributes and listeners as the child's element takes them", async () => {
+		const contents = await emitSource(
+			`import { defineEmits } from "@uxfront/unframework";
 
 export default function Bar() {
   return (
@@ -183,11 +183,11 @@ function Chip({ label }: { label: string }) {
   const emit = defineEmits<{ pick: [label: string] }>();
   return <button type="button" onClick={() => emit("pick", label)}>{label}</button>;
 }`,
-    );
-    // A control runs in a `sync$`, not as a marker: the child's element may listen to the event
-    // from the window, where its markers would apply to every event of the page.
-    expect(lines(contents)).toContain(
-      lines(`<Chip
+		);
+		// A control runs in a `sync$`, not as a marker: the child's element may listen to the event
+		// from the window, where its markers would apply to every event of the page.
+		expect(lines(contents)).toContain(
+			lines(`<Chip
         label="Ada"
         tabIndex={0}
         aria-pressed="true"
@@ -200,13 +200,13 @@ function Chip({ label }: { label: string }) {
           }),
         ]}
       />`),
-    );
-    expect(contents).not.toContain("preventdefault:");
-  });
+		);
+		expect(contents).not.toContain("preventdefault:");
+	});
 
-  it("hands a root component one signal for the root's own ref and a consumer's", async () => {
-    const contents = await emitSource(
-      `import { onMounted, useTemplateRef } from "@uxfront/unframework";
+	it("hands a root component one signal for the root's own ref and a consumer's", async () => {
+		const contents = await emitSource(
+			`import { onMounted, useTemplateRef } from "@uxfront/unframework";
 
 export default function Primary({ text }: { text: string }) {
   const own = useTemplateRef<HTMLButtonElement>();
@@ -217,15 +217,15 @@ export default function Primary({ text }: { text: string }) {
 function Base({ text }: { text: string }) {
   return <button type="button">{text}</button>;
 }`,
-      { fallthrough: true },
-    );
-    // Qwik serialises a component's props, which a function ref is not (Q34).
-    expect(contents).not.toContain("(element) =>");
-    expect(contents).toContain("ref?: Signal<HTMLButtonElement | undefined>");
-    // The consumer's, filled as the server renders, or else the own one; the own one is filled
-    // from the consumer's before the component's own visible tasks run.
-    expect(lines(contents)).toContain(
-      lines(`const own = useSignal<HTMLButtonElement>();
+			{ fallthrough: true },
+		);
+		// Qwik serialises a component's props, which a function ref is not (Q34).
+		expect(contents).not.toContain("(element) =>");
+		expect(contents).toContain("ref?: Signal<HTMLButtonElement | undefined>");
+		// The consumer's, filled as the server renders, or else the own one; the own one is filled
+		// from the consumer's before the component's own visible tasks run.
+		expect(lines(contents)).toContain(
+			lines(`const own = useSignal<HTMLButtonElement>();
         useVisibleTask$(
           ({ track }) => {
             if (ref) own.value = track(ref);
@@ -236,47 +236,47 @@ function Base({ text }: { text: string }) {
         useVisibleTask$(
           () => {
             own.value?.focus();`),
-    );
-    expect(contents).toContain("<Base ref={rootRef} text={text}");
-  });
+		);
+		expect(contents).toContain("<Base ref={rootRef} text={text}");
+	});
 
-  it("types what passes on to a root component as that component's props", async () => {
-    const contents = await emitSource(
-      `export default function Primary({ text }: { text: string }) {
+	it("types what passes on to a root component as that component's props", async () => {
+		const contents = await emitSource(
+			`export default function Primary({ text }: { text: string }) {
   return <Base value={1} tone="primary" class={text} />;
 }
 
 function Base({ value, tone }: { value: number; tone: "primary" | "secondary" }) {
   return <button type="button" class={tone}>{value}</button>;
 }`,
-      { fallthrough: true },
-    );
-    // Not the tag's `value` (`string | number | readonly string[]`), and without the props the
-    // root sets, which a consumer then need not pass.
-    expect(contents).toContain(
-      'Omit<PropsOf<typeof Base>, "text" | "class" | "style" | "value" | "tone">',
-    );
-    // Qwik's `PropsOf` infers no generic component's props: it takes the tag's attributes,
-    // without what the generic component declares.
-    const generic = await emitSource(
-      `export default function Wrapper({ label }: { label: string }) {
+			{ fallthrough: true },
+		);
+		// Not the tag's `value` (`string | number | readonly string[]`), and without the props the
+		// root sets, which a consumer then need not pass.
+		expect(contents).toContain(
+			'Omit<PropsOf<typeof Base>, "text" | "class" | "style" | "value" | "tone">',
+		);
+		// Qwik's `PropsOf` infers no generic component's props: it takes the tag's attributes,
+		// without what the generic component declares.
+		const generic = await emitSource(
+			`export default function Wrapper({ label }: { label: string }) {
   return <Items items={["a"]} aria-label={label} />;
 }
 
 function Items<T extends string>({ items }: { items: T[] }) {
   return <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>;
 }`,
-      { fallthrough: true },
-    );
-    expect(generic).toContain('Omit<PropsOf<"ul">, "label" | "class" | "style" | "items">');
-  });
+			{ fallthrough: true },
+		);
+		expect(generic).toContain('Omit<PropsOf<"ul">, "label" | "class" | "style" | "items">');
+	});
 
-  it(
-    "types what passes on to a generic root component without what it declares (L4)",
-    async () => {
-      // Qwik's `PropsOf` infers no generic component's props, so the rest takes the tag's
-      // attributes, without the root's own `size`, whose type is narrower than an <select>'s.
-      const source = `export default function Page() {
+	it(
+		"types what passes on to a generic root component without what it declares (L4)",
+		async () => {
+			// Qwik's `PropsOf` infers no generic component's props, so the rest takes the tag's
+			// attributes, without the root's own `size`, whose type is narrower than an <select>'s.
+			const source = `export default function Page() {
   return <div><Choice label="c" id="c" /></div>;
 }
 
@@ -287,14 +287,14 @@ function Choice({ label }: { label: string }) {
 function Pick<T extends string>({ items, name, size }: { items: T[]; name?: T; size?: "s" | "m" }) {
   return <select aria-label="pick" name={name} class={size}>{items.map((i) => <option key={i} value={i}>{i}</option>)}</select>;
 }`;
-      await expectCheckedClean([source]);
-    },
-    CHECKED,
-  );
+			await expectCheckedClean([source]);
+		},
+		CHECKED,
+	);
 
-  it("keeps a consumer's listener out of the root's capture and passive listeners", async () => {
-    const contents = await emitSource(
-      `import { ref } from "@uxfront/unframework";
+	it("keeps a consumer's listener out of the root's capture and passive listeners", async () => {
+		const contents = await emitSource(
+			`import { ref } from "@uxfront/unframework";
 
 export default function Box({ label }: { label: string }) {
   const count = ref(0);
@@ -304,22 +304,22 @@ export default function Box({ label }: { label: string }) {
     </div>
   );
 }`,
-      { fallthrough: true },
-    );
-    // The root's capture listener runs from the window, and the consumer's, in the rest, in the
-    // bubble phase on the root; neither listener of the wheel is passive.
-    expect(contents).not.toContain("capture:keydown");
-    expect(contents).not.toContain("passive:wheel");
-    expect(contents).toContain("window:onKeyDown$={(event, element) => {");
-    expect(contents).toContain("({ label, class: className, style, onWheel$, ...attributes })");
-    expect(contents).toContain("onWheel$={[$(() => count.value++), onWheel$]}");
-  });
+			{ fallthrough: true },
+		);
+		// The root's capture listener runs from the window, and the consumer's, in the rest, in the
+		// bubble phase on the root; neither listener of the wheel is passive.
+		expect(contents).not.toContain("capture:keydown");
+		expect(contents).not.toContain("passive:wheel");
+		expect(contents).toContain("window:onKeyDown$={(event, element) => {");
+		expect(contents).toContain("({ label, class: className, style, onWheel$, ...attributes })");
+		expect(contents).toContain("onWheel$={[$(() => count.value++), onWheel$]}");
+	});
 
-  it(
-    "passes a ref, attributes and listeners through a root component, checked clean (L4, L5)",
-    async () => {
-      await expectCheckedClean([
-        `import { onMounted, ref, useTemplateRef } from "@uxfront/unframework";
+	it(
+		"passes a ref, attributes and listeners through a root component, checked clean (L4, L5)",
+		async () => {
+			await expectCheckedClean([
+				`import { onMounted, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Bar() {
   const save = useTemplateRef<HTMLButtonElement>();
@@ -351,16 +351,16 @@ function Box({ label }: { label: string }) {
     </div>
   );
 }`,
-      ]);
-    },
-    CHECKED,
-  );
+			]);
+		},
+		CHECKED,
+	);
 
-  it(
-    "emits what falls through so it type-checks and lints clean (L4, L5)",
-    async () => {
-      await expectCheckedClean([
-        `import { defineEmits, defineOptions, ref, useTemplateRef } from "@uxfront/unframework";
+	it(
+		"emits what falls through so it type-checks and lints clean (L4, L5)",
+		async () => {
+			await expectCheckedClean([
+				`import { defineEmits, defineOptions, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Bar() {
   const count = ref(0);
@@ -385,16 +385,16 @@ function Field({ label, ...rest }: { label: string }) {
   defineOptions({ inheritAttrs: false });
   return <label>{label} <input {...rest} onFocus={() => console.log("own")} /></label>;
 }`,
-      ]);
-    },
-    CHECKED,
-  );
+			]);
+		},
+		CHECKED,
+	);
 });
 
 describe("qwik target: slots", () => {
-  it("projects the default slot and renders any other as a QRL render prop", async () => {
-    const contents = await emitSource(
-      `import { defineSlots } from "@uxfront/unframework";
+	it("projects the default slot and renders any other as a QRL render prop", async () => {
+		const contents = await emitSource(
+			`import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function Card() {
@@ -408,65 +408,65 @@ export default function Card() {
     </div>
   );
 }`,
-    );
-    expect(contents).toContain("export interface CardSlots {");
-    expect(contents).toContain("title$?: QRL<() => JSXOutput>;");
-    expect(contents).toContain("item$?: QRL<(props: { n: number }) => JSXOutput>;");
-    expect(contents).toContain('{title$?.() ?? "Untitled"}');
-    expect(contents).toContain("{title$ ? <hr /> : null}");
-    expect(contents).toContain("{item$?.({ n: 1 })}");
-    expect(contents).toContain("<Slot>\n");
-  });
+		);
+		expect(contents).toContain("export interface CardSlots {");
+		expect(contents).toContain("title$?: QRL<() => JSXOutput>;");
+		expect(contents).toContain("item$?: QRL<(props: { n: number }) => JSXOutput>;");
+		expect(contents).toContain('{title$?.() ?? "Untitled"}');
+		expect(contents).toContain("{title$ ? <hr /> : null}");
+		expect(contents).toContain("{item$?.({ n: 1 })}");
+		expect(contents).toContain("<Slot>\n");
+	});
 });
 
 describe("qwik target: models", () => {
-  it("reads a model through a computed of its prop or local signal, and writes it through a setter", async () => {
-    const contents = await emitSource(
-      `import { defineModel } from "@uxfront/unframework";
+	it("reads a model through a computed of its prop or local signal, and writes it through a setter", async () => {
+		const contents = await emitSource(
+			`import { defineModel } from "@uxfront/unframework";
 
 export default function Toggle() {
   const open = defineModel<boolean>("open", { default: false });
   return <button type="button" onClick={() => (open.value = !open.value)}>{open.value ? "On" : "Off"}</button>;
 }`,
-    );
-    expect(contents).toContain("export interface ToggleModels {");
-    expect(contents).toContain("onOpenChange$?: QRL<(open: boolean) => void>;");
-    expect(contents).toContain("({ open: openProp, onOpenChange$, ref })");
-    expect(contents).toContain("const openLocal = useSignal<boolean>(false);");
-    expect(contents).toContain(
-      "const open = useComputed$(() => (openProp === undefined ? openLocal.value : openProp));",
-    );
-    expect(contents).toContain("if (openProp === undefined) openLocal.value = next;");
-    expect(contents).toContain("await onOpenChange$?.(next);");
-    expect(contents).toContain("onClick$={() => setOpen(!open.value)}");
-  });
+		);
+		expect(contents).toContain("export interface ToggleModels {");
+		expect(contents).toContain("onOpenChange$?: QRL<(open: boolean) => void>;");
+		expect(contents).toContain("({ open: openProp, onOpenChange$, ref })");
+		expect(contents).toContain("const openLocal = useSignal<boolean>(false);");
+		expect(contents).toContain(
+			"const open = useComputed$(() => (openProp === undefined ? openLocal.value : openProp));",
+		);
+		expect(contents).toContain("if (openProp === undefined) openLocal.value = next;");
+		expect(contents).toContain("await onOpenChange$?.(next);");
+		expect(contents).toContain("onClick$={() => setOpen(!open.value)}");
+	});
 
-  it("reads a control's model in render, so Qwik sets the property", async () => {
-    const contents = await emitSource(
-      `import { ref } from "@uxfront/unframework";
+	it("reads a control's model in render, so Qwik sets the property", async () => {
+		const contents = await emitSource(
+			`import { ref } from "@uxfront/unframework";
 
 export default function Search() {
   const query = ref("");
   const weight = ref(0);
   return <form><input v-model={query.value} /><input v-model_number={weight.value} /></form>;
 }`,
-    );
-    expect(contents).toContain("const currentQuery = query.value;");
-    expect(contents).toContain(
-      "<input value={currentQuery} onInput$={(_, element) => (query.value = element.value)} />",
-    );
-    expect(contents).toContain("const weightInput = useSignal<HTMLInputElement>();");
-    expect(contents).toContain(
-      "value={modelText.shown(weightInput.value, currentWeight, { number: true })}",
-    );
-    expect(contents).toContain("(weight.value = modelText.read(element, { number: true }))");
-  });
+		);
+		expect(contents).toContain("const currentQuery = query.value;");
+		expect(contents).toContain(
+			"<input value={currentQuery} onInput$={(_, element) => (query.value = element.value)} />",
+		);
+		expect(contents).toContain("const weightInput = useSignal<HTMLInputElement>();");
+		expect(contents).toContain(
+			"value={modelText.shown(weightInput.value, currentWeight, { number: true })}",
+		);
+		expect(contents).toContain("(weight.value = modelText.read(element, { number: true }))");
+	});
 });
 
 describe("qwik target: replaced nodes", () => {
-  it("puts a conditional a sibling follows in a fragment of its own", async () => {
-    const contents = await emitSource(
-      `import { ref } from "@uxfront/unframework";
+	it("puts a conditional a sibling follows in a fragment of its own", async () => {
+		const contents = await emitSource(
+			`import { ref } from "@uxfront/unframework";
 
 export default function Swap() {
   const on = ref(false);
@@ -478,17 +478,17 @@ export default function Swap() {
     </div>
   );
 }`,
-    );
-    expect(contents).toContain("<>{on.value ? <h2>On</h2> : <p>Off</p>}</>");
-    expect(contents).toContain("{on.value ? <em>Last</em> : null}");
-    expect(contents).not.toContain("<>{on.value ? <em>Last</em> : null}</>");
-  });
+		);
+		expect(contents).toContain("<>{on.value ? <h2>On</h2> : <p>Off</p>}</>");
+		expect(contents).toContain("{on.value ? <em>Last</em> : null}");
+		expect(contents).not.toContain("<>{on.value ? <em>Last</em> : null}</>");
+	});
 });
 
 describe("qwik target: expose and context", () => {
-  it("fills the consumer's ref with the exposed QRLs once in the document", async () => {
-    const contents = await emitSource(
-      `import { defineExpose, ref } from "@uxfront/unframework";
+	it("fills the consumer's ref with the exposed QRLs once in the document", async () => {
+		const contents = await emitSource(
+			`import { defineExpose, ref } from "@uxfront/unframework";
 
 export default function Counter() {
   const count = ref(0);
@@ -498,18 +498,18 @@ export default function Counter() {
   defineExpose({ reset });
   return <output>{count.value}</output>;
 }`,
-    );
-    expect(contents).toContain("ref?: Signal<object | undefined>");
-    expect(contents).toContain("const reset = $(() => {");
-    // Filled as it renders, so a consumer's `onMounted` finds it; emptied as it goes.
-    expect(contents).toContain("useTask$(() => {\n    exposeRef(ref, { reset });");
-    expect(contents).toContain("cleanup(() => exposeRef(ref, undefined));");
-    expect(contents).toContain("function exposeRef(");
-  });
+		);
+		expect(contents).toContain("ref?: Signal<object | undefined>");
+		expect(contents).toContain("const reset = $(() => {");
+		// Filled as it renders, so a consumer's `onMounted` finds it; emptied as it goes.
+		expect(contents).toContain("useTask$(() => {\n    exposeRef(ref, { reset });");
+		expect(contents).toContain("cleanup(() => exposeRef(ref, undefined));");
+		expect(contents).toContain("function exposeRef(");
+	});
 
-  it("declares a key as a context id, and provides it", async () => {
-    const contents = await emitSource(
-      `import { provide, ref } from "@uxfront/unframework";
+	it("declares a key as a context id, and provides it", async () => {
+		const contents = await emitSource(
+			`import { provide, ref } from "@uxfront/unframework";
 import type { InjectionKey, Ref } from "@uxfront/unframework";
 
 export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");
@@ -519,16 +519,16 @@ export default function Counter() {
   provide(CountKey, count);
   return <output>{count.value}</output>;
 }`,
-    );
-    expect(contents).toContain(
-      'export const CountKey = createContextId<Signal<number>>("uf.count");',
-    );
-    expect(contents).toContain("useContextProvider(CountKey, count);");
-  });
+		);
+		expect(contents).toContain(
+			'export const CountKey = createContextId<Signal<number>>("uf.count");',
+		);
+		expect(contents).toContain("useContextProvider(CountKey, count);");
+	});
 
-  it("injects a key from its module's main component, undefined without a fallback", async () => {
-    const contents = await emitSource(
-      `import { inject, provide } from "@uxfront/unframework";
+	it("injects a key from its module's main component, undefined without a fallback", async () => {
+		const contents = await emitSource(
+			`import { inject, provide } from "@uxfront/unframework";
 import type { InjectionKey } from "@uxfront/unframework";
 
 export const LabelKey: InjectionKey<string> = Symbol("uf.label");
@@ -542,17 +542,17 @@ export default function Labelled() {
   provide(LabelKey, "Name");
   return <Label />;
 }`,
-    );
-    expect(contents).toContain('import { LabelKey } from "./Labelled";');
-    // Qwik throws for an `undefined` default, and calls a function one with what is provided.
-    expect(contents).toContain("const label = useContext(LabelKey, (provided?) => provided);");
-  });
+		);
+		expect(contents).toContain('import { LabelKey } from "./Labelled";');
+		// Qwik throws for an `undefined` default, and calls a function one with what is provided.
+		expect(contents).toContain("const label = useContext(LabelKey, (provided?) => provided);");
+	});
 });
 
 describe("qwik target: render callbacks", () => {
-  it("declares a `<component is>` that reads a list's item in the list's callback", async () => {
-    const contents = await emitSource(
-      `export default function Blocks({ items }: { items: { id: string; tag: "h2" | "p"; text: string }[] }) {
+	it("declares a `<component is>` that reads a list's item in the list's callback", async () => {
+		const contents = await emitSource(
+			`export default function Blocks({ items }: { items: { id: string; tag: "h2" | "p"; text: string }[] }) {
   return (
     <div>
       {items.map((item) => (
@@ -563,14 +563,14 @@ describe("qwik target: render callbacks", () => {
     </div>
   );
 }`,
-    );
-    expect(contents).toContain("({ items, ref }) => {\n  return (");
-    expect(contents).toContain("{items.map((item) => {\n        const Tag = item.tag;");
-  });
+		);
+		expect(contents).toContain("({ items, ref }) => {\n  return (");
+		expect(contents).toContain("{items.map((item) => {\n        const Tag = item.tag;");
+	});
 
-  it("declares a setup function a fill calls in the fill, so the fill renders at once", async () => {
-    const contents = await emitSource(
-      `import { defineSlots, ref } from "@uxfront/unframework";
+	it("declares a setup function a fill calls in the fill, so the fill renders at once", async () => {
+		const contents = await emitSource(
+			`import { defineSlots, ref } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function Names() {
@@ -614,29 +614,29 @@ function List() {
     </div>
   );
 }`,
-    );
-    // A `$` scope captures no plain function (optimizer C02), and a QRL's call is a promise until
-    // it loads: each fill declares what it calls, written in place, and nothing is awaited.
-    expect(contents).not.toContain("$((name: string)");
-    expect(contents).not.toContain("await");
-    expect(contents).not.toContain("async");
-    expect(contents).toContain(
-      "item$={({ item }) => {\n          function ok(name: string) {\n            return name.length > prefix.value.length;\n          }\n          function format(",
-    );
-    expect(contents).toContain(
-      "function format(name: string) {\n            return prefix.value + name;",
-    );
-    expect(contents).toContain(
-      "<b class={{ on: Boolean(ok(item)) }} style={{ color: format(item) }}>",
-    );
-    expect(contents).toContain("{format(each).toUpperCase()}");
-    expect(contents.match(/function format\(/g)).toHaveLength(2);
-  });
+		);
+		// A `$` scope captures no plain function (optimizer C02), and a QRL's call is a promise until
+		// it loads: each fill declares what it calls, written in place, and nothing is awaited.
+		expect(contents).not.toContain("$((name: string)");
+		expect(contents).not.toContain("await");
+		expect(contents).not.toContain("async");
+		expect(contents).toContain(
+			"item$={({ item }) => {\n          function ok(name: string) {\n            return name.length > prefix.value.length;\n          }\n          function format(",
+		);
+		expect(contents).toContain(
+			"function format(name: string) {\n            return prefix.value + name;",
+		);
+		expect(contents).toContain(
+			"<b class={{ on: Boolean(ok(item)) }} style={{ color: format(item) }}>",
+		);
+		expect(contents).toContain("{format(each).toUpperCase()}");
+		expect(contents.match(/function format\(/g)).toHaveLength(2);
+	});
 
-  it("declares a `<component is>` in a list inside a fill in the list's callback", async () => {
-    // A fill's own props cannot name the candidates: the analyser reports UF3044 for them.
-    const contents = await emitSource(
-      `import { defineSlots } from "@uxfront/unframework";
+	it("declares a `<component is>` in a list inside a fill in the list's callback", async () => {
+		// A fill's own props cannot name the candidates: the analyser reports UF3044 for them.
+		const contents = await emitSource(
+			`import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export interface Cell {
@@ -656,28 +656,28 @@ function Row() {
   const slots = defineSlots<{ cell?(): Element }>();
   return <div>{slots.cell?.()}</div>;
 }`,
-    );
-    expect(contents).toContain("{cells.map((cell) => {\n");
-    expect(contents).toContain("const Tag = cell.tag;");
-    expect(contents).not.toMatch(/=> \{\n {4}const Tag/);
-  });
+		);
+		expect(contents).toContain("{cells.map((cell) => {\n");
+		expect(contents).toContain("const Tag = cell.tag;");
+		expect(contents).not.toMatch(/=> \{\n {4}const Tag/);
+	});
 
-  it("selects an option without a value by its text", async () => {
-    const contents = await emitSource(
-      `import { ref } from "@uxfront/unframework";
+	it("selects an option without a value by its text", async () => {
+		const contents = await emitSource(
+			`import { ref } from "@uxfront/unframework";
 
 export default function Pick() {
   const letter = ref("b");
   return <select v-model={letter.value}><option>a</option><option>b</option></select>;
 }`,
-    );
-    expect(contents).toContain('<option selected={currentLetter === "a"}>a</option>');
-    expect(contents).toContain('<option selected={currentLetter === "b"}>b</option>');
-  });
+		);
+		expect(contents).toContain('<option selected={currentLetter === "a"}>a</option>');
+		expect(contents).toContain('<option selected={currentLetter === "b"}>b</option>');
+	});
 
-  it("selects an option by the text its expressions render, as the DOM reads it", async () => {
-    const contents = await emitSource(
-      `import { ref } from "@uxfront/unframework";
+	it("selects an option by the text its expressions render, as the DOM reads it", async () => {
+		const contents = await emitSource(
+			`import { ref } from "@uxfront/unframework";
 
 export default function Pick({ sizes, label }: { sizes: number[]; label: string }) {
   const size = ref("2");
@@ -690,36 +690,36 @@ export default function Pick({ sizes, label }: { sizes: number[]; label: string 
     </select>
   );
 }`,
-    );
-    const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
-    expect(contents).toContain(`currentSize === \`\${n ?? ""}\`${read}`);
-    expect(contents).toContain(`currentSize === \` \${label ?? ""}! \`${read}`);
-  });
+		);
+		const read = String.raw`.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "")`;
+		expect(contents).toContain(`currentSize === \`\${n ?? ""}\`${read}`);
+		expect(contents).toContain(`currentSize === \` \${label ?? ""}! \`${read}`);
+	});
 });
 
 describe("qwik target: fallthrough to a component root", () => {
-  it("passes a consumer's class and style on to the root component", async () => {
-    const contents = await emitSource(
-      `export default function Primary({ text }: { text: string }) {
+	it("passes a consumer's class and style on to the root component", async () => {
+		const contents = await emitSource(
+			`export default function Primary({ text }: { text: string }) {
   return <Base text={text} class="primary" />;
 }
 
 function Base({ text }: { text: string }) {
   return <button type="button" class="base">{text}</button>;
 }`,
-      { fallthrough: true },
-    );
-    // What else falls through passes on in the rest, the scope attributes included (ADR-0118).
-    expect(contents).toContain(
-      '<Base text={text} class={["primary", className]} style={style} {...attributes} />',
-    );
-    // Typed as the root component takes it, without what the root sets itself.
-    expect(contents).toContain('Omit<PropsOf<typeof Base>, "text" | "class" | "style">');
-  });
+			{ fallthrough: true },
+		);
+		// What else falls through passes on in the rest, the scope attributes included (ADR-0118).
+		expect(contents).toContain(
+			'<Base text={text} class={["primary", className]} style={style} {...attributes} />',
+		);
+		// Typed as the root component takes it, without what the root sets itself.
+		expect(contents).toContain('Omit<PropsOf<typeof Base>, "text" | "class" | "style">');
+	});
 });
 
 describe("qwik target: fills, listeners and the optimizer", () => {
-  const board = `import { defineSlots, ref } from "@uxfront/unframework";
+	const board = `import { defineSlots, ref } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function Board() {
@@ -763,26 +763,26 @@ function Groups() {
   return <div>{slots.group?.({ items: ["Ada"] })}</div>;
 }`;
 
-  it("names a fill's copy apart from the QRL a listener in the fill calls", async () => {
-    const contents = await emitSource(board);
-    expect(contents).toContain("const label = $((name: string) => {");
-    expect(contents).toContain("function labelInFill(name: string) {");
-    expect(contents).toContain("Pick {labelInFill(name)}");
-    expect(contents).toContain(".map((c) => labelInFill(c))");
-    expect(contents).toContain("onClick$={$(() => label(name))}");
-  });
+	it("names a fill's copy apart from the QRL a listener in the fill calls", async () => {
+		const contents = await emitSource(board);
+		expect(contents).toContain("const label = $((name: string) => {");
+		expect(contents).toContain("function labelInFill(name: string) {");
+		expect(contents).toContain("Pick {labelInFill(name)}");
+		expect(contents).toContain(".map((c) => labelInFill(c))");
+		expect(contents).toContain("onClick$={$(() => label(name))}");
+	});
 
-  it("writes a listener in a list in a fill `$(…)`, and the optimizer accepts the fill", async () => {
-    const contents = await emitSource(board);
-    expect(contents).toContain("onClick$={$(() => choose(name))}");
-    expect(contents).toContain('const Tag = tagOf("Ada");');
-    expect(contents).not.toMatch(/=> \{\n {4}const Tag/);
-    const file = { path: "/virtual/Board.tsx", contents };
-    const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
-    expect(result).toEqual({ errors: [], warnings: [] });
-  });
+	it("writes a listener in a list in a fill `$(…)`, and the optimizer accepts the fill", async () => {
+		const contents = await emitSource(board);
+		expect(contents).toContain("onClick$={$(() => choose(name))}");
+		expect(contents).toContain('const Tag = tagOf("Ada");');
+		expect(contents).not.toMatch(/=> \{\n {4}const Tag/);
+		const file = { path: "/virtual/Board.tsx", contents };
+		const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
+		expect(result).toEqual({ errors: [], warnings: [] });
+	});
 
-  const spelled = `import { defineSlots, ref } from "@uxfront/unframework";
+	const spelled = `import { defineSlots, ref } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function Spelled() {
@@ -798,26 +798,26 @@ function Rows() {
   return <ul><li>{slots.item?.({ item: "Ada" })}</li></ul>;
 }`;
 
-  it("declares no QRL for a function only a fill's callback calls", async () => {
-    const contents = await emitSource(spelled);
-    expect(contents).not.toContain("$((c: string)");
-    expect(contents).toContain("function format(c: string) {");
-    expect(contents).toContain(".map((c) => format(c))");
-  });
+	it("declares no QRL for a function only a fill's callback calls", async () => {
+		const contents = await emitSource(spelled);
+		expect(contents).not.toContain("$((c: string)");
+		expect(contents).toContain("function format(c: string) {");
+		expect(contents).toContain(".map((c) => format(c))");
+	});
 
-  it(
-    "emits fills that type-check and lint clean (L4, L5)",
-    async () => {
-      await expectCheckedClean([board, spelled]);
-    },
-    CHECKED,
-  );
+	it(
+		"emits fills that type-check and lint clean (L4, L5)",
+		async () => {
+			await expectCheckedClean([board, spelled]);
+		},
+		CHECKED,
+	);
 });
 
 describe("qwik target: generic components", () => {
-  // ADR-0068: a generic arrow in `component$`, which TypeScript makes a generic component, and
-  // the interfaces beside it over the type parameters their members read.
-  const pick = `import { computed, defineEmits, defineExpose, defineModel, defineSlots } from "@uxfront/unframework";
+	// ADR-0068: a generic arrow in `component$`, which TypeScript makes a generic component, and
+	// the interfaces beside it over the type parameters their members read.
+	const pick = `import { computed, defineEmits, defineExpose, defineModel, defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export type PickEvents = "taken";
@@ -851,7 +851,7 @@ export default function Pick<T extends { id: string }, U extends string = "x">({
     </ul>
   );
 }`;
-  const multi = `import { defineModel, ref } from "@uxfront/unframework";
+	const multi = `import { defineModel, ref } from "@uxfront/unframework";
 
 export default function Multi<T extends string>({ options }: { options: readonly T[] }) {
   const picked = ref<T[]>([]);
@@ -870,12 +870,12 @@ export default function Multi<T extends string>({ options }: { options: readonly
     </div>
   );
 }`;
-  const unread = `export default function Unread<T>(props: { items: T[] }) {
+	const unread = `export default function Unread<T>(props: { items: T[] }) {
   return <p>none</p>;
 }`;
-  // Functions whose parameters' types name `T`, in each declared form: they move to module scope
-  // with their own `T`, so a getter may call them, and each call infers it.
-  const hoisted = `import { computed, ref } from "@uxfront/unframework";
+	// Functions whose parameters' types name `T`, in each declared form: they move to module scope
+	// with their own `T`, so a getter may call them, and each call infers it.
+	const hoisted = `import { computed, ref } from "@uxfront/unframework";
 
 export default function Hoisted<T>({ items }: { items: T[] }) {
   const last = ref("");
@@ -901,9 +901,9 @@ export default function Hoisted<T>({ items }: { items: T[] }) {
     </ul>
   );
 }`;
-  // A forward chain of constraints (`A extends Box<B>, B extends Box<C>, C`): each interface and
-  // hoisted function declares all three.
-  const chain = `import { defineEmits } from "@uxfront/unframework";
+	// A forward chain of constraints (`A extends Box<B>, B extends Box<C>, C`): each interface and
+	// hoisted function declares all three.
+	const chain = `import { defineEmits } from "@uxfront/unframework";
 
 interface Box<V> {
   value: V;
@@ -930,14 +930,14 @@ export default function Chain<A extends Box<B>, B extends Box<C>, C>({ items }: 
     </ul>
   );
 }`;
-  // The same chain in the other order: a single pass in declared order misses a parameter here,
-  // as a reversed one does in `chain`.
-  const reversedChain = chain
-    .replaceAll("A extends Box<B>, B extends Box<C>, C", "C, B extends Box<C>, A extends Box<B>")
-    .replaceAll("ChainProps<A, B, C>", "ChainProps<C, B, A>");
-  // Functions kept in the generic arrow, which getters call: a `computed`'s, and a watcher's
-  // sources, alone and in an array.
-  const kept = `import { computed, ref, watch } from "@uxfront/unframework";
+	// The same chain in the other order: a single pass in declared order misses a parameter here,
+	// as a reversed one does in `chain`.
+	const reversedChain = chain
+		.replaceAll("A extends Box<B>, B extends Box<C>, C", "C, B extends Box<C>, A extends Box<B>")
+		.replaceAll("ChainProps<A, B, C>", "ChainProps<C, B, A>");
+	// Functions kept in the generic arrow, which getters call: a `computed`'s, and a watcher's
+	// sources, alone and in an array.
+	const kept = `import { computed, ref, watch } from "@uxfront/unframework";
 
 export default function Kept<T>({ items }: { items: T[] }) {
   const nothing: T[] = [];
@@ -992,10 +992,10 @@ export default function Kept<T>({ items }: { items: T[] }) {
     </p>
   );
 }`;
-  // Kept functions a getter calls and client code too: a listener, a `watchEffect`, an
-  // `onMounted` and `defineExpose`. Client code calls their QRLs, so only `empty`, which the
-  // template calls as well, keeps a plain declaration in the arrow.
-  const shared = `import { computed, defineExpose, onMounted, ref, watchEffect } from "@uxfront/unframework";
+	// Kept functions a getter calls and client code too: a listener, a `watchEffect`, an
+	// `onMounted` and `defineExpose`. Client code calls their QRLs, so only `empty`, which the
+	// template calls as well, keeps a plain declaration in the arrow.
+	const shared = `import { computed, defineExpose, onMounted, ref, watchEffect } from "@uxfront/unframework";
 
 export default function Shared<T>({ items }: { items: T[] }) {
   const picked = ref<T[]>([]);
@@ -1030,8 +1030,8 @@ export default function Shared<T>({ items }: { items: T[] }) {
     </button>
   );
 }`;
-  // A function whose `T` only its return type names, which reads nothing of the component.
-  const first = `import { defineEmits } from "@uxfront/unframework";
+	// A function whose `T` only its return type names, which reads nothing of the component.
+	const first = `import { defineEmits } from "@uxfront/unframework";
 
 export default function First<T>({ items }: { items: T[] }) {
   const emit = defineEmits<{ pick: [item: T] }>();
@@ -1044,8 +1044,8 @@ export default function First<T>({ items }: { items: T[] }) {
   }
   return <button type="button" data-count={items.length} onClick={pick}>Pick</button>;
 }`;
-  // Types the module imports and re-exports keep their names: the interfaces take others.
-  const named = `import { defineEmits, defineSlots } from "@uxfront/unframework";
+	// Types the module imports and re-exports keep their names: the interfaces take others.
+	const named = `import { defineEmits, defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 import type { ListEvents } from "./types";
 
@@ -1065,76 +1065,76 @@ export default function List<T>({ items }: { items: T[] }) {
     </ul>
   );
 }`;
-  const types = 'export type ListEvents = string[];\nexport type ListSlots = "item";\n';
+	const types = 'export type ListEvents = string[];\nexport type ListSlots = "item";\n';
 
-  it("writes a generic arrow, and its interfaces over the parameters they read", async () => {
-    const contents = await emitSource(pick);
-    expect(contents).toContain(
-      "export interface PickEvents_1<T extends { id: string }> {\n  onPick$?: QRL<(item: T) => void>;\n}",
-    );
-    expect(contents).toContain("export interface PickModels {");
-    expect(contents).toContain("export interface PickSlots<T extends { id: string }> {");
-    expect(contents).toMatch(
-      /export default component\$\(\n {2}<T extends \{ id: string \}, U extends string = "x">\(\{/,
-    );
-    // `PickEvents` is the source's own exported type (ADR-0068): the interface takes another name.
-    expect(contents).toContain(
-      "}: PickProps<T, U> &\n    PickEvents_1<T> &\n    PickModels &\n    PickSlots<T> & { ref?: Signal<object | undefined> }) => {",
-    );
-    // A constant `T` types stays in the arrow, where `T` is in scope; a function `T` types moves
-    // to module scope with its own `T`, so the computed's `$` scope can call it.
-    expect(contents).toMatch(/=> \{\n(?:.*\n)*? {4}const empty: T\[\] = \[\];/);
-    expect(contents).toMatch(/^function label<T extends \{ id: string \}>\(item: T\): string \{$/m);
-  });
+	it("writes a generic arrow, and its interfaces over the parameters they read", async () => {
+		const contents = await emitSource(pick);
+		expect(contents).toContain(
+			"export interface PickEvents_1<T extends { id: string }> {\n  onPick$?: QRL<(item: T) => void>;\n}",
+		);
+		expect(contents).toContain("export interface PickModels {");
+		expect(contents).toContain("export interface PickSlots<T extends { id: string }> {");
+		expect(contents).toMatch(
+			/export default component\$\(\n {2}<T extends \{ id: string \}, U extends string = "x">\(\{/,
+		);
+		// `PickEvents` is the source's own exported type (ADR-0068): the interface takes another name.
+		expect(contents).toContain(
+			"}: PickProps<T, U> &\n    PickEvents_1<T> &\n    PickModels &\n    PickSlots<T> & { ref?: Signal<object | undefined> }) => {",
+		);
+		// A constant `T` types stays in the arrow, where `T` is in scope; a function `T` types moves
+		// to module scope with its own `T`, so the computed's `$` scope can call it.
+		expect(contents).toMatch(/=> \{\n(?:.*\n)*? {4}const empty: T\[\] = \[\];/);
+		expect(contents).toMatch(/^function label<T extends \{ id: string \}>\(item: T\): string \{$/m);
+	});
 
-  it("writes a control's value as the type of the generic state or model it binds", async () => {
-    const contents = await emitSource(multi);
-    expect(contents).toContain("picked.value = selectedValues(element) as T[]");
-    expect(contents).toContain("setText(element.value as T)");
-    // A modifier reads the control through `modelText`, whose value is cast the same way.
-    expect(contents).toContain("setTrimmed(modelText.read(element, { trim: true }) as T)");
-  });
+	it("writes a control's value as the type of the generic state or model it binds", async () => {
+		const contents = await emitSource(multi);
+		expect(contents).toContain("picked.value = selectedValues(element) as T[]");
+		expect(contents).toContain("setText(element.value as T)");
+		// A modifier reads the control through `modelText`, whose value is cast the same way.
+		expect(contents).toContain("setTrimmed(modelText.read(element, { trim: true }) as T)");
+	});
 
-  it("moves a function typed by `T` to module scope with its own `T`, in each declared form", async () => {
-    const contents = await emitSource(hoisted);
-    expect(contents).toMatch(/^function size<T>\(list: T\[\]\): number \{$/m);
-    // An arrow's lone `<T>` takes a comma, or TSX reads it as a tag.
-    expect(contents).toMatch(/^const show = <T,>\(item: T\) => String\(item\);$/m);
-    expect(contents).toMatch(/^const settle = async <T,>\(item: T\) => \[item\];$/m);
-    expect(contents).toMatch(/^async function keep<T>\(item: T\): Promise<T\[\]> \{$/m);
-    expect(contents).toContain("useComputed$(() => size(items) + 1)");
-  });
+	it("moves a function typed by `T` to module scope with its own `T`, in each declared form", async () => {
+		const contents = await emitSource(hoisted);
+		expect(contents).toMatch(/^function size<T>\(list: T\[\]\): number \{$/m);
+		// An arrow's lone `<T>` takes a comma, or TSX reads it as a tag.
+		expect(contents).toMatch(/^const show = <T,>\(item: T\) => String\(item\);$/m);
+		expect(contents).toMatch(/^const settle = async <T,>\(item: T\) => \[item\];$/m);
+		expect(contents).toMatch(/^async function keep<T>\(item: T\): Promise<T\[\]> \{$/m);
+		expect(contents).toContain("useComputed$(() => size(items) + 1)");
+	});
 
-  it("closes a parameter's constraints over the parameters they name, in either order", async () => {
-    // The closure runs to a fixed point.
-    const reversed = await emitSource(reversedChain);
-    expect(reversed).toContain(
-      "export interface ChainEvents<C, B extends Box<C>, A extends Box<B>> {",
-    );
-    const contents = await emitSource(chain);
-    expect(contents).toContain(
-      "export interface ChainEvents<A extends Box<B>, B extends Box<C>, C> {",
-    );
-    expect(contents).toMatch(
-      /^function label<A extends Box<B>, B extends Box<C>, C>\(item: A\): string \{$/m,
-    );
-  });
+	it("closes a parameter's constraints over the parameters they name, in either order", async () => {
+		// The closure runs to a fixed point.
+		const reversed = await emitSource(reversedChain);
+		expect(reversed).toContain(
+			"export interface ChainEvents<C, B extends Box<C>, A extends Box<B>> {",
+		);
+		const contents = await emitSource(chain);
+		expect(contents).toContain(
+			"export interface ChainEvents<A extends Box<B>, B extends Box<C>, C> {",
+		);
+		expect(contents).toMatch(
+			/^function label<A extends Box<B>, B extends Box<C>, C>\(item: A\): string \{$/m,
+		);
+	});
 
-  it("names its interfaces apart from the types the module imports and re-exports", async () => {
-    const contents = await emitSource(named);
-    expect(contents).toContain("export interface ListEvents_1<T> {");
-    expect(contents).toContain("export interface ListSlots_1<T> {");
-    expect(contents).toContain('import type { ListEvents } from "./types";');
-    expect(contents).toContain('export type { ListSlots } from "./types";');
-  });
+	it("names its interfaces apart from the types the module imports and re-exports", async () => {
+		const contents = await emitSource(named);
+		expect(contents).toContain("export interface ListEvents_1<T> {");
+		expect(contents).toContain("export interface ListSlots_1<T> {");
+		expect(contents).toContain('import type { ListEvents } from "./types";');
+		expect(contents).toContain('export type { ListSlots } from "./types";');
+	});
 
-  it("declares a function kept in the generic arrow inside each getter that calls it", async () => {
-    const contents = await emitSource(kept);
-    // `blank` names a `T` no call could infer, `count` reads a constant typed by `T`, and `wrap`
-    // calls `blank`: each stays in the arrow, and a getter's `$` scope can't capture a function.
-    expect(contents).not.toMatch(/^(?:function|const) (?:blank|count|wrap)\b/m);
-    expect(lines(contents)).toContain(
-      lines(`const total = useComputed$(() => {
+	it("declares a function kept in the generic arrow inside each getter that calls it", async () => {
+		const contents = await emitSource(kept);
+		// `blank` names a `T` no call could infer, `count` reads a constant typed by `T`, and `wrap`
+		// calls `blank`: each stays in the arrow, and a getter's `$` scope can't capture a function.
+		expect(contents).not.toMatch(/^(?:function|const) (?:blank|count|wrap)\b/m);
+		expect(lines(contents)).toContain(
+			lines(`const total = useComputed$(() => {
         function count() {
           return nothing.length;
         }
@@ -1143,95 +1143,95 @@ export default function List<T>({ items }: { items: T[] }) {
         }
         return count() + blank().length + items.length;
       });`),
-    );
-    // `wrap` declares the `blank` it calls in itself.
-    expect(lines(contents)).toContain(
-      lines(`function wrap() {
+		);
+		// `wrap` declares the `blank` it calls in itself.
+		expect(lines(contents)).toContain(
+			lines(`function wrap() {
           function blank(): T[] {
             return [];
           }
           return blank().length;
         }`),
-    );
-    // A watcher's getter source, alone or among an array's, does the same.
-    expect(lines(contents)).toContain(
-      lines(`const sizeSource = useComputed$(() => {
+		);
+		// A watcher's getter source, alone or among an array's, does the same.
+		expect(lines(contents)).toContain(
+			lines(`const sizeSource = useComputed$(() => {
         function wrap() {`),
-    );
-    expect(contents.match(/function count\(\) \{/g)).toHaveLength(2);
-    // A statement call and an assertion stay calls, declared in the getter: an assertion's
-    // narrowing needs its call by name (TS2776).
-    expect(lines(contents)).toContain(
-      lines(`guard(value);
+		);
+		expect(contents.match(/function count\(\) \{/g)).toHaveLength(2);
+		// A statement call and an assertion stay calls, declared in the getter: an assertion's
+		// narrowing needs its call by name (TS2776).
+		expect(lines(contents)).toContain(
+			lines(`guard(value);
         check(value);
         return value.length + inner().length;`),
-    );
-    expect(contents).toMatch(
-      /useComputed\$\(\(\) => \{\n(?:.*\n)*? {6}function check\(value: unknown\): asserts value is T\[\] \{/,
-    );
-    // `outer`, which the template calls, calls `inner`: the arrow declares both, and the getter
-    // that calls `inner` its own.
-    expect(contents.match(/function inner\(\): T\[\] \{/g)).toHaveLength(2);
-    // `deep`, which only `shallow` calls, which only a getter calls, is declared only there.
-    expect(contents.match(/function deep\(\): T\[\] \{/g)).toHaveLength(1);
-    // The template calls `blank` too, so the arrow declares it as well.
-    expect(contents).toMatch(
-      /=> \{\n {4}const nothing: T\[\] = \[\];\n(?:.*\n)*? {4}function blank\(\): T\[\] \{/,
-    );
-  });
+		);
+		expect(contents).toMatch(
+			/useComputed\$\(\(\) => \{\n(?:.*\n)*? {6}function check\(value: unknown\): asserts value is T\[\] \{/,
+		);
+		// `outer`, which the template calls, calls `inner`: the arrow declares both, and the getter
+		// that calls `inner` its own.
+		expect(contents.match(/function inner\(\): T\[\] \{/g)).toHaveLength(2);
+		// `deep`, which only `shallow` calls, which only a getter calls, is declared only there.
+		expect(contents.match(/function deep\(\): T\[\] \{/g)).toHaveLength(1);
+		// The template calls `blank` too, so the arrow declares it as well.
+		expect(contents).toMatch(
+			/=> \{\n {4}const nothing: T\[\] = \[\];\n(?:.*\n)*? {4}function blank\(\): T\[\] \{/,
+		);
+	});
 
-  it("declares no plain function a getter and client code share, only its QRL", async () => {
-    const contents = await emitSource(shared);
-    // The getter declares all four. The listener and the exposed ref call QRLs; the tasks write
-    // their calls in place, as they do for any function (./src/inline.ts).
-    expect(contents).toContain("const blankQrl = $(");
-    expect(contents).toContain("const noneQrl = $(");
-    expect(lines(contents)).toContain(
-      lines(`const total = useComputed$(() => {
+	it("declares no plain function a getter and client code share, only its QRL", async () => {
+		const contents = await emitSource(shared);
+		// The getter declares all four. The listener and the exposed ref call QRLs; the tasks write
+		// their calls in place, as they do for any function (./src/inline.ts).
+		expect(contents).toContain("const blankQrl = $(");
+		expect(contents).toContain("const noneQrl = $(");
+		expect(lines(contents)).toContain(
+			lines(`const total = useComputed$(() => {
         function blank(): T[] {`),
-    );
-    // Only `empty`, which the template calls, keeps a plain declaration in the arrow too.
-    expect(contents.match(/^ {4}function (\w+)\(\): T\[\] \{$/gm)).toEqual([
-      "    function empty(): T[] {",
-    ]);
-  });
+		);
+		// Only `empty`, which the template calls, keeps a plain declaration in the arrow too.
+		expect(contents.match(/^ {4}function (\w+)\(\): T\[\] \{$/gm)).toEqual([
+			"    function empty(): T[] {",
+		]);
+	});
 
-  it("keeps a function no call could infer `T` for in the arrow, where its callers check", async () => {
-    // A call with no contextual type would infer `unknown` from a module-scope `none<T>()`.
-    const contents = await emitSource(first);
-    expect(contents).not.toMatch(/^function none/m);
-    expect(contents).toContain("  const none = $((): T | undefined => {");
-  });
+	it("keeps a function no call could infer `T` for in the arrow, where its callers check", async () => {
+		// A call with no contextual type would infer `unknown` from a module-scope `none<T>()`.
+		const contents = await emitSource(first);
+		expect(contents).not.toMatch(/^function none/m);
+		expect(contents).toContain("  const none = $((): T | undefined => {");
+	});
 
-  it(
-    "emits generic components the optimizer, the checker and lint accept (L3, L4, L5)",
-    async () => {
-      const sources = [
-        pick,
-        multi,
-        unread,
-        hoisted,
-        chain,
-        reversedChain,
-        named,
-        first,
-        kept,
-        shared,
-      ];
-      for (const source of sources) {
-        const contents = await emitSource(source);
-        const file = { path: "/virtual/Generic.tsx", contents };
-        const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
-        expect(result).toEqual({ errors: [], warnings: [] });
-      }
-      await expectCheckedClean(sources, { "types.ts": types });
-    },
-    CHECKED,
-  );
+	it(
+		"emits generic components the optimizer, the checker and lint accept (L3, L4, L5)",
+		async () => {
+			const sources = [
+				pick,
+				multi,
+				unread,
+				hoisted,
+				chain,
+				reversedChain,
+				named,
+				first,
+				kept,
+				shared,
+			];
+			for (const source of sources) {
+				const contents = await emitSource(source);
+				const file = { path: "/virtual/Generic.tsx", contents };
+				const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
+				expect(result).toEqual({ errors: [], warnings: [] });
+			}
+			await expectCheckedClean(sources, { "types.ts": types });
+		},
+		CHECKED,
+	);
 });
 
 describe("qwik target: options read as the DOM reads them", () => {
-  const pick = `import { ref } from "@uxfront/unframework";
+	const pick = `import { ref } from "@uxfront/unframework";
 
 export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }) {
   const picked = ref("");
@@ -1256,24 +1256,24 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
   );
 }`;
 
-  it("renders a nullish expression as no text, and keeps a non-ASCII space", async () => {
-    const contents = await emitSource(pick);
-    const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
-    expect(contents).toContain(`currentPicked === \`\${hint ?? ""}\`${read}`);
-    // The DOM strips ASCII whitespace only.
-    expect(contents).toContain('currentPicked === "\u00a0sp\u00a0"');
-    // TypeScript rejects `?? ""` after what is never nullish (TS2869).
-    expect(contents).toContain(`\`\${hint ? "Yes" : "No"}\`${read}`);
-    expect(contents).toContain(`\`\${\`\${count.value + 1}\`}\`${read}`);
-    // A conditional that may be nullish is in parentheses before `??`.
-    expect(contents).toContain(`\`\${(hint ? hint : undefined) ?? ""}\`${read}`);
-    expect(contents).toMatch(/currentMany\.includes\(\s*`\$\{n \?\? ""\}`/);
-    // TypeScript reads `a ?? b` by `b`, which is never nullish here.
-    expect(contents).toContain(`\`\${hint ?? "none"}\`${read}`);
-  });
+	it("renders a nullish expression as no text, and keeps a non-ASCII space", async () => {
+		const contents = await emitSource(pick);
+		const read = String.raw`.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "")`;
+		expect(contents).toContain(`currentPicked === \`\${hint ?? ""}\`${read}`);
+		// The DOM strips ASCII whitespace only.
+		expect(contents).toContain('currentPicked === "\u00a0sp\u00a0"');
+		// TypeScript rejects `?? ""` after what is never nullish (TS2869).
+		expect(contents).toContain(`\`\${hint ? "Yes" : "No"}\`${read}`);
+		expect(contents).toContain(`\`\${\`\${count.value + 1}\`}\`${read}`);
+		// A conditional that may be nullish is in parentheses before `??`.
+		expect(contents).toContain(`\`\${(hint ? hint : undefined) ?? ""}\`${read}`);
+		expect(contents).toMatch(/currentMany\.includes\(\s*`\$\{n \?\? ""\}`/);
+		// TypeScript reads `a ?? b` by `b`, which is never nullish here.
+		expect(contents).toContain(`\`\${hint ?? "none"}\`${read}`);
+	});
 
-  it("renders an expression that is always nullish as no text, with no `??` (TS2871)", async () => {
-    const contents = await emitSource(`import { ref } from "@uxfront/unframework";
+	it("renders an expression that is always nullish as no text, with no `??` (TS2871)", async () => {
+		const contents = await emitSource(`import { ref } from "@uxfront/unframework";
 
 export default function Pick({ hint }: { hint?: string }) {
   const picked = ref("");
@@ -1284,24 +1284,24 @@ export default function Pick({ hint }: { hint?: string }) {
     </select>
   );
 }`);
-    expect(contents).toContain("currentPicked === `A`.replace(");
-    // TypeScript reads `hint ?? null` as always nullish, though `hint` may not be.
-    expect(contents).toMatch(
-      /currentPicked ===\s+`\$\{\[hint \?\? null\]\.join\(""\)\}`\.replace\(/,
-    );
-  });
+		expect(contents).toContain("currentPicked === `A`.replace(");
+		// TypeScript reads `hint ?? null` as always nullish, though `hint` may not be.
+		expect(contents).toMatch(
+			/currentPicked ===\s+`\$\{\[hint \?\? null\]\.join\(""\)\}`\.replace\(/,
+		);
+	});
 
-  it(
-    "emits options that type-check and lint clean (L4, L5)",
-    async () => {
-      await expectCheckedClean([pick]);
-    },
-    CHECKED,
-  );
+	it(
+		"emits options that type-check and lint clean (L4, L5)",
+		async () => {
+			await expectCheckedClean([pick]);
+		},
+		CHECKED,
+	);
 });
 
 describe("qwik target: a `v-model` beside a listener of its event", () => {
-  const fields = `import { ref } from "@uxfront/unframework";
+	const fields = `import { ref } from "@uxfront/unframework";
 
 export default function Fields() {
   const text = ref("");
@@ -1321,29 +1321,29 @@ export default function Fields() {
   );
 }`;
 
-  it("runs the model's handler first, in the element's one prop of the event", async () => {
-    const contents = await emitSource(fields);
-    expect(contents.match(/onInput\$=/g)).toHaveLength(1);
-    expect(contents.match(/onChange\$=/g)).toHaveLength(2);
-    expect(contents).toContain(
-      "onInput$={[$((_, element) => (text.value = element.value)), $(() => count.value++)]}",
-    );
-    expect(contents).toContain(
-      "onChange$={[$((_, element) => (size.value = element.value)), $(() => count.value++)]}",
-    );
-  });
+	it("runs the model's handler first, in the element's one prop of the event", async () => {
+		const contents = await emitSource(fields);
+		expect(contents.match(/onInput\$=/g)).toHaveLength(1);
+		expect(contents.match(/onChange\$=/g)).toHaveLength(2);
+		expect(contents).toContain(
+			"onInput$={[$((_, element) => (text.value = element.value)), $(() => count.value++)]}",
+		);
+		expect(contents).toContain(
+			"onChange$={[$((_, element) => (size.value = element.value)), $(() => count.value++)]}",
+		);
+	});
 
-  it(
-    "emits a model beside a listener that type-checks and lints clean (L4, L5)",
-    async () => {
-      await expectCheckedClean([fields]);
-    },
-    CHECKED,
-  );
+	it(
+		"emits a model beside a listener that type-checks and lints clean (L4, L5)",
+		async () => {
+			await expectCheckedClean([fields]);
+		},
+		CHECKED,
+	);
 });
 
 describe("qwik target: a `<component is>` with listeners", () => {
-  const toggle = `import { ref } from "@uxfront/unframework";
+	const toggle = `import { ref } from "@uxfront/unframework";
 
 export default function Toggle({ link }: { link: boolean }) {
   const count = ref(0);
@@ -1357,61 +1357,61 @@ export default function Toggle({ link }: { link: boolean }) {
   );
 }`;
 
-  it("renders one tag per candidate, each with the listeners", async () => {
-    const contents = await emitSource(toggle);
-    expect(contents).toContain('const Tag = link ? "a" : "button";');
-    expect(contents).toMatch(
-      /Tag === "a" \? \(\s*<a role="button" tabIndex=\{0\} onClick\$=\{bump\}/,
-    );
-    expect(contents).toMatch(/\) : \(\s*<button role="button" tabIndex=\{0\} onClick\$=\{bump\}/);
-    expect(contents.match(/onKeyDown\$=\{\(\) => bump\(\)\}/g)).toHaveLength(2);
-    expect(contents).not.toContain("<Tag");
-  });
+	it("renders one tag per candidate, each with the listeners", async () => {
+		const contents = await emitSource(toggle);
+		expect(contents).toContain('const Tag = link ? "a" : "button";');
+		expect(contents).toMatch(
+			/Tag === "a" \? \(\s*<a role="button" tabIndex=\{0\} onClick\$=\{bump\}/,
+		);
+		expect(contents).toMatch(/\) : \(\s*<button role="button" tabIndex=\{0\} onClick\$=\{bump\}/);
+		expect(contents.match(/onKeyDown\$=\{\(\) => bump\(\)\}/g)).toHaveLength(2);
+		expect(contents).not.toContain("<Tag");
+	});
 
-  it("guards an untyped attribute only some tags take, which Qwik writes as a spread (ADR-0119)", async () => {
-    const contents =
-      await emitSource(`export default function Field({ x, f }: { x: boolean; f: string }) {
+	it("guards an untyped attribute only some tags take, which Qwik writes as a spread (ADR-0119)", async () => {
+		const contents =
+			await emitSource(`export default function Field({ x, f }: { x: boolean; f: string }) {
   return <component is={x ? "input" : "a"} form="f1" list={f} />;
 }`);
-    // Qwik's types declare neither on <input>, so each is an object spread, guarded key by key.
-    expect(contents).toContain('{...{ form: Tag === "input" ? "f1" : undefined }}');
-    expect(contents).toContain('{...{ list: Tag === "input" ? f : undefined }}');
-  });
+		// Qwik's types declare neither on <input>, so each is an object spread, guarded key by key.
+		expect(contents).toContain('{...{ form: Tag === "input" ? "f1" : undefined }}');
+		expect(contents).toContain('{...{ list: Tag === "input" ? f : undefined }}');
+	});
 
-  it("plans a tag's listeners as an element's: named, called, capture, control and emitting ones", async () => {
-    const plain = await emitSource(listening("button", "button"));
-    const dynamic = await emitSource(
-      listening('component is={link ? "a" : "button"}', "component"),
-    );
-    // From the body on: a plain root takes a consumer's ref of its element, which a
-    // `<component is>` root does not (ADR-0118), so their props differ.
-    const setup = (code: string) =>
-      lines(code.slice(code.indexOf("=> {"), code.indexOf("return (")));
-    expect(setup(dynamic)).toBe(`${setup(plain)}\nconst Tag = link ? "a" : "button";`);
-    const button = plain
-      .slice(plain.indexOf("<button"), plain.indexOf("</button>") + 9)
-      .replace(" ref={ref}", "");
-    expect(lines(dynamic)).toContain(lines(button));
-    expect(lines(dynamic)).toContain(
-      lines(button).replace("<button", "<a").replace("</button>", "</a>"),
-    );
-  });
+	it("plans a tag's listeners as an element's: named, called, capture, control and emitting ones", async () => {
+		const plain = await emitSource(listening("button", "button"));
+		const dynamic = await emitSource(
+			listening('component is={link ? "a" : "button"}', "component"),
+		);
+		// From the body on: a plain root takes a consumer's ref of its element, which a
+		// `<component is>` root does not (ADR-0118), so their props differ.
+		const setup = (code: string) =>
+			lines(code.slice(code.indexOf("=> {"), code.indexOf("return (")));
+		expect(setup(dynamic)).toBe(`${setup(plain)}\nconst Tag = link ? "a" : "button";`);
+		const button = plain
+			.slice(plain.indexOf("<button"), plain.indexOf("</button>") + 9)
+			.replace(" ref={ref}", "");
+		expect(lines(dynamic)).toContain(lines(button));
+		expect(lines(dynamic)).toContain(
+			lines(button).replace("<button", "<a").replace("</button>", "</a>"),
+		);
+	});
 
-  it(
-    "emits a `<component is>` with listeners that compiles, type-checks and lints clean",
-    async () => {
-      const file = { path: "/virtual/Toggle.tsx", contents: await emitSource(toggle) };
-      const compiled = (await toolchain.frameworkCompile([file], context)).get(file.path);
-      expect(compiled).toEqual({ errors: [], warnings: [] });
-      await expectCheckedClean([toggle]);
-    },
-    CHECKED,
-  );
+	it(
+		"emits a `<component is>` with listeners that compiles, type-checks and lints clean",
+		async () => {
+			const file = { path: "/virtual/Toggle.tsx", contents: await emitSource(toggle) };
+			const compiled = (await toolchain.frameworkCompile([file], context)).get(file.path);
+			expect(compiled).toEqual({ errors: [], warnings: [] });
+			await expectCheckedClean([toggle]);
+		},
+		CHECKED,
+	);
 });
 
 /** A source whose tag, an element or a `<component is>`, holds every kind of listener. */
 function listening(open: string, close: string): string {
-  return `import { defineEmits, ref } from "@uxfront/unframework";
+	return `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Toggle({ link }: { link: boolean }) {
   const emit = defineEmits<{ pressed: [key: string] }>();
@@ -1443,11 +1443,11 @@ export default function Toggle({ link }: { link: boolean }) {
 
 /** Code's lines without their indentation, and without blank ones. */
 function lines(code: string): string {
-  return code
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .join("\n");
+	return code
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.join("\n");
 }
 
 /**
@@ -1456,38 +1456,42 @@ function lines(code: string): string {
  * files or any other path, may remain.
  */
 async function expectCheckedClean(
-  sources: readonly string[],
-  modules: Readonly<Record<string, string>> = {},
+	sources: ReadonlyArray<string>,
+	modules: Readonly<Record<string, string>> = {},
 ): Promise<void> {
-  const paths: string[] = [];
-  for (const source of sources) {
-    const dir = mkdtempSync(join(scratch, "checked-"));
-    // The `.ts` modules a source imports, beside its outputs as in an output tree (ADR-0070).
-    for (const [name, code] of Object.entries(modules)) writeFileSync(join(dir, name), code);
-    const module = lower(source);
-    const reported: unknown[] = [];
-    for (const component of module.components) {
-      const emit: EmitContext = {
-        module,
-        options: undefined,
-        report: (diagnostic) => void reported.push(diagnostic),
-      };
-      for (const file of target.emit(component, emit)) {
-        const formatted = await formatOutput(file);
-        expect(formatted.error).toBeUndefined();
-        const path = join(dir, formatted.file.path);
-        writeFileSync(path, formatted.file.contents);
-        paths.push(path);
-      }
-    }
-    expect(reported).toEqual([]);
-  }
-  const [types, lint] = await Promise.all([
-    toolchain.typecheck(paths, context),
-    toolchain.lint(paths, context),
-  ]);
-  for (const results of [types, lint]) {
-    for (const [path, messages] of results) expect(messages, path).toEqual([]);
-    expect([...results.keys()].toSorted()).toEqual(paths.toSorted());
-  }
+	const paths: Array<string> = [];
+	for (const source of sources) {
+		const dir = mkdtempSync(join(scratch, "checked-"));
+		// The `.ts` modules a source imports, beside its outputs as in an output tree (ADR-0070).
+		for (const [name, code] of Object.entries(modules)) {
+			writeFileSync(join(dir, name), code);
+		}
+		const module = lower(source);
+		const reported: Array<unknown> = [];
+		for (const component of module.components) {
+			const emit: EmitContext = {
+				module,
+				options: undefined,
+				report: (diagnostic) => void reported.push(diagnostic),
+			};
+			for (const file of target.emit(component, emit)) {
+				const formatted = await formatOutput(file);
+				expect(formatted.error).toBeUndefined();
+				const path = join(dir, formatted.file.path);
+				writeFileSync(path, formatted.file.contents);
+				paths.push(path);
+			}
+		}
+		expect(reported).toEqual([]);
+	}
+	const [types, lint] = await Promise.all([
+		toolchain.typecheck(paths, context),
+		toolchain.lint(paths, context),
+	]);
+	for (const results of [types, lint]) {
+		for (const [path, messages] of results) {
+			expect(messages, path).toEqual([]);
+		}
+		expect([...results.keys()].toSorted()).toEqual(paths.toSorted());
+	}
 }

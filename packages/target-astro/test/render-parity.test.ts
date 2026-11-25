@@ -15,20 +15,20 @@ afterAll(() => scratch.remove());
 
 /** Compiles and server-renders the parity component, as the `ssr:astro` project would. */
 async function render(suite: ParitySuite, format: boolean): Promise<string> {
-  const [file] = await emitParity(target, suite, { format });
-  return renderToString(await loadAstroComponent(scratch.path, file!.contents), {
-    props: parityProps(suite),
-  });
+	const [file] = await emitParity(target, suite, { format });
+	return renderToString(await loadAstroComponent(scratch.path, file!.contents), {
+		props: parityProps(suite),
+	});
 }
 
 describe.each([true, false])("astro output (formatted: %s), rendered by Astro", (format) => {
-  it.each(paritySuites())(
-    "renders $title exactly as the reference describes them",
-    async (suite) => {
-      const html = await render(suite, format);
-      for (const { name, expected, actual } of compareCases(parseHtml(html), suite)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    },
-  );
+	it.each(paritySuites())(
+		"renders $title exactly as the reference describes them",
+		async (suite) => {
+			const html = await render(suite, format);
+			for (const { name, expected, actual } of compareCases(parseHtml(html), suite)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		},
+	);
 });

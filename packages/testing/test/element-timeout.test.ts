@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("vitest/browser", () => ({
-  server: { config: { expect: { poll: { timeout: 5_000 } } } },
+	server: { config: { expect: { poll: { timeout: 5000 } } } },
 }));
 
 const { boundElementTimeout } = await import("../src/browser/element-timeout.ts");
@@ -11,20 +11,20 @@ const { boundElementTimeout } = await import("../src/browser/element-timeout.ts"
 const original = expect.element;
 
 describe("boundElementTimeout", () => {
-  afterEach(() => {
-    expect.element = original;
-  });
+	afterEach(() => {
+		expect.element = original;
+	});
 
-  it("wraps expect.element once, however often the setup file runs", () => {
-    const element = vi.fn<typeof expect.element>();
-    expect.element = element;
-    boundElementTimeout();
-    const bound = expect.element;
-    expect(bound).not.toBe(element);
-    boundElementTimeout();
-    expect(expect.element).toBe(bound);
-    void bound(null);
-    expect(element).toHaveBeenCalledTimes(1);
-    expect(element).toHaveBeenCalledWith(null, { timeout: 5_000 });
-  });
+	it("wraps expect.element once, however often the setup file runs", () => {
+		const element = vi.fn<typeof expect.element>();
+		expect.element = element;
+		boundElementTimeout();
+		const bound = expect.element;
+		expect(bound).not.toBe(element);
+		boundElementTimeout();
+		expect(expect.element).toBe(bound);
+		void bound(null);
+		expect(element).toHaveBeenCalledTimes(1);
+		expect(element).toHaveBeenCalledWith(null, { timeout: 5000 });
+	});
 });

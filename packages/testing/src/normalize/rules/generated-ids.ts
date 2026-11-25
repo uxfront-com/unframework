@@ -29,14 +29,14 @@ const GENERATED_ID: RegExp = new RegExp(`(?<![\\w-])${GENERATED_ID_PREFIX}[\\w-]
  * renaming `names` holds and adding to it.
  */
 export function renameGeneratedIds(text: string, names: Map<string, string>): string {
-  return text.replace(GENERATED_ID, (id) => {
-    let name = names.get(id);
-    if (name === undefined) {
-      name = `${GENERATED_ID_PREFIX}${names.size + 1}`;
-      names.set(id, name);
-    }
-    return name;
-  });
+	return text.replaceAll(GENERATED_ID, (id) => {
+		let name = names.get(id);
+		if (name === undefined) {
+			name = `${GENERATED_ID_PREFIX}${names.size + 1}`;
+			names.set(id, name);
+		}
+		return name;
+	});
 }
 
 /** ASCII whitespace, which separates the tokens of a `class` attribute. */
@@ -57,22 +57,22 @@ const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 
  * a step's ARIA tree and emitted payloads carry with it, as its DOM's.
  */
 export function canonicalizeGeneratedIds(
-  root: TreeParent,
-  names: Map<string, string> = new Map(),
+	root: TreeParent,
+	names: Map<string, string> = new Map(),
 ): Map<string, string> {
-  for (const node of childrenOf(root)) {
-    if (isElement(node)) {
-      for (const attribute of node.attrs) {
-        const value = renameGeneratedIds(attribute.value, names);
-        attribute.value =
-          attributeName(attribute) === "class" && value !== attribute.value
-            ? value.split(ASCII_WHITESPACE).toSorted(byCodeUnits).join(" ")
-            : value;
-      }
-      canonicalizeGeneratedIds(node, names);
-    } else if (isText(node)) {
-      node.value = renameGeneratedIds(node.value, names);
-    }
-  }
-  return names;
+	for (const node of childrenOf(root)) {
+		if (isElement(node)) {
+			for (const attribute of node.attrs) {
+				const value = renameGeneratedIds(attribute.value, names);
+				attribute.value =
+					attributeName(attribute) === "class" && value !== attribute.value
+						? value.split(ASCII_WHITESPACE).toSorted(byCodeUnits).join(" ")
+						: value;
+			}
+			canonicalizeGeneratedIds(node, names);
+		} else if (isText(node)) {
+			node.value = renameGeneratedIds(node.value, names);
+		}
+	}
+	return names;
 }

@@ -5,26 +5,26 @@
 // directive, it listens on every element it matches, inside `@if` and `@for` blocks too, and
 // stops listening when its element goes.
 import {
-  exportDeclaration,
-  js,
-  printExpression,
-  TRUSTED_HTML_PIPE,
+	exportDeclaration,
+	js,
+	printExpression,
+	TRUSTED_HTML_PIPE,
 } from "@unframework.dev/codegen";
 import type { ImportSet, Placeholders } from "@unframework.dev/codegen";
 
 /** A directive that listens to one event with one option. */
 export interface DirectiveSpec {
-  /** The DOM event (`click`). */
-  event: string;
-  option: "capture" | "once" | "passive";
-  /** Its selector's attribute and its output's name: `ufClickCapture`. */
-  output: string;
-  /** The class's export name, `ClickCapture`, its shared module's too (ADR-0121). */
-  name: string;
-  /** The class's local name, claimed beside the file's other names. */
-  className: string;
-  /** The DOM interface of the event (`PointerEvent`), the output's value type. */
-  eventType: string;
+	/** The DOM event (`click`). */
+	event: string;
+	option: "capture" | "once" | "passive";
+	/** Its selector's attribute and its output's name: `ufClickCapture`. */
+	output: string;
+	/** The class's export name, `ClickCapture`, its shared module's too (ADR-0121). */
+	name: string;
+	/** The class's local name, claimed beside the file's other names. */
+	className: string;
+	/** The DOM interface of the event (`PointerEvent`), the output's value type. */
+	eventType: string;
 }
 
 /**
@@ -44,45 +44,45 @@ export interface DirectiveSpec {
  * ```
  */
 export function directiveCode(
-  spec: DirectiveSpec,
-  imports: ImportSet,
-  placeholders: Placeholders,
+	spec: DirectiveSpec,
+	imports: ImportSet,
+	placeholders: Placeholders,
 ): { decorator: string; statements: ReturnType<typeof exportDeclaration> } {
-  const core = (name: string) => imports.add("@angular/core", name);
-  const decorator = `@${printExpression(
-    js.callExpression(js.identifier(core("Directive")), [
-      js.objectExpression([["selector", js.stringLiteral(`[${spec.output}]`)]]),
-    ]),
-  )}`;
-  const output = js.propertyDefinition(
-    spec.output,
-    js.callExpression(js.identifier(core("output")), [], [placeholders.type(spec.eventType)]),
-    { readonly: true },
-  );
-  const body = [
-    `const element: HTMLElement = ${core("inject")}(${core("ElementRef")}).nativeElement;`,
-    `const stop = ${core("inject")}(${core("Renderer2")}).listen(element, ${JSON.stringify(spec.event)}, (event: ${spec.eventType}) => this.${spec.output}.emit(event), { ${spec.option}: true });`,
-    `${core("inject")}(${core("DestroyRef")}).onDestroy(stop);`,
-  ].join("\n");
-  const constructor = js.methodDefinition("constructor", [], [placeholders.statements(body)], {
-    kind: "constructor",
-  });
-  // Exported: Angular's template type-checker imports every directive a template uses (NG3004).
-  const declaration = js.classDeclaration(spec.className, [], [output, constructor]);
-  return {
-    decorator,
-    statements: exportDeclaration(spec.className, declaration, [
-      { kind: "named", name: spec.className, local: spec.className, span: { start: 0, end: 0 } },
-    ]),
-  };
+	const core = (name: string) => imports.add("@angular/core", name);
+	const decorator = `@${printExpression(
+		js.callExpression(js.identifier(core("Directive")), [
+			js.objectExpression([["selector", js.stringLiteral(`[${spec.output}]`)]]),
+		]),
+	)}`;
+	const output = js.propertyDefinition(
+		spec.output,
+		js.callExpression(js.identifier(core("output")), [], [placeholders.type(spec.eventType)]),
+		{ readonly: true },
+	);
+	const body = [
+		`const element: HTMLElement = ${core("inject")}(${core("ElementRef")}).nativeElement;`,
+		`const stop = ${core("inject")}(${core("Renderer2")}).listen(element, ${JSON.stringify(spec.event)}, (event: ${spec.eventType}) => this.${spec.output}.emit(event), { ${spec.option}: true });`,
+		`${core("inject")}(${core("DestroyRef")}).onDestroy(stop);`,
+	].join("\n");
+	const constructor = js.methodDefinition("constructor", [], [placeholders.statements(body)], {
+		kind: "constructor",
+	});
+	// Exported: Angular's template type-checker imports every directive a template uses (NG3004).
+	const declaration = js.classDeclaration(spec.className, [], [output, constructor]);
+	return {
+		decorator,
+		statements: exportDeclaration(spec.className, declaration, [
+			{ kind: "named", name: spec.className, local: spec.className, span: { start: 0, end: 0 } },
+		]),
+	};
 }
 
 /** The names the scope directive's code declares, each claimed beside the file's other names. */
 export interface ScopeDirectiveNames {
-  /** The directive's class, `ScopeAttributes`. */
-  className: string;
-  /** The module's map from each host to the scope attributes taken off it, `scopes`. */
-  scopes: string;
+	/** The directive's class, `ScopeAttributes`. */
+	className: string;
+	/** The module's map from each host to the scope attributes taken off it, `scopes`. */
+	scopes: string;
 }
 
 /**
@@ -95,35 +95,35 @@ export interface ScopeDirectiveNames {
  * branch) reads them from the module's map.
  */
 export function scopeDirectiveCode(names: ScopeDirectiveNames, imports: ImportSet): string {
-  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
-  const { className, scopes } = names;
-  return [
-    "/** The scope attributes taken off each host, for the roots its component renders later. */",
-    `const ${scopes} = new WeakMap<Element, string[]>();`,
-    "",
-    "/**",
-    " * Gives a root node of its component the scope attributes the component's styled parents put on",
-    " * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.",
-    " */",
-    `@${core("Directive")}({ selector: "[ufScope]" })`,
-    `export class ${className} implements ${core("OnInit", true)} {`,
-    `  readonly ufScope = ${core("input")}.required<HTMLElement>();`,
-    `  private readonly element = ${core("inject")}<${core("ElementRef")}<Element>>(${core("ElementRef")});`,
-    `  private readonly renderer = ${core("inject")}(${core("Renderer2")});`,
-    "",
-    "  ngOnInit(): void {",
-    "    const host = this.ufScope();",
-    `    let names = ${scopes}.get(host);`,
-    "    if (!names) {",
-    '      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));',
-    "      for (const name of names) this.renderer.removeAttribute(host, name);",
-    `      ${scopes}.set(host, names);`,
-    "    }",
-    '    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");',
-    "  }",
-    "}",
-    "",
-  ].join("\n");
+	const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+	const { className, scopes } = names;
+	return [
+		"/** The scope attributes taken off each host, for the roots its component renders later. */",
+		`const ${scopes} = new WeakMap<Element, string[]>();`,
+		"",
+		"/**",
+		" * Gives a root node of its component the scope attributes the component's styled parents put on",
+		" * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.",
+		" */",
+		`@${core("Directive")}({ selector: "[ufScope]" })`,
+		`export class ${className} implements ${core("OnInit", true)} {`,
+		`  readonly ufScope = ${core("input")}.required<HTMLElement>();`,
+		`  private readonly element = ${core("inject")}<${core("ElementRef")}<Element>>(${core("ElementRef")});`,
+		`  private readonly renderer = ${core("inject")}(${core("Renderer2")});`,
+		"",
+		"  ngOnInit(): void {",
+		"    const host = this.ufScope();",
+		`    let names = ${scopes}.get(host);`,
+		"    if (!names) {",
+		'      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));',
+		"      for (const name of names) this.renderer.removeAttribute(host, name);",
+		`      ${scopes}.set(host, names);`,
+		"    }",
+		'    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");',
+		"  }",
+		"}",
+		"",
+	].join("\n");
 }
 
 /**
@@ -138,8 +138,8 @@ export function scopeDirectiveCode(names: ScopeDirectiveNames, imports: ImportSe
  * components that bind a `<textarea>` import it.
  */
 export function textCaretDirectiveCode(className: string, imports: ImportSet): string {
-  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
-  return `/** Puts a field's caret after its text, as setting the text of an empty field leaves it. */
+	const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+	return `/** Puts a field's caret after its text, as setting the text of an empty field leaves it. */
 @${core("Directive")}({ selector: "textarea[value]" })
 export class ${className} implements ${core("OnInit", true)} {
   private readonly element = ${core("inject")}<${core("ElementRef", true)}<HTMLTextAreaElement>>(${core("ElementRef")});
@@ -175,8 +175,8 @@ export const TELEPORT_HOST_INPUT = "ufTeleportHost";
  * template uses.
  */
 export function teleportDirectiveCode(className: string, imports: ImportSet): string {
-  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
-  return `/** The teleports a render created, which mount in the document's order. */
+	const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+	return `/** The teleports a render created, which mount in the document's order. */
 const ${className}Queue: { anchor: Node; mount: () => void }[] = [];
 
 /** Mounts its template's content into the element \`${TELEPORT_ATTRIBUTE}\` selects once rendered, and removes it on destroy. */
@@ -258,8 +258,8 @@ export const TRANSITION_REGION_ATTRIBUTE = "ufTransitionRegion";
  * `afterNextRender` never runs on the server.
  */
 export function transitionRegionCode(className: string, imports: ImportSet): string {
-  const core = (name: string) => imports.add("@angular/core", name);
-  return `/** A transition's conditional: the branch it shows, and whether it has rendered once. */
+	const core = (name: string) => imports.add("@angular/core", name);
+	return `/** A transition's conditional: the branch it shows, and whether it has rendered once. */
 @${core("Directive")}({ selector: "ng-container[${TRANSITION_REGION_ATTRIBUTE}]" })
 export class ${className} {
   readonly ${TRANSITION_REGION_ATTRIBUTE} = ${core("input")}.required<number>();
@@ -289,12 +289,12 @@ export class ${className} {
  * every directive a template uses.
  */
 export function transitionDirectiveCode(
-  className: string,
-  region: string,
-  imports: ImportSet,
+	className: string,
+	region: string,
+	imports: ImportSet,
 ): string {
-  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
-  return `/** Runs Vue's transition classes of \`${TRANSITION_ATTRIBUTE}\` on its element as it enters and leaves. */
+	const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+	return `/** Runs Vue's transition classes of \`${TRANSITION_ATTRIBUTE}\` on its element as it enters and leaves. */
 @${core("Directive")}({ selector: "[${TRANSITION_ATTRIBUTE}]", exportAs: "${TRANSITION_ATTRIBUTE}" })
 export class ${className} implements ${core("OnInit", true)} {
   readonly ${TRANSITION_ATTRIBUTE} = ${core("input")}.required<string>();
@@ -391,10 +391,10 @@ export class ${className} implements ${core("OnInit", true)} {
  * when the markup changes, so change detection sees one trusted value per string.
  */
 export function trustedHtmlPipeCode(className: string, imports: ImportSet): string {
-  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
-  const browser = (name: string, type = false) =>
-    imports.add("@angular/platform-browser", name, { type });
-  return `/** Marks markup trusted, so that \`[innerHTML]\` renders it as written. */
+	const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+	const browser = (name: string, type = false) =>
+		imports.add("@angular/platform-browser", name, { type });
+	return `/** Marks markup trusted, so that \`[innerHTML]\` renders it as written. */
 @${core("Pipe")}({ name: "${TRUSTED_HTML_PIPE}" })
 class ${className} implements ${core("PipeTransform", true)} {
   private readonly sanitizer = ${core("inject")}(${browser("DomSanitizer")});
@@ -413,5 +413,5 @@ class ${className} implements ${core("PipeTransform", true)} {
  * with its body's `{` where a field's holds ` = `.
  */
 export function spaced(printed: string): string {
-  return printed.replace(/\n(?= {2}[^\s}][^\n]*\{\n)(?! {2}[^\n]* = )/g, "\n\n");
+	return printed.replaceAll(/\n(?= {2}[^\s}][^\n]*\{\n)(?! {2}[^\n]* = )/g, "\n\n");
 }

@@ -21,7 +21,7 @@ export const REPORTS_DIR: string = join(ROOT, ".reports");
  * run in one engine never supersedes or merges the records of another.
  */
 export function reportsDirOf(browser: BrowserEngine): string {
-  return browser === "chromium" ? REPORTS_DIR : join(REPORTS_DIR, browser);
+	return browser === "chromium" ? REPORTS_DIR : join(REPORTS_DIR, browser);
 }
 
 /** Vitest's screenshots of failed browser tests: scratch, never next to the baselines. */
@@ -35,5 +35,5 @@ export const REPO_ROOT: string = realpathSync(join(ROOT, "..", ".."));
 
 /** A target's test toolchain package: its checkers and their TypeScript 6 (ADR-0022). */
 export function toolchainDir(target: string): string {
-  return join(REPO_ROOT, "tests", "toolchains", target);
+	return join(REPO_ROOT, "tests", "toolchains", target);
 }

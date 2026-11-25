@@ -10,7 +10,7 @@
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.tsx": `import { Match, mergeProps, Switch } from "solid-js";
+	"Badge.tsx": `import { Match, mergeProps, Switch } from "solid-js";
 
 export interface BadgeProps {
   label: string;
@@ -62,7 +62,7 @@ function cx(...parts: unknown[]): string {
   return names.join(" ");
 }
 `,
-  "LinkCard.tsx": `interface LinkAttrs {
+	"LinkCard.tsx": `interface LinkAttrs {
   href: string;
   title?: string;
   class?: string;
@@ -100,7 +100,7 @@ function cx(...parts: unknown[]): string {
   return names.join(" ");
 }
 `,
-  "TodoList.tsx": `import { For, Show } from "solid-js";
+	"TodoList.tsx": `import { For, Show } from "solid-js";
 
 interface Todo {
   id: string;
@@ -156,7 +156,7 @@ export default function TodoList(props: TodoListProps) {
 // `ref` callback, `createUniqueId`, the `nextTick` helper, and what captures nothing hoisted to
 // module scope. lint.test.ts pins the L5 configuration against them.
 export const M2_SHAPES: Readonly<Record<string, string>> = {
-  "Counter.tsx": `import { createMemo, createSignal, mergeProps, Show, untrack } from "solid-js";
+	"Counter.tsx": `import { createMemo, createSignal, mergeProps, Show, untrack } from "solid-js";
 
 export interface CounterProps {
   initial?: number;
@@ -204,7 +204,7 @@ export default function Counter(rawProps: CounterProps & CounterEvents) {
   );
 }
 `,
-  "Watchers.tsx": `import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+	"Watchers.tsx": `import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface WatchersProps {
   label: string;
@@ -402,7 +402,7 @@ function createWatchEffect(
 /** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
 type WatchedValues<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };
 `,
-  "Panel.tsx": `import { createSignal, createUniqueId, For, onCleanup, onMount, Show } from "solid-js";
+	"Panel.tsx": `import { createSignal, createUniqueId, For, onCleanup, onMount, Show } from "solid-js";
 
 export interface PanelEvents {
   onReady?: (length: number) => void;

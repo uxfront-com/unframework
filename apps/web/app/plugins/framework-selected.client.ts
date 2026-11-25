@@ -7,9 +7,11 @@
  * made in another tab (the tab picked in has the focus).
  */
 export default defineNuxtPlugin(() => {
-  const { framework } = useFramework();
+	const { framework } = useFramework();
 
-  watch(framework, (value) => {
-    if (document.hasFocus()) window.amplitude?.track("Framework Selected", { framework: value });
-  });
+	watch(framework, (value) => {
+		if (document.hasFocus()) {
+			window.amplitude?.track("Framework Selected", { framework: value });
+		}
+	});
 });

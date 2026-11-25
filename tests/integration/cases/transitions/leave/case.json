@@ -1,8 +1,8 @@
 {
-  "description": "`<Transition name=\"fade\">` around a menu that is open at first: once its condition turns false, the menu stays in its place, carrying `fade-leave-active`, until its leave ends, and only then is it removed. The server renders the open menu settled.",
-  "ssr": {
-    "open": {
-      "props": {}
-    }
-  }
+	"description": "`<Transition name=\"fade\">` around a menu that is open at first: once its condition turns false, the menu stays in its place, carrying `fade-leave-active`, until its leave ends, and only then is it removed. The server renders the open menu settled.",
+	"ssr": {
+		"open": {
+			"props": {}
+		}
+	}
 }

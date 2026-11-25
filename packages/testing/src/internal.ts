@@ -12,19 +12,19 @@ export { installMatchers } from "./browser/matchers.ts";
 export type { HarnessContext } from "./harness.ts";
 export { checkLayers, LAYERS, LayerFailure, recordLayer } from "./layers.ts";
 export type {
-  LayerCheck,
-  LayerName,
-  LayerOutcome,
-  LayerSkip,
-  LayerSubject,
-  QuarantineEntry,
-  UfLayerMeta,
+	LayerCheck,
+	LayerName,
+	LayerOutcome,
+	LayerSkip,
+	LayerSubject,
+	QuarantineEntry,
+	UfLayerMeta,
 } from "./layers.ts";
 export type {
-  MountAdapter,
-  MountedComponent,
-  MountEvent,
-  MountListener,
-  MountOptions,
-  RenderReport,
+	MountAdapter,
+	MountedComponent,
+	MountEvent,
+	MountListener,
+	MountOptions,
+	RenderReport,
 } from "@unframework.dev/codegen";

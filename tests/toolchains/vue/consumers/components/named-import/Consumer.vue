@@ -4,6 +4,6 @@ import Pill from "../../../../../integration/cases/components/named-import/__out
 </script>
 
 <template>
-  <Badge text="New" />
-  <Pill text="ok" />
+	<Badge text="New" />
+	<Pill text="ok" />
 </template>

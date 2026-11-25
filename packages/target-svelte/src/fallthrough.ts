@@ -7,13 +7,13 @@
 // takes a `$bindable` prop, `ref`, which its root binds (`bind:this={ref}`), and the parent binds
 // it, `bind:ref={save}`.
 import type {
-  ComponentApi,
-  ComponentNode,
-  DynamicNode,
-  ElementNode,
-  RefAttribute,
-  UfComponent,
-  UfModule,
+	ComponentApi,
+	ComponentNode,
+	DynamicNode,
+	ElementNode,
+	RefAttribute,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 import { walk } from "@unframework.dev/ir";
 
@@ -23,46 +23,46 @@ import { walk } from "@unframework.dev/ir";
  * `SvelteHTMLElements["div"]`, as Svelte's documentation types a wrapper of one.
  */
 const ELEMENT_ATTRIBUTES: ReadonlyMap<string, string> = new Map([
-  ["a", "HTMLAnchorAttributes"],
-  ["area", "HTMLAreaAttributes"],
-  ["audio", "HTMLAudioAttributes"],
-  ["blockquote", "HTMLBlockquoteAttributes"],
-  ["button", "HTMLButtonAttributes"],
-  ["canvas", "HTMLCanvasAttributes"],
-  ["col", "HTMLColAttributes"],
-  ["colgroup", "HTMLColgroupAttributes"],
-  ["data", "HTMLDataAttributes"],
-  ["del", "HTMLDelAttributes"],
-  ["details", "HTMLDetailsAttributes"],
-  ["dialog", "HTMLDialogAttributes"],
-  ["embed", "HTMLEmbedAttributes"],
-  ["fieldset", "HTMLFieldsetAttributes"],
-  ["form", "HTMLFormAttributes"],
-  ["iframe", "HTMLIframeAttributes"],
-  ["img", "HTMLImgAttributes"],
-  ["input", "HTMLInputAttributes"],
-  ["ins", "HTMLInsAttributes"],
-  ["label", "HTMLLabelAttributes"],
-  ["li", "HTMLLiAttributes"],
-  ["map", "HTMLMapAttributes"],
-  ["menu", "HTMLMenuAttributes"],
-  ["meter", "HTMLMeterAttributes"],
-  ["object", "HTMLObjectAttributes"],
-  ["ol", "HTMLOlAttributes"],
-  ["optgroup", "HTMLOptgroupAttributes"],
-  ["option", "HTMLOptionAttributes"],
-  ["output", "HTMLOutputAttributes"],
-  ["progress", "HTMLProgressAttributes"],
-  ["q", "HTMLQuoteAttributes"],
-  ["select", "HTMLSelectAttributes"],
-  ["source", "HTMLSourceAttributes"],
-  ["table", "HTMLTableAttributes"],
-  ["td", "HTMLTdAttributes"],
-  ["textarea", "HTMLTextareaAttributes"],
-  ["th", "HTMLThAttributes"],
-  ["time", "HTMLTimeAttributes"],
-  ["track", "HTMLTrackAttributes"],
-  ["video", "HTMLVideoAttributes"],
+	["a", "HTMLAnchorAttributes"],
+	["area", "HTMLAreaAttributes"],
+	["audio", "HTMLAudioAttributes"],
+	["blockquote", "HTMLBlockquoteAttributes"],
+	["button", "HTMLButtonAttributes"],
+	["canvas", "HTMLCanvasAttributes"],
+	["col", "HTMLColAttributes"],
+	["colgroup", "HTMLColgroupAttributes"],
+	["data", "HTMLDataAttributes"],
+	["del", "HTMLDelAttributes"],
+	["details", "HTMLDetailsAttributes"],
+	["dialog", "HTMLDialogAttributes"],
+	["embed", "HTMLEmbedAttributes"],
+	["fieldset", "HTMLFieldsetAttributes"],
+	["form", "HTMLFormAttributes"],
+	["iframe", "HTMLIframeAttributes"],
+	["img", "HTMLImgAttributes"],
+	["input", "HTMLInputAttributes"],
+	["ins", "HTMLInsAttributes"],
+	["label", "HTMLLabelAttributes"],
+	["li", "HTMLLiAttributes"],
+	["map", "HTMLMapAttributes"],
+	["menu", "HTMLMenuAttributes"],
+	["meter", "HTMLMeterAttributes"],
+	["object", "HTMLObjectAttributes"],
+	["ol", "HTMLOlAttributes"],
+	["optgroup", "HTMLOptgroupAttributes"],
+	["option", "HTMLOptionAttributes"],
+	["output", "HTMLOutputAttributes"],
+	["progress", "HTMLProgressAttributes"],
+	["q", "HTMLQuoteAttributes"],
+	["select", "HTMLSelectAttributes"],
+	["source", "HTMLSourceAttributes"],
+	["table", "HTMLTableAttributes"],
+	["td", "HTMLTdAttributes"],
+	["textarea", "HTMLTextareaAttributes"],
+	["th", "HTMLThAttributes"],
+	["time", "HTMLTimeAttributes"],
+	["track", "HTMLTrackAttributes"],
+	["video", "HTMLVideoAttributes"],
 ]);
 
 /**
@@ -70,9 +70,11 @@ const ELEMENT_ATTRIBUTES: ReadonlyMap<string, string> = new Map([
  * through `importType`: `HTMLButtonAttributes`, or `SvelteHTMLElements["p"]`.
  */
 export function attributesType(tag: string, importType: (name: string) => string): string {
-  const own = ELEMENT_ATTRIBUTES.get(tag);
-  if (own !== undefined) return importType(own);
-  return `${importType("SvelteHTMLElements")}[${JSON.stringify(tag)}]`;
+	const own = ELEMENT_ATTRIBUTES.get(tag);
+	if (own !== undefined) {
+		return importType(own);
+	}
+	return `${importType("SvelteHTMLElements")}[${JSON.stringify(tag)}]`;
 }
 
 /**
@@ -83,18 +85,20 @@ export function attributesType(tag: string, importType: (name: string) => string
  * Omit<DOMAttributes<HTMLElementTagNameMap["a" | "button"]>, "children">`.
  */
 export function passedType(
-  tags: readonly string[],
-  declared: readonly string[],
-  importType: (name: string) => string,
+	tags: ReadonlyArray<string>,
+	declared: ReadonlyArray<string>,
+	importType: (name: string) => string,
 ): string {
-  const names = (each: readonly string[]) =>
-    [...new Set(each)].map((name) => JSON.stringify(name)).join(" | ");
-  const attributes = tags.map((tag) => attributesType(tag, importType)).join(" & ");
-  if (tags.length === 1) return `Omit<${attributes}, ${names(declared)}>`;
-  const dom = `${importType("DOMAttributes")}<${elementType(tags)}>`;
-  // `DOMAttributes` holds the listeners and `children` alone.
-  const listeners = declared.filter((name) => name === "children" || name.startsWith("on"));
-  return `Omit<${attributes}, ${names(declared)} | keyof ${dom}> & Omit<${dom}, ${names(listeners)}>`;
+	const names = (each: ReadonlyArray<string>) =>
+		[...new Set(each)].map((name) => JSON.stringify(name)).join(" | ");
+	const attributes = tags.map((tag) => attributesType(tag, importType)).join(" & ");
+	if (tags.length === 1) {
+		return `Omit<${attributes}, ${names(declared)}>`;
+	}
+	const dom = `${importType("DOMAttributes")}<${elementType(tags)}>`;
+	// `DOMAttributes` holds the listeners and `children` alone.
+	const listeners = declared.filter((name) => name === "children" || name.startsWith("on"));
+	return `Omit<${attributes}, ${names(declared)} | keyof ${dom}> & Omit<${dom}, ${names(listeners)}>`;
 }
 
 /**
@@ -102,57 +106,63 @@ export function passedType(
  * which is `HTMLButtonElement`, and an `<svg>` root's `SVGElementTagNameMap["svg"]`. A
  * `<component is>` root's holds whichever tag renders: `HTMLElementTagNameMap["a" | "button"]`.
  */
-export function elementType(tags: readonly string[]): string {
-  const map = tags[0] === "svg" ? "SVGElementTagNameMap" : "HTMLElementTagNameMap";
-  return `${map}[${[...new Set(tags)].map((tag) => JSON.stringify(tag)).join(" | ")}]`;
+export function elementType(tags: ReadonlyArray<string>): string {
+	const map = tags[0] === "svg" ? "SVGElementTagNameMap" : "HTMLElementTagNameMap";
+	return `${map}[${[...new Set(tags)].map((tag) => JSON.stringify(tag)).join(" | ")}]`;
 }
 
 /** The API of a child the module imports, by its local name. */
 function importedApi(module: UfModule, local: string): ComponentApi | undefined | null {
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
-    return (
-      entry.api.components.find((each) =>
-        imported.imported === "default"
-          ? each.export === "default"
-          : each.export === "named" && each.name === imported.imported,
-      ) ?? null
-    );
-  }
-  return undefined;
+	for (const entry of module.imports ?? []) {
+		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+		if (!imported) {
+			continue;
+		}
+		return (
+			entry.api.components.find((each) =>
+				imported.imported === "default"
+					? each.export === "default"
+					: each.export === "named" && each.name === imported.imported,
+			) ?? null
+		);
+	}
+	return undefined;
 }
 
 /** The root component of a component whose root is one component, as `takesFallthrough` reads it. */
 export function rootComponentNode(component: UfComponent): ComponentNode | undefined {
-  const { render } = component;
-  if (render.kind !== "Fragment") return undefined;
-  const [only, ...others] = render.children;
-  return only?.kind === "Component" &&
-    others.length === 0 &&
-    only.span.start === render.span.start &&
-    only.span.end === render.span.end
-    ? only
-    : undefined;
+	const { render } = component;
+	if (render.kind !== "Fragment") {
+		return undefined;
+	}
+	const [only, ...others] = render.children;
+	return only?.kind === "Component" &&
+		others.length === 0 &&
+		only.span.start === render.span.start &&
+		only.span.end === render.span.end
+		? only
+		: undefined;
 }
 
 /** A component's root `<component is>` over tags (ADR-0119), as `takesFallthrough` reads it. */
 export function rootDynamicNode(component: UfComponent): DynamicNode | undefined {
-  const { render } = component;
-  if (render.kind !== "Fragment") return undefined;
-  const [only, ...others] = render.children;
-  return only?.kind === "Dynamic" &&
-    only.candidates.every((candidate) => candidate.kind === "Tag") &&
-    others.length === 0 &&
-    only.span.start === render.span.start &&
-    only.span.end === render.span.end
-    ? only
-    : undefined;
+	const { render } = component;
+	if (render.kind !== "Fragment") {
+		return undefined;
+	}
+	const [only, ...others] = render.children;
+	return only?.kind === "Dynamic" &&
+		only.candidates.every((candidate) => candidate.kind === "Tag") &&
+		others.length === 0 &&
+		only.span.start === render.span.start &&
+		only.span.end === render.span.end
+		? only
+		: undefined;
 }
 
 /** The tags a `<component is>` over tags may render. */
-function dynamicTags(node: DynamicNode): string[] {
-  return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
+function dynamicTags(node: DynamicNode): Array<string> {
+	return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
 }
 
 /** The prop a slot is passed as: `children` for the default slot. */
@@ -168,29 +178,35 @@ const event = (name: string) => `on${name.toLowerCase()}`;
  * so its props type leaves them out of the root element's attributes, whose `title` or
  * `children` would else meet the root component's own.
  */
-export function rootComponentNames(component: UfComponent, module: UfModule): string[] {
-  const root = rootComponentNode(component);
-  if (!root) return [];
-  const api = importedApi(module, root.component);
-  if (api === null) return [];
-  if (api !== undefined) {
-    return [
-      ...api.props.map(({ name }) => name),
-      ...api.models.map(({ name }) => name),
-      ...api.slots.map(({ name }) => slot(name)),
-      ...api.events.map(({ name }) => event(name)),
-      "ref",
-    ];
-  }
-  const own = module.components.find((each) => each.name === root.component);
-  if (!own) return [];
-  return [
-    ...own.props.map(({ name }) => name),
-    ...own.setup.flatMap((item) => (item.kind === "Model" ? [item.name] : [])),
-    ...(own.slots?.slots ?? []).map(({ name }) => slot(name)),
-    ...(own.emits?.events ?? []).map(({ name }) => event(name)),
-    "ref",
-  ];
+export function rootComponentNames(component: UfComponent, module: UfModule): Array<string> {
+	const root = rootComponentNode(component);
+	if (!root) {
+		return [];
+	}
+	const api = importedApi(module, root.component);
+	if (api === null) {
+		return [];
+	}
+	if (api !== undefined) {
+		return [
+			...api.props.map(({ name }) => name),
+			...api.models.map(({ name }) => name),
+			...api.slots.map(({ name }) => slot(name)),
+			...api.events.map(({ name }) => event(name)),
+			"ref",
+		];
+	}
+	const own = module.components.find((each) => each.name === root.component);
+	if (!own) {
+		return [];
+	}
+	return [
+		...own.props.map(({ name }) => name),
+		...own.setup.flatMap((item) => (item.kind === "Model" ? [item.name] : [])),
+		...(own.slots?.slots ?? []).map(({ name }) => slot(name)),
+		...(own.emits?.events ?? []).map(({ name }) => event(name)),
+		"ref",
+	];
 }
 
 /**
@@ -199,67 +215,81 @@ export function rootComponentNames(component: UfComponent, module: UfModule): st
  * `<component is>` root, whichever renders (ADR-0122).
  */
 function childTags(
-  module: UfModule,
-  local: string,
-  seen: ReadonlySet<string>,
-): { fallthrough?: readonly string[]; ref?: readonly string[] } {
-  const api = importedApi(module, local);
-  if (api === null) return {};
-  if (api !== undefined) {
-    const fallthrough =
-      api.fallthroughTag !== undefined
-        ? [api.fallthroughTag]
-        : api.inheritAttrs
-          ? api.rootTags
-          : undefined;
-    const ref = api.exposes.length
-      ? undefined
-      : api.refTag !== undefined
-        ? [api.refTag]
-        : api.refTags;
-    return {
-      ...(fallthrough === undefined ? {} : { fallthrough }),
-      ...(ref === undefined ? {} : { ref }),
-    };
-  }
-  const own = module.components.find((each) => each.name === local);
-  if (!own || seen.has(own.name)) return {};
-  const next = new Set([...seen, own.name]);
-  const fallthrough = ownFallthroughTag(own, module, next);
-  const ref = ownRefTag(own, module, next);
-  return {
-    ...(fallthrough === undefined ? {} : { fallthrough }),
-    ...(ref === undefined ? {} : { ref }),
-  };
+	module: UfModule,
+	local: string,
+	seen: ReadonlySet<string>,
+): { fallthrough?: ReadonlyArray<string>; ref?: ReadonlyArray<string> } {
+	const api = importedApi(module, local);
+	if (api === null) {
+		return {};
+	}
+	if (api !== undefined) {
+		const fallthrough =
+			api.fallthroughTag !== undefined
+				? [api.fallthroughTag]
+				: api.inheritAttrs
+					? api.rootTags
+					: undefined;
+		const ref = api.exposes.length
+			? undefined
+			: api.refTag !== undefined
+				? [api.refTag]
+				: api.refTags;
+		return {
+			...(fallthrough === undefined ? {} : { fallthrough }),
+			...(ref === undefined ? {} : { ref }),
+		};
+	}
+	const own = module.components.find((each) => each.name === local);
+	if (!own || seen.has(own.name)) {
+		return {};
+	}
+	const next = new Set([...seen, own.name]);
+	const fallthrough = ownFallthroughTag(own, module, next);
+	const ref = ownRefTag(own, module, next);
+	return {
+		...(fallthrough === undefined ? {} : { fallthrough }),
+		...(ref === undefined ? {} : { ref }),
+	};
 }
 
 function ownFallthroughTag(
-  component: UfComponent,
-  module: UfModule,
-  seen: ReadonlySet<string>,
-): readonly string[] | undefined {
-  if (component.inheritAttrs === false) {
-    const element = restElement(component);
-    return element && [element.tag];
-  }
-  if (component.render.kind === "Element") return [component.render.tag];
-  const dynamic = rootDynamicNode(component);
-  if (dynamic) return dynamicTags(dynamic);
-  const root = rootComponentNode(component);
-  return root ? childTags(module, root.component, seen).fallthrough : undefined;
+	component: UfComponent,
+	module: UfModule,
+	seen: ReadonlySet<string>,
+): ReadonlyArray<string> | undefined {
+	if (component.inheritAttrs === false) {
+		const element = restElement(component);
+		return element && [element.tag];
+	}
+	if (component.render.kind === "Element") {
+		return [component.render.tag];
+	}
+	const dynamic = rootDynamicNode(component);
+	if (dynamic) {
+		return dynamicTags(dynamic);
+	}
+	const root = rootComponentNode(component);
+	return root ? childTags(module, root.component, seen).fallthrough : undefined;
 }
 
 function ownRefTag(
-  component: UfComponent,
-  module: UfModule,
-  seen: ReadonlySet<string>,
-): readonly string[] | undefined {
-  if (component.exposes?.functions.length) return undefined;
-  if (component.render.kind === "Element") return [component.render.tag];
-  const dynamic = rootDynamicNode(component);
-  if (dynamic) return dynamicTags(dynamic);
-  const root = rootComponentNode(component);
-  return root ? childTags(module, root.component, seen).ref : undefined;
+	component: UfComponent,
+	module: UfModule,
+	seen: ReadonlySet<string>,
+): ReadonlyArray<string> | undefined {
+	if (component.exposes?.functions.length) {
+		return undefined;
+	}
+	if (component.render.kind === "Element") {
+		return [component.render.tag];
+	}
+	const dynamic = rootDynamicNode(component);
+	if (dynamic) {
+		return dynamicTags(dynamic);
+	}
+	const root = rootComponentNode(component);
+	return root ? childTags(module, root.component, seen).ref : undefined;
 }
 
 /**
@@ -269,10 +299,10 @@ function ownRefTag(
  * rest. `undefined` where a consumer passes nothing but what the component declares (UF3045).
  */
 export function fallthroughTags(
-  component: UfComponent,
-  module: UfModule,
-): readonly string[] | undefined {
-  return ownFallthroughTag(component, module, new Set([component.name]));
+	component: UfComponent,
+	module: UfModule,
+): ReadonlyArray<string> | undefined {
+	return ownFallthroughTag(component, module, new Set([component.name]));
 }
 
 /**
@@ -280,20 +310,27 @@ export function fallthroughTags(
  * element's, its `<component is>` root's, whichever renders (ADR-0122), or its root component's,
  * where it exposes nothing. `undefined` where a ref holds what it exposes, or no element.
  */
-export function refTags(component: UfComponent, module: UfModule): readonly string[] | undefined {
-  return ownRefTag(component, module, new Set([component.name]));
+export function refTags(
+	component: UfComponent,
+	module: UfModule,
+): ReadonlyArray<string> | undefined {
+	return ownRefTag(component, module, new Set([component.name]));
 }
 
 /** The element that spreads the props' rest, `{...rest}`, which the analyser allows on one. */
 export function restElement(component: UfComponent): ElementNode | undefined {
-  let found: ElementNode | undefined;
-  walk(component.render, {
-    enter(node) {
-      if (found || node.kind !== "Element") return;
-      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
-    },
-  });
-  return found;
+	let found: ElementNode | undefined;
+	walk(component.render, {
+		enter(node) {
+			if (found || node.kind !== "Element") {
+				return;
+			}
+			if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+				found = node;
+			}
+		},
+	});
+	return found;
 }
 
 /**
@@ -302,15 +339,23 @@ export function restElement(component: UfComponent): ElementNode | undefined {
  * exposes something holds the child's instance, `bind:this`, as before.
  */
 export function elementRefs(component: UfComponent, module: UfModule): Set<RefAttribute> {
-  const found = new Set<RefAttribute>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Component") return;
-      if (childTags(module, node.component, new Set([component.name])).ref === undefined) return;
-      for (const attribute of node.attributes) if (attribute.kind === "Ref") found.add(attribute);
-    },
-  });
-  return found;
+	const found = new Set<RefAttribute>();
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Component") {
+				return;
+			}
+			if (childTags(module, node.component, new Set([component.name])).ref === undefined) {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Ref") {
+					found.add(attribute);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /** The scope attributes' prefix, which a styled parent passes its child's root (ADR-0063). */
@@ -322,12 +367,12 @@ export const SCOPE_PREFIX = "data-uf-";
  * the props' rest when it is not the root.
  */
 export function restAttributesHelper(name: string): string {
-  return [
-    "/** What the consumer passes, but the scope attributes the root keeps. */",
-    `function ${name}(props: object): Record<string, unknown> {`,
-    "  return Object.fromEntries(",
-    `    Object.entries(props).filter(([name]) => !name.startsWith(${JSON.stringify(SCOPE_PREFIX)})),`,
-    "  );",
-    "}",
-  ].join("\n");
+	return [
+		"/** What the consumer passes, but the scope attributes the root keeps. */",
+		`function ${name}(props: object): Record<string, unknown> {`,
+		"  return Object.fromEntries(",
+		`    Object.entries(props).filter(([name]) => !name.startsWith(${JSON.stringify(SCOPE_PREFIX)})),`,
+		"  );",
+		"}",
+	].join("\n");
 }

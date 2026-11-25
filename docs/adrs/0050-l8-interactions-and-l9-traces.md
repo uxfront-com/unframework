@@ -325,11 +325,11 @@ From `state/counter`:
 
 ```ts
 it("increments by the step and emits the new value", { requires: ["interactivity"] }, async () => {
-  const view = await mountScenario(Counter, "initial");
-  await view.user.click(view.getByRole("button", { name: "+3" }));
-  await view.expectParity("after-increment");
-  await expect.element(view.getByRole("status")).toHaveTextContent("5");
-  expect(view.emitted("change")).toEqual([[5]]);
+	const view = await mountScenario(Counter, "initial");
+	await view.user.click(view.getByRole("button", { name: "+3" }));
+	await view.expectParity("after-increment");
+	await expect.element(view.getByRole("status")).toHaveTextContent("5");
+	expect(view.emitted("change")).toEqual([[5]]);
 });
 ```
 

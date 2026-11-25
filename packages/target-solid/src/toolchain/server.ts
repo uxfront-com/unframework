@@ -10,7 +10,7 @@ import { asComponent } from "./component.ts";
  * (`web/dist/server.js`, `renderToStream`), and its own types declare it (`web/types/server.d.ts`).
  */
 const SERVER_OPTIONS: NonNullable<Parameters<typeof renderToStringAsync>[1]> & {
-  noScripts: boolean;
+	noScripts: boolean;
 } = { noScripts: true };
 
 /**
@@ -26,17 +26,17 @@ const SERVER_OPTIONS: NonNullable<Parameters<typeof renderToStringAsync>[1]> & {
  * the semantics contract asks.
  */
 export const renderToString: SsrRenderer = async (component, options) => {
-  const solidComponent = asComponent(component);
-  const html: unknown = await renderToStringAsync(
-    () => createComponent(solidComponent, { ...options.props }),
-    SERVER_OPTIONS,
-  );
-  if (typeof html !== "string") {
-    throw new Error(
-      `Solid's server render returned ${typeof html}, not HTML: solid-js/web resolved to its browser build. Compile with vite-plugin-solid({ ssr: true }).`,
-    );
-  }
-  return html;
+	const solidComponent = asComponent(component);
+	const html: unknown = await renderToStringAsync(
+		() => createComponent(solidComponent, { ...options.props }),
+		SERVER_OPTIONS,
+	);
+	if (typeof html !== "string") {
+		throw new Error(
+			`Solid's server render returned ${typeof html}, not HTML: solid-js/web resolved to its browser build. Compile with vite-plugin-solid({ ssr: true }).`,
+		);
+	}
+	return html;
 };
 
 /**

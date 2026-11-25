@@ -1,59 +1,59 @@
 import {
-  addTypeImports,
-  bindingOf,
-  componentTypes,
-  defineTarget,
-  assertedValue,
-  directiveSpecifier,
-  exportDeclaration,
-  hookQueueCode,
-  exportsOf,
-  expressionCode,
-  importedDirectives,
-  ownDirectives,
-  js,
-  jsxContext,
-  jsxNode,
-  printComponentModule,
-  printExpression,
-  spreadStyleExpression,
-  typeExportsCode,
-  typeNames,
-  tagAttributes,
+	addTypeImports,
+	bindingOf,
+	componentTypes,
+	defineTarget,
+	assertedValue,
+	directiveSpecifier,
+	exportDeclaration,
+	hookQueueCode,
+	exportsOf,
+	expressionCode,
+	importedDirectives,
+	ownDirectives,
+	js,
+	jsxContext,
+	jsxNode,
+	printComponentModule,
+	printExpression,
+	spreadStyleExpression,
+	typeExportsCode,
+	typeNames,
+	tagAttributes,
 } from "@unframework.dev/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type {
-  Attribute,
-  ClassAttribute,
-  Code,
-  DirectiveAttribute,
-  ComponentAttribute,
-  ComponentNode,
-  DynamicNode,
-  ElementNode,
-  EventAttribute,
-  Expression,
-  FragmentNode,
-  FunctionCode,
-  RenderNode,
-  SlotFill,
-  StyleAttribute,
-  TextNode,
-  TypeDeclaration,
-  TypeParameter,
-  TypeText,
-  UfComponent,
-  UfModule,
+	Attribute,
+	ClassAttribute,
+	Code,
+	DirectiveAttribute,
+	ComponentAttribute,
+	ComponentNode,
+	DynamicNode,
+	ElementNode,
+	EventAttribute,
+	Expression,
+	FragmentNode,
+	FunctionCode,
+	RenderNode,
+	SlotFill,
+	StyleAttribute,
+	TextNode,
+	TypeDeclaration,
+	TypeParameter,
+	TypeText,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 import { walk } from "@unframework.dev/ir";
 
 import {
-  outerComponent,
-  resolvedPropsType,
-  setupFunction,
-  setupPendingHelper,
-  useSetup,
-  withoutAwaits,
+	outerComponent,
+	resolvedPropsType,
+	setupFunction,
+	setupPendingHelper,
+	useSetup,
+	withoutAwaits,
 } from "./async.ts";
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";
@@ -61,11 +61,11 @@ import { placeConditionals } from "./branches.ts";
 import { emitComposable } from "./composable.ts";
 import { ReactComposer } from "./compose.ts";
 import {
-  exposedType,
-  refValueType,
-  rootComponentProps,
-  SCOPE_HELPER,
-  slotProp,
+	exposedType,
+	refValueType,
+	rootComponentProps,
+	SCOPE_HELPER,
+	slotProp,
 } from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
@@ -73,12 +73,12 @@ import { emitDirective, hooksCode, mergeRefsHelper, useDirectiveHelper } from ".
 import { elementInterface } from "./elements.ts";
 import { synthetic } from "./events.ts";
 import {
-  modelTextHelper,
-  nextTickHelper,
-  refObjectHelper,
-  restAttributesHelper,
-  scopeAttributesHelper,
-  toggleHelper,
+	modelTextHelper,
+	nextTickHelper,
+	refObjectHelper,
+	restAttributesHelper,
+	scopeAttributesHelper,
+	toggleHelper,
 } from "./helpers.ts";
 import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
@@ -98,405 +98,411 @@ type TypeParameters = ReturnType<typeof js.functionDeclaration>["typeParameters"
 
 /** The React 19 target. */
 export const react: Target = defineTarget({
-  name: "react",
-  framework: { package: "react", range: ">=19.2 <20" },
-  capabilities: {
-    element: { support: "native" },
-    text: { support: "native" },
-    "static-attribute": { support: "native" },
-    listbox: { support: "native" },
-    interactivity: { support: "native" },
-    "event-capture": { support: "native" },
-    // React has no `once`: a guard per listener remembers the elements it ran for (ADR-0047).
-    "event-once": {
-      support: "emulated",
-      helper: "useOnce",
-      note: "React has no once listener, so a guard remembers each element the listener ran for, as { once: true } removes it from that element only.",
-    },
-    // react-dom's root listeners of `wheel`, `touchstart` and `touchmove` are passive already.
-    "event-passive": { support: "native" },
-    // React's synthetic events differ from the DOM's for some events: those listen natively.
-    "event-semantics": {
-      support: "emulated",
-      helper: "listen",
-      note: "Where React's synthetic event differs from the DOM's (change on a text field, a checkbox or a radio, focusin, select, non-passive wheel and touch, events React has no prop for, and focus beside a native focusin), the element's ref callback, declared once, listens natively.",
-    },
-    // Listeners run their handlers as the event is dispatched, controls and calls included.
-    "conditional-event-control": { support: "native" },
-    "use-id": { support: "native" },
-    "next-tick": {
-      support: "emulated",
-      helper: "useNextTick",
-      note: "React has no nextTick: the helper asks for a render at the priority of the code that calls it and resolves once React has rendered it, run its effects and rendered what the component's effects wrote: in the task of the click or key whose handler wrote, as on Vue, and in a later task after a watcher's write, in an effect, a timer or after an await. It resolves when the component unmounts too.",
-    },
-    // A rerender passes the props again, and the hooks that read one list it.
-    "late-prop": { support: "native" },
-    props: { support: "native" },
-    interpolation: { support: "native" },
-    conditional: { support: "native" },
-    list: { support: "native" },
-    fragment: { support: "native" },
-    "bound-attribute": { support: "native" },
-    // React's `className` takes one string: a `cx` helper joins the parts (ADR-0038, ADR-0121).
-    "class-binding": {
-      support: "emulated",
-      helper: "cx",
-      note: "React's className takes one string, so a helper shared in the tree's _unframework/ joins the static names, toggles and dynamic parts.",
-    },
-    "style-binding": {
-      support: "emulated",
-      helper: "styleObject",
-      note: "React's style takes an object, so a style bound to a value goes through a shared helper, `styleObject`, that splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
-    },
-    "attribute-spread": { support: "native" },
-    "raw-html": { support: "native" },
-    svg: { support: "native" },
-    component: { support: "native" },
-    "component-event": { support: "native" },
-    "default-slot": { support: "native" },
-    "named-slot": { support: "native" },
-    "scoped-slot": { support: "native" },
-    "slot-fallback": { support: "native" },
-    "default-slot-presence": { support: "native" },
-    "slot-forwarding": { support: "native" },
-    model: { support: "native" },
-    "two-way-binding": { support: "native" },
-    "model-array": {
-      support: "emulated",
-      helper: "toggle",
-      note: "A checkbox group's array goes through an inline helper, `toggle`, as Vue's `vModelCheckbox` does (ADR-0054).",
-    },
-    "model-modifiers": {
-      support: "emulated",
-      helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
-    },
-    // The props' rest, spread on the root after its own attributes, so the consumer's win
-    // (ADR-0118): its listeners run after the root's own of the same prop, and its `ref` is
-    // joined with the root's own through an inline `mergeRefs`. A rest the source spreads on
-    // another element leaves the styled parents' scope attributes to the root (`restAttributes`).
-    fallthrough: { support: "native" },
-    "contextual-root": { support: "native" },
-    // React 19's `ref` prop: the handle `useImperativeHandle` gives it, or, where the component
-    // exposes nothing, its root element, which takes the prop (ADR-0118).
-    expose: { support: "native" },
-    context: { support: "native" },
-    "reactive-context": {
-      support: "emulated",
-      helper: "refObject",
-      note: "A provided ref is passed as an object with a `value` getter, `refObject`, made again at each render of the provider: descendants render each change, and their deferred code, after an `await` or in a timer, reads the value of their last render (ADR-0054).",
-    },
-    "dynamic-component": { support: "native" },
-    "scoped-styles": { support: "native" },
-    // The child's root picks its styled parents' `data-uf-*` attributes out of its props
-    // (ADR-0063): their names are the parents', which the child cannot know. A root that spreads
-    // the props' rest passes them with it (ADR-0118).
-    "child-root-scope": {
-      support: "emulated",
-      helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so where its root does not spread its props' rest, a shared helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional, on a root <component is>, and on the root beside an element that spreads the rest, as Vue's fallthrough reaches them.",
-    },
-    "slotted-styles": { support: "native" },
-    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
-    "sheet-order": { support: "native" },
-    "generic-components": { support: "native" },
-    "generic-slot-props": { support: "native" },
-    composables: { support: "native" },
-    // A custom hook's effects keep React's order, not the caller's (ADR-0048, ADR-0069).
-    "composable-effect-order": {
-      support: "unsupported",
-      code: "UF4005",
-      severity: "info",
-      reason:
-        "A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
-    },
-    hydration: { support: "native" },
-    "keyed-identity": { support: "native" },
-    // React 19's server render cannot portal, so the element is portalled once the component
-    // has mounted (ADR-0098).
-    // A hook per element, whose ref callback and layout effect run the hooks (ADR-0099),
-    // with each element's own value where it reads a row or a fill's props (ADR-0108).
-    directive: {
-      support: "emulated",
-      helper: "useDirective",
-      note: "React has no directive, so an element's directive goes through a shared hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose function makes each element's ref callback from its value as the row renders, joined with the element's other callbacks through a shared `mergeRefs`. The hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
-    },
-    // React has no transition primitive (ADR-0100).
-    transition: {
-      support: "emulated",
-      helper: "Transition",
-      note: "A `<Transition>` is a shared component, `Transition`, around its child, whose branches each take a key: a change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, sets state only in frame and event callbacks or as its child changes, and keeps the child's own ref. The server and the hydrating client render no class (ADR-0100).",
-    },
-    // React has no async component: the setup runs in a function of its own, which the
-    // exported component starts once and the resolved one reads with `use` (ADR-0101).
-    "async-setup": {
-      support: "emulated",
-      helper: "SetupPending",
-      note: "React has no async component, so a module-level function runs the awaits, the exported component starts it once and renders, inside a <Suspense>, the component as written, which reads what they resolved to with `use`. A shared fallback, `SetupPending`, renders nothing and shows the content once the setup settles, rather than after React's fallback throttle. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported.",
-    },
-    teleport: {
-      support: "emulated",
-      helper: "teleport",
-      note: "A `<Teleport>` is `createPortal` from react-dom through a shared helper, `teleport`, once `useSyncExternalStore` says the component has mounted: Fizz throws on a portal, so neither the server nor the hydrating client renders it (ADR-0098).",
-    },
-  },
-  // A custom hook (ADR-0069).
-  emitComposable,
-  emitDirective,
-  // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
-  // declarations and the events' props, the setup's hooks in source order, and the render tree in
-  // React's JSX.
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { module } = context;
-    // Every name the source declares or reads is taken before the output claims its own
-    // (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).
-    // With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
-    const plan = planComponent(component, module, undefined, context.helper !== undefined);
-    const { composition } = plan;
-    // A listener that falls through is the child's prop (ADR-0118): where React's synthetic event
-    // differs from the DOM's on the element it lands on, only a native listener the child adds
-    // keeps the DOM's semantics, and nothing passes the child one yet.
-    const passed = passedListeners(component);
-    for (const [listener, { element }] of plan.listeners) {
-      // On a `<component is>` root, every tag that may render must keep them (ADR-0122).
-      const tag = passed.has(listener)
-        ? (passedTags.get(element) ?? [element.tag]).find(
-            (each) => !synthetic(listener, { ...element, tag: each }),
-          )
-        : undefined;
-      if (tag !== undefined) {
-        context.report({
-          code: "UF1002",
-          severity: "error",
-          message: `The react target does not pass a \`${listener.event}\` listener through to a component yet: React's prop for it would not keep the DOM's semantics on its <${tag}>. Listen to the event on an element instead.`,
-          span: listener.span,
-        });
-        return [];
-      }
-    }
-    const code = reactCode(plan);
-    const names: ReactNames = {
-      imports: plan.names,
-      ...(composition.fallthrough ? { style: composition.fallthrough.style } : {}),
-    };
-    const listeners = new ReactListeners(plan, code);
-    const composer = new ReactComposer(plan, code);
-    composer.connect(listeners);
-    listeners.connect(composer);
-    // A setup that awaits splits the component in three (ADR-0101, ./async.ts): what the
-    // resolved component prints is the setup without its awaits, which their own function runs.
-    const outer = plan.helpers.async;
-    const jsx = jsxContext({
-      component: outer ? withoutAwaits(component) : component,
-      module,
-      dialect: {
-        ...reactDialect(names, listeners, composer),
-        teleport: teleportCall(plan),
-        transition: transitionCall(plan),
-      },
-      rules: code.rules,
-    });
-    importChildren(plan);
-    const setup = printSetup(plan, code);
-    const hooks = hookCalls(plan).map((text) => ({ text, group: -1, compact: true }));
-    // Each directive's call, after the setup whose values it reads (ADR-0099).
-    // A setup function is passed as client code passes one, its stable variant where it has one,
-    // so its identity changes no more than on Vue. Any other value is read in a getter outside
-    // the branches around its element, so what they narrow is asserted.
-    // A value that reads a list's row or a fill's props is passed by each element (ADR-0108).
-    const directives = [...plan.directiveRefs].map(([attribute, ref]) => ({
-      text: plan.elementDirectives.has(attribute)
-        ? `const ${ref} = ${plan.helpers.directive!.each!}(${attribute.name});`
-        : `const ${ref} = ${plan.helpers.directive!.hook!}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
-      group: -150,
-      compact: true,
-    }));
-    // The ref callbacks declared once, after the guards their listeners call.
-    const callbacks = listeners
-      .declarations()
-      .map((text, index) => ({ text, group: -2 - index, compact: false }));
-    // The returned JSX first, while its placeholders are the only ones: it prints on its own for
-    // the opt-out check below. Its `modelText` fields and `<component is>`'s `const`s follow the
-    // setup, and the handle of what the component exposes comes last (ADR-0054).
-    const root = rootForReact(withFallthrough(component.render, plan, composer), jsx, plan);
-    // A lone component or `<component is>` is the root itself, never in a fragment.
-    const [only] = root.kind === "Fragment" && root.children.length === 1 ? root.children : [];
-    const lone = only?.kind === "Component" || only?.kind === "Dynamic" ? only : root;
-    const tree = provided(plan, jsxNode(lone, jsx));
-    const rendered = [
-      ...[...composition.dynamic.values()]
-        .filter(({ hoisted }) => hoisted)
-        .map(({ node, name }) => `const ${name} = ${expressionCode(node.is, jsx)};`),
-      ...composer.fields,
-    ].map((text, index) => ({ text, group: -100 - index, compact: true }));
-    const handle = exposeHandle(plan);
-    // What passes through, out of the props object (ADR-0118), and the root's own ref joined
-    // with the consumer's, once for each pair, after the callbacks it may name.
-    const passedOut = passedDeclaration(plan, composer);
-    const merged = composer.mergedRef && mergedRefDeclaration(plan, composer);
-    const body = [
-      ...(passedOut ? [{ text: passedOut, group: -400, compact: false }] : []),
-      ...(outer ? [{ text: useSetup(plan, jsx), group: -300, compact: false }] : []),
-      ...setup.body,
-      ...hooks,
-      ...directives,
-      ...callbacks,
-      ...(merged ? [{ text: merged, group: -50, compact: false }] : []),
-      ...rendered,
-      ...(handle ? [{ text: handle, group: -200, compact: false }] : []),
-    ];
-    const optOut = compilerOptOut(component, plan, jsx, [
-      ...body.map(({ text }) => ({ code: text, kind: "statements" as const })),
-      { code: jsx.placeholders.print(() => printExpression(tree)), kind: "expression" },
-    ]);
-    const parameters = propsParameters(component, jsx, plan, composer);
-    // Every read is printed now: each composable's call destructures only what they read.
-    const resolved = resolveUses(plan, body);
-    // A blank line between groups, unless both are one-line declarations, and before the return.
-    const statements = resolved.map(({ text, group, compact }, index) => {
-      const next = resolved[index + 1];
-      const apart = !next || (next.group !== group && !(compact && next.compact));
-      return jsx.placeholders.statements(apart ? `${text}\n` : text);
-    });
-    const fn = js.functionDeclaration(outer?.resolved ?? component.name, parameters, [
-      ...(optOut ? [jsx.placeholders.statements(`${optOut}\n`)] : []),
-      ...statements,
-      js.returnStatement(tree),
-    ]);
-    fn.typeParameters = typeParameters(component, jsx);
-    // The module's values it reads, as the source declares and imports them (ADR-0070).
-    const reads = moduleReads(component, module, plan.names);
-    const constants = reads.constants.length ? [reads.constants.join("\n")] : [];
-    // The module's own directives it applies, as their plain hooks (ADR-0099).
-    const ownHooks = ownDirectives(component, module).map((directive) => hooksCode(directive));
-    for (const { specifier, imported, local } of importedDirectives(component, module)) {
-      plan.names.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
-    }
-    const hoisted = [
-      ...constants,
-      ...ownHooks,
-      ...keyDeclarations(plan),
-      ...setup.module,
-      ...(outer ? [setupFunction(plan, code, jsx)] : []),
-    ].map((statement) => jsx.placeholders.statements(`${statement}\n`));
-    // The exported component starts the setup and renders the resolved one, which is today's
-    // whole component, after it (ADR-0101).
-    const exported = outer ? outerComponent(plan, jsx, propsType(plan)) : fn;
-    if (outer) exported.typeParameters = typeParameters(component, jsx);
-    // The types it imports, by name, from where the source imports them, a child's from its
-    // output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
-    addTypeImports(component, module, plan.names, (name) => name);
-    const types = [
-      ...[...moduleTypes(component, module), ...reads.types].toSorted(
-        (a, b) => a.span.start - b.span.start,
-      ),
-      ...eventsInterface(plan),
-      ...compositionInterfaces(plan),
-    ];
-    const helpers = context.helper
-      ? [
-          ...(outer ? [fn] : []),
-          ...inlineCompositionHelpers(plan),
-          ...shareHelpers(context.helper, `${component.name}.tsx`, plan, names),
-        ]
-      : [
-          ...(outer ? [fn] : []),
-          ...(names.cx ? [cxHelper(names.cx, names.cxCollections)] : []),
-          ...(names.styleObject
-            ? [
-                styleObjectHelper(
-                  names.styleObject,
-                  names.imports.add("react", "CSSProperties", { type: true }),
-                ),
-              ]
-            : []),
-          ...listenerHelpers(plan),
-          ...(plan.helpers.nextTick
-            ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
-            : []),
-          ...compositionHelpers(plan),
-          ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
-          ...(plan.helpers.transition
-            ? transitionHelpers(plan.helpers.transition, plan.names, !plan.helpers.teleport)
-            : []),
-          ...(plan.helpers.directive
-            ? [
-                useDirectiveHelper(plan.helpers.directive, plan.names),
-                hookQueueCode(plan.helpers.directive.queue),
-              ]
-            : []),
-          ...(plan.helpers.mergeRefs
-            ? [
-                mergeRefsHelper(plan.helpers.mergeRefs, {
-                  Ref: plan.names.add("react", "Ref", { type: true }),
-                  RefCallback: plan.names.add("react", "RefCallback", { type: true }),
-                }),
-              ]
-            : []),
-          ...(outer
-            ? [setupPendingHelper(outer.pending, plan.names.add("react", "useEffect"))]
-            : []),
-        ];
-    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
-    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
-    // component's style after its script. Collected last: the types and the helpers import
-    // what they name.
-    const file = module.file;
-    const imports = [
-      ...names.imports.toDeclarations(),
-      ...(component.styles
-        ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
-        : []),
-    ];
-    return [
-      {
-        path: `${component.name}.tsx`,
-        contents: printComponentModule(
-          {
-            imports,
-            types,
-            body: [
-              ...hoisted,
-              ...exportDeclaration(
-                component.name,
-                exported,
-                exportsOf(component.name, module.exports),
-              ),
-            ],
-            helpers,
-            placeholders: jsx.placeholders,
-          },
-          { jsx: true },
-        ),
-      },
-    ];
-  },
+	name: "react",
+	framework: { package: "react", range: ">=19.2 <20" },
+	capabilities: {
+		element: { support: "native" },
+		text: { support: "native" },
+		"static-attribute": { support: "native" },
+		listbox: { support: "native" },
+		interactivity: { support: "native" },
+		"event-capture": { support: "native" },
+		// React has no `once`: a guard per listener remembers the elements it ran for (ADR-0047).
+		"event-once": {
+			support: "emulated",
+			helper: "useOnce",
+			note: "React has no once listener, so a guard remembers each element the listener ran for, as { once: true } removes it from that element only.",
+		},
+		// react-dom's root listeners of `wheel`, `touchstart` and `touchmove` are passive already.
+		"event-passive": { support: "native" },
+		// React's synthetic events differ from the DOM's for some events: those listen natively.
+		"event-semantics": {
+			support: "emulated",
+			helper: "listen",
+			note: "Where React's synthetic event differs from the DOM's (change on a text field, a checkbox or a radio, focusin, select, non-passive wheel and touch, events React has no prop for, and focus beside a native focusin), the element's ref callback, declared once, listens natively.",
+		},
+		// Listeners run their handlers as the event is dispatched, controls and calls included.
+		"conditional-event-control": { support: "native" },
+		"use-id": { support: "native" },
+		"next-tick": {
+			support: "emulated",
+			helper: "useNextTick",
+			note: "React has no nextTick: the helper asks for a render at the priority of the code that calls it and resolves once React has rendered it, run its effects and rendered what the component's effects wrote: in the task of the click or key whose handler wrote, as on Vue, and in a later task after a watcher's write, in an effect, a timer or after an await. It resolves when the component unmounts too.",
+		},
+		// A rerender passes the props again, and the hooks that read one list it.
+		"late-prop": { support: "native" },
+		props: { support: "native" },
+		interpolation: { support: "native" },
+		conditional: { support: "native" },
+		list: { support: "native" },
+		fragment: { support: "native" },
+		"bound-attribute": { support: "native" },
+		// React's `className` takes one string: a `cx` helper joins the parts (ADR-0038, ADR-0121).
+		"class-binding": {
+			support: "emulated",
+			helper: "cx",
+			note: "React's className takes one string, so a helper shared in the tree's _unframework/ joins the static names, toggles and dynamic parts.",
+		},
+		"style-binding": {
+			support: "emulated",
+			helper: "styleObject",
+			note: "React's style takes an object, so a style bound to a value goes through a shared helper, `styleObject`, that splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+		},
+		"attribute-spread": { support: "native" },
+		"raw-html": { support: "native" },
+		svg: { support: "native" },
+		component: { support: "native" },
+		"component-event": { support: "native" },
+		"default-slot": { support: "native" },
+		"named-slot": { support: "native" },
+		"scoped-slot": { support: "native" },
+		"slot-fallback": { support: "native" },
+		"default-slot-presence": { support: "native" },
+		"slot-forwarding": { support: "native" },
+		model: { support: "native" },
+		"two-way-binding": { support: "native" },
+		"model-array": {
+			support: "emulated",
+			helper: "toggle",
+			note: "A checkbox group's array goes through an inline helper, `toggle`, as Vue's `vModelCheckbox` does (ADR-0054).",
+		},
+		"model-modifiers": {
+			support: "emulated",
+			helper: "modelText",
+			note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
+		},
+		// The props' rest, spread on the root after its own attributes, so the consumer's win
+		// (ADR-0118): its listeners run after the root's own of the same prop, and its `ref` is
+		// joined with the root's own through an inline `mergeRefs`. A rest the source spreads on
+		// another element leaves the styled parents' scope attributes to the root (`restAttributes`).
+		fallthrough: { support: "native" },
+		"contextual-root": { support: "native" },
+		// React 19's `ref` prop: the handle `useImperativeHandle` gives it, or, where the component
+		// exposes nothing, its root element, which takes the prop (ADR-0118).
+		expose: { support: "native" },
+		context: { support: "native" },
+		"reactive-context": {
+			support: "emulated",
+			helper: "refObject",
+			note: "A provided ref is passed as an object with a `value` getter, `refObject`, made again at each render of the provider: descendants render each change, and their deferred code, after an `await` or in a timer, reads the value of their last render (ADR-0054).",
+		},
+		"dynamic-component": { support: "native" },
+		"scoped-styles": { support: "native" },
+		// The child's root picks its styled parents' `data-uf-*` attributes out of its props
+		// (ADR-0063): their names are the parents', which the child cannot know. A root that spreads
+		// the props' rest passes them with it (ADR-0118).
+		"child-root-scope": {
+			support: "emulated",
+			helper: SCOPE_HELPER,
+			note: "A child cannot know the scope attributes its styled parents pass, so where its root does not spread its props' rest, a shared helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional, on a root <component is>, and on the root beside an element that spreads the rest, as Vue's fallthrough reaches them.",
+		},
+		"slotted-styles": { support: "native" },
+		// A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+		"sheet-order": { support: "native" },
+		"generic-components": { support: "native" },
+		"generic-slot-props": { support: "native" },
+		composables: { support: "native" },
+		// A custom hook's effects keep React's order, not the caller's (ADR-0048, ADR-0069).
+		"composable-effect-order": {
+			support: "unsupported",
+			code: "UF4005",
+			severity: "info",
+			reason:
+				"A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
+		},
+		hydration: { support: "native" },
+		"keyed-identity": { support: "native" },
+		// React 19's server render cannot portal, so the element is portalled once the component
+		// has mounted (ADR-0098).
+		// A hook per element, whose ref callback and layout effect run the hooks (ADR-0099),
+		// with each element's own value where it reads a row or a fill's props (ADR-0108).
+		directive: {
+			support: "emulated",
+			helper: "useDirective",
+			note: "React has no directive, so an element's directive goes through a shared hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose function makes each element's ref callback from its value as the row renders, joined with the element's other callbacks through a shared `mergeRefs`. The hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+		},
+		// React has no transition primitive (ADR-0100).
+		transition: {
+			support: "emulated",
+			helper: "Transition",
+			note: "A `<Transition>` is a shared component, `Transition`, around its child, whose branches each take a key: a change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, sets state only in frame and event callbacks or as its child changes, and keeps the child's own ref. The server and the hydrating client render no class (ADR-0100).",
+		},
+		// React has no async component: the setup runs in a function of its own, which the
+		// exported component starts once and the resolved one reads with `use` (ADR-0101).
+		"async-setup": {
+			support: "emulated",
+			helper: "SetupPending",
+			note: "React has no async component, so a module-level function runs the awaits, the exported component starts it once and renders, inside a <Suspense>, the component as written, which reads what they resolved to with `use`. A shared fallback, `SetupPending`, renders nothing and shows the content once the setup settles, rather than after React's fallback throttle. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported.",
+		},
+		teleport: {
+			support: "emulated",
+			helper: "teleport",
+			note: "A `<Teleport>` is `createPortal` from react-dom through a shared helper, `teleport`, once `useSyncExternalStore` says the component has mounted: Fizz throws on a portal, so neither the server nor the hydrating client renders it (ADR-0098).",
+		},
+	},
+	// A custom hook (ADR-0069).
+	emitComposable,
+	emitDirective,
+	// A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
+	// declarations and the events' props, the setup's hooks in source order, and the render tree in
+	// React's JSX.
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
+		const { module } = context;
+		// Every name the source declares or reads is taken before the output claims its own
+		// (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).
+		// With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
+		const plan = planComponent(component, module, undefined, context.helper !== undefined);
+		const { composition } = plan;
+		// A listener that falls through is the child's prop (ADR-0118): where React's synthetic event
+		// differs from the DOM's on the element it lands on, only a native listener the child adds
+		// keeps the DOM's semantics, and nothing passes the child one yet.
+		const passed = passedListeners(component);
+		for (const [listener, { element }] of plan.listeners) {
+			// On a `<component is>` root, every tag that may render must keep them (ADR-0122).
+			const tag = passed.has(listener)
+				? (passedTags.get(element) ?? [element.tag]).find(
+						(each) => !synthetic(listener, { ...element, tag: each }),
+					)
+				: undefined;
+			if (tag !== undefined) {
+				context.report({
+					code: "UF1002",
+					severity: "error",
+					message: `The react target does not pass a \`${listener.event}\` listener through to a component yet: React's prop for it would not keep the DOM's semantics on its <${tag}>. Listen to the event on an element instead.`,
+					span: listener.span,
+				});
+				return [];
+			}
+		}
+		const code = reactCode(plan);
+		const names: ReactNames = {
+			imports: plan.names,
+			...(composition.fallthrough ? { style: composition.fallthrough.style } : {}),
+		};
+		const listeners = new ReactListeners(plan, code);
+		const composer = new ReactComposer(plan, code);
+		composer.connect(listeners);
+		listeners.connect(composer);
+		// A setup that awaits splits the component in three (ADR-0101, ./async.ts): what the
+		// resolved component prints is the setup without its awaits, which their own function runs.
+		const outer = plan.helpers.async;
+		const jsx = jsxContext({
+			component: outer ? withoutAwaits(component) : component,
+			module,
+			dialect: {
+				...reactDialect(names, listeners, composer),
+				teleport: teleportCall(plan),
+				transition: transitionCall(plan),
+			},
+			rules: code.rules,
+		});
+		importChildren(plan);
+		const setup = printSetup(plan, code);
+		const hooks = hookCalls(plan).map((text) => ({ text, group: -1, compact: true }));
+		// Each directive's call, after the setup whose values it reads (ADR-0099).
+		// A setup function is passed as client code passes one, its stable variant where it has one,
+		// so its identity changes no more than on Vue. Any other value is read in a getter outside
+		// the branches around its element, so what they narrow is asserted.
+		// A value that reads a list's row or a fill's props is passed by each element (ADR-0108).
+		const directives = [...plan.directiveRefs].map(([attribute, ref]) => ({
+			text: plan.elementDirectives.has(attribute)
+				? `const ${ref} = ${plan.helpers.directive!.each!}(${attribute.name});`
+				: `const ${ref} = ${plan.helpers.directive!.hook!}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
+			group: -150,
+			compact: true,
+		}));
+		// The ref callbacks declared once, after the guards their listeners call.
+		const callbacks = listeners
+			.declarations()
+			.map((text, index) => ({ text, group: -2 - index, compact: false }));
+		// The returned JSX first, while its placeholders are the only ones: it prints on its own for
+		// the opt-out check below. Its `modelText` fields and `<component is>`'s `const`s follow the
+		// setup, and the handle of what the component exposes comes last (ADR-0054).
+		const root = rootForReact(withFallthrough(component.render, plan, composer), jsx, plan);
+		// A lone component or `<component is>` is the root itself, never in a fragment.
+		const [only] = root.kind === "Fragment" && root.children.length === 1 ? root.children : [];
+		const lone = only?.kind === "Component" || only?.kind === "Dynamic" ? only : root;
+		const tree = provided(plan, jsxNode(lone, jsx));
+		const rendered = [
+			...[...composition.dynamic.values()]
+				.filter(({ hoisted }) => hoisted)
+				.map(({ node, name }) => `const ${name} = ${expressionCode(node.is, jsx)};`),
+			...composer.fields,
+		].map((text, index) => ({ text, group: -100 - index, compact: true }));
+		const handle = exposeHandle(plan);
+		// What passes through, out of the props object (ADR-0118), and the root's own ref joined
+		// with the consumer's, once for each pair, after the callbacks it may name.
+		const passedOut = passedDeclaration(plan, composer);
+		const merged = composer.mergedRef && mergedRefDeclaration(plan, composer);
+		const body = [
+			...(passedOut ? [{ text: passedOut, group: -400, compact: false }] : []),
+			...(outer ? [{ text: useSetup(plan, jsx), group: -300, compact: false }] : []),
+			...setup.body,
+			...hooks,
+			...directives,
+			...callbacks,
+			...(merged ? [{ text: merged, group: -50, compact: false }] : []),
+			...rendered,
+			...(handle ? [{ text: handle, group: -200, compact: false }] : []),
+		];
+		const optOut = compilerOptOut(component, plan, jsx, [
+			...body.map(({ text }) => ({ code: text, kind: "statements" as const })),
+			{ code: jsx.placeholders.print(() => printExpression(tree)), kind: "expression" },
+		]);
+		const parameters = propsParameters(component, jsx, plan, composer);
+		// Every read is printed now: each composable's call destructures only what they read.
+		const resolved = resolveUses(plan, body);
+		// A blank line between groups, unless both are one-line declarations, and before the return.
+		const statements = resolved.map(({ text, group, compact }, index) => {
+			const next = resolved[index + 1];
+			const apart = !next || (next.group !== group && !(compact && next.compact));
+			return jsx.placeholders.statements(apart ? `${text}\n` : text);
+		});
+		const fn = js.functionDeclaration(outer?.resolved ?? component.name, parameters, [
+			...(optOut ? [jsx.placeholders.statements(`${optOut}\n`)] : []),
+			...statements,
+			js.returnStatement(tree),
+		]);
+		fn.typeParameters = typeParameters(component, jsx);
+		// The module's values it reads, as the source declares and imports them (ADR-0070).
+		const reads = moduleReads(component, module, plan.names);
+		const constants = reads.constants.length ? [reads.constants.join("\n")] : [];
+		// The module's own directives it applies, as their plain hooks (ADR-0099).
+		const ownHooks = ownDirectives(component, module).map((directive) => hooksCode(directive));
+		for (const { specifier, imported, local } of importedDirectives(component, module)) {
+			plan.names.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+		}
+		const hoisted = [
+			...constants,
+			...ownHooks,
+			...keyDeclarations(plan),
+			...setup.module,
+			...(outer ? [setupFunction(plan, code, jsx)] : []),
+		].map((statement) => jsx.placeholders.statements(`${statement}\n`));
+		// The exported component starts the setup and renders the resolved one, which is today's
+		// whole component, after it (ADR-0101).
+		const exported = outer ? outerComponent(plan, jsx, propsType(plan)) : fn;
+		if (outer) {
+			exported.typeParameters = typeParameters(component, jsx);
+		}
+		// The types it imports, by name, from where the source imports them, a child's from its
+		// output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
+		addTypeImports(component, module, plan.names, (name) => name);
+		const types = [
+			...[...moduleTypes(component, module), ...reads.types].toSorted(
+				(a, b) => a.span.start - b.span.start,
+			),
+			...eventsInterface(plan),
+			...compositionInterfaces(plan),
+		];
+		const helpers = context.helper
+			? [
+					...(outer ? [fn] : []),
+					...inlineCompositionHelpers(plan),
+					...shareHelpers(context.helper, `${component.name}.tsx`, plan, names),
+				]
+			: [
+					...(outer ? [fn] : []),
+					...(names.cx ? [cxHelper(names.cx, names.cxCollections)] : []),
+					...(names.styleObject
+						? [
+								styleObjectHelper(
+									names.styleObject,
+									names.imports.add("react", "CSSProperties", { type: true }),
+								),
+							]
+						: []),
+					...listenerHelpers(plan),
+					...(plan.helpers.nextTick
+						? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
+						: []),
+					...compositionHelpers(plan),
+					...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
+					...(plan.helpers.transition
+						? transitionHelpers(plan.helpers.transition, plan.names, !plan.helpers.teleport)
+						: []),
+					...(plan.helpers.directive
+						? [
+								useDirectiveHelper(plan.helpers.directive, plan.names),
+								hookQueueCode(plan.helpers.directive.queue),
+							]
+						: []),
+					...(plan.helpers.mergeRefs
+						? [
+								mergeRefsHelper(plan.helpers.mergeRefs, {
+									Ref: plan.names.add("react", "Ref", { type: true }),
+									RefCallback: plan.names.add("react", "RefCallback", { type: true }),
+								}),
+							]
+						: []),
+					...(outer
+						? [setupPendingHelper(outer.pending, plan.names.add("react", "useEffect"))]
+						: []),
+				];
+		// The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+		// the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+		// component's style after its script. Collected last: the types and the helpers import
+		// what they name.
+		const file = module.file;
+		const imports = [
+			...names.imports.toDeclarations(),
+			...(component.styles
+				? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
+				: []),
+		];
+		return [
+			{
+				path: `${component.name}.tsx`,
+				contents: printComponentModule(
+					{
+						imports,
+						types,
+						body: [
+							...hoisted,
+							...exportDeclaration(
+								component.name,
+								exported,
+								exportsOf(component.name, module.exports),
+							),
+						],
+						helpers,
+						placeholders: jsx.placeholders,
+					},
+					{ jsx: true },
+				),
+			},
+		];
+	},
 });
 
 /** The listeners on the template's components, which fall through to them (ADR-0118). */
 function passedListeners(component: UfComponent): Set<EventAttribute> {
-  const found = new Set<EventAttribute>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Component") return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Event") found.add(attribute);
-      }
-    },
-  });
-  return found;
+	const found = new Set<EventAttribute>();
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Component") {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Event") {
+					found.add(attribute);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /** Whether a directive's value is a setup function by its name alone (ADR-0099). */
 function isFunctionValue(attribute: DirectiveAttribute, plan: ReactPlan): boolean {
-  const [ref, other] = attribute.value.refs;
-  return (
-    ref?.kind === "Binding" &&
-    other === undefined &&
-    plan.bindings.get(ref.binding)?.kind === "localFn" &&
-    ref.span.start === attribute.value.span.start &&
-    ref.span.end === attribute.value.span.end
-  );
+	const [ref, other] = attribute.value.refs;
+	return (
+		ref?.kind === "Binding" &&
+		other === undefined &&
+		plan.bindings.get(ref.binding)?.kind === "localFn" &&
+		ref.span.start === attribute.value.span.start &&
+		ref.span.end === attribute.value.span.end
+	);
 }
 
 /**
@@ -504,16 +510,16 @@ function isFunctionValue(attribute: DirectiveAttribute, plan: ReactPlan): boolea
  * copied as written, and in the output of the module's main component the module's type exports
  * (ADR-0068), each written as its own declaration.
  */
-function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
-  const exported = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
-    name: "",
-    exported: false,
-    code,
-    span,
-  }));
-  return [...componentTypes(component, module), ...exported].toSorted(
-    (a, b) => a.span.start - b.span.start,
-  );
+function moduleTypes(component: UfComponent, module: UfModule): Array<TypeDeclaration> {
+	const exported = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
+		name: "",
+		exported: false,
+		code,
+		span,
+	}));
+	return [...componentTypes(component, module), ...exported].toSorted(
+		(a, b) => a.span.start - b.span.start,
+	);
 }
 
 /**
@@ -522,20 +528,22 @@ function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[
  * component without them.
  */
 function typeParameters(component: UfComponent, context: JsxContext): TypeParameters {
-  if (!component.typeParameters?.length) return null;
-  const type = (text: TypeText | undefined) => (text ? context.placeholders.type(text.code) : null);
-  const params = component.typeParameters.map((parameter) => ({
-    type: "TSTypeParameter" as const,
-    name: js.bindingIdentifier(parameter.name),
-    constraint: type(parameter.constraint),
-    default: type(parameter.default),
-    in: false,
-    out: false,
-    const: false,
-    start: 0,
-    end: 0,
-  }));
-  return { type: "TSTypeParameterDeclaration", params, start: 0, end: 0 };
+	if (!component.typeParameters?.length) {
+		return null;
+	}
+	const type = (text: TypeText | undefined) => (text ? context.placeholders.type(text.code) : null);
+	const params = component.typeParameters.map((parameter) => ({
+		type: "TSTypeParameter" as const,
+		name: js.bindingIdentifier(parameter.name),
+		constraint: type(parameter.constraint),
+		default: type(parameter.default),
+		in: false,
+		out: false,
+		const: false,
+		start: 0,
+		end: 0,
+	}));
+	return { type: "TSTypeParameterDeclaration", params, start: 0, end: 0 };
 }
 
 /**
@@ -544,15 +552,22 @@ function typeParameters(component: UfComponent, context: JsxContext): TypeParame
  * itself calls its own function.
  */
 function importChildren(plan: ReactPlan): void {
-  const { names, composition } = plan;
-  for (const child of composition.children) {
-    if (child.self) continue;
-    if (child.export === "default") names.addDefault(child.specifier, child.local, { exact: true });
-    else names.add(child.specifier, child.name, { local: child.local, exact: true });
-  }
-  for (const key of composition.keys) {
-    if (key.specifier) names.add(key.specifier, key.name, { local: key.local, exact: true });
-  }
+	const { names, composition } = plan;
+	for (const child of composition.children) {
+		if (child.self) {
+			continue;
+		}
+		if (child.export === "default") {
+			names.addDefault(child.specifier, child.local, { exact: true });
+		} else {
+			names.add(child.specifier, child.name, { local: child.local, exact: true });
+		}
+	}
+	for (const key of composition.keys) {
+		if (key.specifier) {
+			names.add(key.specifier, key.name, { local: key.local, exact: true });
+		}
+	}
 }
 
 /**
@@ -560,14 +575,16 @@ function importChildren(plan: ReactPlan): void {
  * React context of the key's type, `undefined` where nothing provides it; a ref the key holds is
  * passed as `{ value }` (`refObject`).
  */
-function keyDeclarations(plan: ReactPlan): string[] {
-  if (!plan.composition.ownsKeys) return [];
-  const createContext = plan.names.add("react", "createContext");
-  return plan.module.keys!.map((key) => {
-    const value = refValueType(key.type.code);
-    const type = key.ref ? `{ readonly value: ${value} }` : key.type.code;
-    return `export const ${key.name} = ${createContext}<${type} | undefined>(undefined);`;
-  });
+function keyDeclarations(plan: ReactPlan): Array<string> {
+	if (!plan.composition.ownsKeys) {
+		return [];
+	}
+	const createContext = plan.names.add("react", "createContext");
+	return plan.module.keys!.map((key) => {
+		const value = refValueType(key.type.code);
+		const type = key.ref ? `{ readonly value: ${value} }` : key.type.code;
+		return `export const ${key.name} = ${createContext}<${type} | undefined>(undefined);`;
+	});
 }
 
 /**
@@ -575,7 +592,7 @@ function keyDeclarations(plan: ReactPlan): string[] {
  * attributes and what they take from a consumer, which {@link forReact} gives it as it reaches it
  * (ADR-0118).
  */
-const restTargets = new WeakMap<ReactPlan, { node: ElementNode; attributes: Attribute[] }>();
+const restTargets = new WeakMap<ReactPlan, { node: ElementNode; attributes: Array<Attribute> }>();
 
 /**
  * The root with what it takes from a consumer (ADR-0054): the `className` prop joined to its
@@ -583,35 +600,37 @@ const restTargets = new WeakMap<ReactPlan, { node: ElementNode; attributes: Attr
  * `inheritAttrs: false`, the element that spreads the props' rest takes them instead (ADR-0118).
  */
 function withFallthrough(
-  root: ElementNode | FragmentNode,
-  plan: ReactPlan,
-  composer: ReactComposer,
+	root: ElementNode | FragmentNode,
+	plan: ReactPlan,
+	composer: ReactComposer,
 ): ElementNode | FragmentNode {
-  const { fallthrough } = plan.composition;
-  if (!fallthrough) return root;
-  const target = fallthrough.root;
-  const consumer: Expression = { code: fallthrough.className, span: target.span, refs: [] };
-  if (target.kind === "Element" && target !== root) {
-    restTargets.set(plan, {
-      node: target,
-      attributes: fallthroughAttributes(target, consumer, composer),
-    });
-    return root;
-  }
-  if (target.kind === "Element") {
-    return { ...target, attributes: fallthroughAttributes(target, consumer, composer) };
-  }
-  if (target.kind === "Dynamic") {
-    // Over tags, its attributes are an element's (ADR-0119).
-    const attributes = fallthroughAttributes(
-      { attributes: tagAttributes(target), span: target.span },
-      consumer,
-      composer,
-    );
-    return { ...root, children: [{ ...target, attributes }] };
-  }
-  const attributes = fallthroughAttributes(target, consumer, composer);
-  return { ...root, children: [{ ...target, attributes }] };
+	const { fallthrough } = plan.composition;
+	if (!fallthrough) {
+		return root;
+	}
+	const target = fallthrough.root;
+	const consumer: Expression = { code: fallthrough.className, span: target.span, refs: [] };
+	if (target.kind === "Element" && target !== root) {
+		restTargets.set(plan, {
+			node: target,
+			attributes: fallthroughAttributes(target, consumer, composer),
+		});
+		return root;
+	}
+	if (target.kind === "Element") {
+		return { ...target, attributes: fallthroughAttributes(target, consumer, composer) };
+	}
+	if (target.kind === "Dynamic") {
+		// Over tags, its attributes are an element's (ADR-0119).
+		const attributes = fallthroughAttributes(
+			{ attributes: tagAttributes(target), span: target.span },
+			consumer,
+			composer,
+		);
+		return { ...root, children: [{ ...target, attributes }] };
+	}
+	const attributes = fallthroughAttributes(target, consumer, composer);
+	return { ...root, children: [{ ...target, attributes }] };
 }
 
 /**
@@ -619,67 +638,67 @@ function withFallthrough(
  * take the consumer's last: added where it has none.
  */
 function fallthroughAttributes<T extends Attribute | ComponentAttribute>(
-  target: { attributes: readonly T[]; span: ElementNode["span"] },
-  consumer: Expression,
-  composer: ReactComposer,
-): (T | ClassAttribute | StyleAttribute)[] {
-  const { span } = target;
-  const attributes: (T | ClassAttribute | StyleAttribute)[] = [];
-  let classed = false;
-  let styled = false;
-  for (const attribute of target.attributes) {
-    if (attribute.kind === "Class") {
-      classed = true;
-      attributes.push({
-        ...attribute,
-        items: [...attribute.items, { kind: "Dynamic", value: consumer, span }],
-      });
-    } else if (attribute.kind === "Static" && attribute.name === "class") {
-      classed = true;
-      attributes.push({
-        kind: "Class",
-        items: [
-          { kind: "Static", value: String(attribute.value), span: attribute.span },
-          { kind: "Dynamic", value: consumer, span },
-        ],
-        span: attribute.span,
-      });
-    } else if (attribute.kind === "Style") {
-      styled = true;
-      const merged: StyleAttribute = { ...attribute };
-      composer.fallthroughStyles.add(merged);
-      attributes.push(merged);
-    } else if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
-      // A spread's `style` is the root's own (ADR-0065): the consumer's merges over it.
-      styled = true;
-      const keys = attribute.keys.filter((key) => key.name !== "style");
-      const merged: StyleAttribute = {
-        kind: "Style",
-        declarations: [],
-        value: spreadStyleExpression(attribute),
-        span: attribute.span,
-      };
-      composer.fallthroughStyles.add(merged);
-      attributes.push({ ...attribute, keys }, merged);
-    } else {
-      attributes.push(attribute);
-    }
-  }
-  if (!classed) {
-    const bare: ClassAttribute = {
-      kind: "Class",
-      items: [{ kind: "Dynamic", value: consumer, span }],
-      span,
-    };
-    composer.bareClasses.add(bare);
-    attributes.push(bare);
-  }
-  if (!styled) {
-    const bare: StyleAttribute = { kind: "Style", declarations: [], span };
-    composer.fallthroughStyles.add(bare);
-    attributes.push(bare);
-  }
-  return attributes;
+	target: { attributes: ReadonlyArray<T>; span: ElementNode["span"] },
+	consumer: Expression,
+	composer: ReactComposer,
+): Array<T | ClassAttribute | StyleAttribute> {
+	const { span } = target;
+	const attributes: Array<T | ClassAttribute | StyleAttribute> = [];
+	let classed = false;
+	let styled = false;
+	for (const attribute of target.attributes) {
+		if (attribute.kind === "Class") {
+			classed = true;
+			attributes.push({
+				...attribute,
+				items: [...attribute.items, { kind: "Dynamic", value: consumer, span }],
+			});
+		} else if (attribute.kind === "Static" && attribute.name === "class") {
+			classed = true;
+			attributes.push({
+				kind: "Class",
+				items: [
+					{ kind: "Static", value: String(attribute.value), span: attribute.span },
+					{ kind: "Dynamic", value: consumer, span },
+				],
+				span: attribute.span,
+			});
+		} else if (attribute.kind === "Style") {
+			styled = true;
+			const merged: StyleAttribute = { ...attribute };
+			composer.fallthroughStyles.add(merged);
+			attributes.push(merged);
+		} else if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
+			// A spread's `style` is the root's own (ADR-0065): the consumer's merges over it.
+			styled = true;
+			const keys = attribute.keys.filter((key) => key.name !== "style");
+			const merged: StyleAttribute = {
+				kind: "Style",
+				declarations: [],
+				value: spreadStyleExpression(attribute),
+				span: attribute.span,
+			};
+			composer.fallthroughStyles.add(merged);
+			attributes.push({ ...attribute, keys }, merged);
+		} else {
+			attributes.push(attribute);
+		}
+	}
+	if (!classed) {
+		const bare: ClassAttribute = {
+			kind: "Class",
+			items: [{ kind: "Dynamic", value: consumer, span }],
+			span,
+		};
+		composer.bareClasses.add(bare);
+		attributes.push(bare);
+	}
+	if (!styled) {
+		const bare: StyleAttribute = { kind: "Style", declarations: [], span };
+		composer.fallthroughStyles.add(bare);
+		attributes.push(bare);
+	}
+	return attributes;
 }
 
 /**
@@ -687,33 +706,35 @@ function fallthroughAttributes<T extends Attribute | ComponentAttribute>(
  * (`<ThemeKey value={themeValue}>`, React 19's context provider, ADR-0054).
  */
 function provided(plan: ReactPlan, tree: ReturnType<typeof jsxNode>): ReturnType<typeof jsxNode> {
-  let wrapped = tree;
-  for (const [item, local] of [...plan.composition.provided].toReversed()) {
-    const children =
-      wrapped.type === "JSXFragment"
-        ? wrapped.children
-        : [wrapped.type === "JSXElement" ? wrapped : js.jsxExpressionContainer(wrapped)];
-    wrapped = js.jsxElement(
-      item.key,
-      [js.jsxAttribute("value", js.jsxExpressionContainer(js.identifier(local)))],
-      children,
-    );
-  }
-  return wrapped;
+	let wrapped = tree;
+	for (const [item, local] of [...plan.composition.provided].toReversed()) {
+		const children =
+			wrapped.type === "JSXFragment"
+				? wrapped.children
+				: [wrapped.type === "JSXElement" ? wrapped : js.jsxExpressionContainer(wrapped)];
+		wrapped = js.jsxElement(
+			item.key,
+			[js.jsxAttribute("value", js.jsxExpressionContainer(js.identifier(local)))],
+			children,
+		);
+	}
+	return wrapped;
 }
 
 /** `useImperativeHandle(ref, () => ({ focus }));`: what the component exposes (ADR-0054). */
 function exposeHandle(plan: ReactPlan): string | undefined {
-  const { expose } = plan.composition;
-  const exposes = plan.owner.exposes;
-  if (!expose || !exposes) return undefined;
-  const useImperativeHandle = plan.names.add("react", "useImperativeHandle");
-  const members = exposes.functions.map((id) => {
-    const { name } = plan.bindings.get(id)!;
-    const variant = plan.clientVariants.get(id);
-    return variant ? `${name}: ${variant}` : name;
-  });
-  return `${useImperativeHandle}(${expose.ref}, () => ({ ${members.join(", ")} }));`;
+	const { expose } = plan.composition;
+	const exposes = plan.owner.exposes;
+	if (!expose || !exposes) {
+		return undefined;
+	}
+	const useImperativeHandle = plan.names.add("react", "useImperativeHandle");
+	const members = exposes.functions.map((id) => {
+		const { name } = plan.bindings.get(id)!;
+		const variant = plan.clientVariants.get(id);
+		return variant ? `${name}: ${variant}` : name;
+	});
+	return `${useImperativeHandle}(${expose.ref}, () => ({ ${members.join(", ")} }));`;
 }
 
 /**
@@ -721,159 +742,159 @@ function exposeHandle(plan: ReactPlan): string | undefined {
  * render prop for a scoped one), the models (each with its change callback), and the root's
  * `className`, `style` and the `ref` that holds the handle; and the handle's own interface.
  */
-function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
-  const { composition, owner: component } = plan;
-  const type = (name: string) => plan.names.add("react", name, { type: true });
-  const declarations: TypeDeclaration[] = [];
-  const declare = (name: string, members: string[], parameters = "") => {
-    const text = `interface ${name}${parameters} {\n${members.map((member) => `  ${member}`).join("\n")}\n}`;
-    declarations.push({ name, exported: true, code: text, span: component.span });
-  };
-  const { interfaces } = composition;
-  const generic = interfaceParameters(plan);
-  if (interfaces.models) {
-    declare(
-      interfaces.models,
-      [...composition.models.values()].flatMap(({ item, prop, event }) => {
-        const valueType = item.type?.code ?? "unknown";
-        // Without a default, an unbound model starts \`undefined\`, which a write may hand on.
-        const written = item.default || item.required ? valueType : `${valueType} | undefined`;
-        return [
-          `${prop}${item.required ? "" : "?"}: ${valueType};`,
-          `${event}?: (${PARAMETER}: ${written}) => void;`,
-        ];
-      }),
-      generic.models?.declared,
-    );
-  }
-  if (interfaces.slots) {
-    const node = type("ReactNode");
-    declare(
-      interfaces.slots,
-      component.slots!.slots.map((slot) =>
-        slot.props
-          ? `${slotProp(slot.name, true)}?: (props: ${slot.props.code}) => ${node};`
-          : `${slotProp(slot.name, false)}?: ${node};`,
-      ),
-      generic.slots?.declared,
-    );
-  }
-  if (composition.expose && component.exposes) {
-    declare(
-      composition.expose.handle,
-      component.exposes.functions.map((id) => {
-        const { name } = plan.bindings.get(id)!;
-        const item = component.setup.find(
-          (entry) => entry.kind === "Function" && entry.binding === id,
-        );
-        const fn =
-          item?.kind === "Function" ? withEventTypes(plan, item.function, undefined) : undefined;
-        const parameters = fn ? parametersOf(fn) : "";
-        return `${name}${fn ? exposedType(fn, parameters) : "(): void"};`;
-      }),
-      generic.expose?.declared,
-    );
-  }
-  const { passing } = composition;
-  if (interfaces.attributes && passing) {
-    // The fallthrough element's own props but those the component declares (ADR-0118), with
-    // the `ref` its root element or its handle takes where that is another's. A root component's
-    // own props type it (`ComponentProps<typeof Base>`), which hold its root's attributes, but
-    // those its element sets itself: one it declares (`value: number`) is no attribute.
-    const handle =
-      composition.expose && `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
-    const [tag, ...others] = passing.tags;
-    const [refTag, ...otherRefs] = passing.refTags ?? [];
-    const own = handle === undefined && !others.length && !otherRefs.length && refTag === tag;
-    const props = type(own ? "ComponentPropsWithRef" : "ComponentPropsWithoutRef");
-    const { target } = passing;
-    const rootComponent = target.kind === "Component" && !passing.inner;
-    const omitted = [
-      ...new Set([
-        ...passing.declared,
-        ...(rootComponent
-          ? rootComponentProps(target, (child, slot) => composition.scoped(child, slot))
-          : []),
-      ]),
-    ]
-      .map((name) => JSON.stringify(name))
-      .join(" | ");
-    const ref =
-      handle ?? (passing.refTags === undefined || own ? undefined : elementUnion(passing.refTags));
-    // A `<component is>` root's are what every tag takes, and its listeners take the event of
-    // whichever tag renders, so a listener it merges with its own takes that event (ADR-0122).
-    const bases = rootComponent
-      ? [`typeof ${target.component}`]
-      : passing.tags.map((each) => JSON.stringify(each));
-    // Tags of one interface (`h2`, `h3`) type their listeners alike.
-    const element = elementUnion(passing.tags);
-    const dom = !rootComponent && element.includes(" | ") && type("DOMAttributes");
-    const parts = [
-      dom
-        ? `Omit<${bases.map((base) => `${props}<${base}>`).join(" & ")}, ${omitted} | keyof ${dom}<${element}>>`
-        : `Omit<${bases.map((base) => `${props}<${base}>`).join(" & ")}, ${omitted}>`,
-      ...(dom ? [`Omit<${dom}<${element}>, ${domOmitted(passing.declared)}>`] : []),
-      ...(ref === undefined ? [] : [`{ ref?: ${type("Ref")}<${ref}> }`]),
-    ];
-    const parameters = generic.expose?.declared ?? "";
-    declarations.push({
-      name: interfaces.attributes,
-      exported: true,
-      code: `type ${interfaces.attributes}${parameters} = ${parts.join(" & ")};`,
-      span: component.span,
-    });
-  } else if (
-    interfaces.attributes &&
-    !composition.fallthrough &&
-    composition.refTags?.length === 1
-  ) {
-    // Nothing passes through, but a ref holds the root element (ADR-0118).
-    const props = type("ComponentPropsWithRef");
-    declarations.push({
-      name: interfaces.attributes,
-      exported: true,
-      code: `type ${interfaces.attributes} = Pick<${props}<${JSON.stringify(composition.refTags[0])}>, "ref">;`,
-      span: component.span,
-    });
-  } else if (interfaces.attributes) {
-    const members: string[] = [];
-    if (composition.fallthrough) {
-      members.push("className?: string;", `style?: ${type("CSSProperties")};`);
-    }
-    if (composition.expose) {
-      const handle = `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
-      members.push(`ref?: ${type("Ref")}<${handle}>;`);
-    } else if (composition.refTags !== undefined) {
-      members.push(`ref?: ${type("Ref")}<${elementUnion(composition.refTags)}>;`);
-    }
-    // The handle is the attributes' one member a type parameter may type.
-    declare(interfaces.attributes, members, generic.expose?.declared);
-  }
-  return declarations;
+function compositionInterfaces(plan: ReactPlan): Array<TypeDeclaration> {
+	const { composition, owner: component } = plan;
+	const type = (name: string) => plan.names.add("react", name, { type: true });
+	const declarations: Array<TypeDeclaration> = [];
+	const declare = (name: string, members: Array<string>, parameters = "") => {
+		const text = `interface ${name}${parameters} {\n${members.map((member) => `  ${member}`).join("\n")}\n}`;
+		declarations.push({ name, exported: true, code: text, span: component.span });
+	};
+	const { interfaces } = composition;
+	const generic = interfaceParameters(plan);
+	if (interfaces.models) {
+		declare(
+			interfaces.models,
+			[...composition.models.values()].flatMap(({ item, prop, event }) => {
+				const valueType = item.type?.code ?? "unknown";
+				// Without a default, an unbound model starts \`undefined\`, which a write may hand on.
+				const written = item.default || item.required ? valueType : `${valueType} | undefined`;
+				return [
+					`${prop}${item.required ? "" : "?"}: ${valueType};`,
+					`${event}?: (${PARAMETER}: ${written}) => void;`,
+				];
+			}),
+			generic.models?.declared,
+		);
+	}
+	if (interfaces.slots) {
+		const node = type("ReactNode");
+		declare(
+			interfaces.slots,
+			component.slots!.slots.map((slot) =>
+				slot.props
+					? `${slotProp(slot.name, true)}?: (props: ${slot.props.code}) => ${node};`
+					: `${slotProp(slot.name, false)}?: ${node};`,
+			),
+			generic.slots?.declared,
+		);
+	}
+	if (composition.expose && component.exposes) {
+		declare(
+			composition.expose.handle,
+			component.exposes.functions.map((id) => {
+				const { name } = plan.bindings.get(id)!;
+				const item = component.setup.find(
+					(entry) => entry.kind === "Function" && entry.binding === id,
+				);
+				const fn =
+					item?.kind === "Function" ? withEventTypes(plan, item.function, undefined) : undefined;
+				const parameters = fn ? parametersOf(fn) : "";
+				return `${name}${fn ? exposedType(fn, parameters) : "(): void"};`;
+			}),
+			generic.expose?.declared,
+		);
+	}
+	const { passing } = composition;
+	if (interfaces.attributes && passing) {
+		// The fallthrough element's own props but those the component declares (ADR-0118), with
+		// the `ref` its root element or its handle takes where that is another's. A root component's
+		// own props type it (`ComponentProps<typeof Base>`), which hold its root's attributes, but
+		// those its element sets itself: one it declares (`value: number`) is no attribute.
+		const handle =
+			composition.expose && `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
+		const [tag, ...others] = passing.tags;
+		const [refTag, ...otherRefs] = passing.refTags ?? [];
+		const own = handle === undefined && !others.length && !otherRefs.length && refTag === tag;
+		const props = type(own ? "ComponentPropsWithRef" : "ComponentPropsWithoutRef");
+		const { target } = passing;
+		const rootComponent = target.kind === "Component" && !passing.inner;
+		const omitted = [
+			...new Set([
+				...passing.declared,
+				...(rootComponent
+					? rootComponentProps(target, (child, slot) => composition.scoped(child, slot))
+					: []),
+			]),
+		]
+			.map((name) => JSON.stringify(name))
+			.join(" | ");
+		const ref =
+			handle ?? (passing.refTags === undefined || own ? undefined : elementUnion(passing.refTags));
+		// A `<component is>` root's are what every tag takes, and its listeners take the event of
+		// whichever tag renders, so a listener it merges with its own takes that event (ADR-0122).
+		const bases = rootComponent
+			? [`typeof ${target.component}`]
+			: passing.tags.map((each) => JSON.stringify(each));
+		// Tags of one interface (`h2`, `h3`) type their listeners alike.
+		const element = elementUnion(passing.tags);
+		const dom = !rootComponent && element.includes(" | ") && type("DOMAttributes");
+		const parts = [
+			dom
+				? `Omit<${bases.map((base) => `${props}<${base}>`).join(" & ")}, ${omitted} | keyof ${dom}<${element}>>`
+				: `Omit<${bases.map((base) => `${props}<${base}>`).join(" & ")}, ${omitted}>`,
+			...(dom ? [`Omit<${dom}<${element}>, ${domOmitted(passing.declared)}>`] : []),
+			...(ref === undefined ? [] : [`{ ref?: ${type("Ref")}<${ref}> }`]),
+		];
+		const parameters = generic.expose?.declared ?? "";
+		declarations.push({
+			name: interfaces.attributes,
+			exported: true,
+			code: `type ${interfaces.attributes}${parameters} = ${parts.join(" & ")};`,
+			span: component.span,
+		});
+	} else if (
+		interfaces.attributes &&
+		!composition.fallthrough &&
+		composition.refTags?.length === 1
+	) {
+		// Nothing passes through, but a ref holds the root element (ADR-0118).
+		const props = type("ComponentPropsWithRef");
+		declarations.push({
+			name: interfaces.attributes,
+			exported: true,
+			code: `type ${interfaces.attributes} = Pick<${props}<${JSON.stringify(composition.refTags[0])}>, "ref">;`,
+			span: component.span,
+		});
+	} else if (interfaces.attributes) {
+		const members: Array<string> = [];
+		if (composition.fallthrough) {
+			members.push("className?: string;", `style?: ${type("CSSProperties")};`);
+		}
+		if (composition.expose) {
+			const handle = `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
+			members.push(`ref?: ${type("Ref")}<${handle}>;`);
+		} else if (composition.refTags !== undefined) {
+			members.push(`ref?: ${type("Ref")}<${elementUnion(composition.refTags)}>;`);
+		}
+		// The handle is the attributes' one member a type parameter may type.
+		declare(interfaces.attributes, members, generic.expose?.declared);
+	}
+	return declarations;
 }
 
 /**
  * The names a `<component is>` root's `DOMAttributes` leave out (ADR-0122): its content, which
  * a component takes as `children` or not at all, and the listener props it declares as events.
  */
-function domOmitted(declared: readonly string[]): string {
-  return [
-    ...new Set([
-      "children",
-      "dangerouslySetInnerHTML",
-      ...declared.filter((name) => /^on[A-Z]/.test(name)),
-    ]),
-  ]
-    .map((name) => JSON.stringify(name))
-    .join(" | ");
+function domOmitted(declared: ReadonlyArray<string>): string {
+	return [
+		...new Set([
+			"children",
+			"dangerouslySetInnerHTML",
+			...declared.filter((name) => /^on[A-Z]/.test(name)),
+		]),
+	]
+		.map((name) => JSON.stringify(name))
+		.join(" | ");
 }
 
 /**
  * The DOM interface of the element a ref holds, or the union of the interfaces of a `<component
  * is>`'s tags, each once, where it holds whichever renders (ADR-0122).
  */
-function elementUnion(tags: readonly string[]): string {
-  return [...new Set(tags.map(elementInterface))].join(" | ");
+function elementUnion(tags: ReadonlyArray<string>): string {
+	return [...new Set(tags.map(elementInterface))].join(" | ");
 }
 
 /** The name a callback's type gives its one parameter: any name, never a keyword's. */
@@ -881,16 +902,16 @@ const PARAMETER = "value";
 
 /** A function's parameters as a type writes them: each with its annotation, `unknown` without. */
 function parametersOf(fn: FunctionCode): string {
-  return fn.parameters
-    .map((parameter, index) => {
-      // A type takes no pattern with a default (TS2371): a pattern is a placeholder's name.
-      const name =
-        parameter.name ?? (fn.parameters.length > 1 ? `${PARAMETER}${index + 1}` : PARAMETER);
-      const rest = parameter.rest ? "..." : "";
-      const optional = parameter.optional || parameter.default ? "?" : "";
-      return `${rest}${name}${optional}: ${parameter.type?.code ?? (parameter.rest ? "unknown[]" : "unknown")}`;
-    })
-    .join(", ");
+	return fn.parameters
+		.map((parameter, index) => {
+			// A type takes no pattern with a default (TS2371): a pattern is a placeholder's name.
+			const name =
+				parameter.name ?? (fn.parameters.length > 1 ? `${PARAMETER}${index + 1}` : PARAMETER);
+			const rest = parameter.rest ? "..." : "";
+			const optional = parameter.optional || parameter.default ? "?" : "";
+			return `${rest}${name}${optional}: ${parameter.type?.code ?? (parameter.rest ? "unknown[]" : "unknown")}`;
+		})
+		.join(", ");
 }
 
 /**
@@ -898,80 +919,82 @@ function parametersOf(fn: FunctionCode): string {
  * and imported under the name the component claimed. Returns nothing to print in the file.
  */
 function shareHelpers(
-  helper: NonNullable<EmitContext["helper"]>,
-  from: string,
-  plan: ReactPlan,
-  names: ReactNames,
-): string[] {
-  const { helpers } = plan;
-  const used = new Map<string, string>();
-  const use = (name: string, local: string | undefined) => {
-    if (local !== undefined) used.set(name, local);
-  };
-  use("cx", names.cx);
-  use("styleObject", names.styleObject);
-  use("listen", helpers.listen);
-  use("useOnce", helpers.once);
-  use("useNextTick", helpers.nextTick);
-  use("useModelText", helpers.modelText);
-  use("scopeAttributes", plan.composition.scope?.helper);
-  use("useDirective", helpers.directive?.hook);
-  use("useElementDirective", helpers.directive?.each);
-  use("mergeRefs", helpers.mergeRefs);
-  use("SetupPending", helpers.async?.pending);
-  use("teleport", helpers.teleport?.helper);
-  use("subscribeNothing", helpers.teleport?.subscribe);
-  use("Transition", helpers.transition?.component);
-  importShared(helper, from, plan.names, used);
-  return [];
+	helper: NonNullable<EmitContext["helper"]>,
+	from: string,
+	plan: ReactPlan,
+	names: ReactNames,
+): Array<string> {
+	const { helpers } = plan;
+	const used = new Map<string, string>();
+	const use = (name: string, local: string | undefined) => {
+		if (local !== undefined) {
+			used.set(name, local);
+		}
+	};
+	use("cx", names.cx);
+	use("styleObject", names.styleObject);
+	use("listen", helpers.listen);
+	use("useOnce", helpers.once);
+	use("useNextTick", helpers.nextTick);
+	use("useModelText", helpers.modelText);
+	use("scopeAttributes", plan.composition.scope?.helper);
+	use("useDirective", helpers.directive?.hook);
+	use("useElementDirective", helpers.directive?.each);
+	use("mergeRefs", helpers.mergeRefs);
+	use("SetupPending", helpers.async?.pending);
+	use("teleport", helpers.teleport?.helper);
+	use("subscribeNothing", helpers.teleport?.subscribe);
+	use("Transition", helpers.transition?.component);
+	importShared(helper, from, plan.names, used);
+	return [];
 }
 
 /**
  * The helpers composition keeps inline beside shared ones (R4, ADR-0121). `restAttributes` stays
  * inline too, until its sharing is decided.
  */
-function inlineCompositionHelpers(plan: ReactPlan): string[] {
-  const { helpers } = plan;
-  return [
-    ...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
-    ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
-    ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
-  ];
+function inlineCompositionHelpers(plan: ReactPlan): Array<string> {
+	const { helpers } = plan;
+	return [
+		...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
+		...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
+		...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
+	];
 }
 
 /** The inline helpers composition needs, after the component (ADR-0055). */
-function compositionHelpers(plan: ReactPlan): string[] {
-  const { helpers, names } = plan;
-  return [
-    ...(plan.composition.scope ? [scopeAttributesHelper(plan.composition.scope.helper)] : []),
-    ...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
-    ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
-    ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
-    ...(helpers.modelText
-      ? [
-          modelTextHelper(helpers.modelText, {
-            useState: names.add("react", "useState"),
-            ChangeEvent: names.add("react", "ChangeEvent", { type: true }),
-            looseToNumber: names.claim("looseToNumber"),
-          }),
-        ]
-      : []),
-  ];
+function compositionHelpers(plan: ReactPlan): Array<string> {
+	const { helpers, names } = plan;
+	return [
+		...(plan.composition.scope ? [scopeAttributesHelper(plan.composition.scope.helper)] : []),
+		...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
+		...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
+		...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
+		...(helpers.modelText
+			? [
+					modelTextHelper(helpers.modelText, {
+						useState: names.add("react", "useState"),
+						ChangeEvent: names.add("react", "ChangeEvent", { type: true }),
+						looseToNumber: names.claim("looseToNumber"),
+					}),
+				]
+			: []),
+	];
 }
 
 /** The hooks the listeners call, after the setup's: one guard per listener that runs once. */
-function hookCalls(plan: ReactPlan): string[] {
-  const { teleport } = plan.helpers;
-  return [
-    ...[...plan.onceGuards.values()].map((guard) => `const ${guard} = ${plan.helpers.once!}();`),
-    // False on the server and while the client hydrates, true after (ADR-0098): Fizz cannot
-    // render a portal, and an effect that sets state fails L5 (`react(set-state-in-effect)`).
-    ...(teleport
-      ? [
-          `const ${teleport.mounted} = ${plan.names.add("react", "useSyncExternalStore")}(${teleport.subscribe}, () => true, () => false);`,
-        ]
-      : []),
-  ];
+function hookCalls(plan: ReactPlan): Array<string> {
+	const { teleport } = plan.helpers;
+	return [
+		...[...plan.onceGuards.values()].map((guard) => `const ${guard} = ${plan.helpers.once!}();`),
+		// False on the server and while the client hydrates, true after (ADR-0098): Fizz cannot
+		// render a portal, and an effect that sets state fails L5 (`react(set-state-in-effect)`).
+		...(teleport
+			? [
+					`const ${teleport.mounted} = ${plan.names.add("react", "useSyncExternalStore")}(${teleport.subscribe}, () => true, () => false);`,
+				]
+			: []),
+	];
 }
 
 /**
@@ -980,38 +1003,46 @@ function hookCalls(plan: ReactPlan): string[] {
  * parameters' defaults, its body's statements and its returned JSX.
  */
 function compilerOptOut(
-  component: UfComponent,
-  plan: ReactPlan,
-  context: JsxContext,
-  code: ComponentCode[],
+	component: UfComponent,
+	plan: ReactPlan,
+	context: JsxContext,
+	code: Array<ComponentCode>,
 ): string | undefined {
-  const parameter = component.propsParameter;
-  const read = (parameter ? component.props : []).filter(
-    (prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
-  );
-  const defaults: ComponentCode[] = [];
-  const locals = declaredNames(code);
-  if (parameter?.form === "object") {
-    locals.add(parameter.name!);
-  } else {
-    for (const prop of read) {
-      locals.add(prop.name);
-      if (prop.default) defaults.push({ code: prop.default.code, kind: "default" });
-    }
-    for (const event of plan.events.values()) if (event.emitted) locals.add(event.local);
-  }
-  const reason = compilerBailout([...defaults, ...code], locals);
-  if (!reason) return undefined;
-  return `// React Compiler 1.0 cannot compile ${reason} yet: the component opts out of it.\n"use no memo";`;
+	const parameter = component.propsParameter;
+	const read = (parameter ? component.props : []).filter(
+		(prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
+	);
+	const defaults: Array<ComponentCode> = [];
+	const locals = declaredNames(code);
+	if (parameter?.form === "object") {
+		locals.add(parameter.name!);
+	} else {
+		for (const prop of read) {
+			locals.add(prop.name);
+			if (prop.default) {
+				defaults.push({ code: prop.default.code, kind: "default" });
+			}
+		}
+		for (const event of plan.events.values()) {
+			if (event.emitted) {
+				locals.add(event.local);
+			}
+		}
+	}
+	const reason = compilerBailout([...defaults, ...code], locals);
+	if (!reason) {
+		return undefined;
+	}
+	return `// React Compiler 1.0 cannot compile ${reason} yet: the component opts out of it.\n"use no memo";`;
 }
 
 /** The local names of the hooks `useNextTick` calls. */
 function nextTickHooks(plan: ReactPlan): NextTickHooks {
-  return {
-    useRef: plan.names.add("react", "useRef"),
-    useReducer: plan.names.add("react", "useReducer"),
-    useEffect: plan.names.add("react", "useEffect"),
-  };
+	return {
+		useRef: plan.names.add("react", "useRef"),
+		useReducer: plan.names.add("react", "useReducer"),
+		useEffect: plan.names.add("react", "useEffect"),
+	};
 }
 
 /**
@@ -1019,20 +1050,22 @@ function nextTickHooks(plan: ReactPlan): NextTickHooks {
  * component declares, `onChange?: (value: number) => void`, with the payload's named members as
  * the listener's parameters. The component's parameter is typed with the props' type and it.
  */
-function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
-  const { emits } = plan.owner;
-  if (!emits || !plan.eventsInterface) return [];
-  const members = emits.events.map((event) => {
-    const parameters = event.parameters
-      .map(
-        (parameter) => `${parameter.name}${parameter.optional ? "?" : ""}: ${parameter.type.code}`,
-      )
-      .join(", ");
-    return `  ${plan.events.get(event.name)!.prop}?: (${parameters}) => void;`;
-  });
-  const parameters = interfaceParameters(plan).events?.declared ?? "";
-  const code = `interface ${plan.eventsInterface}${parameters} {\n${members.join("\n")}\n}`;
-  return [{ name: plan.eventsInterface, exported: true, code, span: emits.span }];
+function eventsInterface(plan: ReactPlan): Array<TypeDeclaration> {
+	const { emits } = plan.owner;
+	if (!emits || !plan.eventsInterface) {
+		return [];
+	}
+	const members = emits.events.map((event) => {
+		const parameters = event.parameters
+			.map(
+				(parameter) => `${parameter.name}${parameter.optional ? "?" : ""}: ${parameter.type.code}`,
+			)
+			.join(", ");
+		return `  ${plan.events.get(event.name)!.prop}?: (${parameters}) => void;`;
+	});
+	const parameters = interfaceParameters(plan).events?.declared ?? "";
+	const code = `interface ${plan.eventsInterface}${parameters} {\n${members.join("\n")}\n}`;
+	return [{ name: plan.eventsInterface, exported: true, code, span: emits.span }];
 }
 
 /**
@@ -1043,52 +1076,64 @@ function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
  * takes none.
  */
 function interfaceParameters(
-  plan: ReactPlan,
+	plan: ReactPlan,
 ): Partial<Record<"events" | "models" | "slots" | "expose", { declared: string; passed: string }>> {
-  const { owner: component, composition } = plan;
-  const parameters = component.typeParameters ?? [];
-  if (!parameters.length) return {};
-  const written = (texts: readonly (TypeText | undefined)[]) => {
-    const named = new Set<string>();
-    const read = (text: TypeText | undefined) => {
-      if (text) for (const name of typeNames(text)) named.add(name);
-    };
-    texts.forEach(read);
-    let kept: TypeParameter[] = [];
-    while (true) {
-      const next = parameters.filter(({ name }) => named.has(name));
-      if (next.length === kept.length) break;
-      kept = next;
-      for (const parameter of kept) {
-        read(parameter.constraint);
-        read(parameter.default);
-      }
-    }
-    if (!kept.length) return undefined;
-    return {
-      declared: `<${kept.map(typeParameterText).join(", ")}>`,
-      passed: `<${kept.map(({ name }) => name).join(", ")}>`,
-    };
-  };
-  const exposed = component.exposes?.functions.flatMap((id) => {
-    const item = component.setup.find((entry) => entry.kind === "Function" && entry.binding === id);
-    if (item?.kind !== "Function") return [];
-    return [...item.function.parameters.map(({ type }) => type), item.function.returnType];
-  });
-  return {
-    events: written(
-      component.emits?.events.flatMap((event) => event.parameters.map(({ type }) => type)) ?? [],
-    ),
-    models: written([...composition.models.values()].map(({ item }) => item.type)),
-    slots: written(component.slots?.slots.map((slot) => slot.props) ?? []),
-    expose: written(composition.expose ? (exposed ?? []) : []),
-  };
+	const { owner: component, composition } = plan;
+	const parameters = component.typeParameters ?? [];
+	if (!parameters.length) {
+		return {};
+	}
+	const written = (texts: ReadonlyArray<TypeText | undefined>) => {
+		const named = new Set<string>();
+		const read = (text: TypeText | undefined) => {
+			if (text) {
+				for (const name of typeNames(text)) {
+					named.add(name);
+				}
+			}
+		};
+		texts.forEach(read);
+		let kept: Array<TypeParameter> = [];
+		while (true) {
+			const next = parameters.filter(({ name }) => named.has(name));
+			if (next.length === kept.length) {
+				break;
+			}
+			kept = next;
+			for (const parameter of kept) {
+				read(parameter.constraint);
+				read(parameter.default);
+			}
+		}
+		if (!kept.length) {
+			return undefined;
+		}
+		return {
+			declared: `<${kept.map(typeParameterText).join(", ")}>`,
+			passed: `<${kept.map(({ name }) => name).join(", ")}>`,
+		};
+	};
+	const exposed = component.exposes?.functions.flatMap((id) => {
+		const item = component.setup.find((entry) => entry.kind === "Function" && entry.binding === id);
+		if (item?.kind !== "Function") {
+			return [];
+		}
+		return [...item.function.parameters.map(({ type }) => type), item.function.returnType];
+	});
+	return {
+		events: written(
+			component.emits?.events.flatMap((event) => event.parameters.map(({ type }) => type)) ?? [],
+		),
+		models: written([...composition.models.values()].map(({ item }) => item.type)),
+		slots: written(component.slots?.slots.map((slot) => slot.props) ?? []),
+		expose: written(composition.expose ? (exposed ?? []) : []),
+	};
 }
 
 /** A type parameter as its component declares it, `T extends Item = Item` (ADR-0068). */
 function typeParameterText(parameter: TypeParameter): string {
-  const constraint = parameter.constraint ? ` extends ${parameter.constraint.code}` : "";
-  return `${parameter.name}${constraint}${parameter.default ? ` = ${parameter.default.code}` : ""}`;
+	const constraint = parameter.constraint ? ` extends ${parameter.constraint.code}` : "";
+	return `${parameter.name}${constraint}${parameter.default ? ` = ${parameter.default.code}` : ""}`;
 }
 
 /**
@@ -1099,92 +1144,111 @@ function typeParameterText(parameter: TypeParameter): string {
  * (or `_` and the object's name): an unused binding, or an empty pattern, fails L5.
  */
 function propsParameters(
-  component: UfComponent,
-  context: JsxContext,
-  plan: ReactPlan,
-  composer: ReactComposer,
-): Parameter[] {
-  const parameter = component.propsParameter;
-  const { names, composition } = plan;
-  const own = propsType(plan);
-  const { scope } = composition;
-  // A component without props still takes the scope attributes of the styled parents that
-  // render it, as an object (ADR-0063).
-  const outer = plan.helpers.async;
-  if (own === undefined && !outer) return [];
-  // The resolved component of a setup that awaits takes its setup's promise too (ADR-0101).
-  const typeCode = outer
-    ? [own === "object" ? undefined : own, resolvedPropsType(plan)]
-        .filter((part) => part !== undefined)
-        .join(" & ")
-    : own!;
-  const type = context.placeholders.type(typeCode);
-  const read = (parameter ? component.props : []).filter(
-    (prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
-  );
-  // What composition reads of the props (ADR-0054), each as `[prop, local, default]`.
-  const composed: [string, string, Expression?][] = [];
-  for (const model of composition.models.values()) {
-    if (!model.local && !context.referenced.has(model.item.binding)) continue;
-    composed.push([model.prop, model.propLocal, model.local ? undefined : model.item.default]);
-    if (model.calls) composed.push([model.event, model.eventLocal]);
-  }
-  for (const slot of composition.slots.values()) {
-    if (slot.read) composed.push([slot.prop, slot.local]);
-  }
-  const { fallthrough, expose, passing } = composition;
-  if (fallthrough)
-    composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
-  if (expose) composed.push(["ref", expose.ref]);
-  // The consumer's `ref` the root takes where nothing passes through (ADR-0118).
-  if (!passing && composer.consumerRef !== undefined) composed.push(["ref", composer.consumerRef]);
-  if (passing && parameter?.form !== "object") {
-    const taken = new Set([
-      ...read.map((prop) => prop.name),
-      ...[...plan.events.values()].filter((event) => event.emitted).map((event) => event.prop),
-      ...composed.map(([prop]) => prop),
-    ]);
-    composed.push(...passedProps(plan, composer, taken));
-  }
-  // The rest the roots pick their styled parents' scope attributes out of (ADR-0063), or what
-  // passes through to the fallthrough node (ADR-0118).
-  const rest =
-    parameter?.form === "object" ? undefined : (passing?.rest ?? (scope ? scope.props : undefined));
-  if (parameter?.form === "object") {
-    // A name `_` and more says it is unused already: it stays the source's (oxlint still
-    // reports a bare `_`). The resolved component of an async setup reads its promise off it.
-    const emitted = [...plan.events.values()].some((event) => event.emitted);
-    const name =
-      read.length || emitted || composed.length || scope || outer || /^_./.test(parameter.name!)
-        ? parameter.name!
-        : names.claim(`_${parameter.name!}`);
-    return [js.bindingIdentifier(name, type)];
-  }
-  const start = (binding: string) => bindingOf(component, binding).span.start;
-  const properties: BindingProperty[] = read
-    .toSorted((a, b) => start(a.binding!) - start(b.binding!))
-    .map((prop) =>
-      js.bindingProperty(
-        prop.name,
-        prop.default && context.placeholders.expression(prop.default.code),
-      ),
-    );
-  for (const event of plan.events.values()) {
-    if (event.emitted) properties.push(renamedProperty(event.prop, event.local));
-  }
-  for (const [prop, local, initial] of composed) {
-    properties.push(
-      renamedProperty(prop, local, initial && context.placeholders.expression(initial.code)),
-    );
-  }
-  // The setup's promise, and the flag that only re-renders the boundary, kept out of the rest
-  // the scope attributes are picked from (ADR-0101).
-  if (outer) {
-    properties.push(js.bindingProperty(outer.promise));
-    if (rest) properties.push(renamedProperty(outer.settled, names.claim(`_${outer.settled}`)));
-  }
-  if (!properties.length) return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
-  return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
+	component: UfComponent,
+	context: JsxContext,
+	plan: ReactPlan,
+	composer: ReactComposer,
+): Array<Parameter> {
+	const parameter = component.propsParameter;
+	const { names, composition } = plan;
+	const own = propsType(plan);
+	const { scope } = composition;
+	// A component without props still takes the scope attributes of the styled parents that
+	// render it, as an object (ADR-0063).
+	const outer = plan.helpers.async;
+	if (own === undefined && !outer) {
+		return [];
+	}
+	// The resolved component of a setup that awaits takes its setup's promise too (ADR-0101).
+	const typeCode = outer
+		? [own === "object" ? undefined : own, resolvedPropsType(plan)]
+				.filter((part) => part !== undefined)
+				.join(" & ")
+		: own!;
+	const type = context.placeholders.type(typeCode);
+	const read = (parameter ? component.props : []).filter(
+		(prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
+	);
+	// What composition reads of the props (ADR-0054), each as `[prop, local, default]`.
+	const composed: Array<[string, string, Expression?]> = [];
+	for (const model of composition.models.values()) {
+		if (!model.local && !context.referenced.has(model.item.binding)) {
+			continue;
+		}
+		composed.push([model.prop, model.propLocal, model.local ? undefined : model.item.default]);
+		if (model.calls) {
+			composed.push([model.event, model.eventLocal]);
+		}
+	}
+	for (const slot of composition.slots.values()) {
+		if (slot.read) {
+			composed.push([slot.prop, slot.local]);
+		}
+	}
+	const { fallthrough, expose, passing } = composition;
+	if (fallthrough) {
+		composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
+	}
+	if (expose) {
+		composed.push(["ref", expose.ref]);
+	}
+	// The consumer's `ref` the root takes where nothing passes through (ADR-0118).
+	if (!passing && composer.consumerRef !== undefined) {
+		composed.push(["ref", composer.consumerRef]);
+	}
+	if (passing && parameter?.form !== "object") {
+		const taken = new Set([
+			...read.map((prop) => prop.name),
+			...[...plan.events.values()].filter((event) => event.emitted).map((event) => event.prop),
+			...composed.map(([prop]) => prop),
+		]);
+		composed.push(...passedProps(plan, composer, taken));
+	}
+	// The rest the roots pick their styled parents' scope attributes out of (ADR-0063), or what
+	// passes through to the fallthrough node (ADR-0118).
+	const rest =
+		parameter?.form === "object" ? undefined : (passing?.rest ?? (scope ? scope.props : undefined));
+	if (parameter?.form === "object") {
+		// A name `_` and more says it is unused already: it stays the source's (oxlint still
+		// reports a bare `_`). The resolved component of an async setup reads its promise off it.
+		const emitted = [...plan.events.values()].some((event) => event.emitted);
+		const name =
+			read.length || emitted || composed.length || scope || outer || /^_./.test(parameter.name!)
+				? parameter.name!
+				: names.claim(`_${parameter.name!}`);
+		return [js.bindingIdentifier(name, type)];
+	}
+	const start = (binding: string) => bindingOf(component, binding).span.start;
+	const properties: Array<BindingProperty> = read
+		.toSorted((a, b) => start(a.binding!) - start(b.binding!))
+		.map((prop) =>
+			js.bindingProperty(
+				prop.name,
+				prop.default && context.placeholders.expression(prop.default.code),
+			),
+		);
+	for (const event of plan.events.values()) {
+		if (event.emitted) {
+			properties.push(renamedProperty(event.prop, event.local));
+		}
+	}
+	for (const [prop, local, initial] of composed) {
+		properties.push(
+			renamedProperty(prop, local, initial && context.placeholders.expression(initial.code)),
+		);
+	}
+	// The setup's promise, and the flag that only re-renders the boundary, kept out of the rest
+	// the scope attributes are picked from (ADR-0101).
+	if (outer) {
+		properties.push(js.bindingProperty(outer.promise));
+		if (rest) {
+			properties.push(renamedProperty(outer.settled, names.claim(`_${outer.settled}`)));
+		}
+	}
+	if (!properties.length) {
+		return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
+	}
+	return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
 }
 
 /**
@@ -1196,33 +1260,37 @@ function propsParameters(
  * root takes it apart from the rest.
  */
 function passedProps(
-  plan: ReactPlan,
-  composer: ReactComposer,
-  taken: ReadonlySet<string>,
-): [string, string][] {
-  const { passing, slots } = plan.composition;
-  if (!passing) return [];
-  // `children` is never passed but as a slot's: the type leaves it out.
-  const children = [...slots.values()].some((slot) => slot.prop === "children");
-  const unread = new Set(passing.declared.filter((name) => name !== "children" || children));
-  const { target } = passing;
-  if (target.kind === "Element") {
-    for (const attribute of target.attributes) {
-      if (attribute.kind !== "Model") continue;
-      const box = ["checkbox", "checkbox-group", "radio"].includes(attribute.control);
-      unread.add(box ? "checked" : "value");
-    }
-  }
-  const unused: [string, string][] = [...unread]
-    .filter((name) => !taken.has(name) && !composer.consumerListeners.has(name))
-    .map((name) => [name, plan.names.claim(`_${name}`)]);
-  return [
-    ...unused,
-    ...composer.consumerListeners,
-    ...(composer.consumerRef === undefined
-      ? []
-      : [["ref", composer.consumerRef] as [string, string]]),
-  ];
+	plan: ReactPlan,
+	composer: ReactComposer,
+	taken: ReadonlySet<string>,
+): Array<[string, string]> {
+	const { passing, slots } = plan.composition;
+	if (!passing) {
+		return [];
+	}
+	// `children` is never passed but as a slot's: the type leaves it out.
+	const children = [...slots.values()].some((slot) => slot.prop === "children");
+	const unread = new Set(passing.declared.filter((name) => name !== "children" || children));
+	const { target } = passing;
+	if (target.kind === "Element") {
+		for (const attribute of target.attributes) {
+			if (attribute.kind !== "Model") {
+				continue;
+			}
+			const box = ["checkbox", "checkbox-group", "radio"].includes(attribute.control);
+			unread.add(box ? "checked" : "value");
+		}
+	}
+	const unused: Array<[string, string]> = [...unread]
+		.filter((name) => !taken.has(name) && !composer.consumerListeners.has(name))
+		.map((name) => [name, plan.names.claim(`_${name}`)]);
+	return [
+		...unused,
+		...composer.consumerListeners,
+		...(composer.consumerRef === undefined
+			? []
+			: [["ref", composer.consumerRef] as [string, string]]),
+	];
 }
 
 /**
@@ -1231,15 +1299,15 @@ function passedProps(
  * them again nor adds the root's native listeners again as it renders (ADR-0118).
  */
 function mergedRefDeclaration(plan: ReactPlan, composer: ReactComposer): string {
-  const { local, own } = composer.mergedRef!;
-  const consumer = composer.consumerRef!;
-  const useMemo = plan.names.add("react", "useMemo");
-  const merge = plan.helpers.mergeRefs!;
-  // A `<component is>` root's ref is the consumer's alone, as a callback (ADR-0122).
-  if (own === undefined) {
-    return `const ${local} = ${useMemo}(() => ${merge}(${consumer}), [${consumer}]);`;
-  }
-  return `const ${local} = ${useMemo}(() => ${merge}(${own}, ${consumer}), [${own}, ${consumer}]);`;
+	const { local, own } = composer.mergedRef!;
+	const consumer = composer.consumerRef!;
+	const useMemo = plan.names.add("react", "useMemo");
+	const merge = plan.helpers.mergeRefs!;
+	// A `<component is>` root's ref is the consumer's alone, as a callback (ADR-0122).
+	if (own === undefined) {
+		return `const ${local} = ${useMemo}(() => ${merge}(${consumer}), [${consumer}]);`;
+	}
+	return `const ${local} = ${useMemo}(() => ${merge}(${own}, ${consumer}), [${own}, ${consumer}]);`;
 }
 
 /**
@@ -1248,37 +1316,41 @@ function mergedRefDeclaration(plan: ReactPlan, composer: ReactComposer): string 
  * off the object, and the locals of the consumer's `class`, `style`, listeners and `ref`.
  */
 function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | undefined {
-  const { passing, fallthrough, expose } = plan.composition;
-  const parameter = plan.owner.propsParameter;
-  if (parameter?.form !== "object") return undefined;
-  // Where nothing else passes, the consumer's `ref` alone: React Compiler reads `props.ref` as
-  // a ref's value read during render.
-  if (!passing) {
-    const ref = composer.consumerRef;
-    return ref === undefined
-      ? undefined
-      : `const { ${ref === "ref" ? ref : `ref: ${ref}`} } = ${parameter.name!};`;
-  }
-  const entries: [string, string][] = [
-    ...(fallthrough
-      ? ([
-          ["className", fallthrough.className],
-          ["style", fallthrough.style],
-        ] as [string, string][])
-      : []),
-    ...passedProps(plan, composer, new Set(["className", "style"])),
-  ];
-  if (expose) entries.push(["ref", plan.names.claim("_ref")]);
-  // The setup's promise and the flag the resolved component of an async setup takes (ADR-0101).
-  const outer = plan.helpers.async;
-  if (outer) {
-    entries.push(
-      [outer.promise, plan.names.claim(`_${outer.promise}`)],
-      [outer.settled, plan.names.claim(`_${outer.settled}`)],
-    );
-  }
-  const pattern = entries.map(([prop, local]) => (prop === local ? prop : `${prop}: ${local}`));
-  return `const { ${[...pattern, `...${passing.rest}`].join(", ")} } = ${parameter.name!};`;
+	const { passing, fallthrough, expose } = plan.composition;
+	const parameter = plan.owner.propsParameter;
+	if (parameter?.form !== "object") {
+		return undefined;
+	}
+	// Where nothing else passes, the consumer's `ref` alone: React Compiler reads `props.ref` as
+	// a ref's value read during render.
+	if (!passing) {
+		const ref = composer.consumerRef;
+		return ref === undefined
+			? undefined
+			: `const { ${ref === "ref" ? ref : `ref: ${ref}`} } = ${parameter.name!};`;
+	}
+	const entries: Array<[string, string]> = [
+		...(fallthrough
+			? ([
+					["className", fallthrough.className],
+					["style", fallthrough.style],
+				] as Array<[string, string]>)
+			: []),
+		...passedProps(plan, composer, new Set(["className", "style"])),
+	];
+	if (expose) {
+		entries.push(["ref", plan.names.claim("_ref")]);
+	}
+	// The setup's promise and the flag the resolved component of an async setup takes (ADR-0101).
+	const outer = plan.helpers.async;
+	if (outer) {
+		entries.push(
+			[outer.promise, plan.names.claim(`_${outer.promise}`)],
+			[outer.settled, plan.names.claim(`_${outer.settled}`)],
+		);
+	}
+	const pattern = entries.map(([prop, local]) => (prop === local ? prop : `${prop}: ${local}`));
+	return `const { ${[...pattern, `...${passing.rest}`].join(", ")} } = ${parameter.name!};`;
 }
 
 /**
@@ -1287,19 +1359,19 @@ function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | u
  * the styled parents that render it (ADR-0063), and none where it takes nothing.
  */
 function propsType(plan: ReactPlan): string | undefined {
-  const parameter = plan.owner.propsParameter;
-  const { slots, models, attributes } = plan.composition.interfaces;
-  const generic = interfaceParameters(plan);
-  const typeCode = [
-    parameter?.type.code,
-    plan.eventsInterface && `${plan.eventsInterface}${generic.events?.passed ?? ""}`,
-    models && `${models}${generic.models?.passed ?? ""}`,
-    slots && `${slots}${generic.slots?.passed ?? ""}`,
-    attributes && `${attributes}${generic.expose?.passed ?? ""}`,
-  ]
-    .filter((part) => part !== undefined)
-    .join(" & ");
-  return typeCode || (plan.composition.scope ? "object" : undefined);
+	const parameter = plan.owner.propsParameter;
+	const { slots, models, attributes } = plan.composition.interfaces;
+	const generic = interfaceParameters(plan);
+	const typeCode = [
+		parameter?.type.code,
+		plan.eventsInterface && `${plan.eventsInterface}${generic.events?.passed ?? ""}`,
+		models && `${models}${generic.models?.passed ?? ""}`,
+		slots && `${slots}${generic.slots?.passed ?? ""}`,
+		attributes && `${attributes}${generic.expose?.passed ?? ""}`,
+	]
+		.filter((part) => part !== undefined)
+		.join(" & ");
+	return typeCode || (plan.composition.scope ? "object" : undefined);
 }
 
 /**
@@ -1307,106 +1379,110 @@ function propsType(plan: ReactPlan): string | undefined {
  * with its default where it has one (`expanded: open = false`).
  */
 function renamedProperty(
-  key: string,
-  local: string,
-  initial?: ReturnType<typeof js.identifier>,
+	key: string,
+	local: string,
+	initial?: ReturnType<typeof js.identifier>,
 ): BindingProperty {
-  if (key === local) return js.bindingProperty(key, initial);
-  const property = js.bindingProperty(key);
-  const value = js.bindingIdentifier(local);
-  return {
-    ...property,
-    shorthand: false,
-    value: initial ? js.assignmentPattern(value, initial) : value,
-  };
+	if (key === local) {
+		return js.bindingProperty(key, initial);
+	}
+	const property = js.bindingProperty(key);
+	const value = js.bindingIdentifier(local);
+	return {
+		...property,
+		shorthand: false,
+		value: initial ? js.assignmentPattern(value, initial) : value,
+	};
 }
 
 /** {@link forReact} over the render root: an element, or a fragment's roots. */
 function rootForReact(
-  root: ElementNode | FragmentNode,
-  context: JsxContext,
-  plan: ReactPlan,
+	root: ElementNode | FragmentNode,
+	context: JsxContext,
+	plan: ReactPlan,
 ): ElementNode | FragmentNode {
-  if (root.kind === "Element") return forReact(root, context, plan);
-  return {
-    ...root,
-    children: placed(
-      root.children.map((child) => childForReact(child, context, plan)),
-      context,
-    ),
-  };
+	if (root.kind === "Element") {
+		return forReact(root, context, plan);
+	}
+	return {
+		...root,
+		children: placed(
+			root.children.map((child) => childForReact(child, context, plan)),
+			context,
+		),
+	};
 }
 
 /** Children as their parent prints them, their keyed conditionals placed (`placeConditionals`). */
-function placed(children: RenderNode[], context: JsxContext): RenderNode[] {
-  placeConditionals(children, context.module);
-  return children;
+function placed(children: Array<RenderNode>, context: JsxContext): Array<RenderNode> {
+	placeConditionals(children, context.module);
+	return children;
 }
 
 /** {@link forReact} over a node, inside conditionals, lists, and composition's content too. */
 function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): RenderNode {
-  const children = (nodes: readonly RenderNode[]) =>
-    placed(
-      nodes.map((child) => childForReact(child, context, plan)),
-      context,
-    );
-  switch (node.kind) {
-    case "Element":
-      return forReact(node, context, plan);
-    case "If":
-      return {
-        ...node,
-        branches: node.branches.map((branch) => ({
-          ...branch,
-          children: branch.children.map((child) => childForReact(child, context, plan)),
-        })),
-      };
-    case "For":
-      return {
-        ...node,
-        body:
-          node.body.kind === "Element"
-            ? forReact(node.body, context, plan)
-            : componentForReact(node.body, context, plan),
-      };
-    case "Component":
-      return componentForReact(node, context, plan);
-    case "SlotOutlet":
-      return { ...node, fallback: children(node.fallback) };
-    case "Dynamic":
-      return {
-        ...node,
-        children: children(node.children),
-        ...(node.fills
-          ? { fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)) }
-          : {}),
-      };
-    case "Teleport":
-    case "Transition":
-      return { ...node, children: children(node.children) };
-    case "Text":
-    case "Interpolation":
-      return node;
-    default:
-      return node satisfies never;
-  }
+	const children = (nodes: ReadonlyArray<RenderNode>) =>
+		placed(
+			nodes.map((child) => childForReact(child, context, plan)),
+			context,
+		);
+	switch (node.kind) {
+		case "Element":
+			return forReact(node, context, plan);
+		case "If":
+			return {
+				...node,
+				branches: node.branches.map((branch) => ({
+					...branch,
+					children: branch.children.map((child) => childForReact(child, context, plan)),
+				})),
+			};
+		case "For":
+			return {
+				...node,
+				body:
+					node.body.kind === "Element"
+						? forReact(node.body, context, plan)
+						: componentForReact(node.body, context, plan),
+			};
+		case "Component":
+			return componentForReact(node, context, plan);
+		case "SlotOutlet":
+			return { ...node, fallback: children(node.fallback) };
+		case "Dynamic":
+			return {
+				...node,
+				children: children(node.children),
+				...(node.fills
+					? { fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)) }
+					: {}),
+			};
+		case "Teleport":
+		case "Transition":
+			return { ...node, children: children(node.children) };
+		case "Text":
+		case "Interpolation":
+			return node;
+		default:
+			return node satisfies never;
+	}
 }
 
 /** A component with its fills as React passes them ({@link fillForReact}). */
 function componentForReact(
-  node: ComponentNode,
-  context: JsxContext,
-  plan: ReactPlan,
+	node: ComponentNode,
+	context: JsxContext,
+	plan: ReactPlan,
 ): ComponentNode {
-  const children = (nodes: readonly RenderNode[]) =>
-    placed(
-      nodes.map((child) => childForReact(child, context, plan)),
-      context,
-    );
-  return {
-    ...node,
-    fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)),
-  };
+	const children = (nodes: ReadonlyArray<RenderNode>) =>
+		placed(
+			nodes.map((child) => childForReact(child, context, plan)),
+			context,
+		);
+	return {
+		...node,
+		fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)),
+	};
 }
 
 /**
@@ -1415,37 +1491,37 @@ function componentForReact(
  * children as content, never as a `children` prop. A scoped one stays a render prop.
  */
 function fillForReact(
-  fill: SlotFill,
-  node: ComponentNode | DynamicNode,
-  context: JsxContext,
-  plan: ReactPlan,
-  children: (nodes: readonly RenderNode[]) => RenderNode[],
+	fill: SlotFill,
+	node: ComponentNode | DynamicNode,
+	context: JsxContext,
+	plan: ReactPlan,
+	children: (nodes: ReadonlyArray<RenderNode>) => Array<RenderNode>,
 ): SlotFill {
-  const own =
-    fill.forward && context.component.slots?.slots.find((slot) => slot.name === fill.forward);
-  if (fill.slot === "default" && own && !own.props) {
-    const { forward: _forward, ...rest } = fill;
-    return {
-      ...rest,
-      children: [{ kind: "SlotOutlet", slot: own.name, fallback: [], span: fill.span }],
-    };
-  }
-  const component =
-    node.kind === "Component"
-      ? node.component
-      : node.candidates.find((candidate) => candidate.kind === "Component")?.component;
-  // A scoped default slot filled without a parameter is a render prop all the same: a parameter
-  // with no name marks it, so the printer passes it as one (`fillAttribute`).
-  if (
-    fill.slot === "default" &&
-    !fill.parameter &&
-    !fill.forward &&
-    component !== undefined &&
-    plan.composition.scoped(component, "default")
-  ) {
-    return { ...fill, parameter: { span: fill.span }, children: children(fill.children) };
-  }
-  return { ...fill, children: children(fill.children) };
+	const own =
+		fill.forward && context.component.slots?.slots.find((slot) => slot.name === fill.forward);
+	if (fill.slot === "default" && own && !own.props) {
+		const { forward: _forward, ...rest } = fill;
+		return {
+			...rest,
+			children: [{ kind: "SlotOutlet", slot: own.name, fallback: [], span: fill.span }],
+		};
+	}
+	const component =
+		node.kind === "Component"
+			? node.component
+			: node.candidates.find((candidate) => candidate.kind === "Component")?.component;
+	// A scoped default slot filled without a parameter is a render prop all the same: a parameter
+	// with no name marks it, so the printer passes it as one (`fillAttribute`).
+	if (
+		fill.slot === "default" &&
+		!fill.parameter &&
+		!fill.forward &&
+		component !== undefined &&
+		plan.composition.scoped(component, "default")
+	) {
+		return { ...fill, parameter: { span: fill.span }, children: children(fill.children) };
+	}
+	return { ...fill, children: children(fill.children) };
 }
 
 /**
@@ -1459,29 +1535,31 @@ function fillForReact(
  * compiler).
  */
 function forReact(original: ElementNode, context: JsxContext, plan: ReactPlan): ElementNode {
-  const rest = restTargets.get(plan);
-  const node = rest?.node === original ? { ...original, attributes: rest.attributes } : original;
-  if (node.tag === "title") return { ...node, children: titleChildren(node.children, context) };
-  if (node.tag !== "textarea" || node.children.length === 0) {
-    return {
-      ...node,
-      children: placed(
-        node.children.map((child) => childForReact(child, context, plan)),
-        context,
-      ),
-    };
-  }
-  const texts = node.children.filter((child): child is TextNode => child.kind === "Text");
-  if (texts.length !== node.children.length) {
-    throw new Error("A <textarea> holds only text: the analyser rejects anything else (UF3003).");
-  }
-  const content: Attribute = {
-    kind: "Static",
-    name: "value",
-    value: texts.map((text) => text.value).join(""),
-    span: { start: texts[0]!.span.start, end: texts.at(-1)!.span.end },
-  };
-  return { ...node, attributes: [...node.attributes, content], children: [] };
+	const rest = restTargets.get(plan);
+	const node = rest?.node === original ? { ...original, attributes: rest.attributes } : original;
+	if (node.tag === "title") {
+		return { ...node, children: titleChildren(node.children, context) };
+	}
+	if (node.tag !== "textarea" || node.children.length === 0) {
+		return {
+			...node,
+			children: placed(
+				node.children.map((child) => childForReact(child, context, plan)),
+				context,
+			),
+		};
+	}
+	const texts = node.children.filter((child): child is TextNode => child.kind === "Text");
+	if (texts.length !== node.children.length) {
+		throw new Error("A <textarea> holds only text: the analyser rejects anything else (UF3003).");
+	}
+	const content: Attribute = {
+		kind: "Static",
+		name: "value",
+		value: texts.map((text) => text.value).join(""),
+		span: { start: texts[0]!.span.start, end: texts.at(-1)!.span.end },
+	};
+	return { ...node, attributes: [...node.attributes, content], children: [] };
 }
 
 export default react;

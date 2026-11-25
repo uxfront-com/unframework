@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Tag from "./Tag.uf.tsx";
 
 describeTargets("styles/pseudo-elements", () => {
-  it("renders the tag between its two pseudo-elements", async () => {
-    const view = await mountScenario(Tag, "design");
-    await view.expectParity("design");
-    await expect.element(view.getByText("design")).toBeVisible();
-  });
+	it("renders the tag between its two pseudo-elements", async () => {
+		const view = await mountScenario(Tag, "design");
+		await view.expectParity("design");
+		await expect.element(view.getByText("design")).toBeVisible();
+	});
 });

@@ -8,5 +8,5 @@ const high = ref(10);
 </script>
 
 <template>
-  <PriceRange v-model:min="low" v-model:max="high" label="Price" />
+	<PriceRange v-model:min="low" v-model:max="high" label="Price" />
 </template>

@@ -1,4 +1,4 @@
 {
-  "description": "A ref on a component that exposes nothing holds its root element, beside the component's own template ref on it.",
-  "main": "Profile.uf.tsx"
+	"description": "A ref on a component that exposes nothing holds its root element, beside the component's own template ref on it.",
+	"main": "Profile.uf.tsx"
 }

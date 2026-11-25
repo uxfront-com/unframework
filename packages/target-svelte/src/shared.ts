@@ -6,19 +6,19 @@
 import type { EmitContext } from "@unframework.dev/codegen";
 
 import {
-  mergeStyleHelper,
-  modelTextHelper,
-  onceHelper,
-  scopeAttributesHelper,
-  styleTextHelper,
-  teleportHelper,
-  transitionHelpers,
+	mergeStyleHelper,
+	modelTextHelper,
+	onceHelper,
+	scopeAttributesHelper,
+	styleTextHelper,
+	teleportHelper,
+	transitionHelpers,
 } from "./script.ts";
 import type { SharedHelper } from "./script.ts";
 
 /** Exports the declaration of `name` in a helper's code: `function once<` → `export function once<`. */
 function exported(code: string, name: string): string {
-  return code.replace(new RegExp(`^function ${name}\\b`, "m"), `export function ${name}`);
+	return code.replace(new RegExp(`^function ${name}\\b`, "m"), `export function ${name}`);
 }
 
 /**
@@ -30,35 +30,35 @@ function exported(code: string, name: string): string {
  * and `out:` reach an element, so sharing it gives no component another's entries (R2).
  */
 const MODULES: Readonly<Record<SharedHelper, { file: string; code: string }>> = {
-  once: { file: "once.ts", code: exported(onceHelper("once"), "once") },
-  modelText: {
-    file: "modelText.svelte.ts",
-    code: `import { on } from "svelte/events";\n\n${exported(modelTextHelper("modelText", "on"), "modelText")}`,
-  },
-  mergeStyle: {
-    file: "mergeStyle.ts",
-    code: exported(mergeStyleHelper("mergeStyle"), "mergeStyle"),
-  },
-  styleText: { file: "styleText.ts", code: exported(styleTextHelper("styleText"), "styleText") },
-  scopeAttributes: {
-    file: "scopeAttributes.ts",
-    code: exported(scopeAttributesHelper("scopeAttributes"), "scopeAttributes"),
-  },
-  teleport: { file: "teleport.ts", code: exported(teleportHelper("teleport"), "teleport") },
-  enter: { file: "transition.ts", code: transitionModule() },
-  leave: { file: "transition.ts", code: transitionModule() },
+	once: { file: "once.ts", code: exported(onceHelper("once"), "once") },
+	modelText: {
+		file: "modelText.svelte.ts",
+		code: `import { on } from "svelte/events";\n\n${exported(modelTextHelper("modelText", "on"), "modelText")}`,
+	},
+	mergeStyle: {
+		file: "mergeStyle.ts",
+		code: exported(mergeStyleHelper("mergeStyle"), "mergeStyle"),
+	},
+	styleText: { file: "styleText.ts", code: exported(styleTextHelper("styleText"), "styleText") },
+	scopeAttributes: {
+		file: "scopeAttributes.ts",
+		code: exported(scopeAttributesHelper("scopeAttributes"), "scopeAttributes"),
+	},
+	teleport: { file: "teleport.ts", code: exported(teleportHelper("teleport"), "teleport") },
+	enter: { file: "transition.ts", code: transitionModule() },
+	leave: { file: "transition.ts", code: transitionModule() },
 };
 
 /** The transition module's text: both phases, exported, over the classes and runs they share. */
 function transitionModule(): string {
-  const code = transitionHelpers({
-    enter: "enter",
-    leave: "leave",
-    classes: "transitionClasses",
-    runs: "transitionRuns",
-    config: "TransitionConfig",
-  }).join("\n\n");
-  return `import type { TransitionConfig } from "svelte/transition";\n\n${exported(exported(code, "enter"), "leave")}`;
+	const code = transitionHelpers({
+		enter: "enter",
+		leave: "leave",
+		classes: "transitionClasses",
+		runs: "transitionRuns",
+		config: "TransitionConfig",
+	}).join("\n\n");
+	return `import type { TransitionConfig } from "svelte/transition";\n\n${exported(exported(code, "enter"), "leave")}`;
 }
 
 /**
@@ -67,11 +67,11 @@ function transitionModule(): string {
  * so `modelText.svelte.ts` is `./_unframework/modelText.svelte`, as a composable's module is.
  */
 export function sharedHelper(
-  helper: NonNullable<EmitContext["helper"]>,
-  from: string,
+	helper: NonNullable<EmitContext["helper"]>,
+	from: string,
 ): (name: SharedHelper) => string {
-  return (name) => {
-    const { file, code } = MODULES[name];
-    return helper(file, `${code}\n`, from).replace(/\.ts$/, "");
-  };
+	return (name) => {
+		const { file, code } = MODULES[name];
+		return helper(file, `${code}\n`, from).replace(/\.ts$/, "");
+	};
 }

@@ -7,15 +7,15 @@ import { expect } from "vitest";
 import Status from "./Status.uf.tsx";
 
 describeTargets("types/package-types", () => {
-  it("renders the package's members with the module's", async () => {
-    const view = await mountScenario(Status, "tick");
-    await view.expectParity("tick");
-    await expect.element(view.getByText("Feed: tick after 250 ms")).toBeVisible();
-  });
+	it("renders the package's members with the module's", async () => {
+		const view = await mountScenario(Status, "tick");
+		await view.expectParity("tick");
+		await expect.element(view.getByText("Feed: tick after 250 ms")).toBeVisible();
+	});
 
-  it("renders other values of the same members", async () => {
-    const view = await mountScenario(Status, "tock");
-    await view.expectParity("tock");
-    await expect.element(view.getByText("Clock: tock after 1000 ms")).toBeVisible();
-  });
+	it("renders other values of the same members", async () => {
+		const view = await mountScenario(Status, "tock");
+		await view.expectParity("tock");
+		await expect.element(view.getByText("Clock: tock after 1000 ms")).toBeVisible();
+	});
 });

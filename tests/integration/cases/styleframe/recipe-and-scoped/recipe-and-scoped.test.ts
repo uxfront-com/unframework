@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Card from "./Card.uf.tsx";
 
 describeTargets("styleframe/recipe-and-scoped", () => {
-  it("renders the recipe and the scoped sheet together", async () => {
-    const view = await mountScenario(Card, "default");
-    await view.expectParity("default");
-    await expect.element(view.getByRole("heading", { name: "Release notes" })).toBeVisible();
-  });
+	it("renders the recipe and the scoped sheet together", async () => {
+		const view = await mountScenario(Card, "default");
+		await view.expectParity("default");
+		await expect.element(view.getByRole("heading", { name: "Release notes" })).toBeVisible();
+	});
 });

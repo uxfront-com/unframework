@@ -3,6 +3,6 @@ import Form from "../../../../../integration/cases/types/child-type-import/__out
 </script>
 
 <template>
-  <!-- @uf-expect TS2741 Form.prop:field -->
-  <Form :field="{ name: 'email' }" />
+	<!-- @uf-expect TS2741 Form.prop:field -->
+	<Form :field="{ name: 'email' }" />
 </template>

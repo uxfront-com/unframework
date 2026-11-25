@@ -10,10 +10,10 @@ export const HELPER_DIRECTORY = "_unframework";
 
 /** The helper modules one target emits for one compile, collected as it emits them. */
 export interface HelperModules {
-  /** What a target's {@link EmitContext.helper} calls. */
-  helper: NonNullable<EmitContext["helper"]>;
-  /** Every helper module put so far, sorted by path (P8). */
-  files(): OutputFile[];
+	/** What a target's {@link EmitContext.helper} calls. */
+	helper: NonNullable<EmitContext["helper"]>;
+	/** Every helper module put so far, sorted by path (P8). */
+	files(): Array<OutputFile>;
 }
 
 /**
@@ -23,53 +23,53 @@ export interface HelperModules {
  * that leaves `_unframework/`, and one file given two texts, throw: either is a target's bug.
  */
 export function createHelperModules(base = ""): HelperModules {
-  const root = segments(base);
-  if (root.some((part) => part !== "..")) {
-    throw new TypeError(`The helper modules' base must be a parent directory, not "${base}".`);
-  }
-  const modules = new Map<string, string>();
-  return {
-    helper(file, contents, from) {
-      // A name, in `_unframework/` itself: the unplugin's ids put only the target's directory there.
-      if (!/^[\w$-][\w$.-]*\.[a-z]+$/i.test(file)) {
-        throw new TypeError(
-          `A helper module's file must be a file name in ${HELPER_DIRECTORY}/, such as "cx.ts", not "${file}".`,
-        );
-      }
-      const path = [...root, HELPER_DIRECTORY, file].join("/");
-      const known = modules.get(path);
-      if (known !== undefined && known !== contents) {
-        throw new Error(
-          `The helper module ${path} was given two different texts: a helper's text must depend only on the target and the helper (ADR-0121).`,
-        );
-      }
-      modules.set(path, contents);
-      return specifierOf(path, from);
-    },
-    files: () =>
-      [...modules.keys()].toSorted().map((path) => ({ path, contents: modules.get(path)! })),
-  };
+	const root = segments(base);
+	if (root.some((part) => part !== "..")) {
+		throw new TypeError(`The helper modules' base must be a parent directory, not "${base}".`);
+	}
+	const modules = new Map<string, string>();
+	return {
+		helper(file, contents, from) {
+			// A name, in `_unframework/` itself: the unplugin's ids put only the target's directory there.
+			if (!/^[\w$-][\w$.-]*\.[a-z]+$/i.test(file)) {
+				throw new TypeError(
+					`A helper module's file must be a file name in ${HELPER_DIRECTORY}/, such as "cx.ts", not "${file}".`,
+				);
+			}
+			const path = [...root, HELPER_DIRECTORY, file].join("/");
+			const known = modules.get(path);
+			if (known !== undefined && known !== contents) {
+				throw new Error(
+					`The helper module ${path} was given two different texts: a helper's text must depend only on the target and the helper (ADR-0121).`,
+				);
+			}
+			modules.set(path, contents);
+			return specifierOf(path, from);
+		},
+		files: () =>
+			[...modules.keys()].toSorted().map((path) => ({ path, contents: modules.get(path)! })),
+	};
 }
 
 /** A path's parts, without the empty and `.` ones. */
-function segments(path: string): string[] {
-  return path.split("/").filter((part) => part !== "" && part !== ".");
+function segments(path: string): Array<string> {
+	return path.split("/").filter((part) => part !== "" && part !== ".");
 }
 
 /** The relative specifier an output at `from` imports `path` by, both relative to one directory. */
 function specifierOf(path: string, from: string): string {
-  const directory = segments(from).slice(0, -1);
-  const target = segments(path);
-  let shared = 0;
-  while (
-    shared < directory.length &&
-    shared < target.length - 1 &&
-    directory[shared] === target[shared] &&
-    directory[shared] !== ".."
-  ) {
-    shared++;
-  }
-  const up = directory.slice(shared).map(() => "..");
-  const relative = [...up, ...target.slice(shared)].join("/");
-  return relative.startsWith("../") ? relative : `./${relative}`;
+	const directory = segments(from).slice(0, -1);
+	const target = segments(path);
+	let shared = 0;
+	while (
+		shared < directory.length &&
+		shared < target.length - 1 &&
+		directory[shared] === target[shared] &&
+		directory[shared] !== ".."
+	) {
+		shared++;
+	}
+	const up = directory.slice(shared).map(() => "..");
+	const relative = [...up, ...target.slice(shared)].join("/");
+	return relative.startsWith("../") ? relative : `./${relative}`;
 }

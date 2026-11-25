@@ -12,14 +12,14 @@
 import type { Children, JSX, TemplateRef } from "./jsx-runtime.ts";
 
 export type {
-  Child,
-  Children,
-  ComponentAttributes,
-  JSX,
-  RefAttribute,
-  SlotObject,
-  TemplateRef,
-  TypedComponent,
+	Child,
+	Children,
+	ComponentAttributes,
+	JSX,
+	RefAttribute,
+	SlotObject,
+	TemplateRef,
+	TypedComponent,
 } from "./jsx-runtime.ts";
 export type { ClassValue, CSSProperties, StyleValue } from "./jsx-upstream.ts";
 
@@ -28,14 +28,14 @@ declare const injectionKeyType: unique symbol;
 
 /** A reactive reference. Writes replace the value whole: `list.value = [...list.value, x]` (ADR-0008). */
 export interface Ref<T> {
-  value: T;
-  readonly [refBrand]: true;
+	value: T;
+	readonly [refBrand]: true;
 }
 
 /** A read-only derived value, from `computed`. */
 export interface ComputedRef<T> {
-  readonly value: T;
-  readonly [refBrand]: true;
+	readonly value: T;
+	readonly [refBrand]: true;
 }
 
 /** The ref `defineModel` returns: writable, and controllable whether the consumer binds it or not. */
@@ -53,42 +53,42 @@ export type WatchSource<T> = Ref<T> | ComputedRef<T> | (() => T);
 export type OnCleanup = (cleanup: () => void) => void;
 export type WatchStopHandle = () => void;
 export interface WatchOptions<Immediate extends boolean = boolean> {
-  /** Run once at setup; the first `previous` is then `undefined`. */
-  immediate?: Immediate;
-  /** `"post"` to read the DOM after it has updated. */
-  flush?: "pre" | "post" | "sync";
-  once?: boolean;
+	/** Run once at setup; the first `previous` is then `undefined`. */
+	immediate?: Immediate;
+	/** `"post"` to read the DOM after it has updated. */
+	flush?: "pre" | "post" | "sync";
+	once?: boolean;
 }
 export interface WatchEffectOptions {
-  flush?: "pre" | "post" | "sync";
+	flush?: "pre" | "post" | "sync";
 }
 /** The values of an array source, a mutable tuple as Vue passes it: a callback may annotate it. */
-type WatchValues<S extends readonly WatchSource<unknown>[]> = {
-  -readonly [K in keyof S]: S[K] extends WatchSource<infer V> ? V : never;
+type WatchValues<S extends ReadonlyArray<WatchSource<unknown>>> = {
+	-readonly [K in keyof S]: S[K] extends WatchSource<infer V> ? V : never;
 };
 
 /** `defineEmits<{ change: [value: number] }>()`: each event name maps to a named-tuple payload. */
-export type EmitsMap = Record<string, readonly unknown[]>;
+export type EmitsMap = Record<string, ReadonlyArray<unknown>>;
 /** The `emit` function. It returns `void`: listeners may run asynchronously on some targets (Qwik). */
 export type EmitFn<E extends EmitsMap> = <K extends keyof E & string>(
-  event: K,
-  ...payload: E[K]
+	event: K,
+	...payload: E[K]
 ) => void;
 
 /** `defineSlots<{ default?(): Element; item?(props: { item: Item }): Element }>()`. */
-export type SlotsMap = Record<string, ((...props: any[]) => unknown) | undefined>;
+export type SlotsMap = Record<string, ((...props: Array<any>) => unknown) | undefined>;
 
 /** The static options `defineOptions` accepts. */
 export interface ComponentOptions {
-  /** `false` stops undeclared attributes falling through to the root element. */
-  inheritAttrs?: boolean;
+	/** `false` stops undeclared attributes falling through to the root element. */
+	inheritAttrs?: boolean;
 }
 
 function compileTimeOnly(api: string): never {
-  throw new Error(
-    `unframework: \`${api}\` is compile-time only. This module was not compiled by unframework ` +
-      "(is the .uf.tsx file going through the unframework bundler plugin?).",
-  );
+	throw new Error(
+		`unframework: \`${api}\` is compile-time only. This module was not compiled by unframework ` +
+			"(is the .uf.tsx file going through the unframework bundler plugin?).",
+	);
 }
 
 // State and derivation
@@ -97,12 +97,12 @@ function compileTimeOnly(api: string): never {
 export function ref<T>(value: T): Ref<T>;
 export function ref<T = undefined>(): Ref<T | undefined>;
 export function ref(_value?: unknown): Ref<unknown> {
-  return compileTimeOnly("ref");
+	return compileTimeOnly("ref");
 }
 
 /** A read-only derived value: `const doubled = computed(() => count.value * 2)`. */
 export function computed<T>(_getter: () => T): ComputedRef<T> {
-  return compileTimeOnly("computed");
+	return compileTimeOnly("computed");
 }
 
 // Effects (client-only: they never run during SSR). A watch callback, an effect and a mount hook may
@@ -111,56 +111,56 @@ export function computed<T>(_getter: () => T): ComputedRef<T> {
 
 /** Runs `callback` after the source changes, with the new and previous values. */
 export function watch<T, Immediate extends boolean = false>(
-  source: WatchSource<T>,
-  callback: (
-    value: T,
-    previous: Immediate extends true ? T | undefined : T,
-    onCleanup: OnCleanup,
-  ) => unknown,
-  options?: WatchOptions<Immediate>,
+	source: WatchSource<T>,
+	callback: (
+		value: T,
+		previous: Immediate extends true ? T | undefined : T,
+		onCleanup: OnCleanup,
+	) => unknown,
+	options?: WatchOptions<Immediate>,
 ): WatchStopHandle;
 /** Runs `callback` after any of the sources changes, with the tuples of new and previous values. */
 export function watch<
-  const S extends readonly WatchSource<unknown>[],
-  Immediate extends boolean = false,
+	const S extends ReadonlyArray<WatchSource<unknown>>,
+	Immediate extends boolean = false,
 >(
-  sources: S,
-  callback: (
-    values: WatchValues<S>,
-    previous: Immediate extends true ? Partial<WatchValues<S>> : WatchValues<S>,
-    onCleanup: OnCleanup,
-  ) => unknown,
-  options?: WatchOptions<Immediate>,
+	sources: S,
+	callback: (
+		values: WatchValues<S>,
+		previous: Immediate extends true ? Partial<WatchValues<S>> : WatchValues<S>,
+		onCleanup: OnCleanup,
+	) => unknown,
+	options?: WatchOptions<Immediate>,
 ): WatchStopHandle;
 export function watch(_source: unknown, _callback: unknown, _options?: unknown): WatchStopHandle {
-  return compileTimeOnly("watch");
+	return compileTimeOnly("watch");
 }
 
 /** Runs `effect` now and again whenever a value it read changes. */
 export function watchEffect(
-  _effect: (onCleanup: OnCleanup) => unknown,
-  _options?: WatchEffectOptions,
+	_effect: (onCleanup: OnCleanup) => unknown,
+	_options?: WatchEffectOptions,
 ): WatchStopHandle {
-  return compileTimeOnly("watchEffect");
+	return compileTimeOnly("watchEffect");
 }
 
 // Lifecycle (client-only)
 
 /** Runs after the component's DOM is in the document. */
 export function onMounted(_hook: () => unknown): void {
-  compileTimeOnly("onMounted");
+	compileTimeOnly("onMounted");
 }
 
 /** Runs when the component is removed: clear timers and listeners here. */
 export function onUnmounted(_hook: () => void): void {
-  compileTimeOnly("onUnmounted");
+	compileTimeOnly("onUnmounted");
 }
 
 /** Resolves after pending DOM updates have been applied. */
 export function nextTick(): Promise<void>;
 export function nextTick<R>(callback: () => R): Promise<Awaited<R>>;
 export function nextTick(_callback?: () => unknown): Promise<unknown> {
-  return compileTimeOnly("nextTick");
+	return compileTimeOnly("nextTick");
 }
 
 /**
@@ -183,7 +183,7 @@ export const isDev: boolean = true;
 
 /** Declares events: `const emit = defineEmits<{ change: [value: number] }>()`; consumers write `onChange`. */
 export function defineEmits<E extends EmitsMap = never>(): EmitFn<E> {
-  return compileTimeOnly("defineEmits");
+	return compileTimeOnly("defineEmits");
 }
 
 /**
@@ -192,54 +192,54 @@ export function defineEmits<E extends EmitsMap = never>(): EmitFn<E> {
  */
 export function defineModel<T>(name: string, options: { required: true; default?: T }): ModelRef<T>;
 export function defineModel<T>(
-  name: string,
-  options: { default: T; required?: boolean },
+	name: string,
+	options: { default: T; required?: boolean },
 ): ModelRef<T>;
 export function defineModel<T = unknown>(
-  name: string,
-  options?: { required?: false },
+	name: string,
+	options?: { required?: false },
 ): ModelRef<T | undefined>;
 export function defineModel(_name: string, _options?: unknown): ModelRef<unknown> {
-  return compileTimeOnly("defineModel");
+	return compileTimeOnly("defineModel");
 }
 
 /** Declares slots, rendered with `{slots.title?.()}`; presence is `slots.title`. */
 export function defineSlots<S extends SlotsMap = never>(): Readonly<S> {
-  return compileTimeOnly("defineSlots");
+	return compileTimeOnly("defineSlots");
 }
 
 /** The API a component ref exposes to its parent: `defineExpose({ focus })`. */
 export function defineExpose(_exposed: Record<string, unknown>): void {
-  compileTimeOnly("defineExpose");
+	compileTimeOnly("defineExpose");
 }
 
 /** Static component options, as an object literal: `defineOptions({ inheritAttrs: false })`. */
 export function defineOptions(_options: ComponentOptions): void {
-  compileTimeOnly("defineOptions");
+	compileTimeOnly("defineOptions");
 }
 
 // Template refs, ids and context
 
 /** `const input = useTemplateRef<HTMLInputElement>()` with `<input ref={input} />`: no string key. */
 export function useTemplateRef<T = unknown>(): TemplateRef<T> {
-  return compileTimeOnly("useTemplateRef");
+	return compileTimeOnly("useTemplateRef");
 }
 
 /** An id that is unique per instance and stable between server and client renders. */
 export function useId(): string {
-  return compileTimeOnly("useId");
+	return compileTimeOnly("useId");
 }
 
 /** Makes `value` available to descendants that `inject(key)`. Pass refs to keep it reactive. */
 export function provide<T>(_key: InjectionKey<T>, _value: T): void {
-  compileTimeOnly("provide");
+	compileTimeOnly("provide");
 }
 
 /** Reads what an ancestor provided; `undefined` when none did, unless a fallback is given. */
 export function inject<T>(key: InjectionKey<T>): T | undefined;
 export function inject<T>(key: InjectionKey<T>, fallback: T): T;
 export function inject(_key: InjectionKey<unknown>, _fallback?: unknown): unknown {
-  return compileTimeOnly("inject");
+	return compileTimeOnly("inject");
 }
 
 // Rendering elsewhere
@@ -250,7 +250,7 @@ export function inject(_key: InjectionKey<unknown>, _fallback?: unknown): unknow
  * it unmounts with the component (ADR-0098). `to` is a string literal.
  */
 export function Teleport(_props: { to: string; children?: Children }): JSX.Element {
-  return compileTimeOnly("Teleport");
+	return compileTimeOnly("Teleport");
 }
 
 // Transitions
@@ -262,11 +262,11 @@ export function Teleport(_props: { to: string; children?: Children }): JSX.Eleme
  * the enter on the first client mount too. The server renders the settled child.
  */
 export function Transition(_props: {
-  name?: string;
-  appear?: boolean;
-  children?: Children;
+	name?: string;
+	appear?: boolean;
+	children?: Children;
 }): JSX.Element {
-  return compileTimeOnly("Transition");
+	return compileTimeOnly("Transition");
 }
 
 // Directives
@@ -280,14 +280,14 @@ declare const directiveBrand: unique symbol;
  * already. A descendant's hook runs before its ancestor's.
  */
 export interface DirectiveHooks<T, E extends globalThis.Element = HTMLElement> {
-  mounted?(el: E, value: T): void;
-  updated?(el: E, value: T, oldValue: T): void;
-  unmounted?(el: E): void;
+	mounted?(el: E, value: T): void;
+	updated?(el: E, value: T, oldValue: T): void;
+	unmounted?(el: E): void;
 }
 
 /** A directive `defineDirective` returns, which an element applies as `v-name={value}`. */
 export interface Directive<T, E extends globalThis.Element = HTMLElement> {
-  readonly [directiveBrand]: { value: T; element: E };
+	readonly [directiveBrand]: { value: T; element: E };
 }
 
 /**
@@ -296,9 +296,9 @@ export interface Directive<T, E extends globalThis.Element = HTMLElement> {
  * upper-case letter, and `T`, the value's type, is required.
  */
 export function defineDirective<T = never, E extends globalThis.Element = HTMLElement>(
-  _hooks: DirectiveHooks<T, E>,
+	_hooks: DirectiveHooks<T, E>,
 ): Directive<T, E> {
-  return compileTimeOnly("defineDirective");
+	return compileTimeOnly("defineDirective");
 }
 
 /** `JSX.Element` without a second import, for slot types: `defineSlots<{ default?(): Element }>()`. */

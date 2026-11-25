@@ -6,13 +6,13 @@ import { expect } from "vitest";
 import Board from "./Board.uf.tsx";
 
 describeTargets("slots/fallback", () => {
-  it("renders the fills and the fallbacks", async () => {
-    const view = await mountScenario(Board, "failed");
-    await view.expectParity("failed");
-    await expect.element(view.getByText("Build #42 failed.")).toBeVisible();
-    await expect.element(view.getByRole("link", { name: "See the logs" })).toBeVisible();
-    await expect
-      .element(view.getByRole("note", { name: "Deploy" }))
-      .toHaveTextContent("Nothing to report.No action");
-  });
+	it("renders the fills and the fallbacks", async () => {
+		const view = await mountScenario(Board, "failed");
+		await view.expectParity("failed");
+		await expect.element(view.getByText("Build #42 failed.")).toBeVisible();
+		await expect.element(view.getByRole("link", { name: "See the logs" })).toBeVisible();
+		await expect
+			.element(view.getByRole("note", { name: "Deploy" }))
+			.toHaveTextContent("Nothing to report.No action");
+	});
 });

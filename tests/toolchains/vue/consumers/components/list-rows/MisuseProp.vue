@@ -3,6 +3,6 @@ import Row from "../../../../../integration/cases/components/list-rows/__output_
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Row.prop:done -->
-  <Row name="Read" done="no" />
+	<!-- @uf-expect TS2322 Row.prop:done -->
+	<Row name="Read" done="no" />
 </template>

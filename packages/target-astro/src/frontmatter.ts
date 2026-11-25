@@ -4,30 +4,30 @@
 // render reads from `Astro.props` (its models, render props and fallthrough included), the
 // setup's values (`./setup.ts`), and each `<component is>` as a constant.
 import {
-  addTypeImports,
-  isIdentifier,
-  js,
-  keyImports,
-  keyOwner,
-  liveTypes,
-  parseStatementsSource,
-  printProgram,
-  rewriteExpression,
-  typeDeclarationCode,
-  typeExportsCode,
-  typeNames,
-  typeSpecifier,
+	addTypeImports,
+	isIdentifier,
+	js,
+	keyImports,
+	keyOwner,
+	liveTypes,
+	parseStatementsSource,
+	printProgram,
+	rewriteExpression,
+	typeDeclarationCode,
+	typeExportsCode,
+	typeNames,
+	typeSpecifier,
 } from "@unframework.dev/codegen";
 import type { ChildImport, ImportSet } from "@unframework.dev/codegen";
 import { expressionsOf, walk } from "@unframework.dev/ir";
 import type {
-  BindingId,
-  InjectItem,
-  ModelItem,
-  Prop,
-  TypeParameter,
-  UfComponent,
-  UfModule,
+	BindingId,
+	InjectItem,
+	ModelItem,
+	Prop,
+	TypeParameter,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { isRenderProp, ownProps } from "./composition.ts";
@@ -39,18 +39,18 @@ import type { Spelling } from "./spelling.ts";
 
 /** What the frontmatter declares beside the setup: the children, and the tree's own names. */
 export interface FrontmatterParts {
-  spelling: Spelling;
-  /** The children's imports (`import Field from "./Field.astro";`), in the file's name scope. */
-  imports: ImportSet;
-  render: AstroRender;
-  /** Whether the markup names `Astro` (`Astro.slots`, `Astro.self`). */
-  markupNamesAstro: boolean;
-  /** The `scopeAttributes` helper's name, when the root takes its parents' (ADR-0063). */
-  scope?: string;
-  /** The `styleObject` helper's name, when a style bound to a value is merged (ADR-0065). */
-  styleObject?: string;
-  /** The emitted sheet the component imports, `./Card.uf.tsx.css` (ADR-0063). */
-  sheet?: string;
+	spelling: Spelling;
+	/** The children's imports (`import Field from "./Field.astro";`), in the file's name scope. */
+	imports: ImportSet;
+	render: AstroRender;
+	/** Whether the markup names `Astro` (`Astro.slots`, `Astro.self`). */
+	markupNamesAstro: boolean;
+	/** The `scopeAttributes` helper's name, when the root takes its parents' (ADR-0063). */
+	scope?: string;
+	/** The `styleObject` helper's name, when a style bound to a value is merged (ADR-0065). */
+	styleObject?: string;
+	/** The emitted sheet the component imports, `./Card.uf.tsx.css` (ADR-0063). */
+	sheet?: string;
 }
 
 /**
@@ -59,19 +59,21 @@ export interface FrontmatterParts {
  * compiler gives every component.
  */
 export function childTags(
-  children: readonly ChildImport[],
-  imports: ImportSet,
+	children: ReadonlyArray<ChildImport>,
+	imports: ImportSet,
 ): Map<string, string> {
-  const tags = new Map<string, string>();
-  for (const child of children) {
-    if (child.self) {
-      tags.set(child.local, "Astro.self");
-      continue;
-    }
-    const local = imports.addDefault(child.specifier, child.local, { exact: true });
-    if (local !== child.local) tags.set(child.local, local);
-  }
-  return tags;
+	const tags = new Map<string, string>();
+	for (const child of children) {
+		if (child.self) {
+			tags.set(child.local, "Astro.self");
+			continue;
+		}
+		const local = imports.addDefault(child.specifier, child.local, { exact: true });
+		if (local !== child.local) {
+			tags.set(child.local, local);
+		}
+	}
+	return tags;
 }
 
 /**
@@ -108,120 +110,150 @@ export function childTags(
  * Astro types the component's callers by, and eslint-plugin-astro allows type exports.
  */
 export function frontmatterOf(
-  component: UfComponent,
-  module: UfModule,
-  { spelling, imports, render, markupNamesAstro, scope, styleObject, sheet }: FrontmatterParts,
+	component: UfComponent,
+	module: UfModule,
+	{ spelling, imports, render, markupNamesAstro, scope, styleObject, sheet }: FrontmatterParts,
 ): string | undefined {
-  const parameter = component.propsParameter;
-  const view = serverView(component, module);
-  const live = serverBindings(view);
-  // What it reads of its module, first, so the names the setup claims leave the module's alone.
-  const reads = moduleReads(component, module, live, {
-    imports,
-    scope: spelling.scope,
-    local: (id) => spelling.name(id),
-  });
-  composableImports(component, module, live, imports);
-  const setup = setupCode(component, live, spelling, (item) =>
-    injectedType(item, component, module, imports),
-  );
-  const propsReads = propsRead(component, live, spelling, render);
-  const exported = !propsReads.length && !setup.readsAstro && !markupNamesAstro;
-  // The type imports keep the source's names, which Astro's own names never take, but `Props`.
-  const imported = (module.typeImports ?? []).flatMap(({ names }) =>
-    names.map(({ local }) => local),
-  );
-  for (const name of imported) if (name !== "Props") spelling.scope.reserve(name);
-  const types = [...liveTypes(view, module, SERVER), ...reads.types].toSorted(
-    (a, b) => a.span.start - b.span.start,
-  );
-  const sourceProps = types.find(({ name }) => name === "Props");
-  // The source's `Props` is renamed where Astro's must say more than it: members beside it, or
-  // its type arguments (`type Props<T> = OwnProps<T>;`), which `Props` cannot alias itself with.
-  // A component with no props declares no `Props` of Astro's, so the source's keeps its name.
-  const ownProps =
-    imported.includes("Props") ||
-    (sourceProps &&
-      ((parameter !== undefined && parameter.type.code !== "Props") ||
-        propsExtras(component, render, (type) => type).length))
-      ? spelling.scope.claim("OwnProps")
-      : undefined;
-  // The source's `Props` under the name it takes beside Astro's (`interface Props extends
-  // OwnProps`), in every type and statement the output prints.
-  const rename = (kind: "type" | "statements") => (code: string) =>
-    ownProps ? renameTypeReferences(code, "Props", ownProps, kind) : code;
-  const own = rename("type");
-  const ownCode = rename("statements");
-  const extras = propsExtras(component, render, own);
-  const local = (name: string) => (ownProps && name === "Props" ? ownProps : name);
-  addTypeImports(view, module, imports, (name) => `${name}.astro`, { live: SERVER, local });
-  const sections: string[][] = [];
-  const declared = types.map((declaration) => {
-    let code =
-      exported && parameter && declaration.name === "Props" && !declaration.exported
-        ? `export ${declaration.code}`
-        : typeDeclarationCode(declaration);
-    code = ownCode(reads.renamed(code, "statements"));
-    if (ownProps && declaration.name === "Props") code = code.replace(/\bProps\b/, ownProps);
-    return { code, span: declaration.span };
-  });
-  const typeExports = typeExportsCode(component, module, (name) => `${name}.astro`).map(
-    ({ code, span }) => ({ code: ownCode(code), span }),
-  );
-  for (const { code } of [...declared, ...typeExports].toSorted(
-    (a, b) => a.span.start - b.span.start,
-  )) {
-    sections.push([code]);
-  }
-  const keys = keyTypes(component, module, new Set(types.map(({ name }) => name))).map(ownCode);
-  for (const statement of keys) sections.push([statement]);
-  keyTypeImports(module, keys, imports, local);
-  const annotation = parameter && own(parameter.type.code);
-  const alias = propsDeclaration(
-    annotation,
-    extras,
-    typeParametersCode(
-      component.typeParameters,
-      own,
-      propsTypeParameters(component, annotation, extras),
-    ),
-    propsHeritage(component, render, imports),
-  );
-  // Exported where the source exports its own `Props` too, under the same name (ADR-0068).
-  if (alias !== undefined) {
-    sections.push([exported || sourceProps?.exported ? `export ${alias}` : alias]);
-  }
-  const helpers = setup.helpers.map(ownCode);
-  const statements = setup.statements.map(ownCode);
-  // The module's constants, which read only the module, before the component's own values.
-  if (reads.constants.length) sections.push(reads.constants);
-  const scoped = typeParameterAliases(component, [...propsReads, ...helpers, ...statements], own);
-  if (scoped.length) sections.push(scoped);
-  if (propsReads.length) sections.push(propsReads);
-  for (const helper of helpers) sections.push([helper]);
-  if (scope) sections.push([scopeAttributesHelper(scope)]);
-  const scopeless = render.fallthrough?.scopeless;
-  if (scopeless) sections.push([withoutScopeHelper(scopeless)]);
-  if (styleObject) sections.push([styleObjectHelper(styleObject)]);
-  if (statements.length) sections.push(statements);
-  // Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
-  const constants = new Map<string, string>();
-  for (const [node, { name, hoisted }] of render.dynamics) {
-    if (!hoisted || constants.has(name)) continue;
-    constants.set(
-      name,
-      `const ${name} = ${rewriteExpression(node.is, component, spelling.rules)};`,
-    );
-  }
-  if (constants.size) sections.push([...constants.values()]);
-  // Imported last: the setup adds the types an injected value names. The sheet follows the
-  // children's outputs.
-  const declarations = [
-    ...(imports.size ? [printProgram(js.program(imports.toDeclarations())).trim()] : []),
-    ...(sheet ? [`import ${JSON.stringify(sheet)};`] : []),
-  ];
-  if (declarations.length) sections.unshift([declarations.join("\n")]);
-  return frontmatterCode(sections);
+	const parameter = component.propsParameter;
+	const view = serverView(component, module);
+	const live = serverBindings(view);
+	// What it reads of its module, first, so the names the setup claims leave the module's alone.
+	const reads = moduleReads(component, module, live, {
+		imports,
+		scope: spelling.scope,
+		local: (id) => spelling.name(id),
+	});
+	composableImports(component, module, live, imports);
+	const setup = setupCode(component, live, spelling, (item) =>
+		injectedType(item, component, module, imports),
+	);
+	const propsReads = propsRead(component, live, spelling, render);
+	const exported = !propsReads.length && !setup.readsAstro && !markupNamesAstro;
+	// The type imports keep the source's names, which Astro's own names never take, but `Props`.
+	const imported = (module.typeImports ?? []).flatMap(({ names }) =>
+		names.map(({ local }) => local),
+	);
+	for (const name of imported) {
+		if (name !== "Props") {
+			spelling.scope.reserve(name);
+		}
+	}
+	const types = [...liveTypes(view, module, SERVER), ...reads.types].toSorted(
+		(a, b) => a.span.start - b.span.start,
+	);
+	const sourceProps = types.find(({ name }) => name === "Props");
+	// The source's `Props` is renamed where Astro's must say more than it: members beside it, or
+	// its type arguments (`type Props<T> = OwnProps<T>;`), which `Props` cannot alias itself with.
+	// A component with no props declares no `Props` of Astro's, so the source's keeps its name.
+	const ownProps =
+		imported.includes("Props") ||
+		(sourceProps &&
+			((parameter !== undefined && parameter.type.code !== "Props") ||
+				propsExtras(component, render, (type) => type).length))
+			? spelling.scope.claim("OwnProps")
+			: undefined;
+	// The source's `Props` under the name it takes beside Astro's (`interface Props extends
+	// OwnProps`), in every type and statement the output prints.
+	const rename = (kind: "type" | "statements") => (code: string) =>
+		ownProps ? renameTypeReferences(code, "Props", ownProps, kind) : code;
+	const own = rename("type");
+	const ownCode = rename("statements");
+	const extras = propsExtras(component, render, own);
+	const local = (name: string) => (ownProps && name === "Props" ? ownProps : name);
+	addTypeImports(view, module, imports, (name) => `${name}.astro`, { live: SERVER, local });
+	const sections: Array<Array<string>> = [];
+	const declared = types.map((declaration) => {
+		let code =
+			exported && parameter && declaration.name === "Props" && !declaration.exported
+				? `export ${declaration.code}`
+				: typeDeclarationCode(declaration);
+		code = ownCode(reads.renamed(code, "statements"));
+		if (ownProps && declaration.name === "Props") {
+			code = code.replace(/\bProps\b/, ownProps);
+		}
+		return { code, span: declaration.span };
+	});
+	const typeExports = typeExportsCode(component, module, (name) => `${name}.astro`).map(
+		({ code, span }) => ({ code: ownCode(code), span }),
+	);
+	for (const { code } of [...declared, ...typeExports].toSorted(
+		(a, b) => a.span.start - b.span.start,
+	)) {
+		sections.push([code]);
+	}
+	const keys = keyTypes(component, module, new Set(types.map(({ name }) => name))).map(ownCode);
+	for (const statement of keys) {
+		sections.push([statement]);
+	}
+	keyTypeImports(module, keys, imports, local);
+	const annotation = parameter && own(parameter.type.code);
+	const alias = propsDeclaration(
+		annotation,
+		extras,
+		typeParametersCode(
+			component.typeParameters,
+			own,
+			propsTypeParameters(component, annotation, extras),
+		),
+		propsHeritage(component, render, imports),
+	);
+	// Exported where the source exports its own `Props` too, under the same name (ADR-0068).
+	if (alias !== undefined) {
+		sections.push([exported || sourceProps?.exported ? `export ${alias}` : alias]);
+	}
+	const helpers = setup.helpers.map(ownCode);
+	const statements = setup.statements.map(ownCode);
+	// The module's constants, which read only the module, before the component's own values.
+	if (reads.constants.length) {
+		sections.push(reads.constants);
+	}
+	const scoped = typeParameterAliases(component, [...propsReads, ...helpers, ...statements], own);
+	if (scoped.length) {
+		sections.push(scoped);
+	}
+	if (propsReads.length) {
+		sections.push(propsReads);
+	}
+	for (const helper of helpers) {
+		sections.push([helper]);
+	}
+	if (scope) {
+		sections.push([scopeAttributesHelper(scope)]);
+	}
+	const scopeless = render.fallthrough?.scopeless;
+	if (scopeless) {
+		sections.push([withoutScopeHelper(scopeless)]);
+	}
+	if (styleObject) {
+		sections.push([styleObjectHelper(styleObject)]);
+	}
+	if (statements.length) {
+		sections.push(statements);
+	}
+	// Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
+	const constants = new Map<string, string>();
+	for (const [node, { name, hoisted }] of render.dynamics) {
+		if (!hoisted || constants.has(name)) {
+			continue;
+		}
+		constants.set(
+			name,
+			`const ${name} = ${rewriteExpression(node.is, component, spelling.rules)};`,
+		);
+	}
+	if (constants.size) {
+		sections.push([...constants.values()]);
+	}
+	// Imported last: the setup adds the types an injected value names. The sheet follows the
+	// children's outputs.
+	const declarations = [
+		...(imports.size ? [printProgram(js.program(imports.toDeclarations())).trim()] : []),
+		...(sheet ? [`import ${JSON.stringify(sheet)};`] : []),
+	];
+	if (declarations.length) {
+		sections.unshift([declarations.join("\n")]);
+	}
+	return frontmatterCode(sections);
 }
 
 /**
@@ -229,28 +261,30 @@ export function frontmatterOf(
  * `import { useToggle } from "./useToggle";` (ADR-0069).
  */
 function composableImports(
-  component: UfComponent,
-  module: UfModule,
-  live: ReadonlySet<BindingId>,
-  imports: ImportSet,
+	component: UfComponent,
+	module: UfModule,
+	live: ReadonlySet<BindingId>,
+	imports: ImportSet,
 ): void {
-  const called = new Set(
-    component.setup.flatMap((item) =>
-      item.kind === "Use" && item.members.some(({ binding }) => live.has(binding))
-        ? [item.composable]
-        : [],
-    ),
-  );
-  for (const entry of module.imports ?? []) {
-    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
-    for (const name of entry.names) {
-      if (name.kind !== "Composable" || !called.has(name.local)) continue;
-      imports.add(`${directory}${name.imported}`, name.imported, {
-        local: name.local,
-        exact: true,
-      });
-    }
-  }
+	const called = new Set(
+		component.setup.flatMap((item) =>
+			item.kind === "Use" && item.members.some(({ binding }) => live.has(binding))
+				? [item.composable]
+				: [],
+		),
+	);
+	for (const entry of module.imports ?? []) {
+		const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+		for (const name of entry.names) {
+			if (name.kind !== "Composable" || !called.has(name.local)) {
+				continue;
+			}
+			imports.add(`${directory}${name.imported}`, name.imported, {
+				local: name.local,
+				exact: true,
+			});
+		}
+	}
 }
 
 /**
@@ -259,8 +293,8 @@ function composableImports(
  * it, with camel-case keys, as the consumer's object has them, which Astro writes in kebab case.
  */
 export function styleObjectHelper(name: string): string {
-  // Raw, so the regular expressions keep their escapes.
-  return String.raw`/** A style bound to a value as an object: a declaration list becomes one. */
+	// Raw, so the regular expressions keep their escapes.
+	return String.raw`/** A style bound to a value as an object: a declaration list becomes one. */
 function ${name}(style: object | string | null | undefined): Record<string, string> {
   if (typeof style !== "string") return { ...style };
   const object: Record<string, string> = {};
@@ -283,14 +317,14 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
  * declares, which a spread of `Astro.props` would.
  */
 export function scopeAttributesHelper(name: string): string {
-  return [
-    "/** The scope attributes of the styled parents that render this component, for its root. */",
-    `function ${name}(props: object): Record<string, ""> {`,
-    '  const scope: Record<string, ""> = {};',
-    '  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
-    "  return scope;",
-    "}",
-  ].join("\n");
+	return [
+		"/** The scope attributes of the styled parents that render this component, for its root. */",
+		`function ${name}(props: object): Record<string, ""> {`,
+		'  const scope: Record<string, ""> = {};',
+		'  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
+		"  return scope;",
+		"}",
+	].join("\n");
 }
 
 /**
@@ -298,12 +332,12 @@ export function scopeAttributesHelper(name: string): string {
  * not the root's (ADR-0118): the root keeps them, as it would without the rest (ADR-0063).
  */
 function withoutScopeHelper(name: string): string {
-  return [
-    "/** What the consumer passes, but its styled parents' scope attributes, which the root keeps. */",
-    `function ${name}(rest: object): Record<string, unknown> {`,
-    '  return Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith("data-uf-")));',
-    "}",
-  ].join("\n");
+	return [
+		"/** What the consumer passes, but its styled parents' scope attributes, which the root keeps. */",
+		`function ${name}(rest: object): Record<string, unknown> {`,
+		'  return Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith("data-uf-")));',
+		"}",
+	].join("\n");
 }
 
 /**
@@ -312,27 +346,27 @@ function withoutScopeHelper(name: string): string {
  * consumer's style is an object, which the root spreads after its own declarations.
  */
 function propsExtras(
-  component: UfComponent,
-  render: AstroRender,
-  own: (type: string) => string,
-): string[] {
-  const members: string[] = [];
-  for (const item of component.setup) {
-    if (item.kind === "Model") {
-      const type = item.type ? own(item.type.code) : "unknown";
-      members.push(`${item.name}${item.required ? "" : "?"}: ${type}`);
-    }
-  }
-  for (const slot of component.slots?.slots ?? []) {
-    if (slot.props) {
-      const name = renderPropName(slot.name, ownProps(component));
-      members.push(`${name}?: (props: ${own(slot.props.code)}) => unknown`);
-    }
-  }
-  if (render.fallthrough) {
-    members.push("class?: string", "style?: Record<string, string | number | undefined>");
-  }
-  return members;
+	component: UfComponent,
+	render: AstroRender,
+	own: (type: string) => string,
+): Array<string> {
+	const members: Array<string> = [];
+	for (const item of component.setup) {
+		if (item.kind === "Model") {
+			const type = item.type ? own(item.type.code) : "unknown";
+			members.push(`${item.name}${item.required ? "" : "?"}: ${type}`);
+		}
+	}
+	for (const slot of component.slots?.slots ?? []) {
+		if (slot.props) {
+			const name = renderPropName(slot.name, ownProps(component));
+			members.push(`${name}?: (props: ${own(slot.props.code)}) => unknown`);
+		}
+	}
+	if (render.fallthrough) {
+		members.push("class?: string", "style?: Record<string, string | number | undefined>");
+	}
+	return members;
 }
 
 /**
@@ -342,21 +376,23 @@ function propsExtras(
  * element, which Astro's types do not list.
  */
 function propsHeritage(
-  component: UfComponent,
-  render: AstroRender,
-  imports: ImportSet,
+	component: UfComponent,
+	render: AstroRender,
+	imports: ImportSet,
 ): string | undefined {
-  const tag = render.fallthrough?.tag;
-  if (tag === undefined || tag.includes("-")) return undefined;
-  const attributes = imports.add("astro/types", "HTMLAttributes", { type: true });
-  // A `<component is>` root's are what every tag takes (ADR-0122).
-  const type = (render.fallthrough?.tags ?? [tag])
-    .map((each) => `${attributes}<${JSON.stringify(each)}>`)
-    .join(" & ");
-  const { omitted } = render.fallthrough!;
-  return omitted.length
-    ? `Omit<${type}, ${omitted.map((name) => JSON.stringify(name)).join(" | ")}>`
-    : type;
+	const tag = render.fallthrough?.tag;
+	if (tag === undefined || tag.includes("-")) {
+		return undefined;
+	}
+	const attributes = imports.add("astro/types", "HTMLAttributes", { type: true });
+	// A `<component is>` root's are what every tag takes (ADR-0122).
+	const type = (render.fallthrough?.tags ?? [tag])
+		.map((each) => `${attributes}<${JSON.stringify(each)}>`)
+		.join(" & ");
+	const { omitted } = render.fallthrough!;
+	return omitted.length
+		? `Omit<${type}, ${omitted.map((name) => JSON.stringify(name)).join(" | ")}>`
+		: type;
 }
 
 /**
@@ -366,94 +402,115 @@ function propsHeritage(
  * keeps the object, under its own name unless Astro takes it, and destructures the rest beside it.
  */
 function propsRead(
-  component: UfComponent,
-  live: ReadonlySet<BindingId>,
-  spelling: Spelling,
-  render: AstroRender,
-): string[] {
-  const statements: string[] = [];
-  const parameter = component.propsParameter;
-  const names: string[] = [];
-  const { fallthrough } = render;
-  // What falls through is the rest of the props (ADR-0118), so every name `Props` declares is
-  // taken out of it, as `_title` where nothing reads it. A `<component is>` takes no rest.
-  const rest = fallthrough?.attributes !== undefined;
-  const unread = (name: string) => `${name}: ${spelling.scope.claim(`_${name}`)}`;
-  const isLive = (prop: Prop) => prop.binding !== undefined && live.has(prop.binding);
-  if (parameter?.form === "object") {
-    if (component.props.some(isLive)) {
-      statements.push(`const ${spelling.propsObject ?? parameter.name!} = Astro.props;`);
-    }
-    if (rest) names.push(...component.props.map(({ name }) => unread(name)));
-  } else if (parameter) {
-    // In the order the source destructures them, then the ones it does not, in its type's order.
-    const start = (prop: Prop) =>
-      prop.binding === undefined ? Infinity : bindingStart(component, prop.binding);
-    names.push(
-      ...component.props
-        .filter((prop) => isLive(prop) || rest)
-        .map((prop) => ({ prop, start: start(prop) }))
-        .toSorted((a, b) => (a.start === b.start ? 0 : a.start < b.start ? -1 : 1))
-        .map(({ prop }) =>
-          !isLive(prop)
-            ? unread(prop.name)
-            : prop.default
-              ? `${prop.name} = ${prop.default.code}`
-              : prop.name,
-        ),
-    );
-  }
-  for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
-    if (live.has(item.binding)) names.push(modelRead(item, spelling));
-    else if (rest) names.push(unread(item.name));
-  }
-  const read = renderPropsRead(component);
-  for (const [slot, local] of spelling.renderProps) {
-    const prop = renderPropName(slot, ownProps(component));
-    if (read.has(slot)) names.push(prop === local ? prop : `${prop}: ${local}`);
-    else if (rest) names.push(unread(prop));
-  }
-  if (fallthrough) {
-    const { className, style, own, attributes } = fallthrough;
-    names.push(`class: ${className}`, style === "style" ? style : `style: ${style}`);
-    // The element's own attributes, which the consumer's override wherever it passes them, an
-    // `undefined` included: the markup tests the key, so they take no default here.
-    for (const { attribute, local } of own) {
-      const key = isIdentifier(attribute.name) ? attribute.name : JSON.stringify(attribute.name);
-      names.push(key === local ? local : `${key}: ${local}`);
-    }
-    if (attributes !== undefined) names.push(`...${attributes}`);
-  }
-  if (names.length) statements.push(`const { ${names.join(", ")} } = Astro.props;`);
-  return statements;
+	component: UfComponent,
+	live: ReadonlySet<BindingId>,
+	spelling: Spelling,
+	render: AstroRender,
+): Array<string> {
+	const statements: Array<string> = [];
+	const parameter = component.propsParameter;
+	const names: Array<string> = [];
+	const { fallthrough } = render;
+	// What falls through is the rest of the props (ADR-0118), so every name `Props` declares is
+	// taken out of it, as `_title` where nothing reads it. A `<component is>` takes no rest.
+	const rest = fallthrough?.attributes !== undefined;
+	const unread = (name: string) => `${name}: ${spelling.scope.claim(`_${name}`)}`;
+	const isLive = (prop: Prop) => prop.binding !== undefined && live.has(prop.binding);
+	if (parameter?.form === "object") {
+		if (component.props.some(isLive)) {
+			statements.push(`const ${spelling.propsObject ?? parameter.name!} = Astro.props;`);
+		}
+		if (rest) {
+			names.push(...component.props.map(({ name }) => unread(name)));
+		}
+	} else if (parameter) {
+		// In the order the source destructures them, then the ones it does not, in its type's order.
+		const start = (prop: Prop) =>
+			prop.binding === undefined ? Infinity : bindingStart(component, prop.binding);
+		names.push(
+			...component.props
+				.filter((prop) => isLive(prop) || rest)
+				.map((prop) => ({ prop, start: start(prop) }))
+				.toSorted((a, b) => (a.start === b.start ? 0 : a.start < b.start ? -1 : 1))
+				.map(({ prop }) =>
+					!isLive(prop)
+						? unread(prop.name)
+						: prop.default
+							? `${prop.name} = ${prop.default.code}`
+							: prop.name,
+				),
+		);
+	}
+	for (const item of component.setup) {
+		if (item.kind !== "Model") {
+			continue;
+		}
+		if (live.has(item.binding)) {
+			names.push(modelRead(item, spelling));
+		} else if (rest) {
+			names.push(unread(item.name));
+		}
+	}
+	const read = renderPropsRead(component);
+	for (const [slot, local] of spelling.renderProps) {
+		const prop = renderPropName(slot, ownProps(component));
+		if (read.has(slot)) {
+			names.push(prop === local ? prop : `${prop}: ${local}`);
+		} else if (rest) {
+			names.push(unread(prop));
+		}
+	}
+	if (fallthrough) {
+		const { className, style, own, attributes } = fallthrough;
+		names.push(`class: ${className}`, style === "style" ? style : `style: ${style}`);
+		// The element's own attributes, which the consumer's override wherever it passes them, an
+		// `undefined` included: the markup tests the key, so they take no default here.
+		for (const { attribute, local } of own) {
+			const key = isIdentifier(attribute.name) ? attribute.name : JSON.stringify(attribute.name);
+			names.push(key === local ? local : `${key}: ${local}`);
+		}
+		if (attributes !== undefined) {
+			names.push(`...${attributes}`);
+		}
+	}
+	if (names.length) {
+		statements.push(`const { ${names.join(", ")} } = Astro.props;`);
+	}
+	return statements;
 }
 
 /** A model, read as the prop it is, with its default: `value = 0`, `open: expanded = false`. */
 function modelRead(item: ModelItem, spelling: Spelling): string {
-  const local = spelling.name(item.binding);
-  const target = local === item.name ? local : `${item.name}: ${local}`;
-  return item.default ? `${target} = ${item.default.code}` : target;
+	const local = spelling.name(item.binding);
+	const target = local === item.name ? local : `${item.name}: ${local}`;
+	return item.default ? `${target} = ${item.default.code}` : target;
 }
 
 /** The scoped slots the markup reads: renders, tests or forwards. */
 function renderPropsRead(component: UfComponent): Set<string> {
-  const read = new Set<string>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "SlotOutlet" && node.props) read.add(node.slot);
-      if (node.kind === "Component" || node.kind === "Dynamic") {
-        for (const fill of node.fills ?? []) {
-          if (fill.forward !== undefined && isRenderProp(fill, component)) read.add(fill.forward);
-        }
-      }
-    },
-  });
-  for (const { expression } of expressionsOf(component)) {
-    for (const reference of expression.refs)
-      if (reference.kind === "Slot") read.add(reference.slot);
-  }
-  return read;
+	const read = new Set<string>();
+	walk(component.render, {
+		enter(node) {
+			if (node.kind === "SlotOutlet" && node.props) {
+				read.add(node.slot);
+			}
+			if (node.kind === "Component" || node.kind === "Dynamic") {
+				for (const fill of node.fills ?? []) {
+					if (fill.forward !== undefined && isRenderProp(fill, component)) {
+						read.add(fill.forward);
+					}
+				}
+			}
+		},
+	});
+	for (const { expression } of expressionsOf(component)) {
+		for (const reference of expression.refs) {
+			if (reference.kind === "Slot") {
+				read.add(reference.slot);
+			}
+		}
+	}
+	return read;
 }
 
 /**
@@ -461,16 +518,18 @@ function renderPropsRead(component: UfComponent): Set<string> {
  * key's name (`keyTypes`), imported from the owner's output unless it is this one.
  */
 function injectedType(
-  item: InjectItem,
-  component: UfComponent,
-  module: UfModule,
-  imports: ImportSet,
+	item: InjectItem,
+	component: UfComponent,
+	module: UfModule,
+	imports: ImportSet,
 ): string {
-  const key = keyImports(component, module, (name) => `${name}.astro`).find(
-    (each) => each.local === item.key,
-  )!;
-  if (!key.specifier) return key.name;
-  return imports.add(key.specifier, key.name, { type: true, local: key.local, exact: true });
+	const key = keyImports(component, module, (name) => `${name}.astro`).find(
+		(each) => each.local === item.key,
+	)!;
+	if (!key.specifier) {
+		return key.name;
+	}
+	return imports.add(key.specifier, key.name, { type: true, local: key.local, exact: true });
 }
 
 /**
@@ -480,26 +539,30 @@ function injectedType(
  * output does.
  */
 function keyTypeImports(
-  module: UfModule,
-  keys: readonly string[],
-  imports: ImportSet,
-  local: (name: string) => string,
+	module: UfModule,
+	keys: ReadonlyArray<string>,
+	imports: ImportSet,
+	local: (name: string) => string,
 ): void {
-  if (!keys.length || !module.typeImports?.length) return;
-  const read = new Set<string>();
-  for (const statement of keys) {
-    forEachFreeTypeReference(parseStatementsSource(statement).statements, ({ name }) => {
-      read.add(name);
-    });
-  }
-  for (const entry of module.typeImports) {
-    for (const name of entry.names) {
-      const named = local(name.local);
-      if (!read.has(named)) continue;
-      const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.astro`);
-      imports.add(specifier, name.imported, { type: true, local: named, exact: true });
-    }
-  }
+	if (!keys.length || !module.typeImports?.length) {
+		return;
+	}
+	const read = new Set<string>();
+	for (const statement of keys) {
+		forEachFreeTypeReference(parseStatementsSource(statement).statements, ({ name }) => {
+			read.add(name);
+		});
+	}
+	for (const entry of module.typeImports) {
+		for (const name of entry.names) {
+			const named = local(name.local);
+			if (!read.has(named)) {
+				continue;
+			}
+			const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.astro`);
+			imports.add(specifier, name.imported, { type: true, local: named, exact: true });
+		}
+	}
 }
 
 /**
@@ -510,71 +573,85 @@ function keyTypeImports(
  * reads. Each module type the alias reaches is declared there too.
  */
 function keyTypes(
-  component: UfComponent,
-  module: UfModule,
-  declared: ReadonlySet<string>,
-): string[] {
-  if (!module.keys?.length || keyOwner(module.components, module.exports) !== component.name) {
-    return [];
-  }
-  const statements: string[] = [];
-  const named = new Set<string>();
-  for (const key of module.keys) {
-    const type = key.ref
-      ? key.type.code.slice(key.type.code.indexOf("<") + 1, key.type.code.lastIndexOf(">"))
-      : key.type.code;
-    for (const name of typeNames(type)) named.add(name);
-    statements.push(`export type ${key.name} = ${type};`);
-  }
-  // The module types the aliases reach, through the types they name in turn, as `liveTypes`
-  // follows a component's: the analyser lists them in the owner's `types`.
-  const owned = new Map(
-    module.types
-      .filter((each) => component.types.includes(each.name))
-      .map((each) => [each.name, each]),
-  );
-  const pending = [...named];
-  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
-    const declaration = owned.get(name);
-    if (!declaration) continue;
-    for (const next of declarationNames(declaration.code)) {
-      if (!named.has(next)) {
-        named.add(next);
-        pending.push(next);
-      }
-    }
-  }
-  const types = module.types
-    .filter((each) => named.has(each.name) && owned.has(each.name) && !declared.has(each.name))
-    .map(typeDeclarationCode);
-  return [...types, ...statements];
+	component: UfComponent,
+	module: UfModule,
+	declared: ReadonlySet<string>,
+): Array<string> {
+	if (!module.keys?.length || keyOwner(module.components, module.exports) !== component.name) {
+		return [];
+	}
+	const statements: Array<string> = [];
+	const named = new Set<string>();
+	for (const key of module.keys) {
+		const type = key.ref
+			? key.type.code.slice(key.type.code.indexOf("<") + 1, key.type.code.lastIndexOf(">"))
+			: key.type.code;
+		for (const name of typeNames(type)) {
+			named.add(name);
+		}
+		statements.push(`export type ${key.name} = ${type};`);
+	}
+	// The module types the aliases reach, through the types they name in turn, as `liveTypes`
+	// follows a component's: the analyser lists them in the owner's `types`.
+	const owned = new Map(
+		module.types
+			.filter((each) => component.types.includes(each.name))
+			.map((each) => [each.name, each]),
+	);
+	const pending = [...named];
+	for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+		const declaration = owned.get(name);
+		if (!declaration) {
+			continue;
+		}
+		for (const next of declarationNames(declaration.code)) {
+			if (!named.has(next)) {
+				named.add(next);
+				pending.push(next);
+			}
+		}
+	}
+	const types = module.types
+		.filter((each) => named.has(each.name) && owned.has(each.name) && !declared.has(each.name))
+		.map(typeDeclarationCode);
+	return [...types, ...statements];
 }
 
 /** The type names a declaration's code refers to: its references and what it extends. */
 function declarationNames(code: string): Set<string> {
-  const names = new Set<string>();
-  const visit = (node: unknown): void => {
-    if (Array.isArray(node)) {
-      for (const each of node) visit(each);
-      return;
-    }
-    if (!node || typeof node !== "object") return;
-    const record = node as Record<string, unknown>;
-    const reference =
-      record.type === "TSTypeReference"
-        ? record.typeName
-        : record.type === "TSInterfaceHeritage"
-          ? record.expression
-          : undefined;
-    let head = reference as Record<string, unknown> | undefined;
-    while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
-      head = (head.left ?? head.object) as Record<string, unknown>;
-    }
-    if (head?.type === "Identifier") names.add(head.name as string);
-    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value);
-  };
-  visit(parseStatementsSource(code).statements);
-  return names;
+	const names = new Set<string>();
+	const visit = (node: unknown): void => {
+		if (Array.isArray(node)) {
+			for (const each of node) {
+				visit(each);
+			}
+			return;
+		}
+		if (!node || typeof node !== "object") {
+			return;
+		}
+		const record = node as Record<string, unknown>;
+		const reference =
+			record.type === "TSTypeReference"
+				? record.typeName
+				: record.type === "TSInterfaceHeritage"
+					? record.expression
+					: undefined;
+		let head = reference as Record<string, unknown> | undefined;
+		while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
+			head = (head.left ?? head.object) as Record<string, unknown>;
+		}
+		if (head?.type === "Identifier") {
+			names.add(head.name as string);
+		}
+		for (const [key, value] of Object.entries(record)) {
+			if (key !== "parent") {
+				visit(value);
+			}
+		}
+	};
+	visit(parseStatementsSource(code).statements);
+	return names;
 }
 
 /**
@@ -586,36 +663,36 @@ function declarationNames(code: string): Set<string> {
  * members read.
  */
 function propsDeclaration(
-  annotation: string | undefined,
-  extras: readonly string[],
-  generics: string,
-  heritage: string | undefined,
+	annotation: string | undefined,
+	extras: ReadonlyArray<string>,
+	generics: string,
+	heritage: string | undefined,
 ): string | undefined {
-  // Each member on a line of its own, after the source's members as written: a line break ends
-  // a member, and a comment the source ends its last member with.
-  const members = extras.map((member) => `\n  ${member};`).join("");
-  const extending = heritage === undefined ? "" : ` extends ${heritage}`;
-  if (annotation === undefined) {
-    return extras.length || heritage
-      ? `interface Props${generics}${extending} {${members}\n}`
-      : undefined;
-  }
-  const { type, kind } = unwrapped(annotation);
-  if (kind === "TSTypeLiteral") {
-    return extras.length
-      ? `interface Props${generics}${extending} ${type.slice(0, -1).trimEnd()}${members}\n}`
-      : `interface Props${generics}${extending} ${type}`;
-  }
-  if (!extras.length && !heritage) {
-    return type === "Props" ? undefined : `type Props${generics} = ${type};`;
-  }
-  if (kind === "TSTypeReference") {
-    const bases = heritage === undefined ? type : `${type}, ${heritage}`;
-    return `interface Props${generics} extends ${bases} {${members}\n}`;
-  }
-  const operand = kind === "TSIntersectionType" ? type : `(${type})`;
-  const intersected = heritage === undefined ? operand : `${operand} & ${heritage}`;
-  return `type Props${generics} = ${intersected} & {${members}\n};`;
+	// Each member on a line of its own, after the source's members as written: a line break ends
+	// a member, and a comment the source ends its last member with.
+	const members = extras.map((member) => `\n  ${member};`).join("");
+	const extending = heritage === undefined ? "" : ` extends ${heritage}`;
+	if (annotation === undefined) {
+		return extras.length || heritage
+			? `interface Props${generics}${extending} {${members}\n}`
+			: undefined;
+	}
+	const { type, kind } = unwrapped(annotation);
+	if (kind === "TSTypeLiteral") {
+		return extras.length
+			? `interface Props${generics}${extending} ${type.slice(0, -1).trimEnd()}${members}\n}`
+			: `interface Props${generics}${extending} ${type}`;
+	}
+	if (!extras.length && !heritage) {
+		return type === "Props" ? undefined : `type Props${generics} = ${type};`;
+	}
+	if (kind === "TSTypeReference") {
+		const bases = heritage === undefined ? type : `${type}, ${heritage}`;
+		return `interface Props${generics} extends ${bases} {${members}\n}`;
+	}
+	const operand = kind === "TSIntersectionType" ? type : `(${type})`;
+	const intersected = heritage === undefined ? operand : `${operand} & ${heritage}`;
+	return `type Props${generics} = ${intersected} & {${members}\n};`;
 }
 
 /**
@@ -623,14 +700,17 @@ function propsDeclaration(
  * `({ a: string })` is the type literal `{ a: string }`, and `(A) & (B)` stays as written.
  */
 function unwrapped(annotation: string): { type: string; kind: string | undefined } {
-  const prefix = "type T = ";
-  const source = `${prefix}${annotation.trim()};`;
-  const [statement] = parseStatementsSource(source).statements;
-  if (statement?.type !== "TSTypeAliasDeclaration")
-    return { type: annotation.trim(), kind: undefined };
-  let node = statement.typeAnnotation;
-  while (node.type === "TSParenthesizedType") node = node.typeAnnotation;
-  return { type: source.slice(node.start, node.end), kind: node.type };
+	const prefix = "type T = ";
+	const source = `${prefix}${annotation.trim()};`;
+	const [statement] = parseStatementsSource(source).statements;
+	if (statement?.type !== "TSTypeAliasDeclaration") {
+		return { type: annotation.trim(), kind: undefined };
+	}
+	let node = statement.typeAnnotation;
+	while (node.type === "TSParenthesizedType") {
+		node = node.typeAnnotation;
+	}
+	return { type: source.slice(node.start, node.end), kind: node.type };
 }
 
 /**
@@ -641,22 +721,24 @@ function unwrapped(annotation: string): { type: string; kind: string | undefined
  * conditional type that infers `Props`) reads its own, and keeps it.
  */
 function renameTypeReferences(
-  code: string,
-  from: string,
-  to: string,
-  kind: "type" | "statements",
+	code: string,
+	from: string,
+	to: string,
+	kind: "type" | "statements",
 ): string {
-  const prefix = kind === "type" ? "type T = " : "";
-  const source = kind === "type" ? `${prefix}${code};` : code;
-  const starts: number[] = [];
-  forEachFreeTypeReference(parseStatementsSource(source).statements, ({ name, start }) => {
-    if (name === from) starts.push(start);
-  });
-  let renamed = source;
-  for (const start of starts.toSorted((a, b) => b - a)) {
-    renamed = `${renamed.slice(0, start)}${to}${renamed.slice(start + from.length)}`;
-  }
-  return kind === "type" ? renamed.slice(prefix.length, -1) : renamed;
+	const prefix = kind === "type" ? "type T = " : "";
+	const source = kind === "type" ? `${prefix}${code};` : code;
+	const starts: Array<number> = [];
+	forEachFreeTypeReference(parseStatementsSource(source).statements, ({ name, start }) => {
+		if (name === from) {
+			starts.push(start);
+		}
+	});
+	let renamed = source;
+	for (const start of starts.toSorted((a, b) => b - a)) {
+		renamed = `${renamed.slice(0, start)}${to}${renamed.slice(start + from.length)}`;
+	}
+	return kind === "type" ? renamed.slice(prefix.length, -1) : renamed;
 }
 
 /**
@@ -666,71 +748,89 @@ function renameTypeReferences(
  * `infer`s of a conditional type, which its extends clause and true branch read.
  */
 function forEachFreeTypeReference(
-  root: unknown,
-  found: (head: { name: string; start: number }) => void,
+	root: unknown,
+	found: (head: { name: string; start: number }) => void,
 ): void {
-  const visit = (node: unknown, bound: ReadonlySet<string>): void => {
-    if (Array.isArray(node)) {
-      for (const each of node) visit(each, bound);
-      return;
-    }
-    if (!node || typeof node !== "object") return;
-    const record = node as Record<string, unknown>;
-    const declared = declaredTypeParameters(record);
-    const inner = declared.length ? new Set([...bound, ...declared]) : bound;
-    if (record.type === "TSConditionalType") {
-      const inferring = new Set([...inner, ...inferred(record.extendsType)]);
-      visit(record.checkType, inner);
-      visit(record.extendsType, inferring);
-      visit(record.trueType, inferring);
-      visit(record.falseType, inner);
-      return;
-    }
-    const reference =
-      record.type === "TSTypeReference"
-        ? record.typeName
-        : record.type === "TSInterfaceHeritage"
-          ? record.expression
-          : undefined;
-    let head = reference as Record<string, unknown> | undefined;
-    while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
-      head = (head.left ?? head.object) as Record<string, unknown>;
-    }
-    if (head?.type === "Identifier" && !inner.has(head.name as string)) {
-      found({ name: head.name as string, start: head.start as number });
-    }
-    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value, inner);
-  };
-  visit(root, new Set());
+	const visit = (node: unknown, bound: ReadonlySet<string>): void => {
+		if (Array.isArray(node)) {
+			for (const each of node) {
+				visit(each, bound);
+			}
+			return;
+		}
+		if (!node || typeof node !== "object") {
+			return;
+		}
+		const record = node as Record<string, unknown>;
+		const declared = declaredTypeParameters(record);
+		const inner = declared.length ? new Set([...bound, ...declared]) : bound;
+		if (record.type === "TSConditionalType") {
+			const inferring = new Set([...inner, ...inferred(record.extendsType)]);
+			visit(record.checkType, inner);
+			visit(record.extendsType, inferring);
+			visit(record.trueType, inferring);
+			visit(record.falseType, inner);
+			return;
+		}
+		const reference =
+			record.type === "TSTypeReference"
+				? record.typeName
+				: record.type === "TSInterfaceHeritage"
+					? record.expression
+					: undefined;
+		let head = reference as Record<string, unknown> | undefined;
+		while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
+			head = (head.left ?? head.object) as Record<string, unknown>;
+		}
+		if (head?.type === "Identifier" && !inner.has(head.name as string)) {
+			found({ name: head.name as string, start: head.start as number });
+		}
+		for (const [key, value] of Object.entries(record)) {
+			if (key !== "parent") {
+				visit(value, inner);
+			}
+		}
+	};
+	visit(root, new Set());
 }
 
 /** The type parameters a node declares: its own (`<T>`), or a mapped type's key (`[K in Keys]`). */
-function declaredTypeParameters(node: Record<string, unknown>): string[] {
-  const declaration = node.typeParameters as { params?: { name?: { name?: string } }[] } | null;
-  const names = (declaration?.params ?? []).flatMap(({ name }) => (name?.name ? [name.name] : []));
-  if (node.type === "TSMappedType") {
-    const key = (node.key ?? (node.typeParameter as { name?: unknown } | undefined)?.name) as
-      | { name?: string }
-      | undefined;
-    if (key?.name) names.push(key.name);
-  }
-  return names;
+function declaredTypeParameters(node: Record<string, unknown>): Array<string> {
+	const declaration = node.typeParameters as {
+		params?: Array<{ name?: { name?: string } }>;
+	} | null;
+	const names = (declaration?.params ?? []).flatMap(({ name }) => (name?.name ? [name.name] : []));
+	if (node.type === "TSMappedType") {
+		const key = (node.key ?? (node.typeParameter as { name?: unknown } | undefined)?.name) as
+			| { name?: string }
+			| undefined;
+		if (key?.name) {
+			names.push(key.name);
+		}
+	}
+	return names;
 }
 
 /** The names a conditional type's extends clause infers (`infer Props`), but a nested one's. */
-function inferred(node: unknown): string[] {
-  if (Array.isArray(node)) return node.flatMap(inferred);
-  if (!node || typeof node !== "object") return [];
-  const record = node as Record<string, unknown>;
-  if (record.type === "TSConditionalType") return inferred(record.checkType);
-  const own =
-    record.type === "TSInferType"
-      ? [(record.typeParameter as { name?: { name?: string } } | undefined)?.name?.name]
-      : [];
-  return [
-    ...own.filter((name): name is string => name !== undefined),
-    ...Object.entries(record).flatMap(([key, value]) => (key === "parent" ? [] : inferred(value))),
-  ];
+function inferred(node: unknown): Array<string> {
+	if (Array.isArray(node)) {
+		return node.flatMap(inferred);
+	}
+	if (!node || typeof node !== "object") {
+		return [];
+	}
+	const record = node as Record<string, unknown>;
+	if (record.type === "TSConditionalType") {
+		return inferred(record.checkType);
+	}
+	const own =
+		record.type === "TSInferType"
+			? [(record.typeParameter as { name?: { name?: string } } | undefined)?.name?.name]
+			: [];
+	return [
+		...own.filter((name): name is string => name !== undefined),
+		...Object.entries(record).flatMap(([key, value]) => (key === "parent" ? [] : inferred(value))),
+	];
 }
 
 /**
@@ -743,22 +843,24 @@ function inferred(node: unknown): string[] {
  * the chain. `own` names an imported `Props` as the output does.
  */
 function typeParameterAliases(
-  component: UfComponent,
-  code: readonly string[],
-  own: (type: string) => string,
-): string[] {
-  const parameters = component.typeParameters ?? [];
-  if (!parameters.length) return [];
-  const named = new Set<string>();
-  for (const each of code) {
-    forEachFreeTypeReference(parseStatementsSource(each).statements, ({ name }) => named.add(name));
-  }
-  reachBounds(parameters, named, { defaults: false });
-  return parameters
-    .filter(({ name }) => named.has(name))
-    .map(
-      ({ name, constraint }) => `type ${name} = ${constraint ? own(constraint.code) : "unknown"};`,
-    );
+	component: UfComponent,
+	code: ReadonlyArray<string>,
+	own: (type: string) => string,
+): Array<string> {
+	const parameters = component.typeParameters ?? [];
+	if (!parameters.length) {
+		return [];
+	}
+	const named = new Set<string>();
+	for (const each of code) {
+		forEachFreeTypeReference(parseStatementsSource(each).statements, ({ name }) => named.add(name));
+	}
+	reachBounds(parameters, named, { defaults: false });
+	return parameters
+		.filter(({ name }) => named.has(name))
+		.map(
+			({ name, constraint }) => `type ${name} = ${constraint ? own(constraint.code) : "unknown"};`,
+		);
 }
 
 /**
@@ -766,25 +868,31 @@ function typeParameterAliases(
  * with `defaults` its default too (`U = T`), along the whole chain.
  */
 function reachBounds(
-  parameters: readonly TypeParameter[],
-  named: Set<string>,
-  { defaults }: { defaults: boolean },
+	parameters: ReadonlyArray<TypeParameter>,
+	named: Set<string>,
+	{ defaults }: { defaults: boolean },
 ): void {
-  const byName = new Map(parameters.map((parameter) => [parameter.name, parameter]));
-  const pending = [...named];
-  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
-    const parameter = byName.get(name);
-    if (!parameter) continue;
-    for (const bound of [parameter.constraint, defaults ? parameter.default : undefined]) {
-      if (!bound) continue;
-      const { statements } = parseStatementsSource(`type T = ${bound.code};`);
-      forEachFreeTypeReference(statements, ({ name: next }) => {
-        if (named.has(next)) return;
-        named.add(next);
-        pending.push(next);
-      });
-    }
-  }
+	const byName = new Map(parameters.map((parameter) => [parameter.name, parameter]));
+	const pending = [...named];
+	for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+		const parameter = byName.get(name);
+		if (!parameter) {
+			continue;
+		}
+		for (const bound of [parameter.constraint, defaults ? parameter.default : undefined]) {
+			if (!bound) {
+				continue;
+			}
+			const { statements } = parseStatementsSource(`type T = ${bound.code};`);
+			forEachFreeTypeReference(statements, ({ name: next }) => {
+				if (named.has(next)) {
+					return;
+				}
+				named.add(next);
+				pending.push(next);
+			});
+		}
+	}
 }
 
 /**
@@ -794,21 +902,25 @@ function reachBounds(
  * linter would report unused (L5).
  */
 function propsTypeParameters(
-  component: UfComponent,
-  annotation: string | undefined,
-  extras: readonly string[],
+	component: UfComponent,
+	annotation: string | undefined,
+	extras: ReadonlyArray<string>,
 ): Set<string> {
-  const named = new Set<string>();
-  const parameters = component.typeParameters ?? [];
-  if (!parameters.length) return named;
-  const types = [annotation, extras.length ? `{ ${extras.join("; ")} }` : undefined];
-  for (const type of types) {
-    if (type === undefined) continue;
-    const { statements } = parseStatementsSource(`type T = ${type};`);
-    forEachFreeTypeReference(statements, ({ name }) => named.add(name));
-  }
-  reachBounds(parameters, named, { defaults: true });
-  return named;
+	const named = new Set<string>();
+	const parameters = component.typeParameters ?? [];
+	if (!parameters.length) {
+		return named;
+	}
+	const types = [annotation, extras.length ? `{ ${extras.join("; ")} }` : undefined];
+	for (const type of types) {
+		if (type === undefined) {
+			continue;
+		}
+		const { statements } = parseStatementsSource(`type T = ${type};`);
+		forEachFreeTypeReference(statements, ({ name }) => named.add(name));
+	}
+	reachBounds(parameters, named, { defaults: true });
+	return named;
 }
 
 /**
@@ -817,38 +929,40 @@ function propsTypeParameters(
  * its types (`own`).
  */
 function typeParametersCode(
-  parameters: readonly TypeParameter[] | undefined,
-  own: (type: string) => string,
-  used: ReadonlySet<string>,
+	parameters: ReadonlyArray<TypeParameter> | undefined,
+	own: (type: string) => string,
+	used: ReadonlySet<string>,
 ): string {
-  const kept = (parameters ?? []).filter(({ name }) => used.has(name));
-  if (!kept.length) return "";
-  const written = kept.map(({ name, constraint, default: fallback }) => {
-    const bound = constraint ? ` extends ${own(constraint.code)}` : "";
-    return `${name}${bound}${fallback ? ` = ${own(fallback.code)}` : ""}`;
-  });
-  return `<${written.join(", ")}>`;
+	const kept = (parameters ?? []).filter(({ name }) => used.has(name));
+	if (!kept.length) {
+		return "";
+	}
+	const written = kept.map(({ name, constraint, default: fallback }) => {
+		const bound = constraint ? ` extends ${own(constraint.code)}` : "";
+		return `${name}${bound}${fallback ? ` = ${own(fallback.code)}` : ""}`;
+	});
+	return `<${written.join(", ")}>`;
 }
 
 function bindingStart(component: UfComponent, id: BindingId): number {
-  return component.bindings.find((binding) => binding.id === id)!.span.start;
+	return component.bindings.find((binding) => binding.id === id)!.span.start;
 }
 
 /** Sections a blank line apart, as oxfmt keeps them; none without. */
-function frontmatterCode(sections: readonly (readonly string[])[]): string | undefined {
-  return sections.length ? sections.map(section).join("\n") : undefined;
+function frontmatterCode(sections: ReadonlyArray<ReadonlyArray<string>>): string | undefined {
+	return sections.length ? sections.map(section).join("\n") : undefined;
 }
 
 /**
  * A section's statements, each on lines of its own: one-line statements follow each other, and
  * a statement over several lines (a function) has a blank line on each side.
  */
-export function section(statements: readonly string[]): string {
-  return statements
-    .map((statement, index) => {
-      const previous = statements[index - 1];
-      const apart = previous !== undefined && (previous.includes("\n") || statement.includes("\n"));
-      return `${apart ? "\n" : ""}${statement}\n`;
-    })
-    .join("");
+export function section(statements: ReadonlyArray<string>): string {
+	return statements
+		.map((statement, index) => {
+			const previous = statements[index - 1];
+			const apart = previous !== undefined && (previous.includes("\n") || statement.includes("\n"));
+			return `${apart ? "\n" : ""}${statement}\n`;
+		})
+		.join("");
 }

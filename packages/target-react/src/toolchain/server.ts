@@ -15,22 +15,24 @@ const DOCUMENT = /^<!DOCTYPE html><html><head>[\s\S]*?<\/head><body>([\s\S]*)<\/
  * prepends them to the component's HTML. The result is the content of `<body>`.
  */
 export const renderToString: SsrRenderer = async (component, options) => {
-  const errors: unknown[] = [];
-  const tree = createElement(
-    "html",
-    null,
-    createElement("head"),
-    createElement("body", null, createElement(asComponent(component), { ...options.props })),
-  );
-  // Errors React recovers from (a boundary renders on the client instead) still fail the render.
-  const { prelude } = await prerender(tree, { onError: (error) => void errors.push(error) });
-  if (errors.length > 0) {
-    throw errors.length === 1 ? errors[0] : new AggregateError(errors, "React SSR failed.");
-  }
-  const document = await new Response(prelude).text();
-  const body = DOCUMENT.exec(document);
-  if (!body) throw new Error(`React's prerender produced an unexpected document:\n${document}`);
-  return body[1] ?? "";
+	const errors: Array<unknown> = [];
+	const tree = createElement(
+		"html",
+		null,
+		createElement("head"),
+		createElement("body", null, createElement(asComponent(component), { ...options.props })),
+	);
+	// Errors React recovers from (a boundary renders on the client instead) still fail the render.
+	const { prelude } = await prerender(tree, { onError: (error) => void errors.push(error) });
+	if (errors.length > 0) {
+		throw errors.length === 1 ? errors[0] : new AggregateError(errors, "React SSR failed.");
+	}
+	const document = await new Response(prelude).text();
+	const body = DOCUMENT.exec(document);
+	if (!body) {
+		throw new Error(`React's prerender produced an unexpected document:\n${document}`);
+	}
+	return body[1] ?? "";
 };
 
 /**
@@ -41,12 +43,12 @@ export const renderToString: SsrRenderer = async (component, options) => {
  * hoists (a `<link rel="preload">` for an `<img>`) then comes first.
  */
 export const renderForHydration: HydrationRenderer = async (component, options) => {
-  const errors: unknown[] = [];
-  const { prelude } = await prerender(createElement(asComponent(component), { ...options.props }), {
-    onError: (error) => void errors.push(error),
-  });
-  if (errors.length > 0) {
-    throw errors.length === 1 ? errors[0] : new AggregateError(errors, "React SSR failed.");
-  }
-  return new Response(prelude).text();
+	const errors: Array<unknown> = [];
+	const { prelude } = await prerender(createElement(asComponent(component), { ...options.props }), {
+		onError: (error) => void errors.push(error),
+	});
+	if (errors.length > 0) {
+		throw errors.length === 1 ? errors[0] : new AggregateError(errors, "React SSR failed.");
+	}
+	return new Response(prelude).text();
 };

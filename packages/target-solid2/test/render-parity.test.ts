@@ -22,25 +22,25 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Compiles and server-renders the parity component, as the `ssr:solid2` project would. */
 async function render(suite: ParitySuite, format: boolean): Promise<string> {
-  const [file] = await emitParity(target, suite, { format });
-  const code = await compileForServer(file!.contents, join(scratch, file!.path));
-  const path = join(scratch, `${randomUUID()}.js`);
-  writeFileSync(path, code);
-  return renderToString(((await import(path)) as { default: unknown }).default, {
-    props: parityProps(suite),
-  });
+	const [file] = await emitParity(target, suite, { format });
+	const code = await compileForServer(file!.contents, join(scratch, file!.path));
+	const path = join(scratch, `${randomUUID()}.js`);
+	writeFileSync(path, code);
+	return renderToString(((await import(path)) as { default: unknown }).default, {
+		props: parityProps(suite),
+	});
 }
 
 describe.each([true, false])("solid2 output (formatted: %s), rendered by Solid 2", (format) => {
-  it.each(paritySuites())(
-    "renders $title exactly as the reference describes them",
-    async (suite) => {
-      const html = await render(suite, format);
-      // Solid 2's hydration key is `_hk`, where Solid 1 wrote `data-hk`.
-      const rendered = parseHtml(html, { ignoreAttribute: (name) => name === "_hk" });
-      for (const { name, expected, actual } of compareCases(rendered, suite)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    },
-  );
+	it.each(paritySuites())(
+		"renders $title exactly as the reference describes them",
+		async (suite) => {
+			const html = await render(suite, format);
+			// Solid 2's hydration key is `_hk`, where Solid 1 wrote `data-hk`.
+			const rendered = parseHtml(html, { ignoreAttribute: (name) => name === "_hk" });
+			for (const { name, expected, actual } of compareCases(rendered, suite)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		},
+	);
 });

@@ -13,19 +13,19 @@ import { expect } from "vitest";
 import Counter from "./Counter.uf.tsx";
 
 describeTargets("state/counter", () => {
-  it("renders the initial count", async () => {
-    const view = await mountScenario(Counter, "initial");
-    await view.expectParity("initial"); // L7 DOM + ARIA, L9 (no steps), L10 pixels, L11 axe
-    await expect.element(view.getByRole("status")).toHaveTextContent("2"); // L8
-  });
+	it("renders the initial count", async () => {
+		const view = await mountScenario(Counter, "initial");
+		await view.expectParity("initial"); // L7 DOM + ARIA, L9 (no steps), L10 pixels, L11 axe
+		await expect.element(view.getByRole("status")).toHaveTextContent("2"); // L8
+	});
 
-  it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(Counter, "initial");
-    await view.user.click(view.getByRole("button", { name: "+3" })); // a step of the trace
-    await view.expectParity("after-increment"); // L9 compares the step with the trace
-    await expect.element(view.getByRole("status")).toHaveTextContent("5");
-    expect(view.emitted("change")).toEqual([[5]]);
-  });
+	it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(Counter, "initial");
+		await view.user.click(view.getByRole("button", { name: "+3" })); // a step of the trace
+		await view.expectParity("after-increment"); // L9 compares the step with the trace
+		await expect.element(view.getByRole("status")).toHaveTextContent("5");
+		expect(view.emitted("change")).toEqual([[5]]);
+	});
 });
 ```
 

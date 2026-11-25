@@ -98,12 +98,12 @@ or `@click` on a child type-checks against the child's root element under `stric
 ```tsx
 // Field.uf.tsx
 export default function Field({ label, ...rest }: { label: string }) {
-  defineOptions({ inheritAttrs: false });
-  return (
-    <label class="field">
-      {label} <input {...rest} />
-    </label>
-  );
+	defineOptions({ inheritAttrs: false });
+	return (
+		<label class="field">
+			{label} <input {...rest} />
+		</label>
+	);
 }
 
 // A parent

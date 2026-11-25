@@ -1,77 +1,77 @@
 import {
-  addTypeImports,
-  angularDialect,
-  codeNames,
-  codeKind,
-  defineTarget,
-  directiveSpecifier,
-  exportDeclaration,
-  importedDirectives,
-  ownDirectives,
-  exportsOf,
-  componentTypes,
-  js,
-  kebabCase,
-  moduleHelperName,
-  Placeholders,
-  printExpression,
-  printProgram,
-  rewriteCode,
-  scopeRoots,
-  sourceNames,
-  typeDeclarationCode,
-  typeExportsCode,
-  typeNames,
+	addTypeImports,
+	angularDialect,
+	codeNames,
+	codeKind,
+	defineTarget,
+	directiveSpecifier,
+	exportDeclaration,
+	importedDirectives,
+	ownDirectives,
+	exportsOf,
+	componentTypes,
+	js,
+	kebabCase,
+	moduleHelperName,
+	Placeholders,
+	printExpression,
+	printProgram,
+	rewriteCode,
+	scopeRoots,
+	sourceNames,
+	typeDeclarationCode,
+	typeExportsCode,
+	typeNames,
 } from "@unframework.dev/codegen";
 import type {
-  EmitContext,
-  ImportSet,
-  OutputFile,
-  RewriteRules,
-  Target,
+	EmitContext,
+	ImportSet,
+	OutputFile,
+	RewriteRules,
+	Target,
 } from "@unframework.dev/codegen";
 import { codeOf, functionsOf, walk } from "@unframework.dev/ir";
 import type { Span, TypeText, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
 import {
-  firstUse,
-  keyOf,
-  planComposition,
-  refObjectCode,
-  slotDirectiveCode,
-  tokenType,
+	firstUse,
+	keyOf,
+	planComposition,
+	refObjectCode,
+	slotDirectiveCode,
+	tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
 import {
-  directiveClassCode,
-  directiveClassName,
-  directiveFile,
-  emitDirective,
-  QUEUE_HELPER,
-  RUNNER_HELPER,
-  runnerCode,
-  runnerNames,
+	directiveClassCode,
+	directiveClassName,
+	directiveFile,
+	emitDirective,
+	QUEUE_HELPER,
+	RUNNER_HELPER,
+	runnerCode,
+	runnerNames,
 } from "./directive.ts";
 import {
-  directiveCode,
-  scopeDirectiveCode,
-  spaced,
-  teleportDirectiveCode,
-  transitionDirectiveCode,
-  transitionRegionCode,
-  textCaretDirectiveCode,
-  trustedHtmlPipeCode,
+	directiveCode,
+	scopeDirectiveCode,
+	spaced,
+	teleportDirectiveCode,
+	transitionDirectiveCode,
+	transitionRegionCode,
+	textCaretDirectiveCode,
+	trustedHtmlPipeCode,
 } from "./directives.ts";
 import type { ScopeDirectiveNames } from "./directives.ts";
 import {
-  ATTRIBUTES_INPUT,
-  childApi,
-  ELEMENT_MEMBER,
-  fallthroughDirectiveCode,
-  LISTENERS_INPUT,
-  planFallthrough,
-  planRootElement,
+	ATTRIBUTES_INPUT,
+	childApi,
+	ELEMENT_MEMBER,
+	fallthroughDirectiveCode,
+	LISTENERS_INPUT,
+	planFallthrough,
+	planRootElement,
 } from "./fallthrough.ts";
 import type { FallthroughPlan } from "./fallthrough.ts";
 import { planListeners } from "./listeners.ts";
@@ -80,13 +80,13 @@ import { planModels } from "./models.ts";
 import { moduleReads } from "./modules.ts";
 import { outputName } from "./outputs.ts";
 import {
-  ANGULAR_MEMBERS,
-  bindingById,
-  formOf,
-  memberOf,
-  moduleMember,
-  planComponent,
-  slotQuery,
+	ANGULAR_MEMBERS,
+	bindingById,
+	formOf,
+	memberOf,
+	moduleMember,
+	planComponent,
+	slotQuery,
 } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { classRules } from "./rules.ts";
@@ -97,7 +97,7 @@ import { declaredTypes } from "./types.ts";
 
 /** The note the emulated cells share: why a listener's option needs a directive. */
 const OPTION_NOTE =
-  "A template's `(event)` binding takes no listener options: an attribute directive per event and option (`[ufClickCapture]`), shared in the tree's `_unframework/`, listens with `Renderer2.listen` and re-emits the event (ADR-0047).";
+	"A template's `(event)` binding takes no listener options: an attribute directive per event and option (`[ufClickCapture]`), shared in the tree's `_unframework/`, listens with `Renderer2.listen` and re-emits the event (ADR-0047).";
 
 /**
  * The Angular 22 target: standalone, zoneless components. The host element gets
@@ -114,193 +114,195 @@ const OPTION_NOTE =
  * name, since a template sees only its component's members.
  */
 export const angular: Target = defineTarget({
-  name: "angular",
-  framework: { package: "@angular/core", range: ">=22 <23" },
-  capabilities: {
-    element: { support: "native" },
-    text: { support: "native" },
-    "static-attribute": { support: "native" },
-    listbox: { support: "native" },
-    interactivity: { support: "native" },
-    "event-capture": { support: "emulated", helper: "uf<Event>Capture", note: OPTION_NOTE },
-    "event-once": {
-      support: "emulated",
-      helper: "uf<Event>Once",
-      note: `${OPTION_NOTE} Beside another listener of its event on its element, which runs in attribute order with it in one template listener, it runs under a guard instead, \`once(clickOnce, $event) && …\`, a method that remembers the elements it ran on.`,
-    },
-    "event-passive": { support: "emulated", helper: "uf<Event>Passive", note: OPTION_NOTE },
-    "event-semantics": { support: "native" },
-    // Listeners run their handlers as the event is dispatched, controls and calls included.
-    "conditional-event-control": { support: "native" },
-    "use-id": {
-      support: "emulated",
-      helper: "idCounter",
-      note: "Angular has no id API: a counter makes each instance's ids, `uf-id-<component>-<n>`, as Angular Material makes its own. It is one per application, an injection token's, so a server render and the client that hydrates it count the same ids (ADR-0095).",
-    },
-    "next-tick": {
-      support: "emulated",
-      helper: "nextTick",
-      note: "Angular has no `nextTick`, and renders a change in a later task: a private method renders the pending change in a microtask with `ApplicationRef.tick()`, as Vue does, and resolves after it (ADR-0048).",
-    },
-    // Every declared input is a signal, set or not.
-    "late-prop": { support: "native" },
-    props: { support: "native" },
-    interpolation: { support: "native" },
-    conditional: { support: "native" },
-    list: { support: "native" },
-    fragment: { support: "native" },
-    "bound-attribute": { support: "native" },
-    "class-binding": {
-      support: "emulated",
-      helper: "classNames",
-      note: "Angular's `[class]` reads no nested array, and drops an entry that holds a space, so a class part that may be an array or an object goes through an inline helper, `classNames`, that reads it as Vue's `normalizeClass` does (ADR-0065).",
-    },
-    "style-binding": {
-      support: "emulated",
-      helper: "styleObject",
-      note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, a shared helper, `styleObject`, splits a declaration list into an object as Vue does (ADR-0065).",
-    },
-    "attribute-spread": { support: "native" },
-    // Angular sanitises a bound `innerHTML`: it drops `id`, `data-*` and `style` attributes, form
-    // controls and SVG. A pure pipe marks the markup trusted, so it renders as written (ADR-0097).
-    "raw-html": {
-      support: "emulated",
-      helper: "TrustedHtmlPipe",
-      note: "A pure pipe passes the markup through `DomSanitizer.bypassSecurityTrustHtml`, so Angular renders it as written instead of sanitising it.",
-    },
-    svg: { support: "native" },
-    component: { support: "native" },
-    "component-event": { support: "native" },
-    "default-slot": { support: "native" },
-    "named-slot": {
-      support: "emulated",
-      helper: "uf<Component><Slot>",
-      note: "Each named slot is a directive the component's file exports, `ng-template[uf<Component><Slot>]`, read with `contentChild` and rendered with `ngTemplateOutlet` (ADR-0056).",
-    },
-    "scoped-slot": {
-      support: "emulated",
-      helper: "uf<Component><Slot>",
-      note: "A scoped slot is a slot directive with `ngTemplateContextGuard`, so strict templates type the consumer's `let-` variables (ADR-0056).",
-    },
-    "slot-fallback": { support: "native" },
-    "default-slot-presence": {
-      support: "unsupported",
-      code: "UF4001",
-      severity: "error",
-      reason:
-        "Angular has no API for whether `<ng-content>` received content, and forwarding the default slot would re-project `<ng-content />`, which always counts as content (ADR-0056).",
-    },
-    "slot-forwarding": {
-      support: "emulated",
-      helper: "uf<Component><Slot>",
-      note: "A forwarded named slot re-declares the child's slot template under `@if`, with the parent's template as its content (ADR-0056).",
-    },
-    model: { support: "native" },
-    "two-way-binding": { support: "native" },
-    "model-array": {
-      support: "emulated",
-      helper: "toggle",
-      note: "A checkbox group's array goes through an inline helper, `toggle`, and a multiple select's through `selectedValues`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
-    },
-    "model-modifiers": {
-      support: "emulated",
-      helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
-    },
-    fallthrough: {
-      support: "emulated",
-      helper: "Fallthrough",
-      note: "Angular has no attribute spread, and a host that carries an attribute is not unwrapped. A component that takes what its consumer passes declares it as inputs, which the consumer binds on the host, and clears `class` and `style` from the host, which keeps only `display: contents` (ADR-0056): `class` and `style` merge into the element that takes them, its root or the props' rest's element, and the other attributes and native listeners come as two records, `ufAttributes` and `ufListeners`, which an attribute directive shared in the tree's `_unframework/`, `Fallthrough` (`[ufFallthrough]`), sets on that element through `Renderer2`, the consumer's attribute winning, and listens to in the browser after the element's own listeners. A root component passes them on to its own (ADR-0118). A hand-written consumer's attribute on the host stays on the host.",
-    },
-    "contextual-root": {
-      support: "unsupported",
-      code: "UF4001",
-      severity: "error",
-      reason:
-        "A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).",
-    },
-    expose: {
-      support: "emulated",
-      helper: "ufElement",
-      note: "`defineExpose` makes the functions public members, which a ref on the component, `viewChild`, reads. A component that exposes nothing declares `ufElement`, a `viewChild` of its root element, `ElementRef<HTMLButtonElement>`, or a `computed` of its root component's own, since its host is no element a ref may hold; the parent's ref is a `computed` of the child's `ufElement`, typed as the source types the element (ADR-0118).",
-    },
-    context: { support: "native" },
-    "reactive-context": {
-      support: "emulated",
-      helper: "refObject",
-      note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
-    },
-    "dynamic-component": {
-      support: "emulated",
-      helper: "@switch",
-      note: "Angular has no `<component is>` over a known set in a strict template: an `@switch` renders each candidate (ADR-0054).",
-    },
-    "scoped-styles": { support: "native" },
-    // The child's root takes the `data-uf-*` attributes its styled parents put on its host
-    // through `[ufScope]` (ADR-0063), but it renders inside the host, which selectors see.
-    "child-root-scope": {
-      support: "unsupported",
-      code: "UF4003",
-      severity: "info",
-      reason:
-        "Each root node of a child binds a shared attribute directive, `ScopeAttributes` (`[ufScope]`), that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
-    },
-    "slotted-styles": { support: "native" },
-    // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
-    // parent sees too little of its subtree to attach its sheets in Vue's order.
-    "sheet-order": {
-      support: "unsupported",
-      code: "UF4002",
-      severity: "info",
-      reason:
-        "Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
-    },
-    "generic-components": { support: "native" },
-    // Slot directives cannot infer `T` (ADR-0068): ngtsc infers a component's type parameter
-    // from its inputs alone.
-    "generic-slot-props": {
-      support: "unsupported",
-      code: "UF4004",
-      severity: "info",
-      reason:
-        "Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).",
-    },
-    composables: { support: "native" },
-    "composable-effect-order": { support: "native" },
-    // `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
-    hydration: { support: "native" },
-    // The setup goes on in `ngOnInit`, once the inputs are set, as a pending task the server's
-    // render and the application's stability wait for, and the template renders behind `@if`
-    // once it resolves, where hydration claims the server's nodes (ADR-0101).
-    "async-setup": { support: "native" },
-    "keyed-identity": { support: "native" },
-    // Angular's CDK portal is no framework import (P7), so an inline directive moves the view.
-    // An attribute directive whose hooks run through an inline runner and queue (ADR-0099).
-    directive: {
-      support: "emulated",
-      helper: RUNNER_HELPER,
-      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
-    },
-    // Angular's `animate.enter` and `animate.leave` take one class list, which can't run Vue's
-    // three phases, so an inline directive runs them, with `animate.leave`'s function form
-    // holding the removal (ADR-0100).
-    transition: {
-      support: "emulated",
-      helper: "Transition",
-      note: "A `<Transition>`'s element takes an inline directive, `ufTransition`, and a conditional child sits in an `<ng-container>` whose inline directive, `TransitionRegion`, is created with the transition and holds the branch shown. The directive runs Vue's enter classes once its region has rendered, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when something around the element removes it, so the directive lets the element go at once while its region still shows its branch (ADR-0100).",
-    },
-    teleport: {
-      support: "emulated",
-      helper: "Teleport",
-      note: "A `<Teleport>` is an `<ng-template>` whose inline directive, once the application has rendered, creates its view in its own view container and moves the view's nodes into `to`, as the CDK's `DomPortalOutlet` does, and removes them with the component (ADR-0098).",
-    },
-  },
-  emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    if (reportsLiteralFallthrough(component, context)) return [];
-    return [emitComponent(component, context)];
-  },
-  emitComposable,
-  emitDirective,
+	name: "angular",
+	framework: { package: "@angular/core", range: ">=22 <23" },
+	capabilities: {
+		element: { support: "native" },
+		text: { support: "native" },
+		"static-attribute": { support: "native" },
+		listbox: { support: "native" },
+		interactivity: { support: "native" },
+		"event-capture": { support: "emulated", helper: "uf<Event>Capture", note: OPTION_NOTE },
+		"event-once": {
+			support: "emulated",
+			helper: "uf<Event>Once",
+			note: `${OPTION_NOTE} Beside another listener of its event on its element, which runs in attribute order with it in one template listener, it runs under a guard instead, \`once(clickOnce, $event) && …\`, a method that remembers the elements it ran on.`,
+		},
+		"event-passive": { support: "emulated", helper: "uf<Event>Passive", note: OPTION_NOTE },
+		"event-semantics": { support: "native" },
+		// Listeners run their handlers as the event is dispatched, controls and calls included.
+		"conditional-event-control": { support: "native" },
+		"use-id": {
+			support: "emulated",
+			helper: "idCounter",
+			note: "Angular has no id API: a counter makes each instance's ids, `uf-id-<component>-<n>`, as Angular Material makes its own. It is one per application, an injection token's, so a server render and the client that hydrates it count the same ids (ADR-0095).",
+		},
+		"next-tick": {
+			support: "emulated",
+			helper: "nextTick",
+			note: "Angular has no `nextTick`, and renders a change in a later task: a private method renders the pending change in a microtask with `ApplicationRef.tick()`, as Vue does, and resolves after it (ADR-0048).",
+		},
+		// Every declared input is a signal, set or not.
+		"late-prop": { support: "native" },
+		props: { support: "native" },
+		interpolation: { support: "native" },
+		conditional: { support: "native" },
+		list: { support: "native" },
+		fragment: { support: "native" },
+		"bound-attribute": { support: "native" },
+		"class-binding": {
+			support: "emulated",
+			helper: "classNames",
+			note: "Angular's `[class]` reads no nested array, and drops an entry that holds a space, so a class part that may be an array or an object goes through an inline helper, `classNames`, that reads it as Vue's `normalizeClass` does (ADR-0065).",
+		},
+		"style-binding": {
+			support: "emulated",
+			helper: "styleObject",
+			note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, a shared helper, `styleObject`, splits a declaration list into an object as Vue does (ADR-0065).",
+		},
+		"attribute-spread": { support: "native" },
+		// Angular sanitises a bound `innerHTML`: it drops `id`, `data-*` and `style` attributes, form
+		// controls and SVG. A pure pipe marks the markup trusted, so it renders as written (ADR-0097).
+		"raw-html": {
+			support: "emulated",
+			helper: "TrustedHtmlPipe",
+			note: "A pure pipe passes the markup through `DomSanitizer.bypassSecurityTrustHtml`, so Angular renders it as written instead of sanitising it.",
+		},
+		svg: { support: "native" },
+		component: { support: "native" },
+		"component-event": { support: "native" },
+		"default-slot": { support: "native" },
+		"named-slot": {
+			support: "emulated",
+			helper: "uf<Component><Slot>",
+			note: "Each named slot is a directive the component's file exports, `ng-template[uf<Component><Slot>]`, read with `contentChild` and rendered with `ngTemplateOutlet` (ADR-0056).",
+		},
+		"scoped-slot": {
+			support: "emulated",
+			helper: "uf<Component><Slot>",
+			note: "A scoped slot is a slot directive with `ngTemplateContextGuard`, so strict templates type the consumer's `let-` variables (ADR-0056).",
+		},
+		"slot-fallback": { support: "native" },
+		"default-slot-presence": {
+			support: "unsupported",
+			code: "UF4001",
+			severity: "error",
+			reason:
+				"Angular has no API for whether `<ng-content>` received content, and forwarding the default slot would re-project `<ng-content />`, which always counts as content (ADR-0056).",
+		},
+		"slot-forwarding": {
+			support: "emulated",
+			helper: "uf<Component><Slot>",
+			note: "A forwarded named slot re-declares the child's slot template under `@if`, with the parent's template as its content (ADR-0056).",
+		},
+		model: { support: "native" },
+		"two-way-binding": { support: "native" },
+		"model-array": {
+			support: "emulated",
+			helper: "toggle",
+			note: "A checkbox group's array goes through an inline helper, `toggle`, and a multiple select's through `selectedValues`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
+		},
+		"model-modifiers": {
+			support: "emulated",
+			helper: "modelText",
+			note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
+		},
+		fallthrough: {
+			support: "emulated",
+			helper: "Fallthrough",
+			note: "Angular has no attribute spread, and a host that carries an attribute is not unwrapped. A component that takes what its consumer passes declares it as inputs, which the consumer binds on the host, and clears `class` and `style` from the host, which keeps only `display: contents` (ADR-0056): `class` and `style` merge into the element that takes them, its root or the props' rest's element, and the other attributes and native listeners come as two records, `ufAttributes` and `ufListeners`, which an attribute directive shared in the tree's `_unframework/`, `Fallthrough` (`[ufFallthrough]`), sets on that element through `Renderer2`, the consumer's attribute winning, and listens to in the browser after the element's own listeners. A root component passes them on to its own (ADR-0118). A hand-written consumer's attribute on the host stays on the host.",
+		},
+		"contextual-root": {
+			support: "unsupported",
+			code: "UF4001",
+			severity: "error",
+			reason:
+				"A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).",
+		},
+		expose: {
+			support: "emulated",
+			helper: "ufElement",
+			note: "`defineExpose` makes the functions public members, which a ref on the component, `viewChild`, reads. A component that exposes nothing declares `ufElement`, a `viewChild` of its root element, `ElementRef<HTMLButtonElement>`, or a `computed` of its root component's own, since its host is no element a ref may hold; the parent's ref is a `computed` of the child's `ufElement`, typed as the source types the element (ADR-0118).",
+		},
+		context: { support: "native" },
+		"reactive-context": {
+			support: "emulated",
+			helper: "refObject",
+			note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
+		},
+		"dynamic-component": {
+			support: "emulated",
+			helper: "@switch",
+			note: "Angular has no `<component is>` over a known set in a strict template: an `@switch` renders each candidate (ADR-0054).",
+		},
+		"scoped-styles": { support: "native" },
+		// The child's root takes the `data-uf-*` attributes its styled parents put on its host
+		// through `[ufScope]` (ADR-0063), but it renders inside the host, which selectors see.
+		"child-root-scope": {
+			support: "unsupported",
+			code: "UF4003",
+			severity: "info",
+			reason:
+				"Each root node of a child binds a shared attribute directive, `ScopeAttributes` (`[ufScope]`), that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
+		},
+		"slotted-styles": { support: "native" },
+		// Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
+		// parent sees too little of its subtree to attach its sheets in Vue's order.
+		"sheet-order": {
+			support: "unsupported",
+			code: "UF4002",
+			severity: "info",
+			reason:
+				"Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
+		},
+		"generic-components": { support: "native" },
+		// Slot directives cannot infer `T` (ADR-0068): ngtsc infers a component's type parameter
+		// from its inputs alone.
+		"generic-slot-props": {
+			support: "unsupported",
+			code: "UF4004",
+			severity: "info",
+			reason:
+				"Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).",
+		},
+		composables: { support: "native" },
+		"composable-effect-order": { support: "native" },
+		// `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
+		hydration: { support: "native" },
+		// The setup goes on in `ngOnInit`, once the inputs are set, as a pending task the server's
+		// render and the application's stability wait for, and the template renders behind `@if`
+		// once it resolves, where hydration claims the server's nodes (ADR-0101).
+		"async-setup": { support: "native" },
+		"keyed-identity": { support: "native" },
+		// Angular's CDK portal is no framework import (P7), so an inline directive moves the view.
+		// An attribute directive whose hooks run through an inline runner and queue (ADR-0099).
+		directive: {
+			support: "emulated",
+			helper: RUNNER_HELPER,
+			note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+		},
+		// Angular's `animate.enter` and `animate.leave` take one class list, which can't run Vue's
+		// three phases, so an inline directive runs them, with `animate.leave`'s function form
+		// holding the removal (ADR-0100).
+		transition: {
+			support: "emulated",
+			helper: "Transition",
+			note: "A `<Transition>`'s element takes an inline directive, `ufTransition`, and a conditional child sits in an `<ng-container>` whose inline directive, `TransitionRegion`, is created with the transition and holds the branch shown. The directive runs Vue's enter classes once its region has rendered, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when something around the element removes it, so the directive lets the element go at once while its region still shows its branch (ADR-0100).",
+		},
+		teleport: {
+			support: "emulated",
+			helper: "Teleport",
+			note: "A `<Teleport>` is an `<ng-template>` whose inline directive, once the application has rendered, creates its view in its own view container and moves the view's nodes into `to`, as the CDK's `DomPortalOutlet` does, and removes them with the component (ADR-0098).",
+		},
+	},
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
+		if (reportsLiteralFallthrough(component, context)) {
+			return [];
+		}
+		return [emitComponent(component, context)];
+	},
+	emitComposable,
+	emitDirective,
 });
 
 export default angular;
@@ -311,492 +313,508 @@ export default angular;
  * it, and it is not supported yet (UF1002, ADR-0122). Returns whether it reported.
  */
 function reportsLiteralFallthrough(component: UfComponent, context: EmitContext): boolean {
-  let reported = false;
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Component") return;
-      const literal = childApi(context.module, node.component)?.literal;
-      if (literal === undefined) return;
-      for (const attribute of node.attributes) {
-        if (!["Static", "Bound", "Event", "Class", "Style"].includes(attribute.kind)) continue;
-        reported = true;
-        context.report({
-          code: "UF1002",
-          severity: "error",
-          message: `The angular target does not pass what falls through to ${node.component}'s root yet: its \`${literal}\` attribute holds \`{{\`, so Angular prints the root where it binds nothing (ADR-0037).`,
-          span: attribute.span,
-        });
-      }
-    },
-  });
-  return reported;
+	let reported = false;
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Component") {
+				return;
+			}
+			const literal = childApi(context.module, node.component)?.literal;
+			if (literal === undefined) {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (!["Static", "Bound", "Event", "Class", "Style"].includes(attribute.kind)) {
+					continue;
+				}
+				reported = true;
+				context.report({
+					code: "UF1002",
+					severity: "error",
+					message: `The angular target does not pass what falls through to ${node.component}'s root yet: its \`${literal}\` attribute holds \`{{\`, so Angular prints the root where it binds nothing (ADR-0037).`,
+					span: attribute.span,
+				});
+			}
+		},
+	});
+	return reported;
 }
 
 /** A component's output file. */
 function emitComponent(component: UfComponent, context: EmitContext): OutputFile {
-  const { module } = context;
-  // With `helper`, the helpers that pass R1 to R4 are shared in `_unframework/` (ADR-0121).
-  const shares = context.helper !== undefined;
-  const plan = planComponent(component, module, shares);
-  const { imports } = plan;
-  const composition = planComposition(plan);
-  // Angular matches a child by its selector alone, so two children of one name are reported
-  // (UF1104), as two names that differ only in case are: rename one of them.
-  for (const [local, selector] of composition.clashes) {
-    context.report({
-      code: "UF1104",
-      severity: "error",
-      message: `\`${local}\` is written \`<${selector}>\` on Angular, as another component of its name is: Angular would match both. Rename one of them.`,
-      span: firstUse(component, local),
-    });
-  }
-  // A slot's directive selects its component's name and the slot's: two pairs can give one
-  // attribute (UF1104), so a template that fills both slots would match both directives.
-  for (const { fill, child, attribute, other } of composition.slotClashes) {
-    context.report({
-      code: "UF1104",
-      severity: "error",
-      message: `${child} is filled through \`${attribute}\` on Angular, as ${other} is: Angular would match both. Rename one of the slots.`,
-      span: fill.span,
-    });
-  }
-  const models = planModels(plan);
-  // The module's types keep their names, which consumers import. Angular's own names come
-  // next: its compiler accepts a signal input only in a class whose decorator is imported as
-  // `Component` (NG8110 otherwise), so a component named `Component` takes another name
-  // locally (`Component_1`), exported under its own.
-  const decoratorName = imports.add("@angular/core", "Component");
-  const className = imports.claim(component.name);
-  const placeholders = new Placeholders();
+	const { module } = context;
+	// With `helper`, the helpers that pass R1 to R4 are shared in `_unframework/` (ADR-0121).
+	const shares = context.helper !== undefined;
+	const plan = planComponent(component, module, shares);
+	const { imports } = plan;
+	const composition = planComposition(plan);
+	// Angular matches a child by its selector alone, so two children of one name are reported
+	// (UF1104), as two names that differ only in case are: rename one of them.
+	for (const [local, selector] of composition.clashes) {
+		context.report({
+			code: "UF1104",
+			severity: "error",
+			message: `\`${local}\` is written \`<${selector}>\` on Angular, as another component of its name is: Angular would match both. Rename one of them.`,
+			span: firstUse(component, local),
+		});
+	}
+	// A slot's directive selects its component's name and the slot's: two pairs can give one
+	// attribute (UF1104), so a template that fills both slots would match both directives.
+	for (const { fill, child, attribute, other } of composition.slotClashes) {
+		context.report({
+			code: "UF1104",
+			severity: "error",
+			message: `${child} is filled through \`${attribute}\` on Angular, as ${other} is: Angular would match both. Rename one of the slots.`,
+			span: fill.span,
+		});
+	}
+	const models = planModels(plan);
+	// The module's types keep their names, which consumers import. Angular's own names come
+	// next: its compiler accepts a signal input only in a class whose decorator is imported as
+	// `Component` (NG8110 otherwise), so a component named `Component` takes another name
+	// locally (`Component_1`), exported under its own.
+	const decoratorName = imports.add("@angular/core", "Component");
+	const className = imports.claim(component.name);
+	const placeholders = new Placeholders();
 
-  const callsNextTick = codeOf(component).some(({ code }) =>
-    code.refs.some((reference) => reference.kind === "Api"),
-  );
-  const nextTick = callsNextTick ? plan.members.claim("nextTick") : undefined;
-  const rules = classRules(plan, nextTick);
-  const closure = componentTypes(component, module);
-  // What the consumer passes falls through to the root, or to the rest's element (ADR-0056,
-  // ADR-0118), and a ref on the component holds its root element where it exposes nothing.
-  const fallthrough = planFallthrough(component, module);
-  const rootElement = planRootElement(component, module);
-  const forwards =
-    fallthrough?.passes && fallthrough.target.kind === "Component" ? fallthrough.target : undefined;
-  const listeners = planListeners(plan, nextTick, models.writes, forwards);
-  const reads = templateReads(plan, listeners);
-  const templateBindings = [...reads.read, ...reads.keyed, ...listeners.members].map((id) =>
-    bindingById(plan, id),
-  );
-  // A composable's result is read through its call's holder (ADR-0069).
-  const templateMembers = new Set<string>(
-    templateBindings
-      .filter((binding) => formOf(plan, binding) !== "module")
-      .map((binding) => memberOf(plan, binding).split(".")[0]!),
-  );
-  // A module's value is read through a member, of its name unless the class declares that one,
-  // as a global is (ADR-0070).
-  const moduleMembers = new Map(
-    templateBindings
-      .filter((binding) => formOf(plan, binding) === "module")
-      .map((binding) => [binding.name, moduleMember(plan, binding)] as const),
-  );
-  for (const method of listeners.methods) templateMembers.add(method.name);
-  for (const guard of listeners.guards) templateMembers.add(guard);
-  for (const slot of reads.slots) templateMembers.add(slotQuery(slot));
-  // A consumer's `class` and `style` fall through to a root element or component, or the
-  // rest's element, through inputs, and so do its other attributes and listeners, through two
-  // records; the host clears `class` and `style` for a component that takes them or opts out
-  // (ADR-0056, ADR-0118). An element Angular can bind nothing on (`{{` in an attribute,
-  // ADR-0037) takes none of them.
-  const clearsHost = fallthrough !== undefined || component.inheritAttrs === false;
-  reportApiClashes(component, composition, fallthrough, rootElement !== undefined, context);
-  // The directive the element that takes the records binds, and their listeners' type, shared
-  // in `_unframework/` with `helper` (ADR-0121).
-  const passes = !fallthrough?.passes
-    ? undefined
-    : shares
-      ? sharedFallthroughNames(plan, fallthrough)
-      : fallthroughNames(component, module, imports, fallthrough.target.kind !== "Component");
-  const usesRefObject = component.setup.some(
-    (item) =>
-      (item.kind === "Provide" || (item.kind === "Inject" && item.fallback)) &&
-      keyOf(plan, item.key).ref,
-  );
-  const refObject = usesRefObject ? imports.claim("refObject") : undefined;
-  const provided = providers(plan, rules, composition, className, refObject);
-  const nextId = component.setup.some((item) => item.kind === "Id")
-    ? imports.claim("idCounter")
-    : undefined;
-  const directives = shares
-    ? []
-    : listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
-  // `innerHTML` reads its markup through a pure pipe that marks it trusted (ADR-0097).
-  const trustedHtml = rendersRawHtml(component) ? plan.helper("TrustedHtmlPipe") : undefined;
-  // A teleport mounts its view through an inline directive (ADR-0098).
-  const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
-  // A transition runs through an inline directive, and a region directive around a conditional
-  // child (ADR-0100).
-  const transition = holdsTransition(component)
-    ? {
-        className: imports.claim("Transition"),
-        regionClass: imports.claim("TransitionRegion"),
-        // The region wraps a conditional child only, and the template imports it only then.
-        regions: holdsTransition(component, true),
-        ref: plan.members.claim("transition"),
-      }
-    : undefined;
-  // The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
-  // and its module's own as classes of this file, with the runner and queue their hooks run through.
-  const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>
-    imports.add(
-      directiveSpecifier(specifier, directiveFile(imported)),
-      directiveClassName(imported),
-      { exact: true },
-    ),
-  );
-  const ownApplied = ownDirectives(component, module);
-  // A shared `queueHook` is imported (ADR-0121); the rest of the runner stays inline (R2).
-  const runner = ownApplied.length
-    ? runnerNames((base) => (base === QUEUE_HELPER ? plan.helper(base) : imports.claim(base)))
-    : undefined;
-  const ownClasses = ownApplied.map((directive) => ({
-    directive,
-    className: imports.claim(directiveClassName(directive.name)),
-  }));
-  // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
-  // attributes the component's styled parents put on its host.
-  const roots = scopedRoots(component, fallthrough?.rest === true);
-  const scope = roots.size
-    ? {
-        ...(shares
-          ? { className: plan.helper("ScopeAttributes"), scopes: "" }
-          : scopeNames(component, module, imports)),
-        host: plan.members.claim("host"),
-      }
-    : undefined;
-  // A teleport root takes its parents' scope attributes off the host (ADR-0098).
-  const { render } = component;
-  const teleportHost =
-    teleport !== undefined &&
-    render.kind === "Fragment" &&
-    render.children.length === 1 &&
-    render.children[0]!.kind === "Teleport"
-      ? (scope?.host ?? plan.members.claim("host"))
-      : undefined;
-  const { members, implements: interfaces } = classMembers({
-    plan,
-    placeholders,
-    declarations: closure,
-    rules,
-    templateMembers,
-    globals: reads.globals,
-    moduleMembers,
-    handlers: listeners.methods,
-    guards: listeners.guards,
-    ...(listeners.once === undefined ? {} : { once: listeners.once }),
-    ...(nextTick === undefined ? {} : { nextTick }),
-    ...(nextId === undefined ? {} : { nextId }),
-    ...(refObject === undefined ? {} : { refObject }),
-    slots: composition.slots,
-    ...(fallthrough === undefined
-      ? {}
-      : { fallthrough: { passes: passes !== undefined, listeners: passes?.listeners ?? "" } }),
-    ...(rootElement === undefined
-      ? {}
-      : {
-          rootElement:
-            rootElement.root.kind === "Component"
-              ? {
-                  component: {
-                    className: rootElement.root.component,
-                    query: plan.members.claim("rootComponent"),
-                  },
-                }
-              : { type: rootElement.type! },
-        }),
-    keyNames: composition.keyNames,
-    external: provided.external,
-    helpers: models.helpers,
-    ...(models.server === undefined ? {} : { server: models.server }),
-  });
+	const callsNextTick = codeOf(component).some(({ code }) =>
+		code.refs.some((reference) => reference.kind === "Api"),
+	);
+	const nextTick = callsNextTick ? plan.members.claim("nextTick") : undefined;
+	const rules = classRules(plan, nextTick);
+	const closure = componentTypes(component, module);
+	// What the consumer passes falls through to the root, or to the rest's element (ADR-0056,
+	// ADR-0118), and a ref on the component holds its root element where it exposes nothing.
+	const fallthrough = planFallthrough(component, module);
+	const rootElement = planRootElement(component, module);
+	const forwards =
+		fallthrough?.passes && fallthrough.target.kind === "Component" ? fallthrough.target : undefined;
+	const listeners = planListeners(plan, nextTick, models.writes, forwards);
+	const reads = templateReads(plan, listeners);
+	const templateBindings = [...reads.read, ...reads.keyed, ...listeners.members].map((id) =>
+		bindingById(plan, id),
+	);
+	// A composable's result is read through its call's holder (ADR-0069).
+	const templateMembers = new Set<string>(
+		templateBindings
+			.filter((binding) => formOf(plan, binding) !== "module")
+			.map((binding) => memberOf(plan, binding).split(".")[0]!),
+	);
+	// A module's value is read through a member, of its name unless the class declares that one,
+	// as a global is (ADR-0070).
+	const moduleMembers = new Map(
+		templateBindings
+			.filter((binding) => formOf(plan, binding) === "module")
+			.map((binding) => [binding.name, moduleMember(plan, binding)] as const),
+	);
+	for (const method of listeners.methods) {
+		templateMembers.add(method.name);
+	}
+	for (const guard of listeners.guards) {
+		templateMembers.add(guard);
+	}
+	for (const slot of reads.slots) {
+		templateMembers.add(slotQuery(slot));
+	}
+	// A consumer's `class` and `style` fall through to a root element or component, or the
+	// rest's element, through inputs, and so do its other attributes and listeners, through two
+	// records; the host clears `class` and `style` for a component that takes them or opts out
+	// (ADR-0056, ADR-0118). An element Angular can bind nothing on (`{{` in an attribute,
+	// ADR-0037) takes none of them.
+	const clearsHost = fallthrough !== undefined || component.inheritAttrs === false;
+	reportApiClashes(component, composition, fallthrough, rootElement !== undefined, context);
+	// The directive the element that takes the records binds, and their listeners' type, shared
+	// in `_unframework/` with `helper` (ADR-0121).
+	const passes = !fallthrough?.passes
+		? undefined
+		: shares
+			? sharedFallthroughNames(plan, fallthrough)
+			: fallthroughNames(component, module, imports, fallthrough.target.kind !== "Component");
+	const usesRefObject = component.setup.some(
+		(item) =>
+			(item.kind === "Provide" || (item.kind === "Inject" && item.fallback)) &&
+			keyOf(plan, item.key).ref,
+	);
+	const refObject = usesRefObject ? imports.claim("refObject") : undefined;
+	const provided = providers(plan, rules, composition, className, refObject);
+	const nextId = component.setup.some((item) => item.kind === "Id")
+		? imports.claim("idCounter")
+		: undefined;
+	const directives = shares
+		? []
+		: listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
+	// `innerHTML` reads its markup through a pure pipe that marks it trusted (ADR-0097).
+	const trustedHtml = rendersRawHtml(component) ? plan.helper("TrustedHtmlPipe") : undefined;
+	// A teleport mounts its view through an inline directive (ADR-0098).
+	const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
+	// A transition runs through an inline directive, and a region directive around a conditional
+	// child (ADR-0100).
+	const transition = holdsTransition(component)
+		? {
+				className: imports.claim("Transition"),
+				regionClass: imports.claim("TransitionRegion"),
+				// The region wraps a conditional child only, and the template imports it only then.
+				regions: holdsTransition(component, true),
+				ref: plan.members.claim("transition"),
+			}
+		: undefined;
+	// The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
+	// and its module's own as classes of this file, with the runner and queue their hooks run through.
+	const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>
+		imports.add(
+			directiveSpecifier(specifier, directiveFile(imported)),
+			directiveClassName(imported),
+			{ exact: true },
+		),
+	);
+	const ownApplied = ownDirectives(component, module);
+	// A shared `queueHook` is imported (ADR-0121); the rest of the runner stays inline (R2).
+	const runner = ownApplied.length
+		? runnerNames((base) => (base === QUEUE_HELPER ? plan.helper(base) : imports.claim(base)))
+		: undefined;
+	const ownClasses = ownApplied.map((directive) => ({
+		directive,
+		className: imports.claim(directiveClassName(directive.name)),
+	}));
+	// The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
+	// attributes the component's styled parents put on its host.
+	const roots = scopedRoots(component, fallthrough?.rest === true);
+	const scope = roots.size
+		? {
+				...(shares
+					? { className: plan.helper("ScopeAttributes"), scopes: "" }
+					: scopeNames(component, module, imports)),
+				host: plan.members.claim("host"),
+			}
+		: undefined;
+	// A teleport root takes its parents' scope attributes off the host (ADR-0098).
+	const { render } = component;
+	const teleportHost =
+		teleport !== undefined &&
+		render.kind === "Fragment" &&
+		render.children.length === 1 &&
+		render.children[0]!.kind === "Teleport"
+			? (scope?.host ?? plan.members.claim("host"))
+			: undefined;
+	const { members, implements: interfaces } = classMembers({
+		plan,
+		placeholders,
+		declarations: closure,
+		rules,
+		templateMembers,
+		globals: reads.globals,
+		moduleMembers,
+		handlers: listeners.methods,
+		guards: listeners.guards,
+		...(listeners.once === undefined ? {} : { once: listeners.once }),
+		...(nextTick === undefined ? {} : { nextTick }),
+		...(nextId === undefined ? {} : { nextId }),
+		...(refObject === undefined ? {} : { refObject }),
+		slots: composition.slots,
+		...(fallthrough === undefined
+			? {}
+			: { fallthrough: { passes: passes !== undefined, listeners: passes?.listeners ?? "" } }),
+		...(rootElement === undefined
+			? {}
+			: {
+					rootElement:
+						rootElement.root.kind === "Component"
+							? {
+									component: {
+										className: rootElement.root.component,
+										query: plan.members.claim("rootComponent"),
+									},
+								}
+							: { type: rootElement.type! },
+				}),
+		keyNames: composition.keyNames,
+		external: provided.external,
+		helpers: models.helpers,
+		...(models.server === undefined ? {} : { server: models.server }),
+	});
 
-  type Entry = Parameters<typeof js.objectExpression>[0][number];
-  const metadata = js.objectExpression([
-    ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(composition.imports.length ||
-    directives.length ||
-    scope ||
-    passes?.directive !== undefined ||
-    models.textCaret ||
-    trustedHtml ||
-    teleport ||
-    transition ||
-    appliedImports.length ||
-    ownClasses.length
-      ? [
-          [
-            "imports",
-            js.arrayExpression(
-              [
-                ...composition.imports,
-                ...listeners.directives.map(({ className: name }) => name),
-                ...(scope ? [scope.className] : []),
-                ...(passes?.directive === undefined ? [] : [passes.directive]),
-                ...(models.textCaret === undefined ? [] : [models.textCaret]),
-                ...(trustedHtml === undefined ? [] : [trustedHtml]),
-                ...(teleport === undefined ? [] : [teleport]),
-                ...(transition === undefined
-                  ? []
-                  : [
-                      transition.className,
-                      ...(transition.regions ? [transition.regionClass] : []),
-                    ]),
-                ...appliedImports,
-                ...ownClasses.map(({ className: name }) => name),
-              ].map((name) => js.identifier(name)),
-            ),
-          ] satisfies Entry,
-        ]
-      : []),
-    ...(provided.code.length
-      ? [
-          [
-            "providers",
-            js.arrayExpression(provided.code.map((code) => placeholders.expression(code))),
-          ] satisfies Entry,
-        ]
-      : []),
-    [
-      "host",
-      clearsHost
-        ? js.objectExpression([
-            ["[attr.class]", js.stringLiteral("null")],
-            ["[attr.style]", js.stringLiteral("'display: contents;'")],
-          ])
-        : js.objectExpression([["style", js.stringLiteral("display: contents")]]),
-    ],
-    ["preserveWhitespaces", js.booleanLiteral(false)],
-    [
-      "template",
-      js.templateLiteral(
-        `\n${template(plan, listeners, reads, composition, models, { ...(fallthrough === undefined ? {} : { plan: fallthrough }), ...(rootElement === undefined ? {} : { rootElement }) }, scope && { roots, host: scope.host }, teleportHost, transition)}\n  `,
-      ),
-    ],
-    // The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own
-    // encapsulation would scope it again.
-    ...(component.styles
-      ? [
-          [
-            "styleUrl",
-            js.stringLiteral(`./${module.file.slice(module.file.lastIndexOf("/") + 1)}.css`),
-          ] satisfies Entry,
-          [
-            "encapsulation",
-            js.memberExpression(
-              js.identifier(imports.add("@angular/core", "ViewEncapsulation")),
-              "None",
-            ),
-          ] satisfies Entry,
-        ]
-      : []),
-  ]);
-  // Printed apart from the class: oxc-codegen puts a class's decorators after `export`, and
-  // Angular code puts them first.
-  const decorator = () =>
-    `@${printExpression(js.callExpression(js.identifier(decoratorName), [metadata]))}`;
-  // The host the root nodes' scope directive reads (`<button [ufScope]="this.host">`).
-  const hostName = scope?.host ?? teleportHost;
-  const hostMember = hostName !== undefined && [
-    js.propertyDefinition(
-      hostName,
-      placeholders.expression(
-        `${imports.add("@angular/core", "inject")}<${imports.add("@angular/core", "ElementRef")}<HTMLElement>>(${imports.add("@angular/core", "ElementRef")}).nativeElement`,
-      ),
-      { accessibility: "protected", readonly: true },
-    ),
-  ];
-  const declaration = js.classDeclaration(className, [], [...members, ...(hostMember || [])], {
-    implements: interfaces,
-  });
-  declaration.typeParameters = typeParameters(component, placeholders);
-  const statements = exportDeclaration(
-    className,
-    declaration,
-    exportsOf(component.name, module.exports),
-  );
-  const types = declaredTypes(closure, typeRoots(component, module));
-  // A slot's directive is exported under the name its consumers compute (`CardTitle`), which
-  // nothing else the file exports may take: a type, a key or the component (UF2003).
-  const exported = new Map<string, string>([
-    ...types.filter((type) => type.exported).map(({ name }) => [name, `the type`] as const),
-    ...composition.keys.map(({ name }) => [name, `the injection key`] as const),
-    ...exportsOf(component.name, module.exports).map(
-      ({ name }) => [name, `the component`] as const,
-    ),
-  ]);
-  for (const { slot, exported: name } of composition.slots) {
-    const other = exported.get(name);
-    if (other === undefined) continue;
-    context.report({
-      code: "UF2003",
-      severity: "error",
-      message: `\`${name}\` names the directive of \`${component.name}\`'s \`${slot.name}\` slot on Angular, and ${other} \`${name}\` too. Rename one of them.`,
-      span: slot.span,
-    });
-  }
-  // The file's own declarations, before the imports print: each adds the imports it needs.
-  const declarations = [
-    ...composition.keys.map(
-      (key) =>
-        `export const ${key.name} = new ${imports.add("@angular/core", "InjectionToken")}<${tokenType(key)}>(${JSON.stringify(key.description)});\n`,
-    ),
-    ...(refObject === undefined ? [] : [refObjectCode(refObject)]),
-    ...[...models.helpers, ...models.support]
-      .filter(({ shared }) => shared === undefined)
-      .map(({ code }) => `${code}\n`),
-    ...composition.slots.map((slot) =>
-      slotDirectiveCode(
-        component.name,
-        slot,
-        imports.add("@angular/core", "Directive"),
-        component.typeParameters,
-      ),
-    ),
-    ...(scope && !shares ? [scopeDirectiveCode(scope, imports)] : []),
-    ...(passes === undefined || shares
-      ? []
-      : [
-          fallthroughDirectiveCode(
-            passes,
-            fallthrough!.events,
-            (name, type = false) => imports.add("@angular/core", name, { type }),
-            (name) => imports.add("@angular/common", name),
-          ),
-        ]),
-    ...(models.textCaret === undefined || shares
-      ? []
-      : [textCaretDirectiveCode(models.textCaret, imports)]),
-    ...(trustedHtml === undefined || shares ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
-    ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
-    ...(transition === undefined
-      ? []
-      : [
-          transitionRegionCode(transition.regionClass, imports),
-          transitionDirectiveCode(transition.className, transition.regionClass, imports),
-        ]),
-    ...(runner === undefined ? [] : runnerCode(runner, !shares)),
-    ...ownClasses.map(({ directive, className: name }) =>
-      directiveClassCode(directive, name, runner?.run ?? RUNNER_HELPER, imports),
-    ),
-  ];
-  if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
-    imports.add("@angular/core", "WritableSignal", { type: true });
-  }
-  const path = `${kebabCase(component.name)}.ts`;
-  if (context.helper) {
-    importShared(context.helper, path, imports, [
-      ...listeners.directives.map((spec): SharedUse => ({
-        name: spec.name,
-        local: spec.className,
-        contents: directiveModule(spec),
-      })),
-      ...(scope ? [{ name: "ScopeAttributes", local: scope.className }] : []),
-      ...(passes === undefined
-        ? []
-        : [
-            { name: listenersExport(fallthrough!), local: passes.listeners, type: true },
-            ...(passes.directive === undefined
-              ? []
-              : [{ name: "Fallthrough", local: passes.directive }]),
-          ]),
-      ...models.helpers.flatMap(({ name, shared }) =>
-        shared === undefined ? [] : [{ name: shared, local: name }],
-      ),
-      ...(models.textCaret === undefined ? [] : [{ name: "TextCaret", local: models.textCaret }]),
-      ...(trustedHtml === undefined ? [] : [{ name: "TrustedHtmlPipe", local: trustedHtml }]),
-      ...(runner === undefined ? [] : [{ name: QUEUE_HELPER, local: runner.queue }]),
-    ]);
-  }
-  // The types it imports, by name, from where the source imports them, a child's from its
-  // output (`./field`), and in the main component's file the module's type exports, in source
-  // order among the types it declares (ADR-0067, ADR-0068).
-  addTypeImports(component, module, imports, kebabCase);
-  // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
-  const own = new Set(types.map(({ name }) => name));
-  const constants = moduleReads(component.bindings, module, imports, kebabCase);
-  const typeCode = [
-    ...[...types, ...constants.types.filter(({ name }) => !own.has(name))].map((type) => ({
-      code: typeDeclarationCode(type),
-      span: type.span,
-    })),
-    ...typeExportsCode(component, module, kebabCase),
-  ].toSorted((a, b) => a.span.start - b.span.start);
-  // One id counter per application, so a server render and the client that hydrates it count
-  // alike (ADR-0095). Claimed before the imports are printed.
-  const idCounter =
-    nextId === undefined
-      ? undefined
-      : `const ${nextId} = new ${imports.add("@angular/core", "InjectionToken")}<{ next: number }>("${nextId}", {\n  factory: () => ({ next: 0 }),\n});\n`;
-  const contents = placeholders.print(() =>
-    [
-      printProgram(js.program(imports.toDeclarations())),
-      ...typeCode.map(({ code }) => `${code}\n`),
-      ...(constants.constants.length ? [`${constants.constants.join("\n")}\n`] : []),
-      ...(idCounter === undefined ? [] : [idCounter]),
-      ...declarations,
-      ...directives.map(
-        ({ decorator: written, statements: declared }) =>
-          `${written}\n${spaced(printProgram(js.program(declared)))}`,
-      ),
-      decorator(),
-      spaced(printProgram(js.program(statements))),
-    ].join("\n"),
-  );
-  return { path, contents };
+	type Entry = Parameters<typeof js.objectExpression>[0][number];
+	const metadata = js.objectExpression([
+		["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
+		...(composition.imports.length ||
+		directives.length ||
+		scope ||
+		passes?.directive !== undefined ||
+		models.textCaret ||
+		trustedHtml ||
+		teleport ||
+		transition ||
+		appliedImports.length ||
+		ownClasses.length
+			? [
+					[
+						"imports",
+						js.arrayExpression(
+							[
+								...composition.imports,
+								...listeners.directives.map(({ className: name }) => name),
+								...(scope ? [scope.className] : []),
+								...(passes?.directive === undefined ? [] : [passes.directive]),
+								...(models.textCaret === undefined ? [] : [models.textCaret]),
+								...(trustedHtml === undefined ? [] : [trustedHtml]),
+								...(teleport === undefined ? [] : [teleport]),
+								...(transition === undefined
+									? []
+									: [
+											transition.className,
+											...(transition.regions ? [transition.regionClass] : []),
+										]),
+								...appliedImports,
+								...ownClasses.map(({ className: name }) => name),
+							].map((name) => js.identifier(name)),
+						),
+					] satisfies Entry,
+				]
+			: []),
+		...(provided.code.length
+			? [
+					[
+						"providers",
+						js.arrayExpression(provided.code.map((code) => placeholders.expression(code))),
+					] satisfies Entry,
+				]
+			: []),
+		[
+			"host",
+			clearsHost
+				? js.objectExpression([
+						["[attr.class]", js.stringLiteral("null")],
+						["[attr.style]", js.stringLiteral("'display: contents;'")],
+					])
+				: js.objectExpression([["style", js.stringLiteral("display: contents")]]),
+		],
+		["preserveWhitespaces", js.booleanLiteral(false)],
+		[
+			"template",
+			js.templateLiteral(
+				`\n${template(plan, listeners, reads, composition, models, { ...(fallthrough === undefined ? {} : { plan: fallthrough }), ...(rootElement === undefined ? {} : { rootElement }) }, scope && { roots, host: scope.host }, teleportHost, transition)}\n  `,
+			),
+		],
+		// The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own
+		// encapsulation would scope it again.
+		...(component.styles
+			? [
+					[
+						"styleUrl",
+						js.stringLiteral(`./${module.file.slice(module.file.lastIndexOf("/") + 1)}.css`),
+					] satisfies Entry,
+					[
+						"encapsulation",
+						js.memberExpression(
+							js.identifier(imports.add("@angular/core", "ViewEncapsulation")),
+							"None",
+						),
+					] satisfies Entry,
+				]
+			: []),
+	]);
+	// Printed apart from the class: oxc-codegen puts a class's decorators after `export`, and
+	// Angular code puts them first.
+	const decorator = () =>
+		`@${printExpression(js.callExpression(js.identifier(decoratorName), [metadata]))}`;
+	// The host the root nodes' scope directive reads (`<button [ufScope]="this.host">`).
+	const hostName = scope?.host ?? teleportHost;
+	const hostMember = hostName !== undefined && [
+		js.propertyDefinition(
+			hostName,
+			placeholders.expression(
+				`${imports.add("@angular/core", "inject")}<${imports.add("@angular/core", "ElementRef")}<HTMLElement>>(${imports.add("@angular/core", "ElementRef")}).nativeElement`,
+			),
+			{ accessibility: "protected", readonly: true },
+		),
+	];
+	const declaration = js.classDeclaration(className, [], [...members, ...(hostMember || [])], {
+		implements: interfaces,
+	});
+	declaration.typeParameters = typeParameters(component, placeholders);
+	const statements = exportDeclaration(
+		className,
+		declaration,
+		exportsOf(component.name, module.exports),
+	);
+	const types = declaredTypes(closure, typeRoots(component, module));
+	// A slot's directive is exported under the name its consumers compute (`CardTitle`), which
+	// nothing else the file exports may take: a type, a key or the component (UF2003).
+	const exported = new Map<string, string>([
+		...types.filter((type) => type.exported).map(({ name }) => [name, `the type`] as const),
+		...composition.keys.map(({ name }) => [name, `the injection key`] as const),
+		...exportsOf(component.name, module.exports).map(
+			({ name }) => [name, `the component`] as const,
+		),
+	]);
+	for (const { slot, exported: name } of composition.slots) {
+		const other = exported.get(name);
+		if (other === undefined) {
+			continue;
+		}
+		context.report({
+			code: "UF2003",
+			severity: "error",
+			message: `\`${name}\` names the directive of \`${component.name}\`'s \`${slot.name}\` slot on Angular, and ${other} \`${name}\` too. Rename one of them.`,
+			span: slot.span,
+		});
+	}
+	// The file's own declarations, before the imports print: each adds the imports it needs.
+	const declarations = [
+		...composition.keys.map(
+			(key) =>
+				`export const ${key.name} = new ${imports.add("@angular/core", "InjectionToken")}<${tokenType(key)}>(${JSON.stringify(key.description)});\n`,
+		),
+		...(refObject === undefined ? [] : [refObjectCode(refObject)]),
+		...[...models.helpers, ...models.support]
+			.filter(({ shared }) => shared === undefined)
+			.map(({ code }) => `${code}\n`),
+		...composition.slots.map((slot) =>
+			slotDirectiveCode(
+				component.name,
+				slot,
+				imports.add("@angular/core", "Directive"),
+				component.typeParameters,
+			),
+		),
+		...(scope && !shares ? [scopeDirectiveCode(scope, imports)] : []),
+		...(passes === undefined || shares
+			? []
+			: [
+					fallthroughDirectiveCode(
+						passes,
+						fallthrough!.events,
+						(name, type = false) => imports.add("@angular/core", name, { type }),
+						(name) => imports.add("@angular/common", name),
+					),
+				]),
+		...(models.textCaret === undefined || shares
+			? []
+			: [textCaretDirectiveCode(models.textCaret, imports)]),
+		...(trustedHtml === undefined || shares ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
+		...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
+		...(transition === undefined
+			? []
+			: [
+					transitionRegionCode(transition.regionClass, imports),
+					transitionDirectiveCode(transition.className, transition.regionClass, imports),
+				]),
+		...(runner === undefined ? [] : runnerCode(runner, !shares)),
+		...ownClasses.map(({ directive, className: name }) =>
+			directiveClassCode(directive, name, runner?.run ?? RUNNER_HELPER, imports),
+		),
+	];
+	if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
+		imports.add("@angular/core", "WritableSignal", { type: true });
+	}
+	const path = `${kebabCase(component.name)}.ts`;
+	if (context.helper) {
+		importShared(context.helper, path, imports, [
+			...listeners.directives.map((spec): SharedUse => ({
+				name: spec.name,
+				local: spec.className,
+				contents: directiveModule(spec),
+			})),
+			...(scope ? [{ name: "ScopeAttributes", local: scope.className }] : []),
+			...(passes === undefined
+				? []
+				: [
+						{ name: listenersExport(fallthrough!), local: passes.listeners, type: true },
+						...(passes.directive === undefined
+							? []
+							: [{ name: "Fallthrough", local: passes.directive }]),
+					]),
+			...models.helpers.flatMap(({ name, shared }) =>
+				shared === undefined ? [] : [{ name: shared, local: name }],
+			),
+			...(models.textCaret === undefined ? [] : [{ name: "TextCaret", local: models.textCaret }]),
+			...(trustedHtml === undefined ? [] : [{ name: "TrustedHtmlPipe", local: trustedHtml }]),
+			...(runner === undefined ? [] : [{ name: QUEUE_HELPER, local: runner.queue }]),
+		]);
+	}
+	// The types it imports, by name, from where the source imports them, a child's from its
+	// output (`./field`), and in the main component's file the module's type exports, in source
+	// order among the types it declares (ADR-0067, ADR-0068).
+	addTypeImports(component, module, imports, kebabCase);
+	// What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
+	const own = new Set(types.map(({ name }) => name));
+	const constants = moduleReads(component.bindings, module, imports, kebabCase);
+	const typeCode = [
+		...[...types, ...constants.types.filter(({ name }) => !own.has(name))].map((type) => ({
+			code: typeDeclarationCode(type),
+			span: type.span,
+		})),
+		...typeExportsCode(component, module, kebabCase),
+	].toSorted((a, b) => a.span.start - b.span.start);
+	// One id counter per application, so a server render and the client that hydrates it count
+	// alike (ADR-0095). Claimed before the imports are printed.
+	const idCounter =
+		nextId === undefined
+			? undefined
+			: `const ${nextId} = new ${imports.add("@angular/core", "InjectionToken")}<{ next: number }>("${nextId}", {\n  factory: () => ({ next: 0 }),\n});\n`;
+	const contents = placeholders.print(() =>
+		[
+			printProgram(js.program(imports.toDeclarations())),
+			...typeCode.map(({ code }) => `${code}\n`),
+			...(constants.constants.length ? [`${constants.constants.join("\n")}\n`] : []),
+			...(idCounter === undefined ? [] : [idCounter]),
+			...declarations,
+			...directives.map(
+				({ decorator: written, statements: declared }) =>
+					`${written}\n${spaced(printProgram(js.program(declared)))}`,
+			),
+			decorator(),
+			spaced(printProgram(js.program(statements))),
+		].join("\n"),
+	);
+	return { path, contents };
 }
 
 /** Whether an element of the component's template sets `innerHTML` (ADR-0097). */
 function rendersRawHtml(component: UfComponent): boolean {
-  let found = false;
-  walk(component.render, {
-    enter: (node) => {
-      if (node.kind === "Element" && node.attributes.some(({ kind }) => kind === "RawHtml")) {
-        found = true;
-      }
-      return found ? false : undefined;
-    },
-  });
-  return found;
+	let found = false;
+	walk(component.render, {
+		enter: (node) => {
+			if (node.kind === "Element" && node.attributes.some(({ kind }) => kind === "RawHtml")) {
+				found = true;
+			}
+			return found ? false : undefined;
+		},
+	});
+	return found;
 }
 
 /** Whether the template holds a `<Transition>`, or one around a conditional (ADR-0100). */
 function holdsTransition(component: UfComponent, conditional = false): boolean {
-  let found = false;
-  walk(component.render, {
-    enter: (node) => {
-      if (node.kind === "Transition" && (!conditional || node.children[0]?.kind === "If")) {
-        found = true;
-      }
-      return found ? false : undefined;
-    },
-  });
-  return found;
+	let found = false;
+	walk(component.render, {
+		enter: (node) => {
+			if (node.kind === "Transition" && (!conditional || node.children[0]?.kind === "If")) {
+				found = true;
+			}
+			return found ? false : undefined;
+		},
+	});
+	return found;
 }
 
 /** Whether the template holds a `<Teleport>` (ADR-0098). */
 function holdsTeleport(component: UfComponent): boolean {
-  let found = false;
-  walk(component.render, {
-    enter: (node) => {
-      if (node.kind === "Teleport") found = true;
-      return found ? false : undefined;
-    },
-  });
-  return found;
+	let found = false;
+	walk(component.render, {
+		enter: (node) => {
+			if (node.kind === "Teleport") {
+				found = true;
+			}
+			return found ? false : undefined;
+		},
+	});
+	return found;
 }
 
 /** A span's key in a set of root nodes. */
 function spanKey({ start, end }: Span): string {
-  return `${start}:${end}`;
+	return `${start}:${end}`;
 }
 
 /**
@@ -807,26 +825,26 @@ function spanKey({ start, end }: Span): string {
  * takes everything else its consumer passes (ADR-0118).
  */
 function scopedRoots(component: UfComponent, rest: boolean): Set<string> {
-  const { inheritAttrs: _, ...inheriting } = component;
-  const roots = new Set(scopeRoots(rest ? inheriting : component).map(spanKey));
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "Element" && angularDialect.literalRegion?.(node) !== undefined) {
-        roots.delete(spanKey(node.span));
-      }
-    },
-  });
-  return roots;
+	const { inheritAttrs: _, ...inheriting } = component;
+	const roots = new Set(scopeRoots(rest ? inheriting : component).map(spanKey));
+	walk(component.render, {
+		enter(node) {
+			if (node.kind === "Element" && angularDialect.literalRegion?.(node) !== undefined) {
+				roots.delete(spanKey(node.span));
+			}
+		},
+	});
+	return roots;
 }
 
 /** The names of the scope directive's code, claimed as {@link helperClaim} does. */
 function scopeNames(
-  component: UfComponent,
-  module: UfModule,
-  imports: ImportSet,
+	component: UfComponent,
+	module: UfModule,
+	imports: ImportSet,
 ): ScopeDirectiveNames {
-  const claim = helperClaim(component, module, imports);
-  return { className: claim("ScopeAttributes"), scopes: claim("scopes") };
+	const claim = helperClaim(component, module, imports);
+	return { className: claim("ScopeAttributes"), scopes: claim("scopes") };
 }
 
 /**
@@ -835,19 +853,19 @@ function scopeNames(
  * (a root component takes them through its own inputs).
  */
 function fallthroughNames(
-  component: UfComponent,
-  module: UfModule,
-  imports: ImportSet,
-  directive: boolean,
+	component: UfComponent,
+	module: UfModule,
+	imports: ImportSet,
+	directive: boolean,
 ): { listeners: string; directive?: string } {
-  const claim = helperClaim(component, module, imports);
-  const listeners = claim("Listeners");
-  return directive ? { listeners, directive: claim("Fallthrough") } : { listeners };
+	const claim = helperClaim(component, module, imports);
+	const listeners = claim("Listeners");
+	return directive ? { listeners, directive: claim("Fallthrough") } : { listeners };
 }
 
 /** The export name of the listeners' type the component's records take, in `_unframework/`. */
 function listenersExport(fallthrough: FallthroughPlan): string {
-  return fallthrough.events === "SVGElementEventMap" ? "SvgListeners" : "Listeners";
+	return fallthrough.events === "SVGElementEventMap" ? "SvgListeners" : "Listeners";
 }
 
 /**
@@ -855,13 +873,13 @@ function listenersExport(fallthrough: FallthroughPlan): string {
  * `plan.helper` claims them: one per source, so the join writes one import (A3).
  */
 function sharedFallthroughNames(
-  plan: Plan,
-  fallthrough: FallthroughPlan,
+	plan: Plan,
+	fallthrough: FallthroughPlan,
 ): { listeners: string; directive?: string } {
-  const listeners = plan.helper(listenersExport(fallthrough));
-  return fallthrough.target.kind !== "Component"
-    ? { listeners, directive: plan.helper("Fallthrough") }
-    : { listeners };
+	const listeners = plan.helper(listenersExport(fallthrough));
+	return fallthrough.target.kind !== "Component"
+		? { listeners, directive: plan.helper("Fallthrough") }
+		: { listeners };
 }
 
 /**
@@ -870,27 +888,27 @@ function sharedFallthroughNames(
  * past the names any other component declares.
  */
 function helperClaim(
-  component: UfComponent,
-  module: UfModule,
-  imports: ImportSet,
+	component: UfComponent,
+	module: UfModule,
+	imports: ImportSet,
 ): (helper: string) => string {
-  const index = module.components.findIndex((each) => each.name === component.name);
-  const reserved = module.components.map((each) => sourceNames(each, module));
-  return (helper) => {
-    const { base, others } = moduleHelperName(helper, reserved, index);
-    imports.reserve(...others);
-    imports.scope.rebase(helper, base);
-    return imports.claim(helper);
-  };
+	const index = module.components.findIndex((each) => each.name === component.name);
+	const reserved = module.components.map((each) => sourceNames(each, module));
+	return (helper) => {
+		const { base, others } = moduleHelperName(helper, reserved, index);
+		imports.reserve(...others);
+		imports.scope.rebase(helper, base);
+		return imports.claim(helper);
+	};
 }
 
 /** A name of the component's API on Angular, and what the source names with it. */
 interface ApiName {
-  /** A class member, an input or an output. */
-  space: "member" | "input" | "output";
-  name: string;
-  /** What declares it, for a diagnostic: "the prop `label`". */
-  what: string;
+	/** A class member, an input or an output. */
+	space: "member" | "input" | "output";
+	name: string;
+	/** What declares it, for a diagnostic: "the prop `label`". */
+	what: string;
 }
 
 /**
@@ -903,122 +921,126 @@ interface ApiName {
  * ./plan.ts renames it.
  */
 function reportApiClashes(
-  component: UfComponent,
-  composition: Composition,
-  fallthrough: FallthroughPlan | undefined,
-  rootElement: boolean,
-  context: EmitContext,
+	component: UfComponent,
+	composition: Composition,
+	fallthrough: FallthroughPlan | undefined,
+	rootElement: boolean,
+	context: EmitContext,
 ): void {
-  const taken = new Map<string, string>();
-  const key = ({ space, name }: ApiName) => `${space} ${name}`;
-  const declare = (names: ApiName[]) => {
-    for (const name of names) if (!taken.has(key(name))) taken.set(key(name), name.what);
-  };
-  for (const name of ANGULAR_MEMBERS) {
-    const what =
-      name === "constructor" ? "the class's constructor" : `the lifecycle hook \`${name}\``;
-    declare([{ space: "member", name, what }]);
-  }
-  for (const { slot } of composition.slots) {
-    const what = `the query of the \`${slot.name}\` slot`;
-    declare([{ space: "member", name: slotQuery(slot.name), what }]);
-  }
-  if (fallthrough) {
-    for (const name of ["class", "style"]) {
-      const what = `the input of the consumer's \`${name}\``;
-      declare([
-        { space: "member", name, what },
-        { space: "input", name, what },
-      ]);
-    }
-  }
-  if (fallthrough?.passes) {
-    for (const [name, what] of [
-      [ATTRIBUTES_INPUT, "the input of the consumer's attributes"],
-      [LISTENERS_INPUT, "the input of the consumer's listeners"],
-    ] as const) {
-      declare([
-        { space: "member", name, what },
-        { space: "input", name, what },
-      ]);
-    }
-  }
-  if (rootElement) {
-    const what = "the member that holds the root element a ref on the component holds";
-    declare([{ space: "member", name: ELEMENT_MEMBER, what }]);
-  }
-  const source: { kind: string; label: string; span: Span; names: ApiName[] }[] = [
-    ...component.props.map(({ name, span }) => {
-      const what = `the prop \`${name}\``;
-      return {
-        kind: "prop",
-        label: name,
-        span,
-        names: [
-          { space: "member" as const, name, what },
-          { space: "input" as const, name, what },
-        ],
-      };
-    }),
-    ...component.setup.flatMap((item) =>
-      item.kind === "Model"
-        ? [
-            {
-              kind: "model",
-              label: item.name,
-              span: item.span,
-              names: [
-                { space: "input" as const, name: item.name, what: `the model \`${item.name}\`` },
-                {
-                  space: "output" as const,
-                  name: `${item.name}Change`,
-                  what: `the output of the model \`${item.name}\``,
-                },
-              ],
-            },
-          ]
-        : [],
-    ),
-    ...(component.emits?.events ?? []).map(({ name: event, span }) => {
-      const name = outputName(event);
-      const what =
-        name === event
-          ? `the output of the event \`${event}\``
-          : `the output \`${name}\` of the event \`${event}\``;
-      return {
-        kind: "event",
-        label: event,
-        span,
-        names: [
-          { space: "member" as const, name, what },
-          { space: "output" as const, name, what },
-        ],
-      };
-    }),
-    ...(component.exposes?.functions ?? []).map((id) => {
-      const { name, span } = component.bindings.find((binding) => binding.id === id)!;
-      return {
-        kind: "function",
-        label: name,
-        span,
-        names: [{ space: "member" as const, name, what: `the exposed function \`${name}\`` }],
-      };
-    }),
-  ];
-  for (const { kind, label, span, names } of source) {
-    const clash = names.find((name) => taken.has(key(name)));
-    if (clash === undefined) {
-      declare(names);
-      continue;
-    }
-    const named = clash.name === label ? `\`${label}\`` : `\`${clash.name}\`, ${clash.what},`;
-    context.report({
-      code: "UF2003",
-      severity: "error",
-      message: `${named} names ${taken.get(key(clash))} on Angular. Rename the ${kind}.`,
-      span,
-    });
-  }
+	const taken = new Map<string, string>();
+	const key = ({ space, name }: ApiName) => `${space} ${name}`;
+	const declare = (names: Array<ApiName>) => {
+		for (const name of names) {
+			if (!taken.has(key(name))) {
+				taken.set(key(name), name.what);
+			}
+		}
+	};
+	for (const name of ANGULAR_MEMBERS) {
+		const what =
+			name === "constructor" ? "the class's constructor" : `the lifecycle hook \`${name}\``;
+		declare([{ space: "member", name, what }]);
+	}
+	for (const { slot } of composition.slots) {
+		const what = `the query of the \`${slot.name}\` slot`;
+		declare([{ space: "member", name: slotQuery(slot.name), what }]);
+	}
+	if (fallthrough) {
+		for (const name of ["class", "style"]) {
+			const what = `the input of the consumer's \`${name}\``;
+			declare([
+				{ space: "member", name, what },
+				{ space: "input", name, what },
+			]);
+		}
+	}
+	if (fallthrough?.passes) {
+		for (const [name, what] of [
+			[ATTRIBUTES_INPUT, "the input of the consumer's attributes"],
+			[LISTENERS_INPUT, "the input of the consumer's listeners"],
+		] as const) {
+			declare([
+				{ space: "member", name, what },
+				{ space: "input", name, what },
+			]);
+		}
+	}
+	if (rootElement) {
+		const what = "the member that holds the root element a ref on the component holds";
+		declare([{ space: "member", name: ELEMENT_MEMBER, what }]);
+	}
+	const source: Array<{ kind: string; label: string; span: Span; names: Array<ApiName> }> = [
+		...component.props.map(({ name, span }) => {
+			const what = `the prop \`${name}\``;
+			return {
+				kind: "prop",
+				label: name,
+				span,
+				names: [
+					{ space: "member" as const, name, what },
+					{ space: "input" as const, name, what },
+				],
+			};
+		}),
+		...component.setup.flatMap((item) =>
+			item.kind === "Model"
+				? [
+						{
+							kind: "model",
+							label: item.name,
+							span: item.span,
+							names: [
+								{ space: "input" as const, name: item.name, what: `the model \`${item.name}\`` },
+								{
+									space: "output" as const,
+									name: `${item.name}Change`,
+									what: `the output of the model \`${item.name}\``,
+								},
+							],
+						},
+					]
+				: [],
+		),
+		...(component.emits?.events ?? []).map(({ name: event, span }) => {
+			const name = outputName(event);
+			const what =
+				name === event
+					? `the output of the event \`${event}\``
+					: `the output \`${name}\` of the event \`${event}\``;
+			return {
+				kind: "event",
+				label: event,
+				span,
+				names: [
+					{ space: "member" as const, name, what },
+					{ space: "output" as const, name, what },
+				],
+			};
+		}),
+		...(component.exposes?.functions ?? []).map((id) => {
+			const { name, span } = component.bindings.find((binding) => binding.id === id)!;
+			return {
+				kind: "function",
+				label: name,
+				span,
+				names: [{ space: "member" as const, name, what: `the exposed function \`${name}\`` }],
+			};
+		}),
+	];
+	for (const { kind, label, span, names } of source) {
+		const clash = names.find((name) => taken.has(key(name)));
+		if (clash === undefined) {
+			declare(names);
+			continue;
+		}
+		const named = clash.name === label ? `\`${label}\`` : `\`${clash.name}\`, ${clash.what},`;
+		context.report({
+			code: "UF2003",
+			severity: "error",
+			message: `${named} names ${taken.get(key(clash))} on Angular. Rename the ${kind}.`,
+			span,
+		});
+	}
 }
 
 /**
@@ -1028,34 +1050,38 @@ function reportApiClashes(
  * signal. The members the factories read are public: they are read from outside the class.
  */
 function providers(
-  plan: Plan,
-  rules: RewriteRules,
-  composition: Composition,
-  className: string,
-  refObject: string | undefined,
-): { code: string[]; external: Set<string> } {
-  const external = new Set<string>();
-  const code: string[] = [];
-  const instance = plan.locals.claim(`${className.charAt(0).toLowerCase()}${className.slice(1)}`);
-  for (const item of plan.component.setup) {
-    if (item.kind !== "Provide") continue;
-    for (const reference of item.value.refs) {
-      if (reference.kind === "Binding") external.add(bindingById(plan, reference.binding).name);
-    }
-    const written = rewriteCode(item.value, plan.component, rules, "pure");
-    const value = keyOf(plan, item.key).ref ? `${refObject}(${written})` : written;
-    const key = composition.keyNames.get(item.key) ?? item.key;
-    const reads = value.split("this.").length - 1;
-    const inject = () => `${plan.imports.add("@angular/core", "inject")}(${className})`;
-    code.push(
-      reads === 0
-        ? `{ provide: ${key}, useValue: ${value} }`
-        : reads === 1
-          ? `{ provide: ${key}, useFactory: () => ${value.replace("this.", `${inject()}.`)} }`
-          : `{ provide: ${key}, useFactory: () => { const ${instance} = ${inject()}; return ${value.replaceAll("this.", `${instance}.`)}; } }`,
-    );
-  }
-  return { code, external };
+	plan: Plan,
+	rules: RewriteRules,
+	composition: Composition,
+	className: string,
+	refObject: string | undefined,
+): { code: Array<string>; external: Set<string> } {
+	const external = new Set<string>();
+	const code: Array<string> = [];
+	const instance = plan.locals.claim(`${className.charAt(0).toLowerCase()}${className.slice(1)}`);
+	for (const item of plan.component.setup) {
+		if (item.kind !== "Provide") {
+			continue;
+		}
+		for (const reference of item.value.refs) {
+			if (reference.kind === "Binding") {
+				external.add(bindingById(plan, reference.binding).name);
+			}
+		}
+		const written = rewriteCode(item.value, plan.component, rules, "pure");
+		const value = keyOf(plan, item.key).ref ? `${refObject}(${written})` : written;
+		const key = composition.keyNames.get(item.key) ?? item.key;
+		const reads = value.split("this.").length - 1;
+		const inject = () => `${plan.imports.add("@angular/core", "inject")}(${className})`;
+		code.push(
+			reads === 0
+				? `{ provide: ${key}, useValue: ${value} }`
+				: reads === 1
+					? `{ provide: ${key}, useFactory: () => ${value.replace("this.", `${inject()}.`)} }`
+					: `{ provide: ${key}, useFactory: () => { const ${instance} = ${inject()}; return ${value.replaceAll("this.", `${instance}.`)}; } }`,
+		);
+	}
+	return { code, external };
 }
 
 /**
@@ -1066,34 +1092,52 @@ function providers(
  * it by indexed access (`propType`).
  */
 function typeRoots(component: UfComponent, module: UfModule): Set<string> {
-  const names = new Set<string>();
-  const add = (found: Iterable<string>) => {
-    for (const name of found) names.add(name);
-  };
-  const declared = new Set(module.types.map(({ name }) => name));
-  for (const prop of component.props) {
-    add(
-      typeNames(
-        prop.declaredBy && component.propsParameter ? component.propsParameter.type : prop.type,
-      ),
-    );
-  }
-  for (const parameter of component.typeParameters ?? []) {
-    if (parameter.constraint) add(typeNames(parameter.constraint));
-    if (parameter.default) add(typeNames(parameter.default));
-  }
-  for (const event of component.emits?.events ?? []) {
-    for (const parameter of event.parameters) add(typeNames(parameter.type));
-  }
-  for (const item of component.setup) {
-    if ("type" in item && item.type) add(typeNames(item.type));
-  }
-  for (const { code } of codeOf(component)) add(codeNames(code.code, codeKind(code, component)));
-  for (const { function: fn } of functionsOf(component)) {
-    for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
-    if (fn.returnType) add(typeNames(fn.returnType));
-  }
-  return new Set([...names].filter((name) => declared.has(name)));
+	const names = new Set<string>();
+	const add = (found: Iterable<string>) => {
+		for (const name of found) {
+			names.add(name);
+		}
+	};
+	const declared = new Set(module.types.map(({ name }) => name));
+	for (const prop of component.props) {
+		add(
+			typeNames(
+				prop.declaredBy && component.propsParameter ? component.propsParameter.type : prop.type,
+			),
+		);
+	}
+	for (const parameter of component.typeParameters ?? []) {
+		if (parameter.constraint) {
+			add(typeNames(parameter.constraint));
+		}
+		if (parameter.default) {
+			add(typeNames(parameter.default));
+		}
+	}
+	for (const event of component.emits?.events ?? []) {
+		for (const parameter of event.parameters) {
+			add(typeNames(parameter.type));
+		}
+	}
+	for (const item of component.setup) {
+		if ("type" in item && item.type) {
+			add(typeNames(item.type));
+		}
+	}
+	for (const { code } of codeOf(component)) {
+		add(codeNames(code.code, codeKind(code, component)));
+	}
+	for (const { function: fn } of functionsOf(component)) {
+		for (const parameter of fn.parameters) {
+			if (parameter.type) {
+				add(typeNames(parameter.type));
+			}
+		}
+		if (fn.returnType) {
+			add(typeNames(fn.returnType));
+		}
+	}
+	return new Set([...names].filter((name) => declared.has(name)));
 }
 
 /**
@@ -1102,21 +1146,23 @@ function typeRoots(component: UfComponent, module: UfModule): Set<string> {
  * defaults copied as written. `null` for a component without them.
  */
 function typeParameters(
-  component: UfComponent,
-  placeholders: Placeholders,
+	component: UfComponent,
+	placeholders: Placeholders,
 ): ReturnType<typeof js.classDeclaration>["typeParameters"] {
-  if (!component.typeParameters?.length) return null;
-  const type = (text: TypeText | undefined) => (text ? placeholders.type(text.code) : null);
-  const params = component.typeParameters.map((parameter) => ({
-    type: "TSTypeParameter" as const,
-    name: js.bindingIdentifier(parameter.name),
-    constraint: type(parameter.constraint),
-    default: type(parameter.default),
-    in: false,
-    out: false,
-    const: false,
-    start: 0,
-    end: 0,
-  }));
-  return { type: "TSTypeParameterDeclaration", params, start: 0, end: 0 };
+	if (!component.typeParameters?.length) {
+		return null;
+	}
+	const type = (text: TypeText | undefined) => (text ? placeholders.type(text.code) : null);
+	const params = component.typeParameters.map((parameter) => ({
+		type: "TSTypeParameter" as const,
+		name: js.bindingIdentifier(parameter.name),
+		constraint: type(parameter.constraint),
+		default: type(parameter.default),
+		in: false,
+		out: false,
+		const: false,
+		start: 0,
+		end: 0,
+	}));
+	return { type: "TSTypeParameterDeclaration", params, start: 0, end: 0 };
 }

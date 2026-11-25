@@ -25,13 +25,13 @@
 import { childImports, keyImports, keyOwner, scopeRoots } from "@unframework.dev/codegen";
 import type { ImportSet } from "@unframework.dev/codegen";
 import type {
-  Binding,
-  InjectionKeyDeclaration,
-  ModelItem,
-  Span,
-  TypeDeclaration,
-  UfComponent,
-  UfModule,
+	Binding,
+	InjectionKeyDeclaration,
+	ModelItem,
+	Span,
+	TypeDeclaration,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { planFallthrough } from "./fallthrough.ts";
@@ -42,247 +42,259 @@ import { eventProp } from "./props.ts";
 
 /** What a component's composition adds to its output. */
 export class SolidComposition {
-  readonly component: UfComponent;
-  readonly module: UfModule;
-  readonly #imports: ImportSet;
-  /** The interfaces the props parameter takes beside its own type: the models', the slots'. */
-  readonly types: TypeDeclaration[] = [];
-  /** How the props parameter names each of `types`: `PickerSlots<T>` (src/generics.ts). */
-  readonly #references: string[] = [];
-  /**
-   * The type the props parameter takes for fallthrough and `ref`, or none: the attributes of the
-   * element they land on but the names the component declares (src/fallthrough.ts).
-   */
-  readonly inline: string | undefined;
-  /** How the component passes what falls through, and the consumer's `ref` (ADR-0118). */
-  readonly plan: FallthroughPlan | undefined;
-  /**
-   * Where `class` and `style` fall through: the root element's or root component's span, or
-   * none (a fragment, a conditional, `inheritAttrs: false`).
-   */
-  readonly fallthrough: Span | undefined;
-  /**
-   * The root nodes that spread the scope attributes of the styled parents that render the
-   * component (the child-root rule, ADR-0063), by `start:end` of their spans (`scopeRoots`).
-   */
-  readonly scopeRoots: ReadonlySet<string>;
-  /**
-   * The slots resolved once in the component with `children()`, by name, with the name of their
-   * content (see {@link resolvable}).
-   */
-  readonly resolved: ReadonlyMap<string, string>;
-  /** The slots resolved once in each row of the lists being printed, innermost last. */
-  readonly #rows: ReadonlyMap<string, string>[] = [];
+	readonly component: UfComponent;
+	readonly module: UfModule;
+	readonly #imports: ImportSet;
+	/** The interfaces the props parameter takes beside its own type: the models', the slots'. */
+	readonly types: Array<TypeDeclaration> = [];
+	/** How the props parameter names each of `types`: `PickerSlots<T>` (src/generics.ts). */
+	readonly #references: Array<string> = [];
+	/**
+	 * The type the props parameter takes for fallthrough and `ref`, or none: the attributes of the
+	 * element they land on but the names the component declares (src/fallthrough.ts).
+	 */
+	readonly inline: string | undefined;
+	/** How the component passes what falls through, and the consumer's `ref` (ADR-0118). */
+	readonly plan: FallthroughPlan | undefined;
+	/**
+	 * Where `class` and `style` fall through: the root element's or root component's span, or
+	 * none (a fragment, a conditional, `inheritAttrs: false`).
+	 */
+	readonly fallthrough: Span | undefined;
+	/**
+	 * The root nodes that spread the scope attributes of the styled parents that render the
+	 * component (the child-root rule, ADR-0063), by `start:end` of their spans (`scopeRoots`).
+	 */
+	readonly scopeRoots: ReadonlySet<string>;
+	/**
+	 * The slots resolved once in the component with `children()`, by name, with the name of their
+	 * content (see {@link resolvable}).
+	 */
+	readonly resolved: ReadonlyMap<string, string>;
+	/** The slots resolved once in each row of the lists being printed, innermost last. */
+	readonly #rows: Array<ReadonlyMap<string, string>> = [];
 
-  constructor(component: UfComponent, module: UfModule, imports: ImportSet) {
-    this.component = component;
-    this.module = module;
-    this.#imports = imports;
-    // Each child's output, by the name the template uses (ADR-0053): a component that renders
-    // itself calls its own function.
-    for (const child of childImports(component, module, (name) => name)) {
-      if (child.self) continue;
-      if (child.export === "default") {
-        imports.addDefault(child.specifier, child.local, { exact: true });
-      } else imports.add(child.specifier, child.name, { local: child.local, exact: true });
-    }
-    for (const key of keyImports(component, module, (name) => name)) {
-      if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
-    }
-    const jsx = () => imports.add("@solidjs/web", "JSX", { type: true });
-    const models = component.setup.filter((item): item is ModelItem => item.kind === "Model");
-    if (models.length) {
-      const name = imports.claim(`${component.name}Models`);
-      const members = models.flatMap((model) => {
-        const type = model.type?.code ?? "unknown";
-        return [
-          `  ${model.name}${model.required ? "" : "?"}: ${type};`,
-          `  ${eventProp(`${model.name}Change`)}?: (value: ${type}) => void;`,
-        ];
-      });
-      this.#declare(generatedInterface(component, name, members, model0Span(models)));
-    }
-    const { slots } = component;
-    if (slots) {
-      const name = imports.claim(`${component.name}Slots`);
-      const members = slots.slots.map((slot) => {
-        const prop = slot.name === "default" ? "children" : slot.name;
-        const type = slot.props
-          ? `(props: ${slot.props.code}) => ${jsx()}.Element`
-          : `${jsx()}.Element`;
-        return `  ${propertyKey(prop)}${slot.optional ? "?" : ""}: ${type};`;
-      });
-      this.#declare(generatedInterface(component, name, members, slots.span));
-    }
-    this.fallthrough = fallthroughRoot(component);
-    this.scopeRoots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
-    const { type, plan } = planFallthrough(component, module, {
-      componentProps: () => imports.add("@solidjs/web", "ComponentProps", { type: true }),
-      jsx,
-      exposed: () => this.exposedType(),
-    });
-    this.inline = type;
-    this.plan = plan;
-    this.resolved = this.#resolve(component.render, new Map());
-  }
+	constructor(component: UfComponent, module: UfModule, imports: ImportSet) {
+		this.component = component;
+		this.module = module;
+		this.#imports = imports;
+		// Each child's output, by the name the template uses (ADR-0053): a component that renders
+		// itself calls its own function.
+		for (const child of childImports(component, module, (name) => name)) {
+			if (child.self) {
+				continue;
+			}
+			if (child.export === "default") {
+				imports.addDefault(child.specifier, child.local, { exact: true });
+			} else {
+				imports.add(child.specifier, child.name, { local: child.local, exact: true });
+			}
+		}
+		for (const key of keyImports(component, module, (name) => name)) {
+			if (key.specifier) {
+				imports.add(key.specifier, key.name, { local: key.local, exact: true });
+			}
+		}
+		const jsx = () => imports.add("@solidjs/web", "JSX", { type: true });
+		const models = component.setup.filter((item): item is ModelItem => item.kind === "Model");
+		if (models.length) {
+			const name = imports.claim(`${component.name}Models`);
+			const members = models.flatMap((model) => {
+				const type = model.type?.code ?? "unknown";
+				return [
+					`  ${model.name}${model.required ? "" : "?"}: ${type};`,
+					`  ${eventProp(`${model.name}Change`)}?: (value: ${type}) => void;`,
+				];
+			});
+			this.#declare(generatedInterface(component, name, members, model0Span(models)));
+		}
+		const { slots } = component;
+		if (slots) {
+			const name = imports.claim(`${component.name}Slots`);
+			const members = slots.slots.map((slot) => {
+				const prop = slot.name === "default" ? "children" : slot.name;
+				const type = slot.props
+					? `(props: ${slot.props.code}) => ${jsx()}.Element`
+					: `${jsx()}.Element`;
+				return `  ${propertyKey(prop)}${slot.optional ? "?" : ""}: ${type};`;
+			});
+			this.#declare(generatedInterface(component, name, members, slots.span));
+		}
+		this.fallthrough = fallthroughRoot(component);
+		this.scopeRoots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
+		const { type, plan } = planFallthrough(component, module, {
+			componentProps: () => imports.add("@solidjs/web", "ComponentProps", { type: true }),
+			jsx,
+			exposed: () => this.exposedType(),
+		});
+		this.inline = type;
+		this.plan = plan;
+		this.resolved = this.#resolve(component.render, new Map());
+	}
 
-  /**
-   * The slots a template, or a list's row, resolves once (src/composition.ts's module comment):
-   * each slot without props that it tests, or the default slot where it falls back, which it
-   * renders or forwards once at most, outside any list row it holds. One a row renders is
-   * resolved in that row, so each row has its own content; one rendered twice is read twice.
-   */
-  #resolve(root: unknown, around: ReadonlyMap<string, string>): Map<string, string> {
-    const use = slotUse(root);
-    return new Map(
-      (this.component.slots?.slots ?? [])
-        .filter(
-          (slot) =>
-            !slot.props &&
-            !around.has(slot.name) &&
-            (use.tests.has(slot.name) || use.fallsBack.has(slot.name)) &&
-            (use.uses.get(slot.name) ?? 0) <= 1 &&
-            !use.rows.has(slot.name),
-        )
-        .map((slot) => [
-          slot.name,
-          this.#imports.claim(slot.name === "default" ? "content" : slot.name),
-        ]),
-    );
-  }
+	/**
+	 * The slots a template, or a list's row, resolves once (src/composition.ts's module comment):
+	 * each slot without props that it tests, or the default slot where it falls back, which it
+	 * renders or forwards once at most, outside any list row it holds. One a row renders is
+	 * resolved in that row, so each row has its own content; one rendered twice is read twice.
+	 */
+	#resolve(root: unknown, around: ReadonlyMap<string, string>): Map<string, string> {
+		const use = slotUse(root);
+		return new Map(
+			(this.component.slots?.slots ?? [])
+				.filter(
+					(slot) =>
+						!slot.props &&
+						!around.has(slot.name) &&
+						(use.tests.has(slot.name) || use.fallsBack.has(slot.name)) &&
+						(use.uses.get(slot.name) ?? 0) <= 1 &&
+						!use.rows.has(slot.name),
+				)
+				.map((slot) => [
+					slot.name,
+					this.#imports.claim(slot.name === "default" ? "content" : slot.name),
+				]),
+		);
+	}
 
-  /** The slots a list's row resolves, beside those the component and the rows around it do. */
-  rowSlots(body: unknown): Map<string, string> {
-    return this.#resolve(
-      body,
-      new Map([...this.resolved, ...this.#rows.flatMap((row) => [...row])]),
-    );
-  }
+	/** The slots a list's row resolves, beside those the component and the rows around it do. */
+	rowSlots(body: unknown): Map<string, string> {
+		return this.#resolve(
+			body,
+			new Map([...this.resolved, ...this.#rows.flatMap((row) => [...row])]),
+		);
+	}
 
-  /** What `print` prints inside a row that resolves `slots`. */
-  withinRow<T>(slots: ReadonlyMap<string, string>, print: () => T): T {
-    this.#rows.push(slots);
-    try {
-      return print();
-    } finally {
-      this.#rows.pop();
-    }
-  }
+	/** What `print` prints inside a row that resolves `slots`. */
+	withinRow<T>(slots: ReadonlyMap<string, string>, print: () => T): T {
+		this.#rows.push(slots);
+		try {
+			return print();
+		} finally {
+			this.#rows.pop();
+		}
+	}
 
-  /** The name of a slot's resolved content where it is printed, or none. */
-  resolvedSlot(slot: string): string | undefined {
-    for (const row of this.#rows.toReversed()) {
-      const name = row.get(slot);
-      if (name) return name;
-    }
-    return this.resolved.get(slot);
-  }
+	/** The name of a slot's resolved content where it is printed, or none. */
+	resolvedSlot(slot: string): string | undefined {
+		for (const row of this.#rows.toReversed()) {
+			const name = row.get(slot);
+			if (name) {
+				return name;
+			}
+		}
+		return this.resolved.get(slot);
+	}
 
-  /** The type texts the props parameter takes beside the props type and the events. */
-  parameterTypes(): string[] {
-    return [...this.#references, ...(this.inline ? [this.inline] : [])];
-  }
+	/** The type texts the props parameter takes beside the props type and the events. */
+	parameterTypes(): Array<string> {
+		return [...this.#references, ...(this.inline ? [this.inline] : [])];
+	}
 
-  #declare({ declaration, reference }: GeneratedInterface): void {
-    this.types.push(declaration);
-    this.#references.push(reference);
-  }
+	#declare({ declaration, reference }: GeneratedInterface): void {
+		this.types.push(declaration);
+		this.#references.push(reference);
+	}
 
-  /** Whether the output reads the props object for composition. */
-  get reads(): boolean {
-    return Boolean(
-      this.fallthrough ||
-      this.plan ||
-      this.scopeRoots.size ||
-      this.component.exposes ||
-      this.component.slots ||
-      this.component.setup.some((item) => item.kind === "Model"),
-    );
-  }
+	/** Whether the output reads the props object for composition. */
+	get reads(): boolean {
+		return Boolean(
+			this.fallthrough ||
+			this.plan ||
+			this.scopeRoots.size ||
+			this.component.exposes ||
+			this.component.slots ||
+			this.component.setup.some((item) => item.kind === "Model"),
+		);
+	}
 
-  /**
-   * The statements that resolve slots, before the setup or at the start of a list's row
-   * (`const content = children(() => props.children);`).
-   */
-  statements(object: string, slots: ReadonlyMap<string, string> = this.resolved): string[] {
-    if (!slots.size) return [];
-    const children = this.#imports.add("solid-js", "children");
-    return [...slots].map(
-      ([slot, name]) =>
-        `const ${name} = ${children}(() => ${object}.${slot === "default" ? "children" : slot});`,
-    );
-  }
+	/**
+	 * The statements that resolve slots, before the setup or at the start of a list's row
+	 * (`const content = children(() => props.children);`).
+	 */
+	statements(object: string, slots: ReadonlyMap<string, string> = this.resolved): Array<string> {
+		if (!slots.size) {
+			return [];
+		}
+		const children = this.#imports.add("solid-js", "children");
+		return [...slots].map(
+			([slot, name]) =>
+				`const ${name} = ${children}(() => ${object}.${slot === "default" ? "children" : slot});`,
+		);
+	}
 
-  /** The statement that hands the exposed functions to the `ref` prop, or none. */
-  expose(object: string): string | undefined {
-    const { exposes } = this.component;
-    if (!exposes) return undefined;
-    const names = exposes.functions.map((id) => this.#binding(id).name);
-    // Once, as an element's `ref` is called: `solid/reactivity` (L5) asks for `untrack`.
-    const untrack = this.#imports.add("solid-js", "untrack");
-    return `${untrack}(() => ${object}.ref?.({ ${names.join(", ")} }));`;
-  }
+	/** The statement that hands the exposed functions to the `ref` prop, or none. */
+	expose(object: string): string | undefined {
+		const { exposes } = this.component;
+		if (!exposes) {
+			return undefined;
+		}
+		const names = exposes.functions.map((id) => this.#binding(id).name);
+		// Once, as an element's `ref` is called: `solid/reactivity` (L5) asks for `untrack`.
+		const untrack = this.#imports.add("solid-js", "untrack");
+		return `${untrack}(() => ${object}.ref?.({ ${names.join(", ")} }));`;
+	}
 
-  /**
-   * The type of what the component exposes, its functions by their signatures: a parameter
-   * without a type is `unknown`, and a function without a return type returns `void`, which
-   * any return type is assignable to.
-   */
-  exposedType(): string {
-    const functions = new Map(
-      this.component.setup.flatMap((item) =>
-        item.kind === "Function" ? [[item.binding, item.function] as const] : [],
-      ),
-    );
-    const members = (this.component.exposes?.functions ?? []).map((id) => {
-      const fn = functions.get(id)!;
-      const parameters = fn.parameters.map((parameter, index) => {
-        const name = parameter.name ?? `arg${index}`;
-        const rest = parameter.rest ? "..." : "";
-        const optional = parameter.optional || parameter.default ? "?" : "";
-        return `${rest}${name}${optional}: ${parameter.type?.code ?? (parameter.rest ? "unknown[]" : "unknown")}`;
-      });
-      const returned = fn.returnType?.code ?? (fn.async ? "Promise<void>" : "void");
-      return `${this.#binding(id).name}: (${parameters.join(", ")}) => ${returned}`;
-    });
-    return `{ ${members.join("; ")} }`;
-  }
+	/**
+	 * The type of what the component exposes, its functions by their signatures: a parameter
+	 * without a type is `unknown`, and a function without a return type returns `void`, which
+	 * any return type is assignable to.
+	 */
+	exposedType(): string {
+		const functions = new Map(
+			this.component.setup.flatMap((item) =>
+				item.kind === "Function" ? [[item.binding, item.function] as const] : [],
+			),
+		);
+		const members = (this.component.exposes?.functions ?? []).map((id) => {
+			const fn = functions.get(id)!;
+			const parameters = fn.parameters.map((parameter, index) => {
+				const name = parameter.name ?? `arg${index}`;
+				const rest = parameter.rest ? "..." : "";
+				const optional = parameter.optional || parameter.default ? "?" : "";
+				return `${rest}${name}${optional}: ${parameter.type?.code ?? (parameter.rest ? "unknown[]" : "unknown")}`;
+			});
+			const returned = fn.returnType?.code ?? (fn.async ? "Promise<void>" : "void");
+			return `${this.#binding(id).name}: (${parameters.join(", ")}) => ${returned}`;
+		});
+		return `{ ${members.join("; ")} }`;
+	}
 
-  /** The module's keys, as contexts, when this component's output declares them. */
-  keys(): string[] {
-    const keys = this.module.keys ?? [];
-    if (
-      !keys.length ||
-      keyOwner(this.module.components, this.module.exports) !== this.component.name
-    ) {
-      return [];
-    }
-    // `null` by default: Solid 2's context without one throws where no provider is, and takes a
-    // provided `undefined` for none, where Vue's `inject` gives `undefined` or its fallback.
-    const createContext = this.#imports.add("solid-js", "createContext");
-    return keys.map(
-      (key) => `export const ${key.name} = ${createContext}<${contextType(key)} | null>(null);`,
-    );
-  }
+	/** The module's keys, as contexts, when this component's output declares them. */
+	keys(): Array<string> {
+		const keys = this.module.keys ?? [];
+		if (
+			!keys.length ||
+			keyOwner(this.module.components, this.module.exports) !== this.component.name
+		) {
+			return [];
+		}
+		// `null` by default: Solid 2's context without one throws where no provider is, and takes a
+		// provided `undefined` for none, where Vue's `inject` gives `undefined` or its fallback.
+		const createContext = this.#imports.add("solid-js", "createContext");
+		return keys.map(
+			(key) => `export const ${key.name} = ${createContext}<${contextType(key)} | null>(null);`,
+		);
+	}
 
-  /** A provided ref, `refObject`: an object whose `value` reads its signal. */
-  refObject(accessor: string): string {
-    return `{\nget value() {\nreturn ${accessor}();\n},\n}`;
-  }
+	/** A provided ref, `refObject`: an object whose `value` reads its signal. */
+	refObject(accessor: string): string {
+		return `{\nget value() {\nreturn ${accessor}();\n},\n}`;
+	}
 
-  #binding(id: string): Binding {
-    return this.component.bindings.find((binding) => binding.id === id)!;
-  }
+	#binding(id: string): Binding {
+		return this.component.bindings.find((binding) => binding.id === id)!;
+	}
 }
 
 /** Where the first model is declared. */
-function model0Span(models: readonly ModelItem[]): Span {
-  return models[0]!.span;
+function model0Span(models: ReadonlyArray<ModelItem>): Span {
+	return models[0]!.span;
 }
 
 /** A property's key: as it is when it is an identifier, quoted otherwise. */
 function propertyKey(name: string): string {
-  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
+	return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
 }
 
 /**
@@ -291,29 +303,37 @@ function propertyKey(name: string): string {
  * the source; none for any other root or with `inheritAttrs: false`.
  */
 function fallthroughRoot(component: UfComponent): Span | undefined {
-  if (component.inheritAttrs === false) return undefined;
-  const { render } = component;
-  if (render.kind === "Element") return render.span;
-  const [only] = render.children;
-  if (render.children.length !== 1) return undefined;
-  // A `<component is>` over tags renders one element, which takes them as a root element does
-  // (ADR-0119): `jsxDynamic` keeps its span for `isRoot`.
-  if (only?.kind === "Component") return only.span;
-  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
-    ? only.span
-    : undefined;
+	if (component.inheritAttrs === false) {
+		return undefined;
+	}
+	const { render } = component;
+	if (render.kind === "Element") {
+		return render.span;
+	}
+	const [only] = render.children;
+	if (render.children.length !== 1) {
+		return undefined;
+	}
+	// A `<component is>` over tags renders one element, which takes them as a root element does
+	// (ADR-0119): `jsxDynamic` keeps its span for `isRoot`.
+	if (only?.kind === "Component") {
+		return only.span;
+	}
+	return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
+		? only.span
+		: undefined;
 }
 
 /** What a template, or a row, does with its slots, outside the list rows it holds. */
 interface SlotUse {
-  /** The slots an expression tests (`slots.title`). */
-  tests: Set<string>;
-  /** How many times each slot is rendered or forwarded. */
-  uses: Map<string, number>;
-  /** The default slot, where it is rendered with a fallback. */
-  fallsBack: Set<string>;
-  /** The slots a list row it holds tests, renders or forwards. */
-  rows: Set<string>;
+	/** The slots an expression tests (`slots.title`). */
+	tests: Set<string>;
+	/** How many times each slot is rendered or forwarded. */
+	uses: Map<string, number>;
+	/** The default slot, where it is rendered with a fallback. */
+	fallsBack: Set<string>;
+	/** The slots a list row it holds tests, renders or forwards. */
+	rows: Set<string>;
 }
 
 /**
@@ -322,33 +342,45 @@ interface SlotUse {
  * whose slots it only notes.
  */
 function slotUse(root: unknown): SlotUse {
-  const use: SlotUse = { tests: new Set(), uses: new Map(), fallsBack: new Set(), rows: new Set() };
-  const visit = (value: unknown, row: boolean): void => {
-    if (Array.isArray(value)) {
-      for (const item of value) visit(item, row);
-      return;
-    }
-    if (!value || typeof value !== "object") return;
-    const node = value as Record<string, unknown>;
-    const named = (slot: unknown, count: boolean) => {
-      if (typeof slot !== "string") return;
-      if (row) use.rows.add(slot);
-      else if (count) use.uses.set(slot, (use.uses.get(slot) ?? 0) + 1);
-      else use.tests.add(slot);
-    };
-    if (node.kind === "SlotOutlet") {
-      named(node.slot, true);
-      if (!row && node.slot === "default" && (node.fallback as unknown[]).length) {
-        use.fallsBack.add("default");
-      }
-    } else if (node.kind === "Slot") named(node.slot, false);
-    named(node.forward, true);
-    for (const [key, child] of Object.entries(node)) {
-      visit(child, row || (node.kind === "For" && key === "body"));
-    }
-  };
-  visit(root, false);
-  return use;
+	const use: SlotUse = { tests: new Set(), uses: new Map(), fallsBack: new Set(), rows: new Set() };
+	const visit = (value: unknown, row: boolean): void => {
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				visit(item, row);
+			}
+			return;
+		}
+		if (!value || typeof value !== "object") {
+			return;
+		}
+		const node = value as Record<string, unknown>;
+		const named = (slot: unknown, count: boolean) => {
+			if (typeof slot !== "string") {
+				return;
+			}
+			if (row) {
+				use.rows.add(slot);
+			} else if (count) {
+				use.uses.set(slot, (use.uses.get(slot) ?? 0) + 1);
+			} else {
+				use.tests.add(slot);
+			}
+		};
+		if (node.kind === "SlotOutlet") {
+			named(node.slot, true);
+			if (!row && node.slot === "default" && (node.fallback as Array<unknown>).length) {
+				use.fallsBack.add("default");
+			}
+		} else if (node.kind === "Slot") {
+			named(node.slot, false);
+		}
+		named(node.forward, true);
+		for (const [key, child] of Object.entries(node)) {
+			visit(child, row || (node.kind === "For" && key === "body"));
+		}
+	};
+	visit(root, false);
+	return use;
 }
 
 /**
@@ -356,7 +388,9 @@ function slotUse(root: unknown): SlotUse {
  * the object `refObject` provides, `{ readonly value: number }`.
  */
 function contextType(key: InjectionKeyDeclaration): string {
-  if (!key.ref) return key.type.code;
-  const inner = /^\s*[A-Za-z]+\s*<([\s\S]*)>\s*$/.exec(key.type.code)?.[1]?.trim() ?? "unknown";
-  return `{ readonly value: ${inner} }`;
+	if (!key.ref) {
+		return key.type.code;
+	}
+	const inner = /^\s*[A-Za-z]+\s*<([\s\S]*)>\s*$/.exec(key.type.code)?.[1]?.trim() ?? "unknown";
+	return `{ readonly value: ${inner} }`;
 }

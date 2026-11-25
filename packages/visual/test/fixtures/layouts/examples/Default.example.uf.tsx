@@ -3,10 +3,10 @@
  * @order 2
  */
 export default function Default() {
-  return (
-    <>
-      <span>One</span>
-      <span>Two</span>
-    </>
-  );
+	return (
+		<>
+			<span>One</span>
+			<span>Two</span>
+		</>
+	);
 }

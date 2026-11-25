@@ -18,7 +18,7 @@ export { VIEWPORT } from "./viewport.ts";
  * timeout, so a locator that matches nothing would hold a failing test, or a browser canary,
  * for a minute.
  */
-export const ACTION_TIMEOUT = 5_000;
+export const ACTION_TIMEOUT = 5000;
 
 /**
  * The switches Chromium launches with, for the captures (L10):
@@ -35,22 +35,25 @@ export const ACTION_TIMEOUT = 5_000;
  *   depends on the DOM, never on what was repainted before it (test/parity/cases/stub/raster).
  *   Every reference capture of the corpus is byte-identical with and without it.
  */
-const CHROMIUM_ARGS: readonly string[] = ["--font-render-hinting=none", "--disable-partial-raster"];
+const CHROMIUM_ARGS: ReadonlyArray<string> = [
+	"--font-render-hinting=none",
+	"--disable-partial-raster",
+];
 
 /**
  * A browser command of any signature. Vitest calls it with its command context and the payload
  * the browser sent, which only the command and its caller agree on.
  */
-export type AnyBrowserCommand = (context: never, ...payload: never[]) => unknown;
+export type AnyBrowserCommand = (context: never, ...payload: Array<never>) => unknown;
 
 /** Options for {@link parityBrowser}. */
 export interface ParityBrowserOptions {
-  /** The project's name, also the instance's (or Vitest appends " (chromium)"). */
-  name: string;
-  /** Commands besides the testing API's own, such as a target's server-side render. */
-  commands?: Readonly<Record<string, AnyBrowserCommand>>;
-  /** The engine (`UF_BROWSER`, through the harness's mode); Chromium by default. */
-  browser?: BrowserEngine;
+	/** The project's name, also the instance's (or Vitest appends " (chromium)"). */
+	name: string;
+	/** Commands besides the testing API's own, such as a target's server-side render. */
+	commands?: Readonly<Record<string, AnyBrowserCommand>>;
+	/** The engine (`UF_BROWSER`, through the harness's mode); Chromium by default. */
+	browser?: BrowserEngine;
 }
 
 /**
@@ -59,38 +62,38 @@ export interface ParityBrowserOptions {
  * visual comparison for that project without a word.
  */
 export function parityBrowser(options: ParityBrowserOptions): BrowserConfigOptions {
-  const taken = Object.keys(options.commands ?? {}).filter((name) =>
-    Object.hasOwn(browserCommands, name),
-  );
-  if (taken.length) {
-    throw new Error(
-      `[uf] parityBrowser(${options.name}): ${taken.join(", ")} would replace the testing API's own command(s). Give the target's command another name.`,
-    );
-  }
-  const browser = options.browser ?? "chromium";
-  return {
-    enabled: true,
-    // Headed runs inherit the host's device pixel ratio; the captures need DPR 1.
-    headless: true,
-    viewport: VIEWPORT,
-    provider: playwright({
-      // Every Playwright call in the context waits this long at most (`setDefaultTimeout`):
-      // the actions, and the ARIA snapshot and focus commands. The visual command names its
-      // own timeouts.
-      actionTimeout: ACTION_TIMEOUT,
-      // Firefox and WebKit have no such switches; their captures compare live within the engine.
-      launchOptions: { args: browser === "chromium" ? [...CHROMIUM_ARGS] : [] },
-      contextOptions: {
-        deviceScaleFactor: 1,
-        colorScheme: "light",
-        reducedMotion: "reduce",
-        forcedColors: "none",
-        locale: "en-US",
-        timezoneId: "UTC",
-      },
-    }),
-    instances: [{ browser, name: options.name }],
-    // Vitest types each command against its own context; these take the parts they read.
-    commands: { ...browserCommands, ...options.commands } as BrowserConfigOptions["commands"],
-  };
+	const taken = Object.keys(options.commands ?? {}).filter((name) =>
+		Object.hasOwn(browserCommands, name),
+	);
+	if (taken.length) {
+		throw new Error(
+			`[uf] parityBrowser(${options.name}): ${taken.join(", ")} would replace the testing API's own command(s). Give the target's command another name.`,
+		);
+	}
+	const browser = options.browser ?? "chromium";
+	return {
+		enabled: true,
+		// Headed runs inherit the host's device pixel ratio; the captures need DPR 1.
+		headless: true,
+		viewport: VIEWPORT,
+		provider: playwright({
+			// Every Playwright call in the context waits this long at most (`setDefaultTimeout`):
+			// the actions, and the ARIA snapshot and focus commands. The visual command names its
+			// own timeouts.
+			actionTimeout: ACTION_TIMEOUT,
+			// Firefox and WebKit have no such switches; their captures compare live within the engine.
+			launchOptions: { args: browser === "chromium" ? [...CHROMIUM_ARGS] : [] },
+			contextOptions: {
+				deviceScaleFactor: 1,
+				colorScheme: "light",
+				reducedMotion: "reduce",
+				forcedColors: "none",
+				locale: "en-US",
+				timezoneId: "UTC",
+			},
+		}),
+		instances: [{ browser, name: options.name }],
+		// Vitest types each command against its own context; these take the parts they read.
+		commands: { ...browserCommands, ...options.commands } as BrowserConfigOptions["commands"],
+	};
 }

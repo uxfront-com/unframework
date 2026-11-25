@@ -6,58 +6,58 @@
 // (`useTemplateRef("name")`, `watchPostEffect`, the `uf-id-` prefix). Last come the functions the
 // template's listeners call where a handler cannot stay in the template (`listeners.ts`).
 import {
-  addPassThroughImports,
-  addTypeImports,
-  bindingOf,
-  childImports,
-  childIsAsync,
-  keyImports,
-  keyOwner,
-  componentTypes,
-  functionText,
-  ImportSet,
-  isPrimitiveState,
-  js,
-  ownDirectives,
-  printProgram,
-  referencedBindings,
-  rewriteCode,
-  typeExportsCode,
+	addPassThroughImports,
+	addTypeImports,
+	bindingOf,
+	childImports,
+	childIsAsync,
+	keyImports,
+	keyOwner,
+	componentTypes,
+	functionText,
+	ImportSet,
+	isPrimitiveState,
+	js,
+	ownDirectives,
+	printProgram,
+	referencedBindings,
+	rewriteCode,
+	typeExportsCode,
 } from "@unframework.dev/codegen";
 import type { RewriteRules } from "@unframework.dev/codegen";
 import { codeOf, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
-  Binding,
-  BindingId,
-  Code,
-  ComponentNode,
-  FunctionCode,
-  Prop,
-  PropsParameter,
-  SetupItem,
-  StateItem,
-  TypeDeclaration,
-  TypeParameter,
-  TypeText,
-  UfComponent,
-  UfModule,
-  WatchItem,
-  WatchSource,
+	Binding,
+	BindingId,
+	Code,
+	ComponentNode,
+	FunctionCode,
+	Prop,
+	PropsParameter,
+	SetupItem,
+	StateItem,
+	TypeDeclaration,
+	TypeParameter,
+	TypeText,
+	UfComponent,
+	UfModule,
+	WatchItem,
+	WatchSource,
 } from "@unframework.dev/ir";
 
 import {
-  addReadTypeImports,
-  constantTypes,
-  declarationCode,
-  moduleBindings,
+	addReadTypeImports,
+	constantTypes,
+	declarationCode,
+	moduleBindings,
 } from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
 import { addDirectiveImports, directiveCode } from "./directive.ts";
 import {
-  changingElementRefs,
-  planRest,
-  restAttributesType,
-  rootElementRefs,
+	changingElementRefs,
+	planRest,
+	restAttributesType,
+	rootElementRefs,
 } from "./fallthrough.ts";
 import type { RestPlan } from "./fallthrough.ts";
 import { planListeners } from "./listeners.ts";
@@ -66,37 +66,37 @@ import { moduleReach, unreachable, VUE_RESERVED, VueNames } from "./names.ts";
 
 /** What a component's script gives its template. */
 export interface ScriptSetup {
-  /** The `<script setup lang="ts">` block: absent for a component with nothing to declare. */
-  block?: string;
-  /** How the template spells references: a setup ref's value is the ref, which Vue unwraps. */
-  rewrite: RewriteRules;
-  /** Each listener's attribute, as the template writes it. */
-  listeners: Listeners;
-  /** The name the script imports a child under, where it is not the child's own. */
-  components: ReadonlyMap<string, string>;
-  /**
-   * The `<script lang="ts">` block of the output that declares the module's injection keys
-   * (ADR-0054), which a `<script setup>` cannot export: absent elsewhere.
-   */
-  keys?: string;
-  /**
-   * The local directive that puts a bound `<textarea>`'s caret after its text (`vTextCaret`),
-   * when the template binds one: the template writes it beside the field's `v-model`.
-   */
-  textCaret?: string;
-  /**
-   * The ref that turns true once the component has mounted, when its template holds a
-   * `<Teleport>` (ADR-0098): each teleport is `v-if` on it, so neither the server nor the
-   * hydrating client renders its content.
-   */
-  mounted?: string;
-  /**
-   * The key the template's `ref` reads a child's instance by, for each template ref on a child
-   * that exposes nothing: the source's ref is its root element, the instance's `$el` (ADR-0118).
-   */
-  instanceRefs: ReadonlyMap<BindingId, string>;
-  /** How the template binds the props' rest (ADR-0118), when an element spreads it. */
-  rest?: RestPlan;
+	/** The `<script setup lang="ts">` block: absent for a component with nothing to declare. */
+	block?: string;
+	/** How the template spells references: a setup ref's value is the ref, which Vue unwraps. */
+	rewrite: RewriteRules;
+	/** Each listener's attribute, as the template writes it. */
+	listeners: Listeners;
+	/** The name the script imports a child under, where it is not the child's own. */
+	components: ReadonlyMap<string, string>;
+	/**
+	 * The `<script lang="ts">` block of the output that declares the module's injection keys
+	 * (ADR-0054), which a `<script setup>` cannot export: absent elsewhere.
+	 */
+	keys?: string;
+	/**
+	 * The local directive that puts a bound `<textarea>`'s caret after its text (`vTextCaret`),
+	 * when the template binds one: the template writes it beside the field's `v-model`.
+	 */
+	textCaret?: string;
+	/**
+	 * The ref that turns true once the component has mounted, when its template holds a
+	 * `<Teleport>` (ADR-0098): each teleport is `v-if` on it, so neither the server nor the
+	 * hydrating client renders its content.
+	 */
+	mounted?: string;
+	/**
+	 * The key the template's `ref` reads a child's instance by, for each template ref on a child
+	 * that exposes nothing: the source's ref is its root element, the instance's `$el` (ADR-0118).
+	 */
+	instanceRefs: ReadonlyMap<BindingId, string>;
+	/** How the template binds the props' rest (ADR-0118), when an element spreads it. */
+	rest?: RestPlan;
 }
 
 /**
@@ -105,24 +105,24 @@ export interface ScriptSetup {
  * imported, and written, under a name of its own.
  */
 const VUE_BUILT_INS: ReadonlySet<string> = new Set([
-  "BaseTransition",
-  "Component",
-  "KeepAlive",
-  "Suspense",
-  "Teleport",
-  "Transition",
-  "TransitionGroup",
+	"BaseTransition",
+	"Component",
+	"KeepAlive",
+	"Suspense",
+	"Teleport",
+	"Transition",
+	"TransitionGroup",
 ]);
 
 /** A statement of the script, and how it sits beside its neighbours. */
 export interface Statement {
-  code: string;
-  /**
-   * `macro` for `defineProps` and `defineEmits`, `line` for a declaration on one line: a run of
-   * either stays together, and a blank line separates everything else, as a person lays out a
-   * script.
-   */
-  layout: "macro" | "line" | "block";
+	code: string;
+	/**
+	 * `macro` for `defineProps` and `defineEmits`, `line` for a declaration on one line: a run of
+	 * either stays together, and a blank line separates everything else, as a person lays out a
+	 * script.
+	 */
+	layout: "macro" | "line" | "block";
 }
 
 /**
@@ -152,209 +152,225 @@ export interface Statement {
  * `undefined` default for each optional prop, for the same two reasons.
  */
 export function scriptSetup(component: UfComponent, module: UfModule): ScriptSetup {
-  const names = new VueNames(component, module);
-  const imports = new ImportSet(names.scope);
-  // Each child's output, by the name the template uses (ADR-0053), a component of the same file
-  // included. A component that renders itself names itself instead: a virtual module's file name
-  // is not its name (ADR-0021), and importing its own file fails `import/no-self-import` (L5).
-  // A name Vue keeps for a built-in is claimed last, so it never takes a child's own name.
-  const children = childImports(component, module, (name) => `${name}.vue`);
-  const components = new Map<string, string>();
-  for (const child of children) {
-    if (!child.self && !VUE_BUILT_INS.has(child.local)) {
-      // A child the source imports under two names is imported once, and written by that name.
-      const local = imports.addDefault(child.specifier, child.local, { exact: true });
-      if (local !== child.local) components.set(child.local, local);
-    }
-  }
-  for (const child of children) {
-    if (!VUE_BUILT_INS.has(child.local)) continue;
-    const local = `${child.local}Component`;
-    components.set(
-      child.local,
-      child.self ? names.scope.claim(local) : imports.addDefault(child.specifier, local),
-    );
-  }
-  for (const key of keyImports(component, module, (name) => `${name}.vue`)) {
-    if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
-  }
-  // The imports that pass through, which the template reads as written (ADR-0064).
-  addPassThroughImports(component, module, imports);
-  // Each composable it calls, from the composable's own output, `./useToggle` beside
-  // `useToggle.uf.ts` (ADR-0069).
-  addComposableImports(component, module, imports);
-  // Each directive it applies from a `.uf.ts` module, from the directive's own output (ADR-0099).
-  addDirectiveImports(component, module, imports);
-  // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
-  const reads = moduleBindings(component, module, imports, names);
-  const constants = reads.constants;
-  // The output of the module's main component declares the keys, and the types it copies, in a
-  // plain `<script lang="ts">` block, which `<script setup>` reads.
-  const keys =
-    module.keys?.length && keyOwner(module.components, module.exports) === component.name
-      ? keyBlock(component, module, names, reads)
-      : undefined;
-  // The types it imports, by name, beside the types it copies (ADR-0067): a child's from its
-  // output, `./Field.vue`.
-  if (!keys) {
-    addTypeImports(component, module, imports, (name) => `${name}.vue`);
-    addReadTypeImports(module, imports, reads.typeNames);
-  }
-  // `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
-  for (const binding of component.bindings) {
-    const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
-    if (alias) names.rename(binding.id, alias);
-  }
-  const self = children.find((child) => child.self);
-  const recursive = self && (components.get(self.local) ?? self.local);
-  const statements: Statement[] = [];
-  const parameter = component.propsParameter;
-  if (parameter) {
-    const read = referencedBindings(component);
-    const attributes = restAttributesType(component, () =>
-      imports.add("vue", "IntrinsicElementAttributes", { type: true }),
-    );
-    const type = propsType(component, parameter, attributes);
-    statements.push({
-      code:
-        parameter.form === "object"
-          ? objectDeclaration(component, type, parameter, names, read)
-          : destructuredDeclaration(component, type, names, read),
-      layout: "macro",
-    });
-  }
-  const script = names.scriptRules(() => imports.add("vue", "nextTick"));
-  const template = names.templateRules();
-  // Planned before the setup is printed: a listener's script function claims its name first,
-  // in document order, as the template reads it.
-  const listeners = planListeners(component, names, { script, template });
-  const instanceRefs = rootElementRefs(component, module, names);
-  const rest = planRest(component, names);
-  if (component.emits) {
-    const { emits } = component;
-    const emit = bindingOf(component, emits.binding);
-    // An `emit` nothing calls declares the events alone, as `defineProps` without a pattern.
-    const declared = emitIsCalled(component, emit) ? `const ${names.local(emit)} = ` : "";
-    statements.push({ code: `${declared}defineEmits<${emits.type.code}>();`, layout: "macro" });
-  }
-  if (component.slots) {
-    const binding = bindingOf(component, component.slots.binding);
-    // Bound only where the template tests or forwards a slot: `<slot>` renders one alone.
-    const declared = readsSlots(component) ? `const ${names.local(binding)} = ` : "";
-    statements.push({
-      code: `${declared}defineSlots<${slotsType(component)}>();`,
-      layout: "macro",
-    });
-  }
-  const options = [
-    ...(recursive ? [`name: ${JSON.stringify(recursive)}`] : []),
-    // A teleport root takes no attribute, which Vue would warn about (ADR-0098).
-    ...(component.inheritAttrs === false ||
-    teleportRoot(component) ||
-    asyncRootChild(component, module)
-      ? ["inheritAttrs: false"]
-      : []),
-  ];
-  if (options.length) {
-    statements.push({ code: `defineOptions({ ${options.join(", ")} });`, layout: "macro" });
-  }
-  const exposed = component.exposes?.functions.map((id) => {
-    const binding = bindingOf(component, id);
-    const local = names.local(binding);
-    return local === binding.name ? local : `${binding.name}: ${local}`;
-  });
-  const expose = exposed && `defineExpose({ ${exposed.join(", ")} });`;
-  // An async setup exposes before its first await, or the parent's ref keeps the bare proxy
-  // (ADR-0101): the functions it names are then declarations, which hoist.
-  const awaits = component.setup.some((item) => item.kind === "Await");
-  if (expose && awaits) statements.push({ code: expose, layout: "block" });
-  const hoisted = new Set(awaits ? component.exposes?.functions : []);
-  for (const item of component.setup) {
-    const code =
-      item.kind === "Function" && hoisted.has(item.binding)
-        ? functionText(item.function, component, script, "client", {
-            name: names.local(bindingOf(component, item.binding)),
-          })
-        : itemCode(item, component, module, names, imports, script, instanceRefs);
-    statements.push({ code: names.ownQueries(code), layout: itemLayout(item, code) });
-  }
-  for (const code of listeners.functions) {
-    statements.push({ code: names.ownQueries(code), layout: "block" });
-  }
-  for (const code of rest?.functions ?? []) statements.push({ code, layout: "block" });
-  // Last, once every function it names is declared (ADR-0054).
-  if (expose && !awaits) statements.push({ code: expose, layout: "block" });
-  // A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
-  // before it, where a client render's `vModelText` sets the text of an empty field and leaves the
-  // caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
-  const textCaret = bindsTextarea(component) ? names.scope.claim("vTextCaret") : undefined;
-  if (textCaret !== undefined) {
-    statements.push({ code: textCaretDirective(textCaret), layout: "block" });
-  }
-  // A plain `<Teleport>` renders its content on the server, into a buffer no server render here
-  // reads, and Vue then mismatches as it hydrates (`runtime-core`'s `hydrateTeleport`): each
-  // teleport waits for a ref the component sets once mounted (ADR-0098).
-  const mounted = holdsTeleport(component) ? names.scope.claim("mounted") : undefined;
-  if (mounted !== undefined) {
-    const ref = imports.add("vue", "ref");
-    const onMounted = imports.add("vue", "onMounted");
-    statements.push({ code: `const ${mounted} = ${ref}(false);`, layout: "line" });
-    statements.push({
-      code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
-      layout: "block",
-    });
-  }
-  // The module's type exports, which consumers import by name (ADR-0068), exported from
-  // `<script setup>` as its own exported types are.
-  const types = keys ? [] : moduleTypes(component, module, reads, names);
-  // The module's own directives it applies, which `<script setup>` resolves by name (ADR-0099).
-  const own = ownDirectives(component, module);
-  const directiveType = own.length ? imports.add("vue", "ObjectDirective", { type: true }) : "";
-  const directives = own.map((directive) => directiveCode(directive, directiveType));
-  if (
-    statements.length === 0 &&
-    imports.size === 0 &&
-    types.length === 0 &&
-    constants.length === 0
-  ) {
-    return {
-      rewrite: template,
-      listeners,
-      components,
-      instanceRefs,
-      ...(keys ? { keys } : {}),
-      ...(rest ? { rest } : {}),
-    };
-  }
-  const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
-  const code = [
-    ...(head ? [head] : []),
-    ...types,
-    ...(constants.length ? [constants.join("\n")] : []),
-    ...directives,
-    ...(statements.length ? [laidOut(statements)] : []),
-  ].join("\n\n");
-  return {
-    block: `<script setup lang="ts"${genericAttribute(component)}>\n${escapeScriptEnd(code)}\n</script>`,
-    rewrite: template,
-    listeners,
-    components,
-    instanceRefs,
-    ...(keys ? { keys } : {}),
-    ...(rest ? { rest } : {}),
-    ...(textCaret === undefined ? {} : { textCaret }),
-    ...(mounted === undefined ? {} : { mounted }),
-  };
+	const names = new VueNames(component, module);
+	const imports = new ImportSet(names.scope);
+	// Each child's output, by the name the template uses (ADR-0053), a component of the same file
+	// included. A component that renders itself names itself instead: a virtual module's file name
+	// is not its name (ADR-0021), and importing its own file fails `import/no-self-import` (L5).
+	// A name Vue keeps for a built-in is claimed last, so it never takes a child's own name.
+	const children = childImports(component, module, (name) => `${name}.vue`);
+	const components = new Map<string, string>();
+	for (const child of children) {
+		if (!child.self && !VUE_BUILT_INS.has(child.local)) {
+			// A child the source imports under two names is imported once, and written by that name.
+			const local = imports.addDefault(child.specifier, child.local, { exact: true });
+			if (local !== child.local) {
+				components.set(child.local, local);
+			}
+		}
+	}
+	for (const child of children) {
+		if (!VUE_BUILT_INS.has(child.local)) {
+			continue;
+		}
+		const local = `${child.local}Component`;
+		components.set(
+			child.local,
+			child.self ? names.scope.claim(local) : imports.addDefault(child.specifier, local),
+		);
+	}
+	for (const key of keyImports(component, module, (name) => `${name}.vue`)) {
+		if (key.specifier) {
+			imports.add(key.specifier, key.name, { local: key.local, exact: true });
+		}
+	}
+	// The imports that pass through, which the template reads as written (ADR-0064).
+	addPassThroughImports(component, module, imports);
+	// Each composable it calls, from the composable's own output, `./useToggle` beside
+	// `useToggle.uf.ts` (ADR-0069).
+	addComposableImports(component, module, imports);
+	// Each directive it applies from a `.uf.ts` module, from the directive's own output (ADR-0099).
+	addDirectiveImports(component, module, imports);
+	// What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
+	const reads = moduleBindings(component, module, imports, names);
+	const constants = reads.constants;
+	// The output of the module's main component declares the keys, and the types it copies, in a
+	// plain `<script lang="ts">` block, which `<script setup>` reads.
+	const keys =
+		module.keys?.length && keyOwner(module.components, module.exports) === component.name
+			? keyBlock(component, module, names, reads)
+			: undefined;
+	// The types it imports, by name, beside the types it copies (ADR-0067): a child's from its
+	// output, `./Field.vue`.
+	if (!keys) {
+		addTypeImports(component, module, imports, (name) => `${name}.vue`);
+		addReadTypeImports(module, imports, reads.typeNames);
+	}
+	// `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
+	for (const binding of component.bindings) {
+		const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
+		if (alias) {
+			names.rename(binding.id, alias);
+		}
+	}
+	const self = children.find((child) => child.self);
+	const recursive = self && (components.get(self.local) ?? self.local);
+	const statements: Array<Statement> = [];
+	const parameter = component.propsParameter;
+	if (parameter) {
+		const read = referencedBindings(component);
+		const attributes = restAttributesType(component, () =>
+			imports.add("vue", "IntrinsicElementAttributes", { type: true }),
+		);
+		const type = propsType(component, parameter, attributes);
+		statements.push({
+			code:
+				parameter.form === "object"
+					? objectDeclaration(component, type, parameter, names, read)
+					: destructuredDeclaration(component, type, names, read),
+			layout: "macro",
+		});
+	}
+	const script = names.scriptRules(() => imports.add("vue", "nextTick"));
+	const template = names.templateRules();
+	// Planned before the setup is printed: a listener's script function claims its name first,
+	// in document order, as the template reads it.
+	const listeners = planListeners(component, names, { script, template });
+	const instanceRefs = rootElementRefs(component, module, names);
+	const rest = planRest(component, names);
+	if (component.emits) {
+		const { emits } = component;
+		const emit = bindingOf(component, emits.binding);
+		// An `emit` nothing calls declares the events alone, as `defineProps` without a pattern.
+		const declared = emitIsCalled(component, emit) ? `const ${names.local(emit)} = ` : "";
+		statements.push({ code: `${declared}defineEmits<${emits.type.code}>();`, layout: "macro" });
+	}
+	if (component.slots) {
+		const binding = bindingOf(component, component.slots.binding);
+		// Bound only where the template tests or forwards a slot: `<slot>` renders one alone.
+		const declared = readsSlots(component) ? `const ${names.local(binding)} = ` : "";
+		statements.push({
+			code: `${declared}defineSlots<${slotsType(component)}>();`,
+			layout: "macro",
+		});
+	}
+	const options = [
+		...(recursive ? [`name: ${JSON.stringify(recursive)}`] : []),
+		// A teleport root takes no attribute, which Vue would warn about (ADR-0098).
+		...(component.inheritAttrs === false ||
+		teleportRoot(component) ||
+		asyncRootChild(component, module)
+			? ["inheritAttrs: false"]
+			: []),
+	];
+	if (options.length) {
+		statements.push({ code: `defineOptions({ ${options.join(", ")} });`, layout: "macro" });
+	}
+	const exposed = component.exposes?.functions.map((id) => {
+		const binding = bindingOf(component, id);
+		const local = names.local(binding);
+		return local === binding.name ? local : `${binding.name}: ${local}`;
+	});
+	const expose = exposed && `defineExpose({ ${exposed.join(", ")} });`;
+	// An async setup exposes before its first await, or the parent's ref keeps the bare proxy
+	// (ADR-0101): the functions it names are then declarations, which hoist.
+	const awaits = component.setup.some((item) => item.kind === "Await");
+	if (expose && awaits) {
+		statements.push({ code: expose, layout: "block" });
+	}
+	const hoisted = new Set(awaits ? component.exposes?.functions : []);
+	for (const item of component.setup) {
+		const code =
+			item.kind === "Function" && hoisted.has(item.binding)
+				? functionText(item.function, component, script, "client", {
+						name: names.local(bindingOf(component, item.binding)),
+					})
+				: itemCode(item, component, module, names, imports, script, instanceRefs);
+		statements.push({ code: names.ownQueries(code), layout: itemLayout(item, code) });
+	}
+	for (const code of listeners.functions) {
+		statements.push({ code: names.ownQueries(code), layout: "block" });
+	}
+	for (const code of rest?.functions ?? []) {
+		statements.push({ code, layout: "block" });
+	}
+	// Last, once every function it names is declared (ADR-0054).
+	if (expose && !awaits) {
+		statements.push({ code: expose, layout: "block" });
+	}
+	// A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
+	// before it, where a client render's `vModelText` sets the text of an empty field and leaves the
+	// caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
+	const textCaret = bindsTextarea(component) ? names.scope.claim("vTextCaret") : undefined;
+	if (textCaret !== undefined) {
+		statements.push({ code: textCaretDirective(textCaret), layout: "block" });
+	}
+	// A plain `<Teleport>` renders its content on the server, into a buffer no server render here
+	// reads, and Vue then mismatches as it hydrates (`runtime-core`'s `hydrateTeleport`): each
+	// teleport waits for a ref the component sets once mounted (ADR-0098).
+	const mounted = holdsTeleport(component) ? names.scope.claim("mounted") : undefined;
+	if (mounted !== undefined) {
+		const ref = imports.add("vue", "ref");
+		const onMounted = imports.add("vue", "onMounted");
+		statements.push(
+			{ code: `const ${mounted} = ${ref}(false);`, layout: "line" },
+			{
+				code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
+				layout: "block",
+			},
+		);
+	}
+	// The module's type exports, which consumers import by name (ADR-0068), exported from
+	// `<script setup>` as its own exported types are.
+	const types = keys ? [] : moduleTypes(component, module, reads, names);
+	// The module's own directives it applies, which `<script setup>` resolves by name (ADR-0099).
+	const own = ownDirectives(component, module);
+	const directiveType = own.length ? imports.add("vue", "ObjectDirective", { type: true }) : "";
+	const directives = own.map((directive) => directiveCode(directive, directiveType));
+	if (
+		statements.length === 0 &&
+		imports.size === 0 &&
+		types.length === 0 &&
+		constants.length === 0
+	) {
+		return {
+			rewrite: template,
+			listeners,
+			components,
+			instanceRefs,
+			...(keys ? { keys } : {}),
+			...(rest ? { rest } : {}),
+		};
+	}
+	const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
+	const code = [
+		...(head ? [head] : []),
+		...types,
+		...(constants.length ? [constants.join("\n")] : []),
+		...directives,
+		...(statements.length ? [laidOut(statements)] : []),
+	].join("\n\n");
+	return {
+		block: `<script setup lang="ts"${genericAttribute(component)}>\n${escapeScriptEnd(code)}\n</script>`,
+		rewrite: template,
+		listeners,
+		components,
+		instanceRefs,
+		...(keys ? { keys } : {}),
+		...(rest ? { rest } : {}),
+		...(textCaret === undefined ? {} : { textCaret }),
+		...(mounted === undefined ? {} : { mounted }),
+	};
 }
 
 /** Whether the component's whole render is a `<Teleport>` (ADR-0098). */
 function teleportRoot(component: UfComponent): boolean {
-  const { render } = component;
-  return (
-    render.kind === "Fragment" &&
-    render.children.length === 1 &&
-    render.children[0]!.kind === "Teleport"
-  );
+	const { render } = component;
+	return (
+		render.kind === "Fragment" &&
+		render.children.length === 1 &&
+		render.children[0]!.kind === "Teleport"
+	);
 }
 
 /**
@@ -362,40 +378,48 @@ function teleportRoot(component: UfComponent): boolean {
  * fallthrough, so the component turns `inheritAttrs` off and binds `$attrs` on the child.
  */
 export function asyncRootChild(
-  component: UfComponent,
-  module: UfModule,
+	component: UfComponent,
+	module: UfModule,
 ): ComponentNode | undefined {
-  const { render } = component;
-  if (component.inheritAttrs === false || render.kind !== "Fragment") return undefined;
-  const [child] = render.children;
-  return render.children.length === 1 &&
-    child?.kind === "Component" &&
-    childIsAsync(module, child.component)
-    ? child
-    : undefined;
+	const { render } = component;
+	if (component.inheritAttrs === false || render.kind !== "Fragment") {
+		return undefined;
+	}
+	const [child] = render.children;
+	return render.children.length === 1 &&
+		child?.kind === "Component" &&
+		childIsAsync(module, child.component)
+		? child
+		: undefined;
 }
 
 /** Whether the template holds a `<Teleport>` (ADR-0098). */
 function holdsTeleport(component: UfComponent): boolean {
-  let found = false;
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "Teleport") found = true;
-    },
-  });
-  return found;
+	let found = false;
+	walk(component.render, {
+		enter(node) {
+			if (node.kind === "Teleport") {
+				found = true;
+			}
+		},
+	});
+	return found;
 }
 
 /** Whether the template binds a `<textarea>` with `v-model`. */
 function bindsTextarea(component: UfComponent): boolean {
-  let found = false;
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element" || node.tag !== "textarea") return;
-      if (node.attributes.some((attribute) => attribute.kind === "Model")) found = true;
-    },
-  });
-  return found;
+	let found = false;
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element" || node.tag !== "textarea") {
+				return;
+			}
+			if (node.attributes.some((attribute) => attribute.kind === "Model")) {
+				found = true;
+			}
+		},
+	});
+	return found;
 }
 
 /**
@@ -403,15 +427,15 @@ function bindsTextarea(component: UfComponent): boolean {
  * field and sets its text again, which fires no event (`setSelectionRange` would fire `select`).
  */
 function textCaretDirective(name: string): string {
-  return [
-    `const ${name} = {`,
-    "  mounted(element: HTMLTextAreaElement) {",
-    "    const text = element.value;",
-    '    element.value = "";',
-    "    element.value = text;",
-    "  },",
-    "};",
-  ].join("\n");
+	return [
+		`const ${name} = {`,
+		"  mounted(element: HTMLTextAreaElement) {",
+		"    const text = element.value;",
+		'    element.value = "";',
+		"    element.value = text;",
+		"  },",
+		"};",
+	].join("\n");
 }
 
 /** The authoring types of a ref a key may hold, which are Vue's own (ADR-0054). */
@@ -423,32 +447,34 @@ const REF_TYPES = ["Ref", "ComputedRef", "ModelRef"] as const;
  * `<script setup>` reads from it.
  */
 function keyBlock(
-  component: UfComponent,
-  module: UfModule,
-  names: VueNames,
-  reads: ModuleReads,
+	component: UfComponent,
+	module: UfModule,
+	names: VueNames,
+	reads: ModuleReads,
 ): string {
-  const imports = new ImportSet(names.scope);
-  const injectionKey = imports.add("vue", "InjectionKey", { type: true });
-  const declarations = module.keys!.map((key) => {
-    // A ref the key holds is typed with Vue's own `Ref`, as the source's authoring one is.
-    let type = key.type.code;
-    for (const name of REF_TYPES) {
-      const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
-      if (!reference.test(type)) continue;
-      const local = imports.add("vue", name, { type: true });
-      type = type.replace(reference, local);
-    }
-    return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
-  });
-  addTypeImports(component, module, imports, (name) => `${name}.vue`);
-  addReadTypeImports(module, imports, reads.typeNames);
-  const code = [
-    printProgram(js.program(imports.toDeclarations())).trim(),
-    ...moduleTypes(component, module, reads, names),
-    declarations.join("\n"),
-  ].join("\n\n");
-  return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
+	const imports = new ImportSet(names.scope);
+	const injectionKey = imports.add("vue", "InjectionKey", { type: true });
+	const declarations = module.keys!.map((key) => {
+		// A ref the key holds is typed with Vue's own `Ref`, as the source's authoring one is.
+		let type = key.type.code;
+		for (const name of REF_TYPES) {
+			const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
+			if (!reference.test(type)) {
+				continue;
+			}
+			const local = imports.add("vue", name, { type: true });
+			type = type.replaceAll(reference, local);
+		}
+		return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
+	});
+	addTypeImports(component, module, imports, (name) => `${name}.vue`);
+	addReadTypeImports(module, imports, reads.typeNames);
+	const code = [
+		printProgram(js.program(imports.toDeclarations())).trim(),
+		...moduleTypes(component, module, reads, names),
+		declarations.join("\n"),
+	].join("\n\n");
+	return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
 }
 
 /**
@@ -457,50 +483,52 @@ function keyBlock(
  * module's main component the module's type exports (ADR-0068).
  */
 function moduleTypes(
-  component: UfComponent,
-  module: UfModule,
-  reads: ModuleReads,
-  names: VueNames,
-): string[] {
-  // An exported type a sibling's output declares is re-exported from it (`typeExportsCode`), so
-  // a constant that names it declares it here unexported: the export is the sibling's.
-  const sibling = (name: string) =>
-    module.components.some((each) => each !== component && each.types.includes(name));
-  // The main output re-exports an exported type only a sibling's constants reach, from that
-  // sibling's output, which declares it (ADR-0068): `typeExportsCode` knows only components'
-  // own types.
-  const reExports: { code: string; span: TypeDeclaration["span"] }[] = [];
-  if (keyOwner(module.components, module.exports) === component.name) {
-    const written = new Set([...component.types, ...reads.types.map(({ name }) => name)]);
-    for (const other of module.components) {
-      if (other === component) continue;
-      const { types } = constantTypes(other, module, moduleReach(other, module).values);
-      for (const declaration of types) {
-        if (!declaration.exported || written.has(declaration.name) || sibling(declaration.name)) {
-          continue;
-        }
-        written.add(declaration.name);
-        reExports.push({
-          code: `export type { ${declaration.name} } from ${JSON.stringify(`./${other.name}.vue`)};`,
-          span: declaration.span,
-        });
-      }
-    }
-  }
-  return [
-    ...reExports,
-    ...componentTypes(component, module).map((declaration) => ({
-      code: declarationCode(declaration, names),
-      span: declaration.span,
-    })),
-    ...reads.types.map((declaration) => ({
-      code: declarationCode(declaration, names, declaration.exported && !sibling(declaration.name)),
-      span: declaration.span,
-    })),
-    ...typeExportsCode(component, module, (name) => `${name}.vue`),
-  ]
-    .toSorted((a, b) => a.span.start - b.span.start)
-    .map(({ code }) => code);
+	component: UfComponent,
+	module: UfModule,
+	reads: ModuleReads,
+	names: VueNames,
+): Array<string> {
+	// An exported type a sibling's output declares is re-exported from it (`typeExportsCode`), so
+	// a constant that names it declares it here unexported: the export is the sibling's.
+	const sibling = (name: string) =>
+		module.components.some((each) => each !== component && each.types.includes(name));
+	// The main output re-exports an exported type only a sibling's constants reach, from that
+	// sibling's output, which declares it (ADR-0068): `typeExportsCode` knows only components'
+	// own types.
+	const reExports: Array<{ code: string; span: TypeDeclaration["span"] }> = [];
+	if (keyOwner(module.components, module.exports) === component.name) {
+		const written = new Set([...component.types, ...reads.types.map(({ name }) => name)]);
+		for (const other of module.components) {
+			if (other === component) {
+				continue;
+			}
+			const { types } = constantTypes(other, module, moduleReach(other, module).values);
+			for (const declaration of types) {
+				if (!declaration.exported || written.has(declaration.name) || sibling(declaration.name)) {
+					continue;
+				}
+				written.add(declaration.name);
+				reExports.push({
+					code: `export type { ${declaration.name} } from ${JSON.stringify(`./${other.name}.vue`)};`,
+					span: declaration.span,
+				});
+			}
+		}
+	}
+	return [
+		...reExports,
+		...componentTypes(component, module).map((declaration) => ({
+			code: declarationCode(declaration, names),
+			span: declaration.span,
+		})),
+		...reads.types.map((declaration) => ({
+			code: declarationCode(declaration, names, declaration.exported && !sibling(declaration.name)),
+			span: declaration.span,
+		})),
+		...typeExportsCode(component, module, (name) => `${name}.vue`),
+	]
+		.toSorted((a, b) => a.span.start - b.span.start)
+		.map(({ code }) => code);
 }
 
 /**
@@ -509,9 +537,11 @@ function moduleTypes(
  * text holds no `'` (`withoutSingleQuotes`), and is single-quoted where it holds a `"`.
  */
 function genericAttribute(component: UfComponent): string {
-  if (!component.typeParameters?.length) return "";
-  const text = withoutSingleQuotes(typeParametersList(component.typeParameters));
-  return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
+	if (!component.typeParameters?.length) {
+		return "";
+	}
+	const text = withoutSingleQuotes(typeParametersList(component.typeParameters));
+	return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
 }
 
 /**
@@ -521,75 +551,78 @@ function genericAttribute(component: UfComponent): string {
  * `` `a${'x'}` `` is `` `a${"x"}` ``. Svelte's `generics` attribute needs the same (ADR-0068).
  */
 function withoutSingleQuotes(text: string): string {
-  let written = "";
-  // The template literals and holes the text is inside, innermost last: "`" for a literal's
-  // text, a number for a hole's code, counting the braces open inside it.
-  const nested: ("`" | number)[] = [];
-  for (let index = 0; index < text.length; index++) {
-    const char = text[index]!;
-    const inside = nested.at(-1);
-    if (inside === "`") {
-      if (char === "\\") {
-        const next = text[++index] ?? "";
-        written += next === "'" ? "\\u0027" : `\\${next}`;
-      } else if (char === "`") {
-        nested.pop();
-        written += char;
-      } else if (text.startsWith("${", index)) {
-        nested.push(0);
-        written += "${";
-        index++;
-      } else {
-        written += char === "'" ? "\\u0027" : char;
-      }
-    } else if (text.startsWith("//", index) || text.startsWith("/*", index)) {
-      const close = text.startsWith("//", index) ? "\n" : "*/";
-      const end = text.indexOf(close, index + 2);
-      const stop = end === -1 ? text.length : end + close.length;
-      written += text.slice(index, stop).replaceAll("'", "\\u0027");
-      index = stop - 1;
-    } else if (char === "'" || char === '"') {
-      // A string literal, to its closing quote, double-quoted.
-      written += '"';
-      for (index++; index < text.length && text[index] !== char; index++) {
-        const each = text[index]!;
-        if (each === "\\") {
-          const next = text[++index] ?? "";
-          written += next === "'" ? "\\u0027" : `\\${next}`;
-        } else {
-          written += each === "'" ? "\\u0027" : each === '"' ? '\\"' : each;
-        }
-      }
-      written += '"';
-    } else if (char === "`") {
-      nested.push("`");
-      written += char;
-    } else if (typeof inside === "number" && (char === "{" || char === "}")) {
-      if (char === "}" && inside === 0) nested.pop();
-      else nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
-      written += char;
-    } else {
-      written += char;
-    }
-  }
-  return written;
+	let written = "";
+	// The template literals and holes the text is inside, innermost last: "`" for a literal's
+	// text, a number for a hole's code, counting the braces open inside it.
+	const nested: Array<"`" | number> = [];
+	for (let index = 0; index < text.length; index++) {
+		const char = text[index]!;
+		const inside = nested.at(-1);
+		if (inside === "`") {
+			if (char === "\\") {
+				const next = text[++index] ?? "";
+				written += next === "'" ? String.raw`\u0027` : `\\${next}`;
+			} else if (char === "`") {
+				nested.pop();
+				written += char;
+			} else if (text.startsWith("${", index)) {
+				nested.push(0);
+				written += "${";
+				index++;
+			} else {
+				written += char === "'" ? String.raw`\u0027` : char;
+			}
+		} else if (text.startsWith("//", index) || text.startsWith("/*", index)) {
+			const close = text.startsWith("//", index) ? "\n" : "*/";
+			const end = text.indexOf(close, index + 2);
+			const stop = end === -1 ? text.length : end + close.length;
+			written += text.slice(index, stop).replaceAll("'", String.raw`\u0027`);
+			index = stop - 1;
+		} else if (char === "'" || char === '"') {
+			// A string literal, to its closing quote, double-quoted.
+			written += '"';
+			for (index++; index < text.length && text[index] !== char; index++) {
+				const each = text[index]!;
+				if (each === "\\") {
+					const next = text[++index] ?? "";
+					written += next === "'" ? String.raw`\u0027` : `\\${next}`;
+				} else {
+					written += each === "'" ? String.raw`\u0027` : each === '"' ? String.raw`\"` : each;
+				}
+			}
+			written += '"';
+		} else if (char === "`") {
+			nested.push("`");
+			written += char;
+		} else if (typeof inside === "number" && (char === "{" || char === "}")) {
+			if (char === "}" && inside === 0) {
+				nested.pop();
+			} else {
+				nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+			}
+			written += char;
+		} else {
+			written += char;
+		}
+	}
+	return written;
 }
 
 /** Type parameters as written, `T extends Item = Item, K`. */
-function typeParametersList(parameters: readonly TypeParameter[]): string {
-  return parameters
-    .map(
-      (parameter) =>
-        `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
-          parameter.default ? ` = ${parameter.default.code}` : ""
-        }`,
-    )
-    .join(", ");
+function typeParametersList(parameters: ReadonlyArray<TypeParameter>): string {
+	return parameters
+		.map(
+			(parameter) =>
+				`${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
+					parameter.default ? ` = ${parameter.default.code}` : ""
+				}`,
+		)
+		.join(", ");
 }
 
 /** A generic function's type parameters, `<T extends Item>`, or nothing (ADR-0068). */
-export function typeParametersText(parameters: readonly TypeParameter[] | undefined): string {
-  return parameters?.length ? `<${typeParametersList(parameters)}>` : "";
+export function typeParametersText(parameters: ReadonlyArray<TypeParameter> | undefined): string {
+	return parameters?.length ? `<${typeParametersList(parameters)}>` : "";
 }
 
 /**
@@ -597,19 +630,21 @@ export function typeParametersText(parameters: readonly TypeParameter[] | undefi
  * by the composable beside its `.uf.ts` module, under the source's local name.
  */
 function addComposableImports(component: UfComponent, module: UfModule, imports: ImportSet): void {
-  const called = new Set(
-    component.setup.flatMap((item) => (item.kind === "Use" ? [item.composable] : [])),
-  );
-  for (const entry of module.imports ?? []) {
-    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
-    for (const name of entry.names) {
-      if (name.kind !== "Composable" || !called.has(name.local)) continue;
-      imports.add(`${directory}${name.imported}`, name.imported, {
-        local: name.local,
-        exact: true,
-      });
-    }
-  }
+	const called = new Set(
+		component.setup.flatMap((item) => (item.kind === "Use" ? [item.composable] : [])),
+	);
+	for (const entry of module.imports ?? []) {
+		const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+		for (const name of entry.names) {
+			if (name.kind !== "Composable" || !called.has(name.local)) {
+				continue;
+			}
+			imports.add(`${directory}${name.imported}`, name.imported, {
+				local: name.local,
+				exact: true,
+			});
+		}
+	}
 }
 
 /**
@@ -624,28 +659,28 @@ function addComposableImports(component: UfComponent, module: UfModule, imports:
  * infer is `null`, which casts nothing, as on every other target (ADR-0034).
  */
 function propsType(
-  component: UfComponent,
-  parameter: PropsParameter,
-  attributes: string | undefined,
+	component: UfComponent,
+	parameter: PropsParameter,
+	attributes: string | undefined,
 ): string {
-  const own = ownPropsType(component, parameter);
-  // A type the runtime props leave out (`fallthrough.ts`).
-  return attributes === undefined ? own : `${own} & /* @vue-ignore */ ${attributes}`;
+	const own = ownPropsType(component, parameter);
+	// A type the runtime props leave out (`fallthrough.ts`).
+	return attributes === undefined ? own : `${own} & /* @vue-ignore */ ${attributes}`;
 }
 
 /** The props' type as the source declares them. */
 function ownPropsType(component: UfComponent, parameter: PropsParameter): string {
-  if (!component.props.some((prop) => prop.declaredBy?.file.startsWith("pkg:"))) {
-    return parameter.type.code;
-  }
-  const members = component.props.map((prop) => {
-    const key = /^[A-Za-z_$][\w$]*$/.test(prop.name) ? prop.name : JSON.stringify(prop.name);
-    const type = prop.declaredBy
-      ? `(${parameter.type.code})[${JSON.stringify(prop.name)}]`
-      : prop.type.code;
-    return `${key}${prop.optional ? "?" : ""}: ${type}`;
-  });
-  return `{ ${members.join("; ")} }`;
+	if (!component.props.some((prop) => prop.declaredBy?.file.startsWith("pkg:"))) {
+		return parameter.type.code;
+	}
+	const members = component.props.map((prop) => {
+		const key = /^[A-Za-z_$][\w$]*$/.test(prop.name) ? prop.name : JSON.stringify(prop.name);
+		const type = prop.declaredBy
+			? `(${parameter.type.code})[${JSON.stringify(prop.name)}]`
+			: prop.type.code;
+		return `${key}${prop.optional ? "?" : ""}: ${type}`;
+	});
+	return `{ ${members.join("; ")} }`;
 }
 
 /**
@@ -654,258 +689,262 @@ function ownPropsType(component: UfComponent, parameter: PropsParameter): string
  * copied.
  */
 function slotsType(component: UfComponent): string {
-  const members = component.slots!.slots.map(
-    (slot) => `${slot.name}?(${slot.props ? `props: ${slot.props.code}` : ""}): unknown`,
-  );
-  return `{ ${members.join("; ")} }`;
+	const members = component.slots!.slots.map(
+		(slot) => `${slot.name}?(${slot.props ? `props: ${slot.props.code}` : ""}): unknown`,
+	);
+	return `{ ${members.join("; ")} }`;
 }
 
 /** Whether the template reads `slots`: a slot's presence, or a forwarded slot's. */
 function readsSlots(component: UfComponent): boolean {
-  if (
-    expressionsOf(component).some(({ expression }) =>
-      expression.refs.some((reference) => reference.kind === "Slot"),
-    )
-  ) {
-    return true;
-  }
-  let forwards = false;
-  walk(component.render, {
-    enter(node) {
-      if (
-        (node.kind === "Component" || node.kind === "Dynamic") &&
-        (node.fills ?? []).some((fill) => fill.forward !== undefined)
-      ) {
-        forwards = true;
-      }
-    },
-  });
-  return forwards;
+	if (
+		expressionsOf(component).some(({ expression }) =>
+			expression.refs.some((reference) => reference.kind === "Slot"),
+		)
+	) {
+		return true;
+	}
+	let forwards = false;
+	walk(component.render, {
+		enter(node) {
+			if (
+				(node.kind === "Component" || node.kind === "Dynamic") &&
+				(node.fills ?? []).some((fill) => fill.forward !== undefined)
+			) {
+				forwards = true;
+			}
+		},
+	});
+	return forwards;
 }
 
 /** The statements, a blank line between two unless both are macros, or both one-line declarations. */
-export function laidOut(statements: readonly Statement[]): string {
-  return statements
-    .map((statement, index) => {
-      const previous = statements[index - 1];
-      if (previous === undefined) return statement.code;
-      const together = previous.layout === statement.layout && statement.layout !== "block";
-      return `${together ? "\n" : "\n\n"}${statement.code}`;
-    })
-    .join("");
+export function laidOut(statements: ReadonlyArray<Statement>): string {
+	return statements
+		.map((statement, index) => {
+			const previous = statements[index - 1];
+			if (previous === undefined) {
+				return statement.code;
+			}
+			const together = previous.layout === statement.layout && statement.layout !== "block";
+			return `${together ? "\n" : "\n\n"}${statement.code}`;
+		})
+		.join("");
 }
 
 /** How a setup item sits in the script: a model is a macro, which stays with `defineProps`. */
 export function itemLayout(item: SetupItem, code: string): Statement["layout"] {
-  if (item.kind === "Model") return "macro";
-  return declares(item) && !code.includes("\n") ? "line" : "block";
+	if (item.kind === "Model") {
+		return "macro";
+	}
+	return declares(item) && !code.includes("\n") ? "line" : "block";
 }
 
 /** Whether a setup item declares a binding, rather than registering an effect or a hook. */
 function declares(item: SetupItem): boolean {
-  switch (item.kind) {
-    case "Await":
-    case "State":
-    case "Derived":
-    case "TemplateRef":
-    case "Id":
-    case "Const":
-    case "Variable":
-    case "Function":
-    case "Model":
-    case "Inject":
-    case "Use":
-      return true;
-    case "Watch":
-    case "WatchEffect":
-    case "Lifecycle":
-    case "Provide":
-    case "DevCheck":
-      return false;
-    default:
-      return unreachable(item);
-  }
+	switch (item.kind) {
+		case "Await":
+		case "State":
+		case "Derived":
+		case "TemplateRef":
+		case "Id":
+		case "Const":
+		case "Variable":
+		case "Function":
+		case "Model":
+		case "Inject":
+		case "Use":
+			return true;
+		case "Watch":
+		case "WatchEffect":
+		case "Lifecycle":
+		case "Provide":
+		case "DevCheck":
+			return false;
+		default:
+			return unreachable(item);
+	}
 }
 
 /** Whether any code calls the component's `emit`, the template's listeners included. */
 function emitIsCalled(component: UfComponent, emit: Binding): boolean {
-  return codeOf(component).some(({ code }) =>
-    code.refs.some((reference) => reference.kind === "Emit" && reference.binding === emit.id),
-  );
+	return codeOf(component).some(({ code }) =>
+		code.refs.some((reference) => reference.kind === "Emit" && reference.binding === emit.id),
+	);
 }
 
 /** One setup item as the script writes it: the source's statement, with Vue's own APIs. */
 export function itemCode(
-  item: SetupItem,
-  component: UfComponent,
-  module: UfModule,
-  names: VueNames,
-  imports: ImportSet,
-  rules: RewriteRules,
-  instanceRefs: ReadonlyMap<BindingId, string> = new Map(),
+	item: SetupItem,
+	component: UfComponent,
+	module: UfModule,
+	names: VueNames,
+	imports: ImportSet,
+	rules: RewriteRules,
+	instanceRefs: ReadonlyMap<BindingId, string> = new Map(),
 ): string {
-  const local = (id: BindingId) => names.local(bindingOf(component, id));
-  const code = (value: Code, site: "pure" | "client") => rewriteCode(value, component, rules, site);
-  const fn = (value: FunctionCode, site: "pure" | "client") =>
-    functionText(value, component, rules, site);
-  switch (item.kind) {
-    case "State": {
-      // State is replaced whole (ADR-0008, UF2004), so nothing needs `ref`'s deep proxy: a value
-      // not known to be a primitive is a `shallowRef`, whose value is the source's own object
-      // (identity, `structuredClone`, a payload), as Svelte's `$state.raw` (ADR-0046).
-      const api = isPrimitiveState(item, component, module) ? "ref" : "shallowRef";
-      const ref = imports.add("vue", api);
-      const initial = item.initial ? code(item.initial, "pure") : "";
-      return `const ${local(item.binding)} = ${ref}${typeArgument(item.type)}(${initial});`;
-    }
-    case "Derived": {
-      const computed = imports.add("vue", "computed");
-      return `const ${local(item.binding)} = ${computed}${typeArgument(item.type)}(${fn(item.getter, "pure")});`;
-    }
-    case "TemplateRef": {
-      // Keyed by the binding's name, which the template's `ref` attribute writes (ADR-0049):
-      // Vue 3.5 sets the ref through its key, and never writes the same-named setup binding.
-      const useTemplateRef = imports.add("vue", "useTemplateRef");
-      const binding = bindingOf(component, item.binding);
-      const instance = instanceRefs.get(item.binding);
-      if (instance !== undefined && item.type) {
-        // On a child that exposes nothing, the source's ref is the child's root element
-        // (ADR-0118): Vue's ref holds the instance, whose `$el` is that element. A `<component
-        // is>` root's changes with its tag, untracked, so a getter ref reads it each time
-        // (ADR-0122).
-        const changes = changingElementRefs(component, module).has(item.binding);
-        const read = changes ? imports.add("vue", "toRef") : imports.add("vue", "computed");
-        return [
-          `const ${instance} = ${useTemplateRef}<{ $el: ${item.type.code} }>(${JSON.stringify(instance)});`,
-          `const ${names.local(binding)} = ${read}(() => ${instance}.value?.$el ?? null);`,
-        ].join("\n");
-      }
-      return `const ${names.local(binding)} = ${useTemplateRef}${typeArgument(item.type)}(${JSON.stringify(binding.name)});`;
-    }
-    case "Id": {
-      // The prefix marks the id as generated wherever it lands (ADR-0049).
-      const useId = imports.add("vue", "useId");
-      return `const ${local(item.binding)} = \`uf-id-\${${useId}()}\`;`;
-    }
-    case "Const":
-      return `const ${local(item.binding)}${annotation(item.type)} = ${code(item.value, "pure")};`;
-    // Top-level `await` in `<script setup>` (ADR-0101): Vue restores the instance after it.
-    case "Await":
-      return `const ${local(item.binding)}${annotation(item.type)} = await ${code(item.value, "pure")};`;
-    case "Variable": {
-      const initial = item.initial ? ` = ${code(item.initial, "pure")}` : "";
-      return `let ${local(item.binding)}${annotation(item.type)}${initial};`;
-    }
-    case "Function":
-      switch (item.form) {
-        case "declaration":
-          return functionText(item.function, component, rules, "client", {
-            name: local(item.binding),
-          });
-        case "arrow":
-          return `const ${local(item.binding)} = ${fn(item.function, "client")};`;
-        default:
-          return unreachable(item.form);
-      }
-    case "Watch": {
-      const watch = imports.add("vue", "watch");
-      const sources = item.sources.map((source) =>
-        watchSource(source, component, module, names, rules),
-      );
-      const options = watchOptions(item);
-      return `${watch}(${[
-        item.array ? `[${sources.join(", ")}]` : sources[0]!,
-        fn(item.callback, "client"),
-        ...(options ? [options] : []),
-      ].join(", ")});`;
-    }
-    case "WatchEffect": {
-      // Vue's `watchEffect` runs during the server's setup and before the DOM updates; every
-      // target runs it after the render instead (ADR-0048), as `watchPostEffect`
-      // does, which Vue never runs on the server.
-      const watchPostEffect = imports.add("vue", "watchPostEffect");
-      return `${watchPostEffect}(${fn(item.effect, "client")});`;
-    }
-    case "Lifecycle": {
-      const hook = imports.add("vue", lifecycleHook(item.hook));
-      return `${hook}(${fn(item.callback, "client")});`;
-    }
-    case "Model": {
-      // An unbound model without a default holds `undefined`, as every target's does: Vue would
-      // cast an absent boolean model to `false` without the explicit default (ADR-0034).
-      const unset = item.default === undefined && !item.required;
-      const type = item.type ? `<${unset ? orUndefined(item.type.code) : item.type.code}>` : "";
-      const options = [
-        ...(item.required ? ["required: true"] : []),
-        ...(item.default ? [`default: ${item.default.code}`] : unset ? ["default: undefined"] : []),
-      ];
-      return `const ${local(item.binding)} = defineModel${type}(${[JSON.stringify(item.name), ...(options.length ? [`{ ${options.join(", ")} }`] : [])].join(", ")});`;
-    }
-    case "Provide": {
-      const provide = imports.add("vue", "provide");
-      return `${provide}(${item.key}, ${code(item.value, "pure")});`;
-    }
-    case "Inject": {
-      const inject = imports.add("vue", "inject");
-      // `undefined` is the source's own fallback: without a second argument, Vue's development
-      // build warns where no ancestor provides the key.
-      const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : ", undefined";
-      return `const ${local(item.binding)} = ${inject}(${item.key}${fallback});`;
-    }
-    // `const { on, toggle } = useToggle(false)`, as written (ADR-0069): Vue reads a getter and
-    // calls a callback as the source does, and the members are the composable's own refs.
-    case "Use": {
-      const members = item.members.map((member) => {
-        const name = local(member.binding);
-        return name === member.member ? name : `${member.member}: ${name}`;
-      });
-      const parts = item.arguments.map((argument) => {
-        switch (argument.kind) {
-          case "Value":
-            return code(argument.value, "pure");
-          case "Getter":
-            return fn(argument.getter, "pure");
-          case "Callback":
-            return fn(argument.callback, "client");
-          default:
-            return unreachable(argument);
-        }
-      });
-      return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
-    }
-    // Copied as written, where `<script setup>` runs it: once per instance (ADR-0117).
-    case "DevCheck":
-      return code(item.code, "pure");
-    default:
-      return unreachable(item);
-  }
+	const local = (id: BindingId) => names.local(bindingOf(component, id));
+	const code = (value: Code, site: "pure" | "client") => rewriteCode(value, component, rules, site);
+	const fn = (value: FunctionCode, site: "pure" | "client") =>
+		functionText(value, component, rules, site);
+	switch (item.kind) {
+		case "State": {
+			// State is replaced whole (ADR-0008, UF2004), so nothing needs `ref`'s deep proxy: a value
+			// not known to be a primitive is a `shallowRef`, whose value is the source's own object
+			// (identity, `structuredClone`, a payload), as Svelte's `$state.raw` (ADR-0046).
+			const api = isPrimitiveState(item, component, module) ? "ref" : "shallowRef";
+			const ref = imports.add("vue", api);
+			const initial = item.initial ? code(item.initial, "pure") : "";
+			return `const ${local(item.binding)} = ${ref}${typeArgument(item.type)}(${initial});`;
+		}
+		case "Derived": {
+			const computed = imports.add("vue", "computed");
+			return `const ${local(item.binding)} = ${computed}${typeArgument(item.type)}(${fn(item.getter, "pure")});`;
+		}
+		case "TemplateRef": {
+			// Keyed by the binding's name, which the template's `ref` attribute writes (ADR-0049):
+			// Vue 3.5 sets the ref through its key, and never writes the same-named setup binding.
+			const useTemplateRef = imports.add("vue", "useTemplateRef");
+			const binding = bindingOf(component, item.binding);
+			const instance = instanceRefs.get(item.binding);
+			if (instance !== undefined && item.type) {
+				// On a child that exposes nothing, the source's ref is the child's root element
+				// (ADR-0118): Vue's ref holds the instance, whose `$el` is that element. A `<component
+				// is>` root's changes with its tag, untracked, so a getter ref reads it each time
+				// (ADR-0122).
+				const changes = changingElementRefs(component, module).has(item.binding);
+				const read = changes ? imports.add("vue", "toRef") : imports.add("vue", "computed");
+				return [
+					`const ${instance} = ${useTemplateRef}<{ $el: ${item.type.code} }>(${JSON.stringify(instance)});`,
+					`const ${names.local(binding)} = ${read}(() => ${instance}.value?.$el ?? null);`,
+				].join("\n");
+			}
+			return `const ${names.local(binding)} = ${useTemplateRef}${typeArgument(item.type)}(${JSON.stringify(binding.name)});`;
+		}
+		case "Id": {
+			// The prefix marks the id as generated wherever it lands (ADR-0049).
+			const useId = imports.add("vue", "useId");
+			return `const ${local(item.binding)} = \`uf-id-\${${useId}()}\`;`;
+		}
+		case "Const":
+			return `const ${local(item.binding)}${annotation(item.type)} = ${code(item.value, "pure")};`;
+		// Top-level `await` in `<script setup>` (ADR-0101): Vue restores the instance after it.
+		case "Await":
+			return `const ${local(item.binding)}${annotation(item.type)} = await ${code(item.value, "pure")};`;
+		case "Variable": {
+			const initial = item.initial ? ` = ${code(item.initial, "pure")}` : "";
+			return `let ${local(item.binding)}${annotation(item.type)}${initial};`;
+		}
+		case "Function":
+			switch (item.form) {
+				case "declaration":
+					return functionText(item.function, component, rules, "client", {
+						name: local(item.binding),
+					});
+				case "arrow":
+					return `const ${local(item.binding)} = ${fn(item.function, "client")};`;
+				default:
+					return unreachable(item.form);
+			}
+		case "Watch": {
+			const watch = imports.add("vue", "watch");
+			const sources = item.sources.map((source) =>
+				watchSource(source, component, module, names, rules),
+			);
+			const options = watchOptions(item);
+			return `${watch}(${[
+				item.array ? `[${sources.join(", ")}]` : sources[0]!,
+				fn(item.callback, "client"),
+				...(options ? [options] : []),
+			].join(", ")});`;
+		}
+		case "WatchEffect": {
+			// Vue's `watchEffect` runs during the server's setup and before the DOM updates; every
+			// target runs it after the render instead (ADR-0048), as `watchPostEffect`
+			// does, which Vue never runs on the server.
+			const watchPostEffect = imports.add("vue", "watchPostEffect");
+			return `${watchPostEffect}(${fn(item.effect, "client")});`;
+		}
+		case "Lifecycle": {
+			const hook = imports.add("vue", lifecycleHook(item.hook));
+			return `${hook}(${fn(item.callback, "client")});`;
+		}
+		case "Model": {
+			// An unbound model without a default holds `undefined`, as every target's does: Vue would
+			// cast an absent boolean model to `false` without the explicit default (ADR-0034).
+			const unset = item.default === undefined && !item.required;
+			const type = item.type ? `<${unset ? orUndefined(item.type.code) : item.type.code}>` : "";
+			const options = [
+				...(item.required ? ["required: true"] : []),
+				...(item.default ? [`default: ${item.default.code}`] : unset ? ["default: undefined"] : []),
+			];
+			return `const ${local(item.binding)} = defineModel${type}(${[JSON.stringify(item.name), ...(options.length ? [`{ ${options.join(", ")} }`] : [])].join(", ")});`;
+		}
+		case "Provide": {
+			const provide = imports.add("vue", "provide");
+			return `${provide}(${item.key}, ${code(item.value, "pure")});`;
+		}
+		case "Inject": {
+			const inject = imports.add("vue", "inject");
+			// `undefined` is the source's own fallback: without a second argument, Vue's development
+			// build warns where no ancestor provides the key.
+			const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : ", undefined";
+			return `const ${local(item.binding)} = ${inject}(${item.key}${fallback});`;
+		}
+		// `const { on, toggle } = useToggle(false)`, as written (ADR-0069): Vue reads a getter and
+		// calls a callback as the source does, and the members are the composable's own refs.
+		case "Use": {
+			const members = item.members.map((member) => {
+				const name = local(member.binding);
+				return name === member.member ? name : `${member.member}: ${name}`;
+			});
+			const parts = item.arguments.map((argument) => {
+				switch (argument.kind) {
+					case "Value":
+						return code(argument.value, "pure");
+					case "Getter":
+						return fn(argument.getter, "pure");
+					case "Callback":
+						return fn(argument.callback, "client");
+					default:
+						return unreachable(argument);
+				}
+			});
+			return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
+		}
+		// Copied as written, where `<script setup>` runs it: once per instance (ADR-0117).
+		case "DevCheck":
+			return code(item.code, "pure");
+		default:
+			return unreachable(item);
+	}
 }
 
 /** `T | undefined`, with parentheses around a function type, which `|` would split. */
 function orUndefined(type: string): string {
-  return `${/=>/.test(type) ? `(${type})` : type} | undefined`;
+	return `${/=>/.test(type) ? `(${type})` : type} | undefined`;
 }
 
 /** A type argument as written (`<Item[]>`), or nothing. */
 function typeArgument(type: TypeText | undefined): string {
-  return type ? `<${type.code}>` : "";
+	return type ? `<${type.code}>` : "";
 }
 
 /** A type annotation as written (`: number | undefined`), or nothing. */
 function annotation(type: TypeText | undefined): string {
-  return type ? `: ${type.code}` : "";
+	return type ? `: ${type.code}` : "";
 }
 
 /** The Vue API of a lifecycle hook. */
 function lifecycleHook(hook: "mounted" | "unmounted"): string {
-  switch (hook) {
-    case "mounted":
-      return "onMounted";
-    case "unmounted":
-      return "onUnmounted";
-    default:
-      return unreachable(hook);
-  }
+	switch (hook) {
+		case "mounted":
+			return "onMounted";
+		case "unmounted":
+			return "onUnmounted";
+		default:
+			return unreachable(hook);
+	}
 }
 
 /**
@@ -917,91 +956,99 @@ function lifecycleHook(hook: "mounted" | "unmounted"): string {
  * (ADR-0048). A getter's value is compared so (`hasChanged`).
  */
 function watchSource(
-  source: WatchSource,
-  component: UfComponent,
-  module: UfModule,
-  names: VueNames,
-  rules: RewriteRules,
+	source: WatchSource,
+	component: UfComponent,
+	module: UfModule,
+	names: VueNames,
+	rules: RewriteRules,
 ): string {
-  switch (source.kind) {
-    case "Ref": {
-      const binding = bindingOf(component, source.binding);
-      const local = names.local(binding);
-      const state = component.setup.find(
-        (item): item is StateItem => item.kind === "State" && item.binding === binding.id,
-      );
-      return state && !isPrimitiveState(state, component, module) ? `() => ${local}.value` : local;
-    }
-    case "Getter":
-      return functionText(source.getter, component, rules, "pure");
-    default:
-      return unreachable(source);
-  }
+	switch (source.kind) {
+		case "Ref": {
+			const binding = bindingOf(component, source.binding);
+			const local = names.local(binding);
+			const state = component.setup.find(
+				(item): item is StateItem => item.kind === "State" && item.binding === binding.id,
+			);
+			return state && !isPrimitiveState(state, component, module) ? `() => ${local}.value` : local;
+		}
+		case "Getter":
+			return functionText(source.getter, component, rules, "pure");
+		default:
+			return unreachable(source);
+	}
 }
 
 /** A watcher's options object, when it has any. */
 function watchOptions(item: WatchItem): string | undefined {
-  const options = [
-    ...(item.immediate ? ["immediate: true"] : []),
-    ...(item.post ? ['flush: "post"'] : []),
-  ];
-  return options.length > 0 ? `{ ${options.join(", ")} }` : undefined;
+	const options = [
+		...(item.immediate ? ["immediate: true"] : []),
+		...(item.post ? ['flush: "post"'] : []),
+	];
+	return options.length > 0 ? `{ ${options.join(", ")} }` : undefined;
 }
 
 /** `const { label, tone = "info", count = undefined, size: _size = 2 } = defineProps<P>();` */
 function destructuredDeclaration(
-  component: UfComponent,
-  type: string,
-  names: VueNames,
-  read: ReadonlySet<BindingId>,
+	component: UfComponent,
+	type: string,
+	names: VueNames,
+	read: ReadonlySet<BindingId>,
 ): string {
-  const macro = `defineProps<${type}>()`;
-  const isRead = (prop: Prop) => prop.binding !== undefined && read.has(prop.binding);
-  if (!component.props.some(isRead)) return `${macro};`;
-  const entries = component.props
-    .filter((prop) => isRead(prop) || prop.optional)
-    .map((prop) => {
-      const value = prop.default?.code ?? (prop.optional ? "undefined" : undefined);
-      // In the pattern for its default alone: the filter keeps only optional unread props.
-      if (!isRead(prop)) return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
-      // Vue 3.5 destructures a prop under another name too (`{ Map: Map_1 }`), and every
-      // reference reads the local.
-      const local = VUE_RESERVED.has(prop.name) ? names.scope.claim(prop.name) : prop.name;
-      if (local !== prop.name && prop.binding !== undefined) names.rename(prop.binding, local);
-      const target = local === prop.name ? prop.name : `${prop.name}: ${local}`;
-      return value === undefined ? target : `${target} = ${value}`;
-    });
-  return `const { ${entries.join(", ")} } = ${macro};`;
+	const macro = `defineProps<${type}>()`;
+	const isRead = (prop: Prop) => prop.binding !== undefined && read.has(prop.binding);
+	if (!component.props.some(isRead)) {
+		return `${macro};`;
+	}
+	const entries = component.props
+		.filter((prop) => isRead(prop) || prop.optional)
+		.map((prop) => {
+			const value = prop.default?.code ?? (prop.optional ? "undefined" : undefined);
+			// In the pattern for its default alone: the filter keeps only optional unread props.
+			if (!isRead(prop)) {
+				return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
+			}
+			// Vue 3.5 destructures a prop under another name too (`{ Map: Map_1 }`), and every
+			// reference reads the local.
+			const local = VUE_RESERVED.has(prop.name) ? names.scope.claim(prop.name) : prop.name;
+			if (local !== prop.name && prop.binding !== undefined) {
+				names.rename(prop.binding, local);
+			}
+			const target = local === prop.name ? prop.name : `${prop.name}: ${local}`;
+			return value === undefined ? target : `${target} = ${value}`;
+		});
+	return `const { ${entries.join(", ")} } = ${macro};`;
 }
 
 /** `const props = withDefaults(defineProps<P>(), { title: undefined });` */
 function objectDeclaration(
-  component: UfComponent,
-  type: string,
-  parameter: PropsParameter,
-  names: VueNames,
-  read: ReadonlySet<BindingId>,
+	component: UfComponent,
+	type: string,
+	parameter: PropsParameter,
+	names: VueNames,
+	read: ReadonlySet<BindingId>,
 ): string {
-  const macro = `defineProps<${type}>()`;
-  // In the object form, every prop is a binding, read as `props.label`.
-  if (!component.props.some((prop) => prop.binding !== undefined && read.has(prop.binding))) {
-    return `${macro};`;
-  }
-  const optional = component.props.filter((prop) => prop.optional);
-  const call = optional.length
-    ? `withDefaults(${macro}, { ${optional.map((prop) => `${prop.name}: undefined`).join(", ")} })`
-    : macro;
-  const name = parameter.name!;
-  // Vue keeps the `_` and `$` prefixes for its own names, and its compiled `setup` declares
-  // some: `const __props = defineProps<P>()` does not compile. The object takes the name
-  // `props` there.
-  const local = VUE_RESERVED.has(name)
-    ? names.scope.claim(name)
-    : /^[_$]/.test(name)
-      ? names.scope.claim("props")
-      : name;
-  if (local !== name) names.renamePropsObject(name, local);
-  return `const ${local} = ${call};`;
+	const macro = `defineProps<${type}>()`;
+	// In the object form, every prop is a binding, read as `props.label`.
+	if (!component.props.some((prop) => prop.binding !== undefined && read.has(prop.binding))) {
+		return `${macro};`;
+	}
+	const optional = component.props.filter((prop) => prop.optional);
+	const call = optional.length
+		? `withDefaults(${macro}, { ${optional.map((prop) => `${prop.name}: undefined`).join(", ")} })`
+		: macro;
+	const name = parameter.name!;
+	// Vue keeps the `_` and `$` prefixes for its own names, and its compiled `setup` declares
+	// some: `const __props = defineProps<P>()` does not compile. The object takes the name
+	// `props` there.
+	const local = VUE_RESERVED.has(name)
+		? names.scope.claim(name)
+		: /^[_$]/.test(name)
+			? names.scope.claim("props")
+			: name;
+	if (local !== name) {
+		names.renamePropsObject(name, local);
+	}
+	return `const ${local} = ${call};`;
 }
 
 /**
@@ -1011,5 +1058,5 @@ function objectDeclaration(
  * could hold it; the target escapes it anyway, as a guard.
  */
 function escapeScriptEnd(code: string): string {
-  return code.replace(/<\/(script)/gi, "<\\/$1");
+	return code.replaceAll(/<\/(script)/gi, String.raw`<\/$1`);
 }

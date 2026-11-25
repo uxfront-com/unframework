@@ -7,10 +7,10 @@ import { expect, it } from "vitest";
 import Summary from "./Summary.uf.tsx";
 
 describeTargets("bindings/table-display", () => {
-  it("lays out rows and cells as a table", async () => {
-    const view = await mountScenario(Summary, "team");
-    await view.expectParity("team");
-    await expect.element(view.getByText("Account")).toHaveStyle("display: table-caption");
-    await expect.element(view.getByText("Team for 5 seats")).toHaveStyle("display: table-cell");
-  });
+	it("lays out rows and cells as a table", async () => {
+		const view = await mountScenario(Summary, "team");
+		await view.expectParity("team");
+		await expect.element(view.getByText("Account")).toHaveStyle("display: table-caption");
+		await expect.element(view.getByText("Team for 5 seats")).toHaveStyle("display: table-cell");
+	});
 });

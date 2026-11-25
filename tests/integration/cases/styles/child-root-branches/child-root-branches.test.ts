@@ -7,10 +7,10 @@ import { expect } from "vitest";
 import Panel from "./Panel.uf.tsx";
 
 describeTargets("styles/child-root-branches", () => {
-  it("styles the root each child renders", async () => {
-    const view = await mount(Panel);
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("button", { name: "Save" })).toBeVisible();
-    await expect.element(view.getByRole("heading", { name: "Release" })).toBeVisible();
-  });
+	it("styles the root each child renders", async () => {
+		const view = await mount(Panel);
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("button", { name: "Save" })).toBeVisible();
+		await expect.element(view.getByRole("heading", { name: "Release" })).toBeVisible();
+	});
 });

@@ -3,6 +3,6 @@ import Table from "../../../../../integration/cases/slots/prop-names/__output__/
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Table.prop:people -->
-  <Table people="Ada" />
+	<!-- @uf-expect TS2322 Table.prop:people -->
+	<Table people="Ada" />
 </template>

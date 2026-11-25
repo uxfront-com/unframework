@@ -9,31 +9,31 @@ import { expect } from "vitest";
 import Timeline from "./Timeline.uf.tsx";
 
 describeTargets("semantics/composable-effect-order", () => {
-  it(
-    "runs the composable's mounted hook between the caller's",
-    { requires: ["interactivity", "composable-effect-order"] },
-    async () => {
-      const view = await mountScenario(Timeline, "initial");
-      await view.expectParity("initial");
-      await expect
-        .element(view.getByRole("list"))
-        .toHaveTextContent("caller mounted firstcomposable mountedcaller mounted last");
-    },
-  );
+	it(
+		"runs the composable's mounted hook between the caller's",
+		{ requires: ["interactivity", "composable-effect-order"] },
+		async () => {
+			const view = await mountScenario(Timeline, "initial");
+			await view.expectParity("initial");
+			await expect
+				.element(view.getByRole("list"))
+				.toHaveTextContent("caller mounted firstcomposable mountedcaller mounted last");
+		},
+	);
 
-  it(
-    "runs the composable's watcher before the caller's later one",
-    { requires: ["interactivity", "composable-effect-order"] },
-    async () => {
-      const view = await mountScenario(Timeline, "initial");
-      await view.user.click(view.getByRole("button", { name: "Increment" }));
-      await view.expectParity("incremented");
-      await expect.element(view.getByRole("status")).toHaveTextContent("Count: 1");
-      await expect
-        .element(view.getByRole("list"))
-        .toHaveTextContent(
-          "caller mounted firstcomposable mountedcaller mounted lastcomposable watchercaller watcher",
-        );
-    },
-  );
+	it(
+		"runs the composable's watcher before the caller's later one",
+		{ requires: ["interactivity", "composable-effect-order"] },
+		async () => {
+			const view = await mountScenario(Timeline, "initial");
+			await view.user.click(view.getByRole("button", { name: "Increment" }));
+			await view.expectParity("incremented");
+			await expect.element(view.getByRole("status")).toHaveTextContent("Count: 1");
+			await expect
+				.element(view.getByRole("list"))
+				.toHaveTextContent(
+					"caller mounted firstcomposable mountedcaller mounted lastcomposable watchercaller watcher",
+				);
+		},
+	);
 });

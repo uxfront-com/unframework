@@ -3,8 +3,8 @@ import Card from "../../../../../integration/cases/slots/named/__output__/vue/Ca
 </script>
 
 <template>
-  <Card>
-    <template #header><h2>Title</h2></template>
-    <p>Body</p>
-  </Card>
+	<Card>
+		<template #header><h2>Title</h2></template>
+		<p>Body</p>
+	</Card>
 </template>

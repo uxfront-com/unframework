@@ -9,46 +9,46 @@ import { mount } from "../src/toolchain/client.ts";
 
 /** A fixture's components, compiled by the optimizer (a computed path: not this tsconfig's). */
 const load = async (name: string): Promise<Readonly<Record<string, unknown>>> =>
-  import(`./fixtures/${name}.tsx`);
+	import(`./fixtures/${name}.tsx`) as Promise<{ default: unknown }>;
 const fixtures = await load("NullProps");
 
 let mounted: MountedComponent | undefined;
 let container: HTMLElement | undefined;
 
 afterEach(async () => {
-  await mounted?.unmount();
-  container?.remove();
-  mounted = container = undefined;
+	await mounted?.unmount();
+	container?.remove();
+	mounted = container = undefined;
 });
 
 /** Mounts a fixture component and returns a reader of the text its probe renders. */
 async function mounting(name: string, props?: Record<string, unknown>): Promise<() => string> {
-  container = document.createElement("div");
-  document.body.append(container);
-  mounted = await mount(fixtures[name], container, { props });
-  const element = container;
-  return () => element.textContent ?? "";
+	container = document.createElement("div");
+	document.body.append(container);
+	mounted = await mount(fixtures[name], container, { props });
+	const element = container;
+	return () => element.textContent ?? "";
 }
 
 describe("null props on Qwik's client", () => {
-  it("reach the component as `null` from the adapter, on a rerender too", async () => {
-    const text = await mounting("NullProbe", { value: null });
-    expect(text()).toBe("null");
-    await mounted!.rerender({ value: "x" });
-    expect(text()).toBe("x");
-    await mounted!.rerender({ value: null });
-    expect(text()).toBe("null");
-    await mounted!.rerender({});
-    expect(text()).toBe("undefined");
-  });
+	it("reach the component as `null` from the adapter, on a rerender too", async () => {
+		const text = await mounting("NullProbe", { value: null });
+		expect(text()).toBe("null");
+		await mounted!.rerender({ value: "x" });
+		expect(text()).toBe("x");
+		await mounted!.rerender({ value: null });
+		expect(text()).toBe("null");
+		await mounted!.rerender({});
+		expect(text()).toBe("undefined");
+	});
 
-  it.each([
-    ["Written", "null"],
-    ["Held", "null"],
-    ["Spread", "null"],
-    ["Called", "null"],
-  ])("keep or lose `null` as Qwik does: %s", async (name, expected) => {
-    // Qwik's own behaviour, pinned: a consumer that spreads its props keeps a `null`.
-    expect((await mounting(name))()).toBe(expected);
-  });
+	it.each([
+		["Written", "null"],
+		["Held", "null"],
+		["Spread", "null"],
+		["Called", "null"],
+	])("keep or lose `null` as Qwik does: %s", async (name, expected) => {
+		// Qwik's own behaviour, pinned: a consumer that spreads its props keeps a `null`.
+		expect((await mounting(name))()).toBe(expected);
+	});
 });

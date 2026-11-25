@@ -13,15 +13,15 @@ import type { UserConfig } from "vite";
  * Astro is imported on first use, so loading the toolchain stays cheap for other projects.
  */
 export async function astroViteConfig(
-  root: string,
-  overrides: UserConfig = {},
+	root: string,
+	overrides: UserConfig = {},
 ): Promise<UserConfig> {
-  const { getViteConfig } = await import("astro/config");
-  const configure = getViteConfig(overrides, {
-    root,
-    configFile: false,
-    logLevel: "warn",
-    devToolbar: { enabled: false },
-  });
-  return configure({ command: "serve", mode: "test" });
+	const { getViteConfig } = await import("astro/config");
+	const configure = getViteConfig(overrides, {
+		root,
+		configFile: false,
+		logLevel: "warn",
+		devToolbar: { enabled: false },
+	});
+	return configure({ command: "serve", mode: "test" });
 }

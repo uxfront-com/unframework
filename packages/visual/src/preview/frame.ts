@@ -16,23 +16,23 @@ import type { EmbedOptions } from "./embed-options.ts";
 import { layoutStyle } from "./layout.ts";
 import { CONTROL_STYLES, controlKit, PALETTE } from "./panel.ts";
 import {
-  CONTROLS_PARAM,
-  EMBED_MESSAGE,
-  EXAMPLE_KEY_PREFIX,
-  EXAMPLE_PARAM,
-  PREVIEW_MESSAGE,
-  RENDER_PATH,
-  RESIZE_PARAM,
-  STATIC_RENDER_MESSAGE,
-  THEME_PARAM,
+	CONTROLS_PARAM,
+	EMBED_MESSAGE,
+	EXAMPLE_KEY_PREFIX,
+	EXAMPLE_PARAM,
+	PREVIEW_MESSAGE,
+	RENDER_PATH,
+	RESIZE_PARAM,
+	STATIC_RENDER_MESSAGE,
+	THEME_PARAM,
 } from "./protocol.ts";
 import type {
-  EmbedResizeMessage,
-  EmbedTheme,
-  FrameMessage,
-  FrameOptions,
-  RenderMessage,
-  StaticRender,
+	EmbedResizeMessage,
+	EmbedTheme,
+	FrameMessage,
+	FrameOptions,
+	RenderMessage,
+	StaticRender,
 } from "./protocol.ts";
 
 type Mounted = Awaited<ReturnType<FrameOptions["mount"]>>;
@@ -46,48 +46,54 @@ const FRAME_NOTICE = "This page is a frame of unframework preview: open the prev
  * example once and shows why when it can't.
  */
 export function startFrame(options: FrameOptions): void {
-  const params = new URLSearchParams(location.search);
-  const root = document.querySelector<HTMLElement>("[data-uf-preview-root]");
-  const example = params.get(EXAMPLE_PARAM);
-  // Any `shell` parameter, even an empty one, keeps the shell's path as it was before ADR-0112.
-  if (root && !params.has("shell") && example !== null) {
-    void standalone(options, root, example, params);
-    return;
-  }
-  const shell = params.get("shell");
-  if (!shell || !root || (options.staticPreview && shell !== location.origin)) {
-    document.body.textContent = FRAME_NOTICE;
-    return;
-  }
-  const render = renderer(options, root);
-  const send = (message: FrameMessage) => window.parent.postMessage(message, shell);
-  // Renders run in order: a mount must finish before the rerender that follows it.
-  let queue: Promise<void> = Promise.resolve();
+	const params = new URLSearchParams(location.search);
+	const root = document.querySelector<HTMLElement>("[data-uf-preview-root]");
+	const example = params.get(EXAMPLE_PARAM);
+	// Any `shell` parameter, even an empty one, keeps the shell's path as it was before ADR-0112.
+	if (root && !params.has("shell") && example !== null) {
+		void standalone(options, root, example, params);
+		return;
+	}
+	const shell = params.get("shell");
+	if (!shell || !root || (options.staticPreview && shell !== location.origin)) {
+		document.body.textContent = FRAME_NOTICE;
+		return;
+	}
+	const render = renderer(options, root);
+	const send = (message: FrameMessage) => window.parent.postMessage(message, shell);
+	// Renders run in order: a mount must finish before the rerender that follows it.
+	let queue: Promise<void> = Promise.resolve();
 
-  const answer = async (message: RenderMessage) => {
-    try {
-      await render(message.entry, message.props);
-      send({ type: PREVIEW_MESSAGE, kind: "rendered", target: options.target, seq: message.seq });
-    } catch (error) {
-      send({
-        type: PREVIEW_MESSAGE,
-        kind: "failed",
-        target: options.target,
-        seq: message.seq,
-        message: errorMessage(error),
-      });
-    }
-  };
+	const answer = async (message: RenderMessage) => {
+		try {
+			await render(message.entry, message.props);
+			send({ type: PREVIEW_MESSAGE, kind: "rendered", target: options.target, seq: message.seq });
+		} catch (error) {
+			send({
+				type: PREVIEW_MESSAGE,
+				kind: "failed",
+				target: options.target,
+				seq: message.seq,
+				message: errorMessage(error),
+			});
+		}
+	};
 
-  window.addEventListener("message", (event: MessageEvent<unknown>) => {
-    if (event.source !== window.parent || event.origin !== shell) return;
-    const message = event.data as Partial<RenderMessage> | null;
-    if (message?.type !== PREVIEW_MESSAGE || message.kind !== "render") return;
-    if (typeof message.entry !== "string" || typeof message.seq !== "number") return;
-    const props = message.props && typeof message.props === "object" ? message.props : {};
-    queue = queue.then(() => answer({ ...(message as RenderMessage), props }));
-  });
-  send({ type: PREVIEW_MESSAGE, kind: "ready", target: options.target });
+	window.addEventListener("message", (event: MessageEvent<unknown>) => {
+		if (event.source !== window.parent || event.origin !== shell) {
+			return;
+		}
+		const message = event.data as Partial<RenderMessage> | null;
+		if (message?.type !== PREVIEW_MESSAGE || message.kind !== "render") {
+			return;
+		}
+		if (typeof message.entry !== "string" || typeof message.seq !== "number") {
+			return;
+		}
+		const props = message.props && typeof message.props === "object" ? message.props : {};
+		queue = queue.then(() => answer({ ...(message as RenderMessage), props }));
+	});
+	send({ type: PREVIEW_MESSAGE, kind: "ready", target: options.target });
 }
 
 /**
@@ -99,45 +105,53 @@ export function startFrame(options: FrameOptions): void {
  * message and reports the height, each only when the URL asks for it (ADR-0116).
  */
 async function standalone(
-  options: FrameOptions,
-  root: HTMLElement,
-  id: string,
-  params: URLSearchParams,
+	options: FrameOptions,
+	root: HTMLElement,
+	id: string,
+	params: URLSearchParams,
 ): Promise<void> {
-  const entry = `${EXAMPLE_KEY_PREFIX}${id}`;
-  const embed = embedOptions(params, {
-    controls: CONTROLS_PARAM,
-    theme: THEME_PARAM,
-    resize: RESIZE_PARAM,
-  });
-  if ("error" in embed) {
-    document.body.textContent = embed.error;
-    return;
-  }
-  const page = embedPage(options, root, entry, embed);
-  const render = renderer(options, root, page.layout !== "natural");
-  try {
-    if (!Object.hasOwn(options.entries, entry)) {
-      throw new Error(`This preview has no example ${JSON.stringify(id)}.`);
-    }
-    await render(entry, {});
-  } catch (error) {
-    document.body.textContent = errorMessage(error);
-    if (embed.resize) reportHeight();
-    return;
-  }
-  if (embed.controls) page.listen(render);
-  if (embed.theme) takeTheme(page.setTheme);
-  if (embed.resize) reportHeight();
+	const entry = `${EXAMPLE_KEY_PREFIX}${id}`;
+	const embed = embedOptions(params, {
+		controls: CONTROLS_PARAM,
+		theme: THEME_PARAM,
+		resize: RESIZE_PARAM,
+	});
+	if ("error" in embed) {
+		document.body.textContent = embed.error;
+		return;
+	}
+	const page = embedPage(options, root, entry, embed);
+	const render = renderer(options, root, page.layout !== "natural");
+	try {
+		if (!Object.hasOwn(options.entries, entry)) {
+			throw new Error(`This preview has no example ${JSON.stringify(id)}.`);
+		}
+		await render(entry, {});
+	} catch (error) {
+		document.body.textContent = errorMessage(error);
+		if (embed.resize) {
+			reportHeight();
+		}
+		return;
+	}
+	if (embed.controls) {
+		page.listen(render);
+	}
+	if (embed.theme) {
+		takeTheme(page.setTheme);
+	}
+	if (embed.resize) {
+		reportHeight();
+	}
 }
 
 /** The standalone page an embed's options lay out, before its first render. */
 interface EmbedPage {
-  /** `fixed` fits the iframe's height, `natural` grows with its content: none is today's page. */
-  layout: "fixed" | "natural" | undefined;
-  setTheme: (theme: EmbedTheme) => void;
-  /** Rerenders the example on each change to a control, once the first render has succeeded. */
-  listen: (render: ReturnType<typeof renderer>) => void;
+	/** `fixed` fits the iframe's height, `natural` grows with its content: none is today's page. */
+	layout: "fixed" | "natural" | undefined;
+	setTheme: (theme: EmbedTheme) => void;
+	/** Rerenders the example on each change to a control, once the first render has succeeded. */
+	listen: (render: ReturnType<typeof renderer>) => void;
 }
 
 /** What an embed's frame adds to the frame page's style for each layout (ADR-0116). */
@@ -181,91 +195,97 @@ ${CONTROL_STYLES}.controls { overflow: visible; border-inline-start: 0; border-t
  * the example never shows in the other mode first.
  */
 function embedPage(
-  options: FrameOptions,
-  root: HTMLElement,
-  entry: string,
-  embed: EmbedOptions,
+	options: FrameOptions,
+	root: HTMLElement,
+	entry: string,
+	embed: EmbedOptions,
 ): EmbedPage {
-  const html = document.documentElement;
-  let host: HTMLElement | undefined;
-  const setTheme = (theme: EmbedTheme) => {
-    html.dataset.theme = theme;
-    html.style.colorScheme = theme;
-    host?.setAttribute("data-theme", theme);
-  };
-  const layout = embed.resize ? "natural" : embed.controls ? "fixed" : undefined;
-  if (!layout) {
-    if (embed.theme) setTheme(embed.theme);
-    return { layout, setTheme, listen: () => undefined };
-  }
-  const style = document.createElement("style");
-  style.textContent = EMBED_STYLES;
-  document.head.append(style);
-  document.body.dataset.ufEmbed = layout;
-  const area = document.createElement("div");
-  area.dataset.ufEmbedExample = "";
-  root.replaceWith(area);
-  area.append(root);
-  const kit = controlKit();
-  const groups = Object.hasOwn(options.controls ?? {}, entry) ? options.controls![entry]! : [];
-  const controls = groups.flatMap((group) => group.controls);
-  let section: HTMLElement | undefined;
-  if (embed.controls) {
-    host = document.createElement("uf-embed-controls");
-    const shadow = host.attachShadow({ mode: "open" });
-    const sheet = document.createElement("style");
-    sheet.textContent = PANEL_STYLES;
-    section = document.createElement("section");
-    section.className = "controls";
-    section.setAttribute("aria-labelledby", "uf-controls-label");
-    const heading = document.createElement("h2");
-    heading.id = "uf-controls-label";
-    heading.textContent = "Controls";
-    section.append(heading);
-    if (!groups.length) {
-      const none = document.createElement("p");
-      none.textContent = "This example has no controls.";
-      section.append(none);
-    }
-    section.append(...kit.exampleGroups(groups));
-    // A field's Enter submits its form, which would load the frame again.
-    section.addEventListener("submit", (event) => event.preventDefault());
-    shadow.append(sheet, section);
-    area.after(host);
-  }
-  if (embed.theme) setTheme(embed.theme);
+	const html = document.documentElement;
+	let host: HTMLElement | undefined;
+	const setTheme = (theme: EmbedTheme) => {
+		html.dataset.theme = theme;
+		html.style.colorScheme = theme;
+		host?.setAttribute("data-theme", theme);
+	};
+	const layout = embed.resize ? "natural" : embed.controls ? "fixed" : undefined;
+	if (!layout) {
+		if (embed.theme) {
+			setTheme(embed.theme);
+		}
+		return { layout, setTheme, listen: () => undefined };
+	}
+	const style = document.createElement("style");
+	style.textContent = EMBED_STYLES;
+	document.head.append(style);
+	document.body.dataset.ufEmbed = layout;
+	const area = document.createElement("div");
+	area.dataset.ufEmbedExample = "";
+	root.replaceWith(area);
+	area.append(root);
+	const kit = controlKit();
+	const groups = Object.hasOwn(options.controls ?? {}, entry) ? options.controls![entry]! : [];
+	const controls = groups.flatMap((group) => group.controls);
+	let section: HTMLElement | undefined;
+	if (embed.controls) {
+		host = document.createElement("uf-embed-controls");
+		const shadow = host.attachShadow({ mode: "open" });
+		const sheet = document.createElement("style");
+		sheet.textContent = PANEL_STYLES;
+		section = document.createElement("section");
+		section.className = "controls";
+		section.setAttribute("aria-labelledby", "uf-controls-label");
+		const heading = document.createElement("h2");
+		heading.id = "uf-controls-label";
+		heading.textContent = "Controls";
+		section.append(heading);
+		if (!groups.length) {
+			const none = document.createElement("p");
+			none.textContent = "This example has no controls.";
+			section.append(none);
+		}
+		section.append(...kit.exampleGroups(groups));
+		// A field's Enter submits its form, which would load the frame again.
+		section.addEventListener("submit", (event) => event.preventDefault());
+		shadow.append(sheet, section);
+		area.after(host);
+	}
+	if (embed.theme) {
+		setTheme(embed.theme);
+	}
 
-  const listen = (render: ReturnType<typeof renderer>) => {
-    if (!section) return;
-    const fields = section;
-    // Renders run in order, as the shell's do: a rerender must finish before the next.
-    let queue: Promise<void> = Promise.resolve();
-    const attempt = async (props: Record<string, unknown>) => {
-      try {
-        await render(entry, props);
-        area.querySelector("[data-uf-embed-failure]")?.remove();
-        delete area.dataset.failed;
-      } catch (error) {
-        // Only the example's area says why: the panel stays, so another value can render again,
-        // as "(default)" does on a static Astro frame (ADR-0111).
-        let failure = area.querySelector<HTMLElement>("[data-uf-embed-failure]");
-        if (!failure) {
-          failure = document.createElement("p");
-          failure.dataset.ufEmbedFailure = "";
-          area.append(failure);
-        }
-        failure.textContent = errorMessage(error);
-        area.dataset.failed = "";
-      }
-    };
-    fields.addEventListener("input", () => {
-      const props = kit.exampleProps(controls, (key) =>
-        fields.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${key}"]`)!,
-      );
-      queue = queue.then(() => attempt(props));
-    });
-  };
-  return { layout, setTheme, listen };
+	const listen = (render: ReturnType<typeof renderer>) => {
+		if (!section) {
+			return;
+		}
+		const fields = section;
+		// Renders run in order, as the shell's do: a rerender must finish before the next.
+		let queue: Promise<void> = Promise.resolve();
+		const attempt = async (props: Record<string, unknown>) => {
+			try {
+				await render(entry, props);
+				area.querySelector("[data-uf-embed-failure]")?.remove();
+				delete area.dataset.failed;
+			} catch (error) {
+				// Only the example's area says why: the panel stays, so another value can render again,
+				// as "(default)" does on a static Astro frame (ADR-0111).
+				let failure = area.querySelector<HTMLElement>("[data-uf-embed-failure]");
+				if (!failure) {
+					failure = document.createElement("p");
+					failure.dataset.ufEmbedFailure = "";
+					area.append(failure);
+				}
+				failure.textContent = errorMessage(error);
+				area.dataset.failed = "";
+			}
+		};
+		fields.addEventListener("input", () => {
+			const props = kit.exampleProps(controls, (key) =>
+				fields.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${key}"]`)!,
+			);
+			queue = queue.then(() => attempt(props));
+		});
+	};
+	return { layout, setTheme, listen };
 }
 
 /**
@@ -274,15 +294,25 @@ function embedPage(
  * modes. Anything else, from anywhere else, changes nothing (ADR-0116).
  */
 function takeTheme(setTheme: (theme: EmbedTheme) => void): void {
-  window.addEventListener("message", (event: MessageEvent<unknown>) => {
-    if (event.source !== window.parent) return;
-    const data = event.data;
-    if (typeof data !== "object" || data === null || Array.isArray(data)) return;
-    const message = data as Record<string, unknown>;
-    if (Object.keys(message).length !== 3) return;
-    if (message.type !== EMBED_MESSAGE || message.kind !== "theme") return;
-    if (message.theme === "light" || message.theme === "dark") setTheme(message.theme);
-  });
+	window.addEventListener("message", (event: MessageEvent<unknown>) => {
+		if (event.source !== window.parent) {
+			return;
+		}
+		const data = event.data;
+		if (typeof data !== "object" || data === null || Array.isArray(data)) {
+			return;
+		}
+		const message = data as Record<string, unknown>;
+		if (Object.keys(message).length !== 3) {
+			return;
+		}
+		if (message.type !== EMBED_MESSAGE || message.kind !== "theme") {
+			return;
+		}
+		if (message.theme === "light" || message.theme === "dark") {
+			setTheme(message.theme);
+		}
+	});
 }
 
 /**
@@ -291,19 +321,21 @@ function takeTheme(setTheme: (theme: EmbedTheme) => void): void {
  * and a host that applies it never makes it grow. A horizontal scrollbar takes room too.
  */
 function reportHeight(): void {
-  const html = document.documentElement;
-  let last: number | undefined;
-  const report = () => {
-    const scrollbar = Math.max(0, window.innerHeight - html.clientHeight);
-    const height = Math.ceil(html.getBoundingClientRect().height + scrollbar);
-    if (height === last) return;
-    last = height;
-    const message: EmbedResizeMessage = { type: EMBED_MESSAGE, kind: "resize", height };
-    window.parent.postMessage(message, "*");
-  };
-  new ResizeObserver(report).observe(html);
-  window.addEventListener("resize", report);
-  report();
+	const html = document.documentElement;
+	let last: number | undefined;
+	const report = () => {
+		const scrollbar = Math.max(0, window.innerHeight - html.clientHeight);
+		const height = Math.ceil(html.getBoundingClientRect().height + scrollbar);
+		if (height === last) {
+			return;
+		}
+		last = height;
+		const message: EmbedResizeMessage = { type: EMBED_MESSAGE, kind: "resize", height };
+		window.parent.postMessage(message, "*");
+	};
+	new ResizeObserver(report).observe(html);
+	window.addEventListener("resize", report);
+	report();
 }
 
 /**
@@ -312,72 +344,78 @@ function reportHeight(): void {
  * container keeps its layout but not its `min-height: 100%`.
  */
 function renderer(
-  options: FrameOptions,
-  root: HTMLElement,
-  fill = true,
+	options: FrameOptions,
+	root: HTMLElement,
+	fill = true,
 ): (entry: string, props: Record<string, unknown>) => Promise<void> {
-  let container: HTMLElement = root;
-  let current: { entry: string; mounted: Mounted } | undefined;
-  return async (entry, props) => {
-    if (current?.entry === entry) {
-      await current.mounted.rerender(props);
-      return;
-    }
-    const previous = current;
-    current = undefined;
-    await previous?.mounted.unmount();
-    // A fresh container for each mount: a framework may mark the one it rendered into, as
-    // Qwik's `q:container` does, and refuse to render there again.
-    const fresh = document.createElement("div");
-    fresh.dataset.ufPreviewRoot = "";
-    fresh.dataset.target = options.target;
-    // The entry's layout goes on its own container only (ADR-0114), so nothing of the previous
-    // entry's carries over, and the example's own elements keep their styles.
-    const layouts = options.layouts ?? {};
-    const layout = Object.hasOwn(layouts, entry) ? layouts[entry] : undefined;
-    for (const [property, value] of Object.entries(layoutStyle(layout))) {
-      // An embed that reports its height takes its content's, never the frame's (ADR-0116).
-      if (!fill && property === "min-height") continue;
-      fresh.style.setProperty(property, value);
-    }
-    container.replaceWith(fresh);
-    container = fresh;
-    const load = Object.hasOwn(options.entries, entry) ? options.entries[entry] : undefined;
-    if (!load) throw new Error(`The preview has no entry ${JSON.stringify(entry)}.`);
-    const component = (await load()).default;
-    if (component === undefined) {
-      throw new Error(`${entry} has no default export to mount.`);
-    }
-    const renderCommand = options.staticRenders
-      ? staticRender(options.staticRenders[entry])
-      : options.serverRender
-        ? serverRender
-        : undefined;
-    const mounted = await options.mount(component, container, {
-      props,
-      ...(renderCommand ? { renderCommand } : {}),
-    });
-    current = { entry, mounted };
-  };
+	let container: HTMLElement = root;
+	let current: { entry: string; mounted: Mounted } | undefined;
+	return async (entry, props) => {
+		if (current?.entry === entry) {
+			await current.mounted.rerender(props);
+			return;
+		}
+		const previous = current;
+		current = undefined;
+		await previous?.mounted.unmount();
+		// A fresh container for each mount: a framework may mark the one it rendered into, as
+		// Qwik's `q:container` does, and refuse to render there again.
+		const fresh = document.createElement("div");
+		fresh.dataset.ufPreviewRoot = "";
+		fresh.dataset.target = options.target;
+		// The entry's layout goes on its own container only (ADR-0114), so nothing of the previous
+		// entry's carries over, and the example's own elements keep their styles.
+		const layouts = options.layouts ?? {};
+		const layout = Object.hasOwn(layouts, entry) ? layouts[entry] : undefined;
+		for (const [property, value] of Object.entries(layoutStyle(layout))) {
+			// An embed that reports its height takes its content's, never the frame's (ADR-0116).
+			if (!fill && property === "min-height") {
+				continue;
+			}
+			fresh.style.setProperty(property, value);
+		}
+		container.replaceWith(fresh);
+		container = fresh;
+		const load = Object.hasOwn(options.entries, entry) ? options.entries[entry] : undefined;
+		if (!load) {
+			throw new Error(`The preview has no entry ${JSON.stringify(entry)}.`);
+		}
+		const component = (await load()).default;
+		if (component === undefined) {
+			throw new Error(`${entry} has no default export to mount.`);
+		}
+		const renderCommand = options.staticRenders
+			? staticRender(options.staticRenders[entry])
+			: options.serverRender
+				? serverRender
+				: undefined;
+		const mounted = await options.mount(component, container, {
+			props,
+			...(renderCommand ? { renderCommand } : {}),
+		});
+		current = { entry, mounted };
+	};
 }
 
 /** An error's message, as the shell's caption and a standalone frame show it. */
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+	return error instanceof Error ? error.message : String(error);
 }
 
 /** The server render of a target with no client runtime, through this frame's own server. */
 async function serverRender(request: {
-  id: string;
-  props: Record<string, unknown>;
-}): Promise<{ html: string; console: { level: "warn" | "error"; message: string }[] }> {
-  const response = await fetch(RENDER_PATH, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(request),
-  });
-  if (!response.ok) throw new Error(await response.text());
-  return (await response.json()) as Awaited<ReturnType<typeof serverRender>>;
+	id: string;
+	props: Record<string, unknown>;
+}): Promise<{ html: string; console: Array<{ level: "warn" | "error"; message: string }> }> {
+	const response = await fetch(RENDER_PATH, {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify(request),
+	});
+	if (!response.ok) {
+		throw new Error(await response.text());
+	}
+	return (await response.json()) as Awaited<ReturnType<typeof serverRender>>;
 }
 
 /**
@@ -386,33 +424,43 @@ async function serverRender(request: {
  * runs no server, so any other props fail with a message that says so.
  */
 function staticRender(
-  file: string | undefined,
+	file: string | undefined,
 ): (request: { props: Record<string, unknown> }) => Promise<{ html: string; console: [] }> {
-  let read: Promise<StaticRender> | undefined;
-  return async ({ props }) => {
-    if (file === undefined) throw new Error(STATIC_RENDER_MESSAGE);
-    read ??= fetch(file).then(async (response) => {
-      if (!response.ok) throw new Error(`${file}: ${response.status} ${response.statusText}`);
-      return (await response.json()) as StaticRender;
-    });
-    const rendered = await read.catch((error: unknown) => {
-      read = undefined;
-      throw error;
-    });
-    if (!sameProps(rendered.props, props)) throw new Error(STATIC_RENDER_MESSAGE);
-    if ("error" in rendered) throw new Error(rendered.error);
-    return { html: rendered.html, console: [] };
-  };
+	let read: Promise<StaticRender> | undefined;
+	return async ({ props }) => {
+		if (file === undefined) {
+			throw new Error(STATIC_RENDER_MESSAGE);
+		}
+		read ??= fetch(file).then(async (response) => {
+			if (!response.ok) {
+				throw new Error(`${file}: ${response.status} ${response.statusText}`);
+			}
+			return (await response.json()) as StaticRender;
+		});
+		const rendered = await read.catch((error: unknown) => {
+			read = undefined;
+			throw error;
+		});
+		if (!sameProps(rendered.props, props)) {
+			throw new Error(STATIC_RENDER_MESSAGE);
+		}
+		if ("error" in rendered) {
+			throw new Error(rendered.error);
+		}
+		return { html: rendered.html, console: [] };
+	};
 }
 
 /** Whether two sets of props hold the same keys with the same values, as JSON gives them. */
 export function sameProps(
-  a: Readonly<Record<string, unknown>>,
-  b: Readonly<Record<string, unknown>>,
+	a: Readonly<Record<string, unknown>>,
+	b: Readonly<Record<string, unknown>>,
 ): boolean {
-  const keys = Object.keys(a);
-  if (keys.length !== Object.keys(b).length) return false;
-  return keys.every(
-    (key) => Object.hasOwn(b, key) && JSON.stringify(a[key]) === JSON.stringify(b[key]),
-  );
+	const keys = Object.keys(a);
+	if (keys.length !== Object.keys(b).length) {
+		return false;
+	}
+	return keys.every(
+		(key) => Object.hasOwn(b, key) && JSON.stringify(a[key]) === JSON.stringify(b[key]),
+	);
 }

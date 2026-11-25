@@ -11,27 +11,27 @@ import { currentTarget } from "./target.ts";
 
 /** The target's capability matrix, as the project provides it. */
 export function capabilityCells(): Readonly<Record<string, CapabilityCell>> {
-  const cells = inject("ufCapabilities") as Readonly<Record<string, CapabilityCell>> | undefined;
-  if (!cells) {
-    throw new Error(
-      "No capabilities are provided: the browser project must set test.provide.ufCapabilities to its target's capability matrix.",
-    );
-  }
-  return cells;
+	const cells = inject("ufCapabilities") as Readonly<Record<string, CapabilityCell>> | undefined;
+	if (!cells) {
+		throw new Error(
+			"No capabilities are provided: the browser project must set test.provide.ufCapabilities to its target's capability matrix.",
+		);
+	}
+	return cells;
 }
 
 /** The capability's cell; throws for a name the matrix does not have. */
 export function capabilityCell(
-  name: string,
-  cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
+	name: string,
+	cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
 ): CapabilityCell {
-  const cell = Object.hasOwn(cells, name) ? cells[name] : undefined;
-  if (!cell) {
-    throw new Error(
-      `"${name}" is not a capability: the capabilities are ${Object.keys(cells).join(", ")}.`,
-    );
-  }
-  return cell;
+	const cell = Object.hasOwn(cells, name) ? cells[name] : undefined;
+	if (!cell) {
+		throw new Error(
+			`"${name}" is not a capability: the capabilities are ${Object.keys(cells).join(", ")}.`,
+		);
+	}
+	return cell;
 }
 
 /**
@@ -39,14 +39,16 @@ export function capabilityCell(
  * reason of the first one whose cell is unsupported (`requires interactivity: …`), or nothing.
  */
 export function requiredSkip(
-  requires: readonly string[],
-  cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
+	requires: ReadonlyArray<string>,
+	cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
 ): string | undefined {
-  for (const name of requires) {
-    const cell = capabilityCell(name, cells);
-    if (cell.support === "unsupported") return requiresSkip(name, cell.reason);
-  }
-  return undefined;
+	for (const name of requires) {
+		const cell = capabilityCell(name, cells);
+		if (cell.support === "unsupported") {
+			return requiresSkip(name, cell.reason);
+		}
+	}
+	return undefined;
 }
 
 /**
@@ -57,11 +59,11 @@ export function requiredSkip(
  * alone, whatever the test requires.
  */
 export function noOutputReason(
-  caseId: string,
-  cases: Readonly<Record<string, string>> | undefined = inject("ufNoOutput"),
+	caseId: string,
+	cases: Readonly<Record<string, string>> | undefined = inject("ufNoOutput"),
 ): string | undefined {
-  const errors = cases && Object.hasOwn(cases, caseId) ? cases[caseId] : undefined;
-  return errors === undefined ? undefined : noOutputSkip(errors);
+	const errors = cases && Object.hasOwn(cases, caseId) ? cases[caseId] : undefined;
+	return errors === undefined ? undefined : noOutputSkip(errors);
 }
 
 /**
@@ -71,10 +73,10 @@ export function noOutputReason(
  * layer fails with this cause.
  */
 export function standInCause(
-  caseId: string,
-  cases: Readonly<Record<string, string>> | undefined = inject("ufStandIn"),
+	caseId: string,
+	cases: Readonly<Record<string, string>> | undefined = inject("ufStandIn"),
 ): string | undefined {
-  return cases && Object.hasOwn(cases, caseId) ? cases[caseId] : undefined;
+	return cases && Object.hasOwn(cases, caseId) ? cases[caseId] : undefined;
 }
 
 /**
@@ -83,13 +85,15 @@ export function standInCause(
  * and is skipped where it cannot run, rather than clicking inert HTML and failing later.
  */
 export function assertInteractive(
-  what: string,
-  cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
-  target: string = currentTarget(),
+	what: string,
+	cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
+	target: string = currentTarget(),
 ): void {
-  const cell = capabilityCell("interactivity", cells);
-  if (cell.support !== "unsupported") return;
-  throw new Error(
-    `${what}: ${target} runs no client code (${cell.reason}). A test that interacts or reads emitted events declares it: it(name, { requires: ["interactivity"] }, fn).`,
-  );
+	const cell = capabilityCell("interactivity", cells);
+	if (cell.support !== "unsupported") {
+		return;
+	}
+	throw new Error(
+		`${what}: ${target} runs no client code (${cell.reason}). A test that interacts or reads emitted events declares it: it(name, { requires: ["interactivity"] }, fn).`,
+	);
 }

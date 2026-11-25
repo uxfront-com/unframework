@@ -7,15 +7,15 @@ import { expect } from "vitest";
 import EmailField from "./EmailField.uf.tsx";
 
 describeTargets("ids/label-association", () => {
-  it("labels and describes the field through two ids", async () => {
-    const view = await mountScenario(EmailField, "work-email");
-    await view.expectParity("work-email");
-    await expect.element(view.getByLabelText("Work email")).toBeVisible();
-    await expect
-      .element(view.getByRole("textbox", { name: "Work email" }))
-      .toHaveAccessibleDescription("We send the invoices here.");
-    await expect
-      .element(view.getByLabelText("Work email"))
-      .toHaveAttribute("id", expect.stringMatching(/^uf-id-/));
-  });
+	it("labels and describes the field through two ids", async () => {
+		const view = await mountScenario(EmailField, "work-email");
+		await view.expectParity("work-email");
+		await expect.element(view.getByLabelText("Work email")).toBeVisible();
+		await expect
+			.element(view.getByRole("textbox", { name: "Work email" }))
+			.toHaveAccessibleDescription("We send the invoices here.");
+		await expect
+			.element(view.getByLabelText("Work email"))
+			.toHaveAttribute("id", expect.stringMatching(/^uf-id-/));
+	});
 });

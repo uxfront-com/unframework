@@ -1,8 +1,8 @@
 {
-  "description": "Several teleports in one component: two side by side, in source order; nodes inserted before them, a conditional and a growing list; one in each row of a keyed list that reverses; and removing the component that holds them, which clears `body`.",
-  "requires": "Every test reads what the component teleports, which mounts in the browser once the component has mounted: Astro, which runs nothing there, renders none of it (ADR-0098).",
-  "main": "Board.uf.tsx",
-  "ssr": {
-    "default": {}
-  }
+	"description": "Several teleports in one component: two side by side, in source order; nodes inserted before them, a conditional and a growing list; one in each row of a keyed list that reverses; and removing the component that holds them, which clears `body`.",
+	"requires": "Every test reads what the component teleports, which mounts in the browser once the component has mounted: Astro, which runs nothing there, renders none of it (ADR-0098).",
+	"main": "Board.uf.tsx",
+	"ssr": {
+		"default": {}
+	}
 }

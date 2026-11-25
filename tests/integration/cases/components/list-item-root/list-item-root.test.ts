@@ -6,10 +6,10 @@ import { expect } from "vitest";
 import Menu from "./Menu.uf.tsx";
 
 describeTargets("components/list-item-root", () => {
-  it("renders each item in the list", async () => {
-    const view = await mountScenario(Menu, "three");
-    await view.expectParity("three");
-    await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("Docs");
-    await expect.element(view.getByRole("list", { name: "Menu" })).toBeVisible();
-  });
+	it("renders each item in the list", async () => {
+		const view = await mountScenario(Menu, "three");
+		await view.expectParity("three");
+		await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("Docs");
+		await expect.element(view.getByRole("list", { name: "Menu" })).toBeVisible();
+	});
 });

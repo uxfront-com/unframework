@@ -1,3 +1,3 @@
 export interface Local {
-  value: string;
+	value: string;
 }

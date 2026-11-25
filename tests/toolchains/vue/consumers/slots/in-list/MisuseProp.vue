@@ -3,6 +3,6 @@ import Steps from "../../../../../integration/cases/slots/in-list/__output__/vue
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Steps.prop:steps -->
-  <Steps steps="Boil" />
+	<!-- @uf-expect TS2322 Steps.prop:steps -->
+	<Steps steps="Boil" />
 </template>

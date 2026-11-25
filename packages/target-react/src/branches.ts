@@ -14,76 +14,78 @@
 // awaited, read once from its props, so two branches that render one async component take keys
 // too, or React would keep the first branch's instance, and its awaited data, for the second.
 import {
-  childIsAsync,
-  js,
-  jsxAttributeValue,
-  jsxBranch,
-  jsxChildren,
-  jsxElement,
-  jsxExpression,
+	childIsAsync,
+	js,
+	jsxAttributeValue,
+	jsxBranch,
+	jsxChildren,
+	jsxElement,
+	jsxExpression,
 } from "@unframework.dev/codegen";
 import type { ImportSet, JsxContext } from "@unframework.dev/codegen";
 import type { ElementNode, IfBranch, IfNode, RenderNode, UfModule } from "@unframework.dev/ir";
 
 type Expression =
-  | ReturnType<typeof js.nullLiteral>
-  | ReturnType<typeof jsxBranch>
-  | ReturnType<typeof js.jsxElement>;
+	| ReturnType<typeof js.nullLiteral>
+	| ReturnType<typeof jsxBranch>
+	| ReturnType<typeof js.jsxElement>;
 
 /**
  * A conditional as a ternary chain ending in `null` (codegen's `ternaryChain`), with a key on each
  * branch where React could otherwise reconcile one branch's element with another's.
  */
 export function keyedTernary(node: IfNode, context: JsxContext, imports: ImportSet): Expression {
-  // A conditional that is a keyed branch's only root renders where the other branches' elements
-  // do: each of its own branches takes a key, whether or not they conflict among themselves.
-  const keyed = KEYED.has(node) || conflicts(node, context.module);
-  const prefix = PREFIXES.get(node) ?? "";
-  const branch = (entry: IfBranch, index: number): Expression => {
-    const [only] = entry.children;
-    const single = entry.children.length === 1;
-    if (single && only?.kind === "If") {
-      // A nested conditional that is the branch's only root prints in this chain: its keys carry
-      // this branch's (`key="1.0"`), so none equals another branch's.
-      PREFIXES.set(only, `${prefix}${index}.`);
-      if (keyed) KEYED.add(only);
-    } else {
-      placeConditionals(entry.children, context.module);
-    }
-    // Text alone is never reconciled with an element: it needs no key.
-    if (
-      !keyed ||
-      !only ||
-      (single && only.kind !== "Element" && only.kind !== "For" && only.kind !== "Component")
-    ) {
-      return jsxBranch(entry.children, context);
-    }
-    if (single && only.kind === "Element") {
-      return jsxElement(only, context, [key(prefix, `${index}`)]);
-    }
-    // A component takes the key through a fragment, which React reconciles by it as well.
-    // Several roots, or a list, whose rows React reconciles by their own keys: a keyed fragment.
-    return js.jsxElement(
-      imports.add("react", "Fragment"),
-      [key(prefix, `${index}`)],
-      jsxChildren(entry.children, context),
-    );
-  };
-  const branches = [...node.branches.entries()];
-  const last = branches.at(-1);
-  let chain: Expression = js.nullLiteral();
-  if (last && !last[1].condition) {
-    chain = branch(last[1], last[0]);
-    branches.pop();
-  }
-  for (const [index, entry] of branches.toReversed()) {
-    chain = js.conditionalExpression(
-      jsxExpression(entry.condition!, context, "test"),
-      branch(entry, index),
-      chain,
-    );
-  }
-  return chain;
+	// A conditional that is a keyed branch's only root renders where the other branches' elements
+	// do: each of its own branches takes a key, whether or not they conflict among themselves.
+	const keyed = KEYED.has(node) || conflicts(node, context.module);
+	const prefix = PREFIXES.get(node) ?? "";
+	const branch = (entry: IfBranch, index: number): Expression => {
+		const [only] = entry.children;
+		const single = entry.children.length === 1;
+		if (single && only?.kind === "If") {
+			// A nested conditional that is the branch's only root prints in this chain: its keys carry
+			// this branch's (`key="1.0"`), so none equals another branch's.
+			PREFIXES.set(only, `${prefix}${index}.`);
+			if (keyed) {
+				KEYED.add(only);
+			}
+		} else {
+			placeConditionals(entry.children, context.module);
+		}
+		// Text alone is never reconciled with an element: it needs no key.
+		if (
+			!keyed ||
+			!only ||
+			(single && only.kind !== "Element" && only.kind !== "For" && only.kind !== "Component")
+		) {
+			return jsxBranch(entry.children, context);
+		}
+		if (single && only.kind === "Element") {
+			return jsxElement(only, context, [key(prefix, `${index}`)]);
+		}
+		// A component takes the key through a fragment, which React reconciles by it as well.
+		// Several roots, or a list, whose rows React reconciles by their own keys: a keyed fragment.
+		return js.jsxElement(
+			imports.add("react", "Fragment"),
+			[key(prefix, `${index}`)],
+			jsxChildren(entry.children, context),
+		);
+	};
+	const branches = [...node.branches.entries()];
+	const last = branches.at(-1);
+	let chain: Expression = js.nullLiteral();
+	if (last && !last[1].condition) {
+		chain = branch(last[1], last[0]);
+		branches.pop();
+	}
+	for (const [index, entry] of branches.toReversed()) {
+		chain = js.conditionalExpression(
+			jsxExpression(entry.condition!, context, "test"),
+			branch(entry, index),
+			chain,
+		);
+	}
+	return chain;
 }
 
 /**
@@ -91,8 +93,8 @@ export function keyedTernary(node: IfNode, context: JsxContext, imports: ImportS
  * so a change of branch is a change of key the transition sees.
  */
 export function keyedBranches(node: IfNode, context: JsxContext, imports: ImportSet): Expression {
-  KEYED.add(node);
-  return keyedTernary(node, context, imports);
+	KEYED.add(node);
+	return keyedTernary(node, context, imports);
 }
 
 /**
@@ -101,12 +103,16 @@ export function keyedBranches(node: IfNode, context: JsxContext, imports: Import
  * about two children with one key and reconciles them by it. Call it on the children a parent
  * prints (an element's, the root fragment's), before they print.
  */
-export function placeConditionals(children: readonly RenderNode[], module?: UfModule): void {
-  const keyed = children.flatMap((child, position) =>
-    child.kind === "If" && conflicts(child, module) ? [[child, position] as const] : [],
-  );
-  if (keyed.length < 2) return;
-  for (const [child, position] of keyed) PREFIXES.set(child, `${position}-`);
+export function placeConditionals(children: ReadonlyArray<RenderNode>, module?: UfModule): void {
+	const keyed = children.flatMap((child, position) =>
+		child.kind === "If" && conflicts(child, module) ? [[child, position] as const] : [],
+	);
+	if (keyed.length < 2) {
+		return;
+	}
+	for (const [child, position] of keyed) {
+		PREFIXES.set(child, `${position}-`);
+	}
 }
 
 /**
@@ -120,29 +126,29 @@ const KEYED = new WeakSet<IfNode>();
 
 /** `key={index}`, or `key="prefix" + index` under a prefix (`key="1.0"`, `key="2-0"`). */
 function key(prefix: string, value: string) {
-  return js.jsxAttribute(
-    "key",
-    prefix
-      ? jsxAttributeValue(`${prefix}${value}`)
-      : js.jsxExpressionContainer(js.numberLiteral(Number(value))),
-  );
+	return js.jsxAttribute(
+		"key",
+		prefix
+			? jsxAttributeValue(`${prefix}${value}`)
+			: js.jsxExpressionContainer(js.numberLiteral(Number(value))),
+	);
 }
 
 /** Elements whose DOM holds what a user does to them: a control, a link, media, an open state. */
 const STATEFUL = new Set([
-  "a",
-  "audio",
-  "button",
-  "details",
-  "dialog",
-  "embed",
-  "iframe",
-  "input",
-  "object",
-  "select",
-  "summary",
-  "textarea",
-  "video",
+	"a",
+	"audio",
+	"button",
+	"details",
+	"dialog",
+	"embed",
+	"iframe",
+	"input",
+	"object",
+	"select",
+	"summary",
+	"textarea",
+	"video",
 ]);
 
 /**
@@ -150,57 +156,57 @@ const STATEFUL = new Set([
  * element, or an element that is focusable, editable, listened to or referenced, at any depth.
  */
 function holdsState(node: RenderNode): boolean {
-  switch (node.kind) {
-    case "Element":
-      return statefulElement(node) || node.children.some(holdsState);
-    case "If":
-      return node.branches.some((branch) => branch.children.some(holdsState));
-    case "For":
-      return holdsState(node.body);
-    // A portal's element is React's to keep or remount as its branch is (ADR-0098), and so is a
-    // transition's (ADR-0100).
-    case "Teleport":
-    case "Transition":
-      return node.children.some(holdsState);
-    case "Text":
-    case "Interpolation":
-      return false;
-    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-    case "Component":
-    case "SlotOutlet":
-    case "Dynamic":
-      return false;
-    default:
-      return node satisfies never;
-  }
+	switch (node.kind) {
+		case "Element":
+			return statefulElement(node) || node.children.some(holdsState);
+		case "If":
+			return node.branches.some((branch) => branch.children.some(holdsState));
+		case "For":
+			return holdsState(node.body);
+		// A portal's element is React's to keep or remount as its branch is (ADR-0098), and so is a
+		// transition's (ADR-0100).
+		case "Teleport":
+		case "Transition":
+			return node.children.some(holdsState);
+		case "Text":
+		case "Interpolation":
+			return false;
+		// Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+		case "Component":
+		case "SlotOutlet":
+		case "Dynamic":
+			return false;
+		default:
+			return node satisfies never;
+	}
 }
 
 function statefulElement(element: ElementNode): boolean {
-  return (
-    STATEFUL.has(element.tag) ||
-    element.attributes.some((attribute) => {
-      switch (attribute.kind) {
-        case "Event":
-        case "Ref":
-        case "Model":
-        // A directive keeps its state on the element (ADR-0099), and the props' rest may hold a
-        // consumer's listeners and `ref` (ADR-0118).
-        case "Directive":
-        case "Rest":
-          return true;
-        case "Static":
-        case "Bound":
-          return attribute.name === "tabindex" || attribute.name === "contenteditable";
-        case "Class":
-        case "Style":
-        case "Spread":
-        case "RawHtml":
-          return false;
-        default:
-          return attribute satisfies never;
-      }
-    })
-  );
+	return (
+		STATEFUL.has(element.tag) ||
+		element.attributes.some((attribute) => {
+			switch (attribute.kind) {
+				case "Event":
+				case "Ref":
+				case "Model":
+				// A directive keeps its state on the element (ADR-0099), and the props' rest may hold a
+				// consumer's listeners and `ref` (ADR-0118).
+				case "Directive":
+				case "Rest":
+					return true;
+				case "Static":
+				case "Bound":
+					return attribute.name === "tabindex" || attribute.name === "contenteditable";
+				case "Class":
+				case "Style":
+				case "Spread":
+				case "RawHtml":
+					return false;
+				default:
+					return attribute satisfies never;
+			}
+		})
+	);
 }
 
 /**
@@ -210,59 +216,67 @@ function statefulElement(element: ElementNode): boolean {
  * keyed branch is never wrong, so a shared tag anywhere at the top is enough.
  */
 function conflicts(node: IfNode, module: UfModule | undefined): boolean {
-  const { branches } = node;
-  const tags = branches.map((branch) => topTags(branch.children, module));
-  // Two branches whose tops render one async component (`<Member>` in `tags`) always conflict.
-  if (
-    tags.some((own, a) =>
-      tags.some(
-        (other, b) => a < b && [...own].some((tag) => tag.startsWith("<") && other.has(tag)),
-      ),
-    )
-  ) {
-    return true;
-  }
-  if (!branches.some((branch) => branch.children.some(holdsState))) return false;
-  return tags.some((own, a) =>
-    tags.some((other, b) => a < b && [...own].some((tag) => other.has(tag))),
-  );
+	const { branches } = node;
+	const tags = branches.map((branch) => topTags(branch.children, module));
+	// Two branches whose tops render one async component (`<Member>` in `tags`) always conflict.
+	if (
+		tags.some((own, a) =>
+			tags.some(
+				(other, b) => a < b && [...own].some((tag) => tag.startsWith("<") && other.has(tag)),
+			),
+		)
+	) {
+		return true;
+	}
+	if (!branches.some((branch) => branch.children.some(holdsState))) {
+		return false;
+	}
+	return tags.some((own, a) =>
+		tags.some((other, b) => a < b && [...own].some((tag) => other.has(tag))),
+	);
 }
 
 /**
  * The tags of the elements nodes can render at their top, where React reconciles them: their own
  * elements, those their nested conditionals' branches render there, and a list's rows.
  */
-function topTags(nodes: readonly RenderNode[], module: UfModule | undefined): Set<string> {
-  const tags = new Set<string>();
-  for (const node of nodes) {
-    switch (node.kind) {
-      case "Element":
-        tags.add(node.tag);
-        break;
-      case "If":
-        for (const branch of node.branches) {
-          for (const tag of topTags(branch.children, module)) tags.add(tag);
-        }
-        break;
-      case "For":
-        if (node.body.kind === "Element") tags.add(node.body.tag);
-        break;
-      // An async component, by its name in angle brackets, which no element's tag takes.
-      case "Component":
-        if (module && childIsAsync(module, node.component)) tags.add(`<${node.component}>`);
-        break;
-      case "Text":
-      case "Interpolation":
-      case "SlotOutlet":
-      case "Dynamic":
-      // A portal renders nothing in place (ADR-0098), and a transition is a component of its own,
-      // which React never reconciles with an element (ADR-0100).
-      case "Teleport":
-      case "Transition":
-        break;
-      default:
-        node satisfies never;
-    }
-  }
-  return tags;
+function topTags(nodes: ReadonlyArray<RenderNode>, module: UfModule | undefined): Set<string> {
+	const tags = new Set<string>();
+	for (const node of nodes) {
+		switch (node.kind) {
+			case "Element":
+				tags.add(node.tag);
+				break;
+			case "If":
+				for (const branch of node.branches) {
+					for (const tag of topTags(branch.children, module)) {
+						tags.add(tag);
+					}
+				}
+				break;
+			case "For":
+				if (node.body.kind === "Element") {
+					tags.add(node.body.tag);
+				}
+				break;
+			// An async component, by its name in angle brackets, which no element's tag takes.
+			case "Component":
+				if (module && childIsAsync(module, node.component)) {
+					tags.add(`<${node.component}>`);
+				}
+				break;
+			case "Text":
+			case "Interpolation":
+			case "SlotOutlet":
+			case "Dynamic":
+			// A portal renders nothing in place (ADR-0098), and a transition is a component of its own,
+			// which React never reconciles with an element (ADR-0100).
+			case "Teleport":
+			case "Transition":
+				break;
+			default:
+				node satisfies never;
+		}
+	}
+	return tags;
 }

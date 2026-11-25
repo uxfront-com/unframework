@@ -3,6 +3,6 @@ import Chip from "../../../../../integration/cases/dynamic/components/__output__
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Chip.prop:label -->
-  <Chip :label="0" />
+	<!-- @uf-expect TS2322 Chip.prop:label -->
+	<Chip :label="0" />
 </template>

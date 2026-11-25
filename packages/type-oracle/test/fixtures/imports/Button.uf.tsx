@@ -8,29 +8,29 @@ import type { Labelled, Size } from "./types.ts";
 import type { Hidden } from "./types.ts";
 
 export function Extended(props: Labelled) {
-  return props;
+	return props;
 }
 
 export function LiteralUnions(props: { size: Size; tone?: Tone }) {
-  return props;
+	return props;
 }
 
 export function Intersected(props: Root & Extra) {
-  return props;
+	return props;
 }
 
 export function Child(props: FieldProps) {
-  return props;
+	return props;
 }
 
 export function Recursive(props: TreeNode) {
-  return props;
+	return props;
 }
 
 export function MissingModule(props: Missing) {
-  return props;
+	return props;
 }
 
 export function MissingExport(props: Hidden) {
-  return props;
+	return props;
 }

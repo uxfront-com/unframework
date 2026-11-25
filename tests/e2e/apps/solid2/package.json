@@ -1,18 +1,18 @@
 {
-  "name": "e2e-app-solid2",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev:plugin": "vite --config vite.config.plugin.ts"
-  },
-  "dependencies": {
-    "@solidjs/web": "2.0.0",
-    "solid-js": "2.0.0"
-  },
-  "devDependencies": {
-    "@solidjs/vite-plugin": "3.0.0",
-    "typescript": "7.1.0-beta",
-    "vite": "8.3.1"
-  }
+	"name": "e2e-app-solid2",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev:plugin": "vite --config vite.config.plugin.ts"
+	},
+	"dependencies": {
+		"@solidjs/web": "2.0.0",
+		"solid-js": "2.0.0"
+	},
+	"devDependencies": {
+		"@solidjs/vite-plugin": "3.0.0",
+		"typescript": "7.1.0-beta",
+		"vite": "8.3.1"
+	}
 }

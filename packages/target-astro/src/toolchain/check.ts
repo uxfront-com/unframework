@@ -8,61 +8,61 @@ import { fileURLToPath } from "node:url";
 
 import type { ToolchainContext, ToolchainMessage } from "@unframework.dev/codegen";
 import {
-  assertFilesToCheck,
-  diagnosticsByFile,
-  resolveInstalled,
+	assertFilesToCheck,
+	diagnosticsByFile,
+	resolveInstalled,
 } from "@unframework.dev/codegen/toolchain-node";
 import type { DiagnosticsByFile } from "@unframework.dev/codegen/toolchain-node";
 
 /** The part of `@astrojs/language-server` the check uses (its `AstroCheck` class). */
 interface LanguageServer {
-  AstroCheck: new (
-    workspacePath: string,
-    typescriptPath: string,
-    tsconfigPath: string,
-  ) => { lint(options: { fileNames: string[] }): Promise<CheckResult> };
-  DiagnosticSeverity: { Error: number; Warning: number };
+	AstroCheck: new (
+		workspacePath: string,
+		typescriptPath: string,
+		tsconfigPath: string,
+	) => { lint(options: { fileNames: Array<string> }): Promise<CheckResult> };
+	DiagnosticSeverity: { Error: number; Warning: number };
 }
 
 interface CheckResult {
-  status: "completed" | "cancelled" | undefined;
-  fileChecked: number;
-  fileResult: { fileUrl: URL; errors: CheckDiagnostic[] }[];
+	status: "completed" | "cancelled" | undefined;
+	fileChecked: number;
+	fileResult: Array<{ fileUrl: URL; errors: Array<CheckDiagnostic> }>;
 }
 
 /** An LSP diagnostic: 0-based positions. */
 interface CheckDiagnostic {
-  severity?: number;
-  code?: number | string;
-  source?: string;
-  message: string;
-  range: { start: { line: number; character: number } };
+	severity?: number;
+	code?: number | string;
+	source?: string;
+	message: string;
+	range: { start: { line: number; character: number } };
 }
 
 /** A TypeScript 6 diagnostic of the tsconfig, as its API reports one. */
 interface ConfigDiagnostic {
-  file?: {
-    fileName: string;
-    getLineAndCharacterOfPosition(position: number): { line: number; character: number };
-  };
-  start?: number;
-  code: number;
-  messageText: unknown;
+	file?: {
+		fileName: string;
+		getLineAndCharacterOfPosition(position: number): { line: number; character: number };
+	};
+	start?: number;
+	code: number;
+	messageText: unknown;
 }
 
 /** The part of TypeScript 6's API that validates the generated tsconfig. */
 interface TypeScriptConfigApi {
-  sys: object;
-  ScriptKind: { Deferred: number };
-  getParsedCommandLineOfConfigFile(
-    path: string,
-    options: undefined,
-    host: object,
-    extendedConfigCache: undefined,
-    watchOptions: undefined,
-    extraFileExtensions: { extension: string; isMixedContent: boolean; scriptKind: number }[],
-  ): { errors: ConfigDiagnostic[] } | undefined;
-  flattenDiagnosticMessageText(text: unknown, newLine: string): string;
+	sys: object;
+	ScriptKind: { Deferred: number };
+	getParsedCommandLineOfConfigFile(
+		path: string,
+		options: undefined,
+		host: object,
+		extendedConfigCache: undefined,
+		watchOptions: undefined,
+		extraFileExtensions: Array<{ extension: string; isMixedContent: boolean; scriptKind: number }>,
+	): { errors: Array<ConfigDiagnostic> } | undefined;
+	flattenDiagnosticMessageText(text: unknown, newLine: string): string;
 }
 
 let runs = 0;
@@ -81,78 +81,80 @@ let runs = 0;
  * or when a file is missing, because `AstroCheck` would report a missing file as clean.
  */
 export async function astroTypecheck(
-  files: readonly string[],
-  context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
-  assertFilesToCheck(files);
-  const { toolchainDir } = context;
-  const baseConfig = join(toolchainDir, "tsconfig.json");
-  if (!existsSync(baseConfig)) {
-    throw new Error(`L4 (astro): the toolchain has no tsconfig.json: ${baseConfig}.`);
-  }
-  const { languageServer, typescriptPath, typescript } = loadChecker(toolchainDir);
+	files: ReadonlyArray<string>,
+	context: ToolchainContext,
+): Promise<Map<string, Array<ToolchainMessage>>> {
+	assertFilesToCheck(files);
+	const { toolchainDir } = context;
+	const baseConfig = join(toolchainDir, "tsconfig.json");
+	if (!existsSync(baseConfig)) {
+		throw new Error(`L4 (astro): the toolchain has no tsconfig.json: ${baseConfig}.`);
+	}
+	const { languageServer, typescriptPath, typescript } = loadChecker(toolchainDir);
 
-  const directory = join(toolchainDir, ".uf-tmp");
-  mkdirSync(directory, { recursive: true });
-  const tsconfig = join(directory, `tsconfig.astro-check.${process.pid}.${++runs}.json`);
-  writeFileSync(
-    tsconfig,
-    `${JSON.stringify({ extends: baseConfig, include: [], files: [...files] }, null, 2)}\n`,
-  );
-  try {
-    const diagnostics = diagnosticsByFile(files, tsconfig);
-    addConfigDiagnostics(typescript, tsconfig, diagnostics);
-    const checker = new languageServer.AstroCheck(toolchainDir, typescriptPath, tsconfig);
-    // AstroCheck lints only the files it is given, unlike tsgo, vue-tsc, svelte-check and ngtsc,
-    // which report every file of the program: an error inside a module an output imports is
-    // not reported here. The modules outputs import beside Astro are other outputs, each linted
-    // as a file of its own, `.ts` modules copied unchanged from the sources (ADR-0067,
-    // ADR-0070), which `tests/integration/tsconfig.cases.json` checks, and packages' types.
-    const result = await checker.lint({ fileNames: [...files] });
-    if (result.status !== "completed" || result.fileChecked !== files.length) {
-      throw new Error(
-        `L4 (astro): astro check ${result.status ?? "did not finish"} after ${result.fileChecked} of ${files.length} files.`,
-      );
-    }
-    const { Error: error, Warning: warning } = languageServer.DiagnosticSeverity;
-    for (const { fileUrl, errors } of result.fileResult) {
-      const file = fileURLToPath(fileUrl);
-      for (const diagnostic of errors) {
-        // LSP leaves the severity out when it is an error.
-        const severity = diagnostic.severity ?? error;
-        if (severity !== error && severity !== warning) continue;
-        diagnostics.add(file, fromDiagnostic(diagnostic, severity === warning));
-      }
-    }
-    return diagnostics.results;
-  } finally {
-    rmSync(tsconfig, { force: true });
-  }
+	const directory = join(toolchainDir, ".uf-tmp");
+	mkdirSync(directory, { recursive: true });
+	const tsconfig = join(directory, `tsconfig.astro-check.${process.pid}.${++runs}.json`);
+	writeFileSync(
+		tsconfig,
+		`${JSON.stringify({ extends: baseConfig, include: [], files: [...files] }, null, 2)}\n`,
+	);
+	try {
+		const diagnostics = diagnosticsByFile(files, tsconfig);
+		addConfigDiagnostics(typescript, tsconfig, diagnostics);
+		const checker = new languageServer.AstroCheck(toolchainDir, typescriptPath, tsconfig);
+		// AstroCheck lints only the files it is given, unlike tsgo, vue-tsc, svelte-check and ngtsc,
+		// which report every file of the program: an error inside a module an output imports is
+		// not reported here. The modules outputs import beside Astro are other outputs, each linted
+		// as a file of its own, `.ts` modules copied unchanged from the sources (ADR-0067,
+		// ADR-0070), which `tests/integration/tsconfig.cases.json` checks, and packages' types.
+		const result = await checker.lint({ fileNames: [...files] });
+		if (result.status !== "completed" || result.fileChecked !== files.length) {
+			throw new Error(
+				`L4 (astro): astro check ${result.status ?? "did not finish"} after ${result.fileChecked} of ${files.length} files.`,
+			);
+		}
+		const { Error: error, Warning: warning } = languageServer.DiagnosticSeverity;
+		for (const { fileUrl, errors } of result.fileResult) {
+			const file = fileURLToPath(fileUrl);
+			for (const diagnostic of errors) {
+				// LSP leaves the severity out when it is an error.
+				const severity = diagnostic.severity ?? error;
+				if (severity !== error && severity !== warning) {
+					continue;
+				}
+				diagnostics.add(file, fromDiagnostic(diagnostic, severity === warning));
+			}
+		}
+		return diagnostics.results;
+	} finally {
+		rmSync(tsconfig, { force: true });
+	}
 }
 
 function loadChecker(toolchainDir: string): {
-  languageServer: LanguageServer;
-  typescriptPath: string;
-  typescript: TypeScriptConfigApi;
+	languageServer: LanguageServer;
+	typescriptPath: string;
+	typescript: TypeScriptConfigApi;
 } {
-  const checkEntry = resolveInstalled(toolchainDir, "@astrojs/check");
-  if (!checkEntry) {
-    throw new Error(`L4 (astro): @astrojs/check is not installed in ${toolchainDir}.`);
-  }
-  // Resolve the language server and TypeScript the way `astro check` itself does.
-  const fromCheck = createRequire(checkEntry);
-  const typescriptPath = fromCheck.resolve("typescript");
-  const typescript = fromCheck(typescriptPath) as TypeScriptConfigApi & { version?: string };
-  if (typeof typescript.getParsedCommandLineOfConfigFile !== "function") {
-    throw new Error(
-      `L4 (astro): @astrojs/check resolves TypeScript ${typescript.version ?? "of an unknown version"}, which has no JS API; the toolchain needs TypeScript 6.`,
-    );
-  }
-  return {
-    languageServer: fromCheck("@astrojs/language-server") as LanguageServer,
-    typescriptPath,
-    typescript,
-  };
+	const checkEntry = resolveInstalled(toolchainDir, "@astrojs/check");
+	if (!checkEntry) {
+		throw new Error(`L4 (astro): @astrojs/check is not installed in ${toolchainDir}.`);
+	}
+	// Resolve the language server and TypeScript the way `astro check` itself does.
+	const fromCheck = createRequire(checkEntry);
+	const typescriptPath = fromCheck.resolve("typescript");
+	const typescript = fromCheck(typescriptPath) as TypeScriptConfigApi & { version?: string };
+	if (typeof typescript.getParsedCommandLineOfConfigFile !== "function") {
+		throw new Error(
+			`L4 (astro): @astrojs/check resolves TypeScript ${typescript.version ?? "of an unknown version"}, which has no JS API; the toolchain needs TypeScript 6.`,
+		);
+	}
+	return {
+		languageServer: fromCheck("@astrojs/language-server") as LanguageServer,
+		typescriptPath,
+		typescript,
+	};
 }
 
 /**
@@ -160,50 +162,50 @@ function loadChecker(toolchainDir: string): {
  * option, which `AstroCheck` ignores and checks on without.
  */
 function addConfigDiagnostics(
-  typescript: TypeScriptConfigApi,
-  tsconfig: string,
-  diagnostics: DiagnosticsByFile,
+	typescript: TypeScriptConfigApi,
+	tsconfig: string,
+	diagnostics: DiagnosticsByFile,
 ): void {
-  const astroFiles = [
-    { extension: ".astro", isMixedContent: true, scriptKind: typescript.ScriptKind.Deferred },
-  ];
-  const fatal: ConfigDiagnostic[] = [];
-  const parsed = typescript.getParsedCommandLineOfConfigFile(
-    tsconfig,
-    undefined,
-    {
-      ...typescript.sys,
-      onUnRecoverableConfigFileDiagnostic: (diagnostic: ConfigDiagnostic) => fatal.push(diagnostic),
-    },
-    undefined,
-    undefined,
-    astroFiles,
-  );
-  for (const diagnostic of [...fatal, ...(parsed?.errors ?? [])]) {
-    const { file, start } = diagnostic;
-    const message = typescript.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-    const code = `TS${diagnostic.code}`;
-    if (!file || start === undefined) {
-      diagnostics.add(file?.fileName, { message, code });
-      continue;
-    }
-    const { line, character } = file.getLineAndCharacterOfPosition(start);
-    diagnostics.add(file.fileName, { message, line: line + 1, column: character + 1, code });
-  }
+	const astroFiles = [
+		{ extension: ".astro", isMixedContent: true, scriptKind: typescript.ScriptKind.Deferred },
+	];
+	const fatal: Array<ConfigDiagnostic> = [];
+	const parsed = typescript.getParsedCommandLineOfConfigFile(
+		tsconfig,
+		undefined,
+		{
+			...typescript.sys,
+			onUnRecoverableConfigFileDiagnostic: (diagnostic: ConfigDiagnostic) => fatal.push(diagnostic),
+		},
+		undefined,
+		undefined,
+		astroFiles,
+	);
+	for (const diagnostic of [...fatal, ...(parsed?.errors ?? [])]) {
+		const { file, start } = diagnostic;
+		const message = typescript.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+		const code = `TS${diagnostic.code}`;
+		if (!file || start === undefined) {
+			diagnostics.add(file?.fileName, { message, code });
+			continue;
+		}
+		const { line, character } = file.getLineAndCharacterOfPosition(start);
+		diagnostics.add(file.fileName, { message, line: line + 1, column: character + 1, code });
+	}
 }
 
 function fromDiagnostic(diagnostic: CheckDiagnostic, warning: boolean): ToolchainMessage {
-  const { line, character } = diagnostic.range.start;
-  const code =
-    diagnostic.code === undefined
-      ? undefined
-      : diagnostic.source === "ts"
-        ? `TS${diagnostic.code}`
-        : String(diagnostic.code);
-  return {
-    message: warning ? `warning: ${diagnostic.message}` : diagnostic.message,
-    line: line + 1,
-    column: character + 1,
-    ...(code ? { code } : {}),
-  };
+	const { line, character } = diagnostic.range.start;
+	const code =
+		diagnostic.code === undefined
+			? undefined
+			: diagnostic.source === "ts"
+				? `TS${diagnostic.code}`
+				: String(diagnostic.code);
+	return {
+		message: warning ? `warning: ${diagnostic.message}` : diagnostic.message,
+		line: line + 1,
+		column: character + 1,
+		...(code ? { code } : {}),
+	};
 }

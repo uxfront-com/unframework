@@ -3,5 +3,5 @@ import Row from "../../../../../integration/cases/components/list-rows/__output_
 </script>
 
 <template>
-  <Row name="Read" :done="false" />
+	<Row name="Read" :done="false" />
 </template>

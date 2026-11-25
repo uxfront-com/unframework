@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: fileURLToPath(new URL("./src/plugin", import.meta.url)),
-  // No `target`: the plugin detects React from plugin-react.
-  plugins: [unframework(), react()],
+	root: fileURLToPath(new URL("./src/plugin", import.meta.url)),
+	// No `target`: the plugin detects React from plugin-react.
+	plugins: [unframework(), react()],
 });
