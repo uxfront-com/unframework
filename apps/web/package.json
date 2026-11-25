@@ -14,20 +14,20 @@
 		"test": "node --test \"scripts/**/*.test.ts\""
 	},
 	"dependencies": {
-		"@amplitude/session-replay-browser": "^1.51.0",
-		"@nuxt/content": "^3.16.1",
+		"@amplitude/session-replay-browser": "^1.53.0",
+		"@nuxt/content": "^3.17.0",
 		"@nuxtjs/partytown": "^2.0.0",
 		"@uxfront/layer-docs": "^0.9.1",
 		"@uxfront/layer-ui": "^0.1.11",
 		"@uxfront/scene": "^0.5.1",
 		"@uxfront/ui": "^0.9.1",
-		"docus": "^5.13.0",
-		"nuxt": "^4.5.2",
-		"vue": "^3.5.43",
-		"vue-router": "^5.3.1"
+		"docus": "^5.15.0",
+		"nuxt": "^4.6.4",
+		"vue": "^3.5.46",
+		"vue-router": "^5.5.1"
 	},
 	"devDependencies": {
-		"@nuxt/kit": "^4.5.2",
-		"@types/node": "^24.19.0"
+		"@nuxt/kit": "^4.6.4",
+		"@types/node": "^24.19.2"
 	}
 }

@@ -83,7 +83,7 @@
 		"@unframework.dev/testing": "workspace:*",
 		"@unframework.dev/visual": "workspace:*",
 		"@uxfront/typescript-config": "catalog:",
-		"@vue/runtime-dom": "3.5.43",
+		"@vue/runtime-dom": "3.5.46",
 		"tsdown": "catalog:",
 		"typescript": "catalog:",
 		"vitest": "catalog:",
