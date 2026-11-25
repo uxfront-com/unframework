@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Card from "./Card.uf.tsx";
 
 describeTargets("styles/layers", () => {
-  it("applies the later layer's colours over the earlier one's", async () => {
-    const view = await mountScenario(Card, "layered");
-    await view.expectParity("layered");
-    await expect.element(view.getByRole("heading", { name: "Layered card" })).toBeVisible();
-  });
+	it("applies the later layer's colours over the earlier one's", async () => {
+		const view = await mountScenario(Card, "layered");
+		await view.expectParity("layered");
+		await expect.element(view.getByRole("heading", { name: "Layered card" })).toBeVisible();
+	});
 });

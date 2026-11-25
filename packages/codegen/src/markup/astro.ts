@@ -8,28 +8,28 @@ import type { ForNode, RenderNode } from "@unframework.dev/ir";
 
 import { referencedBindings } from "../references.ts";
 import {
-  camelCaseProperty,
-  escapeBraces,
-  escapeHtmlText,
-  quotedAttribute,
-  stringLiteral,
+	camelCaseProperty,
+	escapeBraces,
+	escapeHtmlText,
+	quotedAttribute,
+	stringLiteral,
 } from "./escape.ts";
 import {
-  classArrayItems,
-  isRoot,
-  keepsWhitespace,
-  operand,
-  staticClassValue,
-  staticStyleValue,
-  test,
+	classArrayItems,
+	isRoot,
+	keepsWhitespace,
+	operand,
+	staticClassValue,
+	staticStyleValue,
+	test,
 } from "./printer.ts";
 import type {
-  BlockSegment,
-  Container,
-  MarkupDialect,
-  MarkupPiece,
-  PrintedAttribute,
-  PrintedFill,
+	BlockSegment,
+	Container,
+	MarkupDialect,
+	MarkupPiece,
+	PrintedAttribute,
+	PrintedFill,
 } from "./printer.ts";
 
 /** Line breaks and tabs, which JSX-style whitespace rules (Astro's `compressHTML`) rewrite. */
@@ -41,11 +41,11 @@ const JSX_WHITESPACE = /[\t\n\r]/;
  * `true` as a bare one. It renders a boolean on any other attribute as `="false"`/`="true"`.
  */
 const ASTRO_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set(
-  `allowfullscreen async autofocus autoplay checked controls default defer disabled
+	`allowfullscreen async autofocus autoplay checked controls default defer disabled
   disablepictureinpicture disableremoteplayback formnovalidate inert loop muted nomodule
   novalidate open playsinline readonly required reversed scoped seamless selected itemscope`.split(
-    /\s+/,
-  ),
+		/\s+/,
+	),
 );
 
 /**
@@ -54,11 +54,11 @@ const ASTRO_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set(
  * an index any expression reads), and a callback that reads neither takes none.
  */
 function listParameters(node: ForNode, item: string, index: string | undefined): string {
-  const read = referencedBindings(node.body, { includeKeys: false, includeClient: false });
-  if (index !== undefined && node.index !== undefined && read.has(node.index)) {
-    return `${item}, ${index}`;
-  }
-  return read.has(node.item) ? item : "";
+	const read = referencedBindings(node.body, { includeKeys: false, includeClient: false });
+	if (index !== undefined && node.index !== undefined && read.has(node.index)) {
+		return `${item}, ${index}`;
+	}
+	return read.has(node.item) ? item : "";
 }
 
 /**
@@ -66,22 +66,22 @@ function listParameters(node: ForNode, item: string, index: string | undefined):
  * `.map` callback.
  */
 function content(nodes: ReadonlyArray<RenderNode>, container: Container): MarkupPiece {
-  const [only, ...more] = nodes;
-  if (more.length === 0 && only?.kind === "Element") {
-    return { kind: "element", element: only, directives: [] };
-  }
-  if (more.length === 0 && only?.kind === "Component") {
-    return { kind: "component", component: only, directives: [] };
-  }
-  if (more.length === 0 && only?.kind === "Text") {
-    return { kind: "code", code: JSON.stringify(only.value) };
-  }
-  return {
-    kind: "wrapper",
-    tag: "",
-    attributes: [],
-    content: { kind: "nodes", nodes, container },
-  };
+	const [only, ...more] = nodes;
+	if (more.length === 0 && only?.kind === "Element") {
+		return { kind: "element", element: only, directives: [] };
+	}
+	if (more.length === 0 && only?.kind === "Component") {
+		return { kind: "component", component: only, directives: [] };
+	}
+	if (more.length === 0 && only?.kind === "Text") {
+		return { kind: "code", code: JSON.stringify(only.value) };
+	}
+	return {
+		kind: "wrapper",
+		tag: "",
+		attributes: [],
+		content: { kind: "nodes", nodes, container },
+	};
 }
 
 /**
@@ -100,21 +100,21 @@ const PLAIN_PROP = /^[^"&{}<>\\`$\t\n\r\u00a0]*$/;
  * named as the slot.
  */
 function fillContent({ fill, forwardsProps }: PrintedFill): MarkupPiece {
-  if (fill.parameter !== undefined || forwardsProps) {
-    throw new Error(`The astro dialect writes no scoped fill (${fill.slot}): it is a render prop.`);
-  }
-  const slot: PrintedAttribute = { name: "slot", text: quotedAttribute("slot", fill.slot) };
-  if (fill.forward === "default") {
-    return { kind: "tag", tag: "slot", attributes: [] };
-  }
-  if (fill.forward !== undefined) {
-    const name = { name: "name", text: quotedAttribute("name", fill.forward) };
-    return { kind: "tag", tag: "slot", attributes: [name, slot] };
-  }
-  const nodes: MarkupPiece = { kind: "nodes", nodes: fill.children, container: fill };
-  return fill.slot === "default"
-    ? nodes
-    : { kind: "wrapper", tag: "Fragment", attributes: [slot], content: nodes };
+	if (fill.parameter !== undefined || forwardsProps) {
+		throw new Error(`The astro dialect writes no scoped fill (${fill.slot}): it is a render prop.`);
+	}
+	const slot: PrintedAttribute = { name: "slot", text: quotedAttribute("slot", fill.slot) };
+	if (fill.forward === "default") {
+		return { kind: "tag", tag: "slot", attributes: [] };
+	}
+	if (fill.forward !== undefined) {
+		const name = { name: "name", text: quotedAttribute("name", fill.forward) };
+		return { kind: "tag", tag: "slot", attributes: [name, slot] };
+	}
+	const nodes: MarkupPiece = { kind: "nodes", nodes: fill.children, container: fill };
+	return fill.slot === "default"
+		? nodes
+		: { kind: "wrapper", tag: "Fragment", attributes: [slot], content: nodes };
 }
 
 /**
@@ -142,143 +142,143 @@ function fillContent({ fill, forwardsProps }: PrintedFill): MarkupPiece {
  * unplugin reads Astro's resolved configuration and reports any value but the default.
  */
 export const astroDialect: MarkupDialect = {
-  name: "astro",
-  escapeText: (text, position) =>
-    (JSX_WHITESPACE.test(text) && !keepsWhitespace(position)) ||
-    (isRoot(position.container) &&
-      ((position.first && /^(?:\s|---)/.test(text)) || (position.last && /\s$/.test(text))))
-      ? `{${stringLiteral(text)}}`
-      : escapeBraces(escapeHtmlText(text)).replaceAll(">", "&gt;"),
-  attribute: quotedAttribute,
-  voidElement: "self-closing",
-  stripsWhitespaceBetweenElements: true,
-  stripsEdgeWhitespace: true,
-  interpolation: (code) => `{${code}}`,
-  boundAttribute: (name, code, { namespace }) =>
-    namespace === "html" &&
-    BINDABLE_BOOLEAN_ATTRIBUTES.has(name) &&
-    !ASTRO_BOOLEAN_ATTRIBUTES.has(name)
-      ? `${name}={${test(code)} ? "" : undefined}`
-      : `${name}={${code}}`,
-  classAttribute: (parts) =>
-    parts.every((part) => part.kind === "Static")
-      ? [{ name: "class", text: quotedAttribute("class", staticClassValue(parts)) }]
-      : [{ name: "class", text: `class:list={[${classArrayItems(parts, true).join(", ")}]}` }],
-  // A whole style, an object or a declaration list, is Astro's own `style` (ADR-0065).
-  styleAttribute: (parts) =>
-    parts[0]?.property === ""
-      ? [{ name: "style", text: `style={${parts[0].value}}` }]
-      : parts.every((part) => part.kind === "Static")
-        ? [{ name: "style", text: quotedAttribute("style", staticStyleValue(parts)) }]
-        : [
-            {
-              name: "style",
-              text: `style={{ ${parts
-                .map(
-                  (part) =>
-                    `${part.property.startsWith("--") ? JSON.stringify(part.property) : camelCaseProperty(part.property)}: ${
-                      part.kind === "Static" ? JSON.stringify(part.value) : part.value
-                    }`,
-                )
-                .join(", ")} }}`,
-            },
-          ],
-  conditional: (branches) => {
-    // A trailing empty branch renders nothing either way.
-    let last = branches.length;
-    while (last > 0 && branches[last - 1]!.branch.children.length === 0) {
-      last--;
-    }
-    const segments: Array<BlockSegment> = [];
-    let tail = "{";
-    for (const { condition, branch } of branches.slice(0, last)) {
-      const head = condition === undefined ? "" : `${test(condition)} ? `;
-      if (branch.children.length === 0) {
-        tail += `${head}null : `;
-        continue;
-      }
-      segments.push({
-        open: `${tail}${head}`,
-        content: content(branch.children, branch),
-        parentheses: true,
-      });
-      tail = condition === undefined ? "" : " : ";
-    }
-    return [{ kind: "block", segments, close: tail === "" ? "}" : `${tail}null}` }];
-  },
-  list: ({ node, source, item, index }) => [
-    {
-      kind: "block",
-      segments: [
-        {
-          open: `{${operand(source)}.map((${listParameters(node, item, index)}) => `,
-          content: content([node.body], node),
-          parentheses: true,
-        },
-      ],
-      close: ")}",
-    },
-  ],
-  eventAttribute: () => [],
-  refAttribute: () => [],
-  // A directive's hooks run in the browser, which a static page never does (ADR-0099).
-  directiveAttribute: () => [],
-  rawHtmlAttribute: (code) => [{ name: "set:html", text: `set:html={${code}}` }],
-  inert: true,
-  // A component's props are attributes (ADR-0053); no listener runs (`component-event`).
-  propAttribute: ({ name, code, literal }) => [
-    {
-      name,
-      text:
-        literal !== undefined && PLAIN_PROP.test(literal)
-          ? `${name}="${literal}"`
-          : `${name}={${code}}`,
-    },
-  ],
-  componentEvent: () => [],
-  fills: (fills) => fills.map(fillContent),
-  /**
-   * A slot outlet (ADR-0054): `<slot>`, named unless it is the default, with the fallback as its
-   * content, which Astro renders where the consumer passed no slot. A scoped slot is a render
-   * prop the target reads by the slot's name: called with its props, or the fallback where the
-   * consumer passed none.
-   */
-  slotOutlet: ({ node, props }) => {
-    if (props) {
-      const call = `${node.slot}(${props.code})`;
-      if (!node.fallback.length) {
-        return [{ kind: "code", code: `{${node.slot}?.(${props.code})}` }];
-      }
-      return [
-        {
-          kind: "block",
-          segments: [
-            {
-              open: `{${node.slot} ? ${call} : `,
-              content: content(node.fallback, node),
-              parentheses: true,
-            },
-          ],
-          close: "}",
-        },
-      ];
-    }
-    return [
-      {
-        kind: "tag",
-        tag: "slot",
-        attributes:
-          node.slot === "default"
-            ? []
-            : [{ name: "name", text: quotedAttribute("name", node.slot) }],
-        ...(node.fallback.length
-          ? { content: [{ kind: "nodes", nodes: node.fallback, container: node }] }
-          : {}),
-      },
-    ];
-  },
-  // A child's model is a prop that renders its value: nothing writes it (ADR-0054).
-  modelBinding: ({ attribute, value }) => [
-    { name: attribute.model, text: `${attribute.model}={${value}}` },
-  ],
+	name: "astro",
+	escapeText: (text, position) =>
+		(JSX_WHITESPACE.test(text) && !keepsWhitespace(position)) ||
+		(isRoot(position.container) &&
+			((position.first && /^(?:\s|---)/.test(text)) || (position.last && /\s$/.test(text))))
+			? `{${stringLiteral(text)}}`
+			: escapeBraces(escapeHtmlText(text)).replaceAll(">", "&gt;"),
+	attribute: quotedAttribute,
+	voidElement: "self-closing",
+	stripsWhitespaceBetweenElements: true,
+	stripsEdgeWhitespace: true,
+	interpolation: (code) => `{${code}}`,
+	boundAttribute: (name, code, { namespace }) =>
+		namespace === "html" &&
+		BINDABLE_BOOLEAN_ATTRIBUTES.has(name) &&
+		!ASTRO_BOOLEAN_ATTRIBUTES.has(name)
+			? `${name}={${test(code)} ? "" : undefined}`
+			: `${name}={${code}}`,
+	classAttribute: (parts) =>
+		parts.every((part) => part.kind === "Static")
+			? [{ name: "class", text: quotedAttribute("class", staticClassValue(parts)) }]
+			: [{ name: "class", text: `class:list={[${classArrayItems(parts, true).join(", ")}]}` }],
+	// A whole style, an object or a declaration list, is Astro's own `style` (ADR-0065).
+	styleAttribute: (parts) =>
+		parts[0]?.property === ""
+			? [{ name: "style", text: `style={${parts[0].value}}` }]
+			: parts.every((part) => part.kind === "Static")
+				? [{ name: "style", text: quotedAttribute("style", staticStyleValue(parts)) }]
+				: [
+						{
+							name: "style",
+							text: `style={{ ${parts
+								.map(
+									(part) =>
+										`${part.property.startsWith("--") ? JSON.stringify(part.property) : camelCaseProperty(part.property)}: ${
+											part.kind === "Static" ? JSON.stringify(part.value) : part.value
+										}`,
+								)
+								.join(", ")} }}`,
+						},
+					],
+	conditional: (branches) => {
+		// A trailing empty branch renders nothing either way.
+		let last = branches.length;
+		while (last > 0 && branches[last - 1]!.branch.children.length === 0) {
+			last--;
+		}
+		const segments: Array<BlockSegment> = [];
+		let tail = "{";
+		for (const { condition, branch } of branches.slice(0, last)) {
+			const head = condition === undefined ? "" : `${test(condition)} ? `;
+			if (branch.children.length === 0) {
+				tail += `${head}null : `;
+				continue;
+			}
+			segments.push({
+				open: `${tail}${head}`,
+				content: content(branch.children, branch),
+				parentheses: true,
+			});
+			tail = condition === undefined ? "" : " : ";
+		}
+		return [{ kind: "block", segments, close: tail === "" ? "}" : `${tail}null}` }];
+	},
+	list: ({ node, source, item, index }) => [
+		{
+			kind: "block",
+			segments: [
+				{
+					open: `{${operand(source)}.map((${listParameters(node, item, index)}) => `,
+					content: content([node.body], node),
+					parentheses: true,
+				},
+			],
+			close: ")}",
+		},
+	],
+	eventAttribute: () => [],
+	refAttribute: () => [],
+	// A directive's hooks run in the browser, which a static page never does (ADR-0099).
+	directiveAttribute: () => [],
+	rawHtmlAttribute: (code) => [{ name: "set:html", text: `set:html={${code}}` }],
+	inert: true,
+	// A component's props are attributes (ADR-0053); no listener runs (`component-event`).
+	propAttribute: ({ name, code, literal }) => [
+		{
+			name,
+			text:
+				literal !== undefined && PLAIN_PROP.test(literal)
+					? `${name}="${literal}"`
+					: `${name}={${code}}`,
+		},
+	],
+	componentEvent: () => [],
+	fills: (fills) => fills.map(fillContent),
+	/**
+	 * A slot outlet (ADR-0054): `<slot>`, named unless it is the default, with the fallback as its
+	 * content, which Astro renders where the consumer passed no slot. A scoped slot is a render
+	 * prop the target reads by the slot's name: called with its props, or the fallback where the
+	 * consumer passed none.
+	 */
+	slotOutlet: ({ node, props }) => {
+		if (props) {
+			const call = `${node.slot}(${props.code})`;
+			if (!node.fallback.length) {
+				return [{ kind: "code", code: `{${node.slot}?.(${props.code})}` }];
+			}
+			return [
+				{
+					kind: "block",
+					segments: [
+						{
+							open: `{${node.slot} ? ${call} : `,
+							content: content(node.fallback, node),
+							parentheses: true,
+						},
+					],
+					close: "}",
+				},
+			];
+		}
+		return [
+			{
+				kind: "tag",
+				tag: "slot",
+				attributes:
+					node.slot === "default"
+						? []
+						: [{ name: "name", text: quotedAttribute("name", node.slot) }],
+				...(node.fallback.length
+					? { content: [{ kind: "nodes", nodes: node.fallback, container: node }] }
+					: {}),
+			},
+		];
+	},
+	// A child's model is a prop that renders its value: nothing writes it (ADR-0054).
+	modelBinding: ({ attribute, value }) => [
+		{ name: attribute.model, text: `${attribute.model}={${value}}` },
+	],
 };

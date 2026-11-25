@@ -12,23 +12,23 @@ import type { CodeKind } from "../parse.ts";
  * returns as references, because HTML turns a raw one into a line feed.
  */
 export const escapeHtmlText = (text: string): string =>
-  text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll("\u00A0", "&nbsp;")
-    .replaceAll("\r", "&#13;");
+	text
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll("\u00A0", "&nbsp;")
+		.replaceAll("\r", "&#13;");
 
 /** A double-quoted attribute value, with the same references as text plus `"`. */
 export const escapeHtmlAttribute = (value: string): string =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("\u00A0", "&nbsp;")
-    .replaceAll("\r", "&#13;");
+	value
+		.replaceAll("&", "&amp;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("\u00A0", "&nbsp;")
+		.replaceAll("\r", "&#13;");
 
 /** Each UTF-16 code unit of the text as a `\uXXXX` escape. */
 export const unicodeEscape = (text: string): string =>
-  text.replaceAll(/[\s\S]/g, (unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, "0")}`);
+	text.replaceAll(/[\s\S]/g, (unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, "0")}`);
 
 /**
  * A string literal for a template expression (`{{ … }}`, `{…}`): JSON escaping, plus `\u`
@@ -38,15 +38,15 @@ export const unicodeEscape = (text: string): string =>
  * JavaScript tools.
  */
 export const stringLiteral = (text: string): string =>
-  JSON.stringify(text).replaceAll(/[&<>{}\u2028\u2029]/g, unicodeEscape);
+	JSON.stringify(text).replaceAll(/[&<>{}\u2028\u2029]/g, unicodeEscape);
 
 /** `name="value"`, escaped as HTML reads it back. */
 export const quotedAttribute = (name: string, value: string): string =>
-  `${name}="${escapeHtmlAttribute(value)}"`;
+	`${name}="${escapeHtmlAttribute(value)}"`;
 
 /** `{` and `}` as references, which Svelte, Astro and Angular would read as syntax. */
 export function escapeBraces(text: string): string {
-  return text.replaceAll("{", "&#123;").replaceAll("}", "&#125;");
+	return text.replaceAll("{", "&#123;").replaceAll("}", "&#125;");
 }
 
 /**
@@ -56,71 +56,71 @@ export function escapeBraces(text: string): string {
  * (`a && b`) stays as written: no reference starts there.
  */
 export function escapeReferences(code: string): string {
-  return code.replaceAll(/&(?=[A-Za-z0-9#])/g, "&amp;");
+	return code.replaceAll(/&(?=[A-Za-z0-9#])/g, "&amp;");
 }
 
 /** A name in kebab case as a camel-case style key (`margin-top` → `marginTop`). */
 export function camelCaseProperty(property: string): string {
-  return property.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+	return property.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /** Whether a name can be written as an identifier key or after a dot (ASCII, as the IR's). */
 export function isIdentifierName(name: string): boolean {
-  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
+	return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
 }
 
 /** A token of expression code whose text a template scanner may read differently. */
 export type CodeToken =
-  | { kind: "string"; start: number; end: number; value: string }
-  | {
-      kind: "template";
-      /** The quasi's own text, between its delimiters (`` ` ``, `${`, `}`). */
-      start: number;
-      end: number;
-      cooked: string;
-    }
-  | { kind: "regex"; start: number; end: number }
-  | { kind: "number"; start: number; end: number; value: number }
-  | { kind: "comment"; start: number; end: number };
+	| { kind: "string"; start: number; end: number; value: string }
+	| {
+			kind: "template";
+			/** The quasi's own text, between its delimiters (`` ` ``, `${`, `}`). */
+			start: number;
+			end: number;
+			cooked: string;
+	  }
+	| { kind: "regex"; start: number; end: number }
+	| { kind: "number"; start: number; end: number; value: number }
+	| { kind: "comment"; start: number; end: number };
 
 /**
  * What {@link mapCode} does with each kind of token, and with the code between tokens. Each
  * function also gets the output so far, for a rule that spans two tokens.
  */
 export interface CodeMap {
-  string?(raw: string, token: CodeToken & { kind: "string" }, before: string): string;
-  template?(raw: string, token: CodeToken & { kind: "template" }, before: string): string;
-  regex?(raw: string, before: string): string;
-  number?(raw: string, token: CodeToken & { kind: "number" }, before: string): string;
-  comment?(raw: string, before: string): string;
-  /** The code between tokens: punctuation, names and the template literals' delimiters. */
-  other?(text: string, before: string): string;
+	string?(raw: string, token: CodeToken & { kind: "string" }, before: string): string;
+	template?(raw: string, token: CodeToken & { kind: "template" }, before: string): string;
+	regex?(raw: string, before: string): string;
+	number?(raw: string, token: CodeToken & { kind: "number" }, before: string): string;
+	comment?(raw: string, before: string): string;
+	/** The code between tokens: punctuation, names and the template literals' delimiters. */
+	other?(text: string, before: string): string;
 }
 
 /** A node of oxc's AST, as far as the scan reads it. */
 interface Node {
-  type: string;
-  start: number;
-  end: number;
-  [key: string]: unknown;
+	type: string;
+	start: number;
+	end: number;
+	[key: string]: unknown;
 }
 
 function isNode(value: unknown): value is Node {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as { type?: unknown }).type === "string" &&
-    typeof (value as { start?: unknown }).start === "number"
-  );
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		typeof (value as { type?: unknown }).type === "string" &&
+		typeof (value as { start?: unknown }).start === "number"
+	);
 }
 
 /** A template literal's quasi value, `{ raw, cooked }`. */
 function isQuasiValue(value: unknown): value is { raw: string; cooked: string | null } {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as { raw?: unknown }).raw === "string"
-  );
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		typeof (value as { raw?: unknown }).raw === "string"
+	);
 }
 
 /**
@@ -128,48 +128,48 @@ function isQuasiValue(value: unknown): value is { raw: string; cooked: string | 
  * `kind` a list of statements' (a handler a template runs as statements, Vue's `@click="a(); b()"`).
  */
 export function codeTokens(code: string, kind: CodeKind = "expression"): Array<CodeToken> {
-  const { root, comments } = parseCodeSource(code, kind);
-  const tokens: Array<CodeToken> = comments.map(({ start, end }) => ({
-    kind: "comment",
-    start,
-    end,
-  }));
-  const visit = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        visit(item);
-      }
-      return;
-    }
-    if (!isNode(value)) {
-      return;
-    }
-    if (value.type === "Literal") {
-      if (value.regex) {
-        tokens.push({ kind: "regex", ...at(value) });
-      } else if (typeof value.value === "string") {
-        tokens.push({ kind: "string", ...at(value), value: value.value });
-      } else if (typeof value.value === "number") {
-        tokens.push({ kind: "number", ...at(value), value: value.value });
-      }
-      return;
-    }
-    if (value.type === "TemplateElement" && isQuasiValue(value.value)) {
-      // oxc's span covers the delimiters around the quasi: one character before it (`` ` `` or
-      // the `}` that ends a substitution), and `` ` `` or `${` after it.
-      const { raw, cooked } = value.value;
-      const start = value.start + 1;
-      tokens.push({ kind: "template", start, end: start + raw.length, cooked: cooked ?? raw });
-      return;
-    }
-    for (const [key, child] of Object.entries(value)) {
-      if (key !== "type" && typeof child === "object") {
-        visit(child);
-      }
-    }
-  };
-  visit(root);
-  return tokens.toSorted((a, b) => a.start - b.start);
+	const { root, comments } = parseCodeSource(code, kind);
+	const tokens: Array<CodeToken> = comments.map(({ start, end }) => ({
+		kind: "comment",
+		start,
+		end,
+	}));
+	const visit = (value: unknown): void => {
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				visit(item);
+			}
+			return;
+		}
+		if (!isNode(value)) {
+			return;
+		}
+		if (value.type === "Literal") {
+			if (value.regex) {
+				tokens.push({ kind: "regex", ...at(value) });
+			} else if (typeof value.value === "string") {
+				tokens.push({ kind: "string", ...at(value), value: value.value });
+			} else if (typeof value.value === "number") {
+				tokens.push({ kind: "number", ...at(value), value: value.value });
+			}
+			return;
+		}
+		if (value.type === "TemplateElement" && isQuasiValue(value.value)) {
+			// oxc's span covers the delimiters around the quasi: one character before it (`` ` `` or
+			// the `}` that ends a substitution), and `` ` `` or `${` after it.
+			const { raw, cooked } = value.value;
+			const start = value.start + 1;
+			tokens.push({ kind: "template", start, end: start + raw.length, cooked: cooked ?? raw });
+			return;
+		}
+		for (const [key, child] of Object.entries(value)) {
+			if (key !== "type" && typeof child === "object") {
+				visit(child);
+			}
+		}
+	};
+	visit(root);
+	return tokens.toSorted((a, b) => a.start - b.start);
 }
 
 const at = (node: Node) => ({ start: node.start, end: node.end });
@@ -180,34 +180,34 @@ const at = (node: Node) => ({ start: node.start, end: node.end });
  * A function left out keeps its text.
  */
 export function mapCode(code: string, map: CodeMap, kind: CodeKind = "expression"): string {
-  let output = "";
-  let position = 0;
-  const other = (text: string) => (map.other && text ? map.other(text, output) : text);
-  for (const token of codeTokens(code, kind)) {
-    output += other(code.slice(position, token.start));
-    const raw = code.slice(token.start, token.end);
-    switch (token.kind) {
-      case "string":
-        output += map.string ? map.string(raw, token, output) : raw;
-        break;
-      case "template":
-        output += map.template ? map.template(raw, token, output) : raw;
-        break;
-      case "regex":
-        output += map.regex ? map.regex(raw, output) : raw;
-        break;
-      case "number":
-        output += map.number ? map.number(raw, token, output) : raw;
-        break;
-      case "comment":
-        output += map.comment ? map.comment(raw, output) : raw;
-        break;
-      default:
-        unreachable(token);
-    }
-    position = token.end;
-  }
-  return output + other(code.slice(position));
+	let output = "";
+	let position = 0;
+	const other = (text: string) => (map.other && text ? map.other(text, output) : text);
+	for (const token of codeTokens(code, kind)) {
+		output += other(code.slice(position, token.start));
+		const raw = code.slice(token.start, token.end);
+		switch (token.kind) {
+			case "string":
+				output += map.string ? map.string(raw, token, output) : raw;
+				break;
+			case "template":
+				output += map.template ? map.template(raw, token, output) : raw;
+				break;
+			case "regex":
+				output += map.regex ? map.regex(raw, output) : raw;
+				break;
+			case "number":
+				output += map.number ? map.number(raw, token, output) : raw;
+				break;
+			case "comment":
+				output += map.comment ? map.comment(raw, output) : raw;
+				break;
+			default:
+				unreachable(token);
+		}
+		position = token.end;
+	}
+	return output + other(code.slice(position));
 }
 
 /**
@@ -217,13 +217,13 @@ export function mapCode(code: string, map: CodeMap, kind: CodeKind = "expression
  * spells any other character its own way (a template's delimiters), or returns `undefined`.
  */
 export function quoteString(
-  value: string,
-  quote: "'" | '"',
-  escape: (character: string) => string | undefined = () => undefined,
+	value: string,
+	quote: "'" | '"',
+	escape: (character: string) => string | undefined = () => undefined,
 ): string {
-  return `${quote}${escapeCharacters(value, (character) =>
-    character === quote ? `\\${quote}` : escape(character),
-  )}${quote}`;
+	return `${quote}${escapeCharacters(value, (character) =>
+		character === quote ? `\\${quote}` : escape(character),
+	)}${quote}`;
 }
 
 /**
@@ -231,54 +231,54 @@ export function quoteString(
  * {@link quoteString} writes strings, with `` ` `` and the `$` of a `${` escaped.
  */
 export function quasiText(
-  cooked: string,
-  escape: (character: string) => string | undefined = () => undefined,
+	cooked: string,
+	escape: (character: string) => string | undefined = () => undefined,
 ): string {
-  return escapeCharacters(cooked, (character) =>
-    character === "`" ? "\\`" : escape(character),
-  ).replaceAll(/\$(?=\{)/g, String.raw`\$`);
+	return escapeCharacters(cooked, (character) =>
+		character === "`" ? "\\`" : escape(character),
+	).replaceAll(/\$(?=\{)/g, String.raw`\$`);
 }
 
 const SIMPLE_ESCAPES: Readonly<Record<string, string>> = {
-  "\\": String.raw`\\`,
-  "\n": String.raw`\n`,
-  "\r": String.raw`\r`,
-  "\t": String.raw`\t`,
-  "\v": String.raw`\v`,
-  "\f": String.raw`\f`,
+	"\\": String.raw`\\`,
+	"\n": String.raw`\n`,
+	"\r": String.raw`\r`,
+	"\t": String.raw`\t`,
+	"\v": String.raw`\v`,
+	"\f": String.raw`\f`,
 };
 
 function escapeCharacters(value: string, escape: (character: string) => string | undefined) {
-  let output = "";
-  for (let index = 0; index < value.length; index++) {
-    const unit = value.charCodeAt(index);
-    // A surrogate pair is one character, written as it is; a lone surrogate is escaped.
-    if (unit >= 0xd800 && unit <= 0xdbff) {
-      const next = value.charCodeAt(index + 1);
-      if (next >= 0xdc00 && next <= 0xdfff) {
-        output += value.slice(index, index + 2);
-        index++;
-        continue;
-      }
-    }
-    const character = value[index]!;
-    output +=
-      escape(character) ??
-      SIMPLE_ESCAPES[character] ??
-      (unit < 0x20 ||
-      unit === 0x7f ||
-      unit === 0x2028 ||
-      unit === 0x2029 ||
-      (unit >= 0xd800 && unit <= 0xdfff)
-        ? unicodeEscape(character)
-        : character);
-  }
-  return output;
+	let output = "";
+	for (let index = 0; index < value.length; index++) {
+		const unit = value.charCodeAt(index);
+		// A surrogate pair is one character, written as it is; a lone surrogate is escaped.
+		if (unit >= 0xd800 && unit <= 0xdbff) {
+			const next = value.charCodeAt(index + 1);
+			if (next >= 0xdc00 && next <= 0xdfff) {
+				output += value.slice(index, index + 2);
+				index++;
+				continue;
+			}
+		}
+		const character = value[index]!;
+		output +=
+			escape(character) ??
+			SIMPLE_ESCAPES[character] ??
+			(unit < 0x20 ||
+			unit === 0x7f ||
+			unit === 0x2028 ||
+			unit === 0x2029 ||
+			(unit >= 0xd800 && unit <= 0xdfff)
+				? unicodeEscape(character)
+				: character);
+	}
+	return output;
 }
 
 /** `}` as an escape, for a literal a template scanner must not end an interpolation in. */
 const escapeClosingBrace = (character: string) =>
-  character === "}" ? String.raw`\u007d` : undefined;
+	character === "}" ? String.raw`\u007d` : undefined;
 
 /**
  * Code with no `}}` in it, for an interpolation that a template scanner ends at the first one
@@ -289,24 +289,24 @@ const escapeClosingBrace = (character: string) =>
  * a quasi that starts with `}`, is a quasi to re-print too.
  */
 export function separateClosingBraces(code: string): string {
-  if (!code.includes("}}")) {
-    return code;
-  }
-  return mapCode(code, {
-    string: (raw, { value }) =>
-      raw.includes("}}")
-        ? quoteString(value, raw.startsWith("'") ? "'" : '"', escapeClosingBrace)
-        : raw,
-    template: (raw, { cooked }, before) =>
-      raw.includes("}}") || (before.endsWith("}") && raw.startsWith("}"))
-        ? quasiText(cooked, escapeClosingBrace)
-        : raw,
-    regex: (raw) => raw.replaceAll(/(?<=\})\}/g, String.raw`\}`),
-    comment: (raw) => raw.replaceAll(/\}(?=\})/g, "} "),
-    other: (text) => text.replaceAll(/\}(?=\})/g, "} "),
-  });
+	if (!code.includes("}}")) {
+		return code;
+	}
+	return mapCode(code, {
+		string: (raw, { value }) =>
+			raw.includes("}}")
+				? quoteString(value, raw.startsWith("'") ? "'" : '"', escapeClosingBrace)
+				: raw,
+		template: (raw, { cooked }, before) =>
+			raw.includes("}}") || (before.endsWith("}") && raw.startsWith("}"))
+				? quasiText(cooked, escapeClosingBrace)
+				: raw,
+		regex: (raw) => raw.replaceAll(/(?<=\})\}/g, String.raw`\}`),
+		comment: (raw) => raw.replaceAll(/\}(?=\})/g, "} "),
+		other: (text) => text.replaceAll(/\}(?=\})/g, "} "),
+	});
 }
 
 function unreachable(value: never): never {
-  throw new Error(`Unexpected token: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected token: ${JSON.stringify(value)}`);
 }

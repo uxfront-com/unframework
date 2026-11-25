@@ -5,5 +5,5 @@ import type { Tone } from "../../../../../integration/cases/types/shared-type/__
 const tone: Tone = "loud";
 
 export function MisuseType() {
-  return <Palette tone={tone} />;
+	return <Palette tone={tone} />;
 }

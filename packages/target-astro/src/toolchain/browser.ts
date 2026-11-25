@@ -15,19 +15,19 @@ import { recordAstroSource } from "./sources.ts";
  * `ufAstroRender`. When Vitest closes, it closes the render servers.
  */
 export function astroBrowserRef(): Plugin {
-  return {
-    name: "unframework:astro-browser-ref",
-    enforce: "pre",
-    transform: {
-      filter: { id: ASTRO_VIRTUAL_ID },
-      handler(source, id) {
-        const ref = astroComponentRef(id);
-        recordAstroSource(ref.id, source);
-        return { code: `export default ${JSON.stringify(ref)};\n`, map: null, moduleType: "js" };
-      },
-    },
-    configureVitest({ vitest }) {
-      vitest.onClose(closeAstroRenderServers);
-    },
-  };
+	return {
+		name: "unframework:astro-browser-ref",
+		enforce: "pre",
+		transform: {
+			filter: { id: ASTRO_VIRTUAL_ID },
+			handler(source, id) {
+				const ref = astroComponentRef(id);
+				recordAstroSource(ref.id, source);
+				return { code: `export default ${JSON.stringify(ref)};\n`, map: null, moduleType: "js" };
+			},
+		},
+		configureVitest({ vitest }) {
+			vitest.onClose(closeAstroRenderServers);
+		},
+	};
 }

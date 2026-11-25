@@ -1,25 +1,25 @@
 import type {
-  Attribute,
-  BindingKind,
-  Code,
-  CodeReference,
-  ComponentAttribute,
-  EventAttribute,
-  Expression,
-  FragmentNode,
-  FunctionCode,
-  Handler,
-  ListenerAttribute,
-  Parameter,
-  RenderNode,
-  SetupItem,
-  SlotFill,
-  Span,
-  TypeParameter,
-  UfComponent,
-  UfComposable,
-  UfModule,
-  WatchSource,
+	Attribute,
+	BindingKind,
+	Code,
+	CodeReference,
+	ComponentAttribute,
+	EventAttribute,
+	Expression,
+	FragmentNode,
+	FunctionCode,
+	Handler,
+	ListenerAttribute,
+	Parameter,
+	RenderNode,
+	SetupItem,
+	SlotFill,
+	Span,
+	TypeParameter,
+	UfComponent,
+	UfComposable,
+	UfModule,
+	WatchSource,
 } from "./types.ts";
 
 /** An attribute of an element or of a component: what a `Dynamic` node may hold. */
@@ -28,87 +28,87 @@ type AnyAttribute = Attribute | ComponentAttribute;
 // Records rather than arrays: `satisfies` rejects a missing or an unknown kind, so a kind added
 // to the unions cannot be left out of the lists the coverage gate iterates.
 const renderNodeKinds = {
-  Element: true,
-  Text: true,
-  Interpolation: true,
-  If: true,
-  For: true,
-  Component: true,
-  SlotOutlet: true,
-  Dynamic: true,
-  Teleport: true,
-  Transition: true,
+	Element: true,
+	Text: true,
+	Interpolation: true,
+	If: true,
+	For: true,
+	Component: true,
+	SlotOutlet: true,
+	Dynamic: true,
+	Teleport: true,
+	Transition: true,
 } satisfies Record<RenderNode["kind"], true>;
 const attributeKinds = {
-  Static: true,
-  Bound: true,
-  Class: true,
-  Style: true,
-  Spread: true,
-  Event: true,
-  Ref: true,
-  Model: true,
-  Prop: true,
-  Listener: true,
-  ModelBinding: true,
-  RawHtml: true,
-  Directive: true,
-  Rest: true,
+	Static: true,
+	Bound: true,
+	Class: true,
+	Style: true,
+	Spread: true,
+	Event: true,
+	Ref: true,
+	Model: true,
+	Prop: true,
+	Listener: true,
+	ModelBinding: true,
+	RawHtml: true,
+	Directive: true,
+	Rest: true,
 } satisfies Record<AnyAttribute["kind"], true>;
 const bindingKinds = {
-  prop: true,
-  loopVar: true,
-  state: true,
-  derived: true,
-  templateRef: true,
-  localConst: true,
-  localFn: true,
-  localVar: true,
-  awaited: true,
-  emit: true,
-  model: true,
-  slots: true,
-  slotScope: true,
-  context: true,
-  component: true,
-  moduleConst: true,
-  import: true,
-  argument: true,
-  usedState: true,
-  usedDerived: true,
-  usedFn: true,
-  usedConst: true,
+	prop: true,
+	loopVar: true,
+	state: true,
+	derived: true,
+	templateRef: true,
+	localConst: true,
+	localFn: true,
+	localVar: true,
+	awaited: true,
+	emit: true,
+	model: true,
+	slots: true,
+	slotScope: true,
+	context: true,
+	component: true,
+	moduleConst: true,
+	import: true,
+	argument: true,
+	usedState: true,
+	usedDerived: true,
+	usedFn: true,
+	usedConst: true,
 } satisfies Record<BindingKind, true>;
 const setupItemKinds = {
-  Await: true,
-  State: true,
-  Derived: true,
-  TemplateRef: true,
-  Id: true,
-  Const: true,
-  Variable: true,
-  Function: true,
-  Watch: true,
-  WatchEffect: true,
-  Lifecycle: true,
-  Model: true,
-  Provide: true,
-  Inject: true,
-  Use: true,
-  DevCheck: true,
+	Await: true,
+	State: true,
+	Derived: true,
+	TemplateRef: true,
+	Id: true,
+	Const: true,
+	Variable: true,
+	Function: true,
+	Watch: true,
+	WatchEffect: true,
+	Lifecycle: true,
+	Model: true,
+	Provide: true,
+	Inject: true,
+	Use: true,
+	DevCheck: true,
 } satisfies Record<SetupItem["kind"], true>;
 const handlerKinds = { Function: true, Inline: true } satisfies Record<Handler["kind"], true>;
 const watchSourceKinds = { Ref: true, Getter: true } satisfies Record<WatchSource["kind"], true>;
 const codeReferenceKinds = {
-  Binding: true,
-  Global: true,
-  Write: true,
-  Emit: true,
-  Api: true,
-  Event: true,
-  Slot: true,
-  Import: true,
-  Dev: true,
+	Binding: true,
+	Global: true,
+	Write: true,
+	Emit: true,
+	Api: true,
+	Event: true,
+	Slot: true,
+	Import: true,
+	Dev: true,
 } satisfies Record<CodeReference["kind"], true>;
 
 /**
@@ -116,7 +116,7 @@ const codeReferenceKinds = {
  * `Fragment` is not a render node; the `fragment` capability covers it.
  */
 export const RENDER_NODE_KINDS: ReadonlyArray<RenderNode["kind"]> = Object.keys(
-  renderNodeKinds,
+	renderNodeKinds,
 ) as Array<RenderNode["kind"]>;
 
 /**
@@ -124,27 +124,27 @@ export const RENDER_NODE_KINDS: ReadonlyArray<RenderNode["kind"]> = Object.keys(
  * for each.
  */
 export const ATTRIBUTE_KINDS: ReadonlyArray<AnyAttribute["kind"]> = Object.keys(
-  attributeKinds,
+	attributeKinds,
 ) as Array<AnyAttribute["kind"]>;
 
 /** Every kind of binding. The coverage gate requires a corpus case for each. */
 export const BINDING_KINDS: ReadonlyArray<BindingKind> = Object.keys(
-  bindingKinds,
+	bindingKinds,
 ) as Array<BindingKind>;
 
 /** Every kind of setup item. The coverage gate requires a corpus case for each. */
 export const SETUP_ITEM_KINDS: ReadonlyArray<SetupItem["kind"]> = Object.keys(
-  setupItemKinds,
+	setupItemKinds,
 ) as Array<SetupItem["kind"]>;
 
 /** Every kind of event handler. The coverage gate requires a corpus case for each. */
 export const HANDLER_KINDS: ReadonlyArray<Handler["kind"]> = Object.keys(handlerKinds) as Array<
-  Handler["kind"]
+	Handler["kind"]
 >;
 
 /** Every kind of watch source. The coverage gate requires a corpus case for each. */
 export const WATCH_SOURCE_KINDS: ReadonlyArray<WatchSource["kind"]> = Object.keys(
-  watchSourceKinds,
+	watchSourceKinds,
 ) as Array<WatchSource["kind"]>;
 
 /**
@@ -152,7 +152,7 @@ export const WATCH_SOURCE_KINDS: ReadonlyArray<WatchSource["kind"]> = Object.key
  * The coverage gate requires a corpus case for each.
  */
 export const CODE_REFERENCE_KINDS: ReadonlyArray<CodeReference["kind"]> = Object.keys(
-  codeReferenceKinds,
+	codeReferenceKinds,
 ) as Array<CodeReference["kind"]>;
 
 /** A node {@link walk} visits: a render node, or a component's root fragment. */
@@ -165,8 +165,8 @@ export type VisitedNode = RenderNode | FragmentNode;
  * it, or the slot outlet whose fallback it is.
  */
 export interface Visitor {
-  enter?(node: VisitedNode, parent: VisitedNode | undefined): void | false;
-  leave?(node: VisitedNode, parent: VisitedNode | undefined): void;
+	enter?(node: VisitedNode, parent: VisitedNode | undefined): void | false;
+	leave?(node: VisitedNode, parent: VisitedNode | undefined): void;
 }
 
 /**
@@ -176,50 +176,50 @@ export interface Visitor {
  * or a `Transition`'s content, and nothing for text.
  */
 export function childrenOf(node: VisitedNode): ReadonlyArray<RenderNode> {
-  switch (node.kind) {
-    case "Element":
-    case "Fragment":
-    case "Teleport":
-    case "Transition":
-      return node.children;
-    case "If":
-      return node.branches.flatMap((branch) => branch.children);
-    case "For":
-      return [node.body];
-    case "Component":
-      return node.fills.flatMap((fill) => fill.children);
-    case "SlotOutlet":
-      return node.fallback;
-    case "Dynamic":
-      return [...node.children, ...(node.fills ?? []).flatMap((fill) => fill.children)];
-    case "Text":
-    case "Interpolation":
-      return [];
-    default:
-      return unreachable(node);
-  }
+	switch (node.kind) {
+		case "Element":
+		case "Fragment":
+		case "Teleport":
+		case "Transition":
+			return node.children;
+		case "If":
+			return node.branches.flatMap((branch) => branch.children);
+		case "For":
+			return [node.body];
+		case "Component":
+			return node.fills.flatMap((fill) => fill.children);
+		case "SlotOutlet":
+			return node.fallback;
+		case "Dynamic":
+			return [...node.children, ...(node.fills ?? []).flatMap((fill) => fill.children)];
+		case "Text":
+		case "Interpolation":
+			return [];
+		default:
+			return unreachable(node);
+	}
 }
 
 /** Walks a render tree depth-first, in document order. */
 export function walk(node: VisitedNode, visitor: Visitor, parent?: VisitedNode): void {
-  if (visitor.enter?.(node, parent) === false) {
-    return;
-  }
-  for (const child of childrenOf(node)) {
-    walk(child, visitor, node);
-  }
-  visitor.leave?.(node, parent);
+	if (visitor.enter?.(node, parent) === false) {
+		return;
+	}
+	for (const child of childrenOf(node)) {
+		walk(child, visitor, node);
+	}
+	visitor.leave?.(node, parent);
 }
 
 /** What a module uses, by kind: the input of capability checks and of the coverage gate. */
 export interface ModuleFeatures {
-  nodeKinds: Set<RenderNode["kind"]>;
-  attributeKinds: Set<AnyAttribute["kind"]>;
-  bindingKinds: Set<BindingKind>;
-  setupItemKinds: Set<SetupItem["kind"]>;
-  handlerKinds: Set<Handler["kind"]>;
-  watchSourceKinds: Set<WatchSource["kind"]>;
-  codeReferenceKinds: Set<CodeReference["kind"]>;
+	nodeKinds: Set<RenderNode["kind"]>;
+	attributeKinds: Set<AnyAttribute["kind"]>;
+	bindingKinds: Set<BindingKind>;
+	setupItemKinds: Set<SetupItem["kind"]>;
+	handlerKinds: Set<Handler["kind"]>;
+	watchSourceKinds: Set<WatchSource["kind"]>;
+	codeReferenceKinds: Set<CodeReference["kind"]>;
 }
 
 /**
@@ -228,97 +228,97 @@ export interface ModuleFeatures {
  * expressions' own references are setup code's `Binding` and `Global` kinds, so they count too).
  */
 export function collectFeatures(module: UfModule): ModuleFeatures {
-  const features: ModuleFeatures = {
-    nodeKinds: new Set(),
-    attributeKinds: new Set(),
-    bindingKinds: new Set(),
-    setupItemKinds: new Set(),
-    handlerKinds: new Set(),
-    watchSourceKinds: new Set(),
-    codeReferenceKinds: new Set(),
-  };
-  const setup = (owner: UfComponent | UfComposable) => {
-    for (const binding of owner.bindings) {
-      features.bindingKinds.add(binding.kind);
-    }
-    for (const item of owner.setup) {
-      features.setupItemKinds.add(item.kind);
-      if (item.kind === "Watch") {
-        for (const source of item.sources) {
-          features.watchSourceKinds.add(source.kind);
-        }
-      }
-    }
-    for (const { code } of codeOf(owner)) {
-      for (const ref of code.refs) {
-        features.codeReferenceKinds.add(ref.kind);
-      }
-    }
-  };
-  for (const composable of module.composables ?? []) {
-    setup(composable);
-  }
-  for (const directive of module.directives ?? []) {
-    for (const binding of directive.bindings) {
-      features.bindingKinds.add(binding.kind);
-    }
-    for (const hook of directive.hooks) {
-      for (const ref of hook.body.refs) {
-        features.codeReferenceKinds.add(ref.kind);
-      }
-    }
-  }
-  for (const component of module.components) {
-    setup(component);
-    walk(component.render, {
-      enter(node) {
-        if (node.kind === "Fragment") {
-          return;
-        }
-        features.nodeKinds.add(node.kind);
-        for (const attribute of attributesOf(node)) {
-          features.attributeKinds.add(attribute.kind);
-          if (attribute.kind === "Event" || attribute.kind === "Listener") {
-            features.handlerKinds.add(attribute.handler.kind);
-          }
-        }
-      },
-    });
-    for (const { expression } of expressionsOf(component)) {
-      for (const ref of expression.refs) {
-        features.codeReferenceKinds.add(ref.kind);
-      }
-    }
-  }
-  return features;
+	const features: ModuleFeatures = {
+		nodeKinds: new Set(),
+		attributeKinds: new Set(),
+		bindingKinds: new Set(),
+		setupItemKinds: new Set(),
+		handlerKinds: new Set(),
+		watchSourceKinds: new Set(),
+		codeReferenceKinds: new Set(),
+	};
+	const setup = (owner: UfComponent | UfComposable) => {
+		for (const binding of owner.bindings) {
+			features.bindingKinds.add(binding.kind);
+		}
+		for (const item of owner.setup) {
+			features.setupItemKinds.add(item.kind);
+			if (item.kind === "Watch") {
+				for (const source of item.sources) {
+					features.watchSourceKinds.add(source.kind);
+				}
+			}
+		}
+		for (const { code } of codeOf(owner)) {
+			for (const ref of code.refs) {
+				features.codeReferenceKinds.add(ref.kind);
+			}
+		}
+	};
+	for (const composable of module.composables ?? []) {
+		setup(composable);
+	}
+	for (const directive of module.directives ?? []) {
+		for (const binding of directive.bindings) {
+			features.bindingKinds.add(binding.kind);
+		}
+		for (const hook of directive.hooks) {
+			for (const ref of hook.body.refs) {
+				features.codeReferenceKinds.add(ref.kind);
+			}
+		}
+	}
+	for (const component of module.components) {
+		setup(component);
+		walk(component.render, {
+			enter(node) {
+				if (node.kind === "Fragment") {
+					return;
+				}
+				features.nodeKinds.add(node.kind);
+				for (const attribute of attributesOf(node)) {
+					features.attributeKinds.add(attribute.kind);
+					if (attribute.kind === "Event" || attribute.kind === "Listener") {
+						features.handlerKinds.add(attribute.handler.kind);
+					}
+				}
+			},
+		});
+		for (const { expression } of expressionsOf(component)) {
+			for (const ref of expression.refs) {
+				features.codeReferenceKinds.add(ref.kind);
+			}
+		}
+	}
+	return features;
 }
 
 /** The attributes of a node: an element's, a component's or a `Dynamic` node's, or none. */
 function attributesOf(node: VisitedNode): ReadonlyArray<AnyAttribute> {
-  switch (node.kind) {
-    case "Element":
-    case "Component":
-    case "Dynamic":
-      return node.attributes;
-    case "Fragment":
-    case "Teleport":
-    case "Transition":
-    case "Text":
-    case "Interpolation":
-    case "If":
-    case "For":
-    case "SlotOutlet":
-      return [];
-    default:
-      return unreachable(node);
-  }
+	switch (node.kind) {
+		case "Element":
+		case "Component":
+		case "Dynamic":
+			return node.attributes;
+		case "Fragment":
+		case "Teleport":
+		case "Transition":
+		case "Text":
+		case "Interpolation":
+		case "If":
+		case "For":
+		case "SlotOutlet":
+			return [];
+		default:
+			return unreachable(node);
+	}
 }
 
 /** An expression of a component, with where it is. */
 export interface LocatedExpression {
-  expression: Expression;
-  /** A JSON Pointer to the expression: from the component, after `base`. */
-  path: string;
+	expression: Expression;
+	/** A JSON Pointer to the expression: from the component, after `base`. */
+	path: string;
 }
 
 /**
@@ -330,143 +330,143 @@ export interface LocatedExpression {
  * {@link codeOf}'s: a template reads only these (ADR-0045).
  */
 export function expressionsOf(component: UfComponent, base = ""): Array<LocatedExpression> {
-  const found: Array<LocatedExpression> = [];
-  const add = (expression: Expression, path: string) => found.push({ expression, path });
-  for (const [index, prop] of component.props.entries()) {
-    if (prop.default) {
-      add(prop.default, `${base}/props/${index}/default`);
-    }
-  }
-  for (const [index, item] of component.setup.entries()) {
-    if (item.kind === "Model" && item.default) {
-      add(item.default, `${base}/setup/${index}/default`);
-    }
-  }
-  const attributes = (node: { attributes: ReadonlyArray<AnyAttribute> }, path: string) => {
-    for (const [index, attribute] of node.attributes.entries()) {
-      attributeExpressions(attribute, `${path}/attributes/${index}`, add);
-    }
-  };
-  const fills = (list: ReadonlyArray<SlotFill>, path: string) => {
-    for (const [index, fill] of list.entries()) {
-      const at = `${path}/${index}`;
-      if (fill.parameter?.default) {
-        add(fill.parameter.default, `${at}/parameter/default`);
-      }
-      for (const [child, nested] of fill.children.entries()) {
-        visit(nested, `${at}/children/${child}`);
-      }
-    }
-  };
-  const visit = (node: VisitedNode, path: string): void => {
-    switch (node.kind) {
-      case "Element":
-        attributes(node, path);
-        for (const [index, child] of node.children.entries()) {
-          visit(child, `${path}/children/${index}`);
-        }
-        return;
-      case "Component":
-        attributes(node, path);
-        fills(node.fills, `${path}/fills`);
-        return;
-      case "SlotOutlet":
-        if (node.props) {
-          add(node.props, `${path}/props`);
-        }
-        for (const [index, child] of node.fallback.entries()) {
-          visit(child, `${path}/fallback/${index}`);
-        }
-        return;
-      case "Dynamic":
-        add(node.is, `${path}/is`);
-        attributes(node, path);
-        for (const [index, child] of node.children.entries()) {
-          visit(child, `${path}/children/${index}`);
-        }
-        fills(node.fills ?? [], `${path}/fills`);
-        return;
-      case "Fragment":
-      case "Teleport":
-      case "Transition":
-        for (const [index, child] of node.children.entries()) {
-          visit(child, `${path}/children/${index}`);
-        }
-        return;
-      case "Interpolation":
-        add(node.value, `${path}/value`);
-        return;
-      case "If":
-        for (const [index, branch] of node.branches.entries()) {
-          const at = `${path}/branches/${index}`;
-          if (branch.condition) {
-            add(branch.condition, `${at}/condition`);
-          }
-          for (const [child, nested] of branch.children.entries()) {
-            visit(nested, `${at}/children/${child}`);
-          }
-        }
-        return;
-      case "For":
-        add(node.source, `${path}/source`);
-        add(node.key, `${path}/key`);
-        visit(node.body, `${path}/body`);
-        return;
-      case "Text":
-        return;
-      default:
-        unreachable(node);
-    }
-  };
-  visit(component.render, `${base}/render`);
-  return found;
+	const found: Array<LocatedExpression> = [];
+	const add = (expression: Expression, path: string) => found.push({ expression, path });
+	for (const [index, prop] of component.props.entries()) {
+		if (prop.default) {
+			add(prop.default, `${base}/props/${index}/default`);
+		}
+	}
+	for (const [index, item] of component.setup.entries()) {
+		if (item.kind === "Model" && item.default) {
+			add(item.default, `${base}/setup/${index}/default`);
+		}
+	}
+	const attributes = (node: { attributes: ReadonlyArray<AnyAttribute> }, path: string) => {
+		for (const [index, attribute] of node.attributes.entries()) {
+			attributeExpressions(attribute, `${path}/attributes/${index}`, add);
+		}
+	};
+	const fills = (list: ReadonlyArray<SlotFill>, path: string) => {
+		for (const [index, fill] of list.entries()) {
+			const at = `${path}/${index}`;
+			if (fill.parameter?.default) {
+				add(fill.parameter.default, `${at}/parameter/default`);
+			}
+			for (const [child, nested] of fill.children.entries()) {
+				visit(nested, `${at}/children/${child}`);
+			}
+		}
+	};
+	const visit = (node: VisitedNode, path: string): void => {
+		switch (node.kind) {
+			case "Element":
+				attributes(node, path);
+				for (const [index, child] of node.children.entries()) {
+					visit(child, `${path}/children/${index}`);
+				}
+				return;
+			case "Component":
+				attributes(node, path);
+				fills(node.fills, `${path}/fills`);
+				return;
+			case "SlotOutlet":
+				if (node.props) {
+					add(node.props, `${path}/props`);
+				}
+				for (const [index, child] of node.fallback.entries()) {
+					visit(child, `${path}/fallback/${index}`);
+				}
+				return;
+			case "Dynamic":
+				add(node.is, `${path}/is`);
+				attributes(node, path);
+				for (const [index, child] of node.children.entries()) {
+					visit(child, `${path}/children/${index}`);
+				}
+				fills(node.fills ?? [], `${path}/fills`);
+				return;
+			case "Fragment":
+			case "Teleport":
+			case "Transition":
+				for (const [index, child] of node.children.entries()) {
+					visit(child, `${path}/children/${index}`);
+				}
+				return;
+			case "Interpolation":
+				add(node.value, `${path}/value`);
+				return;
+			case "If":
+				for (const [index, branch] of node.branches.entries()) {
+					const at = `${path}/branches/${index}`;
+					if (branch.condition) {
+						add(branch.condition, `${at}/condition`);
+					}
+					for (const [child, nested] of branch.children.entries()) {
+						visit(nested, `${at}/children/${child}`);
+					}
+				}
+				return;
+			case "For":
+				add(node.source, `${path}/source`);
+				add(node.key, `${path}/key`);
+				visit(node.body, `${path}/body`);
+				return;
+			case "Text":
+				return;
+			default:
+				unreachable(node);
+		}
+	};
+	visit(component.render, `${base}/render`);
+	return found;
 }
 
 function attributeExpressions(
-  attribute: AnyAttribute,
-  path: string,
-  add: (expression: Expression, path: string) => void,
+	attribute: AnyAttribute,
+	path: string,
+	add: (expression: Expression, path: string) => void,
 ): void {
-  switch (attribute.kind) {
-    case "Static":
-      return;
-    case "Bound":
-    case "Spread":
-    case "Model":
-    case "Prop":
-    case "ModelBinding":
-    case "RawHtml":
-    case "Directive":
-      add(attribute.value, `${path}/value`);
-      return;
-    case "Class":
-      for (const [index, item] of attribute.items.entries()) {
-        const at = `${path}/items/${index}`;
-        if (item.kind === "Toggle") {
-          add(item.condition, `${at}/condition`);
-        } else if (item.kind === "Dynamic") {
-          add(item.value, `${at}/value`);
-        }
-      }
-      return;
-    case "Style":
-      for (const [index, declaration] of attribute.declarations.entries()) {
-        if (declaration.kind === "Bound") {
-          add(declaration.value, `${path}/declarations/${index}/value`);
-        }
-      }
-      if (attribute.value) {
-        add(attribute.value, `${path}/value`);
-      }
-      return;
-    case "Event":
-    case "Ref":
-    case "Listener":
-    case "Rest":
-      return;
-    default:
-      unreachable(attribute);
-  }
+	switch (attribute.kind) {
+		case "Static":
+			return;
+		case "Bound":
+		case "Spread":
+		case "Model":
+		case "Prop":
+		case "ModelBinding":
+		case "RawHtml":
+		case "Directive":
+			add(attribute.value, `${path}/value`);
+			return;
+		case "Class":
+			for (const [index, item] of attribute.items.entries()) {
+				const at = `${path}/items/${index}`;
+				if (item.kind === "Toggle") {
+					add(item.condition, `${at}/condition`);
+				} else if (item.kind === "Dynamic") {
+					add(item.value, `${at}/value`);
+				}
+			}
+			return;
+		case "Style":
+			for (const [index, declaration] of attribute.declarations.entries()) {
+				if (declaration.kind === "Bound") {
+					add(declaration.value, `${path}/declarations/${index}/value`);
+				}
+			}
+			if (attribute.value) {
+				add(attribute.value, `${path}/value`);
+			}
+			return;
+		case "Event":
+		case "Ref":
+		case "Listener":
+		case "Rest":
+			return;
+		default:
+			unreachable(attribute);
+	}
 }
 
 /**
@@ -482,20 +482,20 @@ export type CodeContext = "render" | "pure" | "client";
  * watch callback, an effect, a lifecycle hook or a handler written in place.
  */
 export type FunctionRole =
-  | "getter"
-  | "function"
-  | "watch"
-  | "watchEffect"
-  | "lifecycle"
-  | "handler";
+	| "getter"
+	| "function"
+	| "watch"
+	| "watchEffect"
+	| "lifecycle"
+	| "handler";
 
 /** A function of a component, with where it is, the context its body runs in and its role. */
 export interface LocatedFunction {
-  function: FunctionCode;
-  /** A JSON Pointer to the function: from the component, after `base`. */
-  path: string;
-  context: Exclude<CodeContext, "render">;
-  role: FunctionRole;
+	function: FunctionCode;
+	/** A JSON Pointer to the function: from the component, after `base`. */
+	path: string;
+	context: Exclude<CodeContext, "render">;
+	role: FunctionRole;
 }
 
 /**
@@ -506,10 +506,10 @@ export interface LocatedFunction {
  * summary says (`summarize`).
  */
 export function functionsOf(
-  component: UfComponent | UfComposable,
-  base = "",
+	component: UfComponent | UfComposable,
+	base = "",
 ): Array<LocatedFunction> {
-  return partsOf(component, base).flatMap((part) => ("function" in part ? [part] : []));
+	return partsOf(component, base).flatMap((part) => ("function" in part ? [part] : []));
 }
 
 /**
@@ -517,98 +517,98 @@ export function functionsOf(
  * value, an `inject`'s fallback or a composable's value argument.
  */
 interface LocatedValue {
-  value: Code;
-  path: string;
+	value: Code;
+	path: string;
 }
 
 /** The values and functions of a setup, in source order, then a component's inline handlers. */
 function partsOf(
-  component: UfComponent | UfComposable,
-  base: string,
+	component: UfComponent | UfComposable,
+	base: string,
 ): Array<LocatedValue | LocatedFunction> {
-  const parts: Array<LocatedValue | LocatedFunction> = [];
-  const add = (
-    fn: FunctionCode,
-    path: string,
-    context: LocatedFunction["context"],
-    role: FunctionRole,
-  ) => parts.push({ function: fn, path, context, role });
-  for (const [index, item] of component.setup.entries()) {
-    const path = `${base}/setup/${index}`;
-    switch (item.kind) {
-      case "State":
-      case "Variable":
-        if (item.initial) {
-          parts.push({ value: item.initial, path: `${path}/initial` });
-        }
-        break;
-      case "Await":
-      case "Const":
-        parts.push({ value: item.value, path: `${path}/value` });
-        break;
-      case "Derived":
-        add(item.getter, `${path}/getter`, "pure", "getter");
-        break;
-      case "Function":
-        add(item.function, `${path}/function`, "client", "function");
-        break;
-      case "Watch":
-        for (const [position, source] of item.sources.entries()) {
-          if (source.kind === "Getter") {
-            add(source.getter, `${path}/sources/${position}/getter`, "pure", "getter");
-          }
-        }
-        add(item.callback, `${path}/callback`, "client", "watch");
-        break;
-      case "WatchEffect":
-        add(item.effect, `${path}/effect`, "client", "watchEffect");
-        break;
-      case "Lifecycle":
-        add(item.callback, `${path}/callback`, "client", "lifecycle");
-        break;
-      case "Provide":
-        parts.push({ value: item.value, path: `${path}/value` });
-        break;
-      case "Inject":
-        if (item.fallback) {
-          parts.push({ value: item.fallback, path: `${path}/fallback` });
-        }
-        break;
-      case "Use":
-        // A value is evaluated once, a getter read reactively, a callback called from client
-        // code (ADR-0069).
-        for (const [position, argument] of item.arguments.entries()) {
-          const at = `${path}/arguments/${position}`;
-          if (argument.kind === "Value") {
-            parts.push({ value: argument.value, path: `${at}/value` });
-          } else if (argument.kind === "Getter") {
-            add(argument.getter, `${at}/getter`, "pure", "getter");
-          } else {
-            add(argument.callback, `${at}/callback`, "client", "function");
-          }
-        }
-        break;
-      // A development-only block runs where the setup does, as a value is read (ADR-0117).
-      case "DevCheck":
-        parts.push({ value: item.code, path: `${path}/code` });
-        break;
-      case "TemplateRef":
-      case "Id":
-      case "Model":
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  if (!("render" in component)) {
-    return parts;
-  }
-  walkHandlers(component.render, `${base}/render`, (attribute, path) => {
-    if (attribute.handler.kind === "Inline") {
-      add(attribute.handler.function, `${path}/handler/function`, "client", "handler");
-    }
-  });
-  return parts;
+	const parts: Array<LocatedValue | LocatedFunction> = [];
+	const add = (
+		fn: FunctionCode,
+		path: string,
+		context: LocatedFunction["context"],
+		role: FunctionRole,
+	) => parts.push({ function: fn, path, context, role });
+	for (const [index, item] of component.setup.entries()) {
+		const path = `${base}/setup/${index}`;
+		switch (item.kind) {
+			case "State":
+			case "Variable":
+				if (item.initial) {
+					parts.push({ value: item.initial, path: `${path}/initial` });
+				}
+				break;
+			case "Await":
+			case "Const":
+				parts.push({ value: item.value, path: `${path}/value` });
+				break;
+			case "Derived":
+				add(item.getter, `${path}/getter`, "pure", "getter");
+				break;
+			case "Function":
+				add(item.function, `${path}/function`, "client", "function");
+				break;
+			case "Watch":
+				for (const [position, source] of item.sources.entries()) {
+					if (source.kind === "Getter") {
+						add(source.getter, `${path}/sources/${position}/getter`, "pure", "getter");
+					}
+				}
+				add(item.callback, `${path}/callback`, "client", "watch");
+				break;
+			case "WatchEffect":
+				add(item.effect, `${path}/effect`, "client", "watchEffect");
+				break;
+			case "Lifecycle":
+				add(item.callback, `${path}/callback`, "client", "lifecycle");
+				break;
+			case "Provide":
+				parts.push({ value: item.value, path: `${path}/value` });
+				break;
+			case "Inject":
+				if (item.fallback) {
+					parts.push({ value: item.fallback, path: `${path}/fallback` });
+				}
+				break;
+			case "Use":
+				// A value is evaluated once, a getter read reactively, a callback called from client
+				// code (ADR-0069).
+				for (const [position, argument] of item.arguments.entries()) {
+					const at = `${path}/arguments/${position}`;
+					if (argument.kind === "Value") {
+						parts.push({ value: argument.value, path: `${at}/value` });
+					} else if (argument.kind === "Getter") {
+						add(argument.getter, `${at}/getter`, "pure", "getter");
+					} else {
+						add(argument.callback, `${at}/callback`, "client", "function");
+					}
+				}
+				break;
+			// A development-only block runs where the setup does, as a value is read (ADR-0117).
+			case "DevCheck":
+				parts.push({ value: item.code, path: `${path}/code` });
+				break;
+			case "TemplateRef":
+			case "Id":
+			case "Model":
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	if (!("render" in component)) {
+		return parts;
+	}
+	walkHandlers(component.render, `${base}/render`, (attribute, path) => {
+		if (attribute.handler.kind === "Inline") {
+			add(attribute.handler.function, `${path}/handler/function`, "client", "handler");
+		}
+	});
+	return parts;
 }
 
 /**
@@ -616,78 +616,78 @@ function partsOf(
  * order, with its path.
  */
 function walkHandlers(
-  node: VisitedNode,
-  path: string,
-  visit: (attribute: EventAttribute | ListenerAttribute, path: string) => void,
+	node: VisitedNode,
+	path: string,
+	visit: (attribute: EventAttribute | ListenerAttribute, path: string) => void,
 ): void {
-  const attributes = (list: ReadonlyArray<AnyAttribute>) => {
-    for (const [index, attribute] of list.entries()) {
-      if (attribute.kind === "Event" || attribute.kind === "Listener") {
-        visit(attribute, `${path}/attributes/${index}`);
-      }
-    }
-  };
-  const fills = (list: ReadonlyArray<SlotFill>) => {
-    for (const [index, fill] of list.entries()) {
-      for (const [child, nested] of fill.children.entries()) {
-        walkHandlers(nested, `${path}/fills/${index}/children/${child}`, visit);
-      }
-    }
-  };
-  switch (node.kind) {
-    case "Element":
-      attributes(node.attributes);
-      for (const [index, child] of node.children.entries()) {
-        walkHandlers(child, `${path}/children/${index}`, visit);
-      }
-      return;
-    case "Component":
-      attributes(node.attributes);
-      fills(node.fills);
-      return;
-    case "SlotOutlet":
-      for (const [index, child] of node.fallback.entries()) {
-        walkHandlers(child, `${path}/fallback/${index}`, visit);
-      }
-      return;
-    case "Dynamic":
-      attributes(node.attributes);
-      for (const [index, child] of node.children.entries()) {
-        walkHandlers(child, `${path}/children/${index}`, visit);
-      }
-      fills(node.fills ?? []);
-      return;
-    case "Fragment":
-    case "Teleport":
-    case "Transition":
-      for (const [index, child] of node.children.entries()) {
-        walkHandlers(child, `${path}/children/${index}`, visit);
-      }
-      return;
-    case "If":
-      for (const [index, branch] of node.branches.entries()) {
-        for (const [child, nested] of branch.children.entries()) {
-          walkHandlers(nested, `${path}/branches/${index}/children/${child}`, visit);
-        }
-      }
-      return;
-    case "For":
-      walkHandlers(node.body, `${path}/body`, visit);
-      return;
-    case "Text":
-    case "Interpolation":
-      return;
-    default:
-      unreachable(node);
-  }
+	const attributes = (list: ReadonlyArray<AnyAttribute>) => {
+		for (const [index, attribute] of list.entries()) {
+			if (attribute.kind === "Event" || attribute.kind === "Listener") {
+				visit(attribute, `${path}/attributes/${index}`);
+			}
+		}
+	};
+	const fills = (list: ReadonlyArray<SlotFill>) => {
+		for (const [index, fill] of list.entries()) {
+			for (const [child, nested] of fill.children.entries()) {
+				walkHandlers(nested, `${path}/fills/${index}/children/${child}`, visit);
+			}
+		}
+	};
+	switch (node.kind) {
+		case "Element":
+			attributes(node.attributes);
+			for (const [index, child] of node.children.entries()) {
+				walkHandlers(child, `${path}/children/${index}`, visit);
+			}
+			return;
+		case "Component":
+			attributes(node.attributes);
+			fills(node.fills);
+			return;
+		case "SlotOutlet":
+			for (const [index, child] of node.fallback.entries()) {
+				walkHandlers(child, `${path}/fallback/${index}`, visit);
+			}
+			return;
+		case "Dynamic":
+			attributes(node.attributes);
+			for (const [index, child] of node.children.entries()) {
+				walkHandlers(child, `${path}/children/${index}`, visit);
+			}
+			fills(node.fills ?? []);
+			return;
+		case "Fragment":
+		case "Teleport":
+		case "Transition":
+			for (const [index, child] of node.children.entries()) {
+				walkHandlers(child, `${path}/children/${index}`, visit);
+			}
+			return;
+		case "If":
+			for (const [index, branch] of node.branches.entries()) {
+				for (const [child, nested] of branch.children.entries()) {
+					walkHandlers(nested, `${path}/branches/${index}/children/${child}`, visit);
+				}
+			}
+			return;
+		case "For":
+			walkHandlers(node.body, `${path}/body`, visit);
+			return;
+		case "Text":
+		case "Interpolation":
+			return;
+		default:
+			unreachable(node);
+	}
 }
 
 /** A piece of setup code of a component, with where it is and the context it runs in. */
 export interface LocatedCode {
-  code: Code;
-  /** A JSON Pointer to the code: from the component, after `base`. */
-  path: string;
-  context: Exclude<CodeContext, "render">;
+	code: Code;
+	/** A JSON Pointer to the code: from the component, after `base`. */
+	path: string;
+	context: Exclude<CodeContext, "render">;
 }
 
 /**
@@ -697,27 +697,27 @@ export interface LocatedCode {
  * `stopPropagation()` calls, which repeat a part of it. `base` prefixes each path.
  */
 export function codeOf(component: UfComponent | UfComposable, base = ""): Array<LocatedCode> {
-  return partsOf(component, base).flatMap((part): Array<LocatedCode> => {
-    if ("value" in part) {
-      return [{ code: part.value, path: part.path, context: "pure" }];
-    }
-    const { function: fn, path, context } = part;
-    return [
-      { code: fn.body, path: `${path}/body`, context },
-      ...(fn.eventControls ?? []).flatMap((control, index) =>
-        control.condition
-          ? [{ code: control.condition, path: `${path}/eventControls/${index}/condition`, context }]
-          : [],
-      ),
-    ];
-  });
+	return partsOf(component, base).flatMap((part): Array<LocatedCode> => {
+		if ("value" in part) {
+			return [{ code: part.value, path: part.path, context: "pure" }];
+		}
+		const { function: fn, path, context } = part;
+		return [
+			{ code: fn.body, path: `${path}/body`, context },
+			...(fn.eventControls ?? []).flatMap((control, index) =>
+				control.condition
+					? [{ code: control.condition, path: `${path}/eventControls/${index}/condition`, context }]
+					: [],
+			),
+		];
+	});
 }
 
 /** A span of a module, with where it is. */
 export interface LocatedSpan {
-  span: Span;
-  /** A JSON Pointer to the span. */
-  path: string;
+	span: Span;
+	/** A JSON Pointer to the span. */
+	path: string;
 }
 
 /** Adds a span found at a JSON Pointer. */
@@ -736,153 +736,153 @@ type AddSpan = (span: Span, path: string) => void;
  * is checked span by span with it.
  */
 export function spansOf(module: UfModule): Array<LocatedSpan> {
-  const found: Array<LocatedSpan> = [];
-  const at: AddSpan = (span, path) => found.push({ span, path });
-  const add: AddSpan = (span, path) => at(span, `${path}/span`);
-  for (const [index, component] of module.components.entries()) {
-    const base = `/components/${index}`;
-    add(component.span, base);
-    typeParameterSpans(component.typeParameters, base, add);
-    if (component.propsParameter) {
-      add(component.propsParameter.span, `${base}/propsParameter`);
-      add(component.propsParameter.type.span, `${base}/propsParameter/type`);
-    }
-    for (const [prop, { span, type }] of component.props.entries()) {
-      add(span, `${base}/props/${prop}`);
-      add(type.span, `${base}/props/${prop}/type`);
-    }
-    if (component.emits) {
-      const { emits } = component;
-      add(emits.type.span, `${base}/emits/type`);
-      for (const [event, declaration] of emits.events.entries()) {
-        const path = `${base}/emits/events/${event}`;
-        for (const [member, { span, type }] of declaration.parameters.entries()) {
-          add(type.span, `${path}/parameters/${member}/type`);
-          add(span, `${path}/parameters/${member}`);
-        }
-        add(declaration.span, path);
-      }
-      add(emits.span, `${base}/emits`);
-    }
-    if (component.slots) {
-      const { slots } = component;
-      add(slots.type.span, `${base}/slots/type`);
-      for (const [slot, declaration] of slots.slots.entries()) {
-        const path = `${base}/slots/slots/${slot}`;
-        if (declaration.props) {
-          add(declaration.props.span, `${path}/props`);
-        }
-        add(declaration.span, path);
-      }
-      add(slots.span, `${base}/slots`);
-    }
-    if (component.exposes) {
-      add(component.exposes.span, `${base}/exposes`);
-    }
-    setupSpans(component, base, add);
-    walkSpans(component.render, `${base}/render`, add);
-    for (const located of expressionsOf(component, base)) {
-      expressionSpans(located.expression, located.path, add);
-    }
-    ownerCodeSpans(component, base, add, at);
-    for (const [sheet, { span }] of (component.styles ?? []).entries()) {
-      add(span, `${base}/styles/${sheet}`);
-    }
-  }
-  for (const [index, composable] of (module.composables ?? []).entries()) {
-    const base = `/composables/${index}`;
-    add(composable.span, base);
-    typeParameterSpans(composable.typeParameters, base, add);
-    for (const [parameter, { span, type }] of composable.parameters.entries()) {
-      add(type.span, `${base}/parameters/${parameter}/type`);
-      add(span, `${base}/parameters/${parameter}`);
-    }
-    setupSpans(composable, base, add);
-    ownerCodeSpans(composable, base, add, at);
-    for (const [member, { span }] of composable.returns.entries()) {
-      add(span, `${base}/returns/${member}`);
-    }
-  }
-  for (const [index, entry] of module.exports.entries()) {
-    add(entry.span, `/exports/${index}`);
-  }
-  for (const [index, declaration] of module.types.entries()) {
-    add(declaration.span, `/types/${index}`);
-  }
-  for (const [index, entry] of (module.imports ?? []).entries()) {
-    for (const [name, { span }] of entry.names.entries()) {
-      add(span, `/imports/${index}/names/${name}`);
-    }
-    add(entry.span, `/imports/${index}`);
-  }
-  for (const [index, key] of (module.keys ?? []).entries()) {
-    add(key.type.span, `/keys/${index}/type`);
-    add(key.span, `/keys/${index}`);
-  }
-  for (const [index, entry] of (module.passThroughImports ?? []).entries()) {
-    for (const [name, { span }] of entry.names.entries()) {
-      add(span, `/passThroughImports/${index}/names/${name}`);
-    }
-    add(entry.span, `/passThroughImports/${index}`);
-  }
-  for (const field of ["typeImports", "moduleImports"] as const) {
-    for (const [index, entry] of (module[field] ?? []).entries()) {
-      for (const [name, { span }] of entry.names.entries()) {
-        add(span, `/${field}/${index}/names/${name}`);
-      }
-      add(entry.span, `/${field}/${index}`);
-    }
-  }
-  for (const [index, entry] of (module.typeExports ?? []).entries()) {
-    if (entry.kind === "ReExport") {
-      for (const [name, { span }] of entry.names.entries()) {
-        add(span, `/typeExports/${index}/names/${name}`);
-      }
-    }
-    add(entry.span, `/typeExports/${index}`);
-  }
-  for (const [index, constant] of (module.constants ?? []).entries()) {
-    const path = `/constants/${index}`;
-    if (constant.type) {
-      add(constant.type.span, `${path}/type`);
-    }
-    codeSpans(constant.value, `${path}/value`, at);
-    add(constant.span, path);
-  }
-  for (const [index, directive] of (module.directives ?? []).entries()) {
-    const path = `/directives/${index}`;
-    add(directive.value.span, `${path}/value`);
-    if (directive.element) {
-      add(directive.element.span, `${path}/element`);
-    }
-    for (const [hook, { body, span }] of directive.hooks.entries()) {
-      codeSpans(body, `${path}/hooks/${hook}/body`, at);
-      add(span, `${path}/hooks/${hook}`);
-    }
-    for (const [binding, { span }] of directive.bindings.entries()) {
-      add(span, `${path}/bindings/${binding}`);
-    }
-    add(directive.span, path);
-  }
-  return found;
+	const found: Array<LocatedSpan> = [];
+	const at: AddSpan = (span, path) => found.push({ span, path });
+	const add: AddSpan = (span, path) => at(span, `${path}/span`);
+	for (const [index, component] of module.components.entries()) {
+		const base = `/components/${index}`;
+		add(component.span, base);
+		typeParameterSpans(component.typeParameters, base, add);
+		if (component.propsParameter) {
+			add(component.propsParameter.span, `${base}/propsParameter`);
+			add(component.propsParameter.type.span, `${base}/propsParameter/type`);
+		}
+		for (const [prop, { span, type }] of component.props.entries()) {
+			add(span, `${base}/props/${prop}`);
+			add(type.span, `${base}/props/${prop}/type`);
+		}
+		if (component.emits) {
+			const { emits } = component;
+			add(emits.type.span, `${base}/emits/type`);
+			for (const [event, declaration] of emits.events.entries()) {
+				const path = `${base}/emits/events/${event}`;
+				for (const [member, { span, type }] of declaration.parameters.entries()) {
+					add(type.span, `${path}/parameters/${member}/type`);
+					add(span, `${path}/parameters/${member}`);
+				}
+				add(declaration.span, path);
+			}
+			add(emits.span, `${base}/emits`);
+		}
+		if (component.slots) {
+			const { slots } = component;
+			add(slots.type.span, `${base}/slots/type`);
+			for (const [slot, declaration] of slots.slots.entries()) {
+				const path = `${base}/slots/slots/${slot}`;
+				if (declaration.props) {
+					add(declaration.props.span, `${path}/props`);
+				}
+				add(declaration.span, path);
+			}
+			add(slots.span, `${base}/slots`);
+		}
+		if (component.exposes) {
+			add(component.exposes.span, `${base}/exposes`);
+		}
+		setupSpans(component, base, add);
+		walkSpans(component.render, `${base}/render`, add);
+		for (const located of expressionsOf(component, base)) {
+			expressionSpans(located.expression, located.path, add);
+		}
+		ownerCodeSpans(component, base, add, at);
+		for (const [sheet, { span }] of (component.styles ?? []).entries()) {
+			add(span, `${base}/styles/${sheet}`);
+		}
+	}
+	for (const [index, composable] of (module.composables ?? []).entries()) {
+		const base = `/composables/${index}`;
+		add(composable.span, base);
+		typeParameterSpans(composable.typeParameters, base, add);
+		for (const [parameter, { span, type }] of composable.parameters.entries()) {
+			add(type.span, `${base}/parameters/${parameter}/type`);
+			add(span, `${base}/parameters/${parameter}`);
+		}
+		setupSpans(composable, base, add);
+		ownerCodeSpans(composable, base, add, at);
+		for (const [member, { span }] of composable.returns.entries()) {
+			add(span, `${base}/returns/${member}`);
+		}
+	}
+	for (const [index, entry] of module.exports.entries()) {
+		add(entry.span, `/exports/${index}`);
+	}
+	for (const [index, declaration] of module.types.entries()) {
+		add(declaration.span, `/types/${index}`);
+	}
+	for (const [index, entry] of (module.imports ?? []).entries()) {
+		for (const [name, { span }] of entry.names.entries()) {
+			add(span, `/imports/${index}/names/${name}`);
+		}
+		add(entry.span, `/imports/${index}`);
+	}
+	for (const [index, key] of (module.keys ?? []).entries()) {
+		add(key.type.span, `/keys/${index}/type`);
+		add(key.span, `/keys/${index}`);
+	}
+	for (const [index, entry] of (module.passThroughImports ?? []).entries()) {
+		for (const [name, { span }] of entry.names.entries()) {
+			add(span, `/passThroughImports/${index}/names/${name}`);
+		}
+		add(entry.span, `/passThroughImports/${index}`);
+	}
+	for (const field of ["typeImports", "moduleImports"] as const) {
+		for (const [index, entry] of (module[field] ?? []).entries()) {
+			for (const [name, { span }] of entry.names.entries()) {
+				add(span, `/${field}/${index}/names/${name}`);
+			}
+			add(entry.span, `/${field}/${index}`);
+		}
+	}
+	for (const [index, entry] of (module.typeExports ?? []).entries()) {
+		if (entry.kind === "ReExport") {
+			for (const [name, { span }] of entry.names.entries()) {
+				add(span, `/typeExports/${index}/names/${name}`);
+			}
+		}
+		add(entry.span, `/typeExports/${index}`);
+	}
+	for (const [index, constant] of (module.constants ?? []).entries()) {
+		const path = `/constants/${index}`;
+		if (constant.type) {
+			add(constant.type.span, `${path}/type`);
+		}
+		codeSpans(constant.value, `${path}/value`, at);
+		add(constant.span, path);
+	}
+	for (const [index, directive] of (module.directives ?? []).entries()) {
+		const path = `/directives/${index}`;
+		add(directive.value.span, `${path}/value`);
+		if (directive.element) {
+			add(directive.element.span, `${path}/element`);
+		}
+		for (const [hook, { body, span }] of directive.hooks.entries()) {
+			codeSpans(body, `${path}/hooks/${hook}/body`, at);
+			add(span, `${path}/hooks/${hook}`);
+		}
+		for (const [binding, { span }] of directive.bindings.entries()) {
+			add(span, `${path}/bindings/${binding}`);
+		}
+		add(directive.span, path);
+	}
+	return found;
 }
 
 /** The spans of a component's or a composable's type parameters. */
 function typeParameterSpans(
-  parameters: ReadonlyArray<TypeParameter> | undefined,
-  base: string,
-  add: AddSpan,
+	parameters: ReadonlyArray<TypeParameter> | undefined,
+	base: string,
+	add: AddSpan,
 ): void {
-  for (const [index, parameter] of (parameters ?? []).entries()) {
-    const path = `${base}/typeParameters/${index}`;
-    if (parameter.constraint) {
-      add(parameter.constraint.span, `${path}/constraint`);
-    }
-    if (parameter.default) {
-      add(parameter.default.span, `${path}/default`);
-    }
-    add(parameter.span, path);
-  }
+	for (const [index, parameter] of (parameters ?? []).entries()) {
+		const path = `${base}/typeParameters/${index}`;
+		if (parameter.constraint) {
+			add(parameter.constraint.span, `${path}/constraint`);
+		}
+		if (parameter.default) {
+			add(parameter.default.span, `${path}/default`);
+		}
+		add(parameter.span, path);
+	}
 }
 
 /**
@@ -890,71 +890,71 @@ function typeParameterSpans(
  * sources, a `Use` item's arguments and members).
  */
 function setupSpans(owner: UfComponent | UfComposable, base: string, add: AddSpan): void {
-  for (const [binding, { span }] of owner.bindings.entries()) {
-    add(span, `${base}/bindings/${binding}`);
-  }
-  for (const [position, item] of owner.setup.entries()) {
-    const path = `${base}/setup/${position}`;
-    if ("type" in item && item.type) {
-      add(item.type.span, `${path}/type`);
-    }
-    if (item.kind === "Watch") {
-      for (const [source, { span }] of item.sources.entries()) {
-        add(span, `${path}/sources/${source}`);
-      }
-    }
-    if (item.kind === "Use") {
-      for (const [argument, { span }] of item.arguments.entries()) {
-        add(span, `${path}/arguments/${argument}`);
-      }
-      for (const [member, { span }] of item.members.entries()) {
-        add(span, `${path}/members/${member}`);
-      }
-    }
-    add(item.span, path);
-  }
+	for (const [binding, { span }] of owner.bindings.entries()) {
+		add(span, `${base}/bindings/${binding}`);
+	}
+	for (const [position, item] of owner.setup.entries()) {
+		const path = `${base}/setup/${position}`;
+		if ("type" in item && item.type) {
+			add(item.type.span, `${path}/type`);
+		}
+		if (item.kind === "Watch") {
+			for (const [source, { span }] of item.sources.entries()) {
+				add(span, `${path}/sources/${source}`);
+			}
+		}
+		if (item.kind === "Use") {
+			for (const [argument, { span }] of item.arguments.entries()) {
+				add(span, `${path}/arguments/${argument}`);
+			}
+			for (const [member, { span }] of item.members.entries()) {
+				add(span, `${path}/members/${member}`);
+			}
+		}
+		add(item.span, path);
+	}
 }
 
 /** The spans of a component's or a composable's functions and code. */
 function ownerCodeSpans(
-  owner: UfComponent | UfComposable,
-  base: string,
-  add: AddSpan,
-  at: AddSpan,
+	owner: UfComponent | UfComposable,
+	base: string,
+	add: AddSpan,
+	at: AddSpan,
 ): void {
-  for (const located of functionsOf(owner, base)) {
-    functionSpans(located.function, located.path, add);
-  }
-  for (const located of codeOf(owner, base)) {
-    codeSpans(located.code, located.path, at);
-  }
+	for (const located of functionsOf(owner, base)) {
+		functionSpans(located.function, located.path, add);
+	}
+	for (const located of codeOf(owner, base)) {
+		codeSpans(located.code, located.path, at);
+	}
 }
 
 /** The spans of an expression and of its references. */
 function expressionSpans(value: Expression, path: string, add: AddSpan): void {
-  add(value.span, path);
-  for (const [index, ref] of value.refs.entries()) {
-    add(ref.span, `${path}/refs/${index}`);
-  }
+	add(value.span, path);
+	for (const [index, ref] of value.refs.entries()) {
+		add(ref.span, `${path}/refs/${index}`);
+	}
 }
 
 /** The spans of a piece of code and of its references, a write's and an emit's parts included. */
 function codeSpans(code: Code, path: string, at: AddSpan): void {
-  at(code.span, `${path}/span`);
-  for (const [index, ref] of code.refs.entries()) {
-    const pointer = `${path}/refs/${index}`;
-    at(ref.span, `${pointer}/span`);
-    if (ref.kind === "Write") {
-      at(ref.target, `${pointer}/target`);
-      if (ref.value) {
-        at(ref.value, `${pointer}/value`);
-      }
-    } else if (ref.kind === "Emit") {
-      for (const [argument, span] of ref.arguments.entries()) {
-        at(span, `${pointer}/arguments/${argument}`);
-      }
-    }
-  }
+	at(code.span, `${path}/span`);
+	for (const [index, ref] of code.refs.entries()) {
+		const pointer = `${path}/refs/${index}`;
+		at(ref.span, `${pointer}/span`);
+		if (ref.kind === "Write") {
+			at(ref.target, `${pointer}/target`);
+			if (ref.value) {
+				at(ref.value, `${pointer}/value`);
+			}
+		} else if (ref.kind === "Emit") {
+			for (const [argument, span] of ref.arguments.entries()) {
+				at(span, `${pointer}/arguments/${argument}`);
+			}
+		}
+	}
 }
 
 /**
@@ -962,16 +962,16 @@ function codeSpans(code: Code, path: string, at: AddSpan): void {
  * type and its event controls. Its body and the controls' conditions are code ({@link codeOf}).
  */
 function functionSpans(fn: FunctionCode, path: string, add: AddSpan): void {
-  for (const [index, parameter] of fn.parameters.entries()) {
-    parameterSpans(parameter, `${path}/parameters/${index}`, add);
-  }
-  if (fn.returnType) {
-    add(fn.returnType.span, `${path}/returnType`);
-  }
-  for (const [index, control] of (fn.eventControls ?? []).entries()) {
-    add(control.span, `${path}/eventControls/${index}`);
-  }
-  add(fn.span, path);
+	for (const [index, parameter] of fn.parameters.entries()) {
+		parameterSpans(parameter, `${path}/parameters/${index}`, add);
+	}
+	if (fn.returnType) {
+		add(fn.returnType.span, `${path}/returnType`);
+	}
+	for (const [index, control] of (fn.eventControls ?? []).entries()) {
+		add(control.span, `${path}/eventControls/${index}`);
+	}
+	add(fn.span, path);
 }
 
 /**
@@ -979,54 +979,54 @@ function functionSpans(fn: FunctionCode, path: string, add: AddSpan): void {
  * references, and itself.
  */
 function parameterSpans(parameter: Parameter, at: string, add: AddSpan): void {
-  if (parameter.pattern) {
-    add(parameter.pattern.span, `${at}/pattern`);
-  }
-  if (parameter.type) {
-    add(parameter.type.span, `${at}/type`);
-  }
-  if (parameter.default) {
-    expressionSpans(parameter.default, `${at}/default`, add);
-  }
-  add(parameter.span, at);
+	if (parameter.pattern) {
+		add(parameter.pattern.span, `${at}/pattern`);
+	}
+	if (parameter.type) {
+		add(parameter.type.span, `${at}/type`);
+	}
+	if (parameter.default) {
+		expressionSpans(parameter.default, `${at}/default`, add);
+	}
+	add(parameter.span, at);
 }
 
 /** The spans of an attribute and of its parts: class parts, style declarations, keys, handler. */
 function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void {
-  add(attribute.span, at);
-  switch (attribute.kind) {
-    case "Static":
-    case "Bound":
-    case "Ref":
-    case "Model":
-    case "Prop":
-    case "ModelBinding":
-    case "RawHtml":
-    case "Directive":
-    case "Rest":
-      return;
-    case "Class":
-      for (const [item, { span }] of attribute.items.entries()) {
-        add(span, `${at}/items/${item}`);
-      }
-      return;
-    case "Style":
-      for (const [item, { span }] of attribute.declarations.entries()) {
-        add(span, `${at}/declarations/${item}`);
-      }
-      return;
-    case "Spread":
-      for (const [item, { span }] of attribute.keys.entries()) {
-        add(span, `${at}/keys/${item}`);
-      }
-      return;
-    case "Event":
-    case "Listener":
-      add(attribute.handler.span, `${at}/handler`);
-      return;
-    default:
-      unreachable(attribute);
-  }
+	add(attribute.span, at);
+	switch (attribute.kind) {
+		case "Static":
+		case "Bound":
+		case "Ref":
+		case "Model":
+		case "Prop":
+		case "ModelBinding":
+		case "RawHtml":
+		case "Directive":
+		case "Rest":
+			return;
+		case "Class":
+			for (const [item, { span }] of attribute.items.entries()) {
+				add(span, `${at}/items/${item}`);
+			}
+			return;
+		case "Style":
+			for (const [item, { span }] of attribute.declarations.entries()) {
+				add(span, `${at}/declarations/${item}`);
+			}
+			return;
+		case "Spread":
+			for (const [item, { span }] of attribute.keys.entries()) {
+				add(span, `${at}/keys/${item}`);
+			}
+			return;
+		case "Event":
+		case "Listener":
+			add(attribute.handler.span, `${at}/handler`);
+			return;
+		default:
+			unreachable(attribute);
+	}
 }
 
 /**
@@ -1034,85 +1034,85 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
  * {@link expressionsOf}'s) and its children.
  */
 function fillSpans(fills: ReadonlyArray<SlotFill>, path: string, add: AddSpan): void {
-  for (const [index, fill] of fills.entries()) {
-    const at = `${path}/${index}`;
-    add(fill.span, at);
-    if (fill.parameter) {
-      const { parameter } = fill;
-      if (parameter.pattern) {
-        add(parameter.pattern.span, `${at}/parameter/pattern`);
-      }
-      if (parameter.type) {
-        add(parameter.type.span, `${at}/parameter/type`);
-      }
-      add(parameter.span, `${at}/parameter`);
-    }
-    for (const [child, nested] of fill.children.entries()) {
-      walkSpans(nested, `${at}/children/${child}`, add);
-    }
-  }
+	for (const [index, fill] of fills.entries()) {
+		const at = `${path}/${index}`;
+		add(fill.span, at);
+		if (fill.parameter) {
+			const { parameter } = fill;
+			if (parameter.pattern) {
+				add(parameter.pattern.span, `${at}/parameter/pattern`);
+			}
+			if (parameter.type) {
+				add(parameter.type.span, `${at}/parameter/type`);
+			}
+			add(parameter.span, `${at}/parameter`);
+		}
+		for (const [child, nested] of fill.children.entries()) {
+			walkSpans(nested, `${at}/children/${child}`, add);
+		}
+	}
 }
 
 /** The spans of nodes, branches, attributes, handlers, fills and their parts (code aside). */
 function walkSpans(node: VisitedNode, path: string, add: AddSpan) {
-  add(node.span, path);
-  switch (node.kind) {
-    case "Element":
-      for (const [index, attribute] of node.attributes.entries()) {
-        attributeSpans(attribute, `${path}/attributes/${index}`, add);
-      }
-      for (const [index, child] of node.children.entries()) {
-        walkSpans(child, `${path}/children/${index}`, add);
-      }
-      return;
-    case "Component":
-      for (const [index, attribute] of node.attributes.entries()) {
-        attributeSpans(attribute, `${path}/attributes/${index}`, add);
-      }
-      fillSpans(node.fills, `${path}/fills`, add);
-      return;
-    case "SlotOutlet":
-      for (const [index, child] of node.fallback.entries()) {
-        walkSpans(child, `${path}/fallback/${index}`, add);
-      }
-      return;
-    case "Dynamic":
-      for (const [index, attribute] of node.attributes.entries()) {
-        attributeSpans(attribute, `${path}/attributes/${index}`, add);
-      }
-      for (const [index, child] of node.children.entries()) {
-        walkSpans(child, `${path}/children/${index}`, add);
-      }
-      fillSpans(node.fills ?? [], `${path}/fills`, add);
-      return;
-    case "Fragment":
-    case "Teleport":
-    case "Transition":
-      for (const [index, child] of node.children.entries()) {
-        walkSpans(child, `${path}/children/${index}`, add);
-      }
-      return;
-    case "If":
-      for (const [index, branch] of node.branches.entries()) {
-        const at = `${path}/branches/${index}`;
-        add(branch.span, at);
-        for (const [child, nested] of branch.children.entries()) {
-          walkSpans(nested, `${at}/children/${child}`, add);
-        }
-      }
-      return;
-    case "For":
-      walkSpans(node.body, `${path}/body`, add);
-      return;
-    case "Text":
-    case "Interpolation":
-      return;
-    default:
-      unreachable(node);
-  }
+	add(node.span, path);
+	switch (node.kind) {
+		case "Element":
+			for (const [index, attribute] of node.attributes.entries()) {
+				attributeSpans(attribute, `${path}/attributes/${index}`, add);
+			}
+			for (const [index, child] of node.children.entries()) {
+				walkSpans(child, `${path}/children/${index}`, add);
+			}
+			return;
+		case "Component":
+			for (const [index, attribute] of node.attributes.entries()) {
+				attributeSpans(attribute, `${path}/attributes/${index}`, add);
+			}
+			fillSpans(node.fills, `${path}/fills`, add);
+			return;
+		case "SlotOutlet":
+			for (const [index, child] of node.fallback.entries()) {
+				walkSpans(child, `${path}/fallback/${index}`, add);
+			}
+			return;
+		case "Dynamic":
+			for (const [index, attribute] of node.attributes.entries()) {
+				attributeSpans(attribute, `${path}/attributes/${index}`, add);
+			}
+			for (const [index, child] of node.children.entries()) {
+				walkSpans(child, `${path}/children/${index}`, add);
+			}
+			fillSpans(node.fills ?? [], `${path}/fills`, add);
+			return;
+		case "Fragment":
+		case "Teleport":
+		case "Transition":
+			for (const [index, child] of node.children.entries()) {
+				walkSpans(child, `${path}/children/${index}`, add);
+			}
+			return;
+		case "If":
+			for (const [index, branch] of node.branches.entries()) {
+				const at = `${path}/branches/${index}`;
+				add(branch.span, at);
+				for (const [child, nested] of branch.children.entries()) {
+					walkSpans(nested, `${at}/children/${child}`, add);
+				}
+			}
+			return;
+		case "For":
+			walkSpans(node.body, `${path}/body`, add);
+			return;
+		case "Text":
+		case "Interpolation":
+			return;
+		default:
+			unreachable(node);
+	}
 }
 
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

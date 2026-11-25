@@ -1,8 +1,8 @@
 {
-  "description": "A `<Transition>` whose condition turns true again while its leave runs: how the toggle looks while it runs is the target's, but the open menu ends with no class of the transition.",
-  "ssr": {
-    "open": {
-      "props": {}
-    }
-  }
+	"description": "A `<Transition>` whose condition turns true again while its leave runs: how the toggle looks while it runs is the target's, but the open menu ends with no class of the transition.",
+	"ssr": {
+		"open": {
+			"props": {}
+		}
+	}
 }

@@ -17,41 +17,41 @@ import { angularComponent } from "./component.ts";
  * `(change)` would be: they outlive every rerender, which sets inputs only.
  */
 export const mount: MountAdapter = async (component, container, options) => {
-  const type = angularComponent(component);
-  // Angular 22 is zoneless by default; the provider keeps that explicit across upgrades.
-  const app = await createApplication({ providers: [provideZonelessChangeDetection()] });
-  const inputs = new Set<string>();
-  let ref: ComponentRef<unknown>;
-  let host: HTMLElement;
-  try {
-    ref = createComponent(type, {
-      environmentInjector: app.injector,
-      bindings: outputBindings(options.on, options.events),
-    });
-    setInputs(ref, inputs, options.props ?? {});
-    host = ref.location.nativeElement as HTMLElement;
-    // `appendChild`, which domino has too: test/rerender.test.ts runs this adapter on it.
-    container.appendChild(host);
-    app.attachView(ref.hostView);
-  } catch (error) {
-    app.destroy();
-    throw error;
-  }
-  // Zoneless change detection is scheduled, not synchronous: stable means it has run.
-  const settle = () => app.whenStable();
-  await settle();
-  return {
-    settle,
-    async rerender(props) {
-      setInputs(ref, inputs, props);
-      await settle();
-    },
-    async unmount() {
-      app.destroy();
-      // Angular removes the nodes it inserted; the host element was inserted here.
-      host.remove();
-    },
-  };
+	const type = angularComponent(component);
+	// Angular 22 is zoneless by default; the provider keeps that explicit across upgrades.
+	const app = await createApplication({ providers: [provideZonelessChangeDetection()] });
+	const inputs = new Set<string>();
+	let ref: ComponentRef<unknown>;
+	let host: HTMLElement;
+	try {
+		ref = createComponent(type, {
+			environmentInjector: app.injector,
+			bindings: outputBindings(options.on, options.events),
+		});
+		setInputs(ref, inputs, options.props ?? {});
+		host = ref.location.nativeElement as HTMLElement;
+		// `appendChild`, which domino has too: test/rerender.test.ts runs this adapter on it.
+		container.appendChild(host);
+		app.attachView(ref.hostView);
+	} catch (error) {
+		app.destroy();
+		throw error;
+	}
+	// Zoneless change detection is scheduled, not synchronous: stable means it has run.
+	const settle = () => app.whenStable();
+	await settle();
+	return {
+		settle,
+		async rerender(props) {
+			setInputs(ref, inputs, props);
+			await settle();
+		},
+		async unmount() {
+			app.destroy();
+			// Angular removes the nodes it inserted; the host element was inserted here.
+			host.remove();
+		},
+	};
 };
 
 /**
@@ -60,21 +60,21 @@ export const mount: MountAdapter = async (component, container, options) => {
  * default (ADR-0043). For a name that is not an input, Angular logs NG0303, which fails L13.
  */
 export function setInputs(
-  ref: ComponentRef<unknown>,
-  set: Set<string>,
-  props: Readonly<Record<string, unknown>>,
+	ref: ComponentRef<unknown>,
+	set: Set<string>,
+	props: Readonly<Record<string, unknown>>,
 ): void {
-  for (const name of set) {
-    if (Object.hasOwn(props, name)) {
-      continue;
-    }
-    ref.setInput(name, undefined);
-    set.delete(name);
-  }
-  for (const [name, value] of Object.entries(props)) {
-    ref.setInput(name, value);
-    set.add(name);
-  }
+	for (const name of set) {
+		if (Object.hasOwn(props, name)) {
+			continue;
+		}
+		ref.setInput(name, undefined);
+		set.delete(name);
+	}
+	for (const [name, value] of Object.entries(props)) {
+		ref.setInput(name, value);
+		set.add(name);
+	}
 }
 
 /**
@@ -84,24 +84,24 @@ export function setInputs(
  * the arguments back, exactly as many as the component passed.
  */
 export function outputBindings(
-  on: Readonly<Record<string, MountListener>> = {},
-  events: ReadonlyArray<MountEvent> = [],
+	on: Readonly<Record<string, MountListener>> = {},
+	events: ReadonlyArray<MountEvent> = [],
 ): Array<Binding> {
-  return Object.entries(on).map(([name, listener]) => {
-    const optional = events.find((event) => event.name === name)?.optional;
-    if (!optional) {
-      throw new Error(
-        `Angular mount: the test listens to "${name}", which the component declares no payload for: an output's value is read by the event's shape.`,
-      );
-    }
-    return outputBinding<unknown>(outputName(name), (value) => {
-      if (!optional.length) {
-        listener();
-      } else if (optional.length === 1 && !optional[0]) {
-        listener(value);
-      } else {
-        listener(...(value as Array<unknown>));
-      }
-    });
-  });
+	return Object.entries(on).map(([name, listener]) => {
+		const optional = events.find((event) => event.name === name)?.optional;
+		if (!optional) {
+			throw new Error(
+				`Angular mount: the test listens to "${name}", which the component declares no payload for: an output's value is read by the event's shape.`,
+			);
+		}
+		return outputBinding<unknown>(outputName(name), (value) => {
+			if (!optional.length) {
+				listener();
+			} else if (optional.length === 1 && !optional[0]) {
+				listener(value);
+			} else {
+				listener(...(value as Array<unknown>));
+			}
+		});
+	});
 }

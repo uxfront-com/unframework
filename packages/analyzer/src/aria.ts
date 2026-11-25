@@ -5,61 +5,61 @@
 
 /** What an ARIA attribute's value is. */
 export type AriaType =
-  | { type: "boolean" }
-  | { type: "tristate" }
-  | { type: "string" }
-  | { type: "id" }
-  | { type: "idlist" }
-  | { type: "integer" }
-  | { type: "number" }
-  | { type: "token"; values: ReadonlyArray<string> }
-  | { type: "tokenlist"; values: ReadonlyArray<string> };
+	| { type: "boolean" }
+	| { type: "tristate" }
+	| { type: "string" }
+	| { type: "id" }
+	| { type: "idlist" }
+	| { type: "integer" }
+	| { type: "number" }
+	| { type: "token"; values: ReadonlyArray<string> }
+	| { type: "tokenlist"; values: ReadonlyArray<string> };
 
 const words = (text: string): Array<string> => text.trim().split(/\s+/);
 
 const of = (type: AriaType, names: string): Array<[string, AriaType]> =>
-  words(names).map((name) => [name, type]);
+	words(names).map((name) => [name, type]);
 
 /** Each ARIA attribute's value type, by name (`ARIA_ATTRIBUTES` lists the names). */
 export const ARIA_TYPES: ReadonlyMap<string, AriaType> = new Map([
-  ...of(
-    { type: "boolean" },
-    `aria-atomic aria-busy aria-disabled aria-expanded aria-hidden aria-modal aria-multiline
+	...of(
+		{ type: "boolean" },
+		`aria-atomic aria-busy aria-disabled aria-expanded aria-hidden aria-modal aria-multiline
      aria-multiselectable aria-readonly aria-required aria-selected`,
-  ),
-  ...of({ type: "tristate" }, "aria-checked aria-pressed"),
-  ...of(
-    { type: "string" },
-    `aria-braillelabel aria-brailleroledescription aria-description aria-keyshortcuts aria-label
+	),
+	...of({ type: "tristate" }, "aria-checked aria-pressed"),
+	...of(
+		{ type: "string" },
+		`aria-braillelabel aria-brailleroledescription aria-description aria-keyshortcuts aria-label
      aria-placeholder aria-roledescription aria-valuetext`,
-  ),
-  ...of({ type: "id" }, "aria-activedescendant aria-details aria-errormessage"),
-  ...of({ type: "idlist" }, "aria-controls aria-describedby aria-flowto aria-labelledby aria-owns"),
-  ...of(
-    { type: "integer" },
-    `aria-colcount aria-colindex aria-colspan aria-level aria-posinset aria-rowcount
+	),
+	...of({ type: "id" }, "aria-activedescendant aria-details aria-errormessage"),
+	...of({ type: "idlist" }, "aria-controls aria-describedby aria-flowto aria-labelledby aria-owns"),
+	...of(
+		{ type: "integer" },
+		`aria-colcount aria-colindex aria-colspan aria-level aria-posinset aria-rowcount
      aria-rowindex aria-rowspan aria-setsize`,
-  ),
-  ...of({ type: "number" }, "aria-valuemax aria-valuemin aria-valuenow"),
-  ...of({ type: "token", values: words("inline list both none") }, "aria-autocomplete"),
-  ...of(
-    { type: "token", values: words("page step location date time true false") },
-    "aria-current",
-  ),
-  ...of(
-    { type: "token", values: words("false true menu listbox tree grid dialog") },
-    "aria-haspopup",
-  ),
-  ...of({ type: "token", values: words("grammar false spelling true") }, "aria-invalid"),
-  ...of({ type: "token", values: words("assertive off polite") }, "aria-live"),
-  ...of({ type: "token", values: words("vertical undefined horizontal") }, "aria-orientation"),
-  ...of({ type: "tokenlist", values: words("additions all removals text") }, "aria-relevant"),
-  ...of({ type: "token", values: words("ascending descending none other") }, "aria-sort"),
+	),
+	...of({ type: "number" }, "aria-valuemax aria-valuemin aria-valuenow"),
+	...of({ type: "token", values: words("inline list both none") }, "aria-autocomplete"),
+	...of(
+		{ type: "token", values: words("page step location date time true false") },
+		"aria-current",
+	),
+	...of(
+		{ type: "token", values: words("false true menu listbox tree grid dialog") },
+		"aria-haspopup",
+	),
+	...of({ type: "token", values: words("grammar false spelling true") }, "aria-invalid"),
+	...of({ type: "token", values: words("assertive off polite") }, "aria-live"),
+	...of({ type: "token", values: words("vertical undefined horizontal") }, "aria-orientation"),
+	...of({ type: "tokenlist", values: words("additions all removals text") }, "aria-relevant"),
+	...of({ type: "token", values: words("ascending descending none other") }, "aria-sort"),
 ]);
 
 /** ARIA's roles an author may write: every role but the abstract ones. */
 export const ARIA_ROLES: ReadonlySet<string> = new Set(
-  words(`
+	words(`
     alert alertdialog application article banner blockquote button caption cell checkbox code
     columnheader combobox complementary contentinfo definition deletion dialog directory document
     emphasis feed figure form generic grid gridcell group heading img insertion link list listbox
@@ -80,9 +80,9 @@ export const ARIA_ROLES: ReadonlySet<string> = new Set(
 
 /** ARIA's abstract roles, which only the specification's own role tree uses. */
 export const ABSTRACT_ROLES: ReadonlySet<string> = new Set(
-  words(
-    "command composite input landmark range roletype section sectionhead select structure widget window",
-  ),
+	words(
+		"command composite input landmark range roletype section sectionhead select structure widget window",
+	),
 );
 
 /**
@@ -91,35 +91,35 @@ export const ABSTRACT_ROLES: ReadonlySet<string> = new Set(
  * or text that is not empty.
  */
 export function ariaValueProblem(name: string, value: string): string | undefined {
-  const aria = ARIA_TYPES.get(name);
-  if (!aria) {
-    return undefined;
-  }
-  switch (aria.type) {
-    case "boolean":
-      return value === "true" || value === "false" ? undefined : '`"true"` or `"false"`';
-    case "tristate":
-      return value === "true" || value === "false" || value === "mixed"
-        ? undefined
-        : '`"true"`, `"false"` or `"mixed"`';
-    case "string":
-    case "id":
-    case "idlist":
-      return value === "" ? "text that is not empty" : undefined;
-    case "integer":
-      return value !== "" && Number.isInteger(Number(value)) ? undefined : "an integer";
-    case "number":
-      return value !== "" && !Number.isNaN(Number(value)) ? undefined : "a number";
-    case "token":
-      return aria.values.includes(value.toLowerCase()) ? undefined : alternatives(aria.values);
-    default:
-      return value
-        .toLowerCase()
-        .split(/\s+/)
-        .every((token) => aria.values.includes(token))
-        ? undefined
-        : `one or more of ${alternatives(aria.values)}`;
-  }
+	const aria = ARIA_TYPES.get(name);
+	if (!aria) {
+		return undefined;
+	}
+	switch (aria.type) {
+		case "boolean":
+			return value === "true" || value === "false" ? undefined : '`"true"` or `"false"`';
+		case "tristate":
+			return value === "true" || value === "false" || value === "mixed"
+				? undefined
+				: '`"true"`, `"false"` or `"mixed"`';
+		case "string":
+		case "id":
+		case "idlist":
+			return value === "" ? "text that is not empty" : undefined;
+		case "integer":
+			return value !== "" && Number.isInteger(Number(value)) ? undefined : "an integer";
+		case "number":
+			return value !== "" && !Number.isNaN(Number(value)) ? undefined : "a number";
+		case "token":
+			return aria.values.includes(value.toLowerCase()) ? undefined : alternatives(aria.values);
+		default:
+			return value
+				.toLowerCase()
+				.split(/\s+/)
+				.every((token) => aria.values.includes(token))
+				? undefined
+				: `one or more of ${alternatives(aria.values)}`;
+	}
 }
 
 /**
@@ -127,18 +127,18 @@ export function ariaValueProblem(name: string, value: string): string | undefine
  * be a role, and none abstract.
  */
 export function roleProblem(value: string): string | undefined {
-  for (const role of value.split(/[\t\n\f\r ]+/).filter(Boolean)) {
-    if (ABSTRACT_ROLES.has(role)) {
-      return `\`${role}\` is an abstract role, which authors cannot use`;
-    }
-    if (!ARIA_ROLES.has(role)) {
-      return `\`${role}\` is not an ARIA role`;
-    }
-  }
-  return undefined;
+	for (const role of value.split(/[\t\n\f\r ]+/).filter(Boolean)) {
+		if (ABSTRACT_ROLES.has(role)) {
+			return `\`${role}\` is an abstract role, which authors cannot use`;
+		}
+		if (!ARIA_ROLES.has(role)) {
+			return `\`${role}\` is not an ARIA role`;
+		}
+	}
+	return undefined;
 }
 
 function alternatives(values: ReadonlyArray<string>): string {
-  const quoted = values.map((value) => `\`"${value}"\``);
-  return `${quoted.slice(0, -1).join(", ")} or ${quoted.at(-1)}`;
+	const quoted = values.map((value) => `\`"${value}"\``);
+	return `${quoted.slice(0, -1).join(", ")} or ${quoted.at(-1)}`;
 }

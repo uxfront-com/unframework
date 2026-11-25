@@ -3,6 +3,6 @@ import Avatar from "../../../../../integration/cases/components/acronym-names/__
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Avatar.prop:userID -->
-  <Avatar image-u-r-l="/b.png" user-i-d="three" />
+	<!-- @uf-expect TS2322 Avatar.prop:userID -->
+	<Avatar image-u-r-l="/b.png" user-i-d="three" />
 </template>

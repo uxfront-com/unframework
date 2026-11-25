@@ -34,105 +34,105 @@ const components = import.meta.glob<{ default: unknown }>("../cases/**/*.uf.tsx"
 
 /** Registers shard `index` of this ssr project's renders: its share of the cases. */
 export function describeSsrShard(index: number): void {
-  const target = inject("target");
-  const harness = inject("ufHarness");
-  const server = inject("ufServer")!;
-  const corpus = listCases(harness.casesDir);
-  const cases = shardOf(onlyCases(corpus, inject("ufOnly")), index, inject("ufSsrShards"));
+	const target = inject("target");
+	const harness = inject("ufHarness");
+	const server = inject("ufServer")!;
+	const corpus = listCases(harness.casesDir);
+	const cases = shardOf(onlyCases(corpus, inject("ufOnly")), index, inject("ufSsrShards"));
 
-  describeServerRender(
-    cases.flatMap((info): Array<SsrCase> => {
-      const errors = errorState(info, target);
-      // A case with compile errors has no output: the compile project records L6 as skipped.
-      if (errors === true) {
-        return [];
-      }
-      // A case whose every test requires a capability the target lacks renders differently
-      // there by declaration (`ssr-skip.ts`).
-      const skip = info.spec
-        ? ssrSkip(
-            specTests(readFileSync(info.spec, "utf8")),
-            builtinTargets[target as TargetName].capabilities,
-          )
-        : undefined;
-      return [
-        {
-          id: info.id,
-          dir: info.dir,
-          source: info.source,
-          ...(skip === undefined ? {} : { skip }),
-          ...(errors instanceof Error ? { failure: errors.message } : {}),
-        },
-      ];
-    }),
-  );
+	describeServerRender(
+		cases.flatMap((info): Array<SsrCase> => {
+			const errors = errorState(info, target);
+			// A case with compile errors has no output: the compile project records L6 as skipped.
+			if (errors === true) {
+				return [];
+			}
+			// A case whose every test requires a capability the target lacks renders differently
+			// there by declaration (`ssr-skip.ts`).
+			const skip = info.spec
+				? ssrSkip(
+						specTests(readFileSync(info.spec, "utf8")),
+						builtinTargets[target as TargetName].capabilities,
+					)
+				: undefined;
+			return [
+				{
+					id: info.id,
+					dir: info.dir,
+					source: info.source,
+					...(skip === undefined ? {} : { skip }),
+					...(errors instanceof Error ? { failure: errors.message } : {}),
+				},
+			];
+		}),
+	);
 
-  /** The target's renderer, imported through this project's Vite pipeline (one framework copy). */
-  async function renderer(): Promise<(component: unknown, options: { props: object }) => unknown> {
-    const module = (await import(/* @vite-ignore */ server)) as {
-      renderToString: (component: unknown, options: { props: object }) => unknown;
-    };
-    return module.renderToString;
-  }
+	/** The target's renderer, imported through this project's Vite pipeline (one framework copy). */
+	async function renderer(): Promise<(component: unknown, options: { props: object }) => unknown> {
+		const module = (await import(/* @vite-ignore */ server)) as {
+			renderToString: (component: unknown, options: { props: object }) => unknown;
+		};
+		return module.renderToString;
+	}
 
-  // L14 (ADR-0078): a render that throws on purpose, apart from the scenarios L6 compares. Vitest
-  // fails a describe without a test, so a shard leaves it out unless one of its cases throws on
-  // purpose and has output on the target, as a reference project's cases may not (ADR-0057). When
-  // no case of the corpus throws on purpose, each shard registers it empty and fails
-  // (`ssr-throws.ts`).
-  if (!registersThrows(cases, corpus, (info) => errorState(info, target) !== true)) {
-    return;
-  }
-  describe(`ssr [${target}] throws`, () => {
-    for (const info of cases) {
-      if (!info.config.ssrThrows) {
-        continue;
-      }
-      const errors = errorState(info, target);
-      if (errors === true) {
-        continue;
-      }
-      const key = `../cases/${info.id}/${basename(info.source)}`;
-      const props = info.config.ssrThrows.props ?? {};
-      it(`${info.id} › throws`, async ({ task }) => {
-        if (errors instanceof Error) {
-          throw errors;
-        }
-        await checkLayers(
-          task,
-          { case: info.id, target, quarantine: harness.quarantine },
-          {
-            async L14() {
-              const load = components[key];
-              if (!load) {
-                throw new Error(`import.meta.glob did not find ${key}.`);
-              }
-              const component = (await load()).default;
-              // The first Error, whichever way it comes: Angular's renderer logs it and resolves.
-              let thrown: Error | undefined;
-              const take = (value: unknown) => {
-                if (value instanceof Error) {
-                  thrown ??= value;
-                }
-              };
-              const original = console.error;
-              console.error = (...args: Array<unknown>) => {
-                args.forEach(take);
-                original.apply(console, args);
-              };
-              try {
-                await (async () => (await renderer())(component, { props }))().catch(take);
-              } finally {
-                console.error = original;
-              }
-              if (!thrown) {
-                throw new Error("The server render threw no Error.");
-              }
-              checkMappedStack(info.dir, info.id, thrown.stack ?? "");
-            },
-          },
-        );
-      });
-    }
-  });
+	// L14 (ADR-0078): a render that throws on purpose, apart from the scenarios L6 compares. Vitest
+	// fails a describe without a test, so a shard leaves it out unless one of its cases throws on
+	// purpose and has output on the target, as a reference project's cases may not (ADR-0057). When
+	// no case of the corpus throws on purpose, each shard registers it empty and fails
+	// (`ssr-throws.ts`).
+	if (!registersThrows(cases, corpus, (info) => errorState(info, target) !== true)) {
+		return;
+	}
+	describe(`ssr [${target}] throws`, () => {
+		for (const info of cases) {
+			if (!info.config.ssrThrows) {
+				continue;
+			}
+			const errors = errorState(info, target);
+			if (errors === true) {
+				continue;
+			}
+			const key = `../cases/${info.id}/${basename(info.source)}`;
+			const props = info.config.ssrThrows.props ?? {};
+			it(`${info.id} › throws`, async ({ task }) => {
+				if (errors instanceof Error) {
+					throw errors;
+				}
+				await checkLayers(
+					task,
+					{ case: info.id, target, quarantine: harness.quarantine },
+					{
+						async L14() {
+							const load = components[key];
+							if (!load) {
+								throw new Error(`import.meta.glob did not find ${key}.`);
+							}
+							const component = (await load()).default;
+							// The first Error, whichever way it comes: Angular's renderer logs it and resolves.
+							let thrown: Error | undefined;
+							const take = (value: unknown) => {
+								if (value instanceof Error) {
+									thrown ??= value;
+								}
+							};
+							const original = console.error;
+							console.error = (...args: Array<unknown>) => {
+								args.forEach(take);
+								original.apply(console, args);
+							};
+							try {
+								await (async () => (await renderer())(component, { props }))().catch(take);
+							} finally {
+								console.error = original;
+							}
+							if (!thrown) {
+								throw new Error("The server render threw no Error.");
+							}
+							checkMappedStack(info.dir, info.id, thrown.stack ?? "");
+						},
+					},
+				);
+			});
+		}
+	});
 }

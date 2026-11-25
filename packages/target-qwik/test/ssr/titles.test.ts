@@ -21,21 +21,21 @@ const ENTITIES: Readonly<Record<string, string>> = { "&lt;": "<", "&gt;": ">", "
 
 /** The text of each `<title>` in server HTML, in order. */
 function titles(html: string): Array<string> {
-  return [...html.matchAll(/<title[^>]*>([\s\S]*?)<\/title>/g)].map(([, inner]) =>
-    inner!
-      .replaceAll(/<!--[\s\S]*?-->/g, "")
-      .replaceAll(/&(?:lt|gt|amp);/g, (entity) => ENTITIES[entity]!),
-  );
+	return [...html.matchAll(/<title[^>]*>([\s\S]*?)<\/title>/g)].map(([, inner]) =>
+		inner!
+			.replaceAll(/<!--[\s\S]*?-->/g, "")
+			.replaceAll(/&(?:lt|gt|amp);/g, (entity) => ENTITIES[entity]!),
+	);
 }
 
 describe("SVG titles, rendered by Qwik", () => {
-  it.each(TITLE_RENDERS)(
-    "renders each title's text with $props",
-    async ({ props, titles: texts }) => {
-      const path = join(scratch, `${randomUUID()}.tsx`);
-      writeFileSync(path, await emitSource(TITLES));
-      const module: { default: unknown } = await import(path);
-      expect(titles(await renderToString(module.default, { props }))).toEqual(texts);
-    },
-  );
+	it.each(TITLE_RENDERS)(
+		"renders each title's text with $props",
+		async ({ props, titles: texts }) => {
+			const path = join(scratch, `${randomUUID()}.tsx`);
+			writeFileSync(path, await emitSource(TITLES));
+			const module: { default: unknown } = await import(path);
+			expect(titles(await renderToString(module.default, { props }))).toEqual(texts);
+		},
+	);
 });

@@ -7,7 +7,7 @@ const COMPILER = "@solidjs/compiler";
 
 /** The part of @solidjs/compiler this calls. */
 interface SolidCompiler {
-  transformAsync(code: string, options: object): Promise<{ code: string }>;
+	transformAsync(code: string, options: object): Promise<{ code: string }>;
 }
 
 /**
@@ -17,40 +17,40 @@ interface SolidCompiler {
  * instead, which also serves its SSR (ADR-0102).
  */
 async function solidCompiler({ resolve }: PackagerInput): Promise<object> {
-  const compiler = (await import(
-    /* @vite-ignore */ pathToFileURL(resolve(COMPILER)).href
-  )) as SolidCompiler;
-  return {
-    name: "unframework:solid2-compiler",
-    renderChunk: async (code: string, chunk: { fileName: string }) =>
-      (
-        await compiler.transformAsync(code, {
-          // The compiler reads JSX by the file's extension, and a chunk is named `.js`.
-          filename: chunk.fileName.replace(/\.js$/, ".jsx"),
-          generate: "dom",
-          moduleName: "@solidjs/web",
-        })
-      ).code,
-  };
+	const compiler = (await import(
+		/* @vite-ignore */ pathToFileURL(resolve(COMPILER)).href
+	)) as SolidCompiler;
+	return {
+		name: "unframework:solid2-compiler",
+		renderChunk: async (code: string, chunk: { fileName: string }) =>
+			(
+				await compiler.transformAsync(code, {
+					// The compiler reads JSX by the file's extension, and a chunk is named `.js`.
+					filename: chunk.fileName.replace(/\.js$/, ".jsx"),
+					generate: "dom",
+					moduleName: "@solidjs/web",
+				})
+			).code,
+	};
 }
 
 /** Plan §8.4 for `solid@2`: JS and `.d.ts` through tsdown, and preserved JSX under `solid`. */
 export const solid2: Packager = {
-  peer: [
-    { name: "solid-js", range: "^2.0.0" },
-    { name: "@solidjs/web", range: "^2.0.0" },
-  ],
-  needs: ["tsdown", COMPILER],
-  types: "solid-js",
-  exports: {
-    types: "./solid2/index.d.ts",
-    solid: "./solid2/index.jsx",
-    default: "./solid2/index.js",
-  },
-  run: async (input) => {
-    await buildWithTsdown(input, { jsx: "preserve", jsxImportSource: "@solidjs/web" }, [
-      { extension: ".jsx" },
-      { extension: ".js", plugins: [await solidCompiler(input)] },
-    ]);
-  },
+	peer: [
+		{ name: "solid-js", range: "^2.0.0" },
+		{ name: "@solidjs/web", range: "^2.0.0" },
+	],
+	needs: ["tsdown", COMPILER],
+	types: "solid-js",
+	exports: {
+		types: "./solid2/index.d.ts",
+		solid: "./solid2/index.jsx",
+		default: "./solid2/index.js",
+	},
+	run: async (input) => {
+		await buildWithTsdown(input, { jsx: "preserve", jsxImportSource: "@solidjs/web" }, [
+			{ extension: ".jsx" },
+			{ extension: ".js", plugins: [await solidCompiler(input)] },
+		]);
+	},
 };

@@ -7,5 +7,5 @@ const field: FieldProps = { name: 1, label: "Email" };
 </script>
 
 <template>
-  <Field name="email" :label="field.label" />
+	<Field name="email" :label="field.label" />
 </template>

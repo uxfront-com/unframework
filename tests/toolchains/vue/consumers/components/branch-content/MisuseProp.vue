@@ -3,6 +3,6 @@ import Notice from "../../../../../integration/cases/components/branch-content/_
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Notice.prop:tone -->
-  <Notice text="Saved" tone="loud" />
+	<!-- @uf-expect TS2322 Notice.prop:tone -->
+	<Notice text="Saved" tone="loud" />
 </template>

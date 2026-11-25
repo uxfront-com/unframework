@@ -10,231 +10,231 @@ import { builtinTargets, compile, createFileResolver } from "../src/index.ts";
 import type { TargetName } from "../src/index.ts";
 
 function emit(name: TargetName, module: UfModule) {
-  const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
-  const files = builtinTargets[name].emit(module.components[0]!, {
-    module,
-    options: undefined,
-    report: (diagnostic) => reported.push(diagnostic),
-  });
-  return { files, reported };
+	const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
+	const files = builtinTargets[name].emit(module.components[0]!, {
+		module,
+		options: undefined,
+		report: (diagnostic) => reported.push(diagnostic),
+	});
+	return { files, reported };
 }
 
 describe("composables and shared modules on each target", () => {
-  it("angular emits a component that reads a module's values and calls a composable", () => {
-    const { files, reported } = emit("angular", modules());
-    expect(reported).toEqual([]);
-    expect(files.map(({ path }) => path)).toEqual(["list.ts"]);
-    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
-    expect(files[0]!.contents).toContain('import { useToggle } from "./use-toggle";');
-    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
-  });
+	it("angular emits a component that reads a module's values and calls a composable", () => {
+		const { files, reported } = emit("angular", modules());
+		expect(reported).toEqual([]);
+		expect(files.map(({ path }) => path)).toEqual(["list.ts"]);
+		expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+		expect(files[0]!.contents).toContain('import { useToggle } from "./use-toggle";');
+		expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+	});
 
-  it("vue emits a component that reads a module's values and calls a composable", () => {
-    const { files, reported } = emit("vue", modules());
-    expect(reported).toEqual([]);
-    expect(files.map(({ path }) => path)).toEqual(["List.vue"]);
-    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
-    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
-    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
-  });
+	it("vue emits a component that reads a module's values and calls a composable", () => {
+		const { files, reported } = emit("vue", modules());
+		expect(reported).toEqual([]);
+		expect(files.map(({ path }) => path)).toEqual(["List.vue"]);
+		expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+		expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+		expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+	});
 
-  it("react emits a component that reads a module's values and calls a composable", () => {
-    const { files, reported } = emit("react", modules());
-    expect(reported).toEqual([]);
-    expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
-    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
-    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
-    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
-    expect(files[0]!.contents).toContain("const { on } = useToggle(false, () => label);");
-  });
+	it("react emits a component that reads a module's values and calls a composable", () => {
+		const { files, reported } = emit("react", modules());
+		expect(reported).toEqual([]);
+		expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
+		expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+		expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+		expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+		expect(files[0]!.contents).toContain("const { on } = useToggle(false, () => label);");
+	});
 
-  it("svelte emits a component that reads a module's values and calls a composable", () => {
-    const { files, reported } = emit("svelte", modules());
-    expect(reported).toEqual([]);
-    expect(files.map(({ path }) => path)).toEqual(["List.svelte"]);
-    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
-    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle.svelte";');
-    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
-  });
+	it("svelte emits a component that reads a module's values and calls a composable", () => {
+		const { files, reported } = emit("svelte", modules());
+		expect(reported).toEqual([]);
+		expect(files.map(({ path }) => path)).toEqual(["List.svelte"]);
+		expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+		expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle.svelte";');
+		expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+	});
 
-  it("solid emits a component that reads a module's values and calls a composable", () => {
-    const { files, reported } = emit("solid", modules());
-    expect(reported).toEqual([]);
-    expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
-    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
-    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
-    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
-  });
+	it("solid emits a component that reads a module's values and calls a composable", () => {
+		const { files, reported } = emit("solid", modules());
+		expect(reported).toEqual([]);
+		expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
+		expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+		expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+		expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+	});
 
-  it("qwik emits a component that reads a module's values and calls a composable", () => {
-    const { files, reported } = emit("qwik", modules());
-    expect(reported).toEqual([]);
-    expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
-    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
-    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
-    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
-  });
+	it("qwik emits a component that reads a module's values and calls a composable", () => {
+		const { files, reported } = emit("qwik", modules());
+		expect(reported).toEqual([]);
+		expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
+		expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+		expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+		expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+	});
 
-  it("astro emits a component that reads a module's values and calls a composable", () => {
-    const { files, reported } = emit("astro", modules());
-    expect(reported).toEqual([]);
-    expect(files.map(({ path }) => path)).toEqual(["List.astro"]);
-    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
-    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
-    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
-    expect(files[0]!.contents).toContain("const { on } = useToggle(false, () => label);");
-  });
+	it("astro emits a component that reads a module's values and calls a composable", () => {
+		const { files, reported } = emit("astro", modules());
+		expect(reported).toEqual([]);
+		expect(files.map(({ path }) => path)).toEqual(["List.astro"]);
+		expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+		expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+		expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+		expect(files[0]!.contents).toContain("const { on } = useToggle(false, () => label);");
+	});
 });
 
 const TOGGLE = [
-  'import { onMounted, ref } from "@uxfront/unframework";',
-  "export function useToggle(initial: boolean) {",
-  "  const on = ref(initial);",
-  "  function toggle() {",
-  "    on.value = !on.value;",
-  "  }",
-  "  onMounted(() => console.log(on.value));",
-  "  return { on, toggle };",
-  "}",
-  "",
+	'import { onMounted, ref } from "@uxfront/unframework";',
+	"export function useToggle(initial: boolean) {",
+	"  const on = ref(initial);",
+	"  function toggle() {",
+	"    on.value = !on.value;",
+	"  }",
+	"  onMounted(() => console.log(on.value));",
+	"  return { on, toggle };",
+	"}",
+	"",
 ].join("\n");
 
 const CALLER = [
-  'import { useToggle } from "../composables/useToggle.uf.ts";',
-  "export default function Toggle() {",
-  "  const { on, toggle } = useToggle(false);",
-  "  return <button onClick={() => toggle()}>{on.value ? 'On' : 'Off'}</button>;",
-  "}",
-  "",
+	'import { useToggle } from "../composables/useToggle.uf.ts";',
+	"export default function Toggle() {",
+	"  const { on, toggle } = useToggle(false);",
+	"  return <button onClick={() => toggle()}>{on.value ? 'On' : 'Off'}</button>;",
+	"}",
+	"",
 ].join("\n");
 
 /** A resolver over in-memory files under `/project`. */
 function memoryResolver(files: Record<string, string>) {
-  return createFileResolver({
-    root: "/project",
-    readFile: (path) => Promise.resolve(files[`${path}`]),
-  });
+	return createFileResolver({
+		root: "/project",
+		readFile: (path) => Promise.resolve(files[`${path}`]),
+	});
 }
 
 describe("a module of composables", () => {
-  it("is resolved to its composables' API, its file relative to the importer", async () => {
-    const resolve = memoryResolver({ "/project/src/composables/useToggle.uf.ts": TOGGLE });
-    const api = await resolve({
-      specifier: "../composables/useToggle.uf.ts",
-      importer: "src/components/Toggle.uf.tsx",
-    });
-    expect(api).toEqual({
-      file: "../composables/useToggle.uf.ts",
-      components: [],
-      keys: [],
-      composables: [
-        {
-          name: "useToggle",
-          parameters: [{ name: "initial", kind: "value", type: "boolean" }],
-          members: [
-            // Its type as its value infers it: `ref(initial)` holds the parameter's (ADR-0069).
-            { name: "on", kind: "state", type: "boolean" },
-            { name: "toggle", kind: "function", client: true },
-          ],
-          hasEffects: true,
-        },
-      ],
-    });
-  });
+	it("is resolved to its composables' API, its file relative to the importer", async () => {
+		const resolve = memoryResolver({ "/project/src/composables/useToggle.uf.ts": TOGGLE });
+		const api = await resolve({
+			specifier: "../composables/useToggle.uf.ts",
+			importer: "src/components/Toggle.uf.tsx",
+		});
+		expect(api).toEqual({
+			file: "../composables/useToggle.uf.ts",
+			components: [],
+			keys: [],
+			composables: [
+				{
+					name: "useToggle",
+					parameters: [{ name: "initial", kind: "value", type: "boolean" }],
+					members: [
+						// Its type as its value infers it: `ref(initial)` holds the parameter's (ADR-0069).
+						{ name: "on", kind: "state", type: "boolean" },
+						{ name: "toggle", kind: "function", client: true },
+					],
+					hasEffects: true,
+				},
+			],
+		});
+	});
 
-  it("compiles a caller through the resolver, and lists the composable among its dependencies", async () => {
-    const result = await compile(CALLER, {
-      filename: "src/components/Toggle.uf.tsx",
-      targets: ["vue"],
-      resolve: memoryResolver({ "/project/src/composables/useToggle.uf.ts": TOGGLE }),
-    });
-    expect(result.ir?.components[0]?.setup[0]).toMatchObject({
-      kind: "Use",
-      composable: "useToggle",
-      hasEffects: true,
-    });
-    expect(result.dependencies).toEqual(["src/composables/useToggle.uf.ts"]);
-    expect(result.diagnostics).toEqual([]);
-    // The caller imports the composable's own output, beside its module (ADR-0069).
-    expect(result.outputs.vue![0]!.contents).toContain(
-      'import { useToggle } from "../composables/useToggle";',
-    );
-  });
+	it("compiles a caller through the resolver, and lists the composable among its dependencies", async () => {
+		const result = await compile(CALLER, {
+			filename: "src/components/Toggle.uf.tsx",
+			targets: ["vue"],
+			resolve: memoryResolver({ "/project/src/composables/useToggle.uf.ts": TOGGLE }),
+		});
+		expect(result.ir?.components[0]?.setup[0]).toMatchObject({
+			kind: "Use",
+			composable: "useToggle",
+			hasEffects: true,
+		});
+		expect(result.dependencies).toEqual(["src/composables/useToggle.uf.ts"]);
+		expect(result.diagnostics).toEqual([]);
+		// The caller imports the composable's own output, beside its module (ADR-0069).
+		expect(result.outputs.vue![0]!.contents).toContain(
+			'import { useToggle } from "../composables/useToggle";',
+		);
+	});
 
-  it("compiles a module of composables for angular, one module each, named in kebab case", async () => {
-    const result = await compile(TOGGLE, { filename: "src/useToggle.uf.ts", targets: ["angular"] });
-    expect(result.diagnostics).toEqual([]);
-    expect(result.outputs.angular!.map(({ path }) => path)).toEqual(["use-toggle.ts"]);
-    expect(result.owners.angular).toEqual({ "use-toggle.ts": "useToggle" });
-  });
+	it("compiles a module of composables for angular, one module each, named in kebab case", async () => {
+		const result = await compile(TOGGLE, { filename: "src/useToggle.uf.ts", targets: ["angular"] });
+		expect(result.diagnostics).toEqual([]);
+		expect(result.outputs.angular!.map(({ path }) => path)).toEqual(["use-toggle.ts"]);
+		expect(result.owners.angular).toEqual({ "use-toggle.ts": "useToggle" });
+	});
 
-  it("compiles a module of composables for vue, one module each", async () => {
-    const result = await compile(TOGGLE, { filename: "src/useToggle.uf.ts", targets: ["vue"] });
-    expect(result.diagnostics).toEqual([]);
-    expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["useToggle.ts"]);
-    expect(result.owners.vue).toEqual({ "useToggle.ts": "useToggle" });
-  });
+	it("compiles a module of composables for vue, one module each", async () => {
+		const result = await compile(TOGGLE, { filename: "src/useToggle.uf.ts", targets: ["vue"] });
+		expect(result.diagnostics).toEqual([]);
+		expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["useToggle.ts"]);
+		expect(result.owners.vue).toEqual({ "useToggle.ts": "useToggle" });
+	});
 
-  it("compiles to nothing, with UF1002 for each composable, on a target without `emitComposable`", async () => {
-    // Every built-in target has its emitter now: a target without one stands in.
-    const plain = { ...builtinTargets.vue, name: "plain", emitComposable: undefined };
-    const result = await compile(TOGGLE, {
-      filename: "src/useToggle.uf.ts",
-      targets: [plain],
-    });
-    expect(result.ir?.composables?.map(({ name }) => name)).toEqual(["useToggle"]);
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        code: "UF1002",
-        severity: "error",
-        target: "plain",
-        span: result.ir!.composables![0]!.span,
-        message: "The plain target does not emit composables: it has no `emitComposable`.",
-      }),
-    ]);
-    expect(result.outputs.plain).toEqual([]);
-  });
+	it("compiles to nothing, with UF1002 for each composable, on a target without `emitComposable`", async () => {
+		// Every built-in target has its emitter now: a target without one stands in.
+		const plain = { ...builtinTargets.vue, name: "plain", emitComposable: undefined };
+		const result = await compile(TOGGLE, {
+			filename: "src/useToggle.uf.ts",
+			targets: [plain],
+		});
+		expect(result.ir?.composables?.map(({ name }) => name)).toEqual(["useToggle"]);
+		expect(result.diagnostics).toEqual([
+			expect.objectContaining({
+				code: "UF1002",
+				severity: "error",
+				target: "plain",
+				span: result.ir!.composables![0]!.span,
+				message: "The plain target does not emit composables: it has no `emitComposable`.",
+			}),
+		]);
+		expect(result.outputs.plain).toEqual([]);
+	});
 
-  it("calls each target's `emitComposable`, and formats what it emits", async () => {
-    const seen: Array<string> = [];
-    const target = {
-      ...builtinTargets.vue,
-      name: "fake",
-      emitComposable(composable: UfComposable, context: { module: UfModule }) {
-        seen.push(`${context.module.file}#${composable.name}`);
-        return [
-          {
-            path: `${composable.name}.ts`,
-            contents: `export function ${composable.name}( ) { return {} }`,
-          },
-        ];
-      },
-    };
-    const result = await compile(TOGGLE, { filename: "useToggle.uf.ts", targets: [target] });
-    expect(seen).toEqual(["useToggle.uf.ts#useToggle"]);
-    expect(result.diagnostics).toEqual([]);
-    expect(result.outputs.fake).toEqual([
-      { path: "useToggle.ts", contents: "export function useToggle() {\n  return {};\n}\n" },
-    ]);
-    expect(result.owners.fake).toEqual({ "useToggle.ts": "useToggle" });
-  });
+	it("calls each target's `emitComposable`, and formats what it emits", async () => {
+		const seen: Array<string> = [];
+		const target = {
+			...builtinTargets.vue,
+			name: "fake",
+			emitComposable(composable: UfComposable, context: { module: UfModule }) {
+				seen.push(`${context.module.file}#${composable.name}`);
+				return [
+					{
+						path: `${composable.name}.ts`,
+						contents: `export function ${composable.name}( ) { return {} }`,
+					},
+				];
+			},
+		};
+		const result = await compile(TOGGLE, { filename: "useToggle.uf.ts", targets: [target] });
+		expect(seen).toEqual(["useToggle.uf.ts#useToggle"]);
+		expect(result.diagnostics).toEqual([]);
+		expect(result.outputs.fake).toEqual([
+			{ path: "useToggle.ts", contents: "export function useToggle() {\n  return {};\n}\n" },
+		]);
+		expect(result.owners.fake).toEqual({ "useToggle.ts": "useToggle" });
+	});
 
-  it("reports a target whose `emitComposable` throws (UF9001), and keeps the others", async () => {
-    // Every target has its emitter now: Vue's output shows the others go on.
-    const target = {
-      ...builtinTargets.vue,
-      name: "broken",
-      emitComposable(): Array<OutputFile> {
-        throw new Error("boom");
-      },
-    };
-    const result = await compile(TOGGLE, {
-      filename: "useToggle.uf.ts",
-      targets: [target, "vue"],
-    });
-    expect(
-      result.diagnostics.map(({ code, target: name, message }) => [code, name, message]),
-    ).toEqual([["UF9001", "broken", "The broken target failed on useToggle: boom"]]);
-    expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["useToggle.ts"]);
-  });
+	it("reports a target whose `emitComposable` throws (UF9001), and keeps the others", async () => {
+		// Every target has its emitter now: Vue's output shows the others go on.
+		const target = {
+			...builtinTargets.vue,
+			name: "broken",
+			emitComposable(): Array<OutputFile> {
+				throw new Error("boom");
+			},
+		};
+		const result = await compile(TOGGLE, {
+			filename: "useToggle.uf.ts",
+			targets: [target, "vue"],
+		});
+		expect(
+			result.diagnostics.map(({ code, target: name, message }) => [code, name, message]),
+		).toEqual([["UF9001", "broken", "The broken target failed on useToggle: boom"]]);
+		expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["useToggle.ts"]);
+	});
 });

@@ -22,29 +22,29 @@ import { shellData, shellPage, startShellServer } from "./shell.ts";
 
 /** The options of {@link startPreview}. */
 export interface PreviewOptions {
-  /** The project's root, where `unframework.config.ts` lies. */
-  root: string;
-  /** The targets to show: every one of the project's by default, in the project's order. */
-  targets?: ReadonlyArray<TargetName>;
-  /** The shell's port: any free one by default. Each target's server takes a free one. */
-  port?: number;
-  /**
-   * Where a target's compiler stack resolves from, such as Angular's, relative to the root:
-   * `package.resolveFrom` in `unframework.config.ts` by default, then the root (A9).
-   */
-  toolchainDirs?: Partial<Record<TargetName, string>>;
+	/** The project's root, where `unframework.config.ts` lies. */
+	root: string;
+	/** The targets to show: every one of the project's by default, in the project's order. */
+	targets?: ReadonlyArray<TargetName>;
+	/** The shell's port: any free one by default. Each target's server takes a free one. */
+	port?: number;
+	/**
+	 * Where a target's compiler stack resolves from, such as Angular's, relative to the root:
+	 * `package.resolveFrom` in `unframework.config.ts` by default, then the root (A9).
+	 */
+	toolchainDirs?: Partial<Record<TargetName, string>>;
 }
 
 /** A running preview. */
 export interface Preview {
-  /** The shell's URL, `http://127.0.0.1:<port>/`. */
-  url: string;
-  /** Each target's server origin, in the order the shell shows them. */
-  frames: Array<{ target: TargetName; origin: string; port: number }>;
-  /** UF7012 for each malformed tag in an example's doc comment (ADR-0110): warnings to print. */
-  diagnostics: Array<Diagnostic>;
-  /** Stops every server: the shell and each target's. Calling it again does nothing more. */
-  close(): Promise<void>;
+	/** The shell's URL, `http://127.0.0.1:<port>/`. */
+	url: string;
+	/** Each target's server origin, in the order the shell shows them. */
+	frames: Array<{ target: TargetName; origin: string; port: number }>;
+	/** UF7012 for each malformed tag in an example's doc comment (ADR-0110): warnings to print. */
+	diagnostics: Array<Diagnostic>;
+	/** Stops every server: the shell and each target's. Calling it again does nothing more. */
+	close(): Promise<void>;
 }
 
 /**
@@ -54,96 +54,96 @@ export interface Preview {
  * that fails closes what it started.
  */
 export async function startPreview(options: PreviewOptions): Promise<Preview> {
-  const root = realpathSync(options.root);
-  const port = options.port ?? 0;
-  if (!Number.isInteger(port) || port < 0 || port > 65_535) {
-    throw new VisualUsageError(`The port must be a whole number from 0 to 65535, not ${port}.`);
-  }
-  const config = await projectConfig(root);
-  const targets = previewTargets(config.targets, options.targets);
-  const catalogue = await readCatalogue(root, config.srcDir);
-  const entries = Object.fromEntries(
-    [...catalogue.examples, ...catalogue.components].map((entry) => [entry.key, entry.file]),
-  );
-  if (!Object.keys(entries).length) {
-    throw new VisualUsageError(
-      `Nothing to preview under ${root}: add an example (*.example.uf.tsx) or a component under ${config.srcDir}.`,
-    );
-  }
-  const layouts = entryLayouts(catalogue);
-  const controls = entryControls(catalogue);
+	const root = realpathSync(options.root);
+	const port = options.port ?? 0;
+	if (!Number.isInteger(port) || port < 0 || port > 65_535) {
+		throw new VisualUsageError(`The port must be a whole number from 0 to 65535, not ${port}.`);
+	}
+	const config = await projectConfig(root);
+	const targets = previewTargets(config.targets, options.targets);
+	const catalogue = await readCatalogue(root, config.srcDir);
+	const entries = Object.fromEntries(
+		[...catalogue.examples, ...catalogue.components].map((entry) => [entry.key, entry.file]),
+	);
+	if (!Object.keys(entries).length) {
+		throw new VisualUsageError(
+			`Nothing to preview under ${root}: add an example (*.example.uf.tsx) or a component under ${config.srcDir}.`,
+		);
+	}
+	const layouts = entryLayouts(catalogue);
+	const controls = entryControls(catalogue);
 
-  const transformSource = exampleTransform(root, catalogue);
+	const transformSource = exampleTransform(root, catalogue);
 
-  const started: Array<TargetServer> = [];
-  const closeAll = async (shell?: { close(): Promise<void> }) => {
-    const results = await Promise.allSettled([
-      ...(shell ? [shell.close()] : []),
-      ...started.map((server) => server.close()),
-    ]);
-    const failed = results.flatMap((result) =>
-      result.status === "rejected" ? [result.reason as unknown] : [],
-    );
-    if (failed.length) {
-      throw new AggregateError(failed, "[uf:preview] A server failed to close.");
-    }
-  };
-  try {
-    const servers = await Promise.allSettled(
-      targets.map((target) =>
-        startTargetServer(
-          targetServerOptions(
-            root,
-            config,
-            target,
-            entries,
-            options.toolchainDirs,
-            layouts,
-            transformSource,
-            controls,
-          ),
-        ).then((server) => {
-          started.push(server);
-          return server;
-        }),
-      ),
-    );
-    const failed = servers.flatMap((result, index) =>
-      result.status === "rejected"
-        ? [{ target: targets[index]!, reason: result.reason as unknown }]
-        : [],
-    );
-    if (failed.length) {
-      throw startFailure(failed);
-    }
-    // In the project's order of targets, whichever started first.
-    const frames = targets.map((target) => started.find((server) => server.target === target)!);
-    const pages = frames.map((frame) => ({
-      target: frame.target,
-      src: `${frame.origin}${FRAME_PATH}`,
-    }));
-    const shell = await startShellServer(
-      {
-        shell: shellPage(shellData(catalogue, pages)),
-        embed: embedPage(embedData(catalogue, pages)),
-      },
-      port,
-    );
-    let closing: Promise<void> | undefined;
-    return {
-      url: shell.url,
-      frames: frames.map((frame) => ({
-        target: frame.target,
-        origin: frame.origin,
-        port: frame.port,
-      })),
-      diagnostics: catalogue.diagnostics,
-      close: () => (closing ??= closeAll(shell)),
-    };
-  } catch (error) {
-    await closeAll().catch(() => undefined);
-    throw error;
-  }
+	const started: Array<TargetServer> = [];
+	const closeAll = async (shell?: { close(): Promise<void> }) => {
+		const results = await Promise.allSettled([
+			...(shell ? [shell.close()] : []),
+			...started.map((server) => server.close()),
+		]);
+		const failed = results.flatMap((result) =>
+			result.status === "rejected" ? [result.reason as unknown] : [],
+		);
+		if (failed.length) {
+			throw new AggregateError(failed, "[uf:preview] A server failed to close.");
+		}
+	};
+	try {
+		const servers = await Promise.allSettled(
+			targets.map((target) =>
+				startTargetServer(
+					targetServerOptions(
+						root,
+						config,
+						target,
+						entries,
+						options.toolchainDirs,
+						layouts,
+						transformSource,
+						controls,
+					),
+				).then((server) => {
+					started.push(server);
+					return server;
+				}),
+			),
+		);
+		const failed = servers.flatMap((result, index) =>
+			result.status === "rejected"
+				? [{ target: targets[index]!, reason: result.reason as unknown }]
+				: [],
+		);
+		if (failed.length) {
+			throw startFailure(failed);
+		}
+		// In the project's order of targets, whichever started first.
+		const frames = targets.map((target) => started.find((server) => server.target === target)!);
+		const pages = frames.map((frame) => ({
+			target: frame.target,
+			src: `${frame.origin}${FRAME_PATH}`,
+		}));
+		const shell = await startShellServer(
+			{
+				shell: shellPage(shellData(catalogue, pages)),
+				embed: embedPage(embedData(catalogue, pages)),
+			},
+			port,
+		);
+		let closing: Promise<void> | undefined;
+		return {
+			url: shell.url,
+			frames: frames.map((frame) => ({
+				target: frame.target,
+				origin: frame.origin,
+				port: frame.port,
+			})),
+			diagnostics: catalogue.diagnostics,
+			close: () => (closing ??= closeAll(shell)),
+		};
+	} catch (error) {
+		await closeAll().catch(() => undefined);
+		throw error;
+	}
 }
 
 /**
@@ -153,25 +153,25 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
  * an embed's panel (ADR-0116).
  */
 export function targetServerOptions(
-  root: string,
-  config: ResolvedConfig,
-  target: TargetName,
-  entries: Readonly<Record<string, string>>,
-  toolchainDirs?: PreviewOptions["toolchainDirs"],
-  layouts?: Readonly<Record<string, PreviewLayout>>,
-  transformSource?: SourceTransform,
-  controls?: Readonly<Record<string, Array<ExampleControlGroup>>>,
+	root: string,
+	config: ResolvedConfig,
+	target: TargetName,
+	entries: Readonly<Record<string, string>>,
+	toolchainDirs?: PreviewOptions["toolchainDirs"],
+	layouts?: Readonly<Record<string, PreviewLayout>>,
+	transformSource?: SourceTransform,
+	controls?: Readonly<Record<string, Array<ExampleControlGroup>>>,
 ): TargetServerOptions {
-  return {
-    root,
-    target,
-    toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
-    entries,
-    ...(config.vite ? { vite: config.vite } : {}),
-    ...(layouts && Object.keys(layouts).length ? { layouts } : {}),
-    ...(transformSource ? { transformSource } : {}),
-    ...(controls && Object.keys(controls).length ? { controls } : {}),
-  };
+	return {
+		root,
+		target,
+		toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
+		entries,
+		...(config.vite ? { vite: config.vite } : {}),
+		...(layouts && Object.keys(layouts).length ? { layouts } : {}),
+		...(transformSource ? { transformSource } : {}),
+		...(controls && Object.keys(controls).length ? { controls } : {}),
+	};
 }
 
 /**
@@ -180,53 +180,53 @@ export function targetServerOptions(
  * fail alike, as on a project plugin that throws, give one line.
  */
 export function startFailure(
-  failed: ReadonlyArray<{ target: TargetName; reason: unknown }>,
+	failed: ReadonlyArray<{ target: TargetName; reason: unknown }>,
 ): unknown {
-  if (failed.length === 1) {
-    return failed[0]!.reason;
-  }
-  const byMessage = new Map<string, Array<TargetName>>();
-  for (const { target, reason } of failed) {
-    const message = reason instanceof Error ? String(reason.message) : String(reason);
-    byMessage.set(message, [...(byMessage.get(message) ?? []), target]);
-  }
-  const lines = [...byMessage].map(([message, names]) => `  ${names.join(", ")}: ${message}`);
-  return new AggregateError(
-    failed.map((each) => each.reason),
-    `[uf:preview] ${failed.length} target servers failed to start:\n${lines.join("\n")}`,
-  );
+	if (failed.length === 1) {
+		return failed[0]!.reason;
+	}
+	const byMessage = new Map<string, Array<TargetName>>();
+	for (const { target, reason } of failed) {
+		const message = reason instanceof Error ? String(reason.message) : String(reason);
+		byMessage.set(message, [...(byMessage.get(message) ?? []), target]);
+	}
+	const lines = [...byMessage].map(([message, names]) => `  ${names.join(", ")}: ${message}`);
+	return new AggregateError(
+		failed.map((each) => each.reason),
+		`[uf:preview] ${failed.length} target servers failed to start:\n${lines.join("\n")}`,
+	);
 }
 
 /** The targets to show: the project's, or those asked for, which must be among them. */
 export function previewTargets(
-  project: ReadonlyArray<TargetName>,
-  requested: ReadonlyArray<TargetName> | undefined,
+	project: ReadonlyArray<TargetName>,
+	requested: ReadonlyArray<TargetName> | undefined,
 ): Array<TargetName> {
-  if (!requested?.length) {
-    return [...project];
-  }
-  const unknown = requested.filter((name) => !project.includes(name));
-  if (unknown.length) {
-    const known = unknown.every((name) => (TARGET_NAMES as ReadonlyArray<string>).includes(name));
-    throw new VisualUsageError(
-      `${unknown.join(", ")} ${unknown.length > 1 ? "are" : "is"} not among ${known ? "the project's targets" : "the targets"} (${(known ? project : TARGET_NAMES).join(", ")}).`,
-    );
-  }
-  return project.filter((name) => requested.includes(name));
+	if (!requested?.length) {
+		return [...project];
+	}
+	const unknown = requested.filter((name) => !project.includes(name));
+	if (unknown.length) {
+		const known = unknown.every((name) => (TARGET_NAMES as ReadonlyArray<string>).includes(name));
+		throw new VisualUsageError(
+			`${unknown.join(", ")} ${unknown.length > 1 ? "are" : "is"} not among ${known ? "the project's targets" : "the targets"} (${(known ? project : TARGET_NAMES).join(", ")}).`,
+		);
+	}
+	return project.filter((name) => requested.includes(name));
 }
 
 /** The project's `unframework.config.ts`, resolved, or an error that lists its diagnostics. */
 export async function projectConfig(root: string): Promise<ResolvedConfig> {
-  const loaded = await loadConfig(root);
-  const resolved =
-    loaded.raw === undefined
-      ? { config: undefined, diagnostics: [] }
-      : await resolveConfig(loaded.raw, loaded);
-  const diagnostics = [...loaded.diagnostics, ...resolved.diagnostics];
-  if (!resolved.config || diagnostics.some((each) => each.severity === "error")) {
-    throw new Error(
-      `[uf] ${loaded.file ?? "unframework.config.ts"} is invalid:\n  ${diagnostics.map((each) => `${each.code} ${each.message}`).join("\n  ")}`,
-    );
-  }
-  return resolved.config;
+	const loaded = await loadConfig(root);
+	const resolved =
+		loaded.raw === undefined
+			? { config: undefined, diagnostics: [] }
+			: await resolveConfig(loaded.raw, loaded);
+	const diagnostics = [...loaded.diagnostics, ...resolved.diagnostics];
+	if (!resolved.config || diagnostics.some((each) => each.severity === "error")) {
+		throw new Error(
+			`[uf] ${loaded.file ?? "unframework.config.ts"} is invalid:\n  ${diagnostics.map((each) => `${each.code} ${each.message}`).join("\n  ")}`,
+		);
+	}
+	return resolved.config;
 }

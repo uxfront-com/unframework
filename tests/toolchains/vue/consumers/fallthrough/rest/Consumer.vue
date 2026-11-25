@@ -7,19 +7,19 @@ const clicks = ref(0);
 const field = useTemplateRef("field");
 
 function focus() {
-  field.value?.$el.focus();
+	field.value?.$el.focus();
 }
 </script>
 
 <template>
-  <p id="email-hint">Hint</p>
-  <Field
-    id="email"
-    ref="field"
-    label="Name"
-    aria-describedby="email-hint"
-    placeholder="Ada"
-    @click="(event) => (clicks += event.detail)"
-  />
-  <button type="button" @click="focus">Focus</button>
+	<p id="email-hint">Hint</p>
+	<Field
+		id="email"
+		ref="field"
+		label="Name"
+		aria-describedby="email-hint"
+		placeholder="Ada"
+		@click="(event) => (clicks += event.detail)"
+	/>
+	<button type="button" @click="focus">Focus</button>
 </template>

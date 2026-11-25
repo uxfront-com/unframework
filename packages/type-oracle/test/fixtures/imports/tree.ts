@@ -1,4 +1,4 @@
 export interface TreeNode {
-  label: string;
-  children: TreeNode[];
+	label: string;
+	children: TreeNode[];
 }

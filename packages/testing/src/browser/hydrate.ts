@@ -9,10 +9,10 @@
 //   DOM               the hydrated root equals the scenario's `__expected__/dom.<name>.html`
 //   client agreement  the hydrated root equals the same target's client render of the props
 import type {
-  HydratedComponent,
-  MountAdapter,
-  MountEvent,
-  MountOptions,
+	HydratedComponent,
+	MountAdapter,
+	MountEvent,
+	MountOptions,
 } from "@unframework.dev/codegen";
 import { assertSerialisableProps } from "@unframework.dev/codegen/toolchain-browser";
 import { inject, TestRunner } from "vitest";
@@ -30,23 +30,23 @@ import { teleportedBy } from "./teleports.ts";
 
 /** Whether this project hydrates (`test.provide.ufHydrate`). */
 export function isHydrateProject(): boolean {
-  return inject("ufHydrate") === true;
+	return inject("ufHydrate") === true;
 }
 
 /** The attributes whose values are ids, or lists of ids, that the `ids` sub-check reads. */
 export const ID_ATTRIBUTES: ReadonlyArray<string> = [
-  "id",
-  "for",
-  "headers",
-  "list",
-  "aria-labelledby",
-  "aria-describedby",
-  "aria-controls",
-  "aria-owns",
-  "aria-activedescendant",
-  "aria-details",
-  "aria-errormessage",
-  "aria-flowto",
+	"id",
+	"for",
+	"headers",
+	"list",
+	"aria-labelledby",
+	"aria-describedby",
+	"aria-controls",
+	"aria-owns",
+	"aria-activedescendant",
+	"aria-details",
+	"aria-errormessage",
+	"aria-flowto",
 ];
 
 /**
@@ -56,63 +56,63 @@ export const ID_ATTRIBUTES: ReadonlyArray<string> = [
  * adapter takes out of the page as it hydrates.
  */
 export function idsOf(root: ParentNode): Array<string> {
-  const ids: Array<string> = [];
-  for (const element of root.querySelectorAll("*")) {
-    if (element.localName === "script") {
-      continue;
-    }
-    for (const name of ID_ATTRIBUTES) {
-      const value = element.getAttribute(name);
-      if (value !== null) {
-        ids.push(`${name}="${value}"`);
-      }
-    }
-  }
-  return ids;
+	const ids: Array<string> = [];
+	for (const element of root.querySelectorAll("*")) {
+		if (element.localName === "script") {
+			continue;
+		}
+		for (const name of ID_ATTRIBUTES) {
+			const value = element.getAttribute(name);
+			if (value !== null) {
+				ids.push(`${name}="${value}"`);
+			}
+		}
+	}
+	return ids;
 }
 
 /** The ids of server HTML, read as the page parses it. */
 export function idsOfHtml(html: string): Array<string> {
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  return idsOf(template.content);
+	const template = document.createElement("template");
+	template.innerHTML = html;
+	return idsOf(template.content);
 }
 
 /** Why two lists of ids differ, or nothing when they are the same. */
 export function compareIds(
-  server: ReadonlyArray<string>,
-  hydrated: ReadonlyArray<string>,
+	server: ReadonlyArray<string>,
+	hydrated: ReadonlyArray<string>,
 ): string | undefined {
-  if (server.length === hydrated.length && server.every((id, index) => id === hydrated[index])) {
-    return undefined;
-  }
-  const lines = [
-    "the hydrated DOM's ids are not the server's:",
-    `  server:   ${server.join(" ") || "(none)"}`,
-    `  hydrated: ${hydrated.join(" ") || "(none)"}`,
-  ];
-  return lines.join("\n");
+	if (server.length === hydrated.length && server.every((id, index) => id === hydrated[index])) {
+		return undefined;
+	}
+	const lines = [
+		"the hydrated DOM's ids are not the server's:",
+		`  server:   ${server.join(" ") || "(none)"}`,
+		`  hydrated: ${hydrated.join(" ") || "(none)"}`,
+	];
+	return lines.join("\n");
 }
 
 /** Records an L12 failure on the current test, naming its sub-check. */
 export function failHydration(target: string, subCheck: string, message: string): void {
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) {
-    throw new Error(`${subCheck}: ${message}`);
-  }
-  const harness = inject("ufHarness");
-  recordLayer(
-    test,
-    { case: caseOfFile(test.file.filepath, harness), target, quarantine: harness.quarantine },
-    "L12",
-    { status: "fail", message: `${subCheck}: ${message}` },
-  );
+	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+	if (!test) {
+		throw new Error(`${subCheck}: ${message}`);
+	}
+	const harness = inject("ufHarness");
+	recordLayer(
+		test,
+		{ case: caseOfFile(test.file.filepath, harness), target, quarantine: harness.quarantine },
+		"L12",
+		{ status: "fail", message: `${subCheck}: ${message}` },
+	);
 }
 
 /** What `hydrateInto` hydrated: the component, and the server HTML it started from. */
 export interface Hydrated {
-  instance: HydratedComponent;
-  html: string;
+	instance: HydratedComponent;
+	html: string;
 }
 
 /**
@@ -123,39 +123,39 @@ export interface Hydrated {
  * Mismatch", Svelte's `hydration_failed`): that is L12's `mismatch`, and the mount fails with it.
  */
 export async function hydrateInto(
-  target: string,
-  hydrate: (
-    component: unknown,
-    container: HTMLElement,
-    html: string,
-    options: MountOptions,
-  ) => Promise<HydratedComponent>,
-  caseId: string,
-  component: unknown,
-  container: HTMLElement,
-  options: MountOptions,
+	target: string,
+	hydrate: (
+		component: unknown,
+		container: HTMLElement,
+		html: string,
+		options: MountOptions,
+	) => Promise<HydratedComponent>,
+	caseId: string,
+	component: unknown,
+	container: HTMLElement,
+	options: MountOptions,
 ): Promise<Hydrated> {
-  const props = { ...options.props };
-  assertSerialisableProps(props, "A hydrate project renders the server HTML in Node (L12)");
-  const rendered = await commands.ufHydrationRender({ case: caseId, props });
-  if (rendered.console.length) {
-    captureExternalConsole(rendered.console);
-  }
-  const main = (await importModule(rendered.module)) as { default?: unknown };
-  if (main.default !== component) {
-    throw new Error(
-      `mount: a hydrate project hydrates the server render of ${caseId}'s main component, ${rendered.module}, and this spec mounted something else. Mount the case's main component (case.json's "main"), or move the spec's other component into a case of its own (ADR-0095).`,
-    );
-  }
-  try {
-    return {
-      instance: await hydrate(component, container, rendered.html, options),
-      html: rendered.html,
-    };
-  } catch (error) {
-    failHydration(target, "mismatch", `the framework could not hydrate: ${formatError(error)}`);
-    throw error;
-  }
+	const props = { ...options.props };
+	assertSerialisableProps(props, "A hydrate project renders the server HTML in Node (L12)");
+	const rendered = await commands.ufHydrationRender({ case: caseId, props });
+	if (rendered.console.length) {
+		captureExternalConsole(rendered.console);
+	}
+	const main = (await importModule(rendered.module)) as { default?: unknown };
+	if (main.default !== component) {
+		throw new Error(
+			`mount: a hydrate project hydrates the server render of ${caseId}'s main component, ${rendered.module}, and this spec mounted something else. Mount the case's main component (case.json's "main"), or move the spec's other component into a case of its own (ADR-0095).`,
+		);
+	}
+	try {
+		return {
+			instance: await hydrate(component, container, rendered.html, options),
+			html: rendered.html,
+		};
+	} catch (error) {
+		failHydration(target, "mismatch", `the framework could not hydrate: ${formatError(error)}`);
+		throw error;
+	}
 }
 
 /**
@@ -165,7 +165,7 @@ export async function hydrateInto(
  */
 // oxlint-disable-next-line typescript/no-implied-eval -- an import() of a computed URL that Vite does not rewrite
 const importModule = new Function("url", "return import(url);") as (
-  url: string,
+	url: string,
 ) => Promise<unknown>;
 
 /** The rounds of settling the client render gets before it counts as never quiet. */
@@ -181,56 +181,56 @@ const CLIENT_SETTLE_ROUNDS = 10;
  * client render too, so the focus goes back where the hydrated view left it (ADR-0101).
  */
 export async function clientRender(
-  mount: MountAdapter,
-  component: unknown,
-  props: Readonly<Record<string, unknown>> | undefined,
-  events: ReadonlyArray<MountEvent>,
-  normalize: (root: HTMLElement, teleported: ReadonlyArray<Element>) => string,
+	mount: MountAdapter,
+	component: unknown,
+	props: Readonly<Record<string, unknown>> | undefined,
+	events: ReadonlyArray<MountEvent>,
+	normalize: (root: HTMLElement, teleported: ReadonlyArray<Element>) => string,
 ): Promise<string> {
-  // What it teleports is its own, not the hydrated view's (ADR-0098).
-  const owner = {};
-  const form = document.createElement("form");
-  const root = document.createElement("div");
-  root.setAttribute(ROOT_ATTRIBUTE, "");
-  root.setAttribute("data-testid", "uf-client-agreement");
-  form.append(root);
-  document.body.append(form);
-  const focused = document.activeElement;
-  try {
-    const on = Object.fromEntries(events.map(({ name }) => [name, () => {}]));
-    const instance = await mount(component, root, { ...(props ? { props } : {}), on, events });
-    try {
-      let previous: string | undefined;
-      for (let round = 0; round < CLIENT_SETTLE_ROUNDS; round += 1) {
-        await settleFrame(() => instance.settle());
-        const html = normalize(root, teleportedBy(owner));
-        if (html === previous) {
-          return html;
-        }
-        previous = html;
-      }
-      throw new Error(
-        `the client render did not settle: its DOM still changed after ${CLIENT_SETTLE_ROUNDS} rounds.`,
-      );
-    } finally {
-      await instance.unmount();
-    }
-  } finally {
-    form.remove();
-    if (
-      focused instanceof HTMLElement &&
-      focused.isConnected &&
-      document.activeElement !== focused
-    ) {
-      focused.focus({ preventScroll: true });
-    }
-  }
+	// What it teleports is its own, not the hydrated view's (ADR-0098).
+	const owner = {};
+	const form = document.createElement("form");
+	const root = document.createElement("div");
+	root.setAttribute(ROOT_ATTRIBUTE, "");
+	root.setAttribute("data-testid", "uf-client-agreement");
+	form.append(root);
+	document.body.append(form);
+	const focused = document.activeElement;
+	try {
+		const on = Object.fromEntries(events.map(({ name }) => [name, () => {}]));
+		const instance = await mount(component, root, { ...(props ? { props } : {}), on, events });
+		try {
+			let previous: string | undefined;
+			for (let round = 0; round < CLIENT_SETTLE_ROUNDS; round += 1) {
+				await settleFrame(() => instance.settle());
+				const html = normalize(root, teleportedBy(owner));
+				if (html === previous) {
+					return html;
+				}
+				previous = html;
+			}
+			throw new Error(
+				`the client render did not settle: its DOM still changed after ${CLIENT_SETTLE_ROUNDS} rounds.`,
+			);
+		} finally {
+			await instance.unmount();
+		}
+	} finally {
+		form.remove();
+		if (
+			focused instanceof HTMLElement &&
+			focused.isConnected &&
+			document.activeElement !== focused
+		) {
+			focused.focus({ preventScroll: true });
+		}
+	}
 }
 
 /** Why the hydrated root and the client render differ, or nothing when they agree. */
 export function compareClientRender(hydrated: string, client: string): string | undefined {
-  if (hydrated === client) {
-    return undefined;
-  }
-  return `the hydrated DOM is not the client render's (expected: the client render, actual: the hydrated root):\n${diffLines(client, hydrated)}`;
+	if (hydrated === client) {
+		return undefined;
+	}
+	return `the hydrated DOM is not the client render's (expected: the client render, actual: the hydrated root):\n${diffLines(client, hydrated)}`;
 }

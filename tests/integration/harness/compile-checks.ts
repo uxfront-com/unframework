@@ -16,21 +16,21 @@ import { diffLines } from "@unframework.dev/testing/node";
 
 /** The diagnostics that concern a target: its own, and those of every target. */
 export const forTarget = <T extends { target?: string | undefined }>(
-  list: ReadonlyArray<T>,
-  target: string,
+	list: ReadonlyArray<T>,
+	target: string,
 ): Array<T> =>
-  list.filter((diagnostic) => diagnostic.target === undefined || diagnostic.target === target);
+	list.filter((diagnostic) => diagnostic.target === undefined || diagnostic.target === target);
 
 /** The built-in targets by any name: a name that is no target has no capability matrix. */
 const targetsByName: Readonly<Record<string, { capabilities: Capabilities } | undefined>> =
-  builtinTargets;
+	builtinTargets;
 
 /** What {@link expectationProblems} reads of an expected diagnostic. */
 export interface ExpectedDiagnosticText {
-  code: string;
-  severity: string;
-  message: string;
-  target?: string | undefined;
+	code: string;
+	severity: string;
+	message: string;
+	target?: string | undefined;
 }
 
 /**
@@ -42,34 +42,34 @@ export interface ExpectedDiagnosticText {
  * without output, and every later layer would skip the case for it.
  */
 export function expectationProblems(
-  expected: ReadonlyArray<ExpectedDiagnosticText>,
-  target: string,
-  hasSpec: boolean,
-  capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
+	expected: ReadonlyArray<ExpectedDiagnosticText>,
+	target: string,
+	hasSpec: boolean,
+	capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
 ): Array<string> {
-  const own = forTarget(expected, target);
-  const problems = own
-    .filter((diagnostic) => /^UF9\d{3}$/.test(diagnostic.code))
-    .map(
-      (diagnostic) =>
-        `The case expects the internal error ${diagnostic.code} (${diagnostic.message}): an internal error is a compiler bug to fix, never an expectation.`,
-    );
-  if (!hasSpec) {
-    return problems;
-  }
-  const declared = capabilityCellDiagnostics(target, capabilities);
-  for (const diagnostic of own) {
-    if (diagnostic.severity !== "error" || /^UF9\d{3}$/.test(diagnostic.code)) {
-      continue;
-    }
-    if (declared.has(cellKey(diagnostic))) {
-      continue;
-    }
-    problems.push(
-      `The case has a spec, yet expects the error ${diagnostic.code} for ${target} (${diagnostic.message}), which is not the error the ${target} target declares for a capability it lacks: a feature case compiles on every target, or the target declares the difference (a UF4xxx capability cell).`,
-    );
-  }
-  return problems;
+	const own = forTarget(expected, target);
+	const problems = own
+		.filter((diagnostic) => /^UF9\d{3}$/.test(diagnostic.code))
+		.map(
+			(diagnostic) =>
+				`The case expects the internal error ${diagnostic.code} (${diagnostic.message}): an internal error is a compiler bug to fix, never an expectation.`,
+		);
+	if (!hasSpec) {
+		return problems;
+	}
+	const declared = capabilityCellDiagnostics(target, capabilities);
+	for (const diagnostic of own) {
+		if (diagnostic.severity !== "error" || /^UF9\d{3}$/.test(diagnostic.code)) {
+			continue;
+		}
+		if (declared.has(cellKey(diagnostic))) {
+			continue;
+		}
+		problems.push(
+			`The case has a spec, yet expects the error ${diagnostic.code} for ${target} (${diagnostic.message}), which is not the error the ${target} target declares for a capability it lacks: a feature case compiles on every target, or the target declares the difference (a UF4xxx capability cell).`,
+		);
+	}
+	return problems;
 }
 
 /**
@@ -80,49 +80,49 @@ export function expectationProblems(
  * no target would write its expectations.
  */
 export function referenceProblems(
-  expected: ReadonlyArray<ExpectedDiagnosticText>,
-  hasSpec: boolean,
-  runReference: string,
-  reference: string | undefined,
+	expected: ReadonlyArray<ExpectedDiagnosticText>,
+	hasSpec: boolean,
+	runReference: string,
+	reference: string | undefined,
 ): Array<string> {
-  if (!hasSpec) {
-    return reference === undefined
-      ? []
-      : ["The case names a reference, and has no spec: only a spec's expectations have a writer."];
-  }
-  const capabilities: Partial<Capabilities> = targetsByName[runReference]?.capabilities ?? {};
-  const lacking = Object.entries(capabilities).flatMap(([capability, cell]) =>
-    cell &&
-    cell.support === "unsupported" &&
-    cell.severity === "error" &&
-    forTarget(expected, runReference).some(
-      (diagnostic) =>
-        cellKey(diagnostic) ===
-        `${cell.code} ${cell.severity} The ${runReference} target does not support ${capability}: ${cell.reason}`,
-    )
-      ? [capability]
-      : [],
-  );
-  if (reference === undefined) {
-    return lacking.length
-      ? [
-          `${runReference}, the run's reference, has no output for the case: it leaves ${lacking.join(", ")} unsupported. Name a target whose cells are native as the case's "reference" in case.json (ADR-0057), so a reviewed target writes its expectations.`,
-        ]
-      : [];
-  }
-  if (!lacking.length) {
-    return [
-      `The case names ${reference} as its reference, yet ${runReference} renders it: a case names another reference only for a capability ${runReference} leaves unsupported (ADR-0057).`,
-    ];
-  }
-  const cells: Partial<Capabilities> = targetsByName[reference]?.capabilities ?? {};
-  return lacking.flatMap((capability) =>
-    cells[capability as keyof Capabilities]?.support === "native"
-      ? []
-      : [
-          `The case names ${reference} as its reference, whose ${capability} cell is not native: a case's reference renders what ${runReference} cannot as the capability means it (ADR-0057).`,
-        ],
-  );
+	if (!hasSpec) {
+		return reference === undefined
+			? []
+			: ["The case names a reference, and has no spec: only a spec's expectations have a writer."];
+	}
+	const capabilities: Partial<Capabilities> = targetsByName[runReference]?.capabilities ?? {};
+	const lacking = Object.entries(capabilities).flatMap(([capability, cell]) =>
+		cell &&
+		cell.support === "unsupported" &&
+		cell.severity === "error" &&
+		forTarget(expected, runReference).some(
+			(diagnostic) =>
+				cellKey(diagnostic) ===
+				`${cell.code} ${cell.severity} The ${runReference} target does not support ${capability}: ${cell.reason}`,
+		)
+			? [capability]
+			: [],
+	);
+	if (reference === undefined) {
+		return lacking.length
+			? [
+					`${runReference}, the run's reference, has no output for the case: it leaves ${lacking.join(", ")} unsupported. Name a target whose cells are native as the case's "reference" in case.json (ADR-0057), so a reviewed target writes its expectations.`,
+				]
+			: [];
+	}
+	if (!lacking.length) {
+		return [
+			`The case names ${reference} as its reference, yet ${runReference} renders it: a case names another reference only for a capability ${runReference} leaves unsupported (ADR-0057).`,
+		];
+	}
+	const cells: Partial<Capabilities> = targetsByName[reference]?.capabilities ?? {};
+	return lacking.flatMap((capability) =>
+		cells[capability as keyof Capabilities]?.support === "native"
+			? []
+			: [
+					`The case names ${reference} as its reference, whose ${capability} cell is not native: a case's reference renders what ${runReference} cannot as the capability means it (ADR-0057).`,
+				],
+	);
 }
 
 /**
@@ -131,23 +131,23 @@ export function referenceProblems(
  * the compiler's words (ADR-0033). A capability the matrix does not declare is no cell.
  */
 function capabilityCellDiagnostics(
-  target: string,
-  capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
+	target: string,
+	capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
 ): Set<string> {
-  return new Set(
-    Object.entries(capabilities ?? {}).flatMap(([capability, cell]) =>
-      cell.support === "unsupported"
-        ? [
-            `${cell.code} ${cell.severity} The ${target} target does not support ${capability}: ${cell.reason}`,
-          ]
-        : [],
-    ),
-  );
+	return new Set(
+		Object.entries(capabilities ?? {}).flatMap(([capability, cell]) =>
+			cell.support === "unsupported"
+				? [
+						`${cell.code} ${cell.severity} The ${target} target does not support ${capability}: ${cell.reason}`,
+					]
+				: [],
+		),
+	);
 }
 
 /** A diagnostic as a capability cell would report it: its code, severity and message. */
 function cellKey(diagnostic: { code: string; severity: string; message: string }): string {
-  return `${diagnostic.code} ${diagnostic.severity} ${diagnostic.message}`;
+	return `${diagnostic.code} ${diagnostic.severity} ${diagnostic.message}`;
 }
 
 /**
@@ -159,59 +159,59 @@ function cellKey(diagnostic: { code: string; severity: string; message: string }
  * right fix may bring (a snapshot of an optional prop fixed into a derived value that reads it).
  */
 export async function checkFixes(
-  source: string,
-  diagnostics: ReadonlyArray<Diagnostic>,
-  target: string,
-  recompile: (source: string) => Promise<ReadonlyArray<Diagnostic>>,
-  capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
+	source: string,
+	diagnostics: ReadonlyArray<Diagnostic>,
+	target: string,
+	recompile: (source: string) => Promise<ReadonlyArray<Diagnostic>>,
+	capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
 ): Promise<void> {
-  const own = forTarget(diagnostics, target);
-  const fixable = own.filter((diagnostic) => diagnostic.fixes?.length);
-  if (!fixable.length) {
-    return;
-  }
-  const fixed = applyFixes(
-    source,
-    fixable.flatMap((diagnostic) => diagnostic.fixes ?? []),
-  );
-  const declared = capabilityCellDiagnostics(target, capabilities);
-  const compared = (diagnostic: Diagnostic) => !declared.has(cellKey(diagnostic));
-  const remaining = own
-    .filter((diagnostic) => !fixable.includes(diagnostic) && compared(diagnostic))
-    .map(diagnosticKey)
-    .toSorted();
-  const after = forTarget(await recompile(fixed), target)
-    .filter(compared)
-    .map(diagnosticKey)
-    .toSorted();
-  if (after.join("\n") !== remaining.join("\n")) {
-    throw new Error(
-      `Applying the fixes of ${fixable.map((diagnostic) => diagnostic.code).join(", ")} does not recompile clean:\n${diffLines(remaining.join("\n"), after.join("\n"))}`,
-    );
-  }
+	const own = forTarget(diagnostics, target);
+	const fixable = own.filter((diagnostic) => diagnostic.fixes?.length);
+	if (!fixable.length) {
+		return;
+	}
+	const fixed = applyFixes(
+		source,
+		fixable.flatMap((diagnostic) => diagnostic.fixes ?? []),
+	);
+	const declared = capabilityCellDiagnostics(target, capabilities);
+	const compared = (diagnostic: Diagnostic) => !declared.has(cellKey(diagnostic));
+	const remaining = own
+		.filter((diagnostic) => !fixable.includes(diagnostic) && compared(diagnostic))
+		.map(diagnosticKey)
+		.toSorted();
+	const after = forTarget(await recompile(fixed), target)
+		.filter(compared)
+		.map(diagnosticKey)
+		.toSorted();
+	if (after.join("\n") !== remaining.join("\n")) {
+		throw new Error(
+			`Applying the fixes of ${fixable.map((diagnostic) => diagnostic.code).join(", ")} does not recompile clean:\n${diffLines(remaining.join("\n"), after.join("\n"))}`,
+		);
+	}
 }
 
 /** A diagnostic as the fix check compares it: its code and message, not where it is. */
 function diagnosticKey(diagnostic: Diagnostic): string {
-  return `${diagnostic.code} ${diagnostic.message}`;
+	return `${diagnostic.code} ${diagnostic.message}`;
 }
 
 /** L2 (P8): how two compiles of one source differ for a target, or `undefined` if they do not. */
 export function nondeterminism(
-  first: CompileResult,
-  second: CompileResult,
-  target: string,
+	first: CompileResult,
+	second: CompileResult,
+	target: string,
 ): string | undefined {
-  const stable = (result: CompileResult) =>
-    JSON.stringify({
-      ir: result.ir,
-      diagnostics: result.diagnostics,
-      files: result.outputs[target],
-    });
-  if (stable(first) === stable(second)) {
-    return undefined;
-  }
-  return `Compiling twice gave different results:\n${diffLines(stable(first).replaceAll(",", ",\n"), stable(second).replaceAll(",", ",\n"))}`;
+	const stable = (result: CompileResult) =>
+		JSON.stringify({
+			ir: result.ir,
+			diagnostics: result.diagnostics,
+			files: result.outputs[target],
+		});
+	if (stable(first) === stable(second)) {
+		return undefined;
+	}
+	return `Compiling twice gave different results:\n${diffLines(stable(first).replaceAll(",", ",\n"), stable(second).replaceAll(",", ",\n"))}`;
 }
 
 /**
@@ -220,17 +220,17 @@ export function nondeterminism(
  * compiler reads (ADR-0063, closing ADR-0025's open item).
  */
 export function stylesheetProblems(
-  target: string,
-  files: ReadonlyArray<OutputFile>,
+	target: string,
+	files: ReadonlyArray<OutputFile>,
 ): Array<string> {
-  return files
-    .filter((file) => file.path.endsWith(".css"))
-    .flatMap((file) =>
-      parseStylesheet(file.path, file.contents).errors.map(
-        ({ message, span }) =>
-          `${target}/${file.path} is not valid CSS at offset ${span.start}: ${message}`,
-      ),
-    );
+	return files
+		.filter((file) => file.path.endsWith(".css"))
+		.flatMap((file) =>
+			parseStylesheet(file.path, file.contents).errors.map(
+				({ message, span }) =>
+					`${target}/${file.path} is not valid CSS at offset ${span.start}: ${message}`,
+			),
+		);
 }
 
 /**
@@ -239,36 +239,36 @@ export function stylesheetProblems(
  * module's own file name; the files an output imports are L4's.
  */
 export function moduleCopyProblems(
-  target: string,
-  outputs: ReadonlyMap<string, string>,
-  modules: ReadonlyArray<OutputFile>,
+	target: string,
+	outputs: ReadonlyMap<string, string>,
+	modules: ReadonlyArray<OutputFile>,
 ): Array<string> {
-  return modules.flatMap(({ path, contents }) => {
-    const copy = outputs.get(path);
-    if (copy === undefined || copy === contents) {
-      return [];
-    }
-    return [`${target}/${path} is not the case's ${path} unchanged:\n${diffLines(contents, copy)}`];
-  });
+	return modules.flatMap(({ path, contents }) => {
+		const copy = outputs.get(path);
+		if (copy === undefined || copy === contents) {
+			return [];
+		}
+		return [`${target}/${path} is not the case's ${path} unchanged:\n${diffLines(contents, copy)}`];
+	});
 }
 
 /** L2: every output file that formatting again would change, or that no longer parses. */
 export async function formattingProblems(
-  target: string,
-  files: ReadonlyArray<OutputFile>,
+	target: string,
+	files: ReadonlyArray<OutputFile>,
 ): Promise<Array<string>> {
-  const problems: Array<string> = [];
-  for (const file of files) {
-    const again = await formatOutput(file);
-    if (again.error) {
-      problems.push(`${target}/${file.path} does not parse when formatted again: ${again.error}`);
-    } else if (again.file.contents !== file.contents) {
-      problems.push(
-        `${target}/${file.path} is not formatted idempotently:\n${diffLines(file.contents, again.file.contents)}`,
-      );
-    }
-  }
-  return problems;
+	const problems: Array<string> = [];
+	for (const file of files) {
+		const again = await formatOutput(file);
+		if (again.error) {
+			problems.push(`${target}/${file.path} does not parse when formatted again: ${again.error}`);
+		} else if (again.file.contents !== file.contents) {
+			problems.push(
+				`${target}/${file.path} is not formatted idempotently:\n${diffLines(file.contents, again.file.contents)}`,
+			);
+		}
+	}
+	return problems;
 }
 
 /**
@@ -283,14 +283,14 @@ const VLQ = /^[A-Za-z0-9+/,;]*$/;
 
 /** The source's token at a column of one of its lines, or `""` where there is none. */
 export function sourceTokenAt(line: string, column: number): string {
-  SOURCE_TOKEN.lastIndex = column;
-  return SOURCE_TOKEN.exec(line)?.[0] ?? "";
+	SOURCE_TOKEN.lastIndex = column;
+	return SOURCE_TOKEN.exec(line)?.[0] ?? "";
 }
 
 /** The source a target's output files were compiled from. */
 export interface MapSource {
-  filename: string;
-  text: string;
+	filename: string;
+	text: string;
 }
 
 /**
@@ -305,84 +305,84 @@ export interface MapSource {
  * comes from a stylesheet, so its map holds no segments (ADR-0063).
  */
 export function sourceMapProblems(
-  target: string,
-  files: ReadonlyArray<OutputFile>,
-  source: MapSource,
-  modules: ReadonlySet<string>,
+	target: string,
+	files: ReadonlyArray<OutputFile>,
+	source: MapSource,
+	modules: ReadonlySet<string>,
 ): Array<string> {
-  return files.flatMap((file) => fileMapProblems(`${target}/${file.path}`, file, source, modules));
+	return files.flatMap((file) => fileMapProblems(`${target}/${file.path}`, file, source, modules));
 }
 
 function fileMapProblems(
-  where: string,
-  file: OutputFile,
-  source: MapSource,
-  modules: ReadonlySet<string>,
+	where: string,
+	file: OutputFile,
+	source: MapSource,
+	modules: ReadonlySet<string>,
 ): Array<string> {
-  const { map } = file;
-  if (!map) {
-    return [`${where} has no source map.`];
-  }
-  const copy = modules.has(file.path);
-  // A copy, or a helper module (ADR-0121), names itself, at its own path in the tree.
-  const expected = copy ? file.path : posix.basename(source.filename);
-  const text = copy ? file.contents : source.text;
-  const named = map.sources.map((name) =>
-    posix.normalize(posix.join(posix.dirname(file.path), name)),
-  );
-  if (named.length !== 1 || named[0] !== expected) {
-    return [`${where}'s map names ${JSON.stringify(map.sources)}, not its source ${expected}.`];
-  }
-  if (map.sourcesContent[0] !== text) {
-    return [`${where}'s map does not hold the content of its source ${expected}.`];
-  }
-  // The decoder reads a character outside the alphabet as zero rather than throw on it.
-  if (!VLQ.test(map.mappings)) {
-    return [`${where}'s map does not decode: its mappings are not VLQ.`];
-  }
-  const lines = decodedMappings(new TraceMap(map));
-  const segments = lines.reduce((count, line) => count + line.length, 0);
-  if (file.path.endsWith(".css")) {
-    return segments ? [`${where}'s map has ${segments} segment(s): a scoped sheet has none.`] : [];
-  }
-  const outputLines = file.contents.split("\n");
-  const sourceLines = text.split("\n");
-  const wrong: Array<string> = [];
-  for (const [line, row] of lines.entries()) {
-    for (const segment of row) {
-      if (segment.length === 1) {
-        continue;
-      }
-      const [column, index, fromLine, fromColumn] = segment;
-      const output = outputLines[line];
-      const original = sourceLines[fromLine];
-      if (
-        index !== 0 ||
-        output === undefined ||
-        original === undefined ||
-        !(column >= 0 && column <= output.length) ||
-        !(fromColumn >= 0 && fromColumn <= original.length)
-      ) {
-        wrong.push(`${line + 1}:${column} points outside its files`);
-        continue;
-      }
-      if (segment.length === 5) {
-        continue;
-      }
-      const token = sourceTokenAt(original, fromColumn);
-      const reads = output.slice(column, column + token.length);
-      if (!token || reads !== token) {
-        wrong.push(
-          `${line + 1}:${column} reads ${JSON.stringify(reads)}, where ${expected}:${fromLine + 1}:${fromColumn} reads ${JSON.stringify(token)}`,
-        );
-      }
-    }
-  }
-  if (!wrong.length) {
-    return [];
-  }
-  // One map can hold thousands of wrong tokens, so the first says what the rest would.
-  return [`${where}'s map has ${wrong.length} wrong segment(s), the first at ${wrong[0]}.`];
+	const { map } = file;
+	if (!map) {
+		return [`${where} has no source map.`];
+	}
+	const copy = modules.has(file.path);
+	// A copy, or a helper module (ADR-0121), names itself, at its own path in the tree.
+	const expected = copy ? file.path : posix.basename(source.filename);
+	const text = copy ? file.contents : source.text;
+	const named = map.sources.map((name) =>
+		posix.normalize(posix.join(posix.dirname(file.path), name)),
+	);
+	if (named.length !== 1 || named[0] !== expected) {
+		return [`${where}'s map names ${JSON.stringify(map.sources)}, not its source ${expected}.`];
+	}
+	if (map.sourcesContent[0] !== text) {
+		return [`${where}'s map does not hold the content of its source ${expected}.`];
+	}
+	// The decoder reads a character outside the alphabet as zero rather than throw on it.
+	if (!VLQ.test(map.mappings)) {
+		return [`${where}'s map does not decode: its mappings are not VLQ.`];
+	}
+	const lines = decodedMappings(new TraceMap(map));
+	const segments = lines.reduce((count, line) => count + line.length, 0);
+	if (file.path.endsWith(".css")) {
+		return segments ? [`${where}'s map has ${segments} segment(s): a scoped sheet has none.`] : [];
+	}
+	const outputLines = file.contents.split("\n");
+	const sourceLines = text.split("\n");
+	const wrong: Array<string> = [];
+	for (const [line, row] of lines.entries()) {
+		for (const segment of row) {
+			if (segment.length === 1) {
+				continue;
+			}
+			const [column, index, fromLine, fromColumn] = segment;
+			const output = outputLines[line];
+			const original = sourceLines[fromLine];
+			if (
+				index !== 0 ||
+				output === undefined ||
+				original === undefined ||
+				!(column >= 0 && column <= output.length) ||
+				!(fromColumn >= 0 && fromColumn <= original.length)
+			) {
+				wrong.push(`${line + 1}:${column} points outside its files`);
+				continue;
+			}
+			if (segment.length === 5) {
+				continue;
+			}
+			const token = sourceTokenAt(original, fromColumn);
+			const reads = output.slice(column, column + token.length);
+			if (!token || reads !== token) {
+				wrong.push(
+					`${line + 1}:${column} reads ${JSON.stringify(reads)}, where ${expected}:${fromLine + 1}:${fromColumn} reads ${JSON.stringify(token)}`,
+				);
+			}
+		}
+	}
+	if (!wrong.length) {
+		return [];
+	}
+	// One map can hold thousands of wrong tokens, so the first says what the rest would.
+	return [`${where}'s map has ${wrong.length} wrong segment(s), the first at ${wrong[0]}.`];
 }
 
 /**
@@ -391,10 +391,10 @@ function fileMapProblems(
  * how the compiler maps a source.
  */
 export function comparedSegments(file: OutputFile): number {
-  if (!file.map || file.map.sources[0] === posix.basename(file.path)) {
-    return 0;
-  }
-  return decodedMappings(new TraceMap(file.map))
-    .flat()
-    .filter((segment) => segment.length === 4).length;
+	if (!file.map || file.map.sources[0] === posix.basename(file.path)) {
+		return 0;
+	}
+	return decodedMappings(new TraceMap(file.map))
+		.flat()
+		.filter((segment) => segment.length === 4).length;
 }

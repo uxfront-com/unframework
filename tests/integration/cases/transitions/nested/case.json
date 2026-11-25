@@ -1,8 +1,8 @@
 {
-  "description": "A `<Transition>` of one element without `appear` inside another transition's element: when the outer transition's element enters again, the inner transition mounts anew and runs no enter, as on Vue.",
-  "ssr": {
-    "open": {
-      "props": {}
-    }
-  }
+	"description": "A `<Transition>` of one element without `appear` inside another transition's element: when the outer transition's element enters again, the inner transition mounts anew and runs no enter, as on Vue.",
+	"ssr": {
+		"open": {
+			"props": {}
+		}
+	}
 }

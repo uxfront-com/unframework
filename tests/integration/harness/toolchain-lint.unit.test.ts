@@ -23,17 +23,17 @@ import { loadToolchain, selectTargets } from "./targets.ts";
 
 /** What an output may import, besides its siblings (M3): its framework only (P7, D11). */
 const ALLOWED_IMPORTS: Record<string, ReadonlyArray<string>> = {
-  // `createPortal` lives in react-dom, React's renderer, which a `<Teleport>` needs (ADR-0098).
-  react: ["react", "react/*", "react-dom"],
-  vue: ["vue", "vue/*"],
-  svelte: ["svelte", "svelte/*"],
-  solid: ["solid-js", "solid-js/*"],
-  // Solid 2's DOM renderer is a package of its own, which owns the JSX types (ADR-0102).
-  solid2: ["solid-js", "@solidjs/web"],
-  // `DomSanitizer`, which renders `innerHTML` as written (ADR-0097).
-  angular: ["@angular/core", "@angular/common", "@angular/platform-browser"],
-  qwik: ["@qwik.dev/core", "@qwik.dev/core/*"],
-  astro: ["astro", "astro/*"],
+	// `createPortal` lives in react-dom, React's renderer, which a `<Teleport>` needs (ADR-0098).
+	react: ["react", "react/*", "react-dom"],
+	vue: ["vue", "vue/*"],
+	svelte: ["svelte", "svelte/*"],
+	solid: ["solid-js", "solid-js/*"],
+	// Solid 2's DOM renderer is a package of its own, which owns the JSX types (ADR-0102).
+	solid2: ["solid-js", "@solidjs/web"],
+	// `DomSanitizer`, which renders `innerHTML` as written (ADR-0097).
+	angular: ["@angular/core", "@angular/common", "@angular/platform-browser"],
+	qwik: ["@qwik.dev/core", "@qwik.dev/core/*"],
+	astro: ["astro", "astro/*"],
 };
 
 /** What every output may import as written: the `virtual:` modules (plan §4.4, ADR-0064). */
@@ -45,7 +45,7 @@ const PASS_THROUGH_IMPORTS: ReadonlyArray<string> = ["virtual:*"];
  * `import/no-self-import` rejects.
  */
 const BASELINE_EXCEPTIONS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  svelte: ["import/no-self-import"],
+	svelte: ["import/no-self-import"],
 };
 
 /**
@@ -53,14 +53,14 @@ const BASELINE_EXCEPTIONS: Readonly<Record<string, ReadonlyArray<string>>> = {
  * in ESLint (`eslint.config.js`), for a template language oxlint cannot read.
  */
 const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
-  react: "oxlint",
-  solid: "oxlint",
-  solid2: "oxlint",
-  qwik: "oxlint",
-  vue: "eslint",
-  svelte: "eslint",
-  astro: "eslint",
-  angular: "eslint",
+	react: "oxlint",
+	solid: "oxlint",
+	solid2: "oxlint",
+	qwik: "oxlint",
+	vue: "eslint",
+	svelte: "eslint",
+	astro: "eslint",
+	angular: "eslint",
 };
 
 /**
@@ -70,7 +70,7 @@ const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
  * them alone.
  */
 const TYPED_LAYER: Record<string, { host: string; rules: ReadonlyArray<string> }> = {
-  qwik: { host: "qwik-eslint", rules: ["qwik/use-async-top", "qwik/valid-lexical-scope"] },
+	qwik: { host: "qwik-eslint", rules: ["qwik/use-async-top", "qwik/valid-lexical-scope"] },
 };
 
 /** A baseline rule every probe breaks: a statement no output has a reason to hold. */
@@ -82,14 +82,14 @@ const BASELINE_RULE = "no-debugger";
  * not run it (a template language's script, whose bindings the markup reads).
  */
 const UNUSED_RULE: Record<string, string> = {
-  react: "no-unused-vars",
-  solid: "no-unused-vars",
-  solid2: "no-unused-vars",
-  qwik: "no-unused-vars",
-  angular: "no-unused-vars",
-  vue: "@typescript-eslint/no-unused-vars",
-  svelte: "@typescript-eslint/no-unused-vars",
-  astro: "@typescript-eslint/no-unused-vars",
+	react: "no-unused-vars",
+	solid: "no-unused-vars",
+	solid2: "no-unused-vars",
+	qwik: "no-unused-vars",
+	angular: "no-unused-vars",
+	vue: "@typescript-eslint/no-unused-vars",
+	svelte: "@typescript-eslint/no-unused-vars",
+	astro: "@typescript-eslint/no-unused-vars",
 };
 
 /**
@@ -99,126 +99,126 @@ const UNUSED_RULE: Record<string, string> = {
  * count.
  */
 const PROBES: Record<string, { file: string; contents: string; rules: ReadonlyArray<string> }> = {
-  react: {
-    file: "Probe.tsx",
-    contents: [
-      "export default function Probe() {",
-      "  debugger;",
-      '  const label = "Hi";',
-      "  const unused = 1;",
-      '  return <p class="x">{label}</p>;',
-      "}",
-      "",
-    ].join("\n"),
-    rules: ["react/no-unknown-property"],
-  },
-  solid: {
-    file: "Probe.tsx",
-    contents: [
-      "export default function Probe() {",
-      "  debugger;",
-      '  const label = "Hi";',
-      "  const unused = 1;",
-      '  return <p className="x">{label}</p>;',
-      "}",
-      "",
-    ].join("\n"),
-    rules: ["solid/no-react-specific-props"],
-  },
-  solid2: {
-    file: "Probe.tsx",
-    contents: [
-      "export default function Probe() {",
-      "  debugger;",
-      '  const label = "Hi";',
-      "  const unused = 1;",
-      '  return <p className="x">{label}</p>;',
-      "}",
-      "",
-    ].join("\n"),
-    rules: ["solid/no-react-specific-props"],
-  },
-  qwik: {
-    file: "Probe.tsx",
-    contents: [
-      'import { component$ } from "@qwik.dev/core";',
-      "",
-      "export default component$(() => {",
-      "  debugger;",
-      '  const label = "Hi";',
-      "  const unused = 1;",
-      "  function greet() {",
-      "    return label;",
-      "  }",
-      '  return <p className="x" onClick$={() => greet()}>{label}</p>;',
-      "});",
-      "",
-    ].join("\n"),
-    rules: ["qwik/no-react-props", "qwik/valid-lexical-scope"],
-  },
-  vue: {
-    file: "Probe.vue",
-    contents: [
-      '<script setup lang="ts">',
-      "debugger;",
-      'const html = "Hi";',
-      "const unused = 1;",
-      "</script>",
-      "",
-      "<template>",
-      '  <p :title.uf="html"></p>',
-      "</template>",
-      "",
-    ].join("\n"),
-    rules: ["vue/valid-v-bind"],
-  },
-  svelte: {
-    file: "Probe.svelte",
-    contents: [
-      '<script lang="ts">',
-      "  debugger;",
-      '  const html = "Hi";',
-      "  const unused = 1;",
-      "</script>",
-      "",
-      "{#each [html] as line}<p>{line}</p>{/each}",
-      "",
-    ].join("\n"),
-    rules: ["svelte/require-each-key"],
-  },
-  astro: {
-    file: "Probe.astro",
-    contents: [
-      "---",
-      "debugger;",
-      'const html = "Hi";',
-      "const unused = 1;",
-      "---",
-      "",
-      "<p set:text={html} />",
-      "",
-    ].join("\n"),
-    rules: ["astro/no-set-text-directive"],
-  },
-  angular: {
-    file: "probe.ts",
-    contents: [
-      'import { Component } from "@angular/core";',
-      "",
-      "@Component({",
-      '  selector: "uf-probe",',
-      '  template: `<p *ngIf="true">Hi</p>`,',
-      "})",
-      "export default class Probe {",
-      "  constructor() {",
-      "    debugger;",
-      "    const unused = 1;",
-      "  }",
-      "}",
-      "",
-    ].join("\n"),
-    rules: ["@angular-eslint/template/prefer-control-flow"],
-  },
+	react: {
+		file: "Probe.tsx",
+		contents: [
+			"export default function Probe() {",
+			"  debugger;",
+			'  const label = "Hi";',
+			"  const unused = 1;",
+			'  return <p class="x">{label}</p>;',
+			"}",
+			"",
+		].join("\n"),
+		rules: ["react/no-unknown-property"],
+	},
+	solid: {
+		file: "Probe.tsx",
+		contents: [
+			"export default function Probe() {",
+			"  debugger;",
+			'  const label = "Hi";',
+			"  const unused = 1;",
+			'  return <p className="x">{label}</p>;',
+			"}",
+			"",
+		].join("\n"),
+		rules: ["solid/no-react-specific-props"],
+	},
+	solid2: {
+		file: "Probe.tsx",
+		contents: [
+			"export default function Probe() {",
+			"  debugger;",
+			'  const label = "Hi";',
+			"  const unused = 1;",
+			'  return <p className="x">{label}</p>;',
+			"}",
+			"",
+		].join("\n"),
+		rules: ["solid/no-react-specific-props"],
+	},
+	qwik: {
+		file: "Probe.tsx",
+		contents: [
+			'import { component$ } from "@qwik.dev/core";',
+			"",
+			"export default component$(() => {",
+			"  debugger;",
+			'  const label = "Hi";',
+			"  const unused = 1;",
+			"  function greet() {",
+			"    return label;",
+			"  }",
+			'  return <p className="x" onClick$={() => greet()}>{label}</p>;',
+			"});",
+			"",
+		].join("\n"),
+		rules: ["qwik/no-react-props", "qwik/valid-lexical-scope"],
+	},
+	vue: {
+		file: "Probe.vue",
+		contents: [
+			'<script setup lang="ts">',
+			"debugger;",
+			'const html = "Hi";',
+			"const unused = 1;",
+			"</script>",
+			"",
+			"<template>",
+			'  <p :title.uf="html"></p>',
+			"</template>",
+			"",
+		].join("\n"),
+		rules: ["vue/valid-v-bind"],
+	},
+	svelte: {
+		file: "Probe.svelte",
+		contents: [
+			'<script lang="ts">',
+			"  debugger;",
+			'  const html = "Hi";',
+			"  const unused = 1;",
+			"</script>",
+			"",
+			"{#each [html] as line}<p>{line}</p>{/each}",
+			"",
+		].join("\n"),
+		rules: ["svelte/require-each-key"],
+	},
+	astro: {
+		file: "Probe.astro",
+		contents: [
+			"---",
+			"debugger;",
+			'const html = "Hi";',
+			"const unused = 1;",
+			"---",
+			"",
+			"<p set:text={html} />",
+			"",
+		].join("\n"),
+		rules: ["astro/no-set-text-directive"],
+	},
+	angular: {
+		file: "probe.ts",
+		contents: [
+			'import { Component } from "@angular/core";',
+			"",
+			"@Component({",
+			'  selector: "uf-probe",',
+			'  template: `<p *ngIf="true">Hi</p>`,',
+			"})",
+			"export default class Probe {",
+			"  constructor() {",
+			"    debugger;",
+			"    const unused = 1;",
+			"  }",
+			"}",
+			"",
+		].join("\n"),
+		rules: ["@angular-eslint/template/prefer-control-flow"],
+	},
 };
 
 const TARGETS = selectTargets(undefined);
@@ -228,13 +228,13 @@ const TARGETS = selectTargets(undefined);
  * copies: off on every target.
  */
 const AUTHOR_RULES = [
-  "unicorn/consistent-function-scoping",
-  "unicorn/no-array-reverse",
-  "unicorn/no-array-sort",
-  "unicorn/no-instanceof-builtins",
-  "unicorn/no-new-array",
-  "unicorn/no-single-promise-in-promise-methods",
-  "unicorn/prefer-add-event-listener",
+	"unicorn/consistent-function-scoping",
+	"unicorn/no-array-reverse",
+	"unicorn/no-array-sort",
+	"unicorn/no-instanceof-builtins",
+	"unicorn/no-new-array",
+	"unicorn/no-single-promise-in-promise-methods",
+	"unicorn/prefer-add-event-listener",
 ];
 
 /** A rule's setting as `--print-config` prints it: a severity, or a severity and its options. */
@@ -242,175 +242,175 @@ type RuleSetting = string | [string, Array<unknown>];
 
 /** The parts of oxlint's effective configuration this test reads. */
 interface EffectiveConfig {
-  rules: Record<string, RuleSetting>;
-  /** Absent without overrides. */
-  overrides?: Array<{ files: Array<string>; rules: Record<string, RuleSetting> }>;
-  /** Each plugin's settings, by plugin. */
-  settings?: Record<string, unknown>;
-  [key: string]: unknown;
+	rules: Record<string, RuleSetting>;
+	/** Absent without overrides. */
+	overrides?: Array<{ files: Array<string>; rules: Record<string, RuleSetting> }>;
+	/** Each plugin's settings, by plugin. */
+	settings?: Record<string, unknown>;
+	[key: string]: unknown;
 }
 
 /** The configuration oxlint lints a toolchain's outputs with. */
 function effectiveConfig(target: string): EffectiveConfig {
-  const directory = toolchainDir(target);
-  const result = spawnSync(
-    process.execPath,
-    [
-      resolveToolBin(directory, "oxlint", "oxlint"),
-      `--config=${join(directory, "output.oxlintrc.json")}`,
-      "--print-config",
-    ],
-    { cwd: directory, encoding: "utf8" },
-  );
-  expect(result.status, result.stdout + result.stderr).toBe(0);
-  return JSON.parse(result.stdout) as EffectiveConfig;
+	const directory = toolchainDir(target);
+	const result = spawnSync(
+		process.execPath,
+		[
+			resolveToolBin(directory, "oxlint", "oxlint"),
+			`--config=${join(directory, "output.oxlintrc.json")}`,
+			"--print-config",
+		],
+		{ cwd: directory, encoding: "utf8" },
+	);
+	expect(result.status, result.stdout + result.stderr).toBe(0);
+	return JSON.parse(result.stdout) as EffectiveConfig;
 }
 
 /** The `group` of each `no-restricted-imports` pattern: what an output may import. */
 function importGroups(config: EffectiveConfig): unknown {
-  const setting = config.rules["no-restricted-imports"];
-  // oxlint prints a rule's severity and then its options object.
-  const options: unknown = Array.isArray(setting) ? setting[1] : undefined;
-  return (options as { patterns?: Array<{ group?: unknown }> } | undefined)?.patterns?.map(
-    (pattern) => pattern.group,
-  );
+	const setting = config.rules["no-restricted-imports"];
+	// oxlint prints a rule's severity and then its options object.
+	const options: unknown = Array.isArray(setting) ? setting[1] : undefined;
+	return (options as { patterns?: Array<{ group?: unknown }> } | undefined)?.patterns?.map(
+		(pattern) => pattern.group,
+	);
 }
 
 describe("every toolchain's oxlint configuration", () => {
-  const configs = new Map(TARGETS.map((target) => [target, effectiveConfig(target)]));
+	const configs = new Map(TARGETS.map((target) => [target, effectiveConfig(target)]));
 
-  it.each(TARGETS)("%s allows imports of its framework and `virtual:` modules only", (target) => {
-    expect(importGroups(configs.get(target)!)).toEqual([
-      [
-        "*",
-        ...[...ALLOWED_IMPORTS[target]!, ...PASS_THROUGH_IMPORTS].map((name) => `!${name}`),
-        "!./**",
-        "!../**",
-      ],
-    ]);
-  });
+	it.each(TARGETS)("%s allows imports of its framework and `virtual:` modules only", (target) => {
+		expect(importGroups(configs.get(target)!)).toEqual([
+			[
+				"*",
+				...[...ALLOWED_IMPORTS[target]!, ...PASS_THROUGH_IMPORTS].map((name) => `!${name}`),
+				"!./**",
+				"!../**",
+			],
+		]);
+	});
 
-  it("holds the same baseline on every target, but for the import allow-list and its exceptions", () => {
-    const baselines = TARGETS.map((target) => {
-      const { overrides: _framework, rules, settings, ...rest } = configs.get(target)!;
-      // A framework's JS-plugin rules read their own settings, like Solid 2's `settings.solid`
-      // (ADR-0102), which belong to the framework's layer as its overrides do.
-      const { solid: _frameworkSettings, ...baselineSettings } = settings ?? {};
-      const { "no-restricted-imports": _allowList, ...baselineRules } = rules;
-      // An excepted rule is off where it is excepted, and on everywhere else.
-      for (const rule of Object.values(BASELINE_EXCEPTIONS).flat()) {
-        const off = BASELINE_EXCEPTIONS[target]?.includes(rule) ?? false;
-        expect(baselineRules[rule], `${target}: ${rule}`).toBe(off ? "allow" : "deny");
-        delete baselineRules[rule];
-      }
-      return { target, baseline: { ...rest, settings: baselineSettings, rules: baselineRules } };
-    });
-    const [first] = baselines;
-    for (const { target, baseline } of baselines) {
-      expect(baseline, `${target} and ${first!.target}`).toEqual(first!.baseline);
-    }
-  });
+	it("holds the same baseline on every target, but for the import allow-list and its exceptions", () => {
+		const baselines = TARGETS.map((target) => {
+			const { overrides: _framework, rules, settings, ...rest } = configs.get(target)!;
+			// A framework's JS-plugin rules read their own settings, like Solid 2's `settings.solid`
+			// (ADR-0102), which belong to the framework's layer as its overrides do.
+			const { solid: _frameworkSettings, ...baselineSettings } = settings ?? {};
+			const { "no-restricted-imports": _allowList, ...baselineRules } = rules;
+			// An excepted rule is off where it is excepted, and on everywhere else.
+			for (const rule of Object.values(BASELINE_EXCEPTIONS).flat()) {
+				const off = BASELINE_EXCEPTIONS[target]?.includes(rule) ?? false;
+				expect(baselineRules[rule], `${target}: ${rule}`).toBe(off ? "allow" : "deny");
+				delete baselineRules[rule];
+			}
+			return { target, baseline: { ...rest, settings: baselineSettings, rules: baselineRules } };
+		});
+		const [first] = baselines;
+		for (const { target, baseline } of baselines) {
+			expect(baseline, `${target} and ${first!.target}`).toEqual(first!.baseline);
+		}
+	});
 
-  it.each(TARGETS)("%s leaves the author's own statements to the author (ADR-0042)", (target) => {
-    // Rules that judge only what the author wrote, which every target copies: where a helper is
-    // nested, and one correct spelling over another. The targets' own placement of setup
-    // functions (ADR-0045) is pinned by their emitter tests.
-    const { rules, overrides = [] } = configs.get(target)!;
-    for (const rule of AUTHOR_RULES) {
-      expect(rules[rule] ?? "allow", rule).toBe("allow");
-      for (const override of overrides) {
-        expect(override.rules[rule] ?? "allow", rule).toBe("allow");
-      }
-    }
-  });
+	it.each(TARGETS)("%s leaves the author's own statements to the author (ADR-0042)", (target) => {
+		// Rules that judge only what the author wrote, which every target copies: where a helper is
+		// nested, and one correct spelling over another. The targets' own placement of setup
+		// functions (ADR-0045) is pinned by their emitter tests.
+		const { rules, overrides = [] } = configs.get(target)!;
+		for (const rule of AUTHOR_RULES) {
+			expect(rules[rule] ?? "allow", rule).toBe("allow");
+			for (const override of overrides) {
+				expect(override.rules[rule] ?? "allow", rule).toBe("allow");
+			}
+		}
+	});
 
-  it.each(TARGETS)("%s runs its framework's rules in one layer, on every file", (target) => {
-    const { overrides = [] } = configs.get(target)!;
-    const eslintConfig = existsSync(join(toolchainDir(target), "eslint.config.js"));
-    if (FRAMEWORK_LAYER[target] === "oxlint") {
-      expect(overrides.map((override) => override.files)).toEqual([["**/*"]]);
-      expect(eslintConfig).toBe(false);
-    } else {
-      expect(overrides).toEqual([]);
-      expect(eslintConfig).toBe(true);
-    }
-  });
+	it.each(TARGETS)("%s runs its framework's rules in one layer, on every file", (target) => {
+		const { overrides = [] } = configs.get(target)!;
+		const eslintConfig = existsSync(join(toolchainDir(target), "eslint.config.js"));
+		if (FRAMEWORK_LAYER[target] === "oxlint") {
+			expect(overrides.map((override) => override.files)).toEqual([["**/*"]]);
+			expect(eslintConfig).toBe(false);
+		} else {
+			expect(overrides).toEqual([]);
+			expect(eslintConfig).toBe(true);
+		}
+	});
 
-  it.each(TARGETS.filter((target) => target in TYPED_LAYER))(
-    "%s runs its type-aware rules in ESLint alone, from a lint host on TypeScript 6",
-    (target) => {
-      const { host, rules } = TYPED_LAYER[target]!;
-      const directory = join(toolchainDir(target), "..", host);
-      const [framework] = configs.get(target)!.overrides ?? [];
-      for (const rule of rules) {
-        expect(framework?.rules[rule], rule).toBe("allow");
-      }
-      expect(eslintRules(directory)).toEqual(rules);
-      // The rules' plugin resolves TypeScript as it is installed for the host, and the
-      // toolchain's checker (tsgo) is TypeScript 7.
-      expect(pluginTypescript(directory, "eslint-plugin-qwik")).toMatch(/^6\./);
-      expect(pluginTypescript(toolchainDir(target), "eslint-plugin-qwik")).toMatch(/^7\./);
-    },
-  );
+	it.each(TARGETS.filter((target) => target in TYPED_LAYER))(
+		"%s runs its type-aware rules in ESLint alone, from a lint host on TypeScript 6",
+		(target) => {
+			const { host, rules } = TYPED_LAYER[target]!;
+			const directory = join(toolchainDir(target), "..", host);
+			const [framework] = configs.get(target)!.overrides ?? [];
+			for (const rule of rules) {
+				expect(framework?.rules[rule], rule).toBe("allow");
+			}
+			expect(eslintRules(directory)).toEqual(rules);
+			// The rules' plugin resolves TypeScript as it is installed for the host, and the
+			// toolchain's checker (tsgo) is TypeScript 7.
+			expect(pluginTypescript(directory, "eslint-plugin-qwik")).toMatch(/^6\./);
+			expect(pluginTypescript(toolchainDir(target), "eslint-plugin-qwik")).toMatch(/^7\./);
+		},
+	);
 });
 
 /** The rules an ESLint configuration in `directory` turns on for a `.tsx` output, sorted. */
 function eslintRules(directory: string): unknown {
-  const eslint = resolveInstalled(directory, "eslint");
-  expect(eslint, `eslint in ${directory}`).toBeDefined();
-  const script = [
-    `const api = await import(${JSON.stringify(pathToFileURL(eslint!).href)});`,
-    "const { ESLint } = api.ESLint ? api : api.default;",
-    'const config = await new ESLint().calculateConfigForFile("Probe.tsx");',
-    "const on = Object.entries(config.rules).filter(([, [severity]]) => severity !== 0);",
-    "process.stdout.write(JSON.stringify(on.map(([name]) => name).sort()));",
-  ].join("\n");
-  const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
-    cwd: realpathSync(directory),
-    encoding: "utf8",
-  });
-  expect(result.status, result.stdout + result.stderr).toBe(0);
-  return JSON.parse(result.stdout);
+	const eslint = resolveInstalled(directory, "eslint");
+	expect(eslint, `eslint in ${directory}`).toBeDefined();
+	const script = [
+		`const api = await import(${JSON.stringify(pathToFileURL(eslint!).href)});`,
+		"const { ESLint } = api.ESLint ? api : api.default;",
+		'const config = await new ESLint().calculateConfigForFile("Probe.tsx");',
+		"const on = Object.entries(config.rules).filter(([, [severity]]) => severity !== 0);",
+		"process.stdout.write(JSON.stringify(on.map(([name]) => name).sort()));",
+	].join("\n");
+	const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+		cwd: realpathSync(directory),
+		encoding: "utf8",
+	});
+	expect(result.status, result.stdout + result.stderr).toBe(0);
+	return JSON.parse(result.stdout);
 }
 
 /** The version of the TypeScript a plugin installed for `directory` loads. */
 function pluginTypescript(directory: string, plugin: string): string {
-  const manifest = resolveInstalled(directory, `${plugin}/package.json`);
-  expect(manifest, `${plugin} in ${directory}`).toBeDefined();
-  const result = spawnSync(
-    process.execPath,
-    ["--print", 'require("typescript/package.json").version'],
-    { cwd: dirname(manifest!), encoding: "utf8" },
-  );
-  expect(result.status, result.stderr).toBe(0);
-  return result.stdout.trim();
+	const manifest = resolveInstalled(directory, `${plugin}/package.json`);
+	expect(manifest, `${plugin} in ${directory}`).toBeDefined();
+	const result = spawnSync(
+		process.execPath,
+		["--print", 'require("typescript/package.json").version'],
+		{ cwd: dirname(manifest!), encoding: "utf8" },
+	);
+	expect(result.status, result.stderr).toBe(0);
+	return result.stdout.trim();
 }
 
 describe("every toolchain's lint", () => {
-  // Inside the integration package, so the probes sit where outputs do.
-  mkdirSync(join(ROOT, ".uf-tmp"), { recursive: true });
-  const scratch = mkdtempSync(join(ROOT, ".uf-tmp", "lint-"));
-  afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+	// Inside the integration package, so the probes sit where outputs do.
+	mkdirSync(join(ROOT, ".uf-tmp"), { recursive: true });
+	const scratch = mkdtempSync(join(ROOT, ".uf-tmp", "lint-"));
+	afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-  it.each(TARGETS)(
-    "%s rejects a probe that breaks two baseline rules and a framework rule",
-    { timeout: 120_000 },
-    async (target) => {
-      const directory = join(scratch, target);
-      mkdirSync(directory);
-      const { file, contents, rules } = PROBES[target]!;
-      const probe = join(directory, file);
-      writeFileSync(probe, contents);
-      const toolchain = await loadToolchain(target);
-      const results = await toolchain.lint([probe], {
-        toolchainDir: toolchainDir(target),
-        root: ROOT,
-      });
-      expect([...results.keys()]).toEqual([probe]);
-      const codes = results.get(probe)!.map((message) => message.code ?? message.message);
-      expect(codes.toSorted(), JSON.stringify(results.get(probe), null, 2)).toEqual(
-        [BASELINE_RULE, UNUSED_RULE[target]!, ...rules].toSorted(),
-      );
-    },
-  );
+	it.each(TARGETS)(
+		"%s rejects a probe that breaks two baseline rules and a framework rule",
+		{ timeout: 120_000 },
+		async (target) => {
+			const directory = join(scratch, target);
+			mkdirSync(directory);
+			const { file, contents, rules } = PROBES[target]!;
+			const probe = join(directory, file);
+			writeFileSync(probe, contents);
+			const toolchain = await loadToolchain(target);
+			const results = await toolchain.lint([probe], {
+				toolchainDir: toolchainDir(target),
+				root: ROOT,
+			});
+			expect([...results.keys()]).toEqual([probe]);
+			const codes = results.get(probe)!.map((message) => message.code ?? message.message);
+			expect(codes.toSorted(), JSON.stringify(results.get(probe), null, 2)).toEqual(
+				[BASELINE_RULE, UNUSED_RULE[target]!, ...rules].toSorted(),
+			);
+		},
+	);
 });

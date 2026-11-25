@@ -8,26 +8,26 @@ import { expect } from "vitest";
 import Editor from "./Editor.uf.tsx";
 
 describeTargets("fallthrough/attributes", () => {
-  it("puts the attributes on the root", async () => {
-    const view = await mount(Editor);
-    await view.expectParity("initial");
-    const save = view.getByRole("button", { name: "Save" });
-    await expect.element(save).toHaveAttribute("id", "save");
-    await expect.element(save).toHaveAttribute("aria-describedby", "save-hint");
-    await expect.element(save).toHaveAttribute("aria-pressed", "false");
-    await expect.element(save).toHaveAttribute("data-testid", "save-button");
-    await expect.element(save).toHaveAttribute("type", "submit");
-    await expect.element(save).toHaveClass("button", "primary");
-    await expect.element(save).toHaveAccessibleDescription("Saves the draft.");
-    await expect.element(save).not.toHaveAttribute("title");
-  });
+	it("puts the attributes on the root", async () => {
+		const view = await mount(Editor);
+		await view.expectParity("initial");
+		const save = view.getByRole("button", { name: "Save" });
+		await expect.element(save).toHaveAttribute("id", "save");
+		await expect.element(save).toHaveAttribute("aria-describedby", "save-hint");
+		await expect.element(save).toHaveAttribute("aria-pressed", "false");
+		await expect.element(save).toHaveAttribute("data-testid", "save-button");
+		await expect.element(save).toHaveAttribute("type", "submit");
+		await expect.element(save).toHaveClass("button", "primary");
+		await expect.element(save).toHaveAccessibleDescription("Saves the draft.");
+		await expect.element(save).not.toHaveAttribute("title");
+	});
 
-  it("updates a bound attribute", { requires: ["interactivity"] }, async () => {
-    const view = await mount(Editor);
-    await view.user.click(view.getByRole("button", { name: "Toggle" }));
-    await view.expectParity("toggled");
-    await expect
-      .element(view.getByRole("button", { name: "Save" }))
-      .toHaveAttribute("aria-pressed", "true");
-  });
+	it("updates a bound attribute", { requires: ["interactivity"] }, async () => {
+		const view = await mount(Editor);
+		await view.user.click(view.getByRole("button", { name: "Toggle" }));
+		await view.expectParity("toggled");
+		await expect
+			.element(view.getByRole("button", { name: "Save" }))
+			.toHaveAttribute("aria-pressed", "true");
+	});
 });

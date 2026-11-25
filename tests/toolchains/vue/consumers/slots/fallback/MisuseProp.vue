@@ -3,6 +3,6 @@ import Notice from "../../../../../integration/cases/slots/fallback/__output__/v
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Notice.prop:label -->
-  <Notice :label="1" />
+	<!-- @uf-expect TS2322 Notice.prop:label -->
+	<Notice :label="1" />
 </template>

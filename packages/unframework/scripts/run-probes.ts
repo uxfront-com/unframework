@@ -21,14 +21,14 @@
  */
 import { spawnSync } from "node:child_process";
 import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	realpathSync,
+	rmSync,
+	writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -50,239 +50,239 @@ const DIAGNOSTIC = /^(.+?)\((\d+),(\d+)\): error (TS\d+): (.*)$/;
 const GLOBAL_DIAGNOSTIC = /^error (TS\d+): (.*)$/;
 
 export interface ProbeOptions {
-  /** The probe tree; defaults to this package's `probes/`. */
-  directory?: string;
-  /** A `tsc` executable to check with (for example a TypeScript nightly); defaults to this package's. */
-  tsc?: string;
+	/** The probe tree; defaults to this package's `probes/`. */
+	directory?: string;
+	/** A `tsc` executable to check with (for example a TypeScript nightly); defaults to this package's. */
+	tsc?: string;
 }
 
 export interface ProbeReport {
-  /** True when the layout, the gate and the pin all passed. */
-  ok: boolean;
-  /** How many directives' lines report exactly one error, with the code the directive names. */
-  pinned: number;
-  /** One line per problem, prefixed with the step that found it. */
-  problems: Array<string>;
+	/** True when the layout, the gate and the pin all passed. */
+	ok: boolean;
+	/** How many directives' lines report exactly one error, with the code the directive names. */
+	pinned: number;
+	/** One line per problem, prefixed with the step that found it. */
+	problems: Array<string>;
 }
 
 interface Diagnostic {
-  /** Relative to the tree, with `/` separators. */
-  file: string;
-  line: number;
-  code: string;
-  message: string;
+	/** Relative to the tree, with `/` separators. */
+	file: string;
+	line: number;
+	code: string;
+	message: string;
 }
 
 interface Directive {
-  /** `<file>:<line>` of the line the directive applies to. */
-  target: string;
-  code: string;
-  text: string;
+	/** `<file>:<line>` of the line the directive applies to. */
+	target: string;
+	code: string;
+	text: string;
 }
 
 /** The checker: an explicit executable, or the `tsc` of the TypeScript this package depends on. */
 function tscCommand(tsc: string | undefined): { command: string; args: Array<string> } {
-  if (tsc) {
-    return { command: tsc, args: [] };
-  }
-  const require = createRequire(import.meta.url);
-  const manifestPath = require.resolve("typescript/package.json");
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { bin: { tsc: string } };
-  return { command: process.execPath, args: [join(dirname(manifestPath), manifest.bin.tsc)] };
+	if (tsc) {
+		return { command: tsc, args: [] };
+	}
+	const require = createRequire(import.meta.url);
+	const manifestPath = require.resolve("typescript/package.json");
+	const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { bin: { tsc: string } };
+	return { command: process.execPath, args: [join(dirname(manifestPath), manifest.bin.tsc)] };
 }
 
 /** Runs `tsc -p` in `cwd` and parses its diagnostics. Throws when the checker cannot run at all. */
 function check(
-  tsc: { command: string; args: Array<string> },
-  cwd: string,
+	tsc: { command: string; args: Array<string> },
+	cwd: string,
 ): { status: number; diagnostics: Array<Diagnostic>; global: Array<string>; output: string } {
-  const result = spawnSync(
-    tsc.command,
-    [...tsc.args, "-p", join(cwd, "tsconfig.json"), "--noEmit", "--pretty", "false"],
-    { cwd, encoding: "utf8" },
-  );
-  if (result.error) {
-    throw new Error(`probes: could not start tsc (${tsc.command}): ${result.error.message}`, {
-      cause: result.error,
-    });
-  }
-  if (result.status === null) {
-    throw new Error(`probes: tsc was stopped by ${result.signal ?? "a signal"}`);
-  }
-  const output = `${result.stdout}${result.stderr}`;
-  const diagnostics: Array<Diagnostic> = [];
-  const global: Array<string> = [];
-  for (const line of output.split("\n")) {
-    const match = DIAGNOSTIC.exec(line);
-    if (match) {
-      diagnostics.push({
-        file: relative(cwd, resolve(cwd, match[1]!)).split(sep).join("/"),
-        line: Number(match[2]),
-        code: match[4]!,
-        message: match[5]!,
-      });
-    } else if (GLOBAL_DIAGNOSTIC.test(line)) {
-      global.push(line);
-    }
-  }
-  return { status: result.status, diagnostics, global, output };
+	const result = spawnSync(
+		tsc.command,
+		[...tsc.args, "-p", join(cwd, "tsconfig.json"), "--noEmit", "--pretty", "false"],
+		{ cwd, encoding: "utf8" },
+	);
+	if (result.error) {
+		throw new Error(`probes: could not start tsc (${tsc.command}): ${result.error.message}`, {
+			cause: result.error,
+		});
+	}
+	if (result.status === null) {
+		throw new Error(`probes: tsc was stopped by ${result.signal ?? "a signal"}`);
+	}
+	const output = `${result.stdout}${result.stderr}`;
+	const diagnostics: Array<Diagnostic> = [];
+	const global: Array<string> = [];
+	for (const line of output.split("\n")) {
+		const match = DIAGNOSTIC.exec(line);
+		if (match) {
+			diagnostics.push({
+				file: relative(cwd, resolve(cwd, match[1]!)).split(sep).join("/"),
+				line: Number(match[2]),
+				code: match[4]!,
+				message: match[5]!,
+			});
+		} else if (GLOBAL_DIAGNOSTIC.test(line)) {
+			global.push(line);
+		}
+	}
+	return { status: result.status, diagnostics, global, output };
 }
 
 /** Every file under a folder of the tree, relative to the tree, with `/` separators. */
 function filesOf(directory: string, folder: string): Array<string> {
-  return readdirSync(join(directory, folder), { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(directory, join(entry.parentPath, entry.name)).split(sep).join("/"))
-    .toSorted();
+	return readdirSync(join(directory, folder), { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile())
+		.map((entry) => relative(directory, join(entry.parentPath, entry.name)).split(sep).join("/"))
+		.toSorted();
 }
 
 /** Reads the directives of every file, reporting the ones the layout does not allow. */
 function readLayout(
-  directory: string,
-  files: Array<string>,
+	directory: string,
+	files: Array<string>,
 ): { directives: Array<Directive>; problems: Array<string> } {
-  const directives: Array<Directive> = [];
-  const problems: Array<string> = [];
-  for (const file of files) {
-    if (!/\.[cm]?tsx?$/.test(file)) {
-      continue;
-    }
-    const inCaught = file.startsWith("caught/");
-    let count = 0;
-    readFileSync(join(directory, file), "utf8")
-      .split("\n")
-      .forEach((text, index) => {
-        const trimmed = text.trim();
-        const where = `${file}:${index + 1}`;
-        if (BLANKET.test(trimmed)) {
-          problems.push(
-            `layout: ${where}: @ts-ignore and @ts-nocheck hide errors; pin them with @ts-expect-error`,
-          );
-        }
-        if (!DIRECTIVE.test(trimmed)) {
-          return;
-        }
-        count++;
-        const pinned = PINNED_DIRECTIVE.exec(trimmed);
-        if (!inCaught) {
-          problems.push(
-            `layout: ${where}: directives belong in caught/; ${file} must type-check clean`,
-          );
-        } else if (!pinned) {
-          problems.push(
-            `layout: ${where}: a directive must name its code: // @ts-expect-error TSxxxx why`,
-          );
-        } else {
-          directives.push({ target: `${file}:${index + 2}`, code: pinned[1]!, text: trimmed });
-        }
-      });
-    if (inCaught && count === 0) {
-      problems.push(
-        `layout: ${file} pins no probe; caught/ files hold one @ts-expect-error per mistake`,
-      );
-    }
-  }
-  return { directives, problems };
+	const directives: Array<Directive> = [];
+	const problems: Array<string> = [];
+	for (const file of files) {
+		if (!/\.[cm]?tsx?$/.test(file)) {
+			continue;
+		}
+		const inCaught = file.startsWith("caught/");
+		let count = 0;
+		readFileSync(join(directory, file), "utf8")
+			.split("\n")
+			.forEach((text, index) => {
+				const trimmed = text.trim();
+				const where = `${file}:${index + 1}`;
+				if (BLANKET.test(trimmed)) {
+					problems.push(
+						`layout: ${where}: @ts-ignore and @ts-nocheck hide errors; pin them with @ts-expect-error`,
+					);
+				}
+				if (!DIRECTIVE.test(trimmed)) {
+					return;
+				}
+				count++;
+				const pinned = PINNED_DIRECTIVE.exec(trimmed);
+				if (!inCaught) {
+					problems.push(
+						`layout: ${where}: directives belong in caught/; ${file} must type-check clean`,
+					);
+				} else if (!pinned) {
+					problems.push(
+						`layout: ${where}: a directive must name its code: // @ts-expect-error TSxxxx why`,
+					);
+				} else {
+					directives.push({ target: `${file}:${index + 2}`, code: pinned[1]!, text: trimmed });
+				}
+			});
+		if (inCaught && count === 0) {
+			problems.push(
+				`layout: ${file} pins no probe; caught/ files hold one @ts-expect-error per mistake`,
+			);
+		}
+	}
+	return { directives, problems };
 }
 
 /** Runs the probe suite over a tree and reports every problem it finds. */
 export function runProbes(options: ProbeOptions = {}): ProbeReport {
-  const requested = resolve(options.directory ?? PROBES_DIRECTORY);
-  for (const required of ["tsconfig.json", ...FOLDERS]) {
-    if (!existsSync(join(requested, required))) {
-      throw new Error(`probes: ${requested} is not a probe tree: it has no ${required}`);
-    }
-  }
-  // tsc reports paths relative to its real working directory (macOS's /tmp is /private/tmp), so
-  // the tree is addressed by its real path too.
-  const directory = realpathSync(requested);
-  const tsc = tscCommand(options.tsc);
-  const files = FOLDERS.flatMap((folder) => filesOf(directory, folder));
-  const { directives, problems } = readLayout(directory, files);
+	const requested = resolve(options.directory ?? PROBES_DIRECTORY);
+	for (const required of ["tsconfig.json", ...FOLDERS]) {
+		if (!existsSync(join(requested, required))) {
+			throw new Error(`probes: ${requested} is not a probe tree: it has no ${required}`);
+		}
+	}
+	// tsc reports paths relative to its real working directory (macOS's /tmp is /private/tmp), so
+	// the tree is addressed by its real path too.
+	const directory = realpathSync(requested);
+	const tsc = tscCommand(options.tsc);
+	const files = FOLDERS.flatMap((folder) => filesOf(directory, folder));
+	const { directives, problems } = readLayout(directory, files);
 
-  const gate = check(tsc, directory);
-  if (gate.status !== 0) {
-    const lines = gate.output.split("\n").filter((line) => line.trim() !== "");
-    problems.push(
-      `gate: tsc exited ${gate.status} (TS2578 is a mistake no longer caught; any other error is a false error)`,
-      ...lines.map((line) => `gate: ${line}`),
-    );
-    return { ok: false, pinned: 0, problems };
-  }
+	const gate = check(tsc, directory);
+	if (gate.status !== 0) {
+		const lines = gate.output.split("\n").filter((line) => line.trim() !== "");
+		problems.push(
+			`gate: tsc exited ${gate.status} (TS2578 is a mistake no longer caught; any other error is a false error)`,
+			...lines.map((line) => `gate: ${line}`),
+		);
+		return { ok: false, pinned: 0, problems };
+	}
 
-  // The copy sits inside the tree, so `@uxfront/unframework` and the base tsconfig resolve exactly as they do
-  // for the original. Disabling rewrites the directive's name: TypeScript would still read
-  // `@ts-expect-error-disabled` as a directive.
-  const scratch = mkdtempSync(join(directory, ".pinned-"));
-  let pinned = 0;
-  try {
-    for (const file of files) {
-      const target = join(scratch, file);
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(
-        target,
-        readFileSync(join(directory, file), "utf8").replaceAll(
-          "@ts-expect-error",
-          "@probe-disabled",
-        ),
-      );
-    }
-    writeFileSync(
-      join(scratch, "tsconfig.json"),
-      `${JSON.stringify({ extends: "../tsconfig.json", include: [...FOLDERS] }, null, 2)}\n`,
-    );
-    const unpinned = check(tsc, scratch);
-    problems.push(...unpinned.global.map((line) => `pin: ${line}`));
+	// The copy sits inside the tree, so `@uxfront/unframework` and the base tsconfig resolve exactly as they do
+	// for the original. Disabling rewrites the directive's name: TypeScript would still read
+	// `@ts-expect-error-disabled` as a directive.
+	const scratch = mkdtempSync(join(directory, ".pinned-"));
+	let pinned = 0;
+	try {
+		for (const file of files) {
+			const target = join(scratch, file);
+			mkdirSync(dirname(target), { recursive: true });
+			writeFileSync(
+				target,
+				readFileSync(join(directory, file), "utf8").replaceAll(
+					"@ts-expect-error",
+					"@probe-disabled",
+				),
+			);
+		}
+		writeFileSync(
+			join(scratch, "tsconfig.json"),
+			`${JSON.stringify({ extends: "../tsconfig.json", include: [...FOLDERS] }, null, 2)}\n`,
+		);
+		const unpinned = check(tsc, scratch);
+		problems.push(...unpinned.global.map((line) => `pin: ${line}`));
 
-    const actual = new Map<string, Array<Diagnostic>>();
-    for (const diagnostic of unpinned.diagnostics) {
-      const key = `${diagnostic.file}:${diagnostic.line}`;
-      actual.set(key, [...(actual.get(key) ?? []), diagnostic]);
-    }
-    for (const { target, code, text } of directives) {
-      const codes = (actual.get(target) ?? []).map((diagnostic) => diagnostic.code);
-      if (codes.length === 1 && codes[0] === code) {
-        pinned++;
-      } else {
-        problems.push(
-          `pin: ${target}: expected ${code}, got ${codes.join(", ") || "nothing"} (${text})`,
-        );
-      }
-      actual.delete(target);
-    }
-    for (const [key, diagnostics] of actual) {
-      for (const { code, message } of diagnostics) {
-        problems.push(`pin: ${key}: unexpected ${code} outside any directive: ${message}`);
-      }
-    }
-    if (
-      unpinned.status !== 0 &&
-      unpinned.diagnostics.length === 0 &&
-      unpinned.global.length === 0
-    ) {
-      problems.push(
-        `pin: tsc exited ${unpinned.status} without a diagnostic: ${unpinned.output.trim()}`,
-      );
-    }
-  } finally {
-    rmSync(scratch, { recursive: true, force: true });
-  }
-  return { ok: problems.length === 0, pinned, problems };
+		const actual = new Map<string, Array<Diagnostic>>();
+		for (const diagnostic of unpinned.diagnostics) {
+			const key = `${diagnostic.file}:${diagnostic.line}`;
+			actual.set(key, [...(actual.get(key) ?? []), diagnostic]);
+		}
+		for (const { target, code, text } of directives) {
+			const codes = (actual.get(target) ?? []).map((diagnostic) => diagnostic.code);
+			if (codes.length === 1 && codes[0] === code) {
+				pinned++;
+			} else {
+				problems.push(
+					`pin: ${target}: expected ${code}, got ${codes.join(", ") || "nothing"} (${text})`,
+				);
+			}
+			actual.delete(target);
+		}
+		for (const [key, diagnostics] of actual) {
+			for (const { code, message } of diagnostics) {
+				problems.push(`pin: ${key}: unexpected ${code} outside any directive: ${message}`);
+			}
+		}
+		if (
+			unpinned.status !== 0 &&
+			unpinned.diagnostics.length === 0 &&
+			unpinned.global.length === 0
+		) {
+			problems.push(
+				`pin: tsc exited ${unpinned.status} without a diagnostic: ${unpinned.output.trim()}`,
+			);
+		}
+	} finally {
+		rmSync(scratch, { recursive: true, force: true });
+	}
+	return { ok: problems.length === 0, pinned, problems };
 }
 
 if (import.meta.main) {
-  const tsc = process.argv
-    .find((argument) => argument.startsWith("--tsc="))
-    ?.slice("--tsc=".length);
-  const report = runProbes({ tsc });
-  if (!report.ok) {
-    for (const problem of report.problems) {
-      console.error(problem);
-    }
-    console.error(`probes: FAIL, ${report.problems.length} problem(s)`);
-    process.exit(1);
-  }
-  console.log(
-    `probes: OK, the gate is clean and ${report.pinned} caught probes are pinned to their codes`,
-  );
+	const tsc = process.argv
+		.find((argument) => argument.startsWith("--tsc="))
+		?.slice("--tsc=".length);
+	const report = runProbes({ tsc });
+	if (!report.ok) {
+		for (const problem of report.problems) {
+			console.error(problem);
+		}
+		console.error(`probes: FAIL, ${report.problems.length} problem(s)`);
+		process.exit(1);
+	}
+	console.log(
+		`probes: OK, the gate is clean and ${report.pinned} caught probes are pinned to their codes`,
+	);
 }

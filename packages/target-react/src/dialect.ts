@@ -4,17 +4,17 @@
 // attribute the IR can hold is one of React's boolean props (test/attributes.test.ts), so the
 // defaults write it bare and bind it as it is.
 import {
-  expressionCode,
-  isIdentifier,
-  isNumberTypedAttribute,
-  js,
-  jsxAttributeName,
-  jsxAttributeValue,
-  jsxExpression,
-  spreadClassReads,
-  spreadRead,
-  staticJsxAttribute,
-  styleObject,
+	expressionCode,
+	isIdentifier,
+	isNumberTypedAttribute,
+	js,
+	jsxAttributeName,
+	jsxAttributeValue,
+	jsxExpression,
+	spreadClassReads,
+	spreadRead,
+	staticJsxAttribute,
+	styleObject,
 } from "@unframework.dev/codegen";
 import type { ImportSet, JsxContext, JsxDialect } from "@unframework.dev/codegen";
 import type { ClassAttribute, ElementNode } from "@unframework.dev/ir";
@@ -30,16 +30,16 @@ type ObjectExpression = ReturnType<typeof js.objectExpression>;
 
 /** The names one output file claims as it prints: its imports, and its inline helper. */
 export interface ReactNames {
-  /** The output file's imports and names (`sourceNames` reserved). */
-  readonly imports: ImportSet;
-  /** The local name of the `cx` helper, once a `className` needs it. */
-  cx?: string;
-  /** Whether a `className` joins a part that may be an array or an object (ADR-0065). */
-  cxCollections?: boolean;
-  /** The local name of the `styleObject` helper, once a style bound to a value needs it. */
-  styleObject?: string;
-  /** The `style` prop's local, where the root takes a consumer's (ADR-0054). */
-  style?: string;
+	/** The output file's imports and names (`sourceNames` reserved). */
+	readonly imports: ImportSet;
+	/** The local name of the `cx` helper, once a `className` needs it. */
+	cx?: string;
+	/** Whether a `className` joins a part that may be an array or an object (ADR-0065). */
+	cxCollections?: boolean;
+	/** The local name of the `styleObject` helper, once a style bound to a value needs it. */
+	styleObject?: string;
+	/** The `style` prop's local, where the root takes a consumer's (ADR-0054). */
+	style?: string;
 }
 
 /**
@@ -47,216 +47,216 @@ export interface ReactNames {
  * prints the listeners and template refs, and `composer` composition (ADR-0054).
  */
 export function reactDialect(
-  names: ReactNames,
-  listeners: ReactListeners,
-  composer: ReactComposer,
+	names: ReactNames,
+	listeners: ReactListeners,
+	composer: ReactComposer,
 ): JsxDialect {
-  const dialect: JsxDialect = {
-    attributeName: (name, element) =>
-      formControlProp(name, element) ?? REACT_PROP_NAMES[name] ?? name,
+	const dialect: JsxDialect = {
+		attributeName: (name, element) =>
+			formControlProp(name, element) ?? REACT_PROP_NAMES[name] ?? name,
 
-    staticAttribute(attribute, element, context) {
-      const { name, value } = attribute;
-      if (typeof value === "string" && name === "class") {
-        const reads = spreadClassReads(element, context);
-        if (reads.length) {
-          return [className([js.stringLiteral(value), ...reads], names)];
-        }
-      }
-      // @types/react types these as `number`, so a string fails L4; the invariants keep their
-      // static values canonical numbers, which print as written (`tabIndex={0}`).
-      if (typeof value === "string" && isNumberTypedAttribute(element.tag, name)) {
-        const number = context.placeholders.expression(value);
-        return [prop(name, element, context, number)];
-      }
-      return staticJsxAttribute(attribute, element, context);
-    },
+		staticAttribute(attribute, element, context) {
+			const { name, value } = attribute;
+			if (typeof value === "string" && name === "class") {
+				const reads = spreadClassReads(element, context);
+				if (reads.length) {
+					return [className([js.stringLiteral(value), ...reads], names)];
+				}
+			}
+			// @types/react types these as `number`, so a string fails L4; the invariants keep their
+			// static values canonical numbers, which print as written (`tabIndex={0}`).
+			if (typeof value === "string" && isNumberTypedAttribute(element.tag, name)) {
+				const number = context.placeholders.expression(value);
+				return [prop(name, element, context, number)];
+			}
+			return staticJsxAttribute(attribute, element, context);
+		},
 
-    boundAttribute: (attribute, element, context) => [
-      prop(attribute.name, element, context, jsxExpression(attribute.value, context)),
-    ],
+		boundAttribute: (attribute, element, context) => [
+			prop(attribute.name, element, context, jsxExpression(attribute.value, context)),
+		],
 
-    classAttribute(attribute, element, context) {
-      if (attribute.items.some((item) => item.kind === "Dynamic" && item.collection)) {
-        names.cxCollections = true;
-      }
-      // The root's `class` is the consumer's alone: as it is (ADR-0054).
-      if (composer.bareClasses.has(attribute) && !spreadsClass(element)) {
-        const [only] = attribute.items;
-        if (only?.kind === "Dynamic") {
-          return [
-            js.jsxAttribute(
-              "className",
-              js.jsxExpressionContainer(jsxExpression(only.value, context)),
-            ),
-          ];
-        }
-      }
-      // A component's static `class` is a string, as an element's (`className="wide"`).
-      if (/^[A-Z]/.test(element.tag) && attribute.items.every((item) => item.kind === "Static")) {
-        const value = attribute.items
-          .map((item) => (item.kind === "Static" ? item.value : ""))
-          .join(" ");
-        return [js.jsxAttribute("className", jsxAttributeValue(value))];
-      }
-      return [
-        className(
-          [...classParts(attribute, context), ...spreadClassReads(element, context)],
-          names,
-        ),
-      ];
-    },
+		classAttribute(attribute, element, context) {
+			if (attribute.items.some((item) => item.kind === "Dynamic" && item.collection)) {
+				names.cxCollections = true;
+			}
+			// The root's `class` is the consumer's alone: as it is (ADR-0054).
+			if (composer.bareClasses.has(attribute) && !spreadsClass(element)) {
+				const [only] = attribute.items;
+				if (only?.kind === "Dynamic") {
+					return [
+						js.jsxAttribute(
+							"className",
+							js.jsxExpressionContainer(jsxExpression(only.value, context)),
+						),
+					];
+				}
+			}
+			// A component's static `class` is a string, as an element's (`className="wide"`).
+			if (/^[A-Z]/.test(element.tag) && attribute.items.every((item) => item.kind === "Static")) {
+				const value = attribute.items
+					.map((item) => (item.kind === "Static" ? item.value : ""))
+					.join(" ");
+				return [js.jsxAttribute("className", jsxAttributeValue(value))];
+			}
+			return [
+				className(
+					[...classParts(attribute, context), ...spreadClassReads(element, context)],
+					names,
+				),
+			];
+		},
 
-    styleAttribute(attribute, _element, context) {
-      const fallthrough = composer.fallthroughStyles.has(attribute);
-      const own = names.style;
-      // A style bound to a value, an object or a declaration list (ADR-0065).
-      if (attribute.value) {
-        const value = styleObjectCall(jsxExpression(attribute.value, context), names);
-        return [
-          js.jsxAttribute(
-            "style",
-            js.jsxExpressionContainer(fallthrough ? withConsumer(value, own!) : value),
-          ),
-        ];
-      }
-      if (fallthrough && attribute.declarations.length === 0) {
-        return [js.jsxAttribute("style", js.jsxExpressionContainer(js.identifier(own!)))];
-      }
-      const object = styleObject(attribute, context, "camel");
-      // A consumer's declarations win over the root's own (ADR-0054).
-      if (fallthrough) {
-        object.properties.push(js.spreadElement(js.identifier(own!)));
-      }
-      // React's `CSSProperties` declares no custom properties, so an object holding one is
-      // typed as its own (tsgo rejects the literal otherwise).
-      const custom = attribute.declarations.some(({ property }) => property.startsWith("--"));
-      const value = custom
-        ? js.asExpression(
-            object,
-            js.typeReference(names.imports.add("react", "CSSProperties", { type: true })),
-          )
-        : object;
-      return [js.jsxAttribute("style", js.jsxExpressionContainer(value))];
-    },
+		styleAttribute(attribute, _element, context) {
+			const fallthrough = composer.fallthroughStyles.has(attribute);
+			const own = names.style;
+			// A style bound to a value, an object or a declaration list (ADR-0065).
+			if (attribute.value) {
+				const value = styleObjectCall(jsxExpression(attribute.value, context), names);
+				return [
+					js.jsxAttribute(
+						"style",
+						js.jsxExpressionContainer(fallthrough ? withConsumer(value, own!) : value),
+					),
+				];
+			}
+			if (fallthrough && attribute.declarations.length === 0) {
+				return [js.jsxAttribute("style", js.jsxExpressionContainer(js.identifier(own!)))];
+			}
+			const object = styleObject(attribute, context, "camel");
+			// A consumer's declarations win over the root's own (ADR-0054).
+			if (fallthrough) {
+				object.properties.push(js.spreadElement(js.identifier(own!)));
+			}
+			// React's `CSSProperties` declares no custom properties, so an object holding one is
+			// typed as its own (tsgo rejects the literal otherwise).
+			const custom = attribute.declarations.some(({ property }) => property.startsWith("--"));
+			const value = custom
+				? js.asExpression(
+						object,
+						js.typeReference(names.imports.add("react", "CSSProperties", { type: true })),
+					)
+				: object;
+			return [js.jsxAttribute("style", js.jsxExpressionContainer(value))];
+		},
 
-    // ADR-0039: a spread renders exactly its declared keys, so each is written out as the bound
-    // attribute it stands for. A `class` key merges into the element's own `className`.
-    spreadAttribute(attribute, element, context) {
-      const merged = element.attributes.some(
-        (other) => other.kind === "Class" || (other.kind === "Static" && other.name === "class"),
-      );
-      return attribute.keys
-        .filter((key) => !(merged && key.name === "class"))
-        .map((key) => {
-          const read = spreadRead(attribute, key, context);
-          // A `style` key is the element's style (ADR-0065).
-          return prop(
-            key.name,
-            element,
-            context,
-            key.name === "style" ? styleObjectCall(read, names) : read,
-          );
-        });
-    },
+		// ADR-0039: a spread renders exactly its declared keys, so each is written out as the bound
+		// attribute it stands for. A `class` key merges into the element's own `className`.
+		spreadAttribute(attribute, element, context) {
+			const merged = element.attributes.some(
+				(other) => other.kind === "Class" || (other.kind === "Static" && other.name === "class"),
+			);
+			return attribute.keys
+				.filter((key) => !(merged && key.name === "class"))
+				.map((key) => {
+					const read = spreadRead(attribute, key, context);
+					// A `style` key is the element's style (ADR-0065).
+					return prop(
+						key.name,
+						element,
+						context,
+						key.name === "style" ? styleObjectCall(read, names) : read,
+					);
+				});
+		},
 
-    conditional: (node, context) => keyedTernary(node, context, names.imports),
+		conditional: (node, context) => keyedTernary(node, context, names.imports),
 
-    eventAttribute: (attribute, element, context) =>
-      rooted(listeners.event(attribute, element, context), element),
-    directiveAttribute: (attribute, element, context) =>
-      rooted(listeners.directive(attribute, element, context), element),
+		eventAttribute: (attribute, element, context) =>
+			rooted(listeners.event(attribute, element, context), element),
+		directiveAttribute: (attribute, element, context) =>
+			rooted(listeners.directive(attribute, element, context), element),
 
-    // What a parent passes a child that it does not declare (ADR-0118), printed as the child's
-    // fallthrough element would take it: React's prop names and number types of its tag, and a
-    // listener as the element's synthetic prop, its own semantics kept (`event-semantics`).
-    fallthroughAttributes(attributes, node, _element, context) {
-      const element = listeners.fallthroughElement(node, attributes);
-      return attributes.flatMap((attribute) => {
-        switch (attribute.kind) {
-          case "Static":
-            return dialect.staticAttribute!(attribute, element, context);
-          case "Bound":
-            return dialect.boundAttribute!(attribute, element, context);
-          case "Event":
-            return listeners.event(attribute, element, context);
-          default:
-            return attribute satisfies never;
-        }
-      });
-    },
+		// What a parent passes a child that it does not declare (ADR-0118), printed as the child's
+		// fallthrough element would take it: React's prop names and number types of its tag, and a
+		// listener as the element's synthetic prop, its own semantics kept (`event-semantics`).
+		fallthroughAttributes(attributes, node, _element, context) {
+			const element = listeners.fallthroughElement(node, attributes);
+			return attributes.flatMap((attribute) => {
+				switch (attribute.kind) {
+					case "Static":
+						return dialect.staticAttribute!(attribute, element, context);
+					case "Bound":
+						return dialect.boundAttribute!(attribute, element, context);
+					case "Event":
+						return listeners.event(attribute, element, context);
+					default:
+						return attribute satisfies never;
+				}
+			});
+		},
 
-    // The props' rest spreads after the element's own attributes, so the consumer's win, as a
-    // root's fallthrough does (`ReactComposer.scopeRootAttributes`, ADR-0118).
-    restAttribute: () => [],
+		// The props' rest spreads after the element's own attributes, so the consumer's win, as a
+		// root's fallthrough does (`ReactComposer.scopeRootAttributes`, ADR-0118).
+		restAttribute: () => [],
 
-    // React's raw HTML prop takes an object, which marks the markup as set on purpose (ADR-0097).
-    rawHtmlAttribute: (attribute, _element, context) => [
-      js.jsxAttribute(
-        "dangerouslySetInnerHTML",
-        js.jsxExpressionContainer(
-          js.objectExpression([["__html", jsxExpression(attribute.value, context)]]),
-        ),
-      ),
-    ],
+		// React's raw HTML prop takes an object, which marks the markup as set on purpose (ADR-0097).
+		rawHtmlAttribute: (attribute, _element, context) => [
+			js.jsxAttribute(
+				"dangerouslySetInnerHTML",
+				js.jsxExpressionContainer(
+					js.objectExpression([["__html", jsxExpression(attribute.value, context)]]),
+				),
+			),
+		],
 
-    // A component's `ref` holds what it exposes, or its root element (ADR-0054, ADR-0118): the
-    // ref object itself.
-    refAttribute: (attribute, element, context) =>
-      rooted(
-        /^[A-Z]/.test(element.tag)
-          ? [
-              js.jsxAttribute(
-                "ref",
-                js.jsxExpressionContainer(
-                  js.identifier(
-                    context.component.bindings.find((binding) => binding.id === attribute.binding)!
-                      .name,
-                  ),
-                ),
-              ),
-            ]
-          : listeners.ref(attribute, element, context),
-        element,
-      ),
+		// A component's `ref` holds what it exposes, or its root element (ADR-0054, ADR-0118): the
+		// ref object itself.
+		refAttribute: (attribute, element, context) =>
+			rooted(
+				/^[A-Z]/.test(element.tag)
+					? [
+							js.jsxAttribute(
+								"ref",
+								js.jsxExpressionContainer(
+									js.identifier(
+										context.component.bindings.find((binding) => binding.id === attribute.binding)!
+											.name,
+									),
+								),
+							),
+						]
+					: listeners.ref(attribute, element, context),
+				element,
+			),
 
-    slotOutlet: (node, context) => composer.slotOutlet(node, context),
-    slotValue: (slot, context) => composer.slotValue(slot, context),
-    fillAttribute: (fill, node, context) => composer.fillAttribute(fill, node, context),
-    componentEvent: (attribute, node, context) => composer.componentEvent(attribute, node, context),
-    modelAttribute: (attribute, element, context) =>
-      rooted(composer.modelAttribute(attribute, element, context), element),
-    modelBinding: (attribute, node, context) => composer.modelBinding(attribute, node, context),
-    dynamic: (node, context) => composer.dynamic(node, context),
-    scopeRootAttributes: (element, context) => composer.scopeRootAttributes(element, context),
-  };
-  /** A root's own `ref` joined with its consumer's, which holds the root too (ADR-0118). */
-  const rooted = <T extends JsxAttributeItem>(items: Array<T>, element: ElementNode) =>
-    items.map((item) => composer.rootRef(item, element));
-  return dialect;
+		slotOutlet: (node, context) => composer.slotOutlet(node, context),
+		slotValue: (slot, context) => composer.slotValue(slot, context),
+		fillAttribute: (fill, node, context) => composer.fillAttribute(fill, node, context),
+		componentEvent: (attribute, node, context) => composer.componentEvent(attribute, node, context),
+		modelAttribute: (attribute, element, context) =>
+			rooted(composer.modelAttribute(attribute, element, context), element),
+		modelBinding: (attribute, node, context) => composer.modelBinding(attribute, node, context),
+		dynamic: (node, context) => composer.dynamic(node, context),
+		scopeRootAttributes: (element, context) => composer.scopeRootAttributes(element, context),
+	};
+	/** A root's own `ref` joined with its consumer's, which holds the root too (ADR-0118). */
+	const rooted = <T extends JsxAttributeItem>(items: Array<T>, element: ElementNode) =>
+		items.map((item) => composer.rootRef(item, element));
+	return dialect;
 }
 
 type JsxAttributeItem = Parameters<ReactComposer["rootRef"]>[0];
 
 /** Whether a spread on the element carries a `class`, which the element's `class` merges. */
 function spreadsClass(element: ElementNode): boolean {
-  return element.attributes.some(
-    (attribute) =>
-      attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "class"),
-  );
+	return element.attributes.some(
+		(attribute) =>
+			attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "class"),
+	);
 }
 
 /** `name={value}`, under the name React spells the attribute with. */
 function prop(
-  name: string,
-  element: ElementNode,
-  context: JsxContext,
-  value: Expression,
+	name: string,
+	element: ElementNode,
+	context: JsxContext,
+	value: Expression,
 ): JsxAttribute {
-  return js.jsxAttribute(
-    jsxAttributeName(name, element, context),
-    js.jsxExpressionContainer(value),
-  );
+	return js.jsxAttribute(
+		jsxAttributeName(name, element, context),
+		js.jsxExpressionContainer(value),
+	);
 }
 
 /**
@@ -265,28 +265,28 @@ function prop(
  * condition is a variable of the toggle's own name.
  */
 function classParts(attribute: ClassAttribute, context: JsxContext): Array<Expression> {
-  const parts: Array<Expression> = [];
-  let toggles: ObjectExpression | undefined;
-  for (const item of attribute.items) {
-    if (item.kind !== "Toggle") {
-      toggles = undefined;
-      parts.push(
-        item.kind === "Static" ? js.stringLiteral(item.value) : jsxExpression(item.value, context),
-      );
-      continue;
-    }
-    const shorthand =
-      isIdentifier(item.name) && expressionCode(item.condition, context) === item.name;
-    const entry = shorthand
-      ? js.property(item.name, js.identifier(item.name), { shorthand: true })
-      : js.property(item.name, jsxExpression(item.condition, context));
-    if (toggles) {
-      toggles.properties.push(entry);
-    } else {
-      parts.push((toggles = js.objectExpression([entry])));
-    }
-  }
-  return parts;
+	const parts: Array<Expression> = [];
+	let toggles: ObjectExpression | undefined;
+	for (const item of attribute.items) {
+		if (item.kind !== "Toggle") {
+			toggles = undefined;
+			parts.push(
+				item.kind === "Static" ? js.stringLiteral(item.value) : jsxExpression(item.value, context),
+			);
+			continue;
+		}
+		const shorthand =
+			isIdentifier(item.name) && expressionCode(item.condition, context) === item.name;
+		const entry = shorthand
+			? js.property(item.name, js.identifier(item.name), { shorthand: true })
+			: js.property(item.name, jsxExpression(item.condition, context));
+		if (toggles) {
+			toggles.properties.push(entry);
+		} else {
+			parts.push((toggles = js.objectExpression([entry])));
+		}
+	}
+	return parts;
 }
 
 /**
@@ -295,18 +295,18 @@ function classParts(attribute: ClassAttribute, context: JsxContext): Array<Expre
  * `class-binding` capability, emulated: ADR-0038).
  */
 function className(parts: Array<Expression>, names: ReactNames): JsxAttribute {
-  names.cx ??= names.imports.claim("cx");
-  return js.jsxAttribute(
-    "className",
-    js.jsxExpressionContainer(js.callExpression(js.identifier(names.cx), parts)),
-  );
+	names.cx ??= names.imports.claim("cx");
+	return js.jsxAttribute(
+		"className",
+		js.jsxExpressionContainer(js.callExpression(js.identifier(names.cx), parts)),
+	);
 }
 
 /** `{ ...value, ...style }`: a consumer's declarations win over the root's own (ADR-0054). */
 function withConsumer(value: Expression, own: string): Expression {
-  const object = js.objectExpression([]);
-  object.properties.push(js.spreadElement(value), js.spreadElement(js.identifier(own)));
-  return object;
+	const object = js.objectExpression([]);
+	object.properties.push(js.spreadElement(value), js.spreadElement(js.identifier(own)));
+	return object;
 }
 
 /**
@@ -314,8 +314,8 @@ function withConsumer(value: Expression, own: string): Expression {
  * `style-binding` capability, emulated: ADR-0065).
  */
 function styleObjectCall(value: Expression, names: ReactNames): Expression {
-  names.styleObject ??= names.imports.claim("styleObject");
-  return js.callExpression(js.identifier(names.styleObject), [value]);
+	names.styleObject ??= names.imports.claim("styleObject");
+	return js.callExpression(js.identifier(names.styleObject), [value]);
 }
 
 /**
@@ -323,8 +323,8 @@ function styleObjectCall(value: Expression, names: ReactNames): Expression {
  * Vue's `parseStringStyle` splits it, with React's camel-case keys (`-webkit-x` is `WebkitX`).
  */
 export function styleObjectHelper(name: string, cssProperties: string): string {
-  // Raw, so the regular expressions keep their escapes.
-  return String.raw`/** A style bound to a value as React's style takes it: a declaration list becomes an object. */
+	// Raw, so the regular expressions keep their escapes.
+	return String.raw`/** A style bound to a value as React's style takes it: a declaration list becomes an object. */
 function ${name}(style: object | string | null | undefined): ${cssProperties} | undefined {
   if (typeof style !== "string") return (style ?? undefined) as ${cssProperties} | undefined;
   const object: Record<string, string> = {};
@@ -348,20 +348,20 @@ function ${name}(style: object | string | null | undefined): ${cssProperties} | 
  * are `unknown`: a toggle's condition may be any value, tested for truthiness.
  */
 export function cxHelper(name: string, collections = false): string {
-  return `/** Joins class names, and the keys of an object's truthy entries, into one \`className\`. */
+	return `/** Joins class names, and the keys of an object's truthy entries, into one \`className\`. */
 function ${name}(...parts: unknown[]): string {
   const names: string[] = [];
   for (const part of parts) {
     if (typeof part === "string") {
       if (part) names.push(part);
     } else if (${
-      collections
-        ? `Array.isArray(part)) {
+			collections
+				? `Array.isArray(part)) {
       const joined = ${name}(...part);
       if (joined) names.push(joined);
     } else if (`
-        : ""
-    }part && typeof part === "object") {
+				: ""
+		}part && typeof part === "object") {
       for (const [key, on] of Object.entries(part)) {
         if (on) names.push(key);
       }

@@ -14,10 +14,10 @@ export const toolchainDir: string = join(repo, "tests", "toolchains", "astro");
 
 /** Every committed golden Astro output in the corpus. */
 export function goldenAstroFiles(): Array<ToolchainFile> {
-  return globSync("cases/**/__output__/astro/*.astro", { cwd: integrationRoot })
-    .toSorted()
-    .map((file) => {
-      const path = join(integrationRoot, file);
-      return { path, contents: readFileSync(path, "utf8") };
-    });
+	return globSync("cases/**/__output__/astro/*.astro", { cwd: integrationRoot })
+		.toSorted()
+		.map((file) => {
+			const path = join(integrationRoot, file);
+			return { path, contents: readFileSync(path, "utf8") };
+		});
 }

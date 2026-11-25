@@ -14,24 +14,24 @@ import { loadToolchain, selectTargets } from "./targets.ts";
 
 /** The options that decide which programs type-check: every toolchain sets each of them. */
 const CONTRACT = [
-  "strict",
-  "noUncheckedIndexedAccess",
-  "noImplicitOverride",
-  "noPropertyAccessFromIndexSignature",
-  "noImplicitReturns",
-  "noFallthroughCasesInSwitch",
-  "verbatimModuleSyntax",
-  "isolatedModules",
+	"strict",
+	"noUncheckedIndexedAccess",
+	"noImplicitOverride",
+	"noPropertyAccessFromIndexSignature",
+	"noImplicitReturns",
+	"noFallthroughCasesInSwitch",
+	"verbatimModuleSyntax",
+	"isolatedModules",
 ] as const;
 
 /** The error each checker must report on the probe, for each flag the probe breaks. */
 const PROBE_ERRORS: Partial<Record<(typeof CONTRACT)[number], string>> = {
-  noUncheckedIndexedAccess: "TS2322",
-  noImplicitOverride: "TS4114",
-  noPropertyAccessFromIndexSignature: "TS4111",
-  noImplicitReturns: "TS7030",
-  noFallthroughCasesInSwitch: "TS7029",
-  verbatimModuleSyntax: "TS1484",
+	noUncheckedIndexedAccess: "TS2322",
+	noImplicitOverride: "TS4114",
+	noPropertyAccessFromIndexSignature: "TS4111",
+	noImplicitReturns: "TS7030",
+	noFallthroughCasesInSwitch: "TS7029",
+	verbatimModuleSyntax: "TS1484",
 };
 
 /** A script that breaks each flag of {@link PROBE_ERRORS} once, and nothing else. */
@@ -69,68 +69,68 @@ export { first, Square, width, pick, label };
 
 /** The probe as each target's output file: a component in its own syntax around the script. */
 const PROBES: Record<string, { file: string; contents: string }> = {
-  react: { file: "Probe.tsx", contents: PROBE },
-  solid: { file: "Probe.tsx", contents: PROBE },
-  solid2: { file: "Probe.tsx", contents: PROBE },
-  qwik: { file: "Probe.tsx", contents: PROBE },
-  angular: { file: "probe.ts", contents: PROBE },
-  vue: {
-    file: "Probe.vue",
-    contents: `<script setup lang="ts">\n${PROBE.replace(/^export .*\n/m, "")}</script>\n\n<template>\n  <p>{{ first }} {{ width }} {{ pick(true) }} {{ label(0) }} {{ Square }}</p>\n</template>\n`,
-  },
-  svelte: {
-    file: "Probe.svelte",
-    contents: `<script lang="ts">\n${PROBE.replace(/^export .*\n/m, "")}</script>\n\n<p>{first} {width} {pick(true)} {label(0)} {Square}</p>\n`,
-  },
-  astro: {
-    file: "Probe.astro",
-    contents: `---\n${PROBE.replace(/^export .*\n/m, "")}---\n\n<p>{first} {width} {pick(true)} {label(0)} {Square}</p>\n`,
-  },
+	react: { file: "Probe.tsx", contents: PROBE },
+	solid: { file: "Probe.tsx", contents: PROBE },
+	solid2: { file: "Probe.tsx", contents: PROBE },
+	qwik: { file: "Probe.tsx", contents: PROBE },
+	angular: { file: "probe.ts", contents: PROBE },
+	vue: {
+		file: "Probe.vue",
+		contents: `<script setup lang="ts">\n${PROBE.replace(/^export .*\n/m, "")}</script>\n\n<template>\n  <p>{{ first }} {{ width }} {{ pick(true) }} {{ label(0) }} {{ Square }}</p>\n</template>\n`,
+	},
+	svelte: {
+		file: "Probe.svelte",
+		contents: `<script lang="ts">\n${PROBE.replace(/^export .*\n/m, "")}</script>\n\n<p>{first} {width} {pick(true)} {label(0)} {Square}</p>\n`,
+	},
+	astro: {
+		file: "Probe.astro",
+		contents: `---\n${PROBE.replace(/^export .*\n/m, "")}---\n\n<p>{first} {width} {pick(true)} {label(0)} {Square}</p>\n`,
+	},
 };
 
 const TARGETS = selectTargets(undefined);
 
 describe("every toolchain tsconfig", () => {
-  it.each(TARGETS)("%s has the contract's options", (target) => {
-    const result = spawnSync(
-      join(REPO_ROOT, "node_modules", ".bin", "tsc"),
-      ["--showConfig", "-p", join(toolchainDir(target), "tsconfig.json")],
-      { encoding: "utf8" },
-    );
-    expect(result.status, result.stderr).toBe(0);
-    const { compilerOptions } = JSON.parse(result.stdout) as {
-      compilerOptions: Record<string, unknown>;
-    };
-    expect(compilerOptions).toMatchObject(
-      Object.fromEntries(CONTRACT.map((option) => [option, true])),
-    );
-  });
+	it.each(TARGETS)("%s has the contract's options", (target) => {
+		const result = spawnSync(
+			join(REPO_ROOT, "node_modules", ".bin", "tsc"),
+			["--showConfig", "-p", join(toolchainDir(target), "tsconfig.json")],
+			{ encoding: "utf8" },
+		);
+		expect(result.status, result.stderr).toBe(0);
+		const { compilerOptions } = JSON.parse(result.stdout) as {
+			compilerOptions: Record<string, unknown>;
+		};
+		expect(compilerOptions).toMatchObject(
+			Object.fromEntries(CONTRACT.map((option) => [option, true])),
+		);
+	});
 });
 
 describe("every checker", () => {
-  // Inside the integration package, so the probes resolve each framework as its outputs do.
-  mkdirSync(join(ROOT, ".uf-tmp"), { recursive: true });
-  const scratch = mkdtempSync(join(ROOT, ".uf-tmp", "strictness-"));
-  afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+	// Inside the integration package, so the probes resolve each framework as its outputs do.
+	mkdirSync(join(ROOT, ".uf-tmp"), { recursive: true });
+	const scratch = mkdtempSync(join(ROOT, ".uf-tmp", "strictness-"));
+	afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-  it.each(TARGETS)(
-    "%s rejects the probe under every flag of the contract",
-    { timeout: 120_000 },
-    async (target) => {
-      const directory = join(scratch, target);
-      mkdirSync(directory);
-      writeFileSync(join(directory, "shape.ts"), "export interface Shape {\n  side: number;\n}\n");
-      const probe = join(directory, PROBES[target]!.file);
-      writeFileSync(probe, PROBES[target]!.contents);
-      const toolchain = await loadToolchain(target);
-      const results = await toolchain.typecheck([probe], {
-        toolchainDir: toolchainDir(target),
-        root: ROOT,
-      });
-      const codes = (results.get(probe) ?? []).map((message) => message.code ?? message.message);
-      expect(codes.toSorted(), JSON.stringify(results.get(probe), null, 2)).toEqual(
-        Object.values(PROBE_ERRORS).toSorted(),
-      );
-    },
-  );
+	it.each(TARGETS)(
+		"%s rejects the probe under every flag of the contract",
+		{ timeout: 120_000 },
+		async (target) => {
+			const directory = join(scratch, target);
+			mkdirSync(directory);
+			writeFileSync(join(directory, "shape.ts"), "export interface Shape {\n  side: number;\n}\n");
+			const probe = join(directory, PROBES[target]!.file);
+			writeFileSync(probe, PROBES[target]!.contents);
+			const toolchain = await loadToolchain(target);
+			const results = await toolchain.typecheck([probe], {
+				toolchainDir: toolchainDir(target),
+				root: ROOT,
+			});
+			const codes = (results.get(probe) ?? []).map((message) => message.code ?? message.message);
+			expect(codes.toSorted(), JSON.stringify(results.get(probe), null, 2)).toEqual(
+				Object.values(PROBE_ERRORS).toSorted(),
+			);
+		},
+	);
 });

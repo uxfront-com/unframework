@@ -3,6 +3,6 @@ import Primary from "../../../../../integration/cases/fallthrough/to-component-r
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Primary.prop:text -->
-  <Primary :text="true" />
+	<!-- @uf-expect TS2322 Primary.prop:text -->
+	<Primary :text="true" />
 </template>

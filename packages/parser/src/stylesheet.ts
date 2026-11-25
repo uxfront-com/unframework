@@ -7,9 +7,9 @@ import type { Span } from "./parse.ts";
  * the parser reports only what lightningcss cannot read: a syntax error, or an unknown at-rule.
  */
 export interface ParsedStylesheet {
-  file: string;
-  source: string;
-  errors: Array<{ message: string; span: Span }>;
+	file: string;
+	source: string;
+	errors: Array<{ message: string; span: Span }>;
 }
 
 const encoder = new TextEncoder();
@@ -20,24 +20,24 @@ const encoder = new TextEncoder();
  * reach the page unread (P2).
  */
 export function parseStylesheet(file: string, source: string): ParsedStylesheet {
-  try {
-    const { warnings } = transform({
-      filename: file,
-      code: encoder.encode(source),
-      errorRecovery: false,
-    });
-    const errors = warnings
-      .filter((warning) => warning.type === "AtRuleInvalid")
-      .map(({ message, loc }) => {
-        const offset = offsetOf(source, loc.line, loc.column);
-        return { message, span: { start: offset, end: offset } };
-      });
-    return { file, source, errors };
-  } catch (error) {
-    const { message, loc } = error as { message: string; loc?: { line: number; column: number } };
-    const offset = loc ? offsetOf(source, loc.line, loc.column) : 0;
-    return { file, source, errors: [{ message, span: { start: offset, end: offset } }] };
-  }
+	try {
+		const { warnings } = transform({
+			filename: file,
+			code: encoder.encode(source),
+			errorRecovery: false,
+		});
+		const errors = warnings
+			.filter((warning) => warning.type === "AtRuleInvalid")
+			.map(({ message, loc }) => {
+				const offset = offsetOf(source, loc.line, loc.column);
+				return { message, span: { start: offset, end: offset } };
+			});
+		return { file, source, errors };
+	} catch (error) {
+		const { message, loc } = error as { message: string; loc?: { line: number; column: number } };
+		const offset = loc ? offsetOf(source, loc.line, loc.column) : 0;
+		return { file, source, errors: [{ message, span: { start: offset, end: offset } }] };
+	}
 }
 
 /**
@@ -45,15 +45,15 @@ export function parseStylesheet(file: string, source: string): ParsedStylesheet 
  * UTF-16 code units. Lines end at CSS's line breaks: LF, CRLF, CR and form feed.
  */
 export function offsetOf(source: string, line: number, column: number): number {
-  let offset = 0;
-  for (let current = 1; current < line; current++) {
-    const end = /\r\n|[\n\r\f]/g;
-    end.lastIndex = offset;
-    const match = end.exec(source);
-    if (!match) {
-      return source.length;
-    }
-    offset = match.index + match[0].length;
-  }
-  return Math.min(source.length, offset + column - 1);
+	let offset = 0;
+	for (let current = 1; current < line; current++) {
+		const end = /\r\n|[\n\r\f]/g;
+		end.lastIndex = offset;
+		const match = end.exec(source);
+		if (!match) {
+			return source.length;
+		}
+		offset = match.index + match[0].length;
+	}
+	return Math.min(source.length, offset + column - 1);
 }

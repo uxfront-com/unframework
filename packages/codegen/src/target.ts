@@ -10,269 +10,269 @@ import type { UfComponent, UfComposable, UfDirective, UfModule } from "@unframew
  * declared here, never discovered.
  */
 export type CapabilityName =
-  /** Intrinsic elements (`ElementNode`). */
-  | "element"
-  /** Text nodes (`TextNode`). */
-  | "text"
-  /** Static attributes (`StaticAttribute`). */
-  | "static-attribute"
-  /**
-   * A `<select>` shown as a single-selection list box: display size above 1, without
-   * `multiple`, holding an option a drop-down would select (`listBoxSize`). A bound or spread
-   * `size`, and options in a conditional or a list, count: what only the run time knows is
-   * taken to be one.
-   */
-  | "listbox"
-  /**
-   * Running code in the browser (ADR-0047, ADR-0048): event listeners (`EventAttribute`),
-   * template refs (`RefAttribute`), watchers, `watchEffect` and lifecycle hooks, and the state
-   * they change.
-   */
-  | "interactivity"
-  /** A listener in the capture phase: `onClickCapture` (`EventAttribute.capture`). */
-  | "event-capture"
-  /** A listener that runs once, then is removed: `onClickOnce` (`EventAttribute.once`). */
-  | "event-once"
-  /** A passive listener: `onWheelPassive` (`EventAttribute.passive`). */
-  | "event-passive"
-  /**
-   * A listener that runs when the DOM event of its name fires, with the DOM's own semantics:
-   * `change` on a text field when it commits, not per keystroke; `focus` and `blur` that do not
-   * bubble (ADR-0047). React's synthetic events differ, so it listens natively where they do.
-   */
-  | "event-semantics"
-  /**
-   * An event control (`preventDefault()`, `stopPropagation()`) that runs or not on more than the
-   * event as it is dispatched (ADR-0047): one a handler reaches through a call of a local
-   * function that is not a statement at the top of the handler before any `await`, nor alone
-   * under an `if` there that tests only the event (`if (open.value) close(event)`), or that
-   * follows a statement that may leave the handler on more than the event (`if (!open.value)
-   * return;`); one in a `once` listener that runs under a condition or after a guard clause; and
-   * any in a `once` listener of an element that listens to that event in both phases. A target
-   * that runs controls apart from the handler, while the event is dispatched, cannot tell
-   * (`handlerControls`).
-   */
-  | "conditional-event-control"
-  /** `useId()`: an id unique to the component's instance, `uf-id-` and the framework's id. */
-  | "use-id"
-  /** `nextTick()`: a promise that resolves once the DOM has updated (`ApiReference`). */
-  | "next-tick"
-  /**
-   * A prop the parent passes only after the component mounted, which the derived values and
-   * watchers that read it follow (ADR-0046): an optional prop, whose key a parent's spread may
-   * add later, read by a derived value's getter, a watch source or a `watchEffect`, itself or
-   * through the functions it calls.
-   */
-  | "late-prop"
-  /** Props: a component whose props type has members (ADR-0034). */
-  | "props"
-  /** Expressions rendered as text (`InterpolationNode`). */
-  | "interpolation"
-  /** Conditionals: `c ? <A/> : <B/>`, `c && <A/>` (`IfNode`). */
-  | "conditional"
-  /** Keyed lists: `items.map((item) => <li key={…}/>)` (`ForNode`), content and order. */
-  | "list"
-  /** Several roots: a component's render root that is a `FragmentNode`. */
-  | "fragment"
-  /** Attributes bound to an expression (`BoundAttribute`). */
-  | "bound-attribute"
-  /** A `class` built from static names, toggles and dynamic parts (`ClassAttribute`). */
-  | "class-binding"
-  /** A `style` as declarations, static or bound (`StyleAttribute`). */
-  | "style-binding"
-  /** A spread of an object whose keys its type declares (`SpreadAttribute`). */
-  | "attribute-spread"
-  /**
-   * `innerHTML={markup}` (`RawHtmlAttribute`, ADR-0097): the element's content is the markup a
-   * string holds, as the browser parses it, never escaped or sanitised.
-   */
-  | "raw-html"
-  /** SVG: an `<svg>` element and the SVG inside it. */
-  | "svg"
-  /** A component element (`ComponentNode`): an imported or a local component (ADR-0053). */
-  | "component"
-  /**
-   * A listener of an event a child declares (`ListenerAttribute`): refines `interactivity`, as
-   * the handler runs in the browser.
-   */
-  | "component-event"
-  /** The default slot: its outlet, `{slots.default?.()}`, or the children a parent fills it with. */
-  | "default-slot"
-  /** A named slot without props: its outlet or its fill. */
-  | "named-slot"
-  /** A slot with props, `{slots.item?.({ item })}`: its outlet or its scoped fill. */
-  | "scoped-slot"
-  /** A slot outlet with fallback content, rendered when the parent leaves the slot empty. */
-  | "slot-fallback"
-  /** `slots.default` as a condition, or the default slot forwarded, which keeps its presence. */
-  | "default-slot-presence"
-  /** A fill that passes on the parent's own slot, `{{ title: slots.title }}` (`SlotFill.forward`). */
-  | "slot-forwarding"
-  /** `defineModel` (`ModelItem`), and a component's `v-model:name` (`ModelBindingAttribute`). */
-  | "model"
-  /** An element's `v-model` (`ModelAttribute`): refines `interactivity`. */
-  | "two-way-binding"
-  /** A `v-model` of a `checkbox-group` or a `select-multiple`, whose value is an array. */
-  | "model-array"
-  /** A `v-model` that is `trim`, `lazy` or `number`, or of a `number` control. */
-  | "model-modifiers"
-  /**
-   * A `class`, a `style`, an attribute or a native listener on a component, which falls through to
-   * its root (ADR-0054, ADR-0118), and a component's `...rest`, which takes them instead.
-   */
-  | "fallthrough"
-  /**
-   * A component whose root element HTML or ARIA ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`):
-   * a host element between them breaks the parent's content model (ADR-0056).
-   */
-  | "contextual-root"
-  /**
-   * `defineExpose`, and a `ref` on a component, which holds what it exposes, or its root element
-   * where it exposes nothing (ADR-0118).
-   */
-  | "expose"
-  /** `provide` and `inject` (`ProvideItem`, `InjectItem`) with an injection key. */
-  | "context"
-  /** A provided `state`, `derived` or `model` binding, which descendants read as it changes. */
-  | "reactive-context"
-  /** `<component is>` over a statically known set (`DynamicNode`). */
-  | "dynamic-component"
-  /**
-   * `<Teleport to>` (`TeleportNode`, ADR-0098): content that mounts into the element `to`
-   * selects once its component has mounted, last in source order, and that the server never
-   * renders.
-   */
-  | "teleport"
-  /**
-   * `<Transition name appear>` (`TransitionNode`, ADR-0100): Vue's CSS-class contract on one
-   * element as it enters or leaves, which stays in the DOM until its leave ends. The server
-   * renders the settled child.
-   */
-  | "transition"
-  /**
-   * `v-name={value}` on an element (`DirectiveAttribute`, ADR-0099): a directive's hooks run in
-   * the browser once the element is in the DOM, after a render that changes the value, and once
-   * it leaves, descendants' before their ancestors'. Refines `interactivity`.
-   */
-  | "directive"
-  /**
-   * A component that imports a stylesheet (`UfComponent.styles`), which the compiler scopes
-   * once and the target attaches its own way (ADR-0063).
-   */
-  | "scoped-styles"
-  /**
-   * A child component a styled component renders: the child's root takes the parent's scope
-   * attribute, as Vue's scope id does (the child-root rule, ADR-0063).
-   */
-  | "child-root-scope"
-  /**
-   * Content a component fills into a slot of a child whose sheet uses `:slotted()`
-   * (`ComponentApi.styles`): it takes the child's `data-uf-<id>-s` attribute (ADR-0063).
-   */
-  | "slotted-styles"
-  /**
-   * The order sheets cascade in, Vue's import order: a child's before its parent's, siblings by
-   * their imports. Where two sheets' rules of equal specificity meet on one element, the later
-   * one wins. Required wherever `scoped-styles` is (ADR-0063).
-   */
-  | "sheet-order"
-  /**
-   * A component with type parameters, `function List<T>(props: ListProps<T>)`
-   * (`UfComponent.typeParameters`), written in each target's generic form (ADR-0068).
-   */
-  | "generic-components"
-  /**
-   * A scoped slot whose props' type names one of the component's type parameters
-   * (`SlotDeclaration.references`), or a fill of such a slot of a generic child: the consumer's
-   * fill is typed by the type argument (ADR-0068).
-   */
-  | "generic-slot-props"
-  /** A call of a composable from a `.uf.ts` module (`UseItem`), compiled per target (ADR-0069). */
-  | "composables"
-  /**
-   * A composable's call whose setup runs code in the browser (`UseItem.hasEffects`): its
-   * watchers, effects and hooks run in order with the caller's own (ADR-0069). Refines
-   * `interactivity`.
-   */
-  | "composable-effect-order"
-  /**
-   * A server render that a client hydrates, or resumes, into the DOM the client renders, with
-   * the server's ids, and interactive after (L12, ADR-0095). No IR kind requires it: every case
-   * runs in the hydrate projects, which skip a target that leaves it unsupported.
-   */
-  | "hydration"
-  /**
-   * A keyed list's item keeps its element, and so its focus, its typed text and its state, while
-   * the list reorders and while the item is replaced by another object of the same key
-   * (ADR-0096). No IR kind requires it: every list's key asks for it, and the specs that reorder
-   * or replace a list while its rows hold the focus or typed text require it.
-   */
-  | "keyed-identity"
-  /**
-   * A setup that awaits (`AwaitItem`, ADR-0101): the server renders the resolved template, a
-   * client mount renders nothing until the setup resolves, and a hydrated component keeps the
-   * server's DOM while its setup runs again.
-   */
-  | "async-setup";
+	/** Intrinsic elements (`ElementNode`). */
+	| "element"
+	/** Text nodes (`TextNode`). */
+	| "text"
+	/** Static attributes (`StaticAttribute`). */
+	| "static-attribute"
+	/**
+	 * A `<select>` shown as a single-selection list box: display size above 1, without
+	 * `multiple`, holding an option a drop-down would select (`listBoxSize`). A bound or spread
+	 * `size`, and options in a conditional or a list, count: what only the run time knows is
+	 * taken to be one.
+	 */
+	| "listbox"
+	/**
+	 * Running code in the browser (ADR-0047, ADR-0048): event listeners (`EventAttribute`),
+	 * template refs (`RefAttribute`), watchers, `watchEffect` and lifecycle hooks, and the state
+	 * they change.
+	 */
+	| "interactivity"
+	/** A listener in the capture phase: `onClickCapture` (`EventAttribute.capture`). */
+	| "event-capture"
+	/** A listener that runs once, then is removed: `onClickOnce` (`EventAttribute.once`). */
+	| "event-once"
+	/** A passive listener: `onWheelPassive` (`EventAttribute.passive`). */
+	| "event-passive"
+	/**
+	 * A listener that runs when the DOM event of its name fires, with the DOM's own semantics:
+	 * `change` on a text field when it commits, not per keystroke; `focus` and `blur` that do not
+	 * bubble (ADR-0047). React's synthetic events differ, so it listens natively where they do.
+	 */
+	| "event-semantics"
+	/**
+	 * An event control (`preventDefault()`, `stopPropagation()`) that runs or not on more than the
+	 * event as it is dispatched (ADR-0047): one a handler reaches through a call of a local
+	 * function that is not a statement at the top of the handler before any `await`, nor alone
+	 * under an `if` there that tests only the event (`if (open.value) close(event)`), or that
+	 * follows a statement that may leave the handler on more than the event (`if (!open.value)
+	 * return;`); one in a `once` listener that runs under a condition or after a guard clause; and
+	 * any in a `once` listener of an element that listens to that event in both phases. A target
+	 * that runs controls apart from the handler, while the event is dispatched, cannot tell
+	 * (`handlerControls`).
+	 */
+	| "conditional-event-control"
+	/** `useId()`: an id unique to the component's instance, `uf-id-` and the framework's id. */
+	| "use-id"
+	/** `nextTick()`: a promise that resolves once the DOM has updated (`ApiReference`). */
+	| "next-tick"
+	/**
+	 * A prop the parent passes only after the component mounted, which the derived values and
+	 * watchers that read it follow (ADR-0046): an optional prop, whose key a parent's spread may
+	 * add later, read by a derived value's getter, a watch source or a `watchEffect`, itself or
+	 * through the functions it calls.
+	 */
+	| "late-prop"
+	/** Props: a component whose props type has members (ADR-0034). */
+	| "props"
+	/** Expressions rendered as text (`InterpolationNode`). */
+	| "interpolation"
+	/** Conditionals: `c ? <A/> : <B/>`, `c && <A/>` (`IfNode`). */
+	| "conditional"
+	/** Keyed lists: `items.map((item) => <li key={…}/>)` (`ForNode`), content and order. */
+	| "list"
+	/** Several roots: a component's render root that is a `FragmentNode`. */
+	| "fragment"
+	/** Attributes bound to an expression (`BoundAttribute`). */
+	| "bound-attribute"
+	/** A `class` built from static names, toggles and dynamic parts (`ClassAttribute`). */
+	| "class-binding"
+	/** A `style` as declarations, static or bound (`StyleAttribute`). */
+	| "style-binding"
+	/** A spread of an object whose keys its type declares (`SpreadAttribute`). */
+	| "attribute-spread"
+	/**
+	 * `innerHTML={markup}` (`RawHtmlAttribute`, ADR-0097): the element's content is the markup a
+	 * string holds, as the browser parses it, never escaped or sanitised.
+	 */
+	| "raw-html"
+	/** SVG: an `<svg>` element and the SVG inside it. */
+	| "svg"
+	/** A component element (`ComponentNode`): an imported or a local component (ADR-0053). */
+	| "component"
+	/**
+	 * A listener of an event a child declares (`ListenerAttribute`): refines `interactivity`, as
+	 * the handler runs in the browser.
+	 */
+	| "component-event"
+	/** The default slot: its outlet, `{slots.default?.()}`, or the children a parent fills it with. */
+	| "default-slot"
+	/** A named slot without props: its outlet or its fill. */
+	| "named-slot"
+	/** A slot with props, `{slots.item?.({ item })}`: its outlet or its scoped fill. */
+	| "scoped-slot"
+	/** A slot outlet with fallback content, rendered when the parent leaves the slot empty. */
+	| "slot-fallback"
+	/** `slots.default` as a condition, or the default slot forwarded, which keeps its presence. */
+	| "default-slot-presence"
+	/** A fill that passes on the parent's own slot, `{{ title: slots.title }}` (`SlotFill.forward`). */
+	| "slot-forwarding"
+	/** `defineModel` (`ModelItem`), and a component's `v-model:name` (`ModelBindingAttribute`). */
+	| "model"
+	/** An element's `v-model` (`ModelAttribute`): refines `interactivity`. */
+	| "two-way-binding"
+	/** A `v-model` of a `checkbox-group` or a `select-multiple`, whose value is an array. */
+	| "model-array"
+	/** A `v-model` that is `trim`, `lazy` or `number`, or of a `number` control. */
+	| "model-modifiers"
+	/**
+	 * A `class`, a `style`, an attribute or a native listener on a component, which falls through to
+	 * its root (ADR-0054, ADR-0118), and a component's `...rest`, which takes them instead.
+	 */
+	| "fallthrough"
+	/**
+	 * A component whose root element HTML or ARIA ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`):
+	 * a host element between them breaks the parent's content model (ADR-0056).
+	 */
+	| "contextual-root"
+	/**
+	 * `defineExpose`, and a `ref` on a component, which holds what it exposes, or its root element
+	 * where it exposes nothing (ADR-0118).
+	 */
+	| "expose"
+	/** `provide` and `inject` (`ProvideItem`, `InjectItem`) with an injection key. */
+	| "context"
+	/** A provided `state`, `derived` or `model` binding, which descendants read as it changes. */
+	| "reactive-context"
+	/** `<component is>` over a statically known set (`DynamicNode`). */
+	| "dynamic-component"
+	/**
+	 * `<Teleport to>` (`TeleportNode`, ADR-0098): content that mounts into the element `to`
+	 * selects once its component has mounted, last in source order, and that the server never
+	 * renders.
+	 */
+	| "teleport"
+	/**
+	 * `<Transition name appear>` (`TransitionNode`, ADR-0100): Vue's CSS-class contract on one
+	 * element as it enters or leaves, which stays in the DOM until its leave ends. The server
+	 * renders the settled child.
+	 */
+	| "transition"
+	/**
+	 * `v-name={value}` on an element (`DirectiveAttribute`, ADR-0099): a directive's hooks run in
+	 * the browser once the element is in the DOM, after a render that changes the value, and once
+	 * it leaves, descendants' before their ancestors'. Refines `interactivity`.
+	 */
+	| "directive"
+	/**
+	 * A component that imports a stylesheet (`UfComponent.styles`), which the compiler scopes
+	 * once and the target attaches its own way (ADR-0063).
+	 */
+	| "scoped-styles"
+	/**
+	 * A child component a styled component renders: the child's root takes the parent's scope
+	 * attribute, as Vue's scope id does (the child-root rule, ADR-0063).
+	 */
+	| "child-root-scope"
+	/**
+	 * Content a component fills into a slot of a child whose sheet uses `:slotted()`
+	 * (`ComponentApi.styles`): it takes the child's `data-uf-<id>-s` attribute (ADR-0063).
+	 */
+	| "slotted-styles"
+	/**
+	 * The order sheets cascade in, Vue's import order: a child's before its parent's, siblings by
+	 * their imports. Where two sheets' rules of equal specificity meet on one element, the later
+	 * one wins. Required wherever `scoped-styles` is (ADR-0063).
+	 */
+	| "sheet-order"
+	/**
+	 * A component with type parameters, `function List<T>(props: ListProps<T>)`
+	 * (`UfComponent.typeParameters`), written in each target's generic form (ADR-0068).
+	 */
+	| "generic-components"
+	/**
+	 * A scoped slot whose props' type names one of the component's type parameters
+	 * (`SlotDeclaration.references`), or a fill of such a slot of a generic child: the consumer's
+	 * fill is typed by the type argument (ADR-0068).
+	 */
+	| "generic-slot-props"
+	/** A call of a composable from a `.uf.ts` module (`UseItem`), compiled per target (ADR-0069). */
+	| "composables"
+	/**
+	 * A composable's call whose setup runs code in the browser (`UseItem.hasEffects`): its
+	 * watchers, effects and hooks run in order with the caller's own (ADR-0069). Refines
+	 * `interactivity`.
+	 */
+	| "composable-effect-order"
+	/**
+	 * A server render that a client hydrates, or resumes, into the DOM the client renders, with
+	 * the server's ids, and interactive after (L12, ADR-0095). No IR kind requires it: every case
+	 * runs in the hydrate projects, which skip a target that leaves it unsupported.
+	 */
+	| "hydration"
+	/**
+	 * A keyed list's item keeps its element, and so its focus, its typed text and its state, while
+	 * the list reorders and while the item is replaced by another object of the same key
+	 * (ADR-0096). No IR kind requires it: every list's key asks for it, and the specs that reorder
+	 * or replace a list while its rows hold the focus or typed text require it.
+	 */
+	| "keyed-identity"
+	/**
+	 * A setup that awaits (`AwaitItem`, ADR-0101): the server renders the resolved template, a
+	 * client mount renders nothing until the setup resolves, and a hydrated component keeps the
+	 * server's DOM while its setup runs again.
+	 */
+	| "async-setup";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: ReadonlyArray<CapabilityName> = [
-  "element",
-  "text",
-  "static-attribute",
-  "listbox",
-  "interactivity",
-  "event-capture",
-  "event-once",
-  "event-passive",
-  "event-semantics",
-  "conditional-event-control",
-  "use-id",
-  "next-tick",
-  "late-prop",
-  "props",
-  "interpolation",
-  "conditional",
-  "list",
-  "fragment",
-  "bound-attribute",
-  "class-binding",
-  "style-binding",
-  "attribute-spread",
-  "raw-html",
-  "svg",
-  "component",
-  "component-event",
-  "default-slot",
-  "named-slot",
-  "scoped-slot",
-  "slot-fallback",
-  "default-slot-presence",
-  "slot-forwarding",
-  "model",
-  "two-way-binding",
-  "model-array",
-  "model-modifiers",
-  "fallthrough",
-  "contextual-root",
-  "expose",
-  "context",
-  "reactive-context",
-  "dynamic-component",
-  "teleport",
-  "transition",
-  "directive",
-  "scoped-styles",
-  "child-root-scope",
-  "slotted-styles",
-  "sheet-order",
-  "generic-components",
-  "generic-slot-props",
-  "composables",
-  "composable-effect-order",
-  "hydration",
-  "keyed-identity",
-  "async-setup",
+	"element",
+	"text",
+	"static-attribute",
+	"listbox",
+	"interactivity",
+	"event-capture",
+	"event-once",
+	"event-passive",
+	"event-semantics",
+	"conditional-event-control",
+	"use-id",
+	"next-tick",
+	"late-prop",
+	"props",
+	"interpolation",
+	"conditional",
+	"list",
+	"fragment",
+	"bound-attribute",
+	"class-binding",
+	"style-binding",
+	"attribute-spread",
+	"raw-html",
+	"svg",
+	"component",
+	"component-event",
+	"default-slot",
+	"named-slot",
+	"scoped-slot",
+	"slot-fallback",
+	"default-slot-presence",
+	"slot-forwarding",
+	"model",
+	"two-way-binding",
+	"model-array",
+	"model-modifiers",
+	"fallthrough",
+	"contextual-root",
+	"expose",
+	"context",
+	"reactive-context",
+	"dynamic-component",
+	"teleport",
+	"transition",
+	"directive",
+	"scoped-styles",
+	"child-root-scope",
+	"slotted-styles",
+	"sheet-order",
+	"generic-components",
+	"generic-slot-props",
+	"composables",
+	"composable-effect-order",
+	"hydration",
+	"keyed-identity",
+	"async-setup",
 ];
 
 /**
@@ -283,35 +283,35 @@ export const CAPABILITY_NAMES: ReadonlyArray<CapabilityName> = [
  * Astro renders the same DOM with its handlers inert.
  */
 export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
-  "interactivity",
-  "event-capture",
-  "event-once",
-  "event-passive",
-  "event-semantics",
-  "conditional-event-control",
-  "next-tick",
-  "late-prop",
-  "component-event",
-  "expose",
-  "two-way-binding",
-  "model-array",
-  "model-modifiers",
-  "sheet-order",
-  "composable-effect-order",
-  // A target that doesn't hydrate still renders the same markup on the server (ADR-0095).
-  "hydration",
-  // A list renders the same markup in order on a target whose rows follow the item's reference
-  // (ADR-0096): only a reorder in the browser shows what an element kept.
-  "keyed-identity",
-  // No target renders a teleport's content on the server, so a static render's markup is the
-  // same without it (ADR-0098): only a mounted component shows it, in `to`.
-  "teleport",
-  // The server renders a transition's child settled, with no class (ADR-0100): only the browser
-  // runs its classes.
-  "transition",
-  // A directive's hooks run in the browser only (ADR-0099), so the server's markup is the same
-  // without them.
-  "directive",
+	"interactivity",
+	"event-capture",
+	"event-once",
+	"event-passive",
+	"event-semantics",
+	"conditional-event-control",
+	"next-tick",
+	"late-prop",
+	"component-event",
+	"expose",
+	"two-way-binding",
+	"model-array",
+	"model-modifiers",
+	"sheet-order",
+	"composable-effect-order",
+	// A target that doesn't hydrate still renders the same markup on the server (ADR-0095).
+	"hydration",
+	// A list renders the same markup in order on a target whose rows follow the item's reference
+	// (ADR-0096): only a reorder in the browser shows what an element kept.
+	"keyed-identity",
+	// No target renders a teleport's content on the server, so a static render's markup is the
+	// same without it (ADR-0098): only a mounted component shows it, in `to`.
+	"teleport",
+	// The server renders a transition's child settled, with no class (ADR-0100): only the browser
+	// runs its classes.
+	"transition",
+	// A directive's hooks run in the browser only (ADR-0099), so the server's markup is the same
+	// without them.
+	"directive",
 ]);
 
 /**
@@ -322,113 +322,113 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
  * check reports only the one they refine there, once, rather than each at the same use.
  */
 export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, CapabilityName>>> = {
-  "event-capture": "interactivity",
-  "event-once": "interactivity",
-  "event-passive": "interactivity",
-  "event-semantics": "interactivity",
-  "conditional-event-control": "interactivity",
-  "next-tick": "interactivity",
-  "component-event": "interactivity",
-  expose: "interactivity",
-  "two-way-binding": "interactivity",
-  "model-array": "interactivity",
-  "model-modifiers": "interactivity",
-  "reactive-context": "context",
-  "composable-effect-order": "interactivity",
-  directive: "interactivity",
+	"event-capture": "interactivity",
+	"event-once": "interactivity",
+	"event-passive": "interactivity",
+	"event-semantics": "interactivity",
+	"conditional-event-control": "interactivity",
+	"next-tick": "interactivity",
+	"component-event": "interactivity",
+	expose: "interactivity",
+	"two-way-binding": "interactivity",
+	"model-array": "interactivity",
+	"model-modifiers": "interactivity",
+	"reactive-context": "context",
+	"composable-effect-order": "interactivity",
+	directive: "interactivity",
 };
 
 /** How a target supports a capability (plan §5.7). */
 export type CapabilityCell =
-  | { support: "native" }
-  | {
-      support: "emulated";
-      /**
-       * The name of the helper the target emits: shared in the output tree's `_unframework/`
-       * directory, or printed inline where it can't be shared (ADR-0121).
-       */
-      helper: string;
-      note?: string;
-    }
-  | {
-      support: "unsupported";
-      /** The portability diagnostic reported where a module first uses the capability. */
-      code: DiagnosticCode;
-      severity: "error" | "warning" | "info";
-      reason: string;
-    };
+	| { support: "native" }
+	| {
+			support: "emulated";
+			/**
+			 * The name of the helper the target emits: shared in the output tree's `_unframework/`
+			 * directory, or printed inline where it can't be shared (ADR-0121).
+			 */
+			helper: string;
+			note?: string;
+	  }
+	| {
+			support: "unsupported";
+			/** The portability diagnostic reported where a module first uses the capability. */
+			code: DiagnosticCode;
+			severity: "error" | "warning" | "info";
+			reason: string;
+	  };
 
 /** A target's capability matrix: one cell per capability. */
 export type Capabilities = Readonly<Record<CapabilityName, CapabilityCell>>;
 
 /** A version 3 source map, whose `sources` are relative to the file it maps (ADR-0074). */
 export interface SourceMapV3 {
-  version: 3;
-  file: string;
-  sources: Array<string>;
-  sourcesContent: Array<string>;
-  names: Array<string>;
-  mappings: string;
+	version: 3;
+	file: string;
+	sources: Array<string>;
+	sourcesContent: Array<string>;
+	names: Array<string>;
+	mappings: string;
 }
 
 /** A file a target emits. */
 export interface OutputFile {
-  /** The path relative to the target's output directory, with forward slashes. */
-  path: string;
-  contents: string;
-  /** How its text maps to its source: `compile()` sets it under its `sourceMap` option. */
-  map?: SourceMapV3;
+	/** The path relative to the target's output directory, with forward slashes. */
+	path: string;
+	contents: string;
+	/** How its text maps to its source: `compile()` sets it under its `sourceMap` option. */
+	map?: SourceMapV3;
 }
 
 /** What a target's `emit` receives besides the component. */
 export interface EmitContext {
-  /** The module the component or the composable belongs to. */
-  module: UfModule;
-  /** The target's validated options. */
-  options: unknown;
-  /** Reports a diagnostic; the compiler sets its file and target. */
-  report(diagnostic: Omit<Diagnostic, "file" | "target">): void;
-  /**
-   * Puts a helper in its shared module (ADR-0121), `_unframework/<file>` at the root of the output
-   * tree, and gives the relative path the output file at `from` imports it by, with its extension
-   * (`./_unframework/cx.ts`), which the target drops where its imports do. `file` is a file name
-   * the target gives (P6), with no directory, and the same `file` must always get the same `contents`: a helper's text depends
-   * only on the target and the helper, never on the component. `from` is the path of an output file
-   * the target emits. A helper module that imports another imports it as its sibling
-   * (`./queueHook`), and the target puts that one too. A target that never calls it emits every
-   * helper inline. `compile()` always passes it. A caller that emits without `compile()` may leave
-   * it out, and a target then prints each helper inline, in the output that uses it.
-   */
-  helper?: (file: string, contents: string, from: string) => string;
+	/** The module the component or the composable belongs to. */
+	module: UfModule;
+	/** The target's validated options. */
+	options: unknown;
+	/** Reports a diagnostic; the compiler sets its file and target. */
+	report(diagnostic: Omit<Diagnostic, "file" | "target">): void;
+	/**
+	 * Puts a helper in its shared module (ADR-0121), `_unframework/<file>` at the root of the output
+	 * tree, and gives the relative path the output file at `from` imports it by, with its extension
+	 * (`./_unframework/cx.ts`), which the target drops where its imports do. `file` is a file name
+	 * the target gives (P6), with no directory, and the same `file` must always get the same `contents`: a helper's text depends
+	 * only on the target and the helper, never on the component. `from` is the path of an output file
+	 * the target emits. A helper module that imports another imports it as its sibling
+	 * (`./queueHook`), and the target puts that one too. A target that never calls it emits every
+	 * helper inline. `compile()` always passes it. A caller that emits without `compile()` may leave
+	 * it out, and a target then prints each helper inline, in the output that uses it.
+	 */
+	helper?: (file: string, contents: string, from: string) => string;
 }
 
 /** A compile target: one framework, at one major version. */
 export interface Target {
-  /** An open string, such as `"react"`; third-party targets are welcome. */
-  readonly name: string;
-  /** The framework package and the version range the output is tested against. */
-  readonly framework: { readonly package: string; readonly range: string };
-  readonly capabilities: Capabilities;
-  /** Validates the target's options. */
-  readonly options?: StandardSchemaV1;
-  /** Emits one component as one or more files. Never throws: report problems instead. */
-  emit(component: UfComponent, context: EmitContext): Array<OutputFile>;
-  /**
-   * Emits one composable of a `.uf.ts` module as its module, in the target's idiom (ADR-0069).
-   * Never throws: report problems instead. Every built-in target has it. It is optional for a
-   * third-party target: `compile()` reports UF1002 for a composable of a target without it.
-   */
-  emitComposable?(composable: UfComposable, context: EmitContext): Array<OutputFile>;
-  /**
-   * Emits one directive a `.uf.ts` module exports as its module, in the target's idiom
-   * (ADR-0099), or no file where the target runs no hook. Never throws: report problems instead.
-   * Every built-in target has it. It is optional for a third-party target: `compile()` reports
-   * UF1002 for a directive of a target without it.
-   */
-  emitDirective?(directive: UfDirective, context: EmitContext): Array<OutputFile>;
+	/** An open string, such as `"react"`; third-party targets are welcome. */
+	readonly name: string;
+	/** The framework package and the version range the output is tested against. */
+	readonly framework: { readonly package: string; readonly range: string };
+	readonly capabilities: Capabilities;
+	/** Validates the target's options. */
+	readonly options?: StandardSchemaV1;
+	/** Emits one component as one or more files. Never throws: report problems instead. */
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile>;
+	/**
+	 * Emits one composable of a `.uf.ts` module as its module, in the target's idiom (ADR-0069).
+	 * Never throws: report problems instead. Every built-in target has it. It is optional for a
+	 * third-party target: `compile()` reports UF1002 for a composable of a target without it.
+	 */
+	emitComposable?(composable: UfComposable, context: EmitContext): Array<OutputFile>;
+	/**
+	 * Emits one directive a `.uf.ts` module exports as its module, in the target's idiom
+	 * (ADR-0099), or no file where the target runs no hook. Never throws: report problems instead.
+	 * Every built-in target has it. It is optional for a third-party target: `compile()` reports
+	 * UF1002 for a directive of a target without it.
+	 */
+	emitDirective?(directive: UfDirective, context: EmitContext): Array<OutputFile>;
 }
 
 /** Declares a target, checking its shape at compile time. */
 export function defineTarget<T extends Target>(target: T): T {
-  return target;
+	return target;
 }

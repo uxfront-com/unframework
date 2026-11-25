@@ -5,15 +5,15 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import type {
-  FrameworkCompileResult,
-  ToolchainContext,
-  ToolchainFile,
-  ToolchainMessage,
+	FrameworkCompileResult,
+	ToolchainContext,
+	ToolchainFile,
+	ToolchainMessage,
 } from "@unframework.dev/codegen";
 import {
-  assertFilesToCheck,
-  assertFilesToCompile,
-  diagnosticsByFile,
+	assertFilesToCheck,
+	assertFilesToCompile,
+	diagnosticsByFile,
 } from "@unframework.dev/codegen/toolchain-node";
 
 import { collectDiagnostics, createHost, groupByFile, strictOptions, toMessage } from "./ngtsc.ts";
@@ -25,24 +25,24 @@ import type { ParsedConfiguration } from "./tools.ts";
  * reports every file's errors and warnings (extended template diagnostics are the warnings).
  */
 export async function frameworkCompile(
-  files: ReadonlyArray<ToolchainFile>,
-  context: ToolchainContext,
+	files: ReadonlyArray<ToolchainFile>,
+	context: ToolchainContext,
 ): Promise<Map<string, FrameworkCompileResult>> {
-  assertFilesToCompile(files);
-  const compiler = await loadCompiler(context.toolchainDir);
-  const options = strictOptions(compiler);
-  const contents = new Map(files.map((file) => [resolve(file.path), file.contents]));
-  const host = createHost(compiler, options, (fileName) => contents.get(resolve(fileName)));
-  // The ambient declarations are read from the disk, beside the files in memory (ADR-0064).
-  const declarations = (context.declarations ?? []).map((file) => resolve(file));
-  const diagnostics = collectDiagnostics(compiler, [...contents.keys()], (rootNames) => {
-    return new compiler.cli.NgtscProgram([...rootNames, ...declarations], options, host);
-  });
-  return groupByFile(
-    compiler,
-    files.map((file) => file.path),
-    diagnostics,
-  );
+	assertFilesToCompile(files);
+	const compiler = await loadCompiler(context.toolchainDir);
+	const options = strictOptions(compiler);
+	const contents = new Map(files.map((file) => [resolve(file.path), file.contents]));
+	const host = createHost(compiler, options, (fileName) => contents.get(resolve(fileName)));
+	// The ambient declarations are read from the disk, beside the files in memory (ADR-0064).
+	const declarations = (context.declarations ?? []).map((file) => resolve(file));
+	const diagnostics = collectDiagnostics(compiler, [...contents.keys()], (rootNames) => {
+		return new compiler.cli.NgtscProgram([...rootNames, ...declarations], options, host);
+	});
+	return groupByFile(
+		compiler,
+		files.map((file) => file.path),
+		diagnostics,
+	);
 }
 
 /**
@@ -50,49 +50,49 @@ export async function frameworkCompile(
  * (`ngtsc-worker.ts`), since no TestBed or JIT metadata reaches a production build.
  */
 export async function frameworkEmit(
-  files: ReadonlyArray<ToolchainFile>,
-  context: ToolchainContext,
+	files: ReadonlyArray<ToolchainFile>,
+	context: ToolchainContext,
 ): Promise<Map<string, Array<ToolchainFile>>> {
-  assertFilesToCompile(files);
-  const compiler = await loadCompiler(context.toolchainDir);
-  const options = {
-    ...strictOptions(compiler),
-    noEmit: false,
-    declaration: false,
-    supportTestBed: false,
-    supportJitMode: false,
-  };
-  const contents = new Map(files.map((file) => [resolve(file.path), file.contents]));
-  const host = createHost(compiler, options, (fileName) => contents.get(resolve(fileName)));
-  const declarations = (context.declarations ?? []).map((file) => resolve(file));
-  const program = new compiler.cli.NgtscProgram(
-    [...contents.keys(), ...declarations],
-    options,
-    host,
-  );
-  await program.compiler.analyzeAsync();
-  const { transformers } = program.compiler.prepareEmit();
-  const tsProgram = program.getTsProgram();
-  const emitted = new Map<string, Array<ToolchainFile>>();
-  for (const file of files) {
-    let code: string | undefined;
-    tsProgram.emit(
-      tsProgram.getSourceFile(resolve(file.path)),
-      (fileName, text) => {
-        if (/\.[cm]?js$/.test(fileName)) {
-          code = text;
-        }
-      },
-      undefined,
-      false,
-      transformers,
-    );
-    if (code === undefined) {
-      throw new Error(`ngtsc emitted nothing for ${file.path}.`);
-    }
-    emitted.set(file.path, [{ path: file.path, contents: code }]);
-  }
-  return emitted;
+	assertFilesToCompile(files);
+	const compiler = await loadCompiler(context.toolchainDir);
+	const options = {
+		...strictOptions(compiler),
+		noEmit: false,
+		declaration: false,
+		supportTestBed: false,
+		supportJitMode: false,
+	};
+	const contents = new Map(files.map((file) => [resolve(file.path), file.contents]));
+	const host = createHost(compiler, options, (fileName) => contents.get(resolve(fileName)));
+	const declarations = (context.declarations ?? []).map((file) => resolve(file));
+	const program = new compiler.cli.NgtscProgram(
+		[...contents.keys(), ...declarations],
+		options,
+		host,
+	);
+	await program.compiler.analyzeAsync();
+	const { transformers } = program.compiler.prepareEmit();
+	const tsProgram = program.getTsProgram();
+	const emitted = new Map<string, Array<ToolchainFile>>();
+	for (const file of files) {
+		let code: string | undefined;
+		tsProgram.emit(
+			tsProgram.getSourceFile(resolve(file.path)),
+			(fileName, text) => {
+				if (/\.[cm]?js$/.test(fileName)) {
+					code = text;
+				}
+			},
+			undefined,
+			false,
+			transformers,
+		);
+		if (code === undefined) {
+			throw new Error(`ngtsc emitted nothing for ${file.path}.`);
+		}
+		emitted.set(file.path, [{ path: file.path, contents: code }]);
+	}
+	return emitted;
 }
 
 let configs = 0;
@@ -106,46 +106,46 @@ let configs = 0;
  * toolchain has no tsconfig.
  */
 export async function typecheck(
-  files: ReadonlyArray<string>,
-  context: ToolchainContext,
+	files: ReadonlyArray<string>,
+	context: ToolchainContext,
 ): Promise<Map<string, Array<ToolchainMessage>>> {
-  assertFilesToCheck(files);
-  const compiler = await loadCompiler(context.toolchainDir);
-  const base = join(context.toolchainDir, "tsconfig.json");
-  if (!existsSync(base)) {
-    throw new Error(
-      `Cannot start the Angular type check: ${base} does not exist, and it is what the check extends.`,
-    );
-  }
-  const directory = join(context.toolchainDir, ".uf-tmp");
-  const project = join(directory, `tsconfig.typecheck.${process.pid}.${++configs}.json`);
-  mkdirSync(directory, { recursive: true });
-  writeFileSync(
-    project,
-    // The ambient declarations go into the program beside the files, and are reported on by no
-    // entry of their own (ADR-0064).
-    `${JSON.stringify({ extends: "../tsconfig.json", files: [...files, ...(context.declarations ?? [])].map((file) => resolve(file)), include: [] }, null, 2)}\n`,
-  );
-  let config: ParsedConfiguration;
-  try {
-    config = compiler.cli.readConfiguration(project);
-  } finally {
-    rmSync(project, { force: true });
-  }
-  // A configuration error is reported, and the check still runs with the options that could be
-  // read, so no file's own diagnostics are lost.
-  const { options, rootNames, errors } = config;
-  const host = createHost(compiler, options, () => undefined);
-  const diagnostics = diagnosticsByFile(files, project);
-  for (const diagnostic of [
-    ...errors,
-    ...collectDiagnostics(
-      compiler,
-      rootNames,
-      (roots) => new compiler.cli.NgtscProgram(roots, options, host),
-    ),
-  ]) {
-    diagnostics.add(diagnostic.file?.fileName, toMessage(compiler, diagnostic));
-  }
-  return diagnostics.results;
+	assertFilesToCheck(files);
+	const compiler = await loadCompiler(context.toolchainDir);
+	const base = join(context.toolchainDir, "tsconfig.json");
+	if (!existsSync(base)) {
+		throw new Error(
+			`Cannot start the Angular type check: ${base} does not exist, and it is what the check extends.`,
+		);
+	}
+	const directory = join(context.toolchainDir, ".uf-tmp");
+	const project = join(directory, `tsconfig.typecheck.${process.pid}.${++configs}.json`);
+	mkdirSync(directory, { recursive: true });
+	writeFileSync(
+		project,
+		// The ambient declarations go into the program beside the files, and are reported on by no
+		// entry of their own (ADR-0064).
+		`${JSON.stringify({ extends: "../tsconfig.json", files: [...files, ...(context.declarations ?? [])].map((file) => resolve(file)), include: [] }, null, 2)}\n`,
+	);
+	let config: ParsedConfiguration;
+	try {
+		config = compiler.cli.readConfiguration(project);
+	} finally {
+		rmSync(project, { force: true });
+	}
+	// A configuration error is reported, and the check still runs with the options that could be
+	// read, so no file's own diagnostics are lost.
+	const { options, rootNames, errors } = config;
+	const host = createHost(compiler, options, () => undefined);
+	const diagnostics = diagnosticsByFile(files, project);
+	for (const diagnostic of [
+		...errors,
+		...collectDiagnostics(
+			compiler,
+			rootNames,
+			(roots) => new compiler.cli.NgtscProgram(roots, options, host),
+		),
+	]) {
+		diagnostics.add(diagnostic.file?.fileName, toMessage(compiler, diagnostic));
+	}
+	return diagnostics.results;
 }

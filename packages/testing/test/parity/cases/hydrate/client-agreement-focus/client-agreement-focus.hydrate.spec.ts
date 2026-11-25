@@ -9,11 +9,11 @@ import "../../../dom-target.ts";
 import Note from "./component.ts";
 
 describeTargets("hydrate/client-agreement-focus", () => {
-  it("keeps the focus in the hydrated view after the client render", async ({ task }) => {
-    const view = await mount(Note, {
-      props: { server: '<label>Note <input type="text"></label>' },
-    });
-    expect(document.activeElement).toBe(view.container.querySelector("input"));
-    expect(Object.keys(task.meta.uf?.layers ?? {})).not.toContain("L12");
-  });
+	it("keeps the focus in the hydrated view after the client render", async ({ task }) => {
+		const view = await mount(Note, {
+			props: { server: '<label>Note <input type="text"></label>' },
+		});
+		expect(document.activeElement).toBe(view.container.querySelector("input"));
+		expect(Object.keys(task.meta.uf?.layers ?? {})).not.toContain("L12");
+	});
 });

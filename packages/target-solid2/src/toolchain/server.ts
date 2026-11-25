@@ -19,23 +19,23 @@ assertSolid2();
  * would see.
  */
 export const renderToString: SsrRenderer = (component, options) =>
-  render(component, options.props, true);
+	render(component, options.props, true);
 
 async function render(
-  component: unknown,
-  props: Readonly<Record<string, unknown>> | undefined,
-  noScripts: boolean,
+	component: unknown,
+	props: Readonly<Record<string, unknown>> | undefined,
+	noScripts: boolean,
 ): Promise<string> {
-  const solidComponent = asComponent(component);
-  const html: unknown = await renderToStream(() => createComponent(solidComponent, { ...props }), {
-    noScripts,
-  });
-  if (typeof html !== "string") {
-    throw new Error(
-      `Solid's server render returned ${typeof html}, not HTML: @solidjs/web resolved to its browser build. Compile with @solidjs/vite-plugin({ ssr: true }).`,
-    );
-  }
-  return html;
+	const solidComponent = asComponent(component);
+	const html: unknown = await renderToStream(() => createComponent(solidComponent, { ...props }), {
+		noScripts,
+	});
+	if (typeof html !== "string") {
+		throw new Error(
+			`Solid's server render returned ${typeof html}, not HTML: @solidjs/web resolved to its browser build. Compile with @solidjs/vite-plugin({ ssr: true }).`,
+		);
+	}
+	return html;
 }
 
 /**
@@ -47,4 +47,4 @@ async function render(
  * contract allows (a component depends neither on its setup running once nor twice).
  */
 export const renderForHydration: HydrationRenderer = (component, options) =>
-  render(component, options.props, false);
+	render(component, options.props, false);

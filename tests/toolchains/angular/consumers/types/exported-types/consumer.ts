@@ -2,16 +2,16 @@ import { Component } from "@angular/core";
 
 import Button from "../../../../../integration/cases/types/exported-types/__output__/angular/button";
 import type {
-  ButtonProps,
-  ButtonSize,
+	ButtonProps,
+	ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/angular/button";
 
 @Component({
-  selector: "uf-button-consumer",
-  imports: [Button],
-  template: `<uf-button [label]="props.label" [tone]="props.tone" [attr.data-size]="size" />`,
+	selector: "uf-button-consumer",
+	imports: [Button],
+	template: `<uf-button [label]="props.label" [tone]="props.tone" [attr.data-size]="size" />`,
 })
 export default class Consumer {
-  protected readonly props: ButtonProps = { label: "Save", tone: "secondary" };
-  protected readonly size: ButtonSize = "large";
+	protected readonly props: ButtonProps = { label: "Save", tone: "secondary" };
+	protected readonly size: ButtonSize = "large";
 }

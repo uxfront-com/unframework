@@ -7,5 +7,5 @@ const size = ref<"s" | "m">("s");
 </script>
 
 <template>
-  <Select v-model:value="size" label="Size" :options="['s', 'm']" />
+	<Select v-model:value="size" label="Size" :options="['s', 'm']" />
 </template>

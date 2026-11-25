@@ -16,46 +16,46 @@ const FUNCTIONS = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFu
  * `for await`. A file that does not parse is left to the compiler, which reports why.
  */
 export function awaitsAtTop(parse: Parse, code: string): boolean {
-  // Most files hold no `await` at all: no parse for them.
-  if (!code.includes("await")) {
-    return false;
-  }
-  let root: AST.Root;
-  try {
-    root = parse(code, { modern: true });
-  } catch {
-    return false;
-  }
-  return root.instance ? holdsAwait(root.instance.content) : false;
+	// Most files hold no `await` at all: no parse for them.
+	if (!code.includes("await")) {
+		return false;
+	}
+	let root: AST.Root;
+	try {
+		root = parse(code, { modern: true });
+	} catch {
+		return false;
+	}
+	return root.instance ? holdsAwait(root.instance.content) : false;
 }
 
 /** The compiler options one component adds: `experimental.async` where it awaits at its top. */
 export function componentOptions(parse: Parse, code: string): Partial<CompileOptions> {
-  return awaitsAtTop(parse, code) ? { experimental: { async: true } } : {};
+	return awaitsAtTop(parse, code) ? { experimental: { async: true } } : {};
 }
 
 /** Whether an ESTree node holds an `await` its own scope runs, outside any nested function. */
 function holdsAwait(node: unknown): boolean {
-  if (Array.isArray(node)) {
-    return node.some(holdsAwait);
-  }
-  if (typeof node !== "object" || node === null) {
-    return false;
-  }
-  const { type } = node as { type?: unknown };
-  if (typeof type !== "string") {
-    return false;
-  }
-  if (type === "AwaitExpression") {
-    return true;
-  }
-  if (type === "ForOfStatement" && (node as { await?: boolean }).await) {
-    return true;
-  }
-  if (FUNCTIONS.has(type)) {
-    return false;
-  }
-  return Object.entries(node).some(
-    ([key, value]) => key !== "metadata" && typeof value === "object" && holdsAwait(value),
-  );
+	if (Array.isArray(node)) {
+		return node.some(holdsAwait);
+	}
+	if (typeof node !== "object" || node === null) {
+		return false;
+	}
+	const { type } = node as { type?: unknown };
+	if (typeof type !== "string") {
+		return false;
+	}
+	if (type === "AwaitExpression") {
+		return true;
+	}
+	if (type === "ForOfStatement" && (node as { await?: boolean }).await) {
+		return true;
+	}
+	if (FUNCTIONS.has(type)) {
+		return false;
+	}
+	return Object.entries(node).some(
+		([key, value]) => key !== "metadata" && typeof value === "object" && holdsAwait(value),
+	);
 }

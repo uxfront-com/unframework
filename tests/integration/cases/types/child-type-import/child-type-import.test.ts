@@ -6,11 +6,11 @@ import { expect } from "vitest";
 import Form from "./Form.uf.tsx";
 
 describeTargets("types/child-type-import", () => {
-  it("passes the typed prop on to the child", async () => {
-    const view = await mountScenario(Form, "email");
-    await view.expectParity("email");
-    await expect
-      .element(view.getByRole("textbox", { name: "Email" }))
-      .toHaveAttribute("name", "email");
-  });
+	it("passes the typed prop on to the child", async () => {
+		const view = await mountScenario(Form, "email");
+		await view.expectParity("email");
+		await expect
+			.element(view.getByRole("textbox", { name: "Email" }))
+			.toHaveAttribute("name", "email");
+	});
 });

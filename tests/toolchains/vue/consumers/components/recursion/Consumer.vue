@@ -3,5 +3,5 @@ import Countdown from "../../../../../integration/cases/components/recursion/__o
 </script>
 
 <template>
-  <Countdown :from="2" />
+	<Countdown :from="2" />
 </template>

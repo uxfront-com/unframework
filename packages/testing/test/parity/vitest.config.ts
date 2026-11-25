@@ -7,9 +7,9 @@ import type { ViteUserConfig } from "vitest/config";
 import { parityProject } from "./project.ts";
 
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [parityProject()],
-  },
+	test: {
+		projects: [parityProject()],
+	},
 });
 
 export default config;

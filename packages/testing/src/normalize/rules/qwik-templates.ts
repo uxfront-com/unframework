@@ -11,10 +11,10 @@ import { isFrameworkAttribute } from "./framework-attributes.ts";
  * task's placeholder (`isTaskPlaceholder`).
  */
 export function removeQwikTemplates(root: TreeParent, target?: NormalizeTarget): void {
-  if (target !== "qwik") {
-    return;
-  }
-  remove(root);
+	if (target !== "qwik") {
+		return;
+	}
+	remove(root);
 }
 
 /**
@@ -25,28 +25,28 @@ export function removeQwikTemplates(root: TreeParent, target?: NormalizeTarget):
  * task in place, does not have it.
  */
 function isTaskPlaceholder(node: TreeElement): boolean {
-  return (
-    node.tagName === "script" &&
-    childrenOf(node).length === 0 &&
-    node.attrs.some((attribute) => attributeName(attribute) === "hidden") &&
-    node.attrs.every((attribute) => {
-      const name = attributeName(attribute);
-      return name === "hidden" || isFrameworkAttribute(name, "qwik");
-    })
-  );
+	return (
+		node.tagName === "script" &&
+		childrenOf(node).length === 0 &&
+		node.attrs.some((attribute) => attributeName(attribute) === "hidden") &&
+		node.attrs.every((attribute) => {
+			const name = attributeName(attribute);
+			return name === "hidden" || isFrameworkAttribute(name, "qwik");
+		})
+	);
 }
 
 function remove(root: TreeParent): void {
-  const children = childrenOf(root);
-  const kept = children.filter(
-    (node) => !isElement(node) || (node.tagName !== "q:template" && !isTaskPlaceholder(node)),
-  );
-  if (kept.length !== children.length) {
-    replaceChildren(root, kept);
-  }
-  for (const node of kept) {
-    if (isElement(node)) {
-      remove(node);
-    }
-  }
+	const children = childrenOf(root);
+	const kept = children.filter(
+		(node) => !isElement(node) || (node.tagName !== "q:template" && !isTaskPlaceholder(node)),
+	);
+	if (kept.length !== children.length) {
+		replaceChildren(root, kept);
+	}
+	for (const node of kept) {
+		if (isElement(node)) {
+			remove(node);
+		}
+	}
 }

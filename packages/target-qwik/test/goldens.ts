@@ -10,20 +10,20 @@ const repo = fileURLToPath(new URL("../../..", import.meta.url));
 
 /** Whether the case that holds a golden expects an error on Qwik (or on every target). */
 function expectsErrors(golden: string): boolean {
-  const caseDir = golden.slice(0, golden.indexOf("/__output__/"));
-  const path = join(caseDir, "__expected__", "diagnostics.json");
-  if (!existsSync(path)) {
-    return false;
-  }
-  const diagnostics = JSON.parse(readFileSync(path, "utf8")) as Array<{
-    severity: string;
-    target?: string;
-  }>;
-  return diagnostics.some(
-    (diagnostic) =>
-      diagnostic.severity === "error" &&
-      (diagnostic.target === undefined || diagnostic.target === "qwik"),
-  );
+	const caseDir = golden.slice(0, golden.indexOf("/__output__/"));
+	const path = join(caseDir, "__expected__", "diagnostics.json");
+	if (!existsSync(path)) {
+		return false;
+	}
+	const diagnostics = JSON.parse(readFileSync(path, "utf8")) as Array<{
+		severity: string;
+		target?: string;
+	}>;
+	return diagnostics.some(
+		(diagnostic) =>
+			diagnostic.severity === "error" &&
+			(diagnostic.target === undefined || diagnostic.target === "qwik"),
+	);
 }
 
 /**
@@ -32,8 +32,8 @@ function expectsErrors(golden: string): boolean {
  * the directories the pattern matches, such as a tree's `_unframework/` (ADR-0121).
  */
 export function goldens(pattern: string): Array<string> {
-  return globSync(pattern, { cwd: repo })
-    .toSorted()
-    .map((file) => join(repo, file))
-    .filter((file) => !file.endsWith(".css") && statSync(file).isFile() && !expectsErrors(file));
+	return globSync(pattern, { cwd: repo })
+		.toSorted()
+		.map((file) => join(repo, file))
+		.filter((file) => !file.endsWith(".css") && statSync(file).isFile() && !expectsErrors(file));
 }

@@ -1,17 +1,17 @@
 {
-  "description": "`innerHTML` renders a prop's markup and a static string as HTML, not as text, with the `raw-html` warning (UF3051). The markup keeps an `id`, a `data-*` attribute and a `style` attribute, which Angular's sanitiser would strip.",
-  "ssr": {
-    "default": {
-      "props": {
-        "title": "Release notes",
-        "body": "<p id=\"lead\" data-kind=\"intro\" style=\"color: rgb(0, 0, 128);\">Version 2 is <strong>out</strong>.</p><ul><li>Faster builds</li><li>Fewer warnings</li></ul>"
-      }
-    },
-    "empty": {
-      "props": {
-        "title": "Draft",
-        "body": ""
-      }
-    }
-  }
+	"description": "`innerHTML` renders a prop's markup and a static string as HTML, not as text, with the `raw-html` warning (UF3051). The markup keeps an `id`, a `data-*` attribute and a `style` attribute, which Angular's sanitiser would strip.",
+	"ssr": {
+		"default": {
+			"props": {
+				"title": "Release notes",
+				"body": "<p id=\"lead\" data-kind=\"intro\" style=\"color: rgb(0, 0, 128);\">Version 2 is <strong>out</strong>.</p><ul><li>Faster builds</li><li>Fewer warnings</li></ul>"
+			}
+		},
+		"empty": {
+			"props": {
+				"title": "Draft",
+				"body": ""
+			}
+		}
+	}
 }

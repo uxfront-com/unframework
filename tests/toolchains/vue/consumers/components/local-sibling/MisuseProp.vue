@@ -3,6 +3,6 @@ import Card from "../../../../../integration/cases/components/local-sibling/__ou
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Card.prop:title -->
-  <Card :title="1" />
+	<!-- @uf-expect TS2322 Card.prop:title -->
+	<Card :title="1" />
 </template>

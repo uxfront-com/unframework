@@ -9,16 +9,16 @@ import type { TreeParent } from "../tree.ts";
  * comment is left as it is, so it joins up exactly as it renders.
  */
 export function removeComments(root: TreeParent): void {
-  const children = childrenOf(root);
-  if (children.some((node) => node.nodeName === "#comment")) {
-    replaceChildren(
-      root,
-      children.filter((node) => node.nodeName !== "#comment"),
-    );
-  }
-  for (const node of childrenOf(root)) {
-    if (isElement(node)) {
-      removeComments(node);
-    }
-  }
+	const children = childrenOf(root);
+	if (children.some((node) => node.nodeName === "#comment")) {
+		replaceChildren(
+			root,
+			children.filter((node) => node.nodeName !== "#comment"),
+		);
+	}
+	for (const node of childrenOf(root)) {
+		if (isElement(node)) {
+			removeComments(node);
+		}
+	}
 }

@@ -6,10 +6,10 @@ import { expect } from "vitest";
 import Fruits from "./Fruits.uf.tsx";
 
 describeTargets("generics/scoped-slot", () => {
-  it("renders the fill with each item", async () => {
-    const view = await mountScenario(Fruits, "basket");
-    await view.expectParity("basket");
-    await expect.element(view.getByRole("listitem").nth(0)).toHaveTextContent("Apple × 3");
-    await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("Pear × 1");
-  });
+	it("renders the fill with each item", async () => {
+		const view = await mountScenario(Fruits, "basket");
+		await view.expectParity("basket");
+		await expect.element(view.getByRole("listitem").nth(0)).toHaveTextContent("Apple × 3");
+		await expect.element(view.getByRole("listitem").nth(1)).toHaveTextContent("Pear × 1");
+	});
 });

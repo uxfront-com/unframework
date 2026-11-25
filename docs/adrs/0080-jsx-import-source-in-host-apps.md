@@ -31,24 +31,24 @@ proposed before M6 builds it, and it's amended in place as it's built.
 ```jsonc
 // tsconfig.uf.json
 {
-  "compilerOptions": {
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "jsx": "preserve",
-    "jsxImportSource": "unframework",
-  },
-  "include": ["**/*.uf.tsx", "**/*.uf.ts"],
-  "exclude": ["dist"],
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"noEmit": true,
+		"allowImportingTsExtensions": true,
+		"jsx": "preserve",
+		"jsxImportSource": "unframework",
+	},
+	"include": ["**/*.uf.tsx", "**/*.uf.ts"],
+	"exclude": ["dist"],
 }
 ```
 
 ```jsonc
 // tsconfig.json, the host's own
 {
-  "exclude": ["**/*.uf.tsx", "**/*.uf.ts"],
+	"exclude": ["**/*.uf.tsx", "**/*.uf.ts"],
 }
 ```
 

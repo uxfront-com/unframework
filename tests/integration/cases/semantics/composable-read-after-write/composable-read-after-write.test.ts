@@ -8,25 +8,25 @@ import { expect } from "vitest";
 import Cart from "./Cart.uf.tsx";
 
 describeTargets("semantics/composable-read-after-write", () => {
-  it("renders an empty cart", async () => {
-    const view = await mountScenario(Cart, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("status")).toHaveTextContent("Items: 0");
-  });
+	it("renders an empty cart", async () => {
+		const view = await mountScenario(Cart, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("status")).toHaveTextContent("Items: 0");
+	});
 
-  it(
-    "reads the composable's writes in the same function",
-    { requires: ["interactivity"] },
-    async () => {
-      const view = await mountScenario(Cart, "initial");
-      await view.user.click(view.getByRole("button", { name: "Add three" }));
-      await view.expectParity("added");
-      await expect.element(view.getByRole("status")).toHaveTextContent("Items: 3");
-      expect(view.emitted("total")).toEqual([[3]]);
-      await view.user.click(view.getByRole("button", { name: "Clear" }));
-      await view.expectParity("cleared");
-      await expect.element(view.getByRole("status")).toHaveTextContent("Items: 0");
-      expect(view.emitted("cleared")).toEqual([[true]]);
-    },
-  );
+	it(
+		"reads the composable's writes in the same function",
+		{ requires: ["interactivity"] },
+		async () => {
+			const view = await mountScenario(Cart, "initial");
+			await view.user.click(view.getByRole("button", { name: "Add three" }));
+			await view.expectParity("added");
+			await expect.element(view.getByRole("status")).toHaveTextContent("Items: 3");
+			expect(view.emitted("total")).toEqual([[3]]);
+			await view.user.click(view.getByRole("button", { name: "Clear" }));
+			await view.expectParity("cleared");
+			await expect.element(view.getByRole("status")).toHaveTextContent("Items: 0");
+			expect(view.emitted("cleared")).toEqual([[true]]);
+		},
+	);
 });

@@ -6,73 +6,73 @@ import { createRequire } from "node:module";
 import { format, stripVTControlCharacters } from "node:util";
 
 import type {
-  FrameworkCompileResult,
-  ToolchainFile,
-  ToolchainMessage,
+	FrameworkCompileResult,
+	ToolchainFile,
+	ToolchainMessage,
 } from "@unframework.dev/codegen";
 import {
-  assertFilesToCompile,
-  compileScriptModules,
+	assertFilesToCompile,
+	compileScriptModules,
 } from "@unframework.dev/codegen/toolchain-node";
 import type {
-  BindingMetadata,
-  CompilerError,
-  SFCDescriptor,
-  SFCStyleCompileOptions,
-  TemplateCompiler,
+	BindingMetadata,
+	CompilerError,
+	SFCDescriptor,
+	SFCStyleCompileOptions,
+	TemplateCompiler,
 } from "vue/compiler-sfc";
 import type * as CompilerSfcModule from "vue/compiler-sfc";
 
 type CompilerSfc = typeof CompilerSfcModule;
 
 interface VueCompilers {
-  /** A private instance of @vue/compiler-sfc, for one file (see {@link privateCompilerSfc}). */
-  sfc(): CompilerSfc;
-  dom: TemplateCompiler;
-  ssr: TemplateCompiler;
-  /** The names of Vue's error codes (`23` → `X_INVALID_END_TAG`). */
-  codeNames: ReadonlyMap<number, string>;
+	/** A private instance of @vue/compiler-sfc, for one file (see {@link privateCompilerSfc}). */
+	sfc(): CompilerSfc;
+	dom: TemplateCompiler;
+	ssr: TemplateCompiler;
+	/** The names of Vue's error codes (`23` → `X_INVALID_END_TAG`). */
+	codeNames: ReadonlyMap<number, string>;
 }
 
 let compilers: Promise<VueCompilers> | undefined;
 
 /** Loads Vue's compilers on first use, so importing the toolchain stays cheap. */
 function loadCompilers(): Promise<VueCompilers> {
-  compilers ??= (async () => {
-    // `vue/compiler-sfc` re-exports @vue/compiler-sfc, the CommonJS build resolved from `vue`.
-    const fromVue = createRequire(createRequire(import.meta.url).resolve("vue/package.json"));
-    const sfcPath = fromVue.resolve("@vue/compiler-sfc");
-    // The template compilers are compiler-sfc's own dependencies, resolved from it, so they are
-    // exactly the versions compileTemplate would pick by itself.
-    const fromSfc = createRequire(sfcPath);
-    const dom = fromSfc("@vue/compiler-dom") as TemplateCompiler & {
-      ErrorCodes: Record<string, string | number>;
-      DOMErrorCodes: Record<string, string | number>;
-    };
-    const ssr = fromSfc("@vue/compiler-ssr") as Pick<TemplateCompiler, "compile">;
-    return {
-      sfc: () => privateCompilerSfc(fromSfc, sfcPath),
-      dom,
-      // compiler-ssr has no parser of its own: compileTemplate also parses SSR templates with
-      // compiler-dom.
-      ssr: {
-        parse: (template, options) => dom.parse(template, options),
-        compile: (template, options) => ssr.compile(template, options),
-      },
-      // Each enum ends with an `__EXTEND_POINT__` that shares its number with the next enum's
-      // first code.
-      codeNames: new Map(
-        [dom.ErrorCodes, dom.DOMErrorCodes].flatMap((codes) =>
-          Object.entries(codes).flatMap(([name, value]) =>
-            typeof value === "number" && name !== "__EXTEND_POINT__"
-              ? [[value, name] as const]
-              : [],
-          ),
-        ),
-      ),
-    };
-  })();
-  return compilers;
+	compilers ??= (async () => {
+		// `vue/compiler-sfc` re-exports @vue/compiler-sfc, the CommonJS build resolved from `vue`.
+		const fromVue = createRequire(createRequire(import.meta.url).resolve("vue/package.json"));
+		const sfcPath = fromVue.resolve("@vue/compiler-sfc");
+		// The template compilers are compiler-sfc's own dependencies, resolved from it, so they are
+		// exactly the versions compileTemplate would pick by itself.
+		const fromSfc = createRequire(sfcPath);
+		const dom = fromSfc("@vue/compiler-dom") as TemplateCompiler & {
+			ErrorCodes: Record<string, string | number>;
+			DOMErrorCodes: Record<string, string | number>;
+		};
+		const ssr = fromSfc("@vue/compiler-ssr") as Pick<TemplateCompiler, "compile">;
+		return {
+			sfc: () => privateCompilerSfc(fromSfc, sfcPath),
+			dom,
+			// compiler-ssr has no parser of its own: compileTemplate also parses SSR templates with
+			// compiler-dom.
+			ssr: {
+				parse: (template, options) => dom.parse(template, options),
+				compile: (template, options) => ssr.compile(template, options),
+			},
+			// Each enum ends with an `__EXTEND_POINT__` that shares its number with the next enum's
+			// first code.
+			codeNames: new Map(
+				[dom.ErrorCodes, dom.DOMErrorCodes].flatMap((codes) =>
+					Object.entries(codes).flatMap(([name, value]) =>
+						typeof value === "number" && name !== "__EXTEND_POINT__"
+							? [[value, name] as const]
+							: [],
+					),
+				),
+			),
+		};
+	})();
+	return compilers;
 }
 
 /**
@@ -84,17 +84,17 @@ function loadCompilers(): Promise<VueCompilers> {
  * plugin-vue compiles with, is put back in the require cache.
  */
 function privateCompilerSfc(require: NodeJS.Require, path: string): CompilerSfc {
-  const shared = require.cache[path];
-  delete require.cache[path];
-  try {
-    return require(path) as CompilerSfc;
-  } finally {
-    if (shared) {
-      require.cache[path] = shared;
-    } else {
-      delete require.cache[path];
-    }
-  }
+	const shared = require.cache[path];
+	delete require.cache[path];
+	try {
+		return require(path) as CompilerSfc;
+	} finally {
+		if (shared) {
+			require.cache[path] = shared;
+		} else {
+			delete require.cache[path];
+		}
+	}
 }
 
 /**
@@ -103,26 +103,26 @@ function privateCompilerSfc(require: NodeJS.Require, path: string): CompilerSfc 
  * TypeScript transform checks it (`compileScriptModules`).
  */
 export async function frameworkCompile(
-  files: ReadonlyArray<ToolchainFile>,
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
-  assertFilesToCompile(files);
-  // Under NODE_ENV=production, compiler-dom loads its production build and warnOnce is a no-op:
-  // every warning disappears, and the check would pass without looking.
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "The Vue toolchain refuses to run under NODE_ENV=production, which silences every " +
-        "@vue/compiler-sfc warning. Unset NODE_ENV for toolchain checks.",
-    );
-  }
-  const loaded = await loadCompilers();
-  const tree = outputTree(files);
-  const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
-  for (const file of files) {
-    if (!file.path.endsWith(".ts")) {
-      results.set(file.path, compileSfc(loaded, file, tree));
-    }
-  }
-  return results;
+	assertFilesToCompile(files);
+	// Under NODE_ENV=production, compiler-dom loads its production build and warnOnce is a no-op:
+	// every warning disappears, and the check would pass without looking.
+	if (process.env.NODE_ENV === "production") {
+		throw new Error(
+			"The Vue toolchain refuses to run under NODE_ENV=production, which silences every " +
+				"@vue/compiler-sfc warning. Unset NODE_ENV for toolchain checks.",
+		);
+	}
+	const loaded = await loadCompilers();
+	const tree = outputTree(files);
+	const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
+	for (const file of files) {
+		if (!file.path.endsWith(".ts")) {
+			results.set(file.path, compileSfc(loaded, file, tree));
+		}
+	}
+	return results;
 }
 
 /**
@@ -131,50 +131,50 @@ export async function frameworkCompile(
  * stays as it is, for the bundler's TypeScript transform.
  */
 export async function frameworkEmit(
-  files: ReadonlyArray<ToolchainFile>,
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, Array<ToolchainFile>>> {
-  assertFilesToCompile(files);
-  const loaded = await loadCompilers();
-  const tree = outputTree(files);
-  return new Map(
-    files.map((file) => {
-      const contents = file.path.endsWith(".ts") ? file.contents : emitSfc(loaded, file, tree);
-      return [file.path, [{ path: file.path, contents }]] as const;
-    }),
-  );
+	assertFilesToCompile(files);
+	const loaded = await loadCompilers();
+	const tree = outputTree(files);
+	return new Map(
+		files.map((file) => {
+			const contents = file.path.endsWith(".ts") ? file.contents : emitSfc(loaded, file, tree);
+			return [file.path, [{ path: file.path, contents }]] as const;
+		}),
+	);
 }
 
 function emitSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): string {
-  const sfc = vue.sfc();
-  const { descriptor } = sfc.parse(file.contents, { filename: file.path, sourceMap: false });
-  const id = createHash("sha256").update(file.path).digest("hex").slice(0, 8);
-  const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
-  const expressionPlugins: Array<"typescript"> = lang && /tsx?$/.test(lang) ? ["typescript"] : [];
-  const compilerOptions = { expressionPlugins };
-  const sheets = descriptor.styles.flatMap((style) =>
-    style.src ? [`import ${JSON.stringify(style.src)};`] : [],
-  );
-  if (descriptor.script || descriptor.scriptSetup) {
-    const script = sfc.compileScript(descriptor, {
-      id,
-      isProd: true,
-      inlineTemplate: true,
-      sourceMap: false,
-      fs,
-      templateOptions: { transformAssetUrls: false, compilerOptions },
-    });
-    return [...sheets, script.content].join("\n");
-  }
-  const render = sfc.compileTemplate({
-    source: descriptor.template?.content ?? "",
-    filename: file.path,
-    id,
-    isProd: true,
-    transformAssetUrls: false,
-    compiler: vue.dom,
-    compilerOptions,
-  });
-  return [...sheets, render.code, "export default { render };"].join("\n");
+	const sfc = vue.sfc();
+	const { descriptor } = sfc.parse(file.contents, { filename: file.path, sourceMap: false });
+	const id = createHash("sha256").update(file.path).digest("hex").slice(0, 8);
+	const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
+	const expressionPlugins: Array<"typescript"> = lang && /tsx?$/.test(lang) ? ["typescript"] : [];
+	const compilerOptions = { expressionPlugins };
+	const sheets = descriptor.styles.flatMap((style) =>
+		style.src ? [`import ${JSON.stringify(style.src)};`] : [],
+	);
+	if (descriptor.script || descriptor.scriptSetup) {
+		const script = sfc.compileScript(descriptor, {
+			id,
+			isProd: true,
+			inlineTemplate: true,
+			sourceMap: false,
+			fs,
+			templateOptions: { transformAssetUrls: false, compilerOptions },
+		});
+		return [...sheets, script.content].join("\n");
+	}
+	const render = sfc.compileTemplate({
+		source: descriptor.template?.content ?? "",
+		filename: file.path,
+		id,
+		isProd: true,
+		transformAssetUrls: false,
+		compiler: vue.dom,
+		compilerOptions,
+	});
+	return [...sheets, render.code, "export default { render };"].join("\n");
 }
 
 /** The file system compileScript reads. */
@@ -186,111 +186,111 @@ type ScriptFs = NonNullable<CompilerSfcModule.SFCScriptCompileOptions["fs"]>;
  * module or another `.vue` file. Without one it cannot resolve an imported type at all.
  */
 function outputTree(files: ReadonlyArray<ToolchainFile>): ScriptFs {
-  const contents = new Map(files.map((file) => [file.path, file.contents]));
-  return {
-    fileExists: (path) => contents.has(path),
-    readFile: (path) => contents.get(path),
-    realpath: (path) => path,
-  };
+	const contents = new Map(files.map((file) => [file.path, file.contents]));
+	return {
+		fileExists: (path) => contents.has(path),
+		readFile: (path) => contents.get(path),
+		realpath: (path) => path,
+	};
 }
 
 function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): FrameworkCompileResult {
-  const sfc = vue.sfc();
-  const source = file.contents;
-  const errors: Array<ToolchainMessage> = [];
-  const warnings: Array<ToolchainMessage> = [];
-  const message = (error: CompilerError | SyntaxError | string, base = 0): ToolchainMessage =>
-    fromCompilerError(error, source, base, vue.codeNames);
-  const logged: Array<string> = [];
+	const sfc = vue.sfc();
+	const source = file.contents;
+	const errors: Array<ToolchainMessage> = [];
+	const warnings: Array<ToolchainMessage> = [];
+	const message = (error: CompilerError | SyntaxError | string, base = 0): ToolchainMessage =>
+		fromCompilerError(error, source, base, vue.codeNames);
+	const logged: Array<string> = [];
 
-  const { descriptor, errors: parseErrors } = sfc.parse(source, {
-    filename: file.path,
-    sourceMap: false,
-  });
-  if (parseErrors.length > 0) {
-    return { errors: parseErrors.map((error) => message(error)), warnings };
-  }
+	const { descriptor, errors: parseErrors } = sfc.parse(source, {
+		filename: file.path,
+		sourceMap: false,
+	});
+	if (parseErrors.length > 0) {
+		return { errors: parseErrors.map((error) => message(error)), warnings };
+	}
 
-  // plugin-vue hashes the path; the id only names the scope attribute of scoped styles.
-  const id = createHash("sha256").update(file.path).digest("hex").slice(0, 8);
-  const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
+	// plugin-vue hashes the path; the id only names the scope attribute of scoped styles.
+	const id = createHash("sha256").update(file.path).digest("hex").slice(0, 8);
+	const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
 
-  let bindings: BindingMetadata | undefined;
-  if (descriptor.script || descriptor.scriptSetup) {
-    try {
-      bindings = capturingConsole(logged, () =>
-        sfc.compileScript(descriptor, {
-          id,
-          isProd: false,
-          inlineTemplate: false,
-          sourceMap: false,
-          fs,
-        }),
-      ).bindings;
-    } catch (error) {
-      errors.push(scriptError(error, descriptor, source));
-    }
-  }
+	let bindings: BindingMetadata | undefined;
+	if (descriptor.script || descriptor.scriptSetup) {
+		try {
+			bindings = capturingConsole(logged, () =>
+				sfc.compileScript(descriptor, {
+					id,
+					isProd: false,
+					inlineTemplate: false,
+					sourceMap: false,
+					fs,
+				}),
+			).bindings;
+		} catch (error) {
+			errors.push(scriptError(error, descriptor, source));
+		}
+	}
 
-  const template = descriptor.template;
-  if (template) {
-    // With a custom compiler, compileTemplate compiles the block's content, so locations are
-    // relative to the start of the content.
-    const base = template.loc.start.offset;
-    for (const ssr of [false, true]) {
-      const reported: Array<CompilerError> = [];
-      try {
-        const result = capturingConsole(logged, () =>
-          sfc.compileTemplate({
-            source: template.content,
-            filename: file.path,
-            id,
-            scoped: descriptor.styles.some((style) => style.scoped),
-            slotted: descriptor.slotted,
-            ssr,
-            ssrCssVars: descriptor.cssVars,
-            isProd: false,
-            compiler: reportingWarnings(ssr ? vue.ssr : vue.dom, reported),
-            // As the toolchain configures plugin-vue: static URLs stay plain strings.
-            transformAssetUrls: false,
-            compilerOptions: {
-              bindingMetadata: bindings,
-              expressionPlugins: lang && /tsx?$/.test(lang) ? ["typescript"] : [],
-            },
-          }),
-        );
-        errors.push(...result.errors.map((error) => message(error, base)));
-      } catch (error) {
-        errors.push(thrown(error));
-      }
-      warnings.push(...reported.map((warning) => message(warning, base)));
-    }
-  }
+	const template = descriptor.template;
+	if (template) {
+		// With a custom compiler, compileTemplate compiles the block's content, so locations are
+		// relative to the start of the content.
+		const base = template.loc.start.offset;
+		for (const ssr of [false, true]) {
+			const reported: Array<CompilerError> = [];
+			try {
+				const result = capturingConsole(logged, () =>
+					sfc.compileTemplate({
+						source: template.content,
+						filename: file.path,
+						id,
+						scoped: descriptor.styles.some((style) => style.scoped),
+						slotted: descriptor.slotted,
+						ssr,
+						ssrCssVars: descriptor.cssVars,
+						isProd: false,
+						compiler: reportingWarnings(ssr ? vue.ssr : vue.dom, reported),
+						// As the toolchain configures plugin-vue: static URLs stay plain strings.
+						transformAssetUrls: false,
+						compilerOptions: {
+							bindingMetadata: bindings,
+							expressionPlugins: lang && /tsx?$/.test(lang) ? ["typescript"] : [],
+						},
+					}),
+				);
+				errors.push(...result.errors.map((error) => message(error, base)));
+			} catch (error) {
+				errors.push(thrown(error));
+			}
+			warnings.push(...reported.map((warning) => message(warning, base)));
+		}
+	}
 
-  for (const style of descriptor.styles) {
-    // An external stylesheet is a separate file, not part of this component's source.
-    if (style.src) {
-      continue;
-    }
-    try {
-      const result = capturingConsole(logged, () =>
-        sfc.compileStyle({
-          source: style.content,
-          filename: file.path,
-          id: `data-v-${id}`,
-          scoped: style.scoped,
-          isProd: false,
-          preprocessLang: style.lang as SFCStyleCompileOptions["preprocessLang"],
-        }),
-      );
-      errors.push(...result.errors.map((error) => styleError(error, style.loc.start)));
-    } catch (error) {
-      errors.push(thrown(error));
-    }
-  }
+	for (const style of descriptor.styles) {
+		// An external stylesheet is a separate file, not part of this component's source.
+		if (style.src) {
+			continue;
+		}
+		try {
+			const result = capturingConsole(logged, () =>
+				sfc.compileStyle({
+					source: style.content,
+					filename: file.path,
+					id: `data-v-${id}`,
+					scoped: style.scoped,
+					isProd: false,
+					preprocessLang: style.lang as SFCStyleCompileOptions["preprocessLang"],
+				}),
+			);
+			errors.push(...result.errors.map((error) => styleError(error, style.loc.start)));
+		} catch (error) {
+			errors.push(thrown(error));
+		}
+	}
 
-  warnings.push(...logged.map((text) => ({ message: text })));
-  return { errors: unique(errors), warnings: unique(warnings) };
+	warnings.push(...logged.map((text) => ({ message: text })));
+	return { errors: unique(errors), warnings: unique(warnings) };
 }
 
 /**
@@ -298,20 +298,20 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): Frame
  * without a location. Wrapping the compiler keeps the structured warnings.
  */
 function reportingWarnings(
-  compiler: TemplateCompiler,
-  sink: Array<CompilerError>,
+	compiler: TemplateCompiler,
+	sink: Array<CompilerError>,
 ): TemplateCompiler {
-  return {
-    parse: (template, options) => compiler.parse(template, options),
-    compile: (template, options) =>
-      compiler.compile(template, {
-        ...options,
-        onWarn(warning) {
-          sink.push(warning);
-          options.onWarn?.(warning);
-        },
-      }),
-  };
+	return {
+		parse: (template, options) => compiler.parse(template, options),
+		compile: (template, options) =>
+			compiler.compile(template, {
+				...options,
+				onWarn(warning) {
+					sink.push(warning);
+					options.onWarn?.(warning);
+				},
+			}),
+	};
 }
 
 /**
@@ -319,35 +319,35 @@ function reportingWarnings(
  * reach `console.warn`. The swap is process-wide, so it must never span an `await`.
  */
 function capturingConsole<T>(sink: Array<string>, run: () => T): T {
-  const { warn, error } = console;
-  const capture = (...args: Array<unknown>) => {
-    sink.push(stripVTControlCharacters(format(...args)).trim());
-  };
-  console.warn = capture;
-  console.error = capture;
-  try {
-    return run();
-  } finally {
-    console.warn = warn;
-    console.error = error;
-  }
+	const { warn, error } = console;
+	const capture = (...args: Array<unknown>) => {
+		sink.push(stripVTControlCharacters(format(...args)).trim());
+	};
+	console.warn = capture;
+	console.error = capture;
+	try {
+		return run();
+	} finally {
+		console.warn = warn;
+		console.error = error;
+	}
 }
 
 function fromCompilerError(
-  error: CompilerError | SyntaxError | string,
-  source: string,
-  base: number,
-  codeNames: VueCompilers["codeNames"],
+	error: CompilerError | SyntaxError | string,
+	source: string,
+	base: number,
+	codeNames: VueCompilers["codeNames"],
 ): ToolchainMessage {
-  if (typeof error === "string") {
-    return { message: error };
-  }
-  const { code, loc } = error as Partial<CompilerError>;
-  return {
-    message: error.message,
-    ...(loc ? positionAt(source, base + loc.start.offset) : {}),
-    ...(typeof code === "number" ? { code: codeNames.get(code) ?? `VUE_${code}` } : {}),
-  };
+	if (typeof error === "string") {
+		return { message: error };
+	}
+	const { code, loc } = error as Partial<CompilerError>;
+	return {
+		message: error.message,
+		...(loc ? positionAt(source, base + loc.start.offset) : {}),
+		...(typeof code === "number" ? { code: codeNames.get(code) ?? `VUE_${code}` } : {}),
+	};
 }
 
 /**
@@ -356,24 +356,24 @@ function fromCompilerError(
  * itself always holds a code frame.
  */
 function scriptError(error: unknown, descriptor: SFCDescriptor, source: string): ToolchainMessage {
-  const blocks = [descriptor.script, descriptor.scriptSetup].filter((block) => block !== null);
-  const base = blocks.length === 1 ? blocks[0]!.loc.start.offset : undefined;
-  return base === undefined ? thrown(error) : thrown(error, base, source);
+	const blocks = [descriptor.script, descriptor.scriptSetup].filter((block) => block !== null);
+	const base = blocks.length === 1 ? blocks[0]!.loc.start.offset : undefined;
+	return base === undefined ? thrown(error) : thrown(error, base, source);
 }
 
 /** A thrown error; `pos` (Babel's offset) is located when the block's offset is known. */
 function thrown(error: unknown, base?: number, source?: string): ToolchainMessage {
-  if (!(error instanceof Error)) {
-    return { message: String(error) };
-  }
-  const { code, pos } = error as Error & { code?: unknown; pos?: unknown };
-  return {
-    message: error.message.trim(),
-    ...(base !== undefined && source !== undefined && typeof pos === "number"
-      ? positionAt(source, base + pos)
-      : {}),
-    ...(typeof code === "string" ? { code } : {}),
-  };
+	if (!(error instanceof Error)) {
+		return { message: String(error) };
+	}
+	const { code, pos } = error as Error & { code?: unknown; pos?: unknown };
+	return {
+		message: error.message.trim(),
+		...(base !== undefined && source !== undefined && typeof pos === "number"
+			? positionAt(source, base + pos)
+			: {}),
+		...(typeof code === "string" ? { code } : {}),
+	};
 }
 
 /**
@@ -381,37 +381,37 @@ function thrown(error: unknown, base?: number, source?: string): ToolchainMessag
  * repeats the position, relative to the block.
  */
 function styleError(error: Error, start: { line: number; column: number }): ToolchainMessage {
-  const { line, column, reason } = error as Error & {
-    line?: unknown;
-    column?: unknown;
-    reason?: unknown;
-  };
-  if (typeof line !== "number" || typeof column !== "number") {
-    return thrown(error);
-  }
-  return {
-    message: typeof reason === "string" ? reason : error.message.trim(),
-    line: start.line + line - 1,
-    column: line === 1 ? start.column + column - 1 : column,
-  };
+	const { line, column, reason } = error as Error & {
+		line?: unknown;
+		column?: unknown;
+		reason?: unknown;
+	};
+	if (typeof line !== "number" || typeof column !== "number") {
+		return thrown(error);
+	}
+	return {
+		message: typeof reason === "string" ? reason : error.message.trim(),
+		line: start.line + line - 1,
+		column: line === 1 ? start.column + column - 1 : column,
+	};
 }
 
 /** The 1-based line and column of an offset. */
 function positionAt(source: string, offset: number): { line: number; column: number } {
-  const before = source.slice(0, offset);
-  const lineStart = before.lastIndexOf("\n") + 1;
-  return { line: before.split("\n").length, column: offset - lineStart + 1 };
+	const before = source.slice(0, offset);
+	const lineStart = before.lastIndexOf("\n") + 1;
+	return { line: before.split("\n").length, column: offset - lineStart + 1 };
 }
 
 /** The DOM and SSR passes share a parser, so they report the same problems twice. */
 function unique(messages: Array<ToolchainMessage>): Array<ToolchainMessage> {
-  const seen = new Set<string>();
-  return messages.filter((item) => {
-    const key = JSON.stringify([item.code, item.line, item.column, item.message]);
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
+	const seen = new Set<string>();
+	return messages.filter((item) => {
+		const key = JSON.stringify([item.code, item.line, item.column, item.message]);
+		if (seen.has(key)) {
+			return false;
+		}
+		seen.add(key);
+		return true;
+	});
 }

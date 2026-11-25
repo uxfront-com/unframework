@@ -5,11 +5,11 @@ import { dirname, join, relative, resolve } from "node:path";
 import type { FrameworkCompileResult, ToolchainMessage } from "@unframework.dev/codegen";
 
 import type {
-  AngularCompiler,
-  CompilerHost,
-  CompilerOptions,
-  Diagnostic,
-  NgtscProgram,
+	AngularCompiler,
+	CompilerHost,
+	CompilerOptions,
+	Diagnostic,
+	NgtscProgram,
 } from "./tools.ts";
 
 /**
@@ -21,33 +21,33 @@ import type {
  * warnings, so L3 can hold output to zero of each.
  */
 export function strictOptions(compiler: AngularCompiler): CompilerOptions {
-  const { ts } = compiler;
-  return {
-    target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.Preserve,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
-    // ES2024's library, as every target's checker has: `toSorted()`, `toReversed()` and
-    // `toSpliced()` (the analyser's fixes for the mutating methods, UF3021) type-check.
-    lib: ["lib.es2024.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],
-    strict: true,
-    noUncheckedIndexedAccess: true,
-    noImplicitOverride: true,
-    noPropertyAccessFromIndexSignature: true,
-    noImplicitReturns: true,
-    noFallthroughCasesInSwitch: true,
-    isolatedModules: true,
-    verbatimModuleSyntax: true,
-    skipLibCheck: true,
-    noEmit: true,
-    types: [],
-    paths: { "@angular/*": [join(compiler.angularScope, "*")] },
-    strictTemplates: true,
-    strictInjectionParameters: true,
-    strictInputAccessModifiers: true,
-    strictStandalone: true,
-    typeCheckHostBindings: true,
-    extendedDiagnostics: { defaultCategory: "warning" },
-  };
+	const { ts } = compiler;
+	return {
+		target: ts.ScriptTarget.ES2022,
+		module: ts.ModuleKind.Preserve,
+		moduleResolution: ts.ModuleResolutionKind.Bundler,
+		// ES2024's library, as every target's checker has: `toSorted()`, `toReversed()` and
+		// `toSpliced()` (the analyser's fixes for the mutating methods, UF3021) type-check.
+		lib: ["lib.es2024.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],
+		strict: true,
+		noUncheckedIndexedAccess: true,
+		noImplicitOverride: true,
+		noPropertyAccessFromIndexSignature: true,
+		noImplicitReturns: true,
+		noFallthroughCasesInSwitch: true,
+		isolatedModules: true,
+		verbatimModuleSyntax: true,
+		skipLibCheck: true,
+		noEmit: true,
+		types: [],
+		paths: { "@angular/*": [join(compiler.angularScope, "*")] },
+		strictTemplates: true,
+		strictInjectionParameters: true,
+		strictInputAccessModifiers: true,
+		strictStandalone: true,
+		typeCheckHostBindings: true,
+		extendedDiagnostics: { defaultCategory: "warning" },
+	};
 }
 
 const DECLARATION = /\.d\.[cm]?ts$/;
@@ -61,56 +61,56 @@ const DECLARATION = /\.d\.[cm]?ts$/;
  * cold compile.
  */
 export function createHost(
-  compiler: AngularCompiler,
-  options: CompilerOptions,
-  contents: (fileName: string) => string | undefined,
+	compiler: AngularCompiler,
+	options: CompilerOptions,
+	contents: (fileName: string) => string | undefined,
 ): CompilerHost {
-  const { ts, declarations } = compiler;
-  const host = ts.createCompilerHost(options, true);
-  const fileExists = host.fileExists.bind(host);
-  const readFile = host.readFile.bind(host);
-  const directoryExists = host.directoryExists.bind(host);
-  const getSourceFile = host.getSourceFile.bind(host);
-  const directories = new Set<string>();
-  // TypeScript reads a file before it resolves anything relative to it, so a directory is
-  // known by the time it is asked about.
-  const inMemory = (fileName: string) => {
-    const text = contents(fileName);
-    let directory = dirname(resolve(fileName));
-    while (text !== undefined && !directories.has(directory)) {
-      directories.add(directory);
-      if (dirname(directory) === directory) {
-        break;
-      }
-      directory = dirname(directory);
-    }
-    return text;
-  };
-  host.fileExists = (fileName) => inMemory(fileName) !== undefined || fileExists(fileName);
-  host.readFile = (fileName) => inMemory(fileName) ?? readFile(fileName);
-  host.directoryExists = (directory) =>
-    directories.has(resolve(directory)) || directoryExists(directory);
-  host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
-    const text = inMemory(fileName);
-    if (text !== undefined) {
-      return ts.createSourceFile(fileName, text, languageVersion, true);
-    }
-    // Only declarations: ngtsc tags the source files it compiles with its type-check shims.
-    if (!fileName.includes("/node_modules/") || !DECLARATION.test(fileName)) {
-      return getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
-    }
-    const key = `${fileName}|${JSON.stringify(languageVersion)}`;
-    const cached = shouldCreateNewSourceFile ? undefined : declarations.get(key);
-    if (cached) {
-      return cached;
-    }
-    const parsed = getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
-    if (parsed) {
-      declarations.set(key, parsed);
-    }
-    return parsed;
-  };
-  return host;
+	const { ts, declarations } = compiler;
+	const host = ts.createCompilerHost(options, true);
+	const fileExists = host.fileExists.bind(host);
+	const readFile = host.readFile.bind(host);
+	const directoryExists = host.directoryExists.bind(host);
+	const getSourceFile = host.getSourceFile.bind(host);
+	const directories = new Set<string>();
+	// TypeScript reads a file before it resolves anything relative to it, so a directory is
+	// known by the time it is asked about.
+	const inMemory = (fileName: string) => {
+		const text = contents(fileName);
+		let directory = dirname(resolve(fileName));
+		while (text !== undefined && !directories.has(directory)) {
+			directories.add(directory);
+			if (dirname(directory) === directory) {
+				break;
+			}
+			directory = dirname(directory);
+		}
+		return text;
+	};
+	host.fileExists = (fileName) => inMemory(fileName) !== undefined || fileExists(fileName);
+	host.readFile = (fileName) => inMemory(fileName) ?? readFile(fileName);
+	host.directoryExists = (directory) =>
+		directories.has(resolve(directory)) || directoryExists(directory);
+	host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
+		const text = inMemory(fileName);
+		if (text !== undefined) {
+			return ts.createSourceFile(fileName, text, languageVersion, true);
+		}
+		// Only declarations: ngtsc tags the source files it compiles with its type-check shims.
+		if (!fileName.includes("/node_modules/") || !DECLARATION.test(fileName)) {
+			return getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
+		}
+		const key = `${fileName}|${JSON.stringify(languageVersion)}`;
+		const cached = shouldCreateNewSourceFile ? undefined : declarations.get(key);
+		if (cached) {
+			return cached;
+		}
+		const parsed = getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
+		if (parsed) {
+			declarations.set(key, parsed);
+		}
+		return parsed;
+	};
+	return host;
 }
 
 /**
@@ -122,44 +122,44 @@ export function createHost(
  * again on their own.
  */
 export function collectDiagnostics(
-  compiler: AngularCompiler,
-  rootNames: ReadonlyArray<string>,
-  createProgram: (rootNames: ReadonlyArray<string>) => NgtscProgram,
+	compiler: AngularCompiler,
+	rootNames: ReadonlyArray<string>,
+	createProgram: (rootNames: ReadonlyArray<string>) => NgtscProgram,
 ): Array<Diagnostic> {
-  const program = createProgram(rootNames);
-  const isError = (diagnostic: Diagnostic) =>
-    diagnostic.category === compiler.ts.DiagnosticCategory.Error;
-  const early = [
-    ...program.getTsOptionDiagnostics(),
-    ...program.getNgOptionDiagnostics(),
-    ...program.getTsSyntacticDiagnostics(),
-  ];
-  if (!early.some(isError)) {
-    return [
-      ...early,
-      ...program.getTsSemanticDiagnostics(),
-      ...program.getNgStructuralDiagnostics(),
-      ...program.getNgSemanticDiagnostics(),
-    ];
-  }
-  const unparsable = new Set(
-    early.flatMap((diagnostic) =>
-      isError(diagnostic) && diagnostic.file ? [resolve(diagnostic.file.fileName)] : [],
-    ),
-  );
-  const parsable = rootNames.filter((fileName) => !unparsable.has(resolve(fileName)));
-  // An options error fails everything, and a syntax error outside the roots cannot be set
-  // aside: report what there is (both reach every file, see groupByFile).
-  const global = early.some((diagnostic) => isError(diagnostic) && !diagnostic.file);
-  if (global || parsable.length === 0 || parsable.length === rootNames.length) {
-    return early;
-  }
-  return [
-    ...early.filter(
-      (diagnostic) => diagnostic.file && unparsable.has(resolve(diagnostic.file.fileName)),
-    ),
-    ...collectDiagnostics(compiler, parsable, createProgram),
-  ];
+	const program = createProgram(rootNames);
+	const isError = (diagnostic: Diagnostic) =>
+		diagnostic.category === compiler.ts.DiagnosticCategory.Error;
+	const early = [
+		...program.getTsOptionDiagnostics(),
+		...program.getNgOptionDiagnostics(),
+		...program.getTsSyntacticDiagnostics(),
+	];
+	if (!early.some(isError)) {
+		return [
+			...early,
+			...program.getTsSemanticDiagnostics(),
+			...program.getNgStructuralDiagnostics(),
+			...program.getNgSemanticDiagnostics(),
+		];
+	}
+	const unparsable = new Set(
+		early.flatMap((diagnostic) =>
+			isError(diagnostic) && diagnostic.file ? [resolve(diagnostic.file.fileName)] : [],
+		),
+	);
+	const parsable = rootNames.filter((fileName) => !unparsable.has(resolve(fileName)));
+	// An options error fails everything, and a syntax error outside the roots cannot be set
+	// aside: report what there is (both reach every file, see groupByFile).
+	const global = early.some((diagnostic) => isError(diagnostic) && !diagnostic.file);
+	if (global || parsable.length === 0 || parsable.length === rootNames.length) {
+		return early;
+	}
+	return [
+		...early.filter(
+			(diagnostic) => diagnostic.file && unparsable.has(resolve(diagnostic.file.fileName)),
+		),
+		...collectDiagnostics(compiler, parsable, createProgram),
+	];
 }
 
 /**
@@ -168,36 +168,36 @@ export function collectDiagnostics(
  * location in the message: nothing is dropped.
  */
 export function groupByFile(
-  compiler: AngularCompiler,
-  fileNames: ReadonlyArray<string>,
-  diagnostics: ReadonlyArray<Diagnostic>,
+	compiler: AngularCompiler,
+	fileNames: ReadonlyArray<string>,
+	diagnostics: ReadonlyArray<Diagnostic>,
 ): Map<string, FrameworkCompileResult> {
-  const byPath = new Map(fileNames.map((fileName) => [resolve(fileName), fileName]));
-  const results = new Map<string, FrameworkCompileResult>(
-    fileNames.map((fileName) => [fileName, { errors: [], warnings: [] }]),
-  );
-  const global: FrameworkCompileResult = { errors: [], warnings: [] };
-  for (const diagnostic of diagnostics) {
-    const input = diagnostic.file && byPath.get(resolve(diagnostic.file.fileName));
-    const result = input ? results.get(input)! : global;
-    const message = toMessage(compiler, diagnostic, input === undefined);
-    if (diagnostic.category === compiler.ts.DiagnosticCategory.Error) {
-      result.errors.push(message);
-    } else {
-      result.warnings.push(message);
-    }
-  }
-  for (const result of results.values()) {
-    result.errors.unshift(...global.errors);
-    result.warnings.unshift(...global.warnings);
-  }
-  return results;
+	const byPath = new Map(fileNames.map((fileName) => [resolve(fileName), fileName]));
+	const results = new Map<string, FrameworkCompileResult>(
+		fileNames.map((fileName) => [fileName, { errors: [], warnings: [] }]),
+	);
+	const global: FrameworkCompileResult = { errors: [], warnings: [] };
+	for (const diagnostic of diagnostics) {
+		const input = diagnostic.file && byPath.get(resolve(diagnostic.file.fileName));
+		const result = input ? results.get(input)! : global;
+		const message = toMessage(compiler, diagnostic, input === undefined);
+		if (diagnostic.category === compiler.ts.DiagnosticCategory.Error) {
+			result.errors.push(message);
+		} else {
+			result.warnings.push(message);
+		}
+	}
+	for (const result of results.values()) {
+		result.errors.unshift(...global.errors);
+		result.warnings.unshift(...global.warnings);
+	}
+	return results;
 }
 
 /** The code ngc prints: Angular's diagnostics are `-99xxxx` internally and `NGxxxx` outside. */
 export function diagnosticCode(diagnostic: Diagnostic): string {
-  const code = String(diagnostic.code);
-  return code.startsWith("-99") ? `NG${code.slice(3)}` : `TS${code}`;
+	const code = String(diagnostic.code);
+	return code.startsWith("-99") ? `NG${code.slice(3)}` : `TS${code}`;
 }
 
 /**
@@ -205,46 +205,46 @@ export function diagnosticCode(diagnostic: Diagnostic): string {
  * file and position in the message instead, for a diagnostic reported on another file.
  */
 export function toMessage(
-  compiler: AngularCompiler,
-  diagnostic: Diagnostic,
-  located = false,
+	compiler: AngularCompiler,
+	diagnostic: Diagnostic,
+	located = false,
 ): ToolchainMessage {
-  const text = compiler.ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-  const code = diagnosticCode(diagnostic);
-  const position = positionOf(diagnostic);
-  if (located && diagnostic.file) {
-    return { message: `${locationOf(diagnostic)}: ${text}`, code };
-  }
-  return position ? { message: text, ...position, code } : { message: text, code };
+	const text = compiler.ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+	const code = diagnosticCode(diagnostic);
+	const position = positionOf(diagnostic);
+	if (located && diagnostic.file) {
+		return { message: `${locationOf(diagnostic)}: ${text}`, code };
+	}
+	return position ? { message: text, ...position, code } : { message: text, code };
 }
 
 /** Diagnostics as ngc prints them, one per line: `file(line,column): error NG8002: …`. */
 export function formatDiagnostics(
-  compiler: AngularCompiler,
-  diagnostics: ReadonlyArray<Diagnostic>,
+	compiler: AngularCompiler,
+	diagnostics: ReadonlyArray<Diagnostic>,
 ): string {
-  return diagnostics
-    .map((diagnostic) => {
-      const text = compiler.ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-      const severity =
-        diagnostic.category === compiler.ts.DiagnosticCategory.Error ? "error" : "warning";
-      const where = diagnostic.file ? `${locationOf(diagnostic)}: ` : "";
-      return `${where}${severity} ${diagnosticCode(diagnostic)}: ${text}`;
-    })
-    .join("\n");
+	return diagnostics
+		.map((diagnostic) => {
+			const text = compiler.ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+			const severity =
+				diagnostic.category === compiler.ts.DiagnosticCategory.Error ? "error" : "warning";
+			const where = diagnostic.file ? `${locationOf(diagnostic)}: ` : "";
+			return `${where}${severity} ${diagnosticCode(diagnostic)}: ${text}`;
+		})
+		.join("\n");
 }
 
 function positionOf(diagnostic: Diagnostic): { line: number; column: number } | undefined {
-  if (!diagnostic.file || diagnostic.start === undefined) {
-    return undefined;
-  }
-  const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-  return { line: line + 1, column: character + 1 };
+	if (!diagnostic.file || diagnostic.start === undefined) {
+		return undefined;
+	}
+	const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+	return { line: line + 1, column: character + 1 };
 }
 
 /** `path(line,column)`, relative to the working directory, as ngc prints it. */
 function locationOf(diagnostic: Diagnostic): string {
-  const path = relative(process.cwd(), diagnostic.file!.fileName);
-  const position = positionOf(diagnostic);
-  return position ? `${path}(${position.line},${position.column})` : path;
+	const path = relative(process.cwd(), diagnostic.file!.fileName);
+	const position = positionOf(diagnostic);
+	return position ? `${path}(${position.line},${position.column})` : path;
 }

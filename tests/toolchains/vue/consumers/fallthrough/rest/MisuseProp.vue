@@ -3,6 +3,6 @@ import Field from "../../../../../integration/cases/fallthrough/rest/__output__/
 </script>
 
 <template>
-  <!-- @uf-expect TS2561 Field.prop:label -->
-  <Field lable="Name" />
+	<!-- @uf-expect TS2561 Field.prop:label -->
+	<Field lable="Name" />
 </template>

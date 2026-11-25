@@ -2,10 +2,10 @@ import schema from "../schema/ir.schema.json" with { type: "json" };
 
 /** A JSON Schema document (draft-07). */
 export interface JsonSchema {
-  $schema?: string;
-  $ref?: string;
-  definitions?: Record<string, unknown>;
-  [keyword: string]: unknown;
+	$schema?: string;
+	$ref?: string;
+	definitions?: Record<string, unknown>;
+	[keyword: string]: unknown;
 }
 
 /**

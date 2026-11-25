@@ -13,9 +13,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type {
-  FrameworkCompileResult,
-  ToolchainFile,
-  ToolchainMessage,
+	FrameworkCompileResult,
+	ToolchainFile,
+	ToolchainMessage,
 } from "@unframework.dev/codegen";
 import { checkLayers, formatError } from "@unframework.dev/testing/node";
 import { beforeAll, describe, inject, it } from "vitest";
@@ -29,10 +29,10 @@ import { outputFiles } from "./output-files.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain } from "./targets.ts";
 import {
-  display,
-  frameworkCompileProblems,
-  lintProblems,
-  typecheckProblems,
+	display,
+	frameworkCompileProblems,
+	lintProblems,
+	typecheckProblems,
 } from "./toolchain-results.ts";
 
 const target = inject("target");
@@ -40,18 +40,18 @@ const harness = inject("ufHarness");
 const cases = listCases(harness.casesDir);
 
 interface Checked {
-  /** Each case's output files (absolute paths). */
-  files: Map<string, Array<string>>;
-  /** Every output file of the run: a message on any other path fails every case. */
-  outputs: Set<string>;
-  /** Each case's consumer fixtures, which only the checker reads (L4). */
-  fixtures: Map<string, Array<Fixture>>;
-  /** Every file the checker read: the outputs and the fixtures. */
-  typechecked: Set<string>;
-  /** What each tool returned, or why it did not run, by the layer it decides. */
-  L3: PromiseSettledResult<Map<string, FrameworkCompileResult>>;
-  L4: PromiseSettledResult<Map<string, Array<ToolchainMessage>>>;
-  L5: PromiseSettledResult<Map<string, Array<ToolchainMessage>>>;
+	/** Each case's output files (absolute paths). */
+	files: Map<string, Array<string>>;
+	/** Every output file of the run: a message on any other path fails every case. */
+	outputs: Set<string>;
+	/** Each case's consumer fixtures, which only the checker reads (L4). */
+	fixtures: Map<string, Array<Fixture>>;
+	/** Every file the checker read: the outputs and the fixtures. */
+	typechecked: Set<string>;
+	/** What each tool returned, or why it did not run, by the layer it decides. */
+	L3: PromiseSettledResult<Map<string, FrameworkCompileResult>>;
+	L4: PromiseSettledResult<Map<string, Array<ToolchainMessage>>>;
+	L5: PromiseSettledResult<Map<string, Array<ToolchainMessage>>>;
 }
 
 /**
@@ -61,13 +61,13 @@ interface Checked {
  * Vue and Svelte read `process.env.NODE_ENV` for `isDev`, which an app declares (ADR-0117).
  */
 const DECLARATIONS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  react: ["sheets.d.ts", "environment.d.ts"],
-  vue: ["environment.d.ts"],
-  solid: ["sheets.d.ts"],
-  solid2: ["sheets.d.ts"],
-  svelte: ["sheets.d.ts", "environment.d.ts"],
-  astro: ["sheets.d.ts"],
-  qwik: ["sheets.d.ts"],
+	react: ["sheets.d.ts", "environment.d.ts"],
+	vue: ["environment.d.ts"],
+	solid: ["sheets.d.ts"],
+	solid2: ["sheets.d.ts"],
+	svelte: ["sheets.d.ts", "environment.d.ts"],
+	astro: ["sheets.d.ts"],
+	qwik: ["sheets.d.ts"],
 };
 
 /** The tool that decides each layer, as its failure names it. */
@@ -78,118 +78,118 @@ let checked: Checked | undefined;
 let failure: string | undefined;
 
 beforeAll(async () => {
-  try {
-    const toolchain = await loadToolchain(target);
-    const files = await outputFiles(cases, target, harness.casesDir, harness.canary);
-    const all = [...files.values()].flat();
-    const fixtures = caseFixtures(files);
-    const typechecked = new Set([
-      ...all,
-      ...[...fixtures.values()].flat().map(({ checked }) => checked),
-      ...(DECLARATIONS[target] ?? []).map((file) => join(toolchainDir(target), file)),
-      // The styling engines' virtual modules, which a styled output imports as written (ADR-0064).
-      ...ENGINE_DECLARATIONS,
-    ]);
-    const context = {
-      toolchainDir: toolchainDir(target),
-      root: ROOT,
-      declarations: ENGINE_DECLARATIONS,
-    };
-    const contents: Array<ToolchainFile> = all.map((path) => ({
-      path,
-      contents: readFileSync(path, "utf8"),
-    }));
-    const [L3, L4, L5] = await Promise.allSettled([
-      toolchain.frameworkCompile(contents, context),
-      toolchain.typecheck([...typechecked], context),
-      toolchain.lint(all, context),
-    ]);
-    checked = { files, outputs: new Set(all), fixtures, typechecked, L3, L4, L5 };
-  } catch (error) {
-    failure = `The ${target} toolchain did not run: ${describeError(error)}`;
-  }
+	try {
+		const toolchain = await loadToolchain(target);
+		const files = await outputFiles(cases, target, harness.casesDir, harness.canary);
+		const all = [...files.values()].flat();
+		const fixtures = caseFixtures(files);
+		const typechecked = new Set([
+			...all,
+			...[...fixtures.values()].flat().map(({ checked }) => checked),
+			...(DECLARATIONS[target] ?? []).map((file) => join(toolchainDir(target), file)),
+			// The styling engines' virtual modules, which a styled output imports as written (ADR-0064).
+			...ENGINE_DECLARATIONS,
+		]);
+		const context = {
+			toolchainDir: toolchainDir(target),
+			root: ROOT,
+			declarations: ENGINE_DECLARATIONS,
+		};
+		const contents: Array<ToolchainFile> = all.map((path) => ({
+			path,
+			contents: readFileSync(path, "utf8"),
+		}));
+		const [L3, L4, L5] = await Promise.allSettled([
+			toolchain.frameworkCompile(contents, context),
+			toolchain.typecheck([...typechecked], context),
+			toolchain.lint(all, context),
+		]);
+		checked = { files, outputs: new Set(all), fixtures, typechecked, L3, L4, L5 };
+	} catch (error) {
+		failure = `The ${target} toolchain did not run: ${describeError(error)}`;
+	}
 });
 
 describe(`toolchain:${target}`, () => {
-  for (const info of cases) {
-    const errors = errorState(info, target);
-    // A case with compile errors has no output: the compile project records L3+ as skipped.
-    if (errors === true) {
-      continue;
-    }
-    it(`${info.id} › ${target}`, async ({ task }) => {
-      if (errors instanceof Error) {
-        throw errors;
-      }
-      const subject = { case: info.id, target, quarantine: harness.quarantine };
-      await checkLayers(task, subject, {
-        L3: () => {
-          const { files, outputs, L3 } = ran();
-          const problems = frameworkCompileProblems(
-            results("L3", L3),
-            casesFiles(files, info),
-            outputs,
-          );
-          if (problems.length) {
-            throw new Error(problems.join("\n"));
-          }
-        },
-        L4: () => {
-          const { files, fixtures, typechecked, L4 } = ran();
-          const messages = results("L4", L4);
-          const problems = [
-            ...typecheckProblems(messages, casesFiles(files, info), typechecked),
-            ...consumerProblems(target, info, fixtures.get(info.id) ?? [], messages),
-          ];
-          if (problems.length) {
-            throw new Error(problems.join("\n"));
-          }
-        },
-        L5: () => {
-          const { files, outputs, L5 } = ran();
-          const problems = lintProblems(results("L5", L5), casesFiles(files, info), outputs);
-          if (problems.length) {
-            throw new Error(problems.join("\n"));
-          }
-        },
-      });
-    });
-  }
+	for (const info of cases) {
+		const errors = errorState(info, target);
+		// A case with compile errors has no output: the compile project records L3+ as skipped.
+		if (errors === true) {
+			continue;
+		}
+		it(`${info.id} › ${target}`, async ({ task }) => {
+			if (errors instanceof Error) {
+				throw errors;
+			}
+			const subject = { case: info.id, target, quarantine: harness.quarantine };
+			await checkLayers(task, subject, {
+				L3: () => {
+					const { files, outputs, L3 } = ran();
+					const problems = frameworkCompileProblems(
+						results("L3", L3),
+						casesFiles(files, info),
+						outputs,
+					);
+					if (problems.length) {
+						throw new Error(problems.join("\n"));
+					}
+				},
+				L4: () => {
+					const { files, fixtures, typechecked, L4 } = ran();
+					const messages = results("L4", L4);
+					const problems = [
+						...typecheckProblems(messages, casesFiles(files, info), typechecked),
+						...consumerProblems(target, info, fixtures.get(info.id) ?? [], messages),
+					];
+					if (problems.length) {
+						throw new Error(problems.join("\n"));
+					}
+				},
+				L5: () => {
+					const { files, outputs, L5 } = ran();
+					const problems = lintProblems(results("L5", L5), casesFiles(files, info), outputs);
+					if (problems.length) {
+						throw new Error(problems.join("\n"));
+					}
+				},
+			});
+		});
+	}
 });
 
 function ran(): Checked {
-  if (failure !== undefined || !checked) {
-    throw new Error(failure ?? "The toolchain did not run.");
-  }
-  return checked;
+	if (failure !== undefined || !checked) {
+		throw new Error(failure ?? "The toolchain did not run.");
+	}
+	return checked;
 }
 
 /** A tool's results, or its failure to run, which fails its layer. */
 function results<T>(layer: keyof typeof TOOLS, settled: PromiseSettledResult<T>): T {
-  if (settled.status === "fulfilled") {
-    return settled.value;
-  }
-  throw new Error(`The ${target} ${TOOLS[layer]} did not run: ${describeError(settled.reason)}`);
+	if (settled.status === "fulfilled") {
+		return settled.value;
+	}
+	throw new Error(`The ${target} ${TOOLS[layer]} did not run: ${describeError(settled.reason)}`);
 }
 
 /** An error and its cause, as a failure shows them. */
 function describeError(error: unknown): string {
-  const cause =
-    error instanceof Error && error.cause ? `\ncaused by: ${formatError(error.cause)}` : "";
-  return `${formatError(error)}${cause}`;
+	const cause =
+		error instanceof Error && error.cause ? `\ncaused by: ${formatError(error.cause)}` : "";
+	return `${formatError(error)}${cause}`;
 }
 
 function casesFiles(files: Map<string, Array<string>>, info: CaseInfo): Array<string> {
-  const list = files.get(info.id);
-  if (list?.length) {
-    return list;
-  }
-  const directory = display(join(info.dir, "__output__", target));
-  throw new Error(
-    harness.canary
-      ? `The canary compile of ${info.id} produced no ${target} output.`
-      : `Missing artefact ${directory}. Run \`pnpm test:update\` to write it.`,
-  );
+	const list = files.get(info.id);
+	if (list?.length) {
+		return list;
+	}
+	const directory = display(join(info.dir, "__output__", target));
+	throw new Error(
+		harness.canary
+			? `The canary compile of ${info.id} produced no ${target} output.`
+			: `Missing artefact ${directory}. Run \`pnpm test:update\` to write it.`,
+	);
 }
 
 /**
@@ -197,18 +197,18 @@ function casesFiles(files: Map<string, Array<string>>, info: CaseInfo): Array<st
  * canary, copies beside its compile under `.canary/<id>/<target>/consumers/`.
  */
 function caseFixtures(files: Map<string, Array<string>>): Map<string, Array<Fixture>> {
-  const fixtures = new Map<string, Array<Fixture>>();
-  for (const id of files.keys()) {
-    const paths = consumerFixtures(target, id);
-    if (!paths.length) {
-      continue;
-    }
-    fixtures.set(
-      id,
-      harness.canary
-        ? copyFixtures(paths, join(CANARY_DIR, harness.canary, target), id)
-        : paths.map((path) => ({ path, checked: path })),
-    );
-  }
-  return fixtures;
+	const fixtures = new Map<string, Array<Fixture>>();
+	for (const id of files.keys()) {
+		const paths = consumerFixtures(target, id);
+		if (!paths.length) {
+			continue;
+		}
+		fixtures.set(
+			id,
+			harness.canary
+				? copyFixtures(paths, join(CANARY_DIR, harness.canary, target), id)
+				: paths.map((path) => ({ path, checked: path })),
+		);
+	}
+	return fixtures;
 }

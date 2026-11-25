@@ -7,44 +7,44 @@ import type { CaptureRequest, CaptureResult } from "./visual-types.ts";
 
 /** A shared expectation the browser computed, to settle under the write policy (ADR-0029). */
 export interface ArtefactRequest {
-  case: string;
-  /** The file name under `__expected__/`, such as `dom.initial.html` or `trace.after-click.json`. */
-  file: string;
-  /**
-   * The file's contents, or `null` where the scenario must have none (a trace without steps): the
-   * file must then not exist, and the reference deletes it in update mode.
-   */
-  contents: string | null;
-  /**
-   * Hydrate projects only (L12): compare only where the file exists, and pass as `absent` where
-   * it does not, since no spec checks that scenario.
-   */
-  optional?: boolean;
+	case: string;
+	/** The file name under `__expected__/`, such as `dom.initial.html` or `trace.after-click.json`. */
+	file: string;
+	/**
+	 * The file's contents, or `null` where the scenario must have none (a trace without steps): the
+	 * file must then not exist, and the reference deletes it in update mode.
+	 */
+	contents: string | null;
+	/**
+	 * Hydrate projects only (L12): compare only where the file exists, and pass as `absent` where
+	 * it does not, since no spec checks that scenario.
+	 */
+	optional?: boolean;
 }
 
 /** How an artefact was settled. */
 export interface ArtefactResult {
-  pass: boolean;
-  /** `matched`, `written`, `missing`, `missing-reference`, `mismatch` or `absent`. */
-  status: string;
-  /** Why it failed, with a diff; empty when it passed. */
-  message: string;
+	pass: boolean;
+	/** `matched`, `written`, `missing`, `missing-reference`, `mismatch` or `absent`. */
+	status: string;
+	/** Why it failed, with a diff; empty when it passed. */
+	message: string;
 }
 
 /** A Vitest locator as commands receive it. */
 export interface SerializedLocatorLike {
-  selector: string;
-  locator: string;
+	selector: string;
+	locator: string;
 }
 
 /** Which case's component `ufComponentEvents` describes. */
 export interface ComponentEventsRequest {
-  case: string;
+	case: string;
 }
 
 /** The events the component a case's spec mounts declares, from the module the project compiled. */
 export interface ComponentEventsResult {
-  events: Array<MountEvent>;
+	events: Array<MountEvent>;
 }
 
 /**
@@ -54,82 +54,82 @@ export interface ComponentEventsResult {
  * release.
  */
 export type InputRequest =
-  | {
-      kind: "move";
-      locator: SerializedLocatorLike;
-      /** The point to move to, from the element's top left corner; its centre by default. */
-      position?: { x: number; y: number };
-      /** Whether a click follows, which refuses a disabled element, or only the move. */
-      check: "click" | "hover";
-    }
-  | { kind: "press" | "release"; clickCount: number }
-  | { kind: "wheel"; deltaX: number; deltaY: number }
-  /** A key Playwright names (`Enter`, `Shift`), or one character (`text`). */
-  | { kind: "keydown" | "keyup"; key: string; text: boolean };
+	| {
+			kind: "move";
+			locator: SerializedLocatorLike;
+			/** The point to move to, from the element's top left corner; its centre by default. */
+			position?: { x: number; y: number };
+			/** Whether a click follows, which refuses a disabled element, or only the move. */
+			check: "click" | "hover";
+	  }
+	| { kind: "press" | "release"; clickCount: number }
+	| { kind: "wheel"; deltaX: number; deltaY: number }
+	/** A key Playwright names (`Enter`, `Shift`), or one character (`text`). */
+	| { kind: "keydown" | "keyup"; key: string; text: boolean };
 
 /** Which case's spec file the calling browser project finished (`ufSpecFinished`, ADR-0091). */
 export interface SpecFinishedRequest {
-  case: string;
+	case: string;
 }
 
 /** The stack of the error a case's scripted step threw, as the browser read it (ADR-0078). */
 export interface MapStackRequest {
-  case: string;
-  stack: string;
+	case: string;
+	stack: string;
 }
 
 /** What the mapped stack says. */
 export interface MapStackResult {
-  /** Why the top frame in the case is not on the authored `throw`; absent when it is. */
-  message?: string;
+	/** Why the top frame in the case is not on the authored `throw`; absent when it is. */
+	message?: string;
 }
 
 /** What `ufHydrationRender` renders: the calling case's main component, with these props (L12). */
 export interface HydrationRenderRequest {
-  case: string;
-  props: Record<string, unknown>;
+	case: string;
+	props: Record<string, unknown>;
 }
 
 /** The server HTML a hydrate project's page hydrates, and what rendering it logged. */
 export interface HydrationRenderResult {
-  /** The target's `renderForHydration`: every marker and script its client needs. */
-  html: string;
-  console: Array<CapturedConsoleMessage>;
-  /** The URL the page imports the rendered component from: the spec must mount that one. */
-  module: string;
+	/** The target's `renderForHydration`: every marker and script its client needs. */
+	html: string;
+	console: Array<CapturedConsoleMessage>;
+	/** The URL the page imports the rendered component from: the spec must mount that one. */
+	module: string;
 }
 
 /** What an input did: a character the keyboard layout lacks is inserted as text, with no key. */
 export interface InputResult {
-  inserted: boolean;
+	inserted: boolean;
 }
 
 declare module "vitest/browser" {
-  interface BrowserCommands {
-    /** Settles a shared `__expected__` artefact under the run's write policy. */
-    ufArtefact: (request: ArtefactRequest) => Promise<ArtefactResult>;
-    /** Playwright's ARIA snapshot of the element a locator points at. */
-    ufAriaSnapshot: (locator: SerializedLocatorLike) => Promise<string>;
-    /** L10: font audit, stable capture, geometry then pixels, under the write policy. */
-    ufVisualCapture: (request: CaptureRequest) => Promise<CaptureResult>;
-    /** Moves the focus to the element a locator points at, as Playwright's `focus` does. */
-    ufFocus: (locator: SerializedLocatorLike) => Promise<void>;
-    /** Dispatches one input of a `view.user` action through Playwright's mouse or keyboard. */
-    ufInput: (request: InputRequest) => Promise<InputResult>;
-    /** Moves the mouse to the corner of the viewport, off every mount root, between tests. */
-    ufResetInput: () => Promise<void>;
-    /** Emulates the `prefers-color-scheme` a case opts into, for the page its spec runs in. */
-    ufColorScheme: (scheme: ColorScheme) => Promise<void>;
-    /** The events a case's component declares, as the project's compile of it says (ADR-0050). */
-    ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
-    /** Records that this project finished a case's spec file, which L10's followers read. */
-    ufSpecFinished: (request: SpecFinishedRequest) => Promise<void>;
-    /**
-     * Hydrate projects (L12): the server HTML of the case's main component, rendered in the SSR
-     * environment of the project's own browser server (ADR-0095).
-     */
-    ufHydrationRender: (request: HydrationRenderRequest) => Promise<HydrationRenderResult>;
-    /** Maps a thrown error's stack through the project's module graph and checks its top frame. */
-    ufMapStack: (request: MapStackRequest) => Promise<MapStackResult>;
-  }
+	interface BrowserCommands {
+		/** Settles a shared `__expected__` artefact under the run's write policy. */
+		ufArtefact: (request: ArtefactRequest) => Promise<ArtefactResult>;
+		/** Playwright's ARIA snapshot of the element a locator points at. */
+		ufAriaSnapshot: (locator: SerializedLocatorLike) => Promise<string>;
+		/** L10: font audit, stable capture, geometry then pixels, under the write policy. */
+		ufVisualCapture: (request: CaptureRequest) => Promise<CaptureResult>;
+		/** Moves the focus to the element a locator points at, as Playwright's `focus` does. */
+		ufFocus: (locator: SerializedLocatorLike) => Promise<void>;
+		/** Dispatches one input of a `view.user` action through Playwright's mouse or keyboard. */
+		ufInput: (request: InputRequest) => Promise<InputResult>;
+		/** Moves the mouse to the corner of the viewport, off every mount root, between tests. */
+		ufResetInput: () => Promise<void>;
+		/** Emulates the `prefers-color-scheme` a case opts into, for the page its spec runs in. */
+		ufColorScheme: (scheme: ColorScheme) => Promise<void>;
+		/** The events a case's component declares, as the project's compile of it says (ADR-0050). */
+		ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
+		/** Records that this project finished a case's spec file, which L10's followers read. */
+		ufSpecFinished: (request: SpecFinishedRequest) => Promise<void>;
+		/**
+		 * Hydrate projects (L12): the server HTML of the case's main component, rendered in the SSR
+		 * environment of the project's own browser server (ADR-0095).
+		 */
+		ufHydrationRender: (request: HydrationRenderRequest) => Promise<HydrationRenderResult>;
+		/** Maps a thrown error's stack through the project's module graph and checks its top frame. */
+		ufMapStack: (request: MapStackRequest) => Promise<MapStackResult>;
+	}
 }

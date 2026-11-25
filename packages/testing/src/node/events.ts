@@ -10,12 +10,12 @@ import type { UfModule } from "@unframework.dev/ir";
 
 /** A module a project compiled, as the unplugin's `onCompile` reports it. */
 export interface CompiledModule {
-  /** The authored `.uf.tsx` file, absolute. */
-  file: string;
-  /** The target the project compiles to. */
-  target: string;
-  /** The compile's IR, or nothing when the module did not parse. */
-  ir?: UfModule | undefined;
+	/** The authored `.uf.tsx` file, absolute. */
+	file: string;
+	/** The target the project compiles to. */
+	target: string;
+	/** The compile's IR, or nothing when the module did not parse. */
+	ir?: UfModule | undefined;
 }
 
 /**
@@ -25,24 +25,24 @@ export interface CompiledModule {
 const STORE = Symbol.for("@unframework.dev/testing:compiled-modules");
 
 function store(): Map<string, UfModule | undefined> {
-  const holder = globalThis as { [STORE]?: Map<string, UfModule | undefined> };
-  return (holder[STORE] ??= new Map<string, UfModule | undefined>());
+	const holder = globalThis as { [STORE]?: Map<string, UfModule | undefined> };
+	return (holder[STORE] ??= new Map<string, UfModule | undefined>());
 }
 
 /** The key of a file's compile for a target: its real path, so links never split it. */
 function keyOf(file: string, target: string): string {
-  let path = file;
-  try {
-    path = realpathSync(file);
-  } catch {
-    // A file that no longer exists is recorded by the path it was compiled from.
-  }
-  return `${target}\0${path}`;
+	let path = file;
+	try {
+		path = realpathSync(file);
+	} catch {
+		// A file that no longer exists is recorded by the path it was compiled from.
+	}
+	return `${target}\0${path}`;
 }
 
 /** Records the latest compile of a module for a target: the harness calls it from `onCompile`. */
 export function recordCompiledModule(module: CompiledModule): void {
-  store().set(keyOf(module.file, module.target), module.ir);
+	store().set(keyOf(module.file, module.target), module.ir);
 }
 
 /**
@@ -53,36 +53,36 @@ export function recordCompiledModule(module: CompiledModule): void {
  * when the module was never compiled for the target, or failed to.
  */
 export function compiledEvents(file: string, target: string): Array<MountEvent> {
-  const key = keyOf(file, target);
-  const entries = store();
-  if (!entries.has(key)) {
-    throw new Error(
-      `[uf] No ${target} compile of ${file} was recorded: the project's unplugin must report every compile to recordCompiledModule (its onCompile hook) before a spec mounts the component.`,
-    );
-  }
-  const ir = entries.get(key);
-  if (!ir) {
-    throw new Error(
-      `[uf] The ${target} compile of ${file} produced no IR: it has nothing to mount.`,
-    );
-  }
-  return eventsOfModule(ir, file);
+	const key = keyOf(file, target);
+	const entries = store();
+	if (!entries.has(key)) {
+		throw new Error(
+			`[uf] No ${target} compile of ${file} was recorded: the project's unplugin must report every compile to recordCompiledModule (its onCompile hook) before a spec mounts the component.`,
+		);
+	}
+	const ir = entries.get(key);
+	if (!ir) {
+		throw new Error(
+			`[uf] The ${target} compile of ${file} produced no IR: it has nothing to mount.`,
+		);
+	}
+	return eventsOfModule(ir, file);
 }
 
 /** The events a module's component declares (see {@link compiledEvents}). */
 export function eventsOfModule(ir: UfModule, file: string = ir.file): Array<MountEvent> {
-  const lists = ir.components.map((component) =>
-    (component.emits?.events ?? []).map((event): MountEvent => ({
-      name: event.name,
-      optional: event.parameters.map((parameter) => parameter.optional === true),
-    })),
-  );
-  const [first = [], ...rest] = lists;
-  const differ = rest.some((list) => JSON.stringify(list) !== JSON.stringify(first));
-  if (differ) {
-    throw new Error(
-      `[uf] ${file} holds ${lists.length} components that declare different events, and a case mounts one of them: a test cannot tell which one it mounts until components can be composed (M3).`,
-    );
-  }
-  return first;
+	const lists = ir.components.map((component) =>
+		(component.emits?.events ?? []).map((event): MountEvent => ({
+			name: event.name,
+			optional: event.parameters.map((parameter) => parameter.optional === true),
+		})),
+	);
+	const [first = [], ...rest] = lists;
+	const differ = rest.some((list) => JSON.stringify(list) !== JSON.stringify(first));
+	if (differ) {
+		throw new Error(
+			`[uf] ${file} holds ${lists.length} components that declare different events, and a case mounts one of them: a test cannot tell which one it mounts until components can be composed (M3).`,
+		);
+	}
+	return first;
 }

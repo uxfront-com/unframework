@@ -13,39 +13,39 @@ import { formatDiagnostics, toJsonDiagnostics } from "@unframework.dev/diagnosti
 import type { Diagnostic, JsonDiagnostic } from "@unframework.dev/diagnostics";
 import { irSchema } from "@unframework.dev/ir";
 import {
-  BROWSER_LAYERS,
-  checkLayers,
-  diffLines,
-  NO_OUTPUT_SKIP,
-  NO_SPEC_SKIP,
-  settleArtefact,
-  settleArtefactDirectory,
+	BROWSER_LAYERS,
+	checkLayers,
+	diffLines,
+	NO_OUTPUT_SKIP,
+	NO_SPEC_SKIP,
+	settleArtefact,
+	settleArtefactDirectory,
 } from "@unframework.dev/testing/node";
 import type { ArtefactContext, LayerCheck, LayerName } from "@unframework.dev/testing/node";
 import { Ajv } from "ajv";
 import { describe, expect, inject, it } from "vitest";
 
 import {
-  canaryCase,
-  canaryFixes,
-  canaryFormats,
-  canaryMaps,
-  canaryPlugins,
-  canarySource,
+	canaryCase,
+	canaryFixes,
+	canaryFormats,
+	canaryMaps,
+	canaryPlugins,
+	canarySource,
 } from "./canaries.ts";
 import { listCases, removeStaleArtefacts, specProblems, staleArtefacts } from "./cases.ts";
 import type { CaseInfo, CaseSource } from "./cases.ts";
 import {
-  checkFixes,
-  comparedSegments,
-  expectationProblems,
-  formattingProblems,
-  forTarget,
-  moduleCopyProblems,
-  nondeterminism,
-  referenceProblems,
-  sourceMapProblems,
-  stylesheetProblems,
+	checkFixes,
+	comparedSegments,
+	expectationProblems,
+	formattingProblems,
+	forTarget,
+	moduleCopyProblems,
+	nondeterminism,
+	referenceProblems,
+	sourceMapProblems,
+	stylesheetProblems,
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
@@ -60,17 +60,17 @@ const owner: ArtefactContext = { role: "owner", update: harness.update, root: RO
 
 /** The layers a case with compile errors has nothing to verify at: there is no output. */
 const NO_OUTPUT_LAYERS: ReadonlyArray<LayerName> = [
-  "L3",
-  "L4",
-  "L5",
-  "L6",
-  "L7",
-  "L8",
-  "L9",
-  "L10",
-  "L11",
-  "L13",
-  "L14",
+	"L3",
+	"L4",
+	"L5",
+	"L6",
+	"L7",
+	"L8",
+	"L9",
+	"L10",
+	"L11",
+	"L13",
+	"L14",
 ];
 
 /**
@@ -79,7 +79,7 @@ const NO_OUTPUT_LAYERS: ReadonlyArray<LayerName> = [
  * server render's too, and L14 this project's.
  */
 const NO_SPEC_LAYERS: ReadonlyArray<LayerName> = BROWSER_LAYERS.filter(
-  (layer) => layer !== "L13" && layer !== "L14",
+	(layer) => layer !== "L13" && layer !== "L14",
 );
 
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
@@ -89,161 +89,161 @@ const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
  * (ADR-0057, ADR-0067); each compiles twice per run (determinism).
  */
 async function compileSource(
-  info: CaseInfo,
-  source: CaseSource,
-  text: string,
-  plugins: ReadonlyArray<CompilerPlugin>,
-  { format = true, sourceMap = false }: { format?: boolean; sourceMap?: boolean } = {},
+	info: CaseInfo,
+	source: CaseSource,
+	text: string,
+	plugins: ReadonlyArray<CompilerPlugin>,
+	{ format = true, sourceMap = false }: { format?: boolean; sourceMap?: boolean } = {},
 ): Promise<CompileResult> {
-  const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
-  try {
-    return await compile(text, {
-      filename: source.filename,
-      targets: TARGET_NAMES,
-      plugins,
-      format,
-      sourceMap,
-      resolve: caseResolver(info, harness.casesDir, typeOracle),
-      typeOracle,
-    });
-  } finally {
-    await typeOracle.dispose();
-  }
+	const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
+	try {
+		return await compile(text, {
+			filename: source.filename,
+			targets: TARGET_NAMES,
+			plugins,
+			format,
+			sourceMap,
+			resolve: caseResolver(info, harness.casesDir, typeOracle),
+			typeOracle,
+		});
+	} finally {
+		await typeOracle.dispose();
+	}
 }
 
 let clean: Promise<Array<CompileResult>> | undefined;
 /** Every source's compile without the canary, so the corpus gates measure the corpus. */
 function corpus(): Promise<Array<CompileResult>> {
-  clean ??= Promise.all(
-    cases.flatMap((info) =>
-      info.sources.map((source) =>
-        compileSource(info, source, readFileSync(source.source, "utf8"), [], { sourceMap: true }),
-      ),
-    ),
-  );
-  return clean;
+	clean ??= Promise.all(
+		cases.flatMap((info) =>
+			info.sources.map((source) =>
+				compileSource(info, source, readFileSync(source.source, "utf8"), [], { sourceMap: true }),
+			),
+		),
+	);
+	return clean;
 }
 
 /** A source of a case and its two compiles. */
 interface CompiledSource {
-  source: CaseSource;
-  /** What the compile project compiles: the input, or the input a source canary corrupted. */
-  text: string;
-  first: CompileResult;
-  second: CompileResult;
+	source: CaseSource;
+	/** What the compile project compiles: the input, or the input a source canary corrupted. */
+	text: string;
+	first: CompileResult;
+	second: CompileResult;
 }
 
 const memo = new Map<string, Promise<Array<CompiledSource>>>();
 /** Each source's two compiles, with the run's canary installed (a fresh plugin for each). */
 function compiled(info: CaseInfo): Promise<Array<CompiledSource>> {
-  let pending = memo.get(info.id);
-  if (!pending) {
-    pending = Promise.all(
-      info.sources.map(async (source) => {
-        const text = canarySource(harness.canary, readFileSync(source.source, "utf8"));
-        const once = () =>
-          compileSource(info, source, text, canaryPlugins(harness.canary), {
-            format: canaryFormats(harness.canary),
-            sourceMap: true,
-          });
-        const [first, second] = await Promise.all([once(), once()]);
-        return { source, text, first, second };
-      }),
-    );
-    memo.set(info.id, pending);
-  }
-  return pending;
+	let pending = memo.get(info.id);
+	if (!pending) {
+		pending = Promise.all(
+			info.sources.map(async (source) => {
+				const text = canarySource(harness.canary, readFileSync(source.source, "utf8"));
+				const once = () =>
+					compileSource(info, source, text, canaryPlugins(harness.canary), {
+						format: canaryFormats(harness.canary),
+						sourceMap: true,
+					});
+				const [first, second] = await Promise.all([once(), once()]);
+				return { source, text, first, second };
+			}),
+		);
+		memo.set(info.id, pending);
+	}
+	return pending;
 }
 
 /** The first compile of each source, as the case's artefacts join them. */
 const firsts = (compiles: ReadonlyArray<CompiledSource>): Array<SourceCompile> =>
-  compiles.map(({ source, text, first }) => ({ source, text, result: first }));
+	compiles.map(({ source, text, first }) => ({ source, text, result: first }));
 
 /** `toJsonDiagnostics` without the documentation URL, which only restates the code. */
 function jsonDiagnostics(
-  diagnostics: ReadonlyArray<Diagnostic>,
-  texts: ReadonlyMap<string, string>,
+	diagnostics: ReadonlyArray<Diagnostic>,
+	texts: ReadonlyMap<string, string>,
 ) {
-  return toJsonDiagnostics(diagnostics, texts).map(({ url: _url, ...diagnostic }) => diagnostic);
+	return toJsonDiagnostics(diagnostics, texts).map(({ url: _url, ...diagnostic }) => diagnostic);
 }
 
 const hasErrors = (diagnostics: ReadonlyArray<Diagnostic>, target: string) =>
-  forTarget(diagnostics, target).some((diagnostic) => diagnostic.severity === "error");
+	forTarget(diagnostics, target).some((diagnostic) => diagnostic.severity === "error");
 
 describe("compile", () => {
-  for (const info of cases) {
-    describe(info.id, () => {
-      for (const target of targets) {
-        it(`${info.id} › ${target}`, async ({ task }) => {
-          const compiles = await compiled(info);
-          const checks: Partial<Record<LayerName, LayerCheck>> = {
-            L1: () => checkDiagnostics(info, compiles, target),
-            L2: () => checkOutputs(info, compiles, target),
-            L14: () => checkSourceMaps(info, compiles, target),
-          };
-          if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
-            for (const layer of NO_OUTPUT_LAYERS) {
-              checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
-            }
-          } else if (!info.spec && info.id.startsWith("diagnostics/")) {
-            // Only a diagnostics case: a feature case without a spec stays a missing cell.
-            for (const layer of NO_SPEC_LAYERS) {
-              checks[layer] = () => ({ skip: NO_SPEC_SKIP });
-            }
-          }
-          // No hydrate project runs a diagnostics case, which has no spec: its L12 says so, with
-          // compile errors or without, as the targets that do not hydrate say why they skip
-          // every other case (ADR-0095).
-          if (!info.spec && info.id.startsWith("diagnostics/")) {
-            checks.L12 = () => ({ skip: NO_SPEC_SKIP });
-          }
-          await checkLayers(
-            task,
-            { case: info.id, target, quarantine: harness.quarantine },
-            checks,
-          );
-        });
-      }
-    });
-  }
+	for (const info of cases) {
+		describe(info.id, () => {
+			for (const target of targets) {
+				it(`${info.id} › ${target}`, async ({ task }) => {
+					const compiles = await compiled(info);
+					const checks: Partial<Record<LayerName, LayerCheck>> = {
+						L1: () => checkDiagnostics(info, compiles, target),
+						L2: () => checkOutputs(info, compiles, target),
+						L14: () => checkSourceMaps(info, compiles, target),
+					};
+					if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
+						for (const layer of NO_OUTPUT_LAYERS) {
+							checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+						}
+					} else if (!info.spec && info.id.startsWith("diagnostics/")) {
+						// Only a diagnostics case: a feature case without a spec stays a missing cell.
+						for (const layer of NO_SPEC_LAYERS) {
+							checks[layer] = () => ({ skip: NO_SPEC_SKIP });
+						}
+					}
+					// No hydrate project runs a diagnostics case, which has no spec: its L12 says so, with
+					// compile errors or without, as the targets that do not hydrate say why they skip
+					// every other case (ADR-0095).
+					if (!info.spec && info.id.startsWith("diagnostics/")) {
+						checks.L12 = () => ({ skip: NO_SPEC_SKIP });
+					}
+					await checkLayers(
+						task,
+						{ case: info.id, target, quarantine: harness.quarantine },
+						checks,
+					);
+				});
+			}
+		});
+	}
 
-  it("covers every IR kind, capability cell and diagnostic code with a case", async () => {
-    const problems = coverageProblems(await corpus());
-    expect(problems, problems.join("\n")).toEqual([]);
-  });
+	it("covers every IR kind, capability cell and diagnostic code with a case", async () => {
+		const problems = coverageProblems(await corpus());
+		expect(problems, problems.join("\n")).toEqual([]);
+	});
 
-  // L14 passes a map with no segments, as a template of only static markup rightly has, so a
-  // compiler that stopped mapping one target's text would pass it everywhere.
-  it("maps text to its source on every target", async () => {
-    const results = await corpus();
-    const unmapped = targets.filter(
-      (target) => !results.some((result) => (result.outputs[target] ?? []).some(comparedSegments)),
-    );
-    expect(unmapped, `No map of these targets compares any text: ${unmapped.join(", ")}`).toEqual(
-      [],
-    );
-  });
+	// L14 passes a map with no segments, as a template of only static markup rightly has, so a
+	// compiler that stopped mapping one target's text would pass it everywhere.
+	it("maps text to its source on every target", async () => {
+		const results = await corpus();
+		const unmapped = targets.filter(
+			(target) => !results.some((result) => (result.outputs[target] ?? []).some(comparedSegments)),
+		);
+		expect(unmapped, `No map of these targets compares any text: ${unmapped.join(", ")}`).toEqual(
+			[],
+		);
+	});
 
-  it("holds specs that follow the spec rules the harness can read", () => {
-    const problems = cases.flatMap(specProblems);
-    expect(problems, problems.join("\n")).toEqual([]);
-  });
+	it("holds specs that follow the spec rules the harness can read", () => {
+		const problems = cases.flatMap(specProblems);
+		expect(problems, problems.join("\n")).toEqual([]);
+	});
 
-  it("holds no shared expectation that no case owns", () => {
-    if (harness.update) {
-      for (const info of cases) {
-        removeStaleArtefacts(info);
-      }
-      return;
-    }
-    const stale = cases.flatMap((info) =>
-      staleArtefacts(info).map((file) => relative(ROOT, join(info.dir, file)).split(sep).join("/")),
-    );
-    expect(
-      stale,
-      `Stale artefacts: no test reads them. Run \`pnpm test:update\` to delete them.\n  ${stale.join("\n  ")}`,
-    ).toEqual([]);
-  });
+	it("holds no shared expectation that no case owns", () => {
+		if (harness.update) {
+			for (const info of cases) {
+				removeStaleArtefacts(info);
+			}
+			return;
+		}
+		const stale = cases.flatMap((info) =>
+			staleArtefacts(info).map((file) => relative(ROOT, join(info.dir, file)).split(sep).join("/")),
+		);
+		expect(
+			stale,
+			`Stale artefacts: no test reads them. Run \`pnpm test:update\` to delete them.\n  ${stale.join("\n  ")}`,
+		).toEqual([]);
+	});
 });
 
 /**
@@ -251,53 +251,53 @@ describe("compile", () => {
  * recompile it clean.
  */
 async function checkDiagnostics(
-  info: CaseInfo,
-  compiles: ReadonlyArray<CompiledSource>,
-  target: string,
+	info: CaseInfo,
+	compiles: ReadonlyArray<CompiledSource>,
+	target: string,
 ): Promise<void> {
-  const joined = firsts(compiles);
-  const actual = jsonDiagnostics(caseDiagnostics(joined), sourceTexts(joined));
-  const path = join(info.dir, "__expected__", "diagnostics.json");
-  const outcome = settleArtefact(path, `${JSON.stringify(actual, null, 2)}\n`, owner);
-  if (!outcome.pass) {
-    if (outcome.status !== "mismatch") {
-      throw new Error(outcome.message);
-    }
-    // The file is target-independent: fail the targets whose own diagnostics differ, with the
-    // difference in theirs, which every other target's would bury in a case of several.
-    const expected = JSON.parse(readFileSync(path, "utf8")) as Array<Omit<JsonDiagnostic, "url">>;
-    const own = (list: ReadonlyArray<Omit<JsonDiagnostic, "url">>) =>
-      `${JSON.stringify(forTarget(list, target), null, 2)}\n`;
-    if (own(expected) !== own(actual)) {
-      const file = relative(ROOT, path).split(sep).join("/");
-      throw new Error(
-        `${file} differs from this run's output on ${target}:\n${diffLines(own(expected), own(actual))}\n\nRun \`pnpm test:update\` and review the diff if the change is intended.`,
-      );
-    }
-  }
+	const joined = firsts(compiles);
+	const actual = jsonDiagnostics(caseDiagnostics(joined), sourceTexts(joined));
+	const path = join(info.dir, "__expected__", "diagnostics.json");
+	const outcome = settleArtefact(path, `${JSON.stringify(actual, null, 2)}\n`, owner);
+	if (!outcome.pass) {
+		if (outcome.status !== "mismatch") {
+			throw new Error(outcome.message);
+		}
+		// The file is target-independent: fail the targets whose own diagnostics differ, with the
+		// difference in theirs, which every other target's would bury in a case of several.
+		const expected = JSON.parse(readFileSync(path, "utf8")) as Array<Omit<JsonDiagnostic, "url">>;
+		const own = (list: ReadonlyArray<Omit<JsonDiagnostic, "url">>) =>
+			`${JSON.stringify(forTarget(list, target), null, 2)}\n`;
+		if (own(expected) !== own(actual)) {
+			const file = relative(ROOT, path).split(sep).join("/");
+			throw new Error(
+				`${file} differs from this run's output on ${target}:\n${diffLines(own(expected), own(actual))}\n\nRun \`pnpm test:update\` and review the diff if the change is intended.`,
+			);
+		}
+	}
 
-  // P2: no internal error is an expectation, and a feature case expects only declared errors.
-  // The case's own reference (ADR-0057) is judged on the L1 cell of the target that writes its
-  // expectations.
-  const problems = [
-    ...expectationProblems(actual, target, info.spec !== undefined),
-    ...(target === (info.config.reference ?? REFERENCE)
-      ? referenceProblems(actual, info.spec !== undefined, REFERENCE, info.config.reference)
-      : []),
-  ];
-  if (problems.length) {
-    throw new Error(problems.join("\n"));
-  }
+	// P2: no internal error is an expectation, and a feature case expects only declared errors.
+	// The case's own reference (ADR-0057) is judged on the L1 cell of the target that writes its
+	// expectations.
+	const problems = [
+		...expectationProblems(actual, target, info.spec !== undefined),
+		...(target === (info.config.reference ?? REFERENCE)
+			? referenceProblems(actual, info.spec !== undefined, REFERENCE, info.config.reference)
+			: []),
+	];
+	if (problems.length) {
+		throw new Error(problems.join("\n"));
+	}
 
-  // The L1-fix-no-op canary corrupts the fixes here, on the cases whose diagnostics have one.
-  for (const { source, text, first } of compiles) {
-    await checkFixes(
-      text,
-      canaryFixes(harness.canary, canaryCase(info), target, text, first.diagnostics),
-      target,
-      async (fixed) => (await compileSource(info, source, fixed, [])).diagnostics,
-    );
-  }
+	// The L1-fix-no-op canary corrupts the fixes here, on the cases whose diagnostics have one.
+	for (const { source, text, first } of compiles) {
+		await checkFixes(
+			text,
+			canaryFixes(harness.canary, canaryCase(info), target, text, first.diagnostics),
+			target,
+			async (fixed) => (await compileSource(info, source, fixed, [])).diagnostics,
+		);
+	}
 }
 
 /**
@@ -306,90 +306,90 @@ async function checkDiagnostics(
  * case with errors, determinism, and formatting idempotence.
  */
 async function checkOutputs(
-  info: CaseInfo,
-  compiles: ReadonlyArray<CompiledSource>,
-  target: string,
+	info: CaseInfo,
+	compiles: ReadonlyArray<CompiledSource>,
+	target: string,
 ): Promise<void> {
-  const problems: Array<string> = [];
-  const output = join(info.dir, "__output__");
-  const settle = (outcome: { pass: boolean; message: string }) => {
-    if (!outcome.pass) {
-      problems.push(outcome.message);
-    }
-  };
+	const problems: Array<string> = [];
+	const output = join(info.dir, "__output__");
+	const settle = (outcome: { pass: boolean; message: string }) => {
+		if (!outcome.pass) {
+			problems.push(outcome.message);
+		}
+	};
 
-  for (const { source, first } of compiles) {
-    settle(
-      settleArtefact(
-        join(output, source.ir),
-        first.ir ? `${JSON.stringify(first.ir, null, 2)}\n` : undefined,
-        owner,
-      ),
-    );
-    if (first.ir && !validateIr(first.ir)) {
-      problems.push(
-        `The IR of ${source.filename} does not validate against irSchema:\n${(
-          validateIr.errors ?? []
-        )
-          .map((error) => `  ${error.instancePath || "/"} ${error.message ?? ""}`)
-          .join("\n")}`,
-      );
-    }
-  }
-  // The snapshot of a source the case no longer holds is stale, like any other artefact.
-  const snapshots = new Set(info.sources.map((source) => source.ir));
-  const stale = existsSync(output)
-    ? readdirSync(output).filter((file) => /^ir\..+\.json$/.test(file) && !snapshots.has(file))
-    : [];
-  for (const file of stale) {
-    settle(settleArtefact(join(output, file), undefined, owner));
-  }
+	for (const { source, first } of compiles) {
+		settle(
+			settleArtefact(
+				join(output, source.ir),
+				first.ir ? `${JSON.stringify(first.ir, null, 2)}\n` : undefined,
+				owner,
+			),
+		);
+		if (first.ir && !validateIr(first.ir)) {
+			problems.push(
+				`The IR of ${source.filename} does not validate against irSchema:\n${(
+					validateIr.errors ?? []
+				)
+					.map((error) => `  ${error.instancePath || "/"} ${error.message ?? ""}`)
+					.join("\n")}`,
+			);
+		}
+	}
+	// The snapshot of a source the case no longer holds is stale, like any other artefact.
+	const snapshots = new Set(info.sources.map((source) => source.ir));
+	const stale = existsSync(output)
+		? readdirSync(output).filter((file) => /^ir\..+\.json$/.test(file) && !snapshots.has(file))
+		: [];
+	for (const file of stale) {
+		settle(settleArtefact(join(output, file), undefined, owner));
+	}
 
-  const joined = firsts(compiles);
-  const diagnostics = caseDiagnostics(joined);
-  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-  settle(
-    settleArtefact(
-      join(output, "diagnostics.txt"),
-      errors.length ? `${formatDiagnostics(diagnostics, sourceTexts(joined))}\n` : undefined,
-      owner,
-    ),
-  );
+	const joined = firsts(compiles);
+	const diagnostics = caseDiagnostics(joined);
+	const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+	settle(
+		settleArtefact(
+			join(output, "diagnostics.txt"),
+			errors.length ? `${formatDiagnostics(diagnostics, sourceTexts(joined))}\n` : undefined,
+			owner,
+		),
+	);
 
-  const { files, problems: collisions } = caseOutputs(joined, target);
-  problems.push(
-    ...collisions,
-    ...moduleCopyProblems(
-      target,
-      files,
-      info.modules.map((module) => ({
-        path: basename(module.source),
-        contents: readFileSync(module.source, "utf8"),
-      })),
-    ),
-  );
-  settle(
-    settleArtefactDirectory(join(output, target), files, {
-      update: harness.update,
-      root: ROOT,
-    }),
-  );
+	const { files, problems: collisions } = caseOutputs(joined, target);
+	problems.push(
+		...collisions,
+		...moduleCopyProblems(
+			target,
+			files,
+			info.modules.map((module) => ({
+				path: basename(module.source),
+				contents: readFileSync(module.source, "utf8"),
+			})),
+		),
+	);
+	settle(
+		settleArtefactDirectory(join(output, target), files, {
+			update: harness.update,
+			root: ROOT,
+		}),
+	);
 
-  // P8: the same input and versions give byte-identical, formatted output.
-  for (const { first, second } of compiles) {
-    const different = nondeterminism(first, second, target);
-    if (different) {
-      problems.push(different);
-    }
-    problems.push(
-      ...(await formattingProblems(target, first.outputs[target] ?? [])),
-      ...stylesheetProblems(target, first.outputs[target] ?? []),
-    );
-  }
+	// P8: the same input and versions give byte-identical, formatted output.
+	for (const { first, second } of compiles) {
+		const different = nondeterminism(first, second, target);
+		if (different) {
+			problems.push(different);
+		}
+		problems.push(
+			...(await formattingProblems(target, first.outputs[target] ?? [])),
+			...stylesheetProblems(target, first.outputs[target] ?? []),
+		);
+	}
 
-  if (problems.length) {
-    throw new Error(problems.join("\n\n"));
-  }
+	if (problems.length) {
+		throw new Error(problems.join("\n\n"));
+	}
 }
 
 /**
@@ -397,28 +397,28 @@ async function checkOutputs(
  * L14-map-shifted canary corrupts the maps here, since the `output` hook runs before they exist.
  */
 function checkSourceMaps(
-  info: CaseInfo,
-  compiles: ReadonlyArray<CompiledSource>,
-  target: string,
+	info: CaseInfo,
+	compiles: ReadonlyArray<CompiledSource>,
+	target: string,
 ): void {
-  const modules = new Set(info.modules.map((module) => basename(module.source)));
-  const problems = compiles.flatMap(({ source, text, first }) => {
-    const files = first.outputs[target] ?? [];
-    // A source a target writes no file for has no map to check or corrupt: a `.uf.ts` module's
-    // directives on Astro, which runs no hook (ADR-0099).
-    if (!files.length) {
-      return [];
-    }
-    // A helper module maps onto itself, as a copy does (ADR-0121).
-    const own = new Set([...modules, ...(first.helpers[target] ?? [])]);
-    return sourceMapProblems(
-      target,
-      canaryMaps(harness.canary, files),
-      { filename: source.filename, text },
-      own,
-    );
-  });
-  if (problems.length) {
-    throw new Error(problems.join("\n"));
-  }
+	const modules = new Set(info.modules.map((module) => basename(module.source)));
+	const problems = compiles.flatMap(({ source, text, first }) => {
+		const files = first.outputs[target] ?? [];
+		// A source a target writes no file for has no map to check or corrupt: a `.uf.ts` module's
+		// directives on Astro, which runs no hook (ADR-0099).
+		if (!files.length) {
+			return [];
+		}
+		// A helper module maps onto itself, as a copy does (ADR-0121).
+		const own = new Set([...modules, ...(first.helpers[target] ?? [])]);
+		return sourceMapProblems(
+			target,
+			canaryMaps(harness.canary, files),
+			{ filename: source.filename, text },
+			own,
+		);
+	});
+	if (problems.length) {
+		throw new Error(problems.join("\n"));
+	}
 }

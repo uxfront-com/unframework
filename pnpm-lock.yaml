@@ -305,8 +305,8 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       '@uxfront/oxfmt-config':
-        specifier: ^0.1.1
-        version: 0.1.1(oxfmt@0.71.0(svelte@5.57.1(@typescript-eslint/types@8.71.0)))
+        specifier: ^0.2.0
+        version: 0.2.0(oxfmt@0.71.0(svelte@5.57.1(@typescript-eslint/types@8.71.0)))
       '@uxfront/oxlint-config':
         specifier: ^0.2.0
         version: 0.2.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0(oxlint-tsgolint@7.0.2008))
@@ -7376,8 +7376,8 @@ packages:
       nuxt: ^4.5.0
       vue: ^3.5.0
 
-  '@uxfront/oxfmt-config@0.1.1':
-    resolution: {integrity: sha512-L/z9RAcr0TehuP9cfc070OGWyXQlwONoqGOomIFL/3Y7WjEPn1bHYBU9+M+LGmz5dH1yDyC26JWNmpa5Y96t9Q==}
+  '@uxfront/oxfmt-config@0.2.0':
+    resolution: {integrity: sha512-K8+//dJ5DtsbaEQ/1sayQC9BIqXbcYa2LQV5Arr/7iZ5Pqe4HA8M3e8uw8AkTmHAM9o4LHgh26ApClNAhklIxw==}
     peerDependencies:
       oxfmt: '>=0.70.0 <1'
 
@@ -18957,7 +18957,7 @@ snapshots:
       - vite
       - webpack
 
-  '@uxfront/oxfmt-config@0.1.1(oxfmt@0.71.0(svelte@5.57.1(@typescript-eslint/types@8.71.0)))':
+  '@uxfront/oxfmt-config@0.2.0(oxfmt@0.71.0(svelte@5.57.1(@typescript-eslint/types@8.71.0)))':
     dependencies:
       oxfmt: 0.71.0(svelte@5.57.1(@typescript-eslint/types@8.71.0))
 

@@ -2,35 +2,35 @@
 // own types do not declare, which `astro check` (L4) would reject as written, and composition in
 // Astro's shape (`./composition.ts`): render props, fallthrough, models and `<component is>`.
 import {
-  astroDialect,
-  elementNamespace,
-  guardsOf,
-  isBooleanAttribute,
-  isIdentifier,
-  needsParentheses,
-  onlyGuards,
-  operand,
-  printMarkup,
-  rewriteExpression,
+	astroDialect,
+	elementNamespace,
+	guardsOf,
+	isBooleanAttribute,
+	isIdentifier,
+	needsParentheses,
+	onlyGuards,
+	operand,
+	printMarkup,
+	rewriteExpression,
 } from "@unframework.dev/codegen";
 import type {
-  AttributeContext,
-  MarkupDialect,
-  MarkupOptions,
-  MarkupPiece,
-  PrintedAttribute,
-  RewriteRules,
+	AttributeContext,
+	MarkupDialect,
+	MarkupOptions,
+	MarkupPiece,
+	PrintedAttribute,
+	RewriteRules,
 } from "@unframework.dev/codegen";
 import type {
-  Attribute,
-  ComponentAttribute,
-  ElementNode,
-  FragmentNode,
-  SlotFill,
-  Span,
-  StaticAttribute,
-  UfComponent,
-  UfModule,
+	Attribute,
+	ComponentAttribute,
+	ElementNode,
+	FragmentNode,
+	SlotFill,
+	Span,
+	StaticAttribute,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { isRenderProp, isUnknownBoolean, SPREAD_STYLE } from "./composition.ts";
@@ -46,13 +46,13 @@ import type { Spelling } from "./spelling.ts";
  * `astro check` over every pair the analyser accepts, both ways.
  */
 const PARTLY_TYPED_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map([
-  ["autocorrect", new Set(["form", "input", "select", "textarea"])],
+	["autocorrect", new Set(["form", "input", "select", "textarea"])],
 ]);
 
 /** Whether Astro's types reject `name` on an HTML `tag`. */
 export function isUntypedAttribute(tag: string, name: string): boolean {
-  const typedOn = PARTLY_TYPED_ATTRIBUTES.get(name);
-  return typedOn !== undefined && !typedOn.has(tag);
+	const typedOn = PARTLY_TYPED_ATTRIBUTES.get(name);
+	return typedOn !== undefined && !typedOn.has(tag);
 }
 
 /**
@@ -61,44 +61,44 @@ export function isUntypedAttribute(tag: string, name: string): boolean {
  * element declares, so the attribute keeps its value and passes `astro check`.
  */
 function spread(name: string, code: string): string {
-  return `{...{ ${isIdentifier(name) ? name : JSON.stringify(name)}: ${code} }}`;
+	return `{...{ ${isIdentifier(name) ? name : JSON.stringify(name)}: ${code} }}`;
 }
 
 /** The Astro dialect, with the attributes Astro's types lack written as spreads. */
 const dialect: MarkupDialect = {
-  ...astroDialect,
-  attribute: (name, value, tag) =>
-    isUntypedAttribute(tag, name)
-      ? spread(name, JSON.stringify(value))
-      : astroDialect.attribute(name, value, tag),
-  boundAttribute(name, code, context) {
-    const printed = astroDialect.boundAttribute(name, code, context);
-    if (context.namespace !== "html" || !isUntypedAttribute(context.element.tag, name)) {
-      return printed;
-    }
-    // The dialect writes `name={value}`: the same value goes into the spread.
-    return spread(name, printed.slice(name.length + 2, -1));
-  },
+	...astroDialect,
+	attribute: (name, value, tag) =>
+		isUntypedAttribute(tag, name)
+			? spread(name, JSON.stringify(value))
+			: astroDialect.attribute(name, value, tag),
+	boundAttribute(name, code, context) {
+		const printed = astroDialect.boundAttribute(name, code, context);
+		if (context.namespace !== "html" || !isUntypedAttribute(context.element.tag, name)) {
+			return printed;
+		}
+		// The dialect writes `name={value}`: the same value goes into the spread.
+		return spread(name, printed.slice(name.length + 2, -1));
+	},
 };
 
 /** What a component's markup needs beyond the dialect: its spelling and its Astro render tree. */
 export interface ComposedMarkup {
-  spelling: Spelling;
-  render: AstroRender;
-  /** The tag each child is written with, where it is not its local name (`Astro.self`). */
-  tags: ReadonlyMap<string, string>;
-  /** The component's module, whose imports give a child's scoped styles (ADR-0063). */
-  module: UfModule;
-  /**
-   * The `scopeAttributes` helper and the root nodes that spread what it picks out of
-   * `Astro.props`, the scope attributes of the styled parents that render the component
-   * (`scopeRoots`, ADR-0063).
-   */
-  scope?: { helper: string; roots: ReadonlyArray<Span> };
-  /** The `styleObject` helper, where a style bound to a value is merged (ADR-0065). */
-  styleObject?: string;
-  /** What the component takes from its consumer beside its props, and where (ADR-0118). */
-  fallthrough?: Fallthrough;
+	spelling: Spelling;
+	render: AstroRender;
+	/** The tag each child is written with, where it is not its local name (`Astro.self`). */
+	tags: ReadonlyMap<string, string>;
+	/** The component's module, whose imports give a child's scoped styles (ADR-0063). */
+	module: UfModule;
+	/**
+	 * The `scopeAttributes` helper and the root nodes that spread what it picks out of
+	 * `Astro.props`, the scope attributes of the styled parents that render the component
+	 * (`scopeRoots`, ADR-0063).
+	 */
+	scope?: { helper: string; roots: ReadonlyArray<Span> };
+	/** The `styleObject` helper, where a style bound to a value is merged (ADR-0065). */
+	styleObject?: string;
+	/** What the component takes from its consumer beside its props, and where (ADR-0118). */
+	fallthrough?: Fallthrough;
 }
 
 /**
@@ -108,45 +108,45 @@ export interface ComposedMarkup {
  * writes composition as `./composition.ts` shapes it.
  */
 export function printComponentMarkup(
-  component: UfComponent,
-  rewrite?: RewriteRules,
-  composed?: ComposedMarkup,
+	component: UfComponent,
+	rewrite?: RewriteRules,
+	composed?: ComposedMarkup,
 ): string {
-  if (!composed) {
-    return printMarkup(component.render, dialect, { component, ...(rewrite ? { rewrite } : {}) });
-  }
-  const { scope, fallthrough } = composed;
-  const roots = new Set(scope?.roots.map(key));
-  // The root that takes what falls through spreads it, the scope attributes included.
-  const root =
-    fallthrough?.attributes !== undefined && !fallthrough.rest
-      ? key(fallthrough.target.span)
-      : undefined;
-  const own = ownAttributes(component, composed);
-  // A scoped fill is printed with these (`renderFunction`): it is the parent's content, not its
-  // root.
-  const options: MarkupOptions = {
-    component,
-    module: composed.module,
-    rewrite: composed.spelling.rules,
-    componentTag: (name) => composed.tags.get(name),
-    ...(own.size ? { attribute: (attribute: Attribute) => own.get(attribute) } : {}),
-  };
-  const composedDialect = composition(component, composed, options);
-  return printMarkup(composed.render.render, composedDialect, {
-    ...options,
-    // Each node Vue's fallthrough reaches, a branch per set of forwarded slots included.
-    ...(scope || root
-      ? {
-          scopeRootAttributes: ({ span }: ElementNode) =>
-            key(span) === root
-              ? [`{...${fallthrough!.attributes}}`]
-              : roots.has(key(span))
-                ? [`{...${scope!.helper}(Astro.props)}`]
-                : [],
-        }
-      : {}),
-  });
+	if (!composed) {
+		return printMarkup(component.render, dialect, { component, ...(rewrite ? { rewrite } : {}) });
+	}
+	const { scope, fallthrough } = composed;
+	const roots = new Set(scope?.roots.map(key));
+	// The root that takes what falls through spreads it, the scope attributes included.
+	const root =
+		fallthrough?.attributes !== undefined && !fallthrough.rest
+			? key(fallthrough.target.span)
+			: undefined;
+	const own = ownAttributes(component, composed);
+	// A scoped fill is printed with these (`renderFunction`): it is the parent's content, not its
+	// root.
+	const options: MarkupOptions = {
+		component,
+		module: composed.module,
+		rewrite: composed.spelling.rules,
+		componentTag: (name) => composed.tags.get(name),
+		...(own.size ? { attribute: (attribute: Attribute) => own.get(attribute) } : {}),
+	};
+	const composedDialect = composition(component, composed, options);
+	return printMarkup(composed.render.render, composedDialect, {
+		...options,
+		// Each node Vue's fallthrough reaches, a branch per set of forwarded slots included.
+		...(scope || root
+			? {
+					scopeRootAttributes: ({ span }: ElementNode) =>
+						key(span) === root
+							? [`{...${fallthrough!.attributes}}`]
+							: roots.has(key(span))
+								? [`{...${scope!.helper}(Astro.props)}`]
+								: [],
+				}
+			: {}),
+	});
 }
 
 /**
@@ -157,40 +157,40 @@ export function printComponentMarkup(
  * the frontmatter cannot read before the setup it names.
  */
 function ownAttributes(
-  component: UfComponent,
-  { fallthrough, spelling }: ComposedMarkup,
+	component: UfComponent,
+	{ fallthrough, spelling }: ComposedMarkup,
 ): Map<Attribute, string> {
-  const texts = new Map<Attribute, string>();
-  if (!fallthrough || fallthrough.target.kind === "Component") {
-    return texts;
-  }
-  // A `<component is>` root's own attributes are what every tag takes: its first stands for
-  // them all (ADR-0122).
-  const { target } = fallthrough;
-  const element: ElementNode =
-    target.kind === "Element"
-      ? target
-      : { kind: "Element", tag: fallthrough.tag!, attributes: [], children: [], span: target.span };
-  const context = { element, namespace: elementNamespace(element.tag, "html") };
-  for (const { attribute, local } of fallthrough.own) {
-    const { name } = attribute;
-    let own: string;
-    if (attribute.kind === "Static") {
-      own = staticValue(attribute, context);
-    } else {
-      // The dialect's value: a boolean attribute Astro's renderer does not know is `""` or
-      // `undefined` already, as the consumer's is.
-      const code = rewriteExpression(attribute.value, component, spelling.rules);
-      own = astroDialect.boundAttribute(name, code, context).slice(name.length + 2, -1);
-    }
-    const otherwise = needsParentheses(own, "argument") ? `(${own})` : own;
-    const value = `${JSON.stringify(name)} in Astro.props ? ${local} : ${otherwise}`;
-    texts.set(
-      attribute,
-      isUntypedAttribute(element.tag, name) ? spread(name, value) : `${name}={${value}}`,
-    );
-  }
-  return texts;
+	const texts = new Map<Attribute, string>();
+	if (!fallthrough || fallthrough.target.kind === "Component") {
+		return texts;
+	}
+	// A `<component is>` root's own attributes are what every tag takes: its first stands for
+	// them all (ADR-0122).
+	const { target } = fallthrough;
+	const element: ElementNode =
+		target.kind === "Element"
+			? target
+			: { kind: "Element", tag: fallthrough.tag!, attributes: [], children: [], span: target.span };
+	const context = { element, namespace: elementNamespace(element.tag, "html") };
+	for (const { attribute, local } of fallthrough.own) {
+		const { name } = attribute;
+		let own: string;
+		if (attribute.kind === "Static") {
+			own = staticValue(attribute, context);
+		} else {
+			// The dialect's value: a boolean attribute Astro's renderer does not know is `""` or
+			// `undefined` already, as the consumer's is.
+			const code = rewriteExpression(attribute.value, component, spelling.rules);
+			own = astroDialect.boundAttribute(name, code, context).slice(name.length + 2, -1);
+		}
+		const otherwise = needsParentheses(own, "argument") ? `(${own})` : own;
+		const value = `${JSON.stringify(name)} in Astro.props ? ${local} : ${otherwise}`;
+		texts.set(
+			attribute,
+			isUntypedAttribute(element.tag, name) ? spread(name, value) : `${name}={${value}}`,
+		);
+	}
+	return texts;
 }
 
 /**
@@ -199,10 +199,10 @@ function ownAttributes(
  * write as `="true"`.
  */
 function staticValue({ name, value }: StaticAttribute, context: AttributeContext): string {
-  if (value !== true) {
-    return JSON.stringify(value);
-  }
-  return isBooleanAttribute(name) && !isUnknownBoolean(name, context) ? "true" : '""';
+	if (value !== true) {
+		return JSON.stringify(value);
+	}
+	return isBooleanAttribute(name) && !isUnknownBoolean(name, context) ? "true" : '""';
 }
 
 /** A span as a key. */
@@ -210,211 +210,211 @@ const key = ({ start, end }: Span): string => `${start}:${end}`;
 
 /** The dialect, with what composition needs of the component and its spelling. */
 function composition(
-  component: UfComponent,
-  { spelling, render, tags, styleObject, fallthrough }: ComposedMarkup,
-  options: MarkupOptions,
+	component: UfComponent,
+	{ spelling, render, tags, styleObject, fallthrough }: ComposedMarkup,
+	options: MarkupOptions,
 ): MarkupDialect {
-  const code = (expression: Parameters<typeof rewriteExpression>[0]) =>
-    rewriteExpression(expression, component, spelling.rules);
-  /** A control's own value as code: its `value`, or the `"on"` a checkbox or radio has without one. */
-  const controlValue = (element: ElementNode): string => {
-    for (const attribute of element.attributes) {
-      if (attribute.kind === "Static" && attribute.name === "value" && attribute.value !== true) {
-        return JSON.stringify(attribute.value);
-      }
-      if (attribute.kind === "Bound" && attribute.name === "value") {
-        return code(attribute.value);
-      }
-    }
-    return JSON.stringify("on");
-  };
-  const composed: MarkupDialect = {
-    ...dialect,
-    // The props' rest (ADR-0118): what the consumer passes that the component does not declare,
-    // but the scope attributes, which the root keeps where the rest is on another element.
-    restAttribute: () => {
-      const { attributes, scopeless } = fallthrough!;
-      if (attributes === undefined) {
-        throw new Error("A rest spread with no rest of the props.");
-      }
-      return [{ name: "", text: `{...${scopeless ? `${scopeless}(${attributes})` : attributes}}` }];
-    },
-    // A scoped fill is a render prop named as the slot, the forwarded one the component's own.
-    propAttribute(prop, context) {
-      const fill = context.component.fills.find((each) =>
-        render.renderProps.get(each)?.includes(prop.name),
-      );
-      if (!fill) {
-        return dialect.propAttribute!(prop, context);
-      }
-      const value =
-        fill.forward === undefined
-          ? renderFunction(fill, context.slotted)
-          : spelling.renderProps.get(fill.forward)!;
-      return [{ name: prop.name, text: `${prop.name}={${value}}` }];
-    },
-    fills: (fills, context) =>
-      dialect.fills!(
-        fills.filter(({ fill }) => !isRenderProp(fill, component)),
-        context,
-      ),
-    slotOutlet: (outlet) =>
-      dialect.slotOutlet!(
-        outlet.props
-          ? {
-              ...outlet,
-              node: { ...outlet.node, slot: spelling.renderProps.get(outlet.node.slot)! },
-            }
-          : outlet,
-      ),
-    /**
-     * A control's model as the state it renders with (ADR-0054): a text field's `value`, a
-     * checkbox's or a radio's `checked`. A `<textarea>`'s text and a `<select>`'s options are
-     * written into the tree (`./composition.ts`).
-     */
-    modelAttribute({ attribute, value }, { element }): Array<PrintedAttribute> {
-      switch (attribute.control) {
-        case "text":
-        case "number":
-          return [{ name: "value", text: `value={${value}}` }];
-        case "checkbox":
-          return [{ name: "checked", text: `checked={${value}}` }];
-        case "checkbox-group":
-          return [
-            {
-              name: "checked",
-              text: `checked={${operand(value)}.includes(${controlValue(element)})}`,
-            },
-          ];
-        case "radio":
-          return [{ name: "checked", text: `checked={${value} === ${controlValue(element)}}` }];
-        case "textarea":
-        case "select":
-        case "select-multiple":
-          return [];
-        default:
-          return unreachable(attribute.control);
-      }
-    },
-    /**
-     * `<component is>` as the constant it renders (`const Tag = …`), a tag: the frontmatter's,
-     * or one declared in place, in a function the expression calls at once, where the list's,
-     * the branch's or the fill's bindings and guards hold (`DynamicTag`).
-     */
-    dynamic({ node, is }) {
-      const { name, hoisted, candidates } = render.dynamics.get(node)!;
-      const component = (tag: string, attributes: Array<ComponentAttribute>): MarkupPiece => ({
-        kind: "component",
-        component: {
-          kind: "Component",
-          component: tag,
-          attributes,
-          fills: node.fills ?? [],
-          span: node.span,
-        },
-        directives: [],
-      });
-      if (candidates) {
-        // Each candidate in turn, the last one where the others are not the tag.
-        const each = [...candidates];
-        const segments = each.map(([candidate, attributes], at) => ({
-          open: `${at === 0 ? (hoisted ? "{" : `{(() => { const ${name} = ${is}; return `) : " : "}${
-            at < each.length - 1 ? `${name} === ${tags.get(candidate) ?? candidate} ? ` : ""
-          }`,
-          content: component(candidate, attributes),
-          parentheses: true,
-        }));
-        return [{ kind: "block", segments, close: hoisted ? "}" : "; })()}" }];
-      }
-      const piece: MarkupPiece = node.candidates.every((candidate) => candidate.kind === "Tag")
-        ? {
-            kind: "element",
-            element: {
-              kind: "Element",
-              tag: name,
-              attributes: node.attributes as Array<Attribute>,
-              children: node.children,
-              span: node.span,
-            },
-            directives: [],
-            // An attribute only some tags take renders on those (ADR-0119).
-            ...guardsOf(onlyGuards(node, name)),
-          }
-        : component(name, node.attributes as Array<ComponentAttribute>);
-      if (hoisted) {
-        return [piece];
-      }
-      return [
-        {
-          kind: "block",
-          segments: [
-            { open: `{(() => { const ${name} = ${is}; return `, content: piece, parentheses: true },
-          ],
-          close: "; })()}",
-        },
-      ];
-    },
-    /**
-     * A style as an object where a component takes it, so that the child can spread it after its
-     * own declarations, and on the root, which spreads the consumer's (`SPREAD_STYLE`).
-     */
-    styleAttribute(parts, context) {
-      const consumer = parts.find((part) => part.property === SPREAD_STYLE);
-      // A style bound to a value is an object where it is spread (ADR-0065): on a component,
-      // and on the root, before the consumer's.
-      const whole = parts.find((part) => part.property === "");
-      if (whole && styleObject && (consumer || /^[A-Z]|\./.test(context.element.tag))) {
-        const own = `${styleObject}(${whole.value})`;
-        const text = consumer ? `style={{ ...${own}, ...${consumer.value} }}` : `style={${own}}`;
-        return [{ name: "style", text }];
-      }
-      if (!consumer && !/^[A-Z]|\./.test(context.element.tag)) {
-        return dialect.styleAttribute(parts, context);
-      }
-      const own = parts.filter((part) => part !== consumer);
-      if (!own.length) {
-        return [{ name: "style", text: `style={${consumer!.value}}` }];
-      }
-      // The dialect writes an object whenever a declaration is bound: a static value is the
-      // same string literal there.
-      const [object] = dialect.styleAttribute(
-        own.map((part) =>
-          part.kind === "Static"
-            ? { kind: "Bound", property: part.property, value: JSON.stringify(part.value) }
-            : part,
-        ),
-        context,
-      );
-      const text = consumer
-        ? `${object!.text.slice(0, -3)}, ...${consumer.value} }}`
-        : object!.text;
-      return [{ name: "style", text }];
-    },
-  };
+	const code = (expression: Parameters<typeof rewriteExpression>[0]) =>
+		rewriteExpression(expression, component, spelling.rules);
+	/** A control's own value as code: its `value`, or the `"on"` a checkbox or radio has without one. */
+	const controlValue = (element: ElementNode): string => {
+		for (const attribute of element.attributes) {
+			if (attribute.kind === "Static" && attribute.name === "value" && attribute.value !== true) {
+				return JSON.stringify(attribute.value);
+			}
+			if (attribute.kind === "Bound" && attribute.name === "value") {
+				return code(attribute.value);
+			}
+		}
+		return JSON.stringify("on");
+	};
+	const composed: MarkupDialect = {
+		...dialect,
+		// The props' rest (ADR-0118): what the consumer passes that the component does not declare,
+		// but the scope attributes, which the root keeps where the rest is on another element.
+		restAttribute: () => {
+			const { attributes, scopeless } = fallthrough!;
+			if (attributes === undefined) {
+				throw new Error("A rest spread with no rest of the props.");
+			}
+			return [{ name: "", text: `{...${scopeless ? `${scopeless}(${attributes})` : attributes}}` }];
+		},
+		// A scoped fill is a render prop named as the slot, the forwarded one the component's own.
+		propAttribute(prop, context) {
+			const fill = context.component.fills.find((each) =>
+				render.renderProps.get(each)?.includes(prop.name),
+			);
+			if (!fill) {
+				return dialect.propAttribute!(prop, context);
+			}
+			const value =
+				fill.forward === undefined
+					? renderFunction(fill, context.slotted)
+					: spelling.renderProps.get(fill.forward)!;
+			return [{ name: prop.name, text: `${prop.name}={${value}}` }];
+		},
+		fills: (fills, context) =>
+			dialect.fills!(
+				fills.filter(({ fill }) => !isRenderProp(fill, component)),
+				context,
+			),
+		slotOutlet: (outlet) =>
+			dialect.slotOutlet!(
+				outlet.props
+					? {
+							...outlet,
+							node: { ...outlet.node, slot: spelling.renderProps.get(outlet.node.slot)! },
+						}
+					: outlet,
+			),
+		/**
+		 * A control's model as the state it renders with (ADR-0054): a text field's `value`, a
+		 * checkbox's or a radio's `checked`. A `<textarea>`'s text and a `<select>`'s options are
+		 * written into the tree (`./composition.ts`).
+		 */
+		modelAttribute({ attribute, value }, { element }): Array<PrintedAttribute> {
+			switch (attribute.control) {
+				case "text":
+				case "number":
+					return [{ name: "value", text: `value={${value}}` }];
+				case "checkbox":
+					return [{ name: "checked", text: `checked={${value}}` }];
+				case "checkbox-group":
+					return [
+						{
+							name: "checked",
+							text: `checked={${operand(value)}.includes(${controlValue(element)})}`,
+						},
+					];
+				case "radio":
+					return [{ name: "checked", text: `checked={${value} === ${controlValue(element)}}` }];
+				case "textarea":
+				case "select":
+				case "select-multiple":
+					return [];
+				default:
+					return unreachable(attribute.control);
+			}
+		},
+		/**
+		 * `<component is>` as the constant it renders (`const Tag = …`), a tag: the frontmatter's,
+		 * or one declared in place, in a function the expression calls at once, where the list's,
+		 * the branch's or the fill's bindings and guards hold (`DynamicTag`).
+		 */
+		dynamic({ node, is }) {
+			const { name, hoisted, candidates } = render.dynamics.get(node)!;
+			const component = (tag: string, attributes: Array<ComponentAttribute>): MarkupPiece => ({
+				kind: "component",
+				component: {
+					kind: "Component",
+					component: tag,
+					attributes,
+					fills: node.fills ?? [],
+					span: node.span,
+				},
+				directives: [],
+			});
+			if (candidates) {
+				// Each candidate in turn, the last one where the others are not the tag.
+				const each = [...candidates];
+				const segments = each.map(([candidate, attributes], at) => ({
+					open: `${at === 0 ? (hoisted ? "{" : `{(() => { const ${name} = ${is}; return `) : " : "}${
+						at < each.length - 1 ? `${name} === ${tags.get(candidate) ?? candidate} ? ` : ""
+					}`,
+					content: component(candidate, attributes),
+					parentheses: true,
+				}));
+				return [{ kind: "block", segments, close: hoisted ? "}" : "; })()}" }];
+			}
+			const piece: MarkupPiece = node.candidates.every((candidate) => candidate.kind === "Tag")
+				? {
+						kind: "element",
+						element: {
+							kind: "Element",
+							tag: name,
+							attributes: node.attributes as Array<Attribute>,
+							children: node.children,
+							span: node.span,
+						},
+						directives: [],
+						// An attribute only some tags take renders on those (ADR-0119).
+						...guardsOf(onlyGuards(node, name)),
+					}
+				: component(name, node.attributes as Array<ComponentAttribute>);
+			if (hoisted) {
+				return [piece];
+			}
+			return [
+				{
+					kind: "block",
+					segments: [
+						{ open: `{(() => { const ${name} = ${is}; return `, content: piece, parentheses: true },
+					],
+					close: "; })()}",
+				},
+			];
+		},
+		/**
+		 * A style as an object where a component takes it, so that the child can spread it after its
+		 * own declarations, and on the root, which spreads the consumer's (`SPREAD_STYLE`).
+		 */
+		styleAttribute(parts, context) {
+			const consumer = parts.find((part) => part.property === SPREAD_STYLE);
+			// A style bound to a value is an object where it is spread (ADR-0065): on a component,
+			// and on the root, before the consumer's.
+			const whole = parts.find((part) => part.property === "");
+			if (whole && styleObject && (consumer || /^[A-Z]|\./.test(context.element.tag))) {
+				const own = `${styleObject}(${whole.value})`;
+				const text = consumer ? `style={{ ...${own}, ...${consumer.value} }}` : `style={${own}}`;
+				return [{ name: "style", text }];
+			}
+			if (!consumer && !/^[A-Z]|\./.test(context.element.tag)) {
+				return dialect.styleAttribute(parts, context);
+			}
+			const own = parts.filter((part) => part !== consumer);
+			if (!own.length) {
+				return [{ name: "style", text: `style={${consumer!.value}}` }];
+			}
+			// The dialect writes an object whenever a declaration is bound: a static value is the
+			// same string literal there.
+			const [object] = dialect.styleAttribute(
+				own.map((part) =>
+					part.kind === "Static"
+						? { kind: "Bound", property: part.property, value: JSON.stringify(part.value) }
+						: part,
+				),
+				context,
+			);
+			const text = consumer
+				? `${object!.text.slice(0, -3)}, ...${consumer.value} }}`
+				: object!.text;
+			return [{ name: "style", text }];
+		},
+	};
 
-  /**
-   * A scoped fill as the function the child calls (ADR-0054): its parameter as written, and its
-   * content as Astro markup: one element, a string, or a fragment, which carries the child's
-   * `-s` attributes (`slotted`, ADR-0063).
-   */
-  function renderFunction(fill: SlotFill, slotted: ReadonlyArray<string>): string {
-    const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code ?? "";
-    const [only, ...more] = fill.children;
-    if (more.length === 0 && only?.kind === "Text") {
-      return `(${parameter}) => ${JSON.stringify(only.value)}`;
-    }
-    const root: FragmentNode = { kind: "Fragment", children: fill.children, span: fill.span };
-    const single = more.length === 0 && (only?.kind === "Element" || only?.kind === "Component");
-    const body = printMarkup(root, composed, { ...options, slotted });
-    const markup = single ? body : `<>\n${indented(body)}\n</>`;
-    const value = markup.includes("\n") ? `(\n${indented(markup)}\n)` : markup;
-    return `(${parameter}) => ${value}`;
-  }
-  return composed;
+	/**
+	 * A scoped fill as the function the child calls (ADR-0054): its parameter as written, and its
+	 * content as Astro markup: one element, a string, or a fragment, which carries the child's
+	 * `-s` attributes (`slotted`, ADR-0063).
+	 */
+	function renderFunction(fill: SlotFill, slotted: ReadonlyArray<string>): string {
+		const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code ?? "";
+		const [only, ...more] = fill.children;
+		if (more.length === 0 && only?.kind === "Text") {
+			return `(${parameter}) => ${JSON.stringify(only.value)}`;
+		}
+		const root: FragmentNode = { kind: "Fragment", children: fill.children, span: fill.span };
+		const single = more.length === 0 && (only?.kind === "Element" || only?.kind === "Component");
+		const body = printMarkup(root, composed, { ...options, slotted });
+		const markup = single ? body : `<>\n${indented(body)}\n</>`;
+		const value = markup.includes("\n") ? `(\n${indented(markup)}\n)` : markup;
+		return `(${parameter}) => ${value}`;
+	}
+	return composed;
 }
 
 const indented = (text: string): string =>
-  text
-    .split("\n")
-    .map((line) => (line ? `  ${line}` : line))
-    .join("\n");
+	text
+		.split("\n")
+		.map((line) => (line ? `  ${line}` : line))
+		.join("\n");

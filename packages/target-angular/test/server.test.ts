@@ -7,17 +7,17 @@ import type { SsrRenderer } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 describe("the server renderer", () => {
-  it("renders a component that imports @angular/common, loaded before the renderer", async () => {
-    const { default: Outlet } = (await import("./fixtures/Outlet.uf.tsx.ts")) as {
-      default: unknown;
-    };
-    const { renderToString } = (await import("../src/toolchain/server.ts")) as {
-      renderToString: SsrRenderer;
-    };
-    expect(await renderToString(Outlet, {})).toMatch(
-      /^<uf-outlet style="display: contents;">(?:<!--[^>]*-->)*<p>x<\/p>(?:<!--[^>]*-->)*<\/uf-outlet>$/,
-    );
-    // Ahead of time only: @angular/compiler registers its JIT facade globally when it loads.
-    expect(Reflect.get(globalThis, "ng")?.ɵcompilerFacade).toBeUndefined();
-  });
+	it("renders a component that imports @angular/common, loaded before the renderer", async () => {
+		const { default: Outlet } = (await import("./fixtures/Outlet.uf.tsx.ts")) as {
+			default: unknown;
+		};
+		const { renderToString } = (await import("../src/toolchain/server.ts")) as {
+			renderToString: SsrRenderer;
+		};
+		expect(await renderToString(Outlet, {})).toMatch(
+			/^<uf-outlet style="display: contents;">(?:<!--[^>]*-->)*<p>x<\/p>(?:<!--[^>]*-->)*<\/uf-outlet>$/,
+		);
+		// Ahead of time only: @angular/compiler registers its JIT facade globally when it loads.
+		expect(Reflect.get(globalThis, "ng")?.ɵcompilerFacade).toBeUndefined();
+	});
 });

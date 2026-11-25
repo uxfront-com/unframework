@@ -6,40 +6,40 @@ import { inject } from "vitest";
 
 /** What a registration may add to its adapter. */
 export interface TargetOptions {
-  /**
-   * The events a component declares, read from the component itself: for a stub target, whose
-   * components are not compiled. Without it, `mount` asks the project which events the case's
-   * compiled component declares (the `ufComponentEvents` command).
-   */
-  events?(component: unknown): ReadonlyArray<MountEvent>;
+	/**
+	 * The events a component declares, read from the component itself: for a stub target, whose
+	 * components are not compiled. Without it, `mount` asks the project which events the case's
+	 * compiled component declares (the `ufComponentEvents` command).
+	 */
+	events?(component: unknown): ReadonlyArray<MountEvent>;
 }
 
 interface Registration extends TargetOptions {
-  target: string;
-  mount: MountAdapter;
-  /** A hydrate project's hydrate adapter (L12, ADR-0095), which `mount` then goes through. */
-  hydrate?: HydrateAdapter;
+	target: string;
+	mount: MountAdapter;
+	/** A hydrate project's hydrate adapter (L12, ADR-0095), which `mount` then goes through. */
+	hydrate?: HydrateAdapter;
 }
 
 let registration: Registration | undefined;
 
 /** Registers the project's mount adapter. One adapter per project: a second target is a bug. */
 export function registerTarget(
-  target: string,
-  mount: MountAdapter,
-  options: TargetOptions = {},
+	target: string,
+	mount: MountAdapter,
+	options: TargetOptions = {},
 ): void {
-  if (registration && registration.target !== target) {
-    throw new Error(
-      `registerTarget("${target}"): this project already registered "${registration.target}". A browser project verifies one target.`,
-    );
-  }
-  registration = {
-    ...options,
-    target,
-    mount,
-    ...(registration?.hydrate ? { hydrate: registration.hydrate } : {}),
-  };
+	if (registration && registration.target !== target) {
+		throw new Error(
+			`registerTarget("${target}"): this project already registered "${registration.target}". A browser project verifies one target.`,
+		);
+	}
+	registration = {
+		...options,
+		target,
+		mount,
+		...(registration?.hydrate ? { hydrate: registration.hydrate } : {}),
+	};
 }
 
 /**
@@ -48,40 +48,40 @@ export function registerTarget(
  * adapter renders the client render the hydrated DOM must agree with.
  */
 export function registerHydrateAdapter(target: string, hydrate: HydrateAdapter): void {
-  if (registration && registration.target !== target) {
-    throw new Error(
-      `registerHydrateAdapter("${target}"): this project already registered "${registration.target}". A browser project verifies one target.`,
-    );
-  }
-  if (!registration) {
-    throw new Error(
-      `registerHydrateAdapter("${target}"): register the target's mount adapter first (@unframework.dev/testing/${target}).`,
-    );
-  }
-  registration.hydrate = hydrate;
+	if (registration && registration.target !== target) {
+		throw new Error(
+			`registerHydrateAdapter("${target}"): this project already registered "${registration.target}". A browser project verifies one target.`,
+		);
+	}
+	if (!registration) {
+		throw new Error(
+			`registerHydrateAdapter("${target}"): register the target's mount adapter first (@unframework.dev/testing/${target}).`,
+		);
+	}
+	registration.hydrate = hydrate;
 }
 
 /** The target this project verifies (`test.provide.target`). */
 export function currentTarget(): string {
-  const target = inject("target");
-  if (!target) {
-    throw new Error("No target is provided: the project must set test.provide.target.");
-  }
-  return target;
+	const target = inject("target");
+	if (!target) {
+		throw new Error("No target is provided: the project must set test.provide.target.");
+	}
+	return target;
 }
 
 /** The registered adapter, checked against the project's target. */
 export function registeredAdapter(): Registration {
-  if (!registration) {
-    throw new Error(
-      "No mount adapter is registered: the project's setupFiles must include @unframework.dev/testing/<target>.",
-    );
-  }
-  const target = currentTarget();
-  if (registration.target !== target) {
-    throw new Error(
-      `The registered adapter is for "${registration.target}", but this project verifies "${target}".`,
-    );
-  }
-  return registration;
+	if (!registration) {
+		throw new Error(
+			"No mount adapter is registered: the project's setupFiles must include @unframework.dev/testing/<target>.",
+		);
+	}
+	const target = currentTarget();
+	if (registration.target !== target) {
+		throw new Error(
+			`The registered adapter is for "${registration.target}", but this project verifies "${target}".`,
+		);
+	}
+	return registration;
 }

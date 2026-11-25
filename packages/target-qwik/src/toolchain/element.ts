@@ -16,12 +16,12 @@ import { _jsxSorted } from "@qwik.dev/core/internal";
  * a new component").
  */
 export function withProps(
-  component: unknown,
-  props: Readonly<Record<string, unknown>>,
-  key: string | null = null,
+	component: unknown,
+	props: Readonly<Record<string, unknown>>,
+	key: string | null = null,
 ): JSXOutput {
-  const sorted = Object.fromEntries(
-    Object.entries(props).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
-  );
-  return _jsxSorted(component, sorted, null, null, 0, key);
+	const sorted = Object.fromEntries(
+		Object.entries(props).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+	);
+	return _jsxSorted(component, sorted, null, null, 0, key);
 }

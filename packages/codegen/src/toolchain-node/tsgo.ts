@@ -15,7 +15,7 @@ const GLOBAL = /^(?:error|warning|message) (TS\d+): (.*)$/;
 
 /** One diagnostic as tsgo printed it; `path` is absent for diagnostics without a file. */
 interface Printed extends ToolchainMessage {
-  path?: string;
+	path?: string;
 }
 
 /**
@@ -32,97 +32,97 @@ interface Printed extends ToolchainMessage {
  * parser does not understand.
  */
 export async function typecheckWithTsgo(
-  files: ReadonlyArray<string>,
-  context: ToolchainContext,
+	files: ReadonlyArray<string>,
+	context: ToolchainContext,
 ): Promise<Map<string, Array<ToolchainMessage>>> {
-  const tsc = resolveTsgo(context.toolchainDir);
-  // `--noEmit` on the command line: a toolchain tsconfig without it must never write
-  // JavaScript next to the golden files.
-  const run = await runChecker(
-    context.toolchainDir,
-    tsc,
-    files.map((file) => resolve(file)),
-    (tsconfig) => ["--project", tsconfig, "--noEmit", "--pretty", "false"],
-  );
-  return collect(files, run);
+	const tsc = resolveTsgo(context.toolchainDir);
+	// `--noEmit` on the command line: a toolchain tsconfig without it must never write
+	// JavaScript next to the golden files.
+	const run = await runChecker(
+		context.toolchainDir,
+		tsc,
+		files.map((file) => resolve(file)),
+		(tsconfig) => ["--project", tsconfig, "--noEmit", "--pretty", "false"],
+	);
+	return collect(files, run);
 }
 
 /** The path of TypeScript 7's `tsc` launcher, as installed for the toolchain directory. */
 function resolveTsgo(toolchainDir: string): string {
-  const installed = findInstalled(toolchainDir, "typescript");
-  if (!installed) {
-    throw new Error(`TypeScript 7 is not installed for the toolchain directory ${toolchainDir}.`);
-  }
-  const { manifestPath, manifest } = installed;
-  // tsgo's output format and options are what this parser was written against.
-  if (!manifest.version?.startsWith("7.")) {
-    throw new Error(
-      `Expected TypeScript 7 (tsgo) for ${toolchainDir}, found ${manifest.version ?? "no version"} at ${dirname(manifestPath)}.`,
-    );
-  }
-  const bin = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.tsc;
-  if (!bin) {
-    throw new Error(`TypeScript at ${dirname(manifestPath)} declares no tsc binary.`);
-  }
-  return join(dirname(manifestPath), bin);
+	const installed = findInstalled(toolchainDir, "typescript");
+	if (!installed) {
+		throw new Error(`TypeScript 7 is not installed for the toolchain directory ${toolchainDir}.`);
+	}
+	const { manifestPath, manifest } = installed;
+	// tsgo's output format and options are what this parser was written against.
+	if (!manifest.version?.startsWith("7.")) {
+		throw new Error(
+			`Expected TypeScript 7 (tsgo) for ${toolchainDir}, found ${manifest.version ?? "no version"} at ${dirname(manifestPath)}.`,
+		);
+	}
+	const bin = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.tsc;
+	if (!bin) {
+		throw new Error(`TypeScript at ${dirname(manifestPath)} declares no tsc binary.`);
+	}
+	return join(dirname(manifestPath), bin);
 }
 
 /** Parses tsgo's output into diagnostics by file, rejecting anything it cannot account for. */
 function collect(
-  files: ReadonlyArray<string>,
-  { cwd, tsconfig, code, signal, stdout, stderr }: CheckerRun,
+	files: ReadonlyArray<string>,
+	{ cwd, tsconfig, code, signal, stdout, stderr }: CheckerRun,
 ): Map<string, Array<ToolchainMessage>> {
-  const printed: Array<Printed> = [];
-  const unparsed: Array<string> = [];
-  for (const line of stdout.split(/\r?\n/)) {
-    if (line.trim() === "") {
-      continue;
-    }
-    const located = LOCATED.exec(line);
-    if (located) {
-      const [, path = "", row, column, tsCode, message = ""] = located;
-      printed.push({
-        path: resolve(cwd, path),
-        message,
-        line: Number(row),
-        column: Number(column),
-        code: tsCode,
-      });
-      continue;
-    }
-    const global = GLOBAL.exec(line);
-    if (global) {
-      printed.push({ message: global[2] ?? "", code: global[1] });
-      continue;
-    }
-    // tsgo indents the elaboration of a diagnostic ("The types of 'x' are incompatible…").
-    const previous = printed.at(-1);
-    if (/^\s/.test(line) && previous) {
-      previous.message += `\n${line}`;
-      continue;
-    }
-    unparsed.push(line);
-  }
+	const printed: Array<Printed> = [];
+	const unparsed: Array<string> = [];
+	for (const line of stdout.split(/\r?\n/)) {
+		if (line.trim() === "") {
+			continue;
+		}
+		const located = LOCATED.exec(line);
+		if (located) {
+			const [, path = "", row, column, tsCode, message = ""] = located;
+			printed.push({
+				path: resolve(cwd, path),
+				message,
+				line: Number(row),
+				column: Number(column),
+				code: tsCode,
+			});
+			continue;
+		}
+		const global = GLOBAL.exec(line);
+		if (global) {
+			printed.push({ message: global[2] ?? "", code: global[1] });
+			continue;
+		}
+		// tsgo indents the elaboration of a diagnostic ("The types of 'x' are incompatible…").
+		const previous = printed.at(-1);
+		if (/^\s/.test(line) && previous) {
+			previous.message += `\n${line}`;
+			continue;
+		}
+		unparsed.push(line);
+	}
 
-  const output = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
-  if (signal) {
-    throw new Error(`tsc was killed by ${signal}.\n${output}`);
-  }
-  // A clean or failing run writes only to stdout; stderr means a crash or a launcher problem.
-  if (stderr.trim() !== "") {
-    throw new Error(`tsc wrote to stderr (exit code ${code}):\n${output}`);
-  }
-  if (unparsed.length > 0) {
-    throw new Error(`tsc printed output this toolchain cannot read:\n${unparsed.join("\n")}`);
-  }
-  if (code !== 0 && printed.length === 0) {
-    throw new Error(`tsc exited with code ${code} without reporting a diagnostic.\n${output}`);
-  }
+	const output = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
+	if (signal) {
+		throw new Error(`tsc was killed by ${signal}.\n${output}`);
+	}
+	// A clean or failing run writes only to stdout; stderr means a crash or a launcher problem.
+	if (stderr.trim() !== "") {
+		throw new Error(`tsc wrote to stderr (exit code ${code}):\n${output}`);
+	}
+	if (unparsed.length > 0) {
+		throw new Error(`tsc printed output this toolchain cannot read:\n${unparsed.join("\n")}`);
+	}
+	if (code !== 0 && printed.length === 0) {
+		throw new Error(`tsc exited with code ${code} without reporting a diagnostic.\n${output}`);
+	}
 
-  // Report against the paths the caller gave, even when tsgo saw them through a symlink.
-  const diagnostics = diagnosticsByFile(files, tsconfig);
-  for (const { path, ...message } of printed) {
-    diagnostics.add(path, message);
-  }
-  return diagnostics.results;
+	// Report against the paths the caller gave, even when tsgo saw them through a symlink.
+	const diagnostics = diagnosticsByFile(files, tsconfig);
+	for (const { path, ...message } of printed) {
+		diagnostics.add(path, message);
+	}
+	return diagnostics.results;
 }

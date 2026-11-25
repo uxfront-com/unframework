@@ -10,78 +10,78 @@ const funcs = `<script q:func="qwik/json">document["qFuncs_5r5ljr"]=[]</script>`
 const events = `<script>(window._qwikEv||(window._qwikEv=[])).push("e:click",0,"5r5ljr")</script>`;
 
 describe("componentHtml", () => {
-  it("returns the container's inner HTML", () => {
-    expect(componentHtml(`${open}<p :="" class="greeting">Hi</p>${close}`)).toBe(
-      `<p :="" class="greeting">Hi</p>`,
-    );
-  });
+	it("returns the container's inner HTML", () => {
+		expect(componentHtml(`${open}<p :="" class="greeting">Hi</p>${close}`)).toBe(
+			`<p :="" class="greeting">Hi</p>`,
+		);
+	});
 
-  it("drops the container data Qwik appends after the component", () => {
-    const component = `<div><button q-e:click="mock-chunk#_run#1">+1</button></div>`;
-    expect(componentHtml(`${open}${component}${state}${vnode}${funcs}${events}${close}`)).toBe(
-      component,
-    );
-  });
+	it("drops the container data Qwik appends after the component", () => {
+		const component = `<div><button q-e:click="mock-chunk#_run#1">+1</button></div>`;
+		expect(componentHtml(`${open}${component}${state}${vnode}${funcs}${events}${close}`)).toBe(
+			component,
+		);
+	});
 
-  it("recognises an event registration that carries a CSP nonce", () => {
-    const nonced = events.replace("<script>", `<script nonce="abc">`);
-    expect(componentHtml(`${open}<p>Hi</p>${nonced}${close}`)).toBe("<p>Hi</p>");
-  });
+	it("recognises an event registration that carries a CSP nonce", () => {
+		const nonced = events.replace("<script>", `<script nonce="abc">`);
+		expect(componentHtml(`${open}<p>Hi</p>${nonced}${close}`)).toBe("<p>Hi</p>");
+	});
 
-  it("drops the self-removing event registrations Qwik writes inside the component", () => {
-    const inline = (names: string) =>
-      `<script>(window._qwikEv||(window._qwikEv=[])).push(${names});document.currentScript.remove()</script>`;
-    const component = `<div><button q-e:click="c#s#1">+1</button>${inline('"e:click"')}<input q-e:keydown="c#k#2" />${inline('"e:keydown","ep:touchstart"')}<p>Hi</p></div>`;
-    expect(componentHtml(`${open}${component}${state}${events}${close}`)).toBe(
-      `<div><button q-e:click="c#s#1">+1</button><input q-e:keydown="c#k#2" /><p>Hi</p></div>`,
-    );
-    const nonced = inline('"e:click"').replace("<script>", `<script nonce="abc">`);
-    expect(componentHtml(`${open}<p>Hi</p>${nonced}<p>Again</p>${close}`)).toBe(
-      "<p>Hi</p><p>Again</p>",
-    );
-  });
+	it("drops the self-removing event registrations Qwik writes inside the component", () => {
+		const inline = (names: string) =>
+			`<script>(window._qwikEv||(window._qwikEv=[])).push(${names});document.currentScript.remove()</script>`;
+		const component = `<div><button q-e:click="c#s#1">+1</button>${inline('"e:click"')}<input q-e:keydown="c#k#2" />${inline('"e:keydown","ep:touchstart"')}<p>Hi</p></div>`;
+		expect(componentHtml(`${open}${component}${state}${events}${close}`)).toBe(
+			`<div><button q-e:click="c#s#1">+1</button><input q-e:keydown="c#k#2" /><p>Hi</p></div>`,
+		);
+		const nonced = inline('"e:click"').replace("<script>", `<script nonce="abc">`);
+		expect(componentHtml(`${open}<p>Hi</p>${nonced}<p>Again</p>${close}`)).toBe(
+			"<p>Hi</p><p>Again</p>",
+		);
+	});
 
-  it("keeps a script inside the component that only resembles an inline registration", () => {
-    const kept = [
-      `<script type="module">(window._qwikEv||(window._qwikEv=[])).push("e:click");document.currentScript.remove()</script>`,
-      `<script>(window._qwikEv||(window._qwikEv=[])).push("e:click")</script>`,
-      `<script>(window._qwikEv||(window._qwikEv=[])).push(0,"e:click");document.currentScript.remove()</script>`,
-      `<script>(window._qwikEv||(window._qwikEv=[])).push("e:click");document.currentScript.remove();alert(1)</script>`,
-    ];
-    for (const script of kept) {
-      const component = `<p>Hi</p>${script}<p>Again</p>`;
-      expect(componentHtml(`${open}${component}${close}`)).toBe(component);
-    }
-  });
+	it("keeps a script inside the component that only resembles an inline registration", () => {
+		const kept = [
+			`<script type="module">(window._qwikEv||(window._qwikEv=[])).push("e:click");document.currentScript.remove()</script>`,
+			`<script>(window._qwikEv||(window._qwikEv=[])).push("e:click")</script>`,
+			`<script>(window._qwikEv||(window._qwikEv=[])).push(0,"e:click");document.currentScript.remove()</script>`,
+			`<script>(window._qwikEv||(window._qwikEv=[])).push("e:click");document.currentScript.remove();alert(1)</script>`,
+		];
+		for (const script of kept) {
+			const component = `<p>Hi</p>${script}<p>Again</p>`;
+			expect(componentHtml(`${open}${component}${close}`)).toBe(component);
+		}
+	});
 
-  it("keeps the component's own scripts, even ones that look like Qwik's", () => {
-    const own = `<script type="qwik/state">{}</script>`;
-    const component = `${own}<p>Hi</p>`;
-    expect(componentHtml(`${open}${component}${state}${close}`)).toBe(component);
-  });
+	it("keeps the component's own scripts, even ones that look like Qwik's", () => {
+		const own = `<script type="qwik/state">{}</script>`;
+		const component = `${own}<p>Hi</p>`;
+		expect(componentHtml(`${open}${component}${state}${close}`)).toBe(component);
+	});
 
-  it("keeps a trailing script that is not container data", () => {
-    const component = `<p>Hi</p><script>console.log("mine")</script>`;
-    expect(componentHtml(`${open}${component}${close}`)).toBe(component);
-  });
+	it("keeps a trailing script that is not container data", () => {
+		const component = `<p>Hi</p><script>console.log("mine")</script>`;
+		expect(componentHtml(`${open}${component}${close}`)).toBe(component);
+	});
 
-  it("keeps an attributed script that only resembles the event registration", () => {
-    const module = `<script type="module">(window._qwikEv||(window._qwikEv=[])).push("x")</script>`;
-    expect(componentHtml(`${open}<p>Hi</p>${module}${close}`)).toBe(`<p>Hi</p>${module}`);
-  });
+	it("keeps an attributed script that only resembles the event registration", () => {
+		const module = `<script type="module">(window._qwikEv||(window._qwikEv=[])).push("x")</script>`;
+		expect(componentHtml(`${open}<p>Hi</p>${module}${close}`)).toBe(`<p>Hi</p>${module}`);
+	});
 
-  it("accepts surrounding whitespace", () => {
-    expect(componentHtml(`\n${open}<p>Hi</p>${close}\n`)).toBe("<p>Hi</p>");
-  });
+	it("accepts surrounding whitespace", () => {
+		expect(componentHtml(`\n${open}<p>Hi</p>${close}\n`)).toBe("<p>Hi</p>");
+	});
 
-  it("throws, rather than guess, when the render is not one container", () => {
-    expect(() => componentHtml("<p>Hi</p>")).toThrow(/not one <uf-qwik-container> container/);
-    expect(() => componentHtml(`<html><body><p>Hi</p></body></html>`)).toThrow(
-      /not one <uf-qwik-container> container/,
-    );
-    expect(() => componentHtml(`${open}<p>Hi</p>${close}${open}<p>Again</p>${close}`)).toThrow(
-      /not one <uf-qwik-container> container/,
-    );
-    expect(() => componentHtml(`${open}<p>Hi</p>`)).toThrow(/not one/);
-  });
+	it("throws, rather than guess, when the render is not one container", () => {
+		expect(() => componentHtml("<p>Hi</p>")).toThrow(/not one <uf-qwik-container> container/);
+		expect(() => componentHtml(`<html><body><p>Hi</p></body></html>`)).toThrow(
+			/not one <uf-qwik-container> container/,
+		);
+		expect(() => componentHtml(`${open}<p>Hi</p>${close}${open}<p>Again</p>${close}`)).toThrow(
+			/not one <uf-qwik-container> container/,
+		);
+		expect(() => componentHtml(`${open}<p>Hi</p>`)).toThrow(/not one/);
+	});
 });

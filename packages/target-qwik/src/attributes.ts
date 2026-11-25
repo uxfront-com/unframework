@@ -17,43 +17,43 @@ import type { ElementNode, FragmentNode, RenderNode } from "@unframework.dev/ir"
  * for at all is {@link QWIK_UNTYPED_ATTRIBUTES}.
  */
 export const QWIK_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = {
-  accesskey: "accessKey",
-  allowfullscreen: "allowFullscreen",
-  autocorrect: "autoCorrect",
-  cellpadding: "cellPadding",
-  cellspacing: "cellSpacing",
-  colspan: "colSpan",
-  contenteditable: "contentEditable",
-  crossorigin: "crossOrigin",
-  datetime: "dateTime",
-  disablepictureinpicture: "disablePictureInPicture",
-  disableremoteplayback: "disableRemotePlayback",
-  enterkeyhint: "enterKeyHint",
-  fetchpriority: "fetchPriority",
-  formaction: "formAction",
-  formenctype: "formEnctype",
-  formmethod: "formMethod",
-  formnovalidate: "formNoValidate",
-  formtarget: "formTarget",
-  frameborder: "frameBorder",
-  inputmode: "inputMode",
-  itemid: "itemID",
-  itemprop: "itemProp",
-  itemref: "itemRef",
-  itemscope: "itemScope",
-  itemtype: "itemType",
-  marginheight: "marginHeight",
-  marginwidth: "marginWidth",
-  maxlength: "maxLength",
-  minlength: "minLength",
-  nomodule: "noModule",
-  novalidate: "noValidate",
-  playsinline: "playsInline",
-  readonly: "readOnly",
-  referrerpolicy: "referrerPolicy",
-  rowspan: "rowSpan",
-  tabindex: "tabIndex",
-  usemap: "useMap",
+	accesskey: "accessKey",
+	allowfullscreen: "allowFullscreen",
+	autocorrect: "autoCorrect",
+	cellpadding: "cellPadding",
+	cellspacing: "cellSpacing",
+	colspan: "colSpan",
+	contenteditable: "contentEditable",
+	crossorigin: "crossOrigin",
+	datetime: "dateTime",
+	disablepictureinpicture: "disablePictureInPicture",
+	disableremoteplayback: "disableRemotePlayback",
+	enterkeyhint: "enterKeyHint",
+	fetchpriority: "fetchPriority",
+	formaction: "formAction",
+	formenctype: "formEnctype",
+	formmethod: "formMethod",
+	formnovalidate: "formNoValidate",
+	formtarget: "formTarget",
+	frameborder: "frameBorder",
+	inputmode: "inputMode",
+	itemid: "itemID",
+	itemprop: "itemProp",
+	itemref: "itemRef",
+	itemscope: "itemScope",
+	itemtype: "itemType",
+	marginheight: "marginHeight",
+	marginwidth: "marginWidth",
+	maxlength: "maxLength",
+	minlength: "minLength",
+	nomodule: "noModule",
+	novalidate: "noValidate",
+	playsinline: "playsInline",
+	readonly: "readOnly",
+	referrerpolicy: "referrerPolicy",
+	rowspan: "rowSpan",
+	tabindex: "tabIndex",
+	usemap: "useMap",
 };
 
 /**
@@ -64,37 +64,37 @@ export const QWIK_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = {
  * `true` would be a real difference (`"true"` on the client).
  */
 export const QWIK_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
-  "allowfullscreen",
-  "alpha",
-  "async",
-  "autofocus",
-  "autoplay",
-  "checked",
-  "controls",
-  "default",
-  "defer",
-  "disabled",
-  "disablepictureinpicture",
-  "disableremoteplayback",
-  "formnovalidate",
-  "hidden",
-  "inert",
-  "itemscope",
-  "loop",
-  "multiple",
-  "muted",
-  "nomodule",
-  "novalidate",
-  "open",
-  "playsinline",
-  "readonly",
-  "required",
-  "reversed",
-  "selected",
-  "shadowrootclonable",
-  "shadowrootcustomelementregistry",
-  "shadowrootdelegatesfocus",
-  "shadowrootserializable",
+	"allowfullscreen",
+	"alpha",
+	"async",
+	"autofocus",
+	"autoplay",
+	"checked",
+	"controls",
+	"default",
+	"defer",
+	"disabled",
+	"disablepictureinpicture",
+	"disableremoteplayback",
+	"formnovalidate",
+	"hidden",
+	"inert",
+	"itemscope",
+	"loop",
+	"multiple",
+	"muted",
+	"nomodule",
+	"novalidate",
+	"open",
+	"playsinline",
+	"readonly",
+	"required",
+	"reversed",
+	"selected",
+	"shadowrootclonable",
+	"shadowrootcustomelementregistry",
+	"shadowrootdelegatesfocus",
+	"shadowrootserializable",
 ]);
 
 /** Some elements by name, or every element but some. */
@@ -109,9 +109,9 @@ type Elements = { readonly on: ReadonlyArray<string> } | { readonly except: Read
  * test/attributes.test.ts, which type-checks every attribute the analyser accepts.
  */
 export const QWIK_UNTYPED_ATTRIBUTES: Readonly<Record<string, Elements>> = {
-  enterkeyhint: { except: ["input", "textarea"] },
-  form: { on: ["input"] },
-  list: { on: ["input"] },
+	enterkeyhint: { except: ["input", "textarea"] },
+	form: { on: ["input"] },
+	list: { on: ["input"] },
 };
 
 /**
@@ -127,23 +127,23 @@ const QWIK_CONTENT_EDITABLE: ReadonlySet<string> = new Set(["false", "inherit", 
  * or `undefined` for a bound one.
  */
 export function isUntypedAttribute(
-  tag: string,
-  namespace: Namespace,
-  name: string,
-  value?: string | true,
+	tag: string,
+	namespace: Namespace,
+	name: string,
+	value?: string | true,
 ): boolean {
-  if (namespace !== "html") {
-    return false;
-  }
-  const html = name.toLowerCase();
-  if (html === "contenteditable") {
-    return typeof value === "string" && !QWIK_CONTENT_EDITABLE.has(value);
-  }
-  const elements = QWIK_UNTYPED_ATTRIBUTES[html];
-  if (!elements) {
-    return false;
-  }
-  return "on" in elements ? elements.on.includes(tag) : !elements.except.includes(tag);
+	if (namespace !== "html") {
+		return false;
+	}
+	const html = name.toLowerCase();
+	if (html === "contenteditable") {
+		return typeof value === "string" && !QWIK_CONTENT_EDITABLE.has(value);
+	}
+	const elements = QWIK_UNTYPED_ATTRIBUTES[html];
+	if (!elements) {
+		return false;
+	}
+	return "on" in elements ? elements.on.includes(tag) : !elements.except.includes(tag);
 }
 
 /** Where an element is: HTML, or a foreign subtree whose attribute names are case-sensitive. */
@@ -155,77 +155,77 @@ export type Namespace = "html" | "svg" | "math";
  * Qwik's camel-cased attribute names: SVG and MathML keep theirs.
  */
 export function elementNamespaces(root: ElementNode | FragmentNode): Map<ElementNode, Namespace> {
-  const namespaces = new Map<ElementNode, Namespace>();
-  const visit = (node: RenderNode | FragmentNode, parent: Namespace): void => {
-    switch (node.kind) {
-      case "Element": {
-        const namespace =
-          parent === "html" && (node.tag === "svg" || node.tag === "math") ? node.tag : parent;
-        namespaces.set(node, namespace);
-        const inner = namespace === "svg" && node.tag === "foreignObject" ? "html" : namespace;
-        for (const child of node.children) {
-          visit(child, inner);
-        }
-        return;
-      }
-      case "Fragment":
-        for (const child of node.children) {
-          visit(child, parent);
-        }
-        return;
-      case "If":
-        for (const branch of node.branches) {
-          for (const child of branch.children) {
-            visit(child, parent);
-          }
-        }
-        return;
-      case "For":
-        visit(node.body, parent);
-        return;
-      case "Text":
-      case "Interpolation":
-        return;
-      // A fill renders in the child's HTML: the analyser keeps components out of SVG (M8).
-      case "Component":
-        for (const fill of node.fills) {
-          for (const child of fill.children) {
-            visit(child, "html");
-          }
-        }
-        return;
-      case "SlotOutlet":
-        for (const child of node.fallback) {
-          visit(child, parent);
-        }
-        return;
-      case "Dynamic":
-        for (const child of node.children) {
-          visit(child, parent);
-        }
-        for (const fill of node.fills ?? []) {
-          for (const child of fill.children) {
-            visit(child, "html");
-          }
-        }
-        return;
-      case "Teleport":
-        for (const child of node.children) {
-          visit(child, "html");
-        }
-        return;
-      // A transition's child renders in its place (ADR-0100).
-      case "Transition":
-        for (const child of node.children) {
-          visit(child, parent);
-        }
-        return;
-      default:
-        return node satisfies never;
-    }
-  };
-  visit(root, "html");
-  return namespaces;
+	const namespaces = new Map<ElementNode, Namespace>();
+	const visit = (node: RenderNode | FragmentNode, parent: Namespace): void => {
+		switch (node.kind) {
+			case "Element": {
+				const namespace =
+					parent === "html" && (node.tag === "svg" || node.tag === "math") ? node.tag : parent;
+				namespaces.set(node, namespace);
+				const inner = namespace === "svg" && node.tag === "foreignObject" ? "html" : namespace;
+				for (const child of node.children) {
+					visit(child, inner);
+				}
+				return;
+			}
+			case "Fragment":
+				for (const child of node.children) {
+					visit(child, parent);
+				}
+				return;
+			case "If":
+				for (const branch of node.branches) {
+					for (const child of branch.children) {
+						visit(child, parent);
+					}
+				}
+				return;
+			case "For":
+				visit(node.body, parent);
+				return;
+			case "Text":
+			case "Interpolation":
+				return;
+			// A fill renders in the child's HTML: the analyser keeps components out of SVG (M8).
+			case "Component":
+				for (const fill of node.fills) {
+					for (const child of fill.children) {
+						visit(child, "html");
+					}
+				}
+				return;
+			case "SlotOutlet":
+				for (const child of node.fallback) {
+					visit(child, parent);
+				}
+				return;
+			case "Dynamic":
+				for (const child of node.children) {
+					visit(child, parent);
+				}
+				for (const fill of node.fills ?? []) {
+					for (const child of fill.children) {
+						visit(child, "html");
+					}
+				}
+				return;
+			case "Teleport":
+				for (const child of node.children) {
+					visit(child, "html");
+				}
+				return;
+			// A transition's child renders in its place (ADR-0100).
+			case "Transition":
+				for (const child of node.children) {
+					visit(child, parent);
+				}
+				return;
+			default:
+				return node satisfies never;
+		}
+	};
+	visit(root, "html");
+	return namespaces;
 }
 
 /**
@@ -233,7 +233,7 @@ export function elementNamespaces(root: ElementNode | FragmentNode): Map<Element
  * `readOnly` in the source is `readonly`, which Qwik spells `readOnly` again.
  */
 export function qwikAttributeName(name: string, namespace: Namespace): string {
-  return namespace === "html" ? (QWIK_ATTRIBUTE_NAMES[name.toLowerCase()] ?? name) : name;
+	return namespace === "html" ? (QWIK_ATTRIBUTE_NAMES[name.toLowerCase()] ?? name) : name;
 }
 
 /**
@@ -250,27 +250,27 @@ export function qwikAttributeName(name: string, namespace: Namespace): string {
  *   serialises a boolean on them back to `"true"` or `"false"`.
  */
 export function qwikStaticValue(
-  tag: string,
-  namespace: Namespace,
-  name: string,
-  value: string | true,
+	tag: string,
+	namespace: Namespace,
+	name: string,
+	value: string | true,
 ): string | true | { code: string } {
-  const html = namespace === "html" ? name.toLowerCase() : name;
-  if (namespace === "html" && QWIK_BOOLEAN_ATTRIBUTES.has(html)) {
-    const untilFound = html === "hidden" && value !== true && value.toLowerCase() === "until-found";
-    return untilFound ? value : true;
-  }
-  if (value === true) {
-    return "";
-  }
-  const numberTyped = isNumberTypedAttribute(namespace === "html" ? tag : "", html);
-  if (numberTyped && String(Number(value)) === value) {
-    return { code: value };
-  }
-  if (namespace === "html" && QWIK_BOOLEAN_TYPED.has(html) && /^(?:true|false)$/.test(value)) {
-    return { code: value };
-  }
-  return value;
+	const html = namespace === "html" ? name.toLowerCase() : name;
+	if (namespace === "html" && QWIK_BOOLEAN_ATTRIBUTES.has(html)) {
+		const untilFound = html === "hidden" && value !== true && value.toLowerCase() === "until-found";
+		return untilFound ? value : true;
+	}
+	if (value === true) {
+		return "";
+	}
+	const numberTyped = isNumberTypedAttribute(namespace === "html" ? tag : "", html);
+	if (numberTyped && String(Number(value)) === value) {
+		return { code: value };
+	}
+	if (namespace === "html" && QWIK_BOOLEAN_TYPED.has(html) && /^(?:true|false)$/.test(value)) {
+		return { code: value };
+	}
+	return value;
 }
 
 /** Enumerated attributes Qwik types as `boolean` (from the DOM's `spellcheck` and `draggable`). */

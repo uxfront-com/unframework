@@ -21,61 +21,61 @@ import { PREVIEW_HOST } from "./servers.ts";
  * static preview, where every frame shares the shell's origin.
  */
 export interface ShellData {
-  frames: Array<{ target: string; src: string }>;
-  /** In the catalogue's order, with the metadata of ADR-0110. */
-  examples: Array<{
-    key: string;
-    id: string;
-    category: Array<string>;
-    title: string;
-    description?: string;
-    order?: number;
-    /** Its controls, by component (ADR-0113): none for one the preview serves as written. */
-    controls: Array<ExampleControlGroup>;
-  }>;
-  components: Array<{
-    key: string;
-    id: string;
-    name: string;
-    controls: PreviewCatalogue["components"][number]["controls"];
-    uncontrolled: PreviewCatalogue["components"][number]["uncontrolled"];
-  }>;
+	frames: Array<{ target: string; src: string }>;
+	/** In the catalogue's order, with the metadata of ADR-0110. */
+	examples: Array<{
+		key: string;
+		id: string;
+		category: Array<string>;
+		title: string;
+		description?: string;
+		order?: number;
+		/** Its controls, by component (ADR-0113): none for one the preview serves as written. */
+		controls: Array<ExampleControlGroup>;
+	}>;
+	components: Array<{
+		key: string;
+		id: string;
+		name: string;
+		controls: PreviewCatalogue["components"][number]["controls"];
+		uncontrolled: PreviewCatalogue["components"][number]["uncontrolled"];
+	}>;
 }
 
 /** The shell's data, from the catalogue and the frame pages' URLs. */
 export function shellData(
-  catalogue: PreviewCatalogue,
-  frames: ReadonlyArray<{ target: string; src: string }>,
+	catalogue: PreviewCatalogue,
+	frames: ReadonlyArray<{ target: string; src: string }>,
 ): ShellData {
-  return {
-    frames: frames.map(({ target, src }) => ({ target, src })),
-    examples: catalogue.examples.map(
-      ({ key, id, category, title, description, order, controls }) => ({
-        key,
-        id,
-        category,
-        title,
-        ...(description === undefined ? {} : { description }),
-        ...(order === undefined ? {} : { order }),
-        controls,
-      }),
-    ),
-    components: catalogue.components.map(({ key, id, name, controls, uncontrolled }) => ({
-      key,
-      id,
-      name,
-      controls,
-      uncontrolled,
-    })),
-  };
+	return {
+		frames: frames.map(({ target, src }) => ({ target, src })),
+		examples: catalogue.examples.map(
+			({ key, id, category, title, description, order, controls }) => ({
+				key,
+				id,
+				category,
+				title,
+				...(description === undefined ? {} : { description }),
+				...(order === undefined ? {} : { order }),
+				controls,
+			}),
+		),
+		components: catalogue.components.map(({ key, id, name, controls, uncontrolled }) => ({
+			key,
+			id,
+			name,
+			controls,
+			uncontrolled,
+		})),
+	};
 }
 
 /** JSON safe inside a `<script>` element: no `</script>` or `<!--` can close it. */
 export function scriptJson(value: unknown): string {
-  return JSON.stringify(value)
-    .replaceAll("<", String.raw`\u003c`)
-    .replaceAll("\u2028", String.raw`\u2028`)
-    .replaceAll("\u2029", String.raw`\u2029`);
+	return JSON.stringify(value)
+		.replaceAll("<", String.raw`\u003c`)
+		.replaceAll("\u2028", String.raw`\u2028`)
+		.replaceAll("\u2029", String.raw`\u2029`);
 }
 
 /** Where the shell keeps the reader's theme, when they chose one over their system's. */
@@ -213,16 +213,16 @@ dialog button { padding: 3px 10px; border: 1px solid var(--line-strong); border-
 
 /** The shell page. */
 export function shellPage(data: ShellData): string {
-  // A preview of one target opens on the view that fills the canvas, written into the page so
-  // nothing moves once its script runs, and has no switch, since a choice of one is none.
-  const single = data.frames.length === 1;
-  const constants = {
-    message: PREVIEW_MESSAGE,
-    themeKey: THEME_KEY,
-    embed: { file: EMBED_FILE, example: EXAMPLE_PARAM, target: TARGET_PARAM },
-  };
-  const chevron = `<svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  return `<!doctype html>
+	// A preview of one target opens on the view that fills the canvas, written into the page so
+	// nothing moves once its script runs, and has no switch, since a choice of one is none.
+	const single = data.frames.length === 1;
+	const constants = {
+		message: PREVIEW_MESSAGE,
+		themeKey: THEME_KEY,
+		embed: { file: EMBED_FILE, example: EXAMPLE_PARAM, target: TARGET_PARAM },
+	};
+	const chevron = `<svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+	return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -306,535 +306,535 @@ export function shellPage(data: ShellData): string {
  * (ADR-0110) and the components.
  */
 function shellScript(
-  constants: {
-    message: string;
-    themeKey: string;
-    embed: { file: string; example: string; target: string };
-  },
-  makeKit: () => ControlKit,
+	constants: {
+		message: string;
+		themeKey: string;
+		embed: { file: string; example: string; target: string };
+	},
+	makeKit: () => ControlKit,
 ): void {
-  type Control = ShellData["components"][number]["controls"][number];
-  type Component = ShellData["components"][number];
-  type Example = ShellData["examples"][number];
-  const data = JSON.parse(document.getElementById("uf-preview-data")!.textContent) as ShellData;
-  const $ = <T extends Element>(selector: string) => document.querySelector<T>(selector)!;
-  const filter = $<HTMLInputElement>("#uf-filter");
-  const trees = [...document.querySelectorAll<HTMLElement>("[data-uf-tree]")];
-  const empty = $<HTMLElement>("[data-uf-empty]");
-  const trail = $<HTMLElement>("[data-uf-trail]");
-  const heading = $<HTMLElement>("[data-uf-selection]");
-  const description = $<HTMLElement>("[data-uf-description]");
-  const view = $<HTMLFieldSetElement>("[data-uf-view]");
-  const grid = $<HTMLElement>(".frames");
-  const form = $<HTMLFormElement>("[data-uf-controls]");
-  const exampleBox = $<HTMLElement>("[data-uf-example-controls]");
-  const noControls = $<HTMLElement>("[data-uf-no-controls]");
-  const uncontrolled = $<HTMLElement>("[data-uf-uncontrolled]");
-  const uncontrolledLabel = $<HTMLElement>("#uf-uncontrolled-label");
-  const themeButton = $<HTMLButtonElement>("[data-uf-theme]");
-  const dialog = $<HTMLDialogElement>("dialog");
-  const chevron = $<HTMLTemplateElement>("#uf-chevron");
-  // The fields and the props rule, shared with an embed's controls (ADR-0116).
-  const kit = makeKit();
-  let selected: string | undefined;
-  // The component whose controls the form shows: one listener reads it on each input.
-  let current: Component | undefined;
-  // The example whose controls the groups show (ADR-0113).
-  let currentExample: Example | undefined;
-  let props: Record<string, unknown> = {};
-  let seq = 0;
+	type Control = ShellData["components"][number]["controls"][number];
+	type Component = ShellData["components"][number];
+	type Example = ShellData["examples"][number];
+	const data = JSON.parse(document.getElementById("uf-preview-data")!.textContent) as ShellData;
+	const $ = <T extends Element>(selector: string) => document.querySelector<T>(selector)!;
+	const filter = $<HTMLInputElement>("#uf-filter");
+	const trees = [...document.querySelectorAll<HTMLElement>("[data-uf-tree]")];
+	const empty = $<HTMLElement>("[data-uf-empty]");
+	const trail = $<HTMLElement>("[data-uf-trail]");
+	const heading = $<HTMLElement>("[data-uf-selection]");
+	const description = $<HTMLElement>("[data-uf-description]");
+	const view = $<HTMLFieldSetElement>("[data-uf-view]");
+	const grid = $<HTMLElement>(".frames");
+	const form = $<HTMLFormElement>("[data-uf-controls]");
+	const exampleBox = $<HTMLElement>("[data-uf-example-controls]");
+	const noControls = $<HTMLElement>("[data-uf-no-controls]");
+	const uncontrolled = $<HTMLElement>("[data-uf-uncontrolled]");
+	const uncontrolledLabel = $<HTMLElement>("#uf-uncontrolled-label");
+	const themeButton = $<HTMLButtonElement>("[data-uf-theme]");
+	const dialog = $<HTMLDialogElement>("dialog");
+	const chevron = $<HTMLTemplateElement>("#uf-chevron");
+	// The fields and the props rule, shared with an embed's controls (ADR-0116).
+	const kit = makeKit();
+	let selected: string | undefined;
+	// The component whose controls the form shows: one listener reads it on each input.
+	let current: Component | undefined;
+	// The example whose controls the groups show (ADR-0113).
+	let currentExample: Example | undefined;
+	let props: Record<string, unknown> = {};
+	let seq = 0;
 
-  // Theme: the system's, until the reader picks one, which the page keeps.
-  const dark = matchMedia("(prefers-color-scheme: dark)");
-  const stored = (): string | null => {
-    try {
-      return localStorage.getItem(constants.themeKey);
-    } catch {
-      return null;
-    }
-  };
-  const applyTheme = () => {
-    const choice = stored();
-    if (choice === "light" || choice === "dark") {
-      document.documentElement.dataset.theme = choice;
-    } else {
-      delete document.documentElement.dataset.theme;
-    }
-    const isDark = choice ? choice === "dark" : dark.matches;
-    themeButton.setAttribute("aria-pressed", String(isDark));
-  };
-  themeButton.addEventListener("click", () => {
-    const next = themeButton.getAttribute("aria-pressed") === "true" ? "light" : "dark";
-    try {
-      localStorage.setItem(constants.themeKey, next);
-    } catch {
-      // Storage may be off: the choice then holds until the page reloads.
-    }
-    document.documentElement.dataset.theme = next;
-    themeButton.setAttribute("aria-pressed", String(next === "dark"));
-  });
-  dark.addEventListener("change", applyTheme);
-  applyTheme();
+	// Theme: the system's, until the reader picks one, which the page keeps.
+	const dark = matchMedia("(prefers-color-scheme: dark)");
+	const stored = (): string | null => {
+		try {
+			return localStorage.getItem(constants.themeKey);
+		} catch {
+			return null;
+		}
+	};
+	const applyTheme = () => {
+		const choice = stored();
+		if (choice === "light" || choice === "dark") {
+			document.documentElement.dataset.theme = choice;
+		} else {
+			delete document.documentElement.dataset.theme;
+		}
+		const isDark = choice ? choice === "dark" : dark.matches;
+		themeButton.setAttribute("aria-pressed", String(isDark));
+	};
+	themeButton.addEventListener("click", () => {
+		const next = themeButton.getAttribute("aria-pressed") === "true" ? "light" : "dark";
+		try {
+			localStorage.setItem(constants.themeKey, next);
+		} catch {
+			// Storage may be off: the choice then holds until the page reloads.
+		}
+		document.documentElement.dataset.theme = next;
+		themeButton.setAttribute("aria-pressed", String(next === "dark"));
+	});
+	dark.addEventListener("change", applyTheme);
+	applyTheme();
 
-  // Frames, and the choice of all targets or one.
-  const frames = data.frames.map(({ target, src }) => {
-    // The frame's own origin, to which the shell posts and from which it takes answers.
-    const url = new URL(src, location.href);
-    const origin = url.origin;
-    const figure = document.createElement("figure");
-    figure.dataset.target = target;
-    const caption = document.createElement("figcaption");
-    const label = document.createElement("span");
-    label.textContent = target;
-    // The example's own URL on this target (ADR-0112), relative to the shell: \`select\` sets it.
-    const link = document.createElement("a");
-    link.textContent = "Open";
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.hidden = true;
-    const status = document.createElement("output");
-    caption.append(label, link, status);
-    const iframe = document.createElement("iframe");
-    iframe.title = `${target} preview`;
-    url.searchParams.set("shell", location.origin);
-    iframe.src = url.href;
-    figure.append(caption, iframe);
-    grid.append(figure);
-    return { target, origin, iframe, link, status, figure };
-  });
-  // One target has no choice to make: the page already shows it in the one-target view.
-  const choices = frames.length > 1 ? ["all", ...frames.map((each) => each.target)] : [];
-  for (const value of choices) {
-    const label = document.createElement("label");
-    const radio = document.createElement("input");
-    radio.type = "radio";
-    radio.name = "uf-view";
-    radio.value = value;
-    radio.checked = value === "all";
-    label.append(radio, value === "all" ? "All" : value);
-    view.append(label);
-  }
-  view.addEventListener("change", (event) => {
-    const value = (event.target as HTMLInputElement).value;
-    grid.dataset.view = value === "all" ? "all" : "one";
-    for (const frame of frames) {
-      frame.figure.hidden = value !== "all" && frame.target !== value;
-    }
-  });
+	// Frames, and the choice of all targets or one.
+	const frames = data.frames.map(({ target, src }) => {
+		// The frame's own origin, to which the shell posts and from which it takes answers.
+		const url = new URL(src, location.href);
+		const origin = url.origin;
+		const figure = document.createElement("figure");
+		figure.dataset.target = target;
+		const caption = document.createElement("figcaption");
+		const label = document.createElement("span");
+		label.textContent = target;
+		// The example's own URL on this target (ADR-0112), relative to the shell: \`select\` sets it.
+		const link = document.createElement("a");
+		link.textContent = "Open";
+		link.target = "_blank";
+		link.rel = "noopener";
+		link.hidden = true;
+		const status = document.createElement("output");
+		caption.append(label, link, status);
+		const iframe = document.createElement("iframe");
+		iframe.title = `${target} preview`;
+		url.searchParams.set("shell", location.origin);
+		iframe.src = url.href;
+		figure.append(caption, iframe);
+		grid.append(figure);
+		return { target, origin, iframe, link, status, figure };
+	});
+	// One target has no choice to make: the page already shows it in the one-target view.
+	const choices = frames.length > 1 ? ["all", ...frames.map((each) => each.target)] : [];
+	for (const value of choices) {
+		const label = document.createElement("label");
+		const radio = document.createElement("input");
+		radio.type = "radio";
+		radio.name = "uf-view";
+		radio.value = value;
+		radio.checked = value === "all";
+		label.append(radio, value === "all" ? "All" : value);
+		view.append(label);
+	}
+	view.addEventListener("change", (event) => {
+		const value = (event.target as HTMLInputElement).value;
+		grid.dataset.view = value === "all" ? "all" : "one";
+		for (const frame of frames) {
+			frame.figure.hidden = value !== "all" && frame.target !== value;
+		}
+	});
 
-  const send = (frame: (typeof frames)[number]) => {
-    if (selected === undefined) {
-      return;
-    }
-    frame.status.dataset.state = "rendering";
-    frame.status.textContent = "rendering…";
-    frame.iframe.contentWindow?.postMessage(
-      { type: constants.message, kind: "render", seq, entry: selected, props },
-      frame.origin,
-    );
-  };
-  const sendAll = () => {
-    seq += 1;
-    for (const frame of frames) {
-      send(frame);
-    }
-  };
+	const send = (frame: (typeof frames)[number]) => {
+		if (selected === undefined) {
+			return;
+		}
+		frame.status.dataset.state = "rendering";
+		frame.status.textContent = "rendering…";
+		frame.iframe.contentWindow?.postMessage(
+			{ type: constants.message, kind: "render", seq, entry: selected, props },
+			frame.origin,
+		);
+	};
+	const sendAll = () => {
+		seq += 1;
+		for (const frame of frames) {
+			send(frame);
+		}
+	};
 
-  window.addEventListener("message", (event) => {
-    const frame = frames.find(
-      (each) => each.origin === event.origin && each.iframe.contentWindow === event.source,
-    );
-    const message = event.data as {
-      type?: unknown;
-      kind?: unknown;
-      seq?: unknown;
-      message?: unknown;
-    };
-    if (!frame || message?.type !== constants.message) {
-      return;
-    }
-    if (message.kind === "ready") {
-      send(frame);
-    }
-    if ((message.kind === "rendered" || message.kind === "failed") && message.seq === seq) {
-      frame.status.dataset.state = message.kind;
-      frame.status.textContent =
-        message.kind === "rendered" ? "rendered" : `failed: ${String(message.message)}`;
-    }
-  });
+	window.addEventListener("message", (event) => {
+		const frame = frames.find(
+			(each) => each.origin === event.origin && each.iframe.contentWindow === event.source,
+		);
+		const message = event.data as {
+			type?: unknown;
+			kind?: unknown;
+			seq?: unknown;
+			message?: unknown;
+		};
+		if (!frame || message?.type !== constants.message) {
+			return;
+		}
+		if (message.kind === "ready") {
+			send(frame);
+		}
+		if ((message.kind === "rendered" || message.kind === "failed") && message.seq === seq) {
+			frame.status.dataset.state = message.kind;
+			frame.status.textContent =
+				message.kind === "rendered" ? "rendered" : `failed: ${String(message.message)}`;
+		}
+	});
 
-  // Controls.
-  const propsOf = (controls: ReadonlyArray<Control>): Record<string, unknown> =>
-    kit.componentProps(
-      controls,
-      (name) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement,
-    );
-  const exampleProps = (example: Example): Record<string, unknown> =>
-    kit.exampleProps(
-      example.controls.flatMap((group) => group.controls),
-      (key) => exampleBox.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${key}"]`)!,
-    );
+	// Controls.
+	const propsOf = (controls: ReadonlyArray<Control>): Record<string, unknown> =>
+		kit.componentProps(
+			controls,
+			(name) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement,
+		);
+	const exampleProps = (example: Example): Record<string, unknown> =>
+		kit.exampleProps(
+			example.controls.flatMap((group) => group.controls),
+			(key) => exampleBox.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${key}"]`)!,
+		);
 
-  form.addEventListener("input", () => {
-    if (!current) {
-      return;
-    }
-    props = propsOf(current.controls);
-    sendAll();
-  });
-  form.addEventListener("submit", (event) => event.preventDefault());
-  exampleBox.addEventListener("input", () => {
-    if (!currentExample) {
-      return;
-    }
-    props = exampleProps(currentExample);
-    sendAll();
-  });
-  exampleBox.addEventListener("submit", (event) => event.preventDefault());
+	form.addEventListener("input", () => {
+		if (!current) {
+			return;
+		}
+		props = propsOf(current.controls);
+		sendAll();
+	});
+	form.addEventListener("submit", (event) => event.preventDefault());
+	exampleBox.addEventListener("input", () => {
+		if (!currentExample) {
+			return;
+		}
+		props = exampleProps(currentExample);
+		sendAll();
+	});
+	exampleBox.addEventListener("submit", (event) => event.preventDefault());
 
-  // An example's controls (ADR-0113): one group per component it renders, headed by the
-  // component's name, and its id too where two groups share a name.
-  const showExampleControls = (example: Example | undefined) => {
-    currentExample = example;
-    exampleBox.replaceChildren();
-    const groups = example?.controls ?? [];
-    exampleBox.hidden = !groups.length;
-    if (!example) {
-      return;
-    }
-    noControls.hidden = groups.length > 0;
-    noControls.textContent = "This example has no controls.";
-    exampleBox.append(...kit.exampleGroups(groups));
-  };
+	// An example's controls (ADR-0113): one group per component it renders, headed by the
+	// component's name, and its id too where two groups share a name.
+	const showExampleControls = (example: Example | undefined) => {
+		currentExample = example;
+		exampleBox.replaceChildren();
+		const groups = example?.controls ?? [];
+		exampleBox.hidden = !groups.length;
+		if (!example) {
+			return;
+		}
+		noControls.hidden = groups.length > 0;
+		noControls.textContent = "This example has no controls.";
+		exampleBox.append(...kit.exampleGroups(groups));
+	};
 
-  const showControls = (component: Component | undefined) => {
-    current = component;
-    form.replaceChildren();
-    uncontrolled.replaceChildren();
-    form.hidden = !component?.controls.length;
-    uncontrolled.hidden = uncontrolledLabel.hidden = !component?.uncontrolled.length;
-    // The message depends on the selection, so it is set on every call: a component
-    // with no props must not leave its text behind for the example selected next.
-    const bare =
-      Boolean(component) && !component?.controls.length && !component?.uncontrolled.length;
-    noControls.hidden = Boolean(component) && !bare;
-    noControls.textContent = bare
-      ? "This component has no props."
-      : "Select an example or a component to set its props.";
-    if (!component) {
-      return;
-    }
-    for (const control of component.controls) {
-      form.append(...kit.controlField(control, control.name, `uf-prop-${control.name}`));
-    }
-    for (const each of component.uncontrolled) {
-      const item = document.createElement("li");
-      const name = document.createElement("code");
-      name.textContent = each.name;
-      item.append(name, `: ${each.reason}.`);
-      uncontrolled.append(item);
-    }
-  };
+	const showControls = (component: Component | undefined) => {
+		current = component;
+		form.replaceChildren();
+		uncontrolled.replaceChildren();
+		form.hidden = !component?.controls.length;
+		uncontrolled.hidden = uncontrolledLabel.hidden = !component?.uncontrolled.length;
+		// The message depends on the selection, so it is set on every call: a component
+		// with no props must not leave its text behind for the example selected next.
+		const bare =
+			Boolean(component) && !component?.controls.length && !component?.uncontrolled.length;
+		noControls.hidden = Boolean(component) && !bare;
+		noControls.textContent = bare
+			? "This component has no props."
+			: "Select an example or a component to set its props.";
+		if (!component) {
+			return;
+		}
+		for (const control of component.controls) {
+			form.append(...kit.controlField(control, control.name, `uf-prop-${control.name}`));
+		}
+		for (const each of component.uncontrolled) {
+			const item = document.createElement("li");
+			const name = document.createElement("code");
+			name.textContent = each.name;
+			item.append(name, `: ${each.reason}.`);
+			uncontrolled.append(item);
+		}
+	};
 
-  // The trees. Each item is a `treeitem`; a group holds its children in a `group` list.
-  interface Item {
-    element: HTMLElement;
-    parent: Item | undefined;
-    children: Array<Item>;
-    key?: string;
-    text: string;
-  }
-  const items = new Map<HTMLElement, Item>();
-  const entries = new Map<string, HTMLElement>();
-  let idCount = 0;
-  const makeItem = (
-    list: HTMLElement,
-    parent: Item | undefined,
-    depth: number,
-    label: string,
-    key?: string,
-  ): Item => {
-    const element = document.createElement("li");
-    element.setAttribute("role", "treeitem");
-    element.tabIndex = -1;
-    const row = document.createElement("div");
-    row.className = "row";
-    row.style.setProperty("--depth", String(depth));
-    row.append(chevron.content.cloneNode(true));
-    const text = document.createElement("span");
-    text.textContent = label;
-    text.title = label;
-    row.append(text);
-    element.append(row);
-    if (key === undefined) {
-      // A group's name is its label alone, not its children's text.
-      text.id = `uf-group-${(idCount += 1)}`;
-      element.setAttribute("aria-labelledby", text.id);
-      element.setAttribute("aria-expanded", "true");
-      const group = document.createElement("ul");
-      group.setAttribute("role", "group");
-      element.append(group);
-    } else {
-      element.classList.add("leaf");
-      element.dataset.entry = key;
-      element.setAttribute("aria-selected", "false");
-      entries.set(key, element);
-    }
-    list.append(element);
-    const item: Item = { element, parent, children: [], key, text: label.toLowerCase() };
-    parent?.children.push(item);
-    items.set(element, item);
-    return item;
-  };
-  const listOf = (item: Item | undefined, tree: HTMLElement): HTMLElement =>
-    item ? item.element.querySelector<HTMLElement>(":scope > [role='group']")! : tree;
+	// The trees. Each item is a `treeitem`; a group holds its children in a `group` list.
+	interface Item {
+		element: HTMLElement;
+		parent: Item | undefined;
+		children: Array<Item>;
+		key?: string;
+		text: string;
+	}
+	const items = new Map<HTMLElement, Item>();
+	const entries = new Map<string, HTMLElement>();
+	let idCount = 0;
+	const makeItem = (
+		list: HTMLElement,
+		parent: Item | undefined,
+		depth: number,
+		label: string,
+		key?: string,
+	): Item => {
+		const element = document.createElement("li");
+		element.setAttribute("role", "treeitem");
+		element.tabIndex = -1;
+		const row = document.createElement("div");
+		row.className = "row";
+		row.style.setProperty("--depth", String(depth));
+		row.append(chevron.content.cloneNode(true));
+		const text = document.createElement("span");
+		text.textContent = label;
+		text.title = label;
+		row.append(text);
+		element.append(row);
+		if (key === undefined) {
+			// A group's name is its label alone, not its children's text.
+			text.id = `uf-group-${(idCount += 1)}`;
+			element.setAttribute("aria-labelledby", text.id);
+			element.setAttribute("aria-expanded", "true");
+			const group = document.createElement("ul");
+			group.setAttribute("role", "group");
+			element.append(group);
+		} else {
+			element.classList.add("leaf");
+			element.dataset.entry = key;
+			element.setAttribute("aria-selected", "false");
+			entries.set(key, element);
+		}
+		list.append(element);
+		const item: Item = { element, parent, children: [], key, text: label.toLowerCase() };
+		parent?.children.push(item);
+		items.set(element, item);
+		return item;
+	};
+	const listOf = (item: Item | undefined, tree: HTMLElement): HTMLElement =>
+		item ? item.element.querySelector<HTMLElement>(":scope > [role='group']")! : tree;
 
-  // Examples by category, each group where its first example puts it, the examples in the
-  // catalogue's order (ADR-0110).
-  const [exampleTree, componentTree] = trees as [HTMLElement, HTMLElement];
-  const groups = new Map<string, Item>();
-  for (const { key, category, title } of data.examples) {
-    let parent: Item | undefined;
-    category.forEach((segment, index) => {
-      const path = category.slice(0, index + 1).join("\u0000");
-      let group = groups.get(path);
-      if (!group) {
-        group = makeItem(listOf(parent, exampleTree), parent, index, segment);
-        groups.set(path, group);
-      }
-      parent = group;
-    });
-    makeItem(listOf(parent, exampleTree), parent, category.length, title, key);
-  }
-  for (const { key, id } of data.components) {
-    makeItem(componentTree, undefined, 0, id, key);
-  }
-  for (const tree of trees) {
-    tree.previousElementSibling!.toggleAttribute("hidden", !tree.children.length);
-  }
-  for (const tree of trees) {
-    tree.hidden = !tree.children.length;
-  }
+	// Examples by category, each group where its first example puts it, the examples in the
+	// catalogue's order (ADR-0110).
+	const [exampleTree, componentTree] = trees as [HTMLElement, HTMLElement];
+	const groups = new Map<string, Item>();
+	for (const { key, category, title } of data.examples) {
+		let parent: Item | undefined;
+		category.forEach((segment, index) => {
+			const path = category.slice(0, index + 1).join("\u0000");
+			let group = groups.get(path);
+			if (!group) {
+				group = makeItem(listOf(parent, exampleTree), parent, index, segment);
+				groups.set(path, group);
+			}
+			parent = group;
+		});
+		makeItem(listOf(parent, exampleTree), parent, category.length, title, key);
+	}
+	for (const { key, id } of data.components) {
+		makeItem(componentTree, undefined, 0, id, key);
+	}
+	for (const tree of trees) {
+		tree.previousElementSibling!.toggleAttribute("hidden", !tree.children.length);
+	}
+	for (const tree of trees) {
+		tree.hidden = !tree.children.length;
+	}
 
-  const visible = (element: HTMLElement): boolean => {
-    for (let item = items.get(element); item; item = item.parent) {
-      if (item.element.hidden) {
-        return false;
-      }
-      if (item !== items.get(element) && item.element.getAttribute("aria-expanded") === "false") {
-        return false;
-      }
-    }
-    return true;
-  };
-  const visibleItems = (tree: HTMLElement) =>
-    [...tree.querySelectorAll<HTMLElement>("[role='treeitem']")].filter(visible);
-  // One tab stop per tree: the selected item, or else its first visible one.
-  const rove = (tree: HTMLElement, focus?: HTMLElement) => {
-    const all = tree.querySelectorAll<HTMLElement>("[role='treeitem']");
-    const target =
-      focus ??
-      [...all].find((each) => each.getAttribute("aria-selected") === "true" && visible(each)) ??
-      visibleItems(tree)[0];
-    for (const each of all) {
-      each.tabIndex = each === target ? 0 : -1;
-    }
-  };
-  const moveTo = (element: HTMLElement | undefined) => {
-    if (!element) {
-      return;
-    }
-    rove(element.closest<HTMLElement>("[role='tree']")!, element);
-    element.focus();
-  };
-  const setExpanded = (item: Item, open: boolean) => {
-    item.element.setAttribute("aria-expanded", String(open));
-  };
+	const visible = (element: HTMLElement): boolean => {
+		for (let item = items.get(element); item; item = item.parent) {
+			if (item.element.hidden) {
+				return false;
+			}
+			if (item !== items.get(element) && item.element.getAttribute("aria-expanded") === "false") {
+				return false;
+			}
+		}
+		return true;
+	};
+	const visibleItems = (tree: HTMLElement) =>
+		[...tree.querySelectorAll<HTMLElement>("[role='treeitem']")].filter(visible);
+	// One tab stop per tree: the selected item, or else its first visible one.
+	const rove = (tree: HTMLElement, focus?: HTMLElement) => {
+		const all = tree.querySelectorAll<HTMLElement>("[role='treeitem']");
+		const target =
+			focus ??
+			[...all].find((each) => each.getAttribute("aria-selected") === "true" && visible(each)) ??
+			visibleItems(tree)[0];
+		for (const each of all) {
+			each.tabIndex = each === target ? 0 : -1;
+		}
+	};
+	const moveTo = (element: HTMLElement | undefined) => {
+		if (!element) {
+			return;
+		}
+		rove(element.closest<HTMLElement>("[role='tree']")!, element);
+		element.focus();
+	};
+	const setExpanded = (item: Item, open: boolean) => {
+		item.element.setAttribute("aria-expanded", String(open));
+	};
 
-  for (const tree of trees) {
-    tree.addEventListener("click", (event) => {
-      const element = (event.target as Element).closest<HTMLElement>("[role='treeitem']");
-      const item = element && items.get(element);
-      if (!item) {
-        return;
-      }
-      event.stopPropagation();
-      if (item.key) {
-        select(item.key);
-      } else {
-        setExpanded(item, item.element.getAttribute("aria-expanded") === "false");
-      }
-      moveTo(item.element);
-    });
-    tree.addEventListener("keydown", (event) => {
-      const element = (event.target as Element).closest<HTMLElement>("[role='treeitem']");
-      const item = element && items.get(element);
-      if (!item || event.altKey || event.ctrlKey || event.metaKey) {
-        return;
-      }
-      const list = visibleItems(tree);
-      const index = list.indexOf(item.element);
-      const expanded = item.element.getAttribute("aria-expanded");
-      let handled = true;
-      if (event.key === "ArrowDown") {
-        moveTo(list[index + 1]);
-      } else if (event.key === "ArrowUp") {
-        moveTo(list[index - 1]);
-      } else if (event.key === "Home") {
-        moveTo(list[0]);
-      } else if (event.key === "End") {
-        moveTo(list.at(-1));
-      } else if (event.key === "ArrowRight") {
-        if (expanded === "false") {
-          setExpanded(item, true);
-        } else if (expanded === "true") {
-          moveTo(item.children.find((each) => visible(each.element))?.element);
-        }
-      } else if (event.key === "ArrowLeft") {
-        if (expanded === "true") {
-          setExpanded(item, false);
-        } else {
-          moveTo(item.parent?.element);
-        }
-      } else if (event.key === "Enter" || event.key === " ") {
-        if (item.key) {
-          select(item.key);
-        } else {
-          setExpanded(item, expanded === "false");
-        }
-      } else {
-        handled = false;
-      }
-      if (handled) {
-        event.preventDefault();
-      }
-    });
-  }
+	for (const tree of trees) {
+		tree.addEventListener("click", (event) => {
+			const element = (event.target as Element).closest<HTMLElement>("[role='treeitem']");
+			const item = element && items.get(element);
+			if (!item) {
+				return;
+			}
+			event.stopPropagation();
+			if (item.key) {
+				select(item.key);
+			} else {
+				setExpanded(item, item.element.getAttribute("aria-expanded") === "false");
+			}
+			moveTo(item.element);
+		});
+		tree.addEventListener("keydown", (event) => {
+			const element = (event.target as Element).closest<HTMLElement>("[role='treeitem']");
+			const item = element && items.get(element);
+			if (!item || event.altKey || event.ctrlKey || event.metaKey) {
+				return;
+			}
+			const list = visibleItems(tree);
+			const index = list.indexOf(item.element);
+			const expanded = item.element.getAttribute("aria-expanded");
+			let handled = true;
+			if (event.key === "ArrowDown") {
+				moveTo(list[index + 1]);
+			} else if (event.key === "ArrowUp") {
+				moveTo(list[index - 1]);
+			} else if (event.key === "Home") {
+				moveTo(list[0]);
+			} else if (event.key === "End") {
+				moveTo(list.at(-1));
+			} else if (event.key === "ArrowRight") {
+				if (expanded === "false") {
+					setExpanded(item, true);
+				} else if (expanded === "true") {
+					moveTo(item.children.find((each) => visible(each.element))?.element);
+				}
+			} else if (event.key === "ArrowLeft") {
+				if (expanded === "true") {
+					setExpanded(item, false);
+				} else {
+					moveTo(item.parent?.element);
+				}
+			} else if (event.key === "Enter" || event.key === " ") {
+				if (item.key) {
+					select(item.key);
+				} else {
+					setExpanded(item, expanded === "false");
+				}
+			} else {
+				handled = false;
+			}
+			if (handled) {
+				event.preventDefault();
+			}
+		});
+	}
 
-  // The filter shows the items whose label, or whose group's label, holds the text.
-  const applyFilter = () => {
-    const query = filter.value.trim().toLowerCase();
-    const show = (item: Item, inherited: boolean): boolean => {
-      const match = inherited || item.text.includes(query);
-      let any = false;
-      for (const child of item.children) {
-        any = show(child, match) || any;
-      }
-      const shown = !query || match || any;
-      item.element.hidden = !shown;
-      if (query && any && !item.key) {
-        setExpanded(item, true);
-      }
-      return shown;
-    };
-    let count = 0;
-    for (const item of items.values()) {
-      if (!item.parent && show(item, false)) {
-        count += 1;
-      }
-    }
-    empty.hidden = count > 0;
-    for (const tree of trees) {
-      rove(tree);
-    }
-  };
-  filter.addEventListener("input", applyFilter);
-  filter.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && filter.value) {
-      filter.value = "";
-      applyFilter();
-      event.preventDefault();
-    } else if (event.key === "ArrowDown") {
-      const first = trees.map(visibleItems).find((each) => each.length)?.[0];
-      if (first) {
-        event.preventDefault();
-        moveTo(first);
-      }
-    }
-  });
+	// The filter shows the items whose label, or whose group's label, holds the text.
+	const applyFilter = () => {
+		const query = filter.value.trim().toLowerCase();
+		const show = (item: Item, inherited: boolean): boolean => {
+			const match = inherited || item.text.includes(query);
+			let any = false;
+			for (const child of item.children) {
+				any = show(child, match) || any;
+			}
+			const shown = !query || match || any;
+			item.element.hidden = !shown;
+			if (query && any && !item.key) {
+				setExpanded(item, true);
+			}
+			return shown;
+		};
+		let count = 0;
+		for (const item of items.values()) {
+			if (!item.parent && show(item, false)) {
+				count += 1;
+			}
+		}
+		empty.hidden = count > 0;
+		for (const tree of trees) {
+			rove(tree);
+		}
+	};
+	filter.addEventListener("input", applyFilter);
+	filter.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && filter.value) {
+			filter.value = "";
+			applyFilter();
+			event.preventDefault();
+		} else if (event.key === "ArrowDown") {
+			const first = trees.map(visibleItems).find((each) => each.length)?.[0];
+			if (first) {
+				event.preventDefault();
+				moveTo(first);
+			}
+		}
+	});
 
-  // An entry by its key, `example:<id>` or `component:<id>`: an example beside its component
-  // shares its id.
-  const select = (key: string) => {
-    const component = data.components.find((each) => each.key === key);
-    const example = data.examples.find((each) => each.key === key);
-    if (!component && !example) {
-      return;
-    }
-    selected = key;
-    trail.textContent = component ? "Components" : example!.category.join(" / ");
-    heading.textContent = component ? component.name : example!.title;
-    description.textContent = component ? component.id : (example!.description ?? example!.id);
-    description.hidden = false;
-    document.title = `${heading.textContent} · unframework preview`;
-    for (const [each, element] of entries) {
-      element.setAttribute("aria-selected", String(each === key));
-    }
-    for (const tree of trees) {
-      rove(tree);
-    }
-    showControls(component);
-    showExampleControls(example);
-    // An example opens by its own URL on each target. A component takes props, which no URL holds.
-    for (const frame of frames) {
-      frame.link.hidden = !example;
-      if (!example) {
-        continue;
-      }
-      const query = new URLSearchParams({
-        [constants.embed.example]: example.id,
-        [constants.embed.target]: frame.target,
-      });
-      frame.link.href = `${constants.embed.file}?${query}`;
-      frame.link.setAttribute(
-        "aria-label",
-        `Open ${example.title} on ${frame.target} in a new tab`,
-      );
-    }
-    // An example starts as written: every control at "(default)", so it takes no props.
-    props = component ? propsOf(component.controls) : {};
-    if (location.hash !== `#${key}`) {
-      history.replaceState(null, "", `#${key}`);
-    }
-    sendAll();
-  };
+	// An entry by its key, `example:<id>` or `component:<id>`: an example beside its component
+	// shares its id.
+	const select = (key: string) => {
+		const component = data.components.find((each) => each.key === key);
+		const example = data.examples.find((each) => each.key === key);
+		if (!component && !example) {
+			return;
+		}
+		selected = key;
+		trail.textContent = component ? "Components" : example!.category.join(" / ");
+		heading.textContent = component ? component.name : example!.title;
+		description.textContent = component ? component.id : (example!.description ?? example!.id);
+		description.hidden = false;
+		document.title = `${heading.textContent} · unframework preview`;
+		for (const [each, element] of entries) {
+			element.setAttribute("aria-selected", String(each === key));
+		}
+		for (const tree of trees) {
+			rove(tree);
+		}
+		showControls(component);
+		showExampleControls(example);
+		// An example opens by its own URL on each target. A component takes props, which no URL holds.
+		for (const frame of frames) {
+			frame.link.hidden = !example;
+			if (!example) {
+				continue;
+			}
+			const query = new URLSearchParams({
+				[constants.embed.example]: example.id,
+				[constants.embed.target]: frame.target,
+			});
+			frame.link.href = `${constants.embed.file}?${query}`;
+			frame.link.setAttribute(
+				"aria-label",
+				`Open ${example.title} on ${frame.target} in a new tab`,
+			);
+		}
+		// An example starts as written: every control at "(default)", so it takes no props.
+		props = component ? propsOf(component.controls) : {};
+		if (location.hash !== `#${key}`) {
+			history.replaceState(null, "", `#${key}`);
+		}
+		sendAll();
+	};
 
-  // Page-wide keys: `/` for the filter and `?` for the shortcuts, never while typing.
-  document.addEventListener("keydown", (event) => {
-    if (!filter.isConnected || event.defaultPrevented) {
-      return;
-    }
-    if (event.altKey || event.ctrlKey || event.metaKey) {
-      return;
-    }
-    const typing = (event.target as Element).closest?.(
-      "input, select, textarea, [contenteditable]",
-    );
-    if (typing || dialog.open) {
-      return;
-    }
-    if (event.key === "/") {
-      event.preventDefault();
-      filter.focus();
-      filter.select();
-    } else if (event.key === "?") {
-      event.preventDefault();
-      dialog.showModal();
-    }
-  });
-  $<HTMLButtonElement>("[data-uf-shortcuts]").addEventListener("click", () => dialog.showModal());
+	// Page-wide keys: `/` for the filter and `?` for the shortcuts, never while typing.
+	document.addEventListener("keydown", (event) => {
+		if (!filter.isConnected || event.defaultPrevented) {
+			return;
+		}
+		if (event.altKey || event.ctrlKey || event.metaKey) {
+			return;
+		}
+		const typing = (event.target as Element).closest?.(
+			"input, select, textarea, [contenteditable]",
+		);
+		if (typing || dialog.open) {
+			return;
+		}
+		if (event.key === "/") {
+			event.preventDefault();
+			filter.focus();
+			filter.select();
+		} else if (event.key === "?") {
+			event.preventDefault();
+			dialog.showModal();
+		}
+	});
+	$<HTMLButtonElement>("[data-uf-shortcuts]").addEventListener("click", () => dialog.showModal());
 
-  const first = decodeURIComponent(location.hash.slice(1));
-  select(entries.has(first) ? first : (data.examples[0]?.key ?? data.components[0]?.key ?? ""));
-  // A link to another entry on this page, or the browser's back and forward, changes the hash.
-  window.addEventListener("hashchange", () => select(decodeURIComponent(location.hash.slice(1))));
+	const first = decodeURIComponent(location.hash.slice(1));
+	select(entries.has(first) ? first : (data.examples[0]?.key ?? data.components[0]?.key ?? ""));
+	// A link to another entry on this page, or the browser's back and forward, changes the hash.
+	window.addEventListener("hashchange", () => select(decodeURIComponent(location.hash.slice(1))));
 }
 
 /** The running shell server. */
 export interface ShellServer {
-  url: string;
-  port: number;
-  close(): Promise<void>;
+	url: string;
+	port: number;
+	close(): Promise<void>;
 }
 
 /**
@@ -842,34 +842,34 @@ export interface ShellServer {
  * free one), and resolves once it listens.
  */
 export function startShellServer(
-  pages: { shell: string; embed: string },
-  port: number,
+	pages: { shell: string; embed: string },
+	port: number,
 ): Promise<ShellServer> {
-  const server: Server = createServer((request, response) => {
-    const path = new URL(request.url ?? "/", "http://preview").pathname;
-    const page = path === "/" ? pages.shell : path === `/${EMBED_FILE}` ? pages.embed : undefined;
-    if (page === undefined || (request.method !== "GET" && request.method !== "HEAD")) {
-      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-      response.end("Not found: the preview serves its page at /.");
-      return;
-    }
-    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    response.end(request.method === "HEAD" ? undefined : page);
-  });
-  return new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(port, PREVIEW_HOST, () => {
-      server.off("error", reject);
-      const actual = (server.address() as AddressInfo).port;
-      resolve({
-        url: `http://${PREVIEW_HOST}:${actual}/`,
-        port: actual,
-        close: () =>
-          new Promise<void>((done) => {
-            server.close(() => done());
-            server.closeAllConnections();
-          }),
-      });
-    });
-  });
+	const server: Server = createServer((request, response) => {
+		const path = new URL(request.url ?? "/", "http://preview").pathname;
+		const page = path === "/" ? pages.shell : path === `/${EMBED_FILE}` ? pages.embed : undefined;
+		if (page === undefined || (request.method !== "GET" && request.method !== "HEAD")) {
+			response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+			response.end("Not found: the preview serves its page at /.");
+			return;
+		}
+		response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+		response.end(request.method === "HEAD" ? undefined : page);
+	});
+	return new Promise((resolve, reject) => {
+		server.once("error", reject);
+		server.listen(port, PREVIEW_HOST, () => {
+			server.off("error", reject);
+			const actual = (server.address() as AddressInfo).port;
+			resolve({
+				url: `http://${PREVIEW_HOST}:${actual}/`,
+				port: actual,
+				close: () =>
+					new Promise<void>((done) => {
+						server.close(() => done());
+						server.closeAllConnections();
+					}),
+			});
+		});
+	});
 }

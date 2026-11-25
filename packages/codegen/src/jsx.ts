@@ -6,40 +6,40 @@
 // literals, spacing and comments stay as the author wrote them.
 import type * as AST from "@oxc-project/types";
 import type {
-  Binding,
-  BindingId,
-  BoundAttribute,
-  ClassAttribute,
-  Attribute,
-  ComponentAttribute,
-  ComponentNode,
-  DynamicNode,
-  ElementNode,
-  EventAttribute,
-  Expression,
-  ForNode,
-  FragmentNode,
-  Handler,
-  IfNode,
-  ListenerAttribute,
-  ModelAttribute,
-  ModelBindingAttribute,
-  PropAttribute,
-  RawHtmlAttribute,
-  DirectiveAttribute,
-  RefAttribute,
-  RestAttribute,
-  RenderNode,
-  SlotFill,
-  SlotOutletNode,
-  SpreadAttribute,
-  SpreadKey,
-  StaticAttribute,
-  StyleAttribute,
-  TeleportNode,
-  TransitionNode,
-  UfComponent,
-  UfModule,
+	Binding,
+	BindingId,
+	BoundAttribute,
+	ClassAttribute,
+	Attribute,
+	ComponentAttribute,
+	ComponentNode,
+	DynamicNode,
+	ElementNode,
+	EventAttribute,
+	Expression,
+	ForNode,
+	FragmentNode,
+	Handler,
+	IfNode,
+	ListenerAttribute,
+	ModelAttribute,
+	ModelBindingAttribute,
+	PropAttribute,
+	RawHtmlAttribute,
+	DirectiveAttribute,
+	RefAttribute,
+	RestAttribute,
+	RenderNode,
+	SlotFill,
+	SlotOutletNode,
+	SpreadAttribute,
+	SpreadKey,
+	StaticAttribute,
+	StyleAttribute,
+	TeleportNode,
+	TransitionNode,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { handlerText } from "./functions.ts";
@@ -56,263 +56,263 @@ import { scopeAttribute, slottedAttributes } from "./scope.ts";
  * ({@link jsxNode}, {@link jsxChildren}, {@link jsxExpression}).
  */
 export interface JsxDialect {
-  /**
-   * The attribute name the framework expects (React: `class` → `className`), which may depend
-   * on the element's other attributes (an input's `type`).
-   */
-  attributeName?(name: string, element: ElementNode): string;
-  /**
-   * The value to write for an attribute given without one in the source
-   * (`<input disabled />`). `true` writes it bare; a string writes that value.
-   */
-  presentAttributeValue?(name: string, element: ElementNode): true | string;
-  /**
-   * The code an expression prints as, for `site` (`render`, or `key` for a list's key). By
-   * default its source text, with each reference spelled by the context's rewrite rules.
-   */
-  expression?(expression: Expression, context: JsxContext, site: RewriteSite): string;
-  /** A conditional: by default a ternary chain ending in `null` ({@link ternaryChain}). */
-  conditional?(node: IfNode, context: JsxContext): AST.Expression;
-  /** A list: by default `source.map((item, index) => <el key={…}>…</el>)` ({@link mapCall}). */
-  list?(node: ForNode, context: JsxContext): AST.Expression;
-  /** A static attribute: by default {@link staticJsxAttribute}. */
-  staticAttribute?(
-    attribute: StaticAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /** A bound attribute: by default `name={expr}`. */
-  boundAttribute?(
-    attribute: BoundAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /** A `class` built from parts: by default `class={["a", tone, { on: active }]}`. */
-  classAttribute?(
-    attribute: ClassAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /** A `style`: by default `style={{ color: "red", marginTop: gap }}` (camelCase keys). */
-  styleAttribute?(
-    attribute: StyleAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * A spread with known keys: by default one attribute per declared key, `title={attrs.title}`,
-   * with a `class` key merged into the element's `class`.
-   */
-  spreadAttribute?(
-    attribute: SpreadAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * A listener: by default `onClick={handler}` (see {@link eventJsxAttribute}). The event's name
-   * is the framework's (React's `onKeyDown`, Qwik's `onKeyDown$`), so a target writes its own.
-   */
-  eventAttribute?(
-    attribute: EventAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * `innerHTML={markup}` (ADR-0097): the element's content is the markup, parsed, not escaped.
-   * By default `innerHTML={markup}`, Solid's spelling: React writes
-   * `dangerouslySetInnerHTML={{ __html: markup }}`, and Qwik `dangerouslySetInnerHTML={markup}`.
-   */
-  rawHtmlAttribute?(
-    attribute: RawHtmlAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * A directive (ADR-0099): its hooks run in the browser once the element is in the DOM, after a
-   * render that changes the value, and once it leaves. Each JSX target composes it with the
-   * element's ref its own way (Solid's `ref={vFocusTrap(() => open())}`, React's helper's ref
-   * callback, Qwik's signal ref).
-   */
-  directiveAttribute?(
-    attribute: DirectiveAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /** A template ref: by default `ref={input}`, the binding by its name. */
-  refAttribute?(
-    attribute: RefAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * The tag a component element is written with (ADR-0053): by default its local name. A
-   * component's `class`, `style` and `ref` go through the element hooks above, with an element
-   * of this tag and no attributes.
-   */
-  componentTag?(node: ComponentNode, context: JsxContext): string;
-  /** A prop passed to a component: by default `label="Name"` or `tone={tone}`. */
-  propAttribute?(
-    attribute: PropAttribute,
-    node: ComponentNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * A listener of a child's event: by default `onClear={handler}`, React's and Solid's spelling
-   * (Qwik's is `onClear$`), the handler taking the event's payload.
-   */
-  componentEvent?(
-    attribute: ListenerAttribute,
-    node: ComponentNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * What a component element passes through to the child's fallthrough element (ADR-0118): its
-   * attributes the child does not declare and its native listeners, in source order. By default
-   * each is printed as the element hooks print it on the component's tag. A target that passes
-   * them as one value (Angular's record) prints them all at once.
-   */
-  fallthroughAttributes?(
-    attributes: ReadonlyArray<StaticAttribute | BoundAttribute | EventAttribute>,
-    node: ComponentNode,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it does
-   * not declare. No default: each target names and spreads its rest its own way.
-   */
-  restAttribute?(
-    attribute: RestAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * A fill of a child's slot as a prop (ADR-0054): by default `title={<h2 />}`, a scoped one
-   * `item={({ item }) => …}`, and a forwarded one `title={…}` with {@link slotValue}'s value.
-   * The default slot's fill without a parameter is the children instead, never this.
-   */
-  fillAttribute?(
-    fill: SlotFill,
-    node: ComponentNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * One of the component's own slots as a value, which a forwarded fill passes on (React's
-   * `title`, Solid's `props.title`, Qwik's `title$`). No default: each target names its slots.
-   */
-  slotValue?(slot: string, context: JsxContext): AST.Expression;
-  /**
-   * Where the component renders one of its slots, with its props and fallback (ADR-0054). No
-   * default: each target renders a slot its own way ({@link jsxSlotProps} and {@link jsxBranch}
-   * give the parts).
-   */
-  slotOutlet?(node: SlotOutletNode, context: JsxContext): AST.Expression;
-  /**
-   * A form control's `v-model` (ADR-0054): the control's value or checked state, and the
-   * listener that writes it back. No default: each target writes its state and its setter its
-   * own way.
-   */
-  modelAttribute?(
-    attribute: ModelAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * A component's `v-model:<name>` (ADR-0054): the model's value and its change callback. No
-   * default: each target names the callback and writes the value its own way.
-   */
-  modelBinding?(
-    attribute: ModelBindingAttribute,
-    node: ComponentNode,
-    context: JsxContext,
-  ): Array<AST.JSXAttributeItem>;
-  /**
-   * `<component is>` (ADR-0054). No default: React and Qwik render a `const` the component
-   * declares, Solid its `<Dynamic>`. {@link jsxDynamic} prints the element under the name each
-   * gives it.
-   */
-  dynamic?(node: DynamicNode, context: JsxContext): AST.Expression;
-  /**
-   * `<Teleport to>` (ADR-0098): its one element, mounted into `to` once the component has
-   * mounted. No default: React portals it, Solid and Qwik move it with inline helpers.
-   * {@link jsxElement} prints the element.
-   */
-  teleport?(node: TeleportNode, context: JsxContext): AST.Expression;
-  /**
-   * `<Transition name appear>` (ADR-0100): its child, one element or one conditional of
-   * elements, with Vue's classes as it enters or leaves. No default: React, Solid and Qwik run
-   * them with inline helpers.
-   */
-  transition?(node: TransitionNode, context: JsxContext): AST.Expression;
-  /**
-   * What an element, a component's tag or a `<component is>` carries after its scope attributes:
-   * the JSX targets spread, on the component's root nodes (`scopeRoots`), the scope attributes
-   * the styled parents that render it pass (the child-root rule, ADR-0063). The node is the
-   * element, or the tag in an element's shape, with the node's span.
-   */
-  scopeRootAttributes?(element: ElementNode, context: JsxContext): Array<AST.JSXAttributeItem>;
+	/**
+	 * The attribute name the framework expects (React: `class` → `className`), which may depend
+	 * on the element's other attributes (an input's `type`).
+	 */
+	attributeName?(name: string, element: ElementNode): string;
+	/**
+	 * The value to write for an attribute given without one in the source
+	 * (`<input disabled />`). `true` writes it bare; a string writes that value.
+	 */
+	presentAttributeValue?(name: string, element: ElementNode): true | string;
+	/**
+	 * The code an expression prints as, for `site` (`render`, or `key` for a list's key). By
+	 * default its source text, with each reference spelled by the context's rewrite rules.
+	 */
+	expression?(expression: Expression, context: JsxContext, site: RewriteSite): string;
+	/** A conditional: by default a ternary chain ending in `null` ({@link ternaryChain}). */
+	conditional?(node: IfNode, context: JsxContext): AST.Expression;
+	/** A list: by default `source.map((item, index) => <el key={…}>…</el>)` ({@link mapCall}). */
+	list?(node: ForNode, context: JsxContext): AST.Expression;
+	/** A static attribute: by default {@link staticJsxAttribute}. */
+	staticAttribute?(
+		attribute: StaticAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/** A bound attribute: by default `name={expr}`. */
+	boundAttribute?(
+		attribute: BoundAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/** A `class` built from parts: by default `class={["a", tone, { on: active }]}`. */
+	classAttribute?(
+		attribute: ClassAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/** A `style`: by default `style={{ color: "red", marginTop: gap }}` (camelCase keys). */
+	styleAttribute?(
+		attribute: StyleAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * A spread with known keys: by default one attribute per declared key, `title={attrs.title}`,
+	 * with a `class` key merged into the element's `class`.
+	 */
+	spreadAttribute?(
+		attribute: SpreadAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * A listener: by default `onClick={handler}` (see {@link eventJsxAttribute}). The event's name
+	 * is the framework's (React's `onKeyDown`, Qwik's `onKeyDown$`), so a target writes its own.
+	 */
+	eventAttribute?(
+		attribute: EventAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * `innerHTML={markup}` (ADR-0097): the element's content is the markup, parsed, not escaped.
+	 * By default `innerHTML={markup}`, Solid's spelling: React writes
+	 * `dangerouslySetInnerHTML={{ __html: markup }}`, and Qwik `dangerouslySetInnerHTML={markup}`.
+	 */
+	rawHtmlAttribute?(
+		attribute: RawHtmlAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * A directive (ADR-0099): its hooks run in the browser once the element is in the DOM, after a
+	 * render that changes the value, and once it leaves. Each JSX target composes it with the
+	 * element's ref its own way (Solid's `ref={vFocusTrap(() => open())}`, React's helper's ref
+	 * callback, Qwik's signal ref).
+	 */
+	directiveAttribute?(
+		attribute: DirectiveAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/** A template ref: by default `ref={input}`, the binding by its name. */
+	refAttribute?(
+		attribute: RefAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * The tag a component element is written with (ADR-0053): by default its local name. A
+	 * component's `class`, `style` and `ref` go through the element hooks above, with an element
+	 * of this tag and no attributes.
+	 */
+	componentTag?(node: ComponentNode, context: JsxContext): string;
+	/** A prop passed to a component: by default `label="Name"` or `tone={tone}`. */
+	propAttribute?(
+		attribute: PropAttribute,
+		node: ComponentNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * A listener of a child's event: by default `onClear={handler}`, React's and Solid's spelling
+	 * (Qwik's is `onClear$`), the handler taking the event's payload.
+	 */
+	componentEvent?(
+		attribute: ListenerAttribute,
+		node: ComponentNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * What a component element passes through to the child's fallthrough element (ADR-0118): its
+	 * attributes the child does not declare and its native listeners, in source order. By default
+	 * each is printed as the element hooks print it on the component's tag. A target that passes
+	 * them as one value (Angular's record) prints them all at once.
+	 */
+	fallthroughAttributes?(
+		attributes: ReadonlyArray<StaticAttribute | BoundAttribute | EventAttribute>,
+		node: ComponentNode,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it does
+	 * not declare. No default: each target names and spreads its rest its own way.
+	 */
+	restAttribute?(
+		attribute: RestAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * A fill of a child's slot as a prop (ADR-0054): by default `title={<h2 />}`, a scoped one
+	 * `item={({ item }) => …}`, and a forwarded one `title={…}` with {@link slotValue}'s value.
+	 * The default slot's fill without a parameter is the children instead, never this.
+	 */
+	fillAttribute?(
+		fill: SlotFill,
+		node: ComponentNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * One of the component's own slots as a value, which a forwarded fill passes on (React's
+	 * `title`, Solid's `props.title`, Qwik's `title$`). No default: each target names its slots.
+	 */
+	slotValue?(slot: string, context: JsxContext): AST.Expression;
+	/**
+	 * Where the component renders one of its slots, with its props and fallback (ADR-0054). No
+	 * default: each target renders a slot its own way ({@link jsxSlotProps} and {@link jsxBranch}
+	 * give the parts).
+	 */
+	slotOutlet?(node: SlotOutletNode, context: JsxContext): AST.Expression;
+	/**
+	 * A form control's `v-model` (ADR-0054): the control's value or checked state, and the
+	 * listener that writes it back. No default: each target writes its state and its setter its
+	 * own way.
+	 */
+	modelAttribute?(
+		attribute: ModelAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * A component's `v-model:<name>` (ADR-0054): the model's value and its change callback. No
+	 * default: each target names the callback and writes the value its own way.
+	 */
+	modelBinding?(
+		attribute: ModelBindingAttribute,
+		node: ComponentNode,
+		context: JsxContext,
+	): Array<AST.JSXAttributeItem>;
+	/**
+	 * `<component is>` (ADR-0054). No default: React and Qwik render a `const` the component
+	 * declares, Solid its `<Dynamic>`. {@link jsxDynamic} prints the element under the name each
+	 * gives it.
+	 */
+	dynamic?(node: DynamicNode, context: JsxContext): AST.Expression;
+	/**
+	 * `<Teleport to>` (ADR-0098): its one element, mounted into `to` once the component has
+	 * mounted. No default: React portals it, Solid and Qwik move it with inline helpers.
+	 * {@link jsxElement} prints the element.
+	 */
+	teleport?(node: TeleportNode, context: JsxContext): AST.Expression;
+	/**
+	 * `<Transition name appear>` (ADR-0100): its child, one element or one conditional of
+	 * elements, with Vue's classes as it enters or leaves. No default: React, Solid and Qwik run
+	 * them with inline helpers.
+	 */
+	transition?(node: TransitionNode, context: JsxContext): AST.Expression;
+	/**
+	 * What an element, a component's tag or a `<component is>` carries after its scope attributes:
+	 * the JSX targets spread, on the component's root nodes (`scopeRoots`), the scope attributes
+	 * the styled parents that render it pass (the child-root rule, ADR-0063). The node is the
+	 * element, or the tag in an element's shape, with the node's span.
+	 */
+	scopeRootAttributes?(element: ElementNode, context: JsxContext): Array<AST.JSXAttributeItem>;
 }
 
 /** What a JSX printer prints one component with. */
 export interface JsxContext {
-  readonly component: UfComponent;
-  readonly dialect: JsxDialect;
-  /** How references are spelled: as written when absent. */
-  readonly rules: RewriteRules | undefined;
-  /** Where expressions go until the module is printed. */
-  readonly placeholders: Placeholders;
-  /**
-   * The bindings the printed code references, handlers included: a list's index parameter
-   * outside it is left out (an unused parameter fails L5).
-   */
-  readonly referenced: ReadonlySet<BindingId>;
-  /** The module, whose imports give a child's scoped styles (ADR-0063). */
-  readonly module?: UfModule | undefined;
-  /**
-   * The `-s` attributes of the children whose slot the nodes being printed fill: set while a
-   * fill's content prints, for each child whose sheets use `:slotted()` (ADR-0063).
-   */
-  readonly slotted?: ReadonlyArray<string> | undefined;
+	readonly component: UfComponent;
+	readonly dialect: JsxDialect;
+	/** How references are spelled: as written when absent. */
+	readonly rules: RewriteRules | undefined;
+	/** Where expressions go until the module is printed. */
+	readonly placeholders: Placeholders;
+	/**
+	 * The bindings the printed code references, handlers included: a list's index parameter
+	 * outside it is left out (an unused parameter fails L5).
+	 */
+	readonly referenced: ReadonlySet<BindingId>;
+	/** The module, whose imports give a child's scoped styles (ADR-0063). */
+	readonly module?: UfModule | undefined;
+	/**
+	 * The `-s` attributes of the children whose slot the nodes being printed fill: set while a
+	 * fill's content prints, for each child whose sheets use `:slotted()` (ADR-0063).
+	 */
+	readonly slotted?: ReadonlyArray<string> | undefined;
 }
 
 /** The options of {@link jsxContext}. */
 export interface JsxContextOptions {
-  component: UfComponent;
-  /**
-   * The component's module: without it, the content filled into a styled child carries no
-   * `-s` attribute (ADR-0063).
-   */
-  module?: UfModule;
-  dialect?: JsxDialect;
-  rules?: RewriteRules;
-  placeholders?: Placeholders;
-  /** Whether lists' keys count as printed references: `false` for a target without keys. */
-  includeKeys?: boolean;
-  /**
-   * Whether handlers and the setup's client code count as printed references: `false` for a
-   * target that prints none (see `referencedBindings`). Default `true`.
-   */
-  includeClient?: boolean;
+	component: UfComponent;
+	/**
+	 * The component's module: without it, the content filled into a styled child carries no
+	 * `-s` attribute (ADR-0063).
+	 */
+	module?: UfModule;
+	dialect?: JsxDialect;
+	rules?: RewriteRules;
+	placeholders?: Placeholders;
+	/** Whether lists' keys count as printed references: `false` for a target without keys. */
+	includeKeys?: boolean;
+	/**
+	 * Whether handlers and the setup's client code count as printed references: `false` for a
+	 * target that prints none (see `referencedBindings`). Default `true`.
+	 */
+	includeClient?: boolean;
 }
 
 /** The context to print a component's JSX with. */
 export function jsxContext(options: JsxContextOptions): JsxContext {
-  return {
-    component: options.component,
-    module: options.module,
-    dialect: options.dialect ?? {},
-    rules: options.rules,
-    placeholders: options.placeholders ?? new Placeholders(),
-    referenced: referencedBindings(options.component, {
-      ...(options.includeKeys === undefined ? {} : { includeKeys: options.includeKeys }),
-      ...(options.includeClient === undefined ? {} : { includeClient: options.includeClient }),
-    }),
-  };
+	return {
+		component: options.component,
+		module: options.module,
+		dialect: options.dialect ?? {},
+		rules: options.rules,
+		placeholders: options.placeholders ?? new Placeholders(),
+		referenced: referencedBindings(options.component, {
+			...(options.includeKeys === undefined ? {} : { includeKeys: options.includeKeys }),
+			...(options.includeClient === undefined ? {} : { includeClient: options.includeClient }),
+		}),
+	};
 }
 
 /** The binding a component declares under `id`. */
 export function jsxBinding(id: BindingId, context: JsxContext): Binding {
-  return bindingOf(context.component, id);
+	return bindingOf(context.component, id);
 }
 
 /**
@@ -320,16 +320,16 @@ export function jsxBinding(id: BindingId, context: JsxContext): Binding {
  * source with references rewritten.
  */
 export function expressionCode(
-  expression: Expression,
-  context: JsxContext,
-  site: RewriteSite = "render",
+	expression: Expression,
+	context: JsxContext,
+	site: RewriteSite = "render",
 ): string {
-  if (context.dialect.expression) {
-    return context.dialect.expression(expression, context, site);
-  }
-  return context.rules
-    ? rewriteExpression(expression, context.component, context.rules, site)
-    : expression.code;
+	if (context.dialect.expression) {
+		return context.dialect.expression(expression, context, site);
+	}
+	return context.rules
+		? rewriteExpression(expression, context.component, context.rules, site)
+		: expression.code;
 }
 
 /**
@@ -338,12 +338,12 @@ export function expressionCode(
  * printed once.
  */
 export function jsxExpression(
-  expression: Expression,
-  context: JsxContext,
-  slot: ParenthesesSlot = "argument",
-  site: RewriteSite = "render",
+	expression: Expression,
+	context: JsxContext,
+	slot: ParenthesesSlot = "argument",
+	site: RewriteSite = "render",
 ): AST.Expression {
-  return context.placeholders.expression(expressionCode(expression, context, site), slot);
+	return context.placeholders.expression(expressionCode(expression, context, site), slot);
 }
 
 /**
@@ -351,33 +351,33 @@ export function jsxExpression(
  * a list's body. Text is a string literal there, and an interpolation its expression.
  */
 export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): AST.Expression {
-  const { dialect } = context;
-  switch (node.kind) {
-    case "Element":
-      return jsxElement(node, context);
-    case "Fragment":
-      return js.jsxFragment(jsxChildren(node.children, context));
-    case "Text":
-      return js.stringLiteral(node.value);
-    case "Interpolation":
-      return jsxExpression(node.value, context);
-    case "If":
-      return dialect.conditional ? dialect.conditional(node, context) : ternaryChain(node, context);
-    case "For":
-      return dialect.list ? dialect.list(node, context) : mapCall(node, context);
-    case "Component":
-      return jsxComponent(node, context);
-    case "SlotOutlet":
-      return hook(context, "slotOutlet")(node, context);
-    case "Dynamic":
-      return hook(context, "dynamic")(node, context);
-    case "Teleport":
-      return hook(context, "teleport")(node, context);
-    case "Transition":
-      return hook(context, "transition")(node, context);
-    default:
-      return unreachable(node);
-  }
+	const { dialect } = context;
+	switch (node.kind) {
+		case "Element":
+			return jsxElement(node, context);
+		case "Fragment":
+			return js.jsxFragment(jsxChildren(node.children, context));
+		case "Text":
+			return js.stringLiteral(node.value);
+		case "Interpolation":
+			return jsxExpression(node.value, context);
+		case "If":
+			return dialect.conditional ? dialect.conditional(node, context) : ternaryChain(node, context);
+		case "For":
+			return dialect.list ? dialect.list(node, context) : mapCall(node, context);
+		case "Component":
+			return jsxComponent(node, context);
+		case "SlotOutlet":
+			return hook(context, "slotOutlet")(node, context);
+		case "Dynamic":
+			return hook(context, "dynamic")(node, context);
+		case "Teleport":
+			return hook(context, "teleport")(node, context);
+		case "Transition":
+			return hook(context, "transition")(node, context);
+		default:
+			return unreachable(node);
+	}
 }
 
 /**
@@ -385,33 +385,33 @@ export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): A
  * everything else in `{…}`, unless a dialect printed it as an element (Solid's `<Show>`).
  */
 export function jsxChildren(
-  nodes: ReadonlyArray<RenderNode>,
-  context: JsxContext,
+	nodes: ReadonlyArray<RenderNode>,
+	context: JsxContext,
 ): Array<AST.JSXChild> {
-  return nodes.map((node): AST.JSXChild => {
-    switch (node.kind) {
-      case "Element":
-        return jsxElement(node, context);
-      case "Text":
-        return jsxText(node.value);
-      case "Component":
-        return jsxComponent(node, context);
-      case "Interpolation":
-      case "If":
-      case "For":
-      case "SlotOutlet":
-      case "Dynamic":
-      case "Teleport":
-      case "Transition": {
-        const expression = jsxNode(node, context);
-        return expression.type === "JSXElement" || expression.type === "JSXFragment"
-          ? expression
-          : js.jsxExpressionContainer(expression);
-      }
-      default:
-        return unreachable(node);
-    }
-  });
+	return nodes.map((node): AST.JSXChild => {
+		switch (node.kind) {
+			case "Element":
+				return jsxElement(node, context);
+			case "Text":
+				return jsxText(node.value);
+			case "Component":
+				return jsxComponent(node, context);
+			case "Interpolation":
+			case "If":
+			case "For":
+			case "SlotOutlet":
+			case "Dynamic":
+			case "Teleport":
+			case "Transition": {
+				const expression = jsxNode(node, context);
+				return expression.type === "JSXElement" || expression.type === "JSXFragment"
+					? expression
+					: js.jsxExpressionContainer(expression);
+			}
+			default:
+				return unreachable(node);
+		}
+	});
 }
 
 /**
@@ -419,17 +419,17 @@ export function jsxChildren(
  * itself for one, and a fragment for several.
  */
 export function jsxBranch(
-  children: ReadonlyArray<RenderNode>,
-  context: JsxContext,
+	children: ReadonlyArray<RenderNode>,
+	context: JsxContext,
 ): AST.Expression {
-  const [only] = children;
-  if (!only) {
-    return js.nullLiteral();
-  }
-  if (children.length === 1) {
-    return jsxNode(only, context);
-  }
-  return js.jsxFragment(jsxChildren(children, context));
+	const [only] = children;
+	if (!only) {
+		return js.nullLiteral();
+	}
+	if (children.length === 1) {
+		return jsxNode(only, context);
+	}
+	return js.jsxFragment(jsxChildren(children, context));
 }
 
 /**
@@ -438,21 +438,21 @@ export function jsxBranch(
  * nothing (ADR-0036).
  */
 export function ternaryChain(node: IfNode, context: JsxContext): AST.Expression {
-  const branches = [...node.branches];
-  const last = branches.at(-1);
-  let chain: AST.Expression = js.nullLiteral();
-  if (last && !last.condition) {
-    chain = jsxBranch(last.children, context);
-    branches.pop();
-  }
-  for (const branch of branches.toReversed()) {
-    chain = js.conditionalExpression(
-      jsxExpression(branch.condition!, context, "test"),
-      jsxBranch(branch.children, context),
-      chain,
-    );
-  }
-  return chain;
+	const branches = [...node.branches];
+	const last = branches.at(-1);
+	let chain: AST.Expression = js.nullLiteral();
+	if (last && !last.condition) {
+		chain = jsxBranch(last.children, context);
+		branches.pop();
+	}
+	for (const branch of branches.toReversed()) {
+		chain = js.conditionalExpression(
+			jsxExpression(branch.condition!, context, "test"),
+			jsxBranch(branch.children, context),
+			chain,
+		);
+	}
+	return chain;
 }
 
 /**
@@ -460,31 +460,31 @@ export function ternaryChain(node: IfNode, context: JsxContext): AST.Expression 
  * The index parameter is left out when nothing printed reads it.
  */
 export function mapCall(node: ForNode, context: JsxContext): AST.Expression {
-  const key = js.jsxAttribute(
-    "key",
-    js.jsxExpressionContainer(jsxExpression(node.key, context, "argument", "key")),
-  );
-  const body =
-    node.body.kind === "Element"
-      ? jsxElement(node.body, context, [key])
-      : jsxComponent(node.body, context, [key]);
-  return js.callExpression(
-    js.memberExpression(jsxExpression(node.source, context, "operand"), "map"),
-    [js.arrowFunction(listParameters(node, context), body)],
-  );
+	const key = js.jsxAttribute(
+		"key",
+		js.jsxExpressionContainer(jsxExpression(node.key, context, "argument", "key")),
+	);
+	const body =
+		node.body.kind === "Element"
+			? jsxElement(node.body, context, [key])
+			: jsxComponent(node.body, context, [key]);
+	return js.callExpression(
+		js.memberExpression(jsxExpression(node.source, context, "operand"), "map"),
+		[js.arrowFunction(listParameters(node, context), body)],
+	);
 }
 
 /**
  * A list callback's parameters: the item, and the index when a printed expression reads it.
  */
 export function listParameters(node: ForNode, context: JsxContext): Array<AST.BindingIdentifier> {
-  const item = jsxBinding(node.item, context);
-  const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
-  const parameters = [js.bindingIdentifier(item.name)];
-  if (index && context.referenced.has(index.id)) {
-    parameters.push(js.bindingIdentifier(index.name));
-  }
-  return parameters;
+	const item = jsxBinding(node.item, context);
+	const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
+	const parameters = [js.bindingIdentifier(item.name)];
+	if (index && context.referenced.has(index.id)) {
+		parameters.push(js.bindingIdentifier(index.name));
+	}
+	return parameters;
 }
 
 /**
@@ -492,15 +492,15 @@ export function listParameters(node: ForNode, context: JsxContext): Array<AST.Bi
  * `key`) come first.
  */
 export function jsxElement(
-  node: ElementNode,
-  context: JsxContext,
-  leading: ReadonlyArray<AST.JSXAttributeItem> = [],
+	node: ElementNode,
+	context: JsxContext,
+	leading: ReadonlyArray<AST.JSXAttributeItem> = [],
 ): AST.JSXElement {
-  return js.jsxElement(
-    node.tag,
-    [...leading, ...jsxAttributes(node, context)],
-    jsxChildren(node.children, context),
-  );
+	return js.jsxElement(
+		node.tag,
+		[...leading, ...jsxAttributes(node, context)],
+		jsxChildren(node.children, context),
+	);
 }
 
 /**
@@ -509,12 +509,12 @@ export function jsxElement(
  * its fills: the default slot's (without a parameter) as the children, any other as a prop.
  */
 export function jsxComponent(
-  node: ComponentNode,
-  context: JsxContext,
-  leading: ReadonlyArray<AST.JSXAttributeItem> = [],
+	node: ComponentNode,
+	context: JsxContext,
+	leading: ReadonlyArray<AST.JSXAttributeItem> = [],
 ): AST.JSXElement {
-  const tag = context.dialect.componentTag?.(node, context) ?? node.component;
-  return componentElement(node, tag, [node.component], context, leading);
+	const tag = context.dialect.componentTag?.(node, context) ?? node.component;
+	return componentElement(node, tag, [node.component], context, leading);
 }
 
 /**
@@ -523,100 +523,100 @@ export function jsxComponent(
  * carries the `-s` attribute of each whose sheets use `:slotted()`.
  */
 function componentElement(
-  node: ComponentNode,
-  tag: string,
-  children: ReadonlyArray<string>,
-  context: JsxContext,
-  leading: ReadonlyArray<AST.JSXAttributeItem>,
+	node: ComponentNode,
+	tag: string,
+	children: ReadonlyArray<string>,
+	context: JsxContext,
+	leading: ReadonlyArray<AST.JSXAttributeItem>,
 ): AST.JSXElement {
-  const { dialect } = context;
-  // The element-shaped context the class, style and ref hooks take: the component's tag.
-  const element: ElementNode = {
-    kind: "Element",
-    tag,
-    attributes: [],
-    children: [],
-    span: node.span,
-  };
-  const passed: Array<StaticAttribute | BoundAttribute | EventAttribute> = [];
-  const fallthrough = (attribute: StaticAttribute | BoundAttribute | EventAttribute) => {
-    passed.push(attribute);
-    return [];
-  };
-  const attributes = node.attributes.flatMap((attribute): Array<AST.JSXAttributeItem> => {
-    switch (attribute.kind) {
-      case "Prop":
-        return dialect.propAttribute
-          ? dialect.propAttribute(attribute, node, context)
-          : propJsxAttribute(attribute, node, context);
-      case "Listener":
-        return dialect.componentEvent
-          ? dialect.componentEvent(attribute, node, context)
-          : listenerJsxAttribute(attribute, node, context);
-      case "Class":
-        return dialect.classAttribute
-          ? dialect.classAttribute(attribute, element, context)
-          : classJsxAttribute(attribute, element, context);
-      case "Style":
-        return dialect.styleAttribute
-          ? dialect.styleAttribute(attribute, element, context)
-          : styleJsxAttribute(attribute, element, context);
-      case "Ref":
-        return dialect.refAttribute
-          ? dialect.refAttribute(attribute, element, context)
-          : refJsxAttribute(attribute, element, context);
-      case "ModelBinding":
-        return hook(context, "modelBinding")(attribute, node, context);
-      // What falls through (ADR-0118): printed all at once below where the dialect takes them
-      // so, and otherwise each as the element hooks print it on the component's tag.
-      case "Static":
-        if (dialect.fallthroughAttributes) {
-          return fallthrough(attribute);
-        }
-        return dialect.staticAttribute
-          ? dialect.staticAttribute(attribute, element, context)
-          : staticJsxAttribute(attribute, element, context);
-      case "Bound":
-        if (dialect.fallthroughAttributes) {
-          return fallthrough(attribute);
-        }
-        return dialect.boundAttribute
-          ? dialect.boundAttribute(attribute, element, context)
-          : boundJsxAttribute(attribute, element, context);
-      case "Event":
-        if (dialect.fallthroughAttributes) {
-          return fallthrough(attribute);
-        }
-        return dialect.eventAttribute
-          ? dialect.eventAttribute(attribute, element, context)
-          : eventJsxAttribute(attribute, element, context);
-      default:
-        return unreachable(attribute);
-    }
-  });
-  if (passed.length) {
-    attributes.push(...dialect.fallthroughAttributes!(passed, node, element, context));
-  }
-  attributes.push(...scopeJsxAttributes(element, context));
-  // A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s` of
-  // this child alone: a child further out stamps only the content filled into it.
-  const fillContext: JsxContext = {
-    ...context,
-    slotted: slottedAttributes(context.module, children),
-  };
-  const content: Array<AST.JSXChild> = [];
-  for (const fill of node.fills) {
-    if (fill.slot === "default" && fill.forward === undefined && !fill.parameter) {
-      content.push(...jsxChildren(fill.children, fillContext));
-    } else {
-      attributes.push(
-        ...(dialect.fillAttribute
-          ? dialect.fillAttribute(fill, node, fillContext)
-          : fillJsxAttribute(fill, node, fillContext)),
-      );
-    }
-  }
-  return js.jsxElement(tag, [...leading, ...attributes], content);
+	const { dialect } = context;
+	// The element-shaped context the class, style and ref hooks take: the component's tag.
+	const element: ElementNode = {
+		kind: "Element",
+		tag,
+		attributes: [],
+		children: [],
+		span: node.span,
+	};
+	const passed: Array<StaticAttribute | BoundAttribute | EventAttribute> = [];
+	const fallthrough = (attribute: StaticAttribute | BoundAttribute | EventAttribute) => {
+		passed.push(attribute);
+		return [];
+	};
+	const attributes = node.attributes.flatMap((attribute): Array<AST.JSXAttributeItem> => {
+		switch (attribute.kind) {
+			case "Prop":
+				return dialect.propAttribute
+					? dialect.propAttribute(attribute, node, context)
+					: propJsxAttribute(attribute, node, context);
+			case "Listener":
+				return dialect.componentEvent
+					? dialect.componentEvent(attribute, node, context)
+					: listenerJsxAttribute(attribute, node, context);
+			case "Class":
+				return dialect.classAttribute
+					? dialect.classAttribute(attribute, element, context)
+					: classJsxAttribute(attribute, element, context);
+			case "Style":
+				return dialect.styleAttribute
+					? dialect.styleAttribute(attribute, element, context)
+					: styleJsxAttribute(attribute, element, context);
+			case "Ref":
+				return dialect.refAttribute
+					? dialect.refAttribute(attribute, element, context)
+					: refJsxAttribute(attribute, element, context);
+			case "ModelBinding":
+				return hook(context, "modelBinding")(attribute, node, context);
+			// What falls through (ADR-0118): printed all at once below where the dialect takes them
+			// so, and otherwise each as the element hooks print it on the component's tag.
+			case "Static":
+				if (dialect.fallthroughAttributes) {
+					return fallthrough(attribute);
+				}
+				return dialect.staticAttribute
+					? dialect.staticAttribute(attribute, element, context)
+					: staticJsxAttribute(attribute, element, context);
+			case "Bound":
+				if (dialect.fallthroughAttributes) {
+					return fallthrough(attribute);
+				}
+				return dialect.boundAttribute
+					? dialect.boundAttribute(attribute, element, context)
+					: boundJsxAttribute(attribute, element, context);
+			case "Event":
+				if (dialect.fallthroughAttributes) {
+					return fallthrough(attribute);
+				}
+				return dialect.eventAttribute
+					? dialect.eventAttribute(attribute, element, context)
+					: eventJsxAttribute(attribute, element, context);
+			default:
+				return unreachable(attribute);
+		}
+	});
+	if (passed.length) {
+		attributes.push(...dialect.fallthroughAttributes!(passed, node, element, context));
+	}
+	attributes.push(...scopeJsxAttributes(element, context));
+	// A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s` of
+	// this child alone: a child further out stamps only the content filled into it.
+	const fillContext: JsxContext = {
+		...context,
+		slotted: slottedAttributes(context.module, children),
+	};
+	const content: Array<AST.JSXChild> = [];
+	for (const fill of node.fills) {
+		if (fill.slot === "default" && fill.forward === undefined && !fill.parameter) {
+			content.push(...jsxChildren(fill.children, fillContext));
+		} else {
+			attributes.push(
+				...(dialect.fillAttribute
+					? dialect.fillAttribute(fill, node, fillContext)
+					: fillJsxAttribute(fill, node, fillContext)),
+			);
+		}
+	}
+	return js.jsxElement(tag, [...leading, ...attributes], content);
 }
 
 /**
@@ -626,38 +626,38 @@ function componentElement(
  * candidates take them as their first component's, and its fills.
  */
 export function jsxDynamic(
-  node: DynamicNode,
-  name: string,
-  context: JsxContext,
-  leading: ReadonlyArray<AST.JSXAttributeItem> = [],
-  tag: () => AST.Expression = () => js.identifier(name),
+	node: DynamicNode,
+	name: string,
+	context: JsxContext,
+	leading: ReadonlyArray<AST.JSXAttributeItem> = [],
+	tag: () => AST.Expression = () => js.identifier(name),
 ): AST.JSXElement {
-  const [first] = node.candidates;
-  if (first?.kind === "Component") {
-    const component: ComponentNode = {
-      kind: "Component",
-      component: first.component,
-      attributes: node.attributes as Array<ComponentAttribute>,
-      fills: node.fills ?? [],
-      span: node.span,
-    };
-    const children = node.candidates.flatMap((each) =>
-      each.kind === "Component" ? [each.component] : [],
-    );
-    return componentElement(component, name, children, context, leading);
-  }
-  const element: ElementNode = {
-    kind: "Element",
-    tag: first?.kind === "Tag" ? first.tag : name,
-    attributes: node.attributes as Array<Attribute>,
-    children: node.children,
-    span: node.span,
-  };
-  return js.jsxElement(
-    name,
-    [...leading, ...jsxAttributes(element, onlyContext(node, tag, context))],
-    jsxChildren(node.children, context),
-  );
+	const [first] = node.candidates;
+	if (first?.kind === "Component") {
+		const component: ComponentNode = {
+			kind: "Component",
+			component: first.component,
+			attributes: node.attributes as Array<ComponentAttribute>,
+			fills: node.fills ?? [],
+			span: node.span,
+		};
+		const children = node.candidates.flatMap((each) =>
+			each.kind === "Component" ? [each.component] : [],
+		);
+		return componentElement(component, name, children, context, leading);
+	}
+	const element: ElementNode = {
+		kind: "Element",
+		tag: first?.kind === "Tag" ? first.tag : name,
+		attributes: node.attributes as Array<Attribute>,
+		children: node.children,
+		span: node.span,
+	};
+	return js.jsxElement(
+		name,
+		[...leading, ...jsxAttributes(element, onlyContext(node, tag, context))],
+		jsxChildren(node.children, context),
+	);
 }
 
 /**
@@ -666,38 +666,38 @@ export function jsxDynamic(
  * that renders, `href={Tag === "a" ? href : undefined}`, which every JSX target leaves out.
  */
 export function onlyContext(
-  node: DynamicNode,
-  tag: () => AST.Expression,
-  context: JsxContext,
+	node: DynamicNode,
+	tag: () => AST.Expression,
+	context: JsxContext,
 ): JsxContext {
-  if (!node.only?.length) {
-    return context;
-  }
-  const only = new Map(node.only.map((entry) => [entry.name, entry.tags]));
-  const { dialect } = context;
-  const guarded = <T extends StaticAttribute | BoundAttribute>(
-    print: (attribute: T, element: ElementNode, context: JsxContext) => Array<AST.JSXAttributeItem>,
-  ) =>
-    function (attribute: T, element: ElementNode, at: JsxContext): Array<AST.JSXAttributeItem> {
-      const tags = only.get(attribute.name);
-      if (!tags) {
-        return print(attribute, element, at);
-      }
-      const items = print(attribute, { ...element, tag: tags[0]! }, at);
-      return items.map((item) => guardJsxAttribute(item, () => tagTest(tag, tags)));
-    };
-  return {
-    ...context,
-    dialect: {
-      ...dialect,
-      staticAttribute: guarded<StaticAttribute>(
-        dialect.staticAttribute?.bind(dialect) ?? staticJsxAttribute,
-      ),
-      boundAttribute: guarded<BoundAttribute>(
-        dialect.boundAttribute?.bind(dialect) ?? boundJsxAttribute,
-      ),
-    },
-  };
+	if (!node.only?.length) {
+		return context;
+	}
+	const only = new Map(node.only.map((entry) => [entry.name, entry.tags]));
+	const { dialect } = context;
+	const guarded = <T extends StaticAttribute | BoundAttribute>(
+		print: (attribute: T, element: ElementNode, context: JsxContext) => Array<AST.JSXAttributeItem>,
+	) =>
+		function (attribute: T, element: ElementNode, at: JsxContext): Array<AST.JSXAttributeItem> {
+			const tags = only.get(attribute.name);
+			if (!tags) {
+				return print(attribute, element, at);
+			}
+			const items = print(attribute, { ...element, tag: tags[0]! }, at);
+			return items.map((item) => guardJsxAttribute(item, () => tagTest(tag, tags)));
+		};
+	return {
+		...context,
+		dialect: {
+			...dialect,
+			staticAttribute: guarded<StaticAttribute>(
+				dialect.staticAttribute?.bind(dialect) ?? staticJsxAttribute,
+			),
+			boundAttribute: guarded<BoundAttribute>(
+				dialect.boundAttribute?.bind(dialect) ?? boundJsxAttribute,
+			),
+		},
+	};
 }
 
 /**
@@ -705,9 +705,9 @@ export function onlyContext(
  * `tag` makes a new node for each use, since a placeholder prints once.
  */
 export function tagTest(tag: () => AST.Expression, tags: ReadonlyArray<string>): AST.Expression {
-  return tags
-    .map((each) => js.binaryExpression("===", tag(), js.stringLiteral(each)) as AST.Expression)
-    .reduce((left, right) => js.logicalExpression("||", left, right));
+	return tags
+		.map((each) => js.binaryExpression("===", tag(), js.stringLiteral(each)) as AST.Expression)
+		.reduce((left, right) => js.logicalExpression("||", left, right));
 }
 
 /**
@@ -717,69 +717,69 @@ export function tagTest(tag: () => AST.Expression, tags: ReadonlyArray<string>):
  * a new node for each use, since a placeholder prints once.
  */
 function guardJsxAttribute(
-  item: AST.JSXAttributeItem,
-  test: () => AST.Expression,
+	item: AST.JSXAttributeItem,
+	test: () => AST.Expression,
 ): AST.JSXAttributeItem {
-  const guard = (value: AST.Expression) =>
-    js.conditionalExpression(test(), value, js.identifier("undefined"));
-  if (item.type === "JSXSpreadAttribute") {
-    const { argument } = item;
-    if (argument.type !== "ObjectExpression") {
-      // Any other object renders all of its keys or none.
-      return {
-        ...item,
-        argument: js.conditionalExpression(test(), argument, js.objectExpression([])),
-      };
-    }
-    return {
-      ...item,
-      argument: {
-        ...argument,
-        properties: argument.properties.map((property) =>
-          property.type === "Property" ? { ...property, value: guard(property.value) } : property,
-        ),
-      },
-    };
-  }
-  const { value } = item;
-  const expression: AST.Expression =
-    value === null
-      ? js.booleanLiteral(true)
-      : value.type === "JSXExpressionContainer"
-        ? value.expression.type === "JSXEmptyExpression"
-          ? js.identifier("undefined")
-          : value.expression
-        : value.type === "Literal"
-          ? js.stringLiteral(value.value)
-          : value;
-  return { ...item, value: js.jsxExpressionContainer(guard(expression)) };
+	const guard = (value: AST.Expression) =>
+		js.conditionalExpression(test(), value, js.identifier("undefined"));
+	if (item.type === "JSXSpreadAttribute") {
+		const { argument } = item;
+		if (argument.type !== "ObjectExpression") {
+			// Any other object renders all of its keys or none.
+			return {
+				...item,
+				argument: js.conditionalExpression(test(), argument, js.objectExpression([])),
+			};
+		}
+		return {
+			...item,
+			argument: {
+				...argument,
+				properties: argument.properties.map((property) =>
+					property.type === "Property" ? { ...property, value: guard(property.value) } : property,
+				),
+			},
+		};
+	}
+	const { value } = item;
+	const expression: AST.Expression =
+		value === null
+			? js.booleanLiteral(true)
+			: value.type === "JSXExpressionContainer"
+				? value.expression.type === "JSXEmptyExpression"
+					? js.identifier("undefined")
+					: value.expression
+				: value.type === "Literal"
+					? js.stringLiteral(value.value)
+					: value;
+	return { ...item, value: js.jsxExpressionContainer(guard(expression)) };
 }
 
 /** A prop, `label="Name"` for a string literal (as written), and `tone={tone}` otherwise. */
 export function propJsxAttribute(
-  attribute: PropAttribute,
-  _node: ComponentNode,
-  context: JsxContext,
+	attribute: PropAttribute,
+	_node: ComponentNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const literal = /^"[^"\\&\n\r]*"$/.test(attribute.value.code) ? attribute.value.code : undefined;
-  return [
-    js.jsxAttribute(
-      attribute.name,
-      literal === undefined
-        ? js.jsxExpressionContainer(jsxExpression(attribute.value, context))
-        : literal.slice(1, -1),
-    ),
-  ];
+	const literal = /^"[^"\\&\n\r]*"$/.test(attribute.value.code) ? attribute.value.code : undefined;
+	return [
+		js.jsxAttribute(
+			attribute.name,
+			literal === undefined
+				? js.jsxExpressionContainer(jsxExpression(attribute.value, context))
+				: literal.slice(1, -1),
+		),
+	];
 }
 
 /** A listener of a child's event, `onClear={handler}`. */
 export function listenerJsxAttribute(
-  attribute: ListenerAttribute,
-  _node: ComponentNode,
-  context: JsxContext,
+	attribute: ListenerAttribute,
+	_node: ComponentNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const name = `on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}`;
-  return [js.jsxAttribute(name, js.jsxExpressionContainer(jsxHandler(attribute.handler, context)))];
+	const name = `on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}`;
+	return [js.jsxAttribute(name, js.jsxExpressionContainer(jsxHandler(attribute.handler, context)))];
 }
 
 /**
@@ -787,11 +787,11 @@ export function listenerJsxAttribute(
  * scoped one, or the parent's own slot for a forwarded one ({@link jsxFillValue}).
  */
 export function fillJsxAttribute(
-  fill: SlotFill,
-  _node: ComponentNode,
-  context: JsxContext,
+	fill: SlotFill,
+	_node: ComponentNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  return [js.jsxAttribute(fill.slot, js.jsxExpressionContainer(jsxFillValue(fill, context)))];
+	return [js.jsxAttribute(fill.slot, js.jsxExpressionContainer(jsxFillValue(fill, context)))];
 }
 
 /**
@@ -799,43 +799,43 @@ export function fillJsxAttribute(
  * `({ item }) => …` for a scoped one, its parameter as written, and what it renders otherwise.
  */
 export function jsxFillValue(fill: SlotFill, context: JsxContext): AST.Expression {
-  if (fill.forward !== undefined) {
-    return hook(context, "slotValue")(fill.forward, context);
-  }
-  const body = jsxBranch(fill.children, context);
-  if (!fill.parameter) {
-    return body;
-  }
-  const parameter = fill.parameter.name ?? fill.parameter.pattern!.code;
-  return js.arrowFunction([context.placeholders.parameter(parameter)], body);
+	if (fill.forward !== undefined) {
+		return hook(context, "slotValue")(fill.forward, context);
+	}
+	const body = jsxBranch(fill.children, context);
+	if (!fill.parameter) {
+		return body;
+	}
+	const parameter = fill.parameter.name ?? fill.parameter.pattern!.code;
+	return js.arrowFunction([context.placeholders.parameter(parameter)], body);
 }
 
 /** The object a slot outlet passes its slot, `{ item }`, or nothing for one without props. */
 export function jsxSlotProps(
-  node: SlotOutletNode,
-  context: JsxContext,
+	node: SlotOutletNode,
+	context: JsxContext,
 ): AST.Expression | undefined {
-  return node.props && jsxExpression(node.props, context);
+	return node.props && jsxExpression(node.props, context);
 }
 
 /** A composition hook a dialect that meets its construct must have (ADR-0055). */
 function hook<
-  K extends
-    | "slotValue"
-    | "slotOutlet"
-    | "modelAttribute"
-    | "modelBinding"
-    | "dynamic"
-    | "teleport"
-    | "transition"
-    | "directiveAttribute"
-    | "restAttribute",
+	K extends
+		| "slotValue"
+		| "slotOutlet"
+		| "modelAttribute"
+		| "modelBinding"
+		| "dynamic"
+		| "teleport"
+		| "transition"
+		| "directiveAttribute"
+		| "restAttribute",
 >(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
-  const found = context.dialect[name];
-  if (!found) {
-    throw new Error(`The JSX dialect does not print composition yet (${name}).`);
-  }
-  return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;
+	const found = context.dialect[name];
+	if (!found) {
+		throw new Error(`The JSX dialect does not print composition yet (${name}).`);
+	}
+	return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;
 }
 
 /**
@@ -843,57 +843,57 @@ function hook<
  * attributes ({@link scopeJsxAttributes}).
  */
 export function jsxAttributes(node: ElementNode, context: JsxContext): Array<AST.JSXAttributeItem> {
-  const { dialect } = context;
-  const attributes = node.attributes.flatMap((attribute) => {
-    switch (attribute.kind) {
-      case "Static":
-        return dialect.staticAttribute
-          ? dialect.staticAttribute(attribute, node, context)
-          : staticJsxAttribute(attribute, node, context);
-      case "Bound":
-        return dialect.boundAttribute
-          ? dialect.boundAttribute(attribute, node, context)
-          : boundJsxAttribute(attribute, node, context);
-      case "Class":
-        return dialect.classAttribute
-          ? dialect.classAttribute(attribute, node, context)
-          : classJsxAttribute(attribute, node, context);
-      case "Style":
-        return dialect.styleAttribute
-          ? dialect.styleAttribute(attribute, node, context)
-          : styleJsxAttribute(attribute, node, context);
-      case "Spread":
-        return dialect.spreadAttribute
-          ? dialect.spreadAttribute(attribute, node, context)
-          : spreadJsxAttributes(attribute, node, context);
-      case "Event":
-        return dialect.eventAttribute
-          ? dialect.eventAttribute(attribute, node, context)
-          : eventJsxAttribute(attribute, node, context);
-      case "Ref":
-        return dialect.refAttribute
-          ? dialect.refAttribute(attribute, node, context)
-          : refJsxAttribute(attribute, node, context);
-      case "Model":
-        return hook(context, "modelAttribute")(attribute, node, context);
-      case "RawHtml":
-        return dialect.rawHtmlAttribute
-          ? dialect.rawHtmlAttribute(attribute, node, context)
-          : [
-              js.jsxAttribute(
-                "innerHTML",
-                js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
-              ),
-            ];
-      case "Directive":
-        return hook(context, "directiveAttribute")(attribute, node, context);
-      case "Rest":
-        return hook(context, "restAttribute")(attribute, node, context);
-      default:
-        return unreachable(attribute);
-    }
-  });
-  return [...attributes, ...scopeJsxAttributes(node, context)];
+	const { dialect } = context;
+	const attributes = node.attributes.flatMap((attribute) => {
+		switch (attribute.kind) {
+			case "Static":
+				return dialect.staticAttribute
+					? dialect.staticAttribute(attribute, node, context)
+					: staticJsxAttribute(attribute, node, context);
+			case "Bound":
+				return dialect.boundAttribute
+					? dialect.boundAttribute(attribute, node, context)
+					: boundJsxAttribute(attribute, node, context);
+			case "Class":
+				return dialect.classAttribute
+					? dialect.classAttribute(attribute, node, context)
+					: classJsxAttribute(attribute, node, context);
+			case "Style":
+				return dialect.styleAttribute
+					? dialect.styleAttribute(attribute, node, context)
+					: styleJsxAttribute(attribute, node, context);
+			case "Spread":
+				return dialect.spreadAttribute
+					? dialect.spreadAttribute(attribute, node, context)
+					: spreadJsxAttributes(attribute, node, context);
+			case "Event":
+				return dialect.eventAttribute
+					? dialect.eventAttribute(attribute, node, context)
+					: eventJsxAttribute(attribute, node, context);
+			case "Ref":
+				return dialect.refAttribute
+					? dialect.refAttribute(attribute, node, context)
+					: refJsxAttribute(attribute, node, context);
+			case "Model":
+				return hook(context, "modelAttribute")(attribute, node, context);
+			case "RawHtml":
+				return dialect.rawHtmlAttribute
+					? dialect.rawHtmlAttribute(attribute, node, context)
+					: [
+							js.jsxAttribute(
+								"innerHTML",
+								js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
+							),
+						];
+			case "Directive":
+				return hook(context, "directiveAttribute")(attribute, node, context);
+			case "Rest":
+				return hook(context, "restAttribute")(attribute, node, context);
+			default:
+				return unreachable(attribute);
+		}
+	});
+	return [...attributes, ...scopeJsxAttributes(node, context)];
 }
 
 /**
@@ -903,22 +903,22 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): Array<AST
  * it: a bare JSX attribute is `true`, which React writes as `"true"`.
  */
 export function scopeJsxAttributes(
-  element: ElementNode,
-  context: JsxContext,
+	element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const { scopeId } = context.component;
-  const names = [...(scopeId ? [scopeAttribute(scopeId)] : []), ...(context.slotted ?? [])];
-  return [
-    ...names.flatMap((name) =>
-      staticJsxAttribute({ kind: "Static", name, value: "", span: element.span }, element, context),
-    ),
-    ...(context.dialect.scopeRootAttributes?.(element, context) ?? []),
-  ];
+	const { scopeId } = context.component;
+	const names = [...(scopeId ? [scopeAttribute(scopeId)] : []), ...(context.slotted ?? [])];
+	return [
+		...names.flatMap((name) =>
+			staticJsxAttribute({ kind: "Static", name, value: "", span: element.span }, element, context),
+		),
+		...(context.dialect.scopeRootAttributes?.(element, context) ?? []),
+	];
 }
 
 /** The attribute name a dialect writes. */
 export function jsxAttributeName(name: string, element: ElementNode, context: JsxContext): string {
-  return context.dialect.attributeName?.(name, element) ?? name;
+	return context.dialect.attributeName?.(name, element) ?? name;
 }
 
 /**
@@ -927,33 +927,33 @@ export function jsxAttributeName(name: string, element: ElementNode, context: Js
  * `class` merges with it: `class={["a b", attrs.class]}`.
  */
 export function staticJsxAttribute(
-  attribute: StaticAttribute,
-  element: ElementNode,
-  context: JsxContext,
+	attribute: StaticAttribute,
+	element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const name = jsxAttributeName(attribute.name, element, context);
-  if (attribute.name === "class" && typeof attribute.value === "string") {
-    const reads = spreadClassReads(element, context);
-    if (reads.length) {
-      const items = [js.stringLiteral(attribute.value), ...reads];
-      return [js.jsxAttribute(name, js.jsxExpressionContainer(js.arrayExpression(items)))];
-    }
-  }
-  const value =
-    attribute.value === true
-      ? (context.dialect.presentAttributeValue?.(attribute.name, element) ?? true)
-      : attribute.value;
-  return [js.jsxAttribute(name, value === true ? null : jsxAttributeValue(value))];
+	const name = jsxAttributeName(attribute.name, element, context);
+	if (attribute.name === "class" && typeof attribute.value === "string") {
+		const reads = spreadClassReads(element, context);
+		if (reads.length) {
+			const items = [js.stringLiteral(attribute.value), ...reads];
+			return [js.jsxAttribute(name, js.jsxExpressionContainer(js.arrayExpression(items)))];
+		}
+	}
+	const value =
+		attribute.value === true
+			? (context.dialect.presentAttributeValue?.(attribute.name, element) ?? true)
+			: attribute.value;
+	return [js.jsxAttribute(name, value === true ? null : jsxAttributeValue(value))];
 }
 
 /** A bound attribute, `name={expr}`. */
 export function boundJsxAttribute(
-  attribute: BoundAttribute,
-  element: ElementNode,
-  context: JsxContext,
+	attribute: BoundAttribute,
+	element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const value = js.jsxExpressionContainer(jsxExpression(attribute.value, context));
-  return [js.jsxAttribute(jsxAttributeName(attribute.name, element, context), value)];
+	const value = js.jsxExpressionContainer(jsxExpression(attribute.value, context));
+	return [js.jsxAttribute(jsxAttributeName(attribute.name, element, context), value)];
 }
 
 /**
@@ -961,17 +961,17 @@ export function boundJsxAttribute(
  * parts as written, adjacent toggles as one object, and the class of each spread after them.
  */
 export function classJsxAttribute(
-  attribute: ClassAttribute,
-  element: ElementNode,
-  context: JsxContext,
+	attribute: ClassAttribute,
+	element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const items = [...classArrayItems(attribute, context), ...spreadClassReads(element, context)];
-  return [
-    js.jsxAttribute(
-      jsxAttributeName("class", element, context),
-      js.jsxExpressionContainer(js.arrayExpression(items)),
-    ),
-  ];
+	const items = [...classArrayItems(attribute, context), ...spreadClassReads(element, context)];
+	return [
+		js.jsxAttribute(
+			jsxAttributeName("class", element, context),
+			js.jsxExpressionContainer(js.arrayExpression(items)),
+		),
+	];
 }
 
 /**
@@ -979,41 +979,41 @@ export function classJsxAttribute(
  * dynamic part, and `{ name: condition }` for toggles, adjacent ones in one object.
  */
 export function classArrayItems(
-  attribute: ClassAttribute,
-  context: JsxContext,
+	attribute: ClassAttribute,
+	context: JsxContext,
 ): Array<AST.Expression> {
-  const items: Array<AST.Expression> = [];
-  let toggles: AST.ObjectExpression | undefined;
-  for (const item of attribute.items) {
-    if (item.kind === "Toggle") {
-      const entry = js.property(item.name, jsxExpression(item.condition, context));
-      if (toggles) {
-        toggles.properties.push(entry);
-      } else {
-        items.push((toggles = js.objectExpression([entry])));
-      }
-      continue;
-    }
-    toggles = undefined;
-    items.push(
-      item.kind === "Static" ? js.stringLiteral(item.value) : jsxExpression(item.value, context),
-    );
-  }
-  return items;
+	const items: Array<AST.Expression> = [];
+	let toggles: AST.ObjectExpression | undefined;
+	for (const item of attribute.items) {
+		if (item.kind === "Toggle") {
+			const entry = js.property(item.name, jsxExpression(item.condition, context));
+			if (toggles) {
+				toggles.properties.push(entry);
+			} else {
+				items.push((toggles = js.objectExpression([entry])));
+			}
+			continue;
+		}
+		toggles = undefined;
+		items.push(
+			item.kind === "Static" ? js.stringLiteral(item.value) : jsxExpression(item.value, context),
+		);
+	}
+	return items;
 }
 
 /** A `style` as an object with camelCase keys (React's and Qwik's form). */
 export function styleJsxAttribute(
-  attribute: StyleAttribute,
-  element: ElementNode,
-  context: JsxContext,
+	attribute: StyleAttribute,
+	element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  return [
-    js.jsxAttribute(
-      jsxAttributeName("style", element, context),
-      js.jsxExpressionContainer(styleObject(attribute, context, "camel")),
-    ),
-  ];
+	return [
+		js.jsxAttribute(
+			jsxAttributeName("style", element, context),
+			js.jsxExpressionContainer(styleObject(attribute, context, "camel")),
+		),
+	];
 }
 
 /**
@@ -1022,18 +1022,18 @@ export function styleJsxAttribute(
  * (`"margin-top"`, Solid); custom properties keep their name (`"--gap"`).
  */
 export function styleObject(
-  attribute: StyleAttribute,
-  context: JsxContext,
-  keys: "camel" | "kebab",
+	attribute: StyleAttribute,
+	context: JsxContext,
+	keys: "camel" | "kebab",
 ): AST.ObjectExpression {
-  return js.objectExpression(
-    attribute.declarations.map((declaration) => [
-      styleKey(declaration.property, keys),
-      declaration.kind === "Static"
-        ? js.stringLiteral(declaration.value)
-        : jsxExpression(declaration.value, context),
-    ]),
-  );
+	return js.objectExpression(
+		attribute.declarations.map((declaration) => [
+			styleKey(declaration.property, keys),
+			declaration.kind === "Static"
+				? js.stringLiteral(declaration.value)
+				: jsxExpression(declaration.value, context),
+		]),
+	);
 }
 
 /**
@@ -1042,14 +1042,14 @@ export function styleObject(
  * never change.
  */
 export function styleKey(property: string, keys: "camel" | "kebab"): string {
-  if (keys === "kebab" || property.startsWith("--")) {
-    return property;
-  }
-  return property
-    .replace(/^-ms-/, "ms-")
-    .replace(/^-/, "")
-    .replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())
-    .replace(/^(webkit|moz|o)(?=[A-Z])/, (prefix) => prefix[0]!.toUpperCase() + prefix.slice(1));
+	if (keys === "kebab" || property.startsWith("--")) {
+		return property;
+	}
+	return property
+		.replace(/^-ms-/, "ms-")
+		.replace(/^-/, "")
+		.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())
+		.replace(/^(webkit|moz|o)(?=[A-Z])/, (prefix) => prefix[0]!.toUpperCase() + prefix.slice(1));
 }
 
 /**
@@ -1058,27 +1058,27 @@ export function styleKey(property: string, keys: "camel" | "kebab"): string {
  * merges it, when the element has one.
  */
 export function spreadJsxAttributes(
-  attribute: SpreadAttribute,
-  element: ElementNode,
-  context: JsxContext,
+	attribute: SpreadAttribute,
+	element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const merged = hasClass(element);
-  return attribute.keys
-    .filter((key) => !(merged && key.name === "class"))
-    .map((key) =>
-      js.jsxAttribute(
-        jsxAttributeName(key.name, element, context),
-        js.jsxExpressionContainer(spreadRead(attribute, key, context)),
-      ),
-    );
+	const merged = hasClass(element);
+	return attribute.keys
+		.filter((key) => !(merged && key.name === "class"))
+		.map((key) =>
+			js.jsxAttribute(
+				jsxAttributeName(key.name, element, context),
+				js.jsxExpressionContainer(spreadRead(attribute, key, context)),
+			),
+		);
 }
 
 /** Whether an element has a `class` of its own, static or from parts. */
 function hasClass(element: ElementNode): boolean {
-  return element.attributes.some(
-    (attribute) =>
-      attribute.kind === "Class" || (attribute.kind === "Static" && attribute.name === "class"),
-  );
+	return element.attributes.some(
+		(attribute) =>
+			attribute.kind === "Class" || (attribute.kind === "Static" && attribute.name === "class"),
+	);
 }
 
 /**
@@ -1087,16 +1087,16 @@ function hasClass(element: ElementNode): boolean {
  * `(on ? attrs : undefined)?.title`), as a spread of nothing renders no key.
  */
 export function spreadRead(
-  attribute: SpreadAttribute,
-  key: SpreadKey,
-  context: JsxContext,
+	attribute: SpreadAttribute,
+	key: SpreadKey,
+	context: JsxContext,
 ): AST.Expression {
-  const source = jsxExpression(attribute.value, context, "operand");
-  if (!attribute.nullish) {
-    return js.memberExpression(source, key.name);
-  }
-  const read = js.memberExpression(source, key.name, { optional: true });
-  return js.chainExpression(read);
+	const source = jsxExpression(attribute.value, context, "operand");
+	if (!attribute.nullish) {
+		return js.memberExpression(source, key.name);
+	}
+	const read = js.memberExpression(source, key.name, { optional: true });
+	return js.chainExpression(read);
 }
 
 /**
@@ -1104,13 +1104,13 @@ export function spreadRead(
  * `class` merges (one at most, by ADR-0039's invariant).
  */
 export function spreadClassReads(element: ElementNode, context: JsxContext): Array<AST.Expression> {
-  return element.attributes.flatMap((attribute) => {
-    if (attribute.kind !== "Spread") {
-      return [];
-    }
-    const key = attribute.keys.find((entry) => entry.name === "class");
-    return key ? [spreadRead(attribute, key, context)] : [];
-  });
+	return element.attributes.flatMap((attribute) => {
+		if (attribute.kind !== "Spread") {
+			return [];
+		}
+		const key = attribute.keys.find((entry) => entry.name === "class");
+		return key ? [spreadRead(attribute, key, context)] : [];
+	});
 }
 
 /**
@@ -1121,18 +1121,18 @@ export function spreadClassReads(element: ElementNode, context: JsxContext): Arr
  * own for `once` or `passive`, so a listener with either throws here: its dialect prints it.
  */
 export function eventJsxAttribute(
-  attribute: EventAttribute,
-  _element: ElementNode,
-  context: JsxContext,
+	attribute: EventAttribute,
+	_element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const option = attribute.once ? "once" : attribute.passive ? "passive" : undefined;
-  if (option) {
-    throw new Error(
-      `JSX has no spelling for a ${option} \`${attribute.event}\` listener: the target's dialect prints it (eventAttribute).`,
-    );
-  }
-  const name = `on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}${attribute.capture ? "Capture" : ""}`;
-  return [js.jsxAttribute(name, js.jsxExpressionContainer(jsxHandler(attribute.handler, context)))];
+	const option = attribute.once ? "once" : attribute.passive ? "passive" : undefined;
+	if (option) {
+		throw new Error(
+			`JSX has no spelling for a ${option} \`${attribute.event}\` listener: the target's dialect prints it (eventAttribute).`,
+		);
+	}
+	const name = `on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}${attribute.capture ? "Capture" : ""}`;
+	return [js.jsxAttribute(name, js.jsxExpressionContainer(jsxHandler(attribute.handler, context)))];
 }
 
 /**
@@ -1141,19 +1141,19 @@ export function eventJsxAttribute(
  * placeholder.
  */
 export function jsxHandler(handler: Handler, context: JsxContext): AST.Expression {
-  return context.placeholders.expression(
-    handlerText(handler, context.component, context.rules, "client"),
-  );
+	return context.placeholders.expression(
+		handlerText(handler, context.component, context.rules, "client"),
+	);
 }
 
 /** A template ref, `ref={input}`: the binding by its name, which the target declares. */
 export function refJsxAttribute(
-  attribute: RefAttribute,
-  _element: ElementNode,
-  context: JsxContext,
+	attribute: RefAttribute,
+	_element: ElementNode,
+	context: JsxContext,
 ): Array<AST.JSXAttributeItem> {
-  const binding = jsxBinding(attribute.binding, context);
-  return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(binding.name)))];
+	const binding = jsxBinding(attribute.binding, context);
+	return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(binding.name)))];
 }
 
 /**
@@ -1177,11 +1177,11 @@ const UNSAFE_JSX_TEXT = /[{}]|[^\S ]|[\u0085​]| {2}|(?:^| )\/[/*]/;
  * line's edges, so not even those are safe (ADR-0030).
  */
 export function jsxText(value: string): AST.JSXText | AST.JSXExpressionContainer {
-  if (!UNSAFE_JSX_TEXT.test(value) && value.trim() !== "") {
-    const raw = value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-    return { type: "JSXText", value, raw, start: 0, end: 0 };
-  }
-  return js.jsxExpressionContainer(js.stringLiteral(value));
+	if (!UNSAFE_JSX_TEXT.test(value) && value.trim() !== "") {
+		const raw = value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+		return { type: "JSXText", value, raw, start: 0, end: 0 };
+	}
+	return js.jsxExpressionContainer(js.stringLiteral(value));
 }
 
 /**
@@ -1190,12 +1190,12 @@ export function jsxText(value: string): AST.JSXText | AST.JSXExpressionContainer
  * turns a raw tab or line break in one into a space.
  */
 export function jsxAttributeValue(value: string): AST.JSXAttributeValue {
-  if (!/["&]/.test(value) && !/[^\S ]/.test(value)) {
-    return { type: "Literal", value, raw: `"${value}"`, start: 0, end: 0 };
-  }
-  return js.jsxExpressionContainer(js.stringLiteral(value));
+	if (!/["&]/.test(value) && !/[^\S ]/.test(value)) {
+		return { type: "Literal", value, raw: `"${value}"`, start: 0, end: 0 };
+	}
+	return js.jsxExpressionContainer(js.stringLiteral(value));
 }
 
 function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

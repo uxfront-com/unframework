@@ -10,13 +10,13 @@ import type { RewriteRules, RewriteSite } from "./rewrite.ts";
 
 /** How {@link functionText} writes a function. */
 export interface FunctionTextOptions {
-  /**
-   * `false` writes a `function` (a declaration when `name` is given), and an arrow otherwise:
-   * by default, an arrow unless `name` is given.
-   */
-  arrow?: boolean;
-  /** The name of a `function` declaration. */
-  name?: string;
+	/**
+	 * `false` writes a `function` (a declaration when `name` is given), and an arrow otherwise:
+	 * by default, an arrow unless `name` is given.
+	 */
+	arrow?: boolean;
+	/** The name of a `function` declaration. */
+	name?: string;
 }
 
 /**
@@ -24,22 +24,22 @@ export interface FunctionTextOptions {
  * `[unit]: string[] = ["x"]`. Its default is static, so it is copied as written.
  */
 export function parameterText(parameter: Parameter): string {
-  const binding = parameter.name ?? parameter.pattern?.code;
-  if (binding === undefined) {
-    throw new Error("A parameter has neither a name nor a pattern.");
-  }
-  return [
-    parameter.rest ? "..." : "",
-    binding,
-    parameter.optional ? "?" : "",
-    parameter.type ? `: ${parameter.type.code}` : "",
-    parameter.default ? ` = ${parameter.default.code}` : "",
-  ].join("");
+	const binding = parameter.name ?? parameter.pattern?.code;
+	if (binding === undefined) {
+		throw new Error("A parameter has neither a name nor a pattern.");
+	}
+	return [
+		parameter.rest ? "..." : "",
+		binding,
+		parameter.optional ? "?" : "",
+		parameter.type ? `: ${parameter.type.code}` : "",
+		parameter.default ? ` = ${parameter.default.code}` : "",
+	].join("");
 }
 
 /** A function's parameters as a list, without the parentheses: `event: MouseEvent, step = 1`. */
 export function parametersText(fn: FunctionCode): string {
-  return fn.parameters.map(parameterText).join(", ");
+	return fn.parameters.map(parameterText).join(", ");
 }
 
 /**
@@ -49,13 +49,13 @@ export function parametersText(fn: FunctionCode): string {
  * expression body that is an object literal or a sequence is parenthesised.
  */
 export function functionText(
-  fn: FunctionCode,
-  component: UfComponent,
-  rules: RewriteRules | undefined,
-  site: RewriteSite,
-  options: FunctionTextOptions = {},
+	fn: FunctionCode,
+	component: UfComponent,
+	rules: RewriteRules | undefined,
+	site: RewriteSite,
+	options: FunctionTextOptions = {},
 ): string {
-  return functionSource(fn, bodyCode(fn, component, rules, site), options);
+	return functionSource(fn, bodyCode(fn, component, rules, site), options);
 }
 
 /**
@@ -63,18 +63,18 @@ export function functionText(
  * expression): see {@link functionText}.
  */
 export function functionSource(
-  fn: FunctionCode,
-  body: string,
-  options: FunctionTextOptions = {},
+	fn: FunctionCode,
+	body: string,
+	options: FunctionTextOptions = {},
 ): string {
-  const head = `${fn.async ? "async " : ""}`;
-  const signature = `(${parametersText(fn)})${fn.returnType ? `: ${fn.returnType.code}` : ""}`;
-  if (options.arrow ?? options.name === undefined) {
-    return `${head}${signature} => ${fn.expression ? arrowBody(body) : body}`;
-  }
-  const name = options.name === undefined ? "" : ` ${options.name}`;
-  const block = fn.expression ? `{\n  return ${body};\n}` : body;
-  return `${head}function${name}${signature} ${block}`;
+	const head = `${fn.async ? "async " : ""}`;
+	const signature = `(${parametersText(fn)})${fn.returnType ? `: ${fn.returnType.code}` : ""}`;
+	if (options.arrow ?? options.name === undefined) {
+		return `${head}${signature} => ${fn.expression ? arrowBody(body) : body}`;
+	}
+	const name = options.name === undefined ? "" : ` ${options.name}`;
+	const block = fn.expression ? `{\n  return ${body};\n}` : body;
+	return `${head}function${name}${signature} ${block}`;
 }
 
 /**
@@ -83,20 +83,20 @@ export function functionSource(
  * expression;`, or with `discard` (a handler's value, which every target drops) `expression;`.
  */
 export function functionBodyText(
-  fn: FunctionCode,
-  component: UfComponent,
-  rules: RewriteRules | undefined,
-  site: RewriteSite,
-  options: { discard?: boolean } = {},
+	fn: FunctionCode,
+	component: UfComponent,
+	rules: RewriteRules | undefined,
+	site: RewriteSite,
+	options: { discard?: boolean } = {},
 ): string {
-  const body = bodyCode(fn, component, rules, site);
-  if (fn.expression) {
-    return options.discard ? `${expressionStatement(body)};` : `return ${body};`;
-  }
-  if (!body.startsWith("{") || !body.endsWith("}")) {
-    throw new Error(`A function's block body is not a block: \`${body}\`.`);
-  }
-  return body.slice(1, -1).trim();
+	const body = bodyCode(fn, component, rules, site);
+	if (fn.expression) {
+		return options.discard ? `${expressionStatement(body)};` : `return ${body};`;
+	}
+	if (!body.startsWith("{") || !body.endsWith("}")) {
+		throw new Error(`A function's block body is not a block: \`${body}\`.`);
+	}
+	return body.slice(1, -1).trim();
 }
 
 /**
@@ -105,43 +105,43 @@ export function functionBodyText(
  * ({@link functionText}).
  */
 export function handlerText(
-  handler: Handler,
-  component: UfComponent,
-  rules: RewriteRules | undefined,
-  site: RewriteSite = "client",
+	handler: Handler,
+	component: UfComponent,
+	rules: RewriteRules | undefined,
+	site: RewriteSite = "client",
 ): string {
-  switch (handler.kind) {
-    case "Function": {
-      const binding = bindingOf(component, handler.binding);
-      if (!rules) {
-        return binding.name;
-      }
-      const reference = { kind: "Binding" as const, binding: handler.binding, span: handler.span };
-      return rules.binding(reference, binding, binding.name, site);
-    }
-    case "Inline":
-      return functionText(handler.function, component, rules, site);
-    default:
-      return unreachable(handler);
-  }
+	switch (handler.kind) {
+		case "Function": {
+			const binding = bindingOf(component, handler.binding);
+			if (!rules) {
+				return binding.name;
+			}
+			const reference = { kind: "Binding" as const, binding: handler.binding, span: handler.span };
+			return rules.binding(reference, binding, binding.name, site);
+		}
+		case "Inline":
+			return functionText(handler.function, component, rules, site);
+		default:
+			return unreachable(handler);
+	}
 }
 
 function bodyCode(
-  fn: FunctionCode,
-  component: UfComponent,
-  rules: RewriteRules | undefined,
-  site: RewriteSite,
+	fn: FunctionCode,
+	component: UfComponent,
+	rules: RewriteRules | undefined,
+	site: RewriteSite,
 ): string {
-  return rules ? rewriteCode(fn.body, component, rules, site) : fn.body.code;
+	return rules ? rewriteCode(fn.body, component, rules, site) : fn.body.code;
 }
 
 /** An arrow's expression body: an object literal or a sequence in parentheses. */
 function arrowBody(code: string): string {
-  const expression = parseExpression(code);
-  const unwrapped = !(code.startsWith("(") && expression.start > 0);
-  return (unwrapped && code.startsWith("{")) || parenthesesNeeded(expression, code, "argument")
-    ? `(${code})`
-    : code;
+	const expression = parseExpression(code);
+	const unwrapped = !(code.startsWith("(") && expression.start > 0);
+	return (unwrapped && code.startsWith("{")) || parenthesesNeeded(expression, code, "argument")
+		? `(${code})`
+		: code;
 }
 
 /**
@@ -149,10 +149,10 @@ function arrowBody(code: string): string {
  * something else (`{`, `function`, `class`, `let [`).
  */
 function expressionStatement(code: string): string {
-  return /^(?:\{|function\b|class\b|async\s+function\b|let\s*\[)/.test(code) ? `(${code})` : code;
+	return /^(?:\{|function\b|class\b|async\s+function\b|let\s*\[)/.test(code) ? `(${code})` : code;
 }
 
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

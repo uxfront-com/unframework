@@ -18,9 +18,9 @@
 // each render, which React calls again with the element, so the hook records the element with
 // the value of each render.
 import {
-  dependencyImports,
-  directiveDependencies,
-  directiveHooksObject,
+	dependencyImports,
+	directiveDependencies,
+	directiveHooksObject,
 } from "@unframework.dev/codegen";
 import type { EmitContext, ImportSet, OutputFile } from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
@@ -28,19 +28,19 @@ import type { DirectiveAttribute, RenderNode, UfComponent, UfDirective } from "@
 
 /** `const vTrace = { mounted(el: HTMLElement, value: string): void { … } };`, the plain hooks. */
 export function hooksCode(directive: UfDirective, exported = false): string {
-  return `${exported ? "export " : ""}const ${directive.name} = ${directiveHooksObject(directive)};`;
+	return `${exported ? "export " : ""}const ${directive.name} = ${directiveHooksObject(directive)};`;
 }
 
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, as its plain hooks. */
 export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
-  const dependencies = directiveDependencies(directive, context.module);
-  const code = [
-    ...(dependencyImports(dependencies).length ? [dependencyImports(dependencies).join("\n")] : []),
-    ...dependencies.types,
-    ...(dependencies.constants.length ? [dependencies.constants.join("\n")] : []),
-    hooksCode(directive, true),
-  ].join("\n\n");
-  return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
+	const dependencies = directiveDependencies(directive, context.module);
+	const code = [
+		...(dependencyImports(dependencies).length ? [dependencyImports(dependencies).join("\n")] : []),
+		...dependencies.types,
+		...(dependencies.constants.length ? [dependencies.constants.join("\n")] : []),
+		hooksCode(directive, true),
+	].join("\n\n");
+	return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
 }
 
 /**
@@ -48,25 +48,25 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Arr
  * before its ancestor's, siblings' in document order), each element's in attribute order.
  */
 export function directivesInPostOrder(component: UfComponent): Array<DirectiveAttribute> {
-  const found: Array<DirectiveAttribute> = [];
-  walk(component.render, {
-    leave(node) {
-      if (node.kind !== "Element") {
-        return;
-      }
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Directive") {
-          found.push(attribute);
-        }
-      }
-    },
-  });
-  return found;
+	const found: Array<DirectiveAttribute> = [];
+	walk(component.render, {
+		leave(node) {
+			if (node.kind !== "Element") {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Directive") {
+					found.push(attribute);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /** The ref a directive's call returns, by name: `focusTrapRef` for `vFocusTrap`. */
 export function directiveRefBase(name: string): string {
-  return `${name[1]!.toLowerCase()}${name.slice(2)}Ref`;
+	return `${name[1]!.toLowerCase()}${name.slice(2)}Ref`;
 }
 
 /**
@@ -74,31 +74,31 @@ export function directiveRefBase(name: string): string {
  * use whose value the component reads, `each` for one whose elements pass their own (ADR-0108).
  */
 export function useDirectiveHelper(
-  names: { hook?: string; each?: string; hooks: string; queue: string },
-  imports: ImportSet,
+	names: { hook?: string; each?: string; hooks: string; queue: string },
+	imports: ImportSet,
 ): string {
-  const react = (name: string) => imports.add("react", name);
-  const { hook, each, hooks, queue } = names;
-  return [
-    `/** The hooks of a directive, which \`${hook ?? each}\` runs on its elements. */
+	const react = (name: string) => imports.add("react", name);
+	const { hook, each, hooks, queue } = names;
+	return [
+		`/** The hooks of a directive, which \`${hook ?? each}\` runs on its elements. */
 interface ${hooks}<E extends Element, T> {
   mounted?(el: E, value: T): unknown;
   updated?(el: E, value: T, oldValue: T): unknown;
   unmounted?(el: E): unknown;
 }`,
-    ...(hook ? [useDirectiveCode(hook, hooks, queue, react)] : []),
-    ...(each ? [useElementDirectiveCode(each, hooks, queue, react)] : []),
-  ].join("\n\n");
+		...(hook ? [useDirectiveCode(hook, hooks, queue, react)] : []),
+		...(each ? [useElementDirectiveCode(each, hooks, queue, react)] : []),
+	].join("\n\n");
 }
 
 /** `useDirective`: one use's hooks, with the value the component's getter reads. */
 function useDirectiveCode(
-  hook: string,
-  hooks: string,
-  queue: string,
-  react: (name: string) => string,
+	hook: string,
+	hooks: string,
+	queue: string,
+	react: (name: string) => string,
 ): string {
-  return `/**
+	return `/**
  * Runs a directive's hooks on each element its ref callback receives, apart: \`mounted\` once
  * the element is rendered, \`updated\` after a render that changes the value, and \`unmounted\`
  * once that element is gone, whichever component renders or removes it. One use may render
@@ -158,12 +158,12 @@ function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>, getValue: () =
 
 /** `useElementDirective`: one use's hooks, with the value each element passes beside it. */
 function useElementDirectiveCode(
-  hook: string,
-  hooks: string,
-  queue: string,
-  react: (name: string) => string,
+	hook: string,
+	hooks: string,
+	queue: string,
+	react: (name: string) => string,
 ): string {
-  return `/**
+	return `/**
  * Runs a directive's hooks on each element, apart, with the element's own value: a list's rows,
  * or a scoped slot a child calls with other props each time, give each element its own. It
  * returns a function that makes an element's ref callback from its value as the element renders,
@@ -221,18 +221,18 @@ function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>) {
 
 /** Whether a node or any node inside it applies a directive. */
 export function appliesDirective(node: RenderNode): boolean {
-  let found = false;
-  walk(node, {
-    enter(each) {
-      if (
-        each.kind === "Element" &&
-        each.attributes.some((attribute) => attribute.kind === "Directive")
-      ) {
-        found = true;
-      }
-    },
-  });
-  return found;
+	let found = false;
+	walk(node, {
+		enter(each) {
+			if (
+				each.kind === "Element" &&
+				each.attributes.some((attribute) => attribute.kind === "Directive")
+			) {
+				found = true;
+			}
+		},
+	});
+	return found;
 }
 
 /**
@@ -241,7 +241,7 @@ export function appliesDirective(node: RenderNode): boolean {
  * one, and a ref object's \`current\`. \`Ref\` and \`RefCallback\` are React's types' locals.
  */
 export function mergeRefsHelper(name: string, types: { Ref: string; RefCallback: string }): string {
-  return `/** Joins an element's refs into one ref callback, whose cleanup clears each. */
+	return `/** Joins an element's refs into one ref callback, whose cleanup clears each. */
 function ${name}<E extends Element>(...refs: (${types.Ref}<E> | undefined)[]): ${types.RefCallback}<E> {
   return (element) => {
     const cleanups = refs.map((ref) => {

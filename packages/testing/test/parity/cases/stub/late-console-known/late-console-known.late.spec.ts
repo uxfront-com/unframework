@@ -7,12 +7,12 @@ import { describeTargets, mount } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
 
 describeTargets("stub/late-console-known", () => {
-  afterAll(() => {
-    console.warn("[fixture] a known late warning");
-  });
+	afterAll(() => {
+		console.warn("[fixture] a known late warning");
+	});
 
-  it("renders", async () => {
-    const view = await mount({ html: "<p>Known</p>" });
-    await expect.element(view.getByText("Known")).toBeVisible();
-  });
+	it("renders", async () => {
+		const view = await mount({ html: "<p>Known</p>" });
+		await expect.element(view.getByText("Known")).toBeVisible();
+	});
 });

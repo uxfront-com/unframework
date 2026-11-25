@@ -30,40 +30,40 @@ import type { ProjectVite } from "./project-vite.ts";
 
 export { discoverCases } from "./cases.ts";
 export {
-  OWNED_KEYS,
-  OWNED_SERVER_KEYS,
-  PASS_THROUGH_DECLARATIONS,
-  passThroughDeclarations,
-  projectPlugins,
-  withProjectVite,
+	OWNED_KEYS,
+	OWNED_SERVER_KEYS,
+	PASS_THROUGH_DECLARATIONS,
+	passThroughDeclarations,
+	projectPlugins,
+	withProjectVite,
 } from "./project-vite.ts";
 export type { ProjectPlugins, ProjectVite } from "./project-vite.ts";
 export type { DiscoverOptions, ProjectCase } from "./cases.ts";
 
 /** The options of {@link defineTestConfig}. */
 export interface TestConfigOptions {
-  /** The targets to test: `unframework.config.ts`'s `targets` by default. */
-  targets?: ReadonlyArray<TargetName>;
-  /** Globs of test files, relative to the root: `["**\/*.test.ts"]` by default. */
-  include?: ReadonlyArray<string>;
-  /**
-   * The target that writes the shared expectations, which every other target must match: `vue`
-   * when the project tests it, the first target otherwise. It always joins the run.
-   */
-  reference?: TargetName;
-  /**
-   * What pixels compare with: `live`, every target against the reference's capture in the same
-   * run, by default, in CI too; or `baseline`, committed baselines, which only the baseline image
-   * writes.
-   */
-  pixels?: PixelMode;
-  /**
-   * Where a target's compiler stack resolves from, such as Angular's: `package.resolveFrom` in
-   * `unframework.config.ts` by default, then the root.
-   */
-  toolchainDirs?: Partial<Record<TargetName, string>>;
-  /** The project's root, where `unframework.config.ts` lies: the working directory by default. */
-  root?: string;
+	/** The targets to test: `unframework.config.ts`'s `targets` by default. */
+	targets?: ReadonlyArray<TargetName>;
+	/** Globs of test files, relative to the root: `["**\/*.test.ts"]` by default. */
+	include?: ReadonlyArray<string>;
+	/**
+	 * The target that writes the shared expectations, which every other target must match: `vue`
+	 * when the project tests it, the first target otherwise. It always joins the run.
+	 */
+	reference?: TargetName;
+	/**
+	 * What pixels compare with: `live`, every target against the reference's capture in the same
+	 * run, by default, in CI too; or `baseline`, committed baselines, which only the baseline image
+	 * writes.
+	 */
+	pixels?: PixelMode;
+	/**
+	 * Where a target's compiler stack resolves from, such as Angular's: `package.resolveFrom` in
+	 * `unframework.config.ts` by default, then the root.
+	 */
+	toolchainDirs?: Partial<Record<TargetName, string>>;
+	/** The project's root, where `unframework.config.ts` lies: the working directory by default. */
+	root?: string;
 }
 
 /** The test files a project's run finds by default. */
@@ -80,7 +80,7 @@ export const TESTING_PACKAGE: RegExp = /[\\/]node_modules[\\/]@unframework\.dev[
  * framework, which must be the copy the component the project's Vite pipeline compiles imports.
  */
 export const TARGET_PACKAGES: RegExp =
-  /[\\/]node_modules[\\/]@unframework\.dev[\\/]target-[a-z]+[\\/]/;
+	/[\\/]node_modules[\\/]@unframework\.dev[\\/]target-[a-z]+[\\/]/;
 
 /** How long a test runs at most: a cold browser project's first mount compiles its framework. */
 const TEST_TIMEOUT = 60_000;
@@ -93,99 +93,99 @@ const TEST_TIMEOUT = 60_000;
  * cannot tell apart and a toolchain that cannot load: a check that cannot start fails.
  */
 export async function defineTestConfig(options: TestConfigOptions = {}): Promise<ViteUserConfig> {
-  const root = realpathSync(options.root ?? process.cwd());
-  const config = await projectConfig(root);
-  const targets = options.targets ?? config.targets;
-  checkTargets("targets", targets, TARGET_NAMES);
-  const reference = options.reference ?? (targets.includes("vue") ? "vue" : targets[0]);
-  if (reference === undefined) {
-    throw new Error("[uf] defineTestConfig: the project has no target.");
-  }
-  checkTargets("reference", [reference], targets);
+	const root = realpathSync(options.root ?? process.cwd());
+	const config = await projectConfig(root);
+	const targets = options.targets ?? config.targets;
+	checkTargets("targets", targets, TARGET_NAMES);
+	const reference = options.reference ?? (targets.includes("vue") ? "vue" : targets[0]);
+	if (reference === undefined) {
+		throw new Error("[uf] defineTestConfig: the project has no target.");
+	}
+	checkTargets("reference", [reference], targets);
 
-  const mode = resolveHarnessMode({
-    env: process.env,
-    platform: process.platform,
-    // Under `unframework test`, the command line is the CLI's, whose own `--update` is not
-    // Vitest's: the CLI refuses Vitest's in what it passes on (`UF_TEST_CLI`).
-    argv: process.env.UF_TEST_CLI === "1" ? [] : process.argv,
-    project: { pixels: options.pixels ?? "live" },
-  });
-  if (mode.browser !== "chromium") {
-    throw new Error(
-      `[uf] A project's tests run in Chromium alone: UF_BROWSER=${mode.browser} cannot apply.`,
-    );
-  }
+	const mode = resolveHarnessMode({
+		env: process.env,
+		platform: process.platform,
+		// Under `unframework test`, the command line is the CLI's, whose own `--update` is not
+		// Vitest's: the CLI refuses Vitest's in what it passes on (`UF_TEST_CLI`).
+		argv: process.env.UF_TEST_CLI === "1" ? [] : process.argv,
+		project: { pixels: options.pixels ?? "live" },
+	});
+	if (mode.browser !== "chromium") {
+		throw new Error(
+			`[uf] A project's tests run in Chromium alone: UF_BROWSER=${mode.browser} cannot apply.`,
+		);
+	}
 
-  const include = options.include ?? DEFAULT_INCLUDE;
-  const cases = discoverCases({ root, include });
-  // A run with nothing to test would pass on nothing, or fail with Vitest's empty suite.
-  if (!cases.length) {
-    throw new Error(
-      `[uf] No test file under ${root} matches ${include.join(", ")}: a case is a directory with one test file, such as test/button/button.test.ts.`,
-    );
-  }
-  const harness = createHarnessRun({
-    root,
-    casesDir: root,
-    reference,
-    mode,
-    quarantine: [],
-    cases: Object.fromEntries(cases.map((info) => [info.id, info.config])),
-    updateCommand: "unframework test --update",
-    liveFonts: config.liveFonts,
-  });
-  const named = caseReferences(harness);
-  checkTargets("a case's reference", named, targets);
-  const run = runTargets(targets, selectedTargets(process.env.UF_TARGETS, targets), [
-    reference,
-    ...named,
-  ]);
-  const setup: ProjectSetup = {
-    root,
-    harness,
-    mode,
-    cases,
-    targets: run,
-    toolchainDir: (target) =>
-      toolchainDirOf(target, root, options.toolchainDirs, config.package?.resolveFrom),
-    vite: config.vite,
-    declarations: passThroughDeclarations(root),
-  };
-  const projects = await Promise.all(
-    run.flatMap((target) => [browserProject(setup, target), ssrProject(setup, target)]),
-  );
-  return { test: { projects } };
+	const include = options.include ?? DEFAULT_INCLUDE;
+	const cases = discoverCases({ root, include });
+	// A run with nothing to test would pass on nothing, or fail with Vitest's empty suite.
+	if (!cases.length) {
+		throw new Error(
+			`[uf] No test file under ${root} matches ${include.join(", ")}: a case is a directory with one test file, such as test/button/button.test.ts.`,
+		);
+	}
+	const harness = createHarnessRun({
+		root,
+		casesDir: root,
+		reference,
+		mode,
+		quarantine: [],
+		cases: Object.fromEntries(cases.map((info) => [info.id, info.config])),
+		updateCommand: "unframework test --update",
+		liveFonts: config.liveFonts,
+	});
+	const named = caseReferences(harness);
+	checkTargets("a case's reference", named, targets);
+	const run = runTargets(targets, selectedTargets(process.env.UF_TARGETS, targets), [
+		reference,
+		...named,
+	]);
+	const setup: ProjectSetup = {
+		root,
+		harness,
+		mode,
+		cases,
+		targets: run,
+		toolchainDir: (target) =>
+			toolchainDirOf(target, root, options.toolchainDirs, config.package?.resolveFrom),
+		vite: config.vite,
+		declarations: passThroughDeclarations(root),
+	};
+	const projects = await Promise.all(
+		run.flatMap((target) => [browserProject(setup, target), ssrProject(setup, target)]),
+	);
+	return { test: { projects } };
 }
 
 /** The project's `unframework.config.ts`, resolved, or an error that lists its diagnostics. */
 async function projectConfig(root: string): Promise<ResolvedConfig> {
-  const loaded = await loadConfig(root);
-  const resolved =
-    loaded.raw === undefined
-      ? { config: undefined, diagnostics: [] }
-      : await resolveConfig(loaded.raw, loaded);
-  const diagnostics = [...loaded.diagnostics, ...resolved.diagnostics];
-  if (!resolved.config || diagnostics.some((each) => each.severity === "error")) {
-    throw new Error(
-      `[uf] ${loaded.file ?? "unframework.config.ts"} is invalid:\n  ${diagnostics.map((each) => `${each.code} ${each.message}`).join("\n  ")}`,
-    );
-  }
-  return resolved.config;
+	const loaded = await loadConfig(root);
+	const resolved =
+		loaded.raw === undefined
+			? { config: undefined, diagnostics: [] }
+			: await resolveConfig(loaded.raw, loaded);
+	const diagnostics = [...loaded.diagnostics, ...resolved.diagnostics];
+	if (!resolved.config || diagnostics.some((each) => each.severity === "error")) {
+		throw new Error(
+			`[uf] ${loaded.file ?? "unframework.config.ts"} is invalid:\n  ${diagnostics.map((each) => `${each.code} ${each.message}`).join("\n  ")}`,
+		);
+	}
+	return resolved.config;
 }
 
 /** Throws unless every name is one of `allowed`. */
 function checkTargets(
-  what: string,
-  names: ReadonlyArray<string>,
-  allowed: ReadonlyArray<TargetName>,
+	what: string,
+	names: ReadonlyArray<string>,
+	allowed: ReadonlyArray<TargetName>,
 ): asserts names is ReadonlyArray<TargetName> {
-  const unknown = names.filter((name) => !(allowed as ReadonlyArray<string>).includes(name));
-  if (unknown.length) {
-    throw new Error(
-      `[uf] defineTestConfig: ${what} names ${unknown.join(", ")}, which ${unknown.length > 1 ? "are" : "is"} not among ${allowed === TARGET_NAMES ? "the targets" : "the project's targets"} (${allowed.join(", ")}).`,
-    );
-  }
+	const unknown = names.filter((name) => !(allowed as ReadonlyArray<string>).includes(name));
+	if (unknown.length) {
+		throw new Error(
+			`[uf] defineTestConfig: ${what} names ${unknown.join(", ")}, which ${unknown.length > 1 ? "are" : "is"} not among ${allowed === TARGET_NAMES ? "the targets" : "the project's targets"} (${allowed.join(", ")}).`,
+		);
+	}
 }
 
 /**
@@ -193,23 +193,23 @@ function checkTargets(
  * it is unset. A name outside the project's targets throws, so a typo never tests nothing.
  */
 export function selectedTargets(
-  value: string | undefined,
-  targets: ReadonlyArray<TargetName>,
+	value: string | undefined,
+	targets: ReadonlyArray<TargetName>,
 ): Array<TargetName> {
-  if (!value?.trim()) {
-    return [...targets];
-  }
-  const requested = value
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean);
-  const unknown = requested.filter((name) => !(targets as ReadonlyArray<string>).includes(name));
-  if (unknown.length) {
-    throw new Error(
-      `[uf] UF_TARGETS names ${unknown.join(", ")}, which ${unknown.length > 1 ? "are" : "is"} not among the project's targets (${targets.join(", ")}).`,
-    );
-  }
-  return targets.filter((name) => requested.includes(name));
+	if (!value?.trim()) {
+		return [...targets];
+	}
+	const requested = value
+		.split(",")
+		.map((name) => name.trim())
+		.filter(Boolean);
+	const unknown = requested.filter((name) => !(targets as ReadonlyArray<string>).includes(name));
+	if (unknown.length) {
+		throw new Error(
+			`[uf] UF_TARGETS names ${unknown.join(", ")}, which ${unknown.length > 1 ? "are" : "is"} not among the project's targets (${targets.join(", ")}).`,
+		);
+	}
+	return targets.filter((name) => requested.includes(name));
 }
 
 /**
@@ -218,11 +218,11 @@ export function selectedTargets(
  * compare with (ADR-0057), so they always join.
  */
 export function runTargets(
-  targets: ReadonlyArray<TargetName>,
-  selected: ReadonlyArray<TargetName>,
-  writers: ReadonlyArray<TargetName>,
+	targets: ReadonlyArray<TargetName>,
+	selected: ReadonlyArray<TargetName>,
+	writers: ReadonlyArray<TargetName>,
 ): Array<TargetName> {
-  return targets.filter((name) => selected.includes(name) || writers.includes(name));
+	return targets.filter((name) => selected.includes(name) || writers.includes(name));
 }
 
 /**
@@ -230,55 +230,55 @@ export function runTargets(
  * `package.resolveFrom`, which `resolveConfig` has made absolute, then the root (A9).
  */
 export function toolchainDirOf(
-  target: TargetName,
-  root: string,
-  toolchainDirs: TestConfigOptions["toolchainDirs"],
-  resolveFrom: string | Partial<Record<TargetName, string>> | undefined,
+	target: TargetName,
+	root: string,
+	toolchainDirs: TestConfigOptions["toolchainDirs"],
+	resolveFrom: string | Partial<Record<TargetName, string>> | undefined,
 ): string {
-  const own = toolchainDirs?.[target];
-  if (own !== undefined) {
-    return resolve(root, own);
-  }
-  return (typeof resolveFrom === "string" ? resolveFrom : resolveFrom?.[target]) ?? root;
+	const own = toolchainDirs?.[target];
+	if (own !== undefined) {
+		return resolve(root, own);
+	}
+	return (typeof resolveFrom === "string" ? resolveFrom : resolveFrom?.[target]) ?? root;
 }
 
 /** What every project factory reads. */
 interface ProjectSetup {
-  root: string;
-  harness: HarnessContext;
-  mode: HarnessMode;
-  cases: ReadonlyArray<ProjectCase>;
-  targets: ReadonlyArray<TargetName>;
-  toolchainDir(target: TargetName): string;
-  /** The project's `vite` function (ADR-0104). */
-  vite: ProjectVite;
-  /** The declarations of the pass-through modules, which Angular's compile reads (ADR-0104). */
-  declarations: ReadonlyArray<string>;
+	root: string;
+	harness: HarnessContext;
+	mode: HarnessMode;
+	cases: ReadonlyArray<ProjectCase>;
+	targets: ReadonlyArray<TargetName>;
+	toolchainDir(target: TargetName): string;
+	/** The project's `vite` function (ADR-0104). */
+	vite: ProjectVite;
+	/** The declarations of the pass-through modules, which Angular's compile reads (ADR-0104). */
+	declarations: ReadonlyArray<string>;
 }
 
 function group(setup: ProjectSetup, kind: ProjectKind, target: TargetName): number {
-  return groupOrder(
-    kind,
-    target,
-    setup.mode,
-    setup.harness.reference,
-    caseReferences(setup.harness),
-    setup.targets,
-  );
+	return groupOrder(
+		kind,
+		target,
+		setup.mode,
+		setup.harness.reference,
+		caseReferences(setup.harness),
+		setup.targets,
+	);
 }
 
 type ToolchainModule = { toolchain?: Toolchain; default?: Toolchain };
 
 /** Each target's toolchain, loaded when its projects are built, so a run loads only its own. */
 const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> = {
-  react: () => import("@unframework.dev/target-react/toolchain"),
-  vue: () => import("@unframework.dev/target-vue/toolchain"),
-  svelte: () => import("@unframework.dev/target-svelte/toolchain"),
-  solid: () => import("@unframework.dev/target-solid/toolchain"),
-  solid2: () => import("@unframework.dev/target-solid2/toolchain"),
-  angular: () => import("@unframework.dev/target-angular/toolchain"),
-  qwik: () => import("@unframework.dev/target-qwik/toolchain"),
-  astro: () => import("@unframework.dev/target-astro/toolchain"),
+	react: () => import("@unframework.dev/target-react/toolchain"),
+	vue: () => import("@unframework.dev/target-vue/toolchain"),
+	svelte: () => import("@unframework.dev/target-svelte/toolchain"),
+	solid: () => import("@unframework.dev/target-solid/toolchain"),
+	solid2: () => import("@unframework.dev/target-solid2/toolchain"),
+	angular: () => import("@unframework.dev/target-angular/toolchain"),
+	qwik: () => import("@unframework.dev/target-qwik/toolchain"),
+	astro: () => import("@unframework.dev/target-astro/toolchain"),
 };
 
 /**
@@ -287,29 +287,29 @@ const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> =
  * preview (`@unframework.dev/visual`) builds its servers from it too.
  */
 export async function loadToolchain(target: TargetName): Promise<Toolchain> {
-  let module: ToolchainModule;
-  try {
-    module = await TOOLCHAINS[target]();
-  } catch (error) {
-    throw new Error(
-      `[uf] The ${target} toolchain (@unframework.dev/target-${target}/toolchain) could not be loaded: install the ${target} framework and its Vite plugin.`,
-      { cause: error },
-    );
-  }
-  const toolchain = module.toolchain ?? module.default;
-  if (!toolchain || toolchain.name !== target) {
-    throw new Error(
-      `[uf] @unframework.dev/target-${target}/toolchain must export \`toolchain\` with name "${target}".`,
-    );
-  }
-  return toolchain;
+	let module: ToolchainModule;
+	try {
+		module = await TOOLCHAINS[target]();
+	} catch (error) {
+		throw new Error(
+			`[uf] The ${target} toolchain (@unframework.dev/target-${target}/toolchain) could not be loaded: install the ${target} framework and its Vite plugin.`,
+			{ cause: error },
+		);
+	}
+	const toolchain = module.toolchain ?? module.default;
+	if (!toolchain || toolchain.name !== target) {
+		throw new Error(
+			`[uf] @unframework.dev/target-${target}/toolchain must export \`toolchain\` with name "${target}".`,
+		);
+	}
+	return toolchain;
 }
 
 async function unpluginOf(target: TargetName): Promise<Array<Plugin>> {
-  const { default: unframework } = await import("@unframework.dev/unplugin/vite");
-  // Every compile is recorded, so a mount listens to the events of the module it compiled.
-  const options: UnframeworkOptions = { target, onCompile: (event) => recordCompiledModule(event) };
-  return unframework(options);
+	const { default: unframework } = await import("@unframework.dev/unplugin/vite");
+	// Every compile is recorded, so a mount listens to the events of the module it compiled.
+	const options: UnframeworkOptions = { target, onCompile: (event) => recordCompiledModule(event) };
+	return unframework(options);
 }
 
 /**
@@ -318,16 +318,16 @@ async function unpluginOf(target: TargetName): Promise<Array<Plugin>> {
  * the project's plugins for the same target and kind of server (ADR-0104).
  */
 function toolchainContext(
-  setup: ProjectSetup,
-  target: TargetName,
-  mode: "browser" | "ssr",
+	setup: ProjectSetup,
+	target: TargetName,
+	mode: "browser" | "ssr",
 ): ToolchainContext {
-  return {
-    toolchainDir: setup.toolchainDir(target),
-    root: setup.root,
-    declarations: setup.declarations,
-    plugins: projectPlugins(setup.vite, { target, mode }),
-  };
+	return {
+		toolchainDir: setup.toolchainDir(target),
+		root: setup.root,
+		declarations: setup.declarations,
+		plugins: projectPlugins(setup.vite, { target, mode }),
+	};
 }
 
 type ProjectTest = NonNullable<UserWorkspaceConfig["test"]>;
@@ -338,24 +338,24 @@ type ProjectTest = NonNullable<UserWorkspaceConfig["test"]>;
  * add up, this configuration's first.
  */
 function projectTest(
-  target: TargetName,
-  fragment: ViteUserConfig["test"],
-  defaults: ProjectTest,
-  owned: ProjectTest,
+	target: TargetName,
+	fragment: ViteUserConfig["test"],
+	defaults: ProjectTest,
+	owned: ProjectTest,
 ): ProjectTest {
-  const toolchain = (fragment ?? {}) as ProjectTest;
-  const taken = Object.keys(toolchain).filter((key) => key !== "setupFiles" && key in owned);
-  if (taken.length) {
-    throw new Error(
-      `[uf] The ${target} toolchain's Vite configuration sets ${taken.map((key) => `test.${key}`).join(", ")}, which defineTestConfig owns.`,
-    );
-  }
-  const setupFiles = [owned.setupFiles ?? [], toolchain.setupFiles ?? []].flat();
-  return { ...defaults, ...toolchain, ...owned, ...(setupFiles.length ? { setupFiles } : {}) };
+	const toolchain = (fragment ?? {}) as ProjectTest;
+	const taken = Object.keys(toolchain).filter((key) => key !== "setupFiles" && key in owned);
+	if (taken.length) {
+		throw new Error(
+			`[uf] The ${target} toolchain's Vite configuration sets ${taken.map((key) => `test.${key}`).join(", ")}, which defineTestConfig owns.`,
+		);
+	}
+	const setupFiles = [owned.setupFiles ?? [], toolchain.setupFiles ?? []].flat();
+	return { ...defaults, ...toolchain, ...owned, ...(setupFiles.length ? { setupFiles } : {}) };
 }
 
 function resolveModule(specifier: string): string {
-  return fileURLToPath(import.meta.resolve(specifier));
+	return fileURLToPath(import.meta.resolve(specifier));
 }
 
 /**
@@ -364,120 +364,120 @@ function resolveModule(specifier: string): string {
  * path, since the project need not install the target package (pnpm keeps it out of reach).
  */
 export function toolchainClientFile(toolchain: Toolchain): string {
-  return resolveModule(toolchain.client);
+	return resolveModule(toolchain.client);
 }
 
 async function browserProject(
-  setup: ProjectSetup,
-  target: TargetName,
+	setup: ProjectSetup,
+	target: TargetName,
 ): Promise<UserWorkspaceConfig> {
-  const name = `browser:${target}`;
-  const toolchain = await loadToolchain(target);
-  const context = toolchainContext(setup, target, "browser");
-  const fragment = await toolchain.vite("browser", context);
-  // The project's config goes in last: its plugins before the unplugin, the rest merged after
-  // the toolchain's fragment (ADR-0064, ADR-0104).
-  const config = await withProjectVite(
-    mergeConfig(
-      {
-        root: setup.root,
-        plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
-        // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
-        // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
-        // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
-        // Nor is Qwik's target: its mount adapter holds a `component$` and a `$()` that Qwik's
-        // plugin must compile, which it never does in a pre-bundled dependency.
-        optimizeDeps: {
-          include: ["@unframework.dev/testing > axe-core", "@unframework.dev/testing > parse5"],
-          exclude: ["@unframework.dev/testing", "@unframework.dev/target-qwik"],
-        },
-      },
-      fragment,
-    ),
-    setup.vite,
-    { target, mode: "browser" },
-  );
-  return {
-    ...config,
-    extends: false,
-    test: projectTest(
-      target,
-      fragment.test,
-      {
-        testTimeout: TEST_TIMEOUT,
-        // A locator that never matches fails in seconds, and a test without an assertion fails L8.
-        expect: { poll: { timeout: 5000 }, requireAssertions: true },
-      },
-      {
-        name,
-        root: setup.root,
-        include: setup.cases.map((info) => info.spec),
-        exclude: [...EXCLUDED],
-        setupFiles: [
-          resolveModule("@unframework.dev/testing/setup"),
-          resolveModule(`@unframework.dev/testing/${target}`),
-        ],
-        provide: {
-          target,
-          ufHarness: setup.harness,
-          ufCapabilities: builtinTargets[target].capabilities,
-          ufNoOutput: {},
-        },
-        sequence: { groupOrder: group(setup, "browser", target) },
-        browser: {
-          ...parityBrowser({
-            name,
-            commands: { ...toolchain.browserCommands?.(context), ufMapStack },
-          }),
-          // Vitest's failure screenshots go next to the test by default, among the expectations.
-          screenshotDirectory: join(setup.root, ".reports", "failures"),
-        },
-      },
-    ),
-  } as UserWorkspaceConfig;
+	const name = `browser:${target}`;
+	const toolchain = await loadToolchain(target);
+	const context = toolchainContext(setup, target, "browser");
+	const fragment = await toolchain.vite("browser", context);
+	// The project's config goes in last: its plugins before the unplugin, the rest merged after
+	// the toolchain's fragment (ADR-0064, ADR-0104).
+	const config = await withProjectVite(
+		mergeConfig(
+			{
+				root: setup.root,
+				plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
+				// The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
+				// one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
+				// it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
+				// Nor is Qwik's target: its mount adapter holds a `component$` and a `$()` that Qwik's
+				// plugin must compile, which it never does in a pre-bundled dependency.
+				optimizeDeps: {
+					include: ["@unframework.dev/testing > axe-core", "@unframework.dev/testing > parse5"],
+					exclude: ["@unframework.dev/testing", "@unframework.dev/target-qwik"],
+				},
+			},
+			fragment,
+		),
+		setup.vite,
+		{ target, mode: "browser" },
+	);
+	return {
+		...config,
+		extends: false,
+		test: projectTest(
+			target,
+			fragment.test,
+			{
+				testTimeout: TEST_TIMEOUT,
+				// A locator that never matches fails in seconds, and a test without an assertion fails L8.
+				expect: { poll: { timeout: 5000 }, requireAssertions: true },
+			},
+			{
+				name,
+				root: setup.root,
+				include: setup.cases.map((info) => info.spec),
+				exclude: [...EXCLUDED],
+				setupFiles: [
+					resolveModule("@unframework.dev/testing/setup"),
+					resolveModule(`@unframework.dev/testing/${target}`),
+				],
+				provide: {
+					target,
+					ufHarness: setup.harness,
+					ufCapabilities: builtinTargets[target].capabilities,
+					ufNoOutput: {},
+				},
+				sequence: { groupOrder: group(setup, "browser", target) },
+				browser: {
+					...parityBrowser({
+						name,
+						commands: { ...toolchain.browserCommands?.(context), ufMapStack },
+					}),
+					// Vitest's failure screenshots go next to the test by default, among the expectations.
+					screenshotDirectory: join(setup.root, ".reports", "failures"),
+				},
+			},
+		),
+	} as UserWorkspaceConfig;
 }
 
 async function ssrProject(setup: ProjectSetup, target: TargetName): Promise<UserWorkspaceConfig> {
-  const toolchain = await loadToolchain(target);
-  const fragment = await toolchain.vite("ssr", toolchainContext(setup, target, "ssr"));
-  const config = await withProjectVite(
-    mergeConfig({ root: setup.root, plugins: await unpluginOf(target) }, fragment),
-    setup.vite,
-    { target, mode: "ssr" },
-  );
-  const cases = setup.cases.map((info): SsrCase => ({
-    id: info.id,
-    dir: info.dir,
-    source: info.source,
-  }));
-  return {
-    ...config,
-    extends: false,
-    test: projectTest(
-      target,
-      fragment.test,
-      { environment: "node", pool: "forks", testTimeout: TEST_TIMEOUT },
-      {
-        name: `ssr:${target}`,
-        root: setup.root,
-        // The spec ships in this package, so it lies in `node_modules` in a project: by its
-        // resolved path, and with no exclusion, or Vitest's default drops it.
-        include: [resolveModule("@unframework.dev/testing/ssr/spec")],
-        exclude: [],
-        // Vitest hands an ESM package under `node_modules` to Node, which would import each case's
-        // `.uf.tsx` past the unplugin. Inlined, the comparison's imports go through this
-        // project's Vite pipeline, as the corpus's do from the workspace. The targets' server
-        // renderers are inlined too, so they render with the framework the component imports:
-        // through Node they would load a second copy, and Angular's would never be linked.
-        server: { deps: { inline: [TESTING_PACKAGE, TARGET_PACKAGES] } },
-        provide: {
-          target,
-          ufHarness: setup.harness,
-          ufServer: toolchain.server,
-          ufSsrCases: cases,
-        },
-        sequence: { groupOrder: group(setup, "ssr", target) },
-      },
-    ),
-  } as UserWorkspaceConfig;
+	const toolchain = await loadToolchain(target);
+	const fragment = await toolchain.vite("ssr", toolchainContext(setup, target, "ssr"));
+	const config = await withProjectVite(
+		mergeConfig({ root: setup.root, plugins: await unpluginOf(target) }, fragment),
+		setup.vite,
+		{ target, mode: "ssr" },
+	);
+	const cases = setup.cases.map((info): SsrCase => ({
+		id: info.id,
+		dir: info.dir,
+		source: info.source,
+	}));
+	return {
+		...config,
+		extends: false,
+		test: projectTest(
+			target,
+			fragment.test,
+			{ environment: "node", pool: "forks", testTimeout: TEST_TIMEOUT },
+			{
+				name: `ssr:${target}`,
+				root: setup.root,
+				// The spec ships in this package, so it lies in `node_modules` in a project: by its
+				// resolved path, and with no exclusion, or Vitest's default drops it.
+				include: [resolveModule("@unframework.dev/testing/ssr/spec")],
+				exclude: [],
+				// Vitest hands an ESM package under `node_modules` to Node, which would import each case's
+				// `.uf.tsx` past the unplugin. Inlined, the comparison's imports go through this
+				// project's Vite pipeline, as the corpus's do from the workspace. The targets' server
+				// renderers are inlined too, so they render with the framework the component imports:
+				// through Node they would load a second copy, and Angular's would never be linked.
+				server: { deps: { inline: [TESTING_PACKAGE, TARGET_PACKAGES] } },
+				provide: {
+					target,
+					ufHarness: setup.harness,
+					ufServer: toolchain.server,
+					ufSsrCases: cases,
+				},
+				sequence: { groupOrder: group(setup, "ssr", target) },
+			},
+		),
+	} as UserWorkspaceConfig;
 }

@@ -3,6 +3,6 @@ import Section from "../../../../../integration/cases/components/three-levels/__
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Section.prop:body -->
-  <Section title="About" :body="false" />
+	<!-- @uf-expect TS2322 Section.prop:body -->
+	<Section title="About" :body="false" />
 </template>

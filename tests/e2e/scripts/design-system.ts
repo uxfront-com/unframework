@@ -9,21 +9,21 @@ import { copyMarker, designSystemCopyName, workDir } from "../harness/apps.ts";
 
 const copy = join(workDir(), designSystemCopyName);
 if (!existsSync(join(copy, copyMarker))) {
-  throw new Error(
-    `${copy} has no design system: run \`pnpm --filter @unframework.dev/e2e prepare-apps\` first.`,
-  );
+	throw new Error(
+		`${copy} has no design system: run \`pnpm --filter @unframework.dev/e2e prepare-apps\` first.`,
+	);
 }
 
 const run = (command: string): number => {
-  process.stdout.write(`[e2e] ${designSystemCopyName}: unframework ${command}\n`);
-  const { status, error } = spawnSync("pnpm", ["exec", "unframework", command], {
-    cwd: copy,
-    stdio: "inherit",
-  });
-  if (error) {
-    throw error;
-  }
-  return status ?? 1;
+	process.stdout.write(`[e2e] ${designSystemCopyName}: unframework ${command}\n`);
+	const { status, error } = spawnSync("pnpm", ["exec", "unframework", command], {
+		cwd: copy,
+		stdio: "inherit",
+	});
+	if (error) {
+		throw error;
+	}
+	return status ?? 1;
 };
 
 const codes = [run("test"), run("visual")];

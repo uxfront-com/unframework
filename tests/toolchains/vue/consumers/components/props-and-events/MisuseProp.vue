@@ -3,6 +3,6 @@ import Field from "../../../../../integration/cases/components/props-and-events/
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Field.prop:label -->
-  <Field :label="42" />
+	<!-- @uf-expect TS2322 Field.prop:label -->
+	<Field :label="42" />
 </template>

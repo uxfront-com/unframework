@@ -10,13 +10,13 @@ import { referencePasses } from "../harness/references.ts";
 
 let status = 0;
 for (const { target, args } of referencePasses(listCases(), process.argv.slice(2))) {
-  const run = spawnSync(
-    process.execPath,
-    ["scripts/run.ts", "--project", `browser:${target}`, "--passWithNoTests", ...args],
-    { stdio: "inherit", env: { ...process.env, UF_REFERENCE_PASS: "1" } },
-  );
-  if (run.status !== 0 && status === 0) {
-    status = run.status ?? 1;
-  }
+	const run = spawnSync(
+		process.execPath,
+		["scripts/run.ts", "--project", `browser:${target}`, "--passWithNoTests", ...args],
+		{ stdio: "inherit", env: { ...process.env, UF_REFERENCE_PASS: "1" } },
+	);
+	if (run.status !== 0 && status === 0) {
+		status = run.status ?? 1;
+	}
 }
 process.exitCode = status;

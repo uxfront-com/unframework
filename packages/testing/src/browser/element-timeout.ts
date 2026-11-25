@@ -18,18 +18,18 @@ let bound = false;
  * project without a poll timeout cannot bound its assertions, so that throws.
  */
 export function boundElementTimeout(): void {
-  // Once per page: the setup file runs again for every spec file that shares it (ADR-0092), and
-  // each run would wrap the wrapper again.
-  if (bound) {
-    return;
-  }
-  const timeout = server.config.expect?.poll?.timeout;
-  if (timeout === undefined) {
-    throw new Error(
-      "[uf] The browser project sets no `expect.poll.timeout`: `expect.element` would wait for the whole test timeout.",
-    );
-  }
-  bound = true;
-  const element = expect.element;
-  expect.element = (subject, options) => element(subject, { timeout, ...options });
+	// Once per page: the setup file runs again for every spec file that shares it (ADR-0092), and
+	// each run would wrap the wrapper again.
+	if (bound) {
+		return;
+	}
+	const timeout = server.config.expect?.poll?.timeout;
+	if (timeout === undefined) {
+		throw new Error(
+			"[uf] The browser project sets no `expect.poll.timeout`: `expect.element` would wait for the whole test timeout.",
+		);
+	}
+	bound = true;
+	const element = expect.element;
+	expect.element = (subject, options) => element(subject, { timeout, ...options });
 }

@@ -1,14 +1,14 @@
 // L3 for Svelte: svelte/compiler's compile() for the client and for the server, collecting the
 // first error (Svelte stops at it) and every warning, a11y included (spike: framework-compile ADR).
 import type {
-  FrameworkCompileResult,
-  ToolchainFile,
-  ToolchainMessage,
+	FrameworkCompileResult,
+	ToolchainFile,
+	ToolchainMessage,
 } from "@unframework.dev/codegen";
 import {
-  assertFilesToCompile,
-  compileScriptModules,
-  transformScriptModule,
+	assertFilesToCompile,
+	compileScriptModules,
+	transformScriptModule,
 } from "@unframework.dev/codegen/toolchain-node";
 import type { Warning } from "svelte/compiler";
 import type * as SvelteCompilerModule from "svelte/compiler";
@@ -27,22 +27,22 @@ let compiler: Promise<SvelteCompiler> | undefined;
  * the transform alone checks it.
  */
 export async function frameworkCompile(
-  files: ReadonlyArray<ToolchainFile>,
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
-  assertFilesToCompile(files);
-  // Loaded on first use, so importing the toolchain stays cheap.
-  const svelte = await (compiler ??= import("svelte/compiler"));
-  const results = await compileScriptModules(
-    files.filter((file) => file.path.endsWith(".ts") && !file.path.endsWith(".svelte.ts")),
-  );
-  for (const file of files) {
-    if (file.path.endsWith(".svelte.ts")) {
-      results.set(file.path, await compileRunesModule(svelte.compileModule, file));
-    } else if (!file.path.endsWith(".ts")) {
-      results.set(file.path, compileComponent(svelte, file));
-    }
-  }
-  return results;
+	assertFilesToCompile(files);
+	// Loaded on first use, so importing the toolchain stays cheap.
+	const svelte = await (compiler ??= import("svelte/compiler"));
+	const results = await compileScriptModules(
+		files.filter((file) => file.path.endsWith(".ts") && !file.path.endsWith(".svelte.ts")),
+	);
+	for (const file of files) {
+		if (file.path.endsWith(".svelte.ts")) {
+			results.set(file.path, await compileRunesModule(svelte.compileModule, file));
+		} else if (!file.path.endsWith(".ts")) {
+			results.set(file.path, compileComponent(svelte, file));
+		}
+	}
+	return results;
 }
 
 /**
@@ -50,52 +50,52 @@ export async function frameworkCompile(
  * as it is, for the bundler's TypeScript transform.
  */
 export async function frameworkEmit(
-  files: ReadonlyArray<ToolchainFile>,
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, Array<ToolchainFile>>> {
-  assertFilesToCompile(files);
-  const svelte = await (compiler ??= import("svelte/compiler"));
-  const emitted = new Map<string, Array<ToolchainFile>>();
-  for (const file of files) {
-    let contents = file.contents;
-    if (file.path.endsWith(".svelte.ts")) {
-      const { code, result } = await transformScriptModule(file);
-      if (code === undefined) {
-        throw new Error(`${file.path} did not transform: ${result.errors[0]?.message ?? ""}`);
-      }
-      contents = svelte.compileModule(code, { filename: file.path, generate: "client" }).js.code;
-    } else if (!file.path.endsWith(".ts")) {
-      contents = svelte.compile(file.contents, {
-        filename: file.path,
-        generate: "client",
-        ...componentOptions(svelte.parse, file.contents),
-      }).js.code;
-    }
-    emitted.set(file.path, [{ path: file.path, contents }]);
-  }
-  return emitted;
+	assertFilesToCompile(files);
+	const svelte = await (compiler ??= import("svelte/compiler"));
+	const emitted = new Map<string, Array<ToolchainFile>>();
+	for (const file of files) {
+		let contents = file.contents;
+		if (file.path.endsWith(".svelte.ts")) {
+			const { code, result } = await transformScriptModule(file);
+			if (code === undefined) {
+				throw new Error(`${file.path} did not transform: ${result.errors[0]?.message ?? ""}`);
+			}
+			contents = svelte.compileModule(code, { filename: file.path, generate: "client" }).js.code;
+		} else if (!file.path.endsWith(".ts")) {
+			contents = svelte.compile(file.contents, {
+				filename: file.path,
+				generate: "client",
+				...componentOptions(svelte.parse, file.contents),
+			}).js.code;
+		}
+		emitted.set(file.path, [{ path: file.path, contents }]);
+	}
+	return emitted;
 }
 
 /** A `.svelte.ts` module: its TypeScript transform's report, then Svelte's for each generate. */
 async function compileRunesModule(
-  compileModule: SvelteCompiler["compileModule"],
-  file: ToolchainFile,
+	compileModule: SvelteCompiler["compileModule"],
+	file: ToolchainFile,
 ): Promise<FrameworkCompileResult> {
-  const { code, result } = await transformScriptModule(file);
-  if (code === undefined) {
-    return result;
-  }
-  const warnings = new Map<string, ToolchainMessage>();
-  for (const generate of ["client", "server"] as const) {
-    try {
-      for (const warning of compileModule(code, { filename: file.path, generate }).warnings) {
-        const message = fromDiagnostic(warning);
-        warnings.set(JSON.stringify([message.code, message.line, message.column]), message);
-      }
-    } catch (error) {
-      return { errors: [...result.errors, fromThrown(error)], warnings: result.warnings };
-    }
-  }
-  return { errors: result.errors, warnings: [...result.warnings, ...warnings.values()] };
+	const { code, result } = await transformScriptModule(file);
+	if (code === undefined) {
+		return result;
+	}
+	const warnings = new Map<string, ToolchainMessage>();
+	for (const generate of ["client", "server"] as const) {
+		try {
+			for (const warning of compileModule(code, { filename: file.path, generate }).warnings) {
+				const message = fromDiagnostic(warning);
+				warnings.set(JSON.stringify([message.code, message.line, message.column]), message);
+			}
+		} catch (error) {
+			return { errors: [...result.errors, fromThrown(error)], warnings: result.warnings };
+		}
+	}
+	return { errors: result.errors, warnings: [...result.warnings, ...warnings.values()] };
 }
 
 /**
@@ -103,53 +103,53 @@ async function compileRunesModule(
  * compiles under `experimental.async`, as the toolchain's Vite plugin compiles it (ADR-0101).
  */
 function compileComponent(svelte: SvelteCompiler, file: ToolchainFile): FrameworkCompileResult {
-  const { compile } = svelte;
-  const options = componentOptions(svelte.parse, file.contents);
-  const errors: Array<ToolchainMessage> = [];
-  const warnings = new Map<string, ToolchainMessage>();
-  for (const generate of ["client", "server"] as const) {
-    let result: ReturnType<SvelteCompiler["compile"]>;
-    try {
-      result = compile(file.contents, { filename: file.path, generate, ...options });
-    } catch (error) {
-      errors.push(fromThrown(error));
-      // The server pass would stop at the same error.
-      break;
-    }
-    // Both passes run the same analysis, so most warnings come twice.
-    for (const warning of result.warnings) {
-      const message = fromDiagnostic(warning);
-      warnings.set(JSON.stringify([message.code, message.line, message.column]), message);
-    }
-    if (generate === "client" && !result.metadata.runes) {
-      errors.push({
-        code: "legacy_mode",
-        message:
-          "The component compiles in legacy mode: Svelte infers it for a component without " +
-          "runes. Declare runes mode with <svelte:options runes={true} />.",
-      });
-    }
-  }
-  return { errors, warnings: [...warnings.values()] };
+	const { compile } = svelte;
+	const options = componentOptions(svelte.parse, file.contents);
+	const errors: Array<ToolchainMessage> = [];
+	const warnings = new Map<string, ToolchainMessage>();
+	for (const generate of ["client", "server"] as const) {
+		let result: ReturnType<SvelteCompiler["compile"]>;
+		try {
+			result = compile(file.contents, { filename: file.path, generate, ...options });
+		} catch (error) {
+			errors.push(fromThrown(error));
+			// The server pass would stop at the same error.
+			break;
+		}
+		// Both passes run the same analysis, so most warnings come twice.
+		for (const warning of result.warnings) {
+			const message = fromDiagnostic(warning);
+			warnings.set(JSON.stringify([message.code, message.line, message.column]), message);
+		}
+		if (generate === "client" && !result.metadata.runes) {
+			errors.push({
+				code: "legacy_mode",
+				message:
+					"The component compiles in legacy mode: Svelte infers it for a component without " +
+					"runes. Declare runes mode with <svelte:options runes={true} />.",
+			});
+		}
+	}
+	return { errors, warnings: [...warnings.values()] };
 }
 
 /** Svelte's lines are 1-based and its columns 0-based. */
 function fromDiagnostic(diagnostic: Warning): ToolchainMessage {
-  return {
-    message: diagnostic.message,
-    ...(diagnostic.start
-      ? { line: diagnostic.start.line, column: diagnostic.start.column + 1 }
-      : {}),
-    code: diagnostic.code,
-  };
+	return {
+		message: diagnostic.message,
+		...(diagnostic.start
+			? { line: diagnostic.start.line, column: diagnostic.start.column + 1 }
+			: {}),
+		code: diagnostic.code,
+	};
 }
 
 /** A CompileError has a warning's shape; anything else is a compiler crash. */
 function fromThrown(error: unknown): ToolchainMessage {
-  if (error instanceof Error && error.name === "CompileError" && "code" in error) {
-    return fromDiagnostic(error as unknown as Warning);
-  }
-  return {
-    message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-  };
+	if (error instanceof Error && error.name === "CompileError" && "code" in error) {
+		return fromDiagnostic(error as unknown as Warning);
+	}
+	return {
+		message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+	};
 }

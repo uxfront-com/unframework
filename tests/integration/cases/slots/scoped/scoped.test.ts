@@ -6,12 +6,12 @@ import { expect } from "vitest";
 import Ranking from "./Ranking.uf.tsx";
 
 describeTargets("slots/scoped", () => {
-  it("renders each item through the fill", async () => {
-    const view = await mountScenario(Ranking, "three");
-    await view.expectParity("three");
-    const podium = view.getByRole("list", { name: "Podium" });
-    await expect.element(podium.getByRole("listitem").nth(1)).toHaveTextContent("2. Grace");
-    const initials = view.getByRole("list", { name: "Initials" });
-    await expect.element(initials.getByRole("listitem").nth(2)).toHaveTextContent("L");
-  });
+	it("renders each item through the fill", async () => {
+		const view = await mountScenario(Ranking, "three");
+		await view.expectParity("three");
+		const podium = view.getByRole("list", { name: "Podium" });
+		await expect.element(podium.getByRole("listitem").nth(1)).toHaveTextContent("2. Grace");
+		const initials = view.getByRole("list", { name: "Initials" });
+		await expect.element(initials.getByRole("listitem").nth(2)).toHaveTextContent("L");
+	});
 });

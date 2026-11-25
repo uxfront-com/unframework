@@ -27,25 +27,25 @@ import { captureVisual } from "./visual.ts";
 
 /** Options for `expectParity`. */
 export interface ParityOptions {
-  /** A pixel tolerance for this scenario. Zero by default; any tolerance needs a reason. */
-  tolerance?: PixelTolerance;
+	/** A pixel tolerance for this scenario. Zero by default; any tolerance needs a reason. */
+	tolerance?: PixelTolerance;
 }
 
 /** What `expectParity` needs from a mounted view. */
 export interface ParityView {
-  target: string;
-  container: HTMLElement;
-  /** The container's locator, which matches nothing the view teleported (ADR-0098). */
-  containerLocator: Locator;
-  /** What the view teleported, each with its own locator, in `body` order (ADR-0098). */
-  teleported(): Array<{ element: Element; locator: Locator }>;
-  /** Playwright's ARIA snapshot of the root, without Angular's host spaces (ADR-0060). */
-  aria(): Promise<string>;
-  /** The normalised DOM, and the renaming of the generated ids it found. */
-  dom(): { html: string; ids: Map<string, string> };
-  settle(): Promise<void>;
-  /** The view's trace: the steps since the mount or the previous `expectParity`. */
-  trace: { take(): Array<TraceStep> };
+	target: string;
+	container: HTMLElement;
+	/** The container's locator, which matches nothing the view teleported (ADR-0098). */
+	containerLocator: Locator;
+	/** What the view teleported, each with its own locator, in `body` order (ADR-0098). */
+	teleported(): Array<{ element: Element; locator: Locator }>;
+	/** Playwright's ARIA snapshot of the root, without Angular's host spaces (ADR-0060). */
+	aria(): Promise<string>;
+	/** The normalised DOM, and the renaming of the generated ids it found. */
+	dom(): { html: string; ids: Map<string, string> };
+	settle(): Promise<void>;
+	/** The view's trace: the steps since the mount or the previous `expectParity`. */
+	trace: { take(): Array<TraceStep> };
 }
 
 /** The scenarios each spec file has checked, by file: a name names one scenario of a case. */
@@ -57,128 +57,128 @@ const checked = new Map<string, Set<string>>();
  * reason, a call outside a test): that is the spec's own error, recorded as L8.
  */
 export async function expectParity(
-  view: ParityView,
-  name: string,
-  options: ParityOptions = {},
+	view: ParityView,
+	name: string,
+	options: ParityOptions = {},
 ): Promise<void> {
-  if (!KEBAB_CASE.test(name)) {
-    throw new Error(
-      `expectParity("${name}"): a scenario name is kebab-case (words of a-z and 0-9 joined by single hyphens), such as "after-click".`,
-    );
-  }
-  if (options.tolerance && !options.tolerance.reason.trim()) {
-    throw new Error(`expectParity("${name}"): a pixel tolerance needs a reason.`);
-  }
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) {
-    throw new Error("expectParity must be called inside a test.");
-  }
-  // One scenario, one name: a second check under a name would settle the same trace (and DOM)
-  // twice, maybe once with steps and once without.
-  const names = checked.get(test.file.filepath) ?? new Set<string>();
-  checked.set(test.file.filepath, names);
-  if (names.has(name)) {
-    throw new Error(
-      `expectParity("${name}"): this spec checked a scenario of that name already. Each scenario is unique in its case: name this one apart.`,
-    );
-  }
-  names.add(name);
-  const harness = inject("ufHarness");
-  const caseId = caseOfFile(test.file.filepath, harness);
-  const declaredAxe = harness.cases[caseId]?.axe ?? [];
-  const subject = { case: caseId, target: view.target, quarantine: harness.quarantine };
-  recordScenario(test, subject, name);
-  await view.settle();
-  const steps = view.trace.take();
+	if (!KEBAB_CASE.test(name)) {
+		throw new Error(
+			`expectParity("${name}"): a scenario name is kebab-case (words of a-z and 0-9 joined by single hyphens), such as "after-click".`,
+		);
+	}
+	if (options.tolerance && !options.tolerance.reason.trim()) {
+		throw new Error(`expectParity("${name}"): a pixel tolerance needs a reason.`);
+	}
+	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+	if (!test) {
+		throw new Error("expectParity must be called inside a test.");
+	}
+	// One scenario, one name: a second check under a name would settle the same trace (and DOM)
+	// twice, maybe once with steps and once without.
+	const names = checked.get(test.file.filepath) ?? new Set<string>();
+	checked.set(test.file.filepath, names);
+	if (names.has(name)) {
+		throw new Error(
+			`expectParity("${name}"): this spec checked a scenario of that name already. Each scenario is unique in its case: name this one apart.`,
+		);
+	}
+	names.add(name);
+	const harness = inject("ufHarness");
+	const caseId = caseOfFile(test.file.filepath, harness);
+	const declaredAxe = harness.cases[caseId]?.axe ?? [];
+	const subject = { case: caseId, target: view.target, quarantine: harness.quarantine };
+	recordScenario(test, subject, name);
+	await view.settle();
+	const steps = view.trace.take();
 
-  // A hydrate project records every check as L12 and captures no pixels (ADR-0095).
-  const pixels = !isHydrateProject();
-  await recordLayerChecks(test, subject, {
-    async L7() {
-      const failures: Array<string> = [];
-      const { html, ids } = view.dom();
-      const dom = await commands.ufArtefact({
-        case: caseId,
-        file: `dom.${name}.html`,
-        contents: asFile(html),
-      });
-      if (!dom.pass) {
-        failures.push(dom.message);
-      }
-      // A generated id in the tree's text or a link's URL reads as the DOM's renaming has it.
-      const snapshot = renameGeneratedIds(await view.aria(), new Map(ids));
-      const aria = await commands.ufArtefact({
-        case: caseId,
-        file: `aria.${name}.yaml`,
-        contents: asFile(snapshot),
-      });
-      if (!aria.pass) {
-        failures.push(aria.message);
-      }
-      if (failures.length) {
-        throw new Error(failures.join("\n\n"));
-      }
-    },
-    async L9() {
-      // With no steps, no trace: the reference deletes a stale one, and a follower fails on it.
-      const trace = await commands.ufArtefact({
-        case: caseId,
-        file: `trace.${name}.json`,
-        contents: steps.length ? traceFile(steps) : null,
-      });
-      if (!trace.pass) {
-        throw new Error(trace.message);
-      }
-      return steps.length ? undefined : { skip: NO_INTERACTION_SKIP };
-    },
-    ...(pixels
-      ? {
-          async L10() {
-            const result = await captureVisual(test, {
-              case: caseId,
-              name,
-              container: view.container,
-              locator: view.containerLocator,
-              teleported: view.teleported(),
-              ...(options.tolerance ? { tolerance: options.tolerance } : {}),
-            });
-            // Nothing to compare with: the summary fails the run once, naming the reference's
-            // project and Vitest's error, rather than every follower here (ADR-0091).
-            if (result.outcome === "reference-not-run" && result.referenceProject !== undefined) {
-              return { skip: referenceNotRunSkip(result.referenceProject) };
-            }
-            if (!result.pass) {
-              throw new Error(
-                `${result.outcome} (${result.mode}, ${result.role}): ${result.message}`,
-              );
-            }
-            return result.outcome === "published-reference"
-              ? { skip: LIVE_REFERENCE_SKIP }
-              : undefined;
-          },
-        }
-      : {}),
-    async L11() {
-      const { pass, unexpected, missing } = await compareAxe(
-        view.container,
-        declaredAxe,
-        view.teleported().map(({ element }) => element),
-      );
-      if (pass) {
-        return;
-      }
-      const lines = [...unexpected];
-      if (missing.length) {
-        lines.push(`  declared in case.json but not reported: ${missing.join(", ")}`);
-      }
-      throw new Error(
-        `axe-core violations differ from case.json's "axe" list:\n${lines.join("\n")}`,
-      );
-    },
-  });
+	// A hydrate project records every check as L12 and captures no pixels (ADR-0095).
+	const pixels = !isHydrateProject();
+	await recordLayerChecks(test, subject, {
+		async L7() {
+			const failures: Array<string> = [];
+			const { html, ids } = view.dom();
+			const dom = await commands.ufArtefact({
+				case: caseId,
+				file: `dom.${name}.html`,
+				contents: asFile(html),
+			});
+			if (!dom.pass) {
+				failures.push(dom.message);
+			}
+			// A generated id in the tree's text or a link's URL reads as the DOM's renaming has it.
+			const snapshot = renameGeneratedIds(await view.aria(), new Map(ids));
+			const aria = await commands.ufArtefact({
+				case: caseId,
+				file: `aria.${name}.yaml`,
+				contents: asFile(snapshot),
+			});
+			if (!aria.pass) {
+				failures.push(aria.message);
+			}
+			if (failures.length) {
+				throw new Error(failures.join("\n\n"));
+			}
+		},
+		async L9() {
+			// With no steps, no trace: the reference deletes a stale one, and a follower fails on it.
+			const trace = await commands.ufArtefact({
+				case: caseId,
+				file: `trace.${name}.json`,
+				contents: steps.length ? traceFile(steps) : null,
+			});
+			if (!trace.pass) {
+				throw new Error(trace.message);
+			}
+			return steps.length ? undefined : { skip: NO_INTERACTION_SKIP };
+		},
+		...(pixels
+			? {
+					async L10() {
+						const result = await captureVisual(test, {
+							case: caseId,
+							name,
+							container: view.container,
+							locator: view.containerLocator,
+							teleported: view.teleported(),
+							...(options.tolerance ? { tolerance: options.tolerance } : {}),
+						});
+						// Nothing to compare with: the summary fails the run once, naming the reference's
+						// project and Vitest's error, rather than every follower here (ADR-0091).
+						if (result.outcome === "reference-not-run" && result.referenceProject !== undefined) {
+							return { skip: referenceNotRunSkip(result.referenceProject) };
+						}
+						if (!result.pass) {
+							throw new Error(
+								`${result.outcome} (${result.mode}, ${result.role}): ${result.message}`,
+							);
+						}
+						return result.outcome === "published-reference"
+							? { skip: LIVE_REFERENCE_SKIP }
+							: undefined;
+					},
+				}
+			: {}),
+		async L11() {
+			const { pass, unexpected, missing } = await compareAxe(
+				view.container,
+				declaredAxe,
+				view.teleported().map(({ element }) => element),
+			);
+			if (pass) {
+				return;
+			}
+			const lines = [...unexpected];
+			if (missing.length) {
+				lines.push(`  declared in case.json but not reported: ${missing.join(", ")}`);
+			}
+			throw new Error(
+				`axe-core violations differ from case.json's "axe" list:\n${lines.join("\n")}`,
+			);
+		},
+	});
 }
 
 /** Artefacts are text files with exactly one trailing newline. */
 function asFile(text: string): string {
-  return `${text.replace(/\n+$/, "")}\n`;
+	return `${text.replace(/\n+$/, "")}\n`;
 }

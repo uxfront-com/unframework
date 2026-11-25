@@ -5,6 +5,6 @@ import type { CompileResult, OutputFile } from "../src/index.ts";
  * the sheets and the copies, which a test about them counts.
  */
 export function ownOutputs(result: CompileResult, target: string): Array<OutputFile> {
-  const helpers = new Set(result.helpers[target] ?? []);
-  return (result.outputs[target] ?? []).filter((file) => !helpers.has(file.path));
+	const helpers = new Set(result.helpers[target] ?? []);
+	return (result.outputs[target] ?? []).filter((file) => !helpers.has(file.path));
 }

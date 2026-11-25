@@ -6,16 +6,16 @@ import { expect } from "vitest";
 import ReportPanel from "./ReportPanel.uf.tsx";
 
 describeTargets("sourcemaps/mounted-throws", () => {
-  it("renders the panel without the chart", async () => {
-    const view = await mount(ReportPanel);
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("button", { name: "Show the chart" })).toBeVisible();
-  });
+	it("renders the panel without the chart", async () => {
+		const view = await mount(ReportPanel);
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("button", { name: "Show the chart" })).toBeVisible();
+	});
 
-  it("maps the hook's throw to its line", { requires: ["interactivity"] }, async () => {
-    const view = await mount(ReportPanel);
-    const button = view.getByRole("button", { name: "Show the chart" });
-    await expect.element(button).toBeVisible();
-    await view.expectThrown(() => view.user.click(button));
-  });
+	it("maps the hook's throw to its line", { requires: ["interactivity"] }, async () => {
+		const view = await mount(ReportPanel);
+		const button = view.getByRole("button", { name: "Show the chart" });
+		await expect.element(button).toBeVisible();
+		await view.expectThrown(() => view.user.click(button));
+	});
 });

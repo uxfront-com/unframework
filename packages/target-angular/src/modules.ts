@@ -9,10 +9,10 @@ import type { Binding, TypeDeclaration, UfModule } from "@unframework.dev/ir";
 
 /** What an output reads of its module. */
 export interface ModuleReads {
-  /** The constants it declares, in source order, each as the source writes it. */
-  constants: Array<string>;
-  /** The module's type declarations its constants name, transitively. */
-  types: Array<TypeDeclaration>;
+	/** The constants it declares, in source order, each as the source writes it. */
+	constants: Array<string>;
+	/** The module's type declarations its constants name, transitively. */
+	types: Array<TypeDeclaration>;
 }
 
 /**
@@ -22,86 +22,86 @@ export interface ModuleReads {
  * name keeps its name in every Angular output.
  */
 export function moduleReads(
-  bindings: ReadonlyArray<Binding>,
-  module: UfModule,
-  imports: ImportSet,
-  file: (name: string) => string,
+	bindings: ReadonlyArray<Binding>,
+	module: UfModule,
+	imports: ImportSet,
+	file: (name: string) => string,
 ): ModuleReads {
-  const values = new Set(
-    bindings
-      .filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
-      .map((binding) => binding.name),
-  );
-  const constants = module.constants ?? [];
-  // A constant's references name a binding by `name@offset`; a module's names are unique.
-  for (let size = -1; size !== values.size;) {
-    size = values.size;
-    for (const constant of constants) {
-      if (!values.has(constant.name)) {
-        continue;
-      }
-      for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") {
-          values.add(reference.binding.split("@")[0]!);
-        }
-      }
-    }
-  }
-  for (const entry of module.moduleImports ?? []) {
-    for (const name of entry.names) {
-      if (!values.has(name.local)) {
-        continue;
-      }
-      if (name.imported === "default") {
-        imports.addDefault(entry.specifier, name.local, { exact: true });
-      } else {
-        imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
-      }
-    }
-  }
-  const declared = constants.filter((constant) => values.has(constant.name));
-  // The types they name: the module's declarations, transitively, and the type imports.
-  const named = new Set<string>();
-  for (const constant of declared) {
-    if (constant.type) {
-      for (const name of typeNames(constant.type)) {
-        named.add(name);
-      }
-    }
-    for (const name of codeNames(constant.value.code)) {
-      named.add(name);
-    }
-  }
-  const types = new Map<string, TypeDeclaration>();
-  for (let size = -1; size !== types.size;) {
-    size = types.size;
-    for (const declaration of module.types) {
-      if (types.has(declaration.name) || !named.has(declaration.name)) {
-        continue;
-      }
-      types.set(declaration.name, declaration);
-      for (const name of codeNames(declaration.code, "statements")) {
-        named.add(name);
-      }
-    }
-  }
-  for (const entry of module.typeImports ?? []) {
-    for (const name of entry.names) {
-      if (!named.has(name.local)) {
-        continue;
-      }
-      imports.add(typeSpecifier(entry.specifier, module, file), name.imported, {
-        type: true,
-        local: name.local,
-        exact: true,
-      });
-    }
-  }
-  return {
-    constants: declared.map(
-      (constant) =>
-        `const ${constant.name}${constant.type ? `: ${constant.type.code}` : ""} = ${constant.value.code};`,
-    ),
-    types: module.types.filter((declaration) => types.has(declaration.name)),
-  };
+	const values = new Set(
+		bindings
+			.filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
+			.map((binding) => binding.name),
+	);
+	const constants = module.constants ?? [];
+	// A constant's references name a binding by `name@offset`; a module's names are unique.
+	for (let size = -1; size !== values.size;) {
+		size = values.size;
+		for (const constant of constants) {
+			if (!values.has(constant.name)) {
+				continue;
+			}
+			for (const reference of constant.value.refs) {
+				if (reference.kind === "Binding") {
+					values.add(reference.binding.split("@")[0]!);
+				}
+			}
+		}
+	}
+	for (const entry of module.moduleImports ?? []) {
+		for (const name of entry.names) {
+			if (!values.has(name.local)) {
+				continue;
+			}
+			if (name.imported === "default") {
+				imports.addDefault(entry.specifier, name.local, { exact: true });
+			} else {
+				imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
+			}
+		}
+	}
+	const declared = constants.filter((constant) => values.has(constant.name));
+	// The types they name: the module's declarations, transitively, and the type imports.
+	const named = new Set<string>();
+	for (const constant of declared) {
+		if (constant.type) {
+			for (const name of typeNames(constant.type)) {
+				named.add(name);
+			}
+		}
+		for (const name of codeNames(constant.value.code)) {
+			named.add(name);
+		}
+	}
+	const types = new Map<string, TypeDeclaration>();
+	for (let size = -1; size !== types.size;) {
+		size = types.size;
+		for (const declaration of module.types) {
+			if (types.has(declaration.name) || !named.has(declaration.name)) {
+				continue;
+			}
+			types.set(declaration.name, declaration);
+			for (const name of codeNames(declaration.code, "statements")) {
+				named.add(name);
+			}
+		}
+	}
+	for (const entry of module.typeImports ?? []) {
+		for (const name of entry.names) {
+			if (!named.has(name.local)) {
+				continue;
+			}
+			imports.add(typeSpecifier(entry.specifier, module, file), name.imported, {
+				type: true,
+				local: name.local,
+				exact: true,
+			});
+		}
+	}
+	return {
+		constants: declared.map(
+			(constant) =>
+				`const ${constant.name}${constant.type ? `: ${constant.type.code}` : ""} = ${constant.value.code};`,
+		),
+		types: module.types.filter((declaration) => types.has(declaration.name)),
+	};
 }

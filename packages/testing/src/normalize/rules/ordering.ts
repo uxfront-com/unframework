@@ -11,11 +11,11 @@ const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 
  * numbering never depends on a framework's attribute order.
  */
 export function sortAttributes(root: TreeParent): void {
-  forEachElement(root, (element) => {
-    element.attrs = element.attrs.toSorted((a, b) =>
-      byCodeUnits(attributeName(a), attributeName(b)),
-    );
-  });
+	forEachElement(root, (element) => {
+		element.attrs = element.attrs.toSorted((a, b) =>
+			byCodeUnits(attributeName(a), attributeName(b)),
+		);
+	});
 }
 
 /** ASCII whitespace, which separates the tokens of a `class` attribute. */
@@ -31,17 +31,17 @@ const ASCII_WHITESPACE = /[\t\n\f\r ]+/;
  * selector tells the two apart.
  */
 export function canonicalizeClasses(root: TreeParent): void {
-  forEachElement(root, (element) => {
-    element.attrs = element.attrs.flatMap((attribute) => {
-      if (attributeName(attribute) !== "class") {
-        return [attribute];
-      }
-      const tokens = attribute.value.split(ASCII_WHITESPACE).filter((token) => token !== "");
-      if (!tokens.length) {
-        return [];
-      }
-      attribute.value = tokens.toSorted(byCodeUnits).join(" ");
-      return [attribute];
-    });
-  });
+	forEachElement(root, (element) => {
+		element.attrs = element.attrs.flatMap((attribute) => {
+			if (attributeName(attribute) !== "class") {
+				return [attribute];
+			}
+			const tokens = attribute.value.split(ASCII_WHITESPACE).filter((token) => token !== "");
+			if (!tokens.length) {
+				return [];
+			}
+			attribute.value = tokens.toSorted(byCodeUnits).join(" ");
+			return [attribute];
+		});
+	});
 }

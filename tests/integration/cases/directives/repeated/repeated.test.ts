@@ -9,8 +9,8 @@ import { expect } from "vitest";
 import Page from "./Page.uf.tsx";
 
 interface Trace {
-  call: string;
-  el: Element;
+	call: string;
+	el: Element;
 }
 
 /**
@@ -20,109 +20,109 @@ interface Trace {
  * other views beside the test's (L12 renders the client side too).
  */
 function record(): {
-  mark: () => number;
-  since: (view: View, mark: number) => Array<{ name: string | null; calls: Array<string> }>;
-  stop: () => void;
+	mark: () => number;
+	since: (view: View, mark: number) => Array<{ name: string | null; calls: Array<string> }>;
+	stop: () => void;
 } {
-  const traces: Array<Trace> = [];
-  const own = new Set<Element>();
-  const listener = (event: Event) => void traces.push((event as CustomEvent<Trace>).detail);
-  document.addEventListener("directive-trace", listener);
-  return {
-    mark: () => traces.length,
-    since: (view, mark) => {
-      for (const { call, el } of traces) {
-        if (call.startsWith("mounted") && view.container.contains(el)) {
-          own.add(el);
-        }
-      }
-      const found = new Map<Element, Array<string>>();
-      for (const { call, el } of traces.slice(mark)) {
-        if (!own.has(el)) {
-          continue;
-        }
-        found.set(el, [...(found.get(el) ?? []), call]);
-      }
-      return [...found].map(([el, calls]) => ({ name: el.getAttribute("data-name"), calls }));
-    },
-    stop: () => document.removeEventListener("directive-trace", listener),
-  };
+	const traces: Array<Trace> = [];
+	const own = new Set<Element>();
+	const listener = (event: Event) => void traces.push((event as CustomEvent<Trace>).detail);
+	document.addEventListener("directive-trace", listener);
+	return {
+		mark: () => traces.length,
+		since: (view, mark) => {
+			for (const { call, el } of traces) {
+				if (call.startsWith("mounted") && view.container.contains(el)) {
+					own.add(el);
+				}
+			}
+			const found = new Map<Element, Array<string>>();
+			for (const { call, el } of traces.slice(mark)) {
+				if (!own.has(el)) {
+					continue;
+				}
+				found.set(el, [...(found.get(el) ?? []), call]);
+			}
+			return [...found].map(([el, calls]) => ({ name: el.getAttribute("data-name"), calls }));
+		},
+		stop: () => document.removeEventListener("directive-trace", listener),
+	};
 }
 
 /** The elements' names and calls, sorted, so a count doesn't depend on which target runs first. */
 function sorted(found: Array<{ name: string | null; calls: Array<string> }>): Array<string> {
-  return found.map(({ name, calls }) => `${name}: ${calls.join(", ")}`).toSorted();
+	return found.map(({ name, calls }) => `${name}: ${calls.join(", ")}`).toSorted();
 }
 
 describeTargets("directives/repeated", () => {
-  it("renders every row, the body and every item", async () => {
-    const view = await mountScenario(Page, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("button", { name: "Rename" })).toBeVisible();
-  });
+	it("renders every row, the body and every item", async () => {
+		const view = await mountScenario(Page, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("button", { name: "Rename" })).toBeVisible();
+	});
 
-  it("runs each hook on each element apart", { requires: ["directive"] }, async () => {
-    const trace = record();
-    try {
-      let mark = trace.mark();
-      const view = await mountScenario(Page, "initial");
-      await view.expectParity("traced");
-      expect(sorted(trace.since(view, mark))).toEqual([
-        "body: mounted first",
-        "item: mounted first",
-        "item: mounted first",
-        "note: mounted first",
-        "row: mounted first",
-        "row: mounted first",
-      ]);
-      // The template ref beside the directive holds its element.
-      await view.user.click(view.getByRole("button", { name: "Check" }));
-      await view.expectParity("checked");
-      await expect.poll(() => view.container.querySelector("output")?.textContent).toBe("note");
+	it("runs each hook on each element apart", { requires: ["directive"] }, async () => {
+		const trace = record();
+		try {
+			let mark = trace.mark();
+			const view = await mountScenario(Page, "initial");
+			await view.expectParity("traced");
+			expect(sorted(trace.since(view, mark))).toEqual([
+				"body: mounted first",
+				"item: mounted first",
+				"item: mounted first",
+				"note: mounted first",
+				"row: mounted first",
+				"row: mounted first",
+			]);
+			// The template ref beside the directive holds its element.
+			await view.user.click(view.getByRole("button", { name: "Check" }));
+			await view.expectParity("checked");
+			await expect.poll(() => view.container.querySelector("output")?.textContent).toBe("note");
 
-      mark = trace.mark();
-      await view.user.click(view.getByRole("button", { name: "Add row" }));
-      await view.expectParity("added");
-      expect(trace.since(view, mark)).toEqual([{ name: "row", calls: ["mounted first"] }]);
+			mark = trace.mark();
+			await view.user.click(view.getByRole("button", { name: "Add row" }));
+			await view.expectParity("added");
+			expect(trace.since(view, mark)).toEqual([{ name: "row", calls: ["mounted first"] }]);
 
-      mark = trace.mark();
-      await view.user.click(view.getByRole("button", { name: "Remove row" }));
-      await view.expectParity("removed");
-      expect(trace.since(view, mark)).toEqual([{ name: "row", calls: ["unmounted"] }]);
+			mark = trace.mark();
+			await view.user.click(view.getByRole("button", { name: "Remove row" }));
+			await view.expectParity("removed");
+			expect(trace.since(view, mark)).toEqual([{ name: "row", calls: ["unmounted"] }]);
 
-      mark = trace.mark();
-      await view.user.click(view.getByRole("button", { name: "Rename" }));
-      await view.expectParity("renamed");
-      expect(sorted(trace.since(view, mark))).toEqual([
-        "body: updated second first",
-        "item: updated second first",
-        "item: updated second first",
-        "note: updated second first",
-        "row: updated second first",
-        "row: updated second first",
-      ]);
+			mark = trace.mark();
+			await view.user.click(view.getByRole("button", { name: "Rename" }));
+			await view.expectParity("renamed");
+			expect(sorted(trace.since(view, mark))).toEqual([
+				"body: updated second first",
+				"item: updated second first",
+				"item: updated second first",
+				"note: updated second first",
+				"row: updated second first",
+				"row: updated second first",
+			]);
 
-      mark = trace.mark();
-      await view.user.click(view.getByRole("button", { name: "Switch" }));
-      await view.expectParity("switched");
-      // The old branch's element leaves before the new one's mounts.
-      expect(trace.since(view, mark)).toEqual([
-        { name: "body", calls: ["unmounted"] },
-        { name: "body", calls: ["mounted second"] },
-      ]);
+			mark = trace.mark();
+			await view.user.click(view.getByRole("button", { name: "Switch" }));
+			await view.expectParity("switched");
+			// The old branch's element leaves before the new one's mounts.
+			expect(trace.since(view, mark)).toEqual([
+				{ name: "body", calls: ["unmounted"] },
+				{ name: "body", calls: ["mounted second"] },
+			]);
 
-      mark = trace.mark();
-      await view.unmount();
-      expect(sorted(trace.since(view, mark))).toEqual([
-        "body: unmounted",
-        "item: unmounted",
-        "item: unmounted",
-        "note: unmounted",
-        "row: unmounted",
-        "row: unmounted",
-      ]);
-    } finally {
-      trace.stop();
-    }
-  });
+			mark = trace.mark();
+			await view.unmount();
+			expect(sorted(trace.since(view, mark))).toEqual([
+				"body: unmounted",
+				"item: unmounted",
+				"item: unmounted",
+				"note: unmounted",
+				"row: unmounted",
+				"row: unmounted",
+			]);
+		} finally {
+			trace.stop();
+		}
+	});
 });

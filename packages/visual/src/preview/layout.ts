@@ -11,20 +11,20 @@ type FlexLayout = Extract<PreviewLayout, { display: "flex" }>;
  * plain `center` would push half of it out of reach above and to the left.
  */
 const JUSTIFY: Readonly<Record<FlexLayout["justify"], string>> = {
-  start: "flex-start",
-  center: "safe center",
-  end: "safe flex-end",
-  between: "space-between",
-  around: "space-around",
-  evenly: "space-evenly",
+	start: "flex-start",
+	center: "safe center",
+	end: "safe flex-end",
+	between: "space-between",
+	around: "space-around",
+	evenly: "space-evenly",
 };
 
 const ALIGN: Readonly<Record<FlexLayout["align"], string>> = {
-  start: "flex-start",
-  center: "safe center",
-  end: "safe flex-end",
-  stretch: "stretch",
-  baseline: "baseline",
+	start: "flex-start",
+	center: "safe center",
+	end: "safe flex-end",
+	stretch: "stretch",
+	baseline: "baseline",
 };
 
 /**
@@ -33,18 +33,18 @@ const ALIGN: Readonly<Record<FlexLayout["align"], string>> = {
  * `none` is a block that fills it with none.
  */
 export function layoutStyle(layout: PreviewLayout = DEFAULT_LAYOUT): Record<string, string> {
-  if (layout.display === "block") {
-    return { display: "block", "box-sizing": "border-box", "min-height": "100%", padding: "0" };
-  }
-  return {
-    display: "flex",
-    "box-sizing": "border-box",
-    "min-height": "100%",
-    padding: "1rem",
-    "flex-direction": layout.direction,
-    "justify-content": JUSTIFY[layout.justify],
-    "align-items": ALIGN[layout.align],
-    "flex-wrap": layout.wrap ? "wrap" : "nowrap",
-    gap: layout.gap,
-  };
+	if (layout.display === "block") {
+		return { display: "block", "box-sizing": "border-box", "min-height": "100%", padding: "0" };
+	}
+	return {
+		display: "flex",
+		"box-sizing": "border-box",
+		"min-height": "100%",
+		padding: "1rem",
+		"flex-direction": layout.direction,
+		"justify-content": JUSTIFY[layout.justify],
+		"align-items": ALIGN[layout.align],
+		"flex-wrap": layout.wrap ? "wrap" : "nowrap",
+		gap: layout.gap,
+	};
 }

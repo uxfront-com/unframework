@@ -9,41 +9,41 @@ import { configs, processors } from "eslint-plugin-astro";
 import tseslint from "typescript-eslint";
 
 export default [
-  ...configs["flat/recommended"],
-  {
-    files: ["**/*.astro"],
-    // eslint-plugin-astro looks for a TypeScript parser from the process's working directory, and
-    // parses the frontmatter as JavaScript when it finds none: name it, so the frontmatter is
-    // TypeScript wherever ESLint runs.
-    languageOptions: { parserOptions: { parser: tseslint.parser } },
-    processor: processors["client-side-ts"],
-    plugins: { "@typescript-eslint": tseslint.plugin },
-    rules: {
-      // The baseline's unused-variable rule, which oxlint does not run on an `.astro` file: the
-      // markup reads the frontmatter's bindings where oxlint cannot see them, and
-      // astro-eslint-parser counts those reads. It counts the `Props` Astro reads only in a file
-      // that names `Astro`, so the target exports `Props` when nothing reads `Astro.props`
-      // (ADR-0034). typescript-eslint's,
-      // with the options oxlint's takes by default (a variable or a parameter whose name starts
-      // with `_` is ignored). It also reports a value only a type reads, which oxlint's does
-      // not: that value is dead too.
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
-      ],
-      // Judges the author's choice to render markup unescaped: `innerHTML={markup}` in the
-      // source, which the analyser reports as a warning (UF3051), and every target renders as
-      // markup (ADR-0097).
-      "astro/no-set-html-directive": "off",
-      "astro/no-set-text-directive": "error",
-      "astro/no-unsafe-inline-scripts": "error",
-      "astro/no-unused-css-selector": "error",
-      // The shape of plan §6: `class:list` for every class binding.
-      "astro/prefer-class-list-directive": "error",
-      // Off: they judge the author's class expressions (`c ? "a" : "b"`, `` `btn btn-${size}` ``),
-      // which every target copies as written.
-      "astro/prefer-object-class-list": "off",
-      "astro/prefer-split-class-list": "off",
-    },
-  },
+	...configs["flat/recommended"],
+	{
+		files: ["**/*.astro"],
+		// eslint-plugin-astro looks for a TypeScript parser from the process's working directory, and
+		// parses the frontmatter as JavaScript when it finds none: name it, so the frontmatter is
+		// TypeScript wherever ESLint runs.
+		languageOptions: { parserOptions: { parser: tseslint.parser } },
+		processor: processors["client-side-ts"],
+		plugins: { "@typescript-eslint": tseslint.plugin },
+		rules: {
+			// The baseline's unused-variable rule, which oxlint does not run on an `.astro` file: the
+			// markup reads the frontmatter's bindings where oxlint cannot see them, and
+			// astro-eslint-parser counts those reads. It counts the `Props` Astro reads only in a file
+			// that names `Astro`, so the target exports `Props` when nothing reads `Astro.props`
+			// (ADR-0034). typescript-eslint's,
+			// with the options oxlint's takes by default (a variable or a parameter whose name starts
+			// with `_` is ignored). It also reports a value only a type reads, which oxlint's does
+			// not: that value is dead too.
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{ varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+			],
+			// Judges the author's choice to render markup unescaped: `innerHTML={markup}` in the
+			// source, which the analyser reports as a warning (UF3051), and every target renders as
+			// markup (ADR-0097).
+			"astro/no-set-html-directive": "off",
+			"astro/no-set-text-directive": "error",
+			"astro/no-unsafe-inline-scripts": "error",
+			"astro/no-unused-css-selector": "error",
+			// The shape of plan §6: `class:list` for every class binding.
+			"astro/prefer-class-list-directive": "error",
+			// Off: they judge the author's class expressions (`c ? "a" : "b"`, `` `btn btn-${size}` ``),
+			// which every target copies as written.
+			"astro/prefer-object-class-list": "off",
+			"astro/prefer-split-class-list": "off",
+		},
+	},
 ];

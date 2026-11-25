@@ -20,65 +20,65 @@ import type { OutputNames } from "./plan.ts";
 
 /** The names a component's teleports need. */
 export interface TeleportNames {
-  /** The signal that turns true once the component has mounted. */
-  mounted: string;
-  /** The inline helper whose ref moves an element into `to`. */
-  helper: string;
-  /** The elements the helper has taken, which a later render's ref leaves alone. */
-  taken: string;
-  /** The selector of a Qwik container's element. */
-  container: string;
+	/** The signal that turns true once the component has mounted. */
+	mounted: string;
+	/** The inline helper whose ref moves an element into `to`. */
+	helper: string;
+	/** The elements the helper has taken, which a later render's ref leaves alone. */
+	taken: string;
+	/** The selector of a Qwik container's element. */
+	container: string;
 }
 
 /** The names a component's teleports need, claimed where its template holds one. */
 export function teleportNames(
-  component: UfComponent,
-  names: OutputNames,
+	component: UfComponent,
+	names: OutputNames,
 ): TeleportNames | undefined {
-  let found = false;
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "Teleport") {
-        found = true;
-      }
-    },
-  });
-  return found
-    ? {
-        mounted: names.fresh("mounted"),
-        helper: names.once("teleport"),
-        taken: names.once("teleported"),
-        container: names.once("QWIK_CONTAINER"),
-      }
-    : undefined;
+	let found = false;
+	walk(component.render, {
+		enter(node) {
+			if (node.kind === "Teleport") {
+				found = true;
+			}
+		},
+	});
+	return found
+		? {
+				mounted: names.fresh("mounted"),
+				helper: names.once("teleport"),
+				taken: names.once("teleported"),
+				container: names.once("QWIK_CONTAINER"),
+			}
+		: undefined;
 }
 
 /** The component's statements: the signal, and the visible task that sets it. */
 export function teleportSetup(teleport: TeleportNames, names: OutputNames): string {
-  return [
-    `const ${teleport.mounted} = ${names.core("useSignal")}(false);`,
-    `${names.core("useVisibleTask$")}(() => {\n${teleport.mounted}.value = true;\n}, { strategy: "document-ready" });`,
-  ].join("\n");
+	return [
+		`const ${teleport.mounted} = ${names.core("useSignal")}(false);`,
+		`${names.core("useVisibleTask$")}(() => {\n${teleport.mounted}.value = true;\n}, { strategy: "document-ready" });`,
+	].join("\n");
 }
 
 /** The dialect's `teleport` hook: `mounted.value && <>{""}<div ref={teleport("body")} …/></>`. */
 export function teleportJsx(teleport: TeleportNames): NonNullable<JsxDialect["teleport"]> {
-  return (node, context) => {
-    const ref = js.jsxAttribute(
-      "ref",
-      js.jsxExpressionContainer(
-        js.callExpression(js.identifier(teleport.helper), [js.stringLiteral(node.to)]),
-      ),
-    );
-    return js.logicalExpression(
-      "&&",
-      js.memberExpression(js.identifier(teleport.mounted), "value"),
-      js.jsxFragment([
-        js.jsxExpressionContainer(js.stringLiteral("")),
-        jsxElement(node.children[0] as ElementNode, context, [ref]),
-      ]),
-    );
-  };
+	return (node, context) => {
+		const ref = js.jsxAttribute(
+			"ref",
+			js.jsxExpressionContainer(
+				js.callExpression(js.identifier(teleport.helper), [js.stringLiteral(node.to)]),
+			),
+		);
+		return js.logicalExpression(
+			"&&",
+			js.memberExpression(js.identifier(teleport.mounted), "value"),
+			js.jsxFragment([
+				js.jsxExpressionContainer(js.stringLiteral("")),
+				jsxElement(node.children[0] as ElementNode, context, [ref]),
+			]),
+		);
+	};
 }
 
 /**
@@ -86,7 +86,7 @@ export function teleportJsx(teleport: TeleportNames): NonNullable<JsxDialect["te
  * render makes a new one, so the helper takes an element once.
  */
 export function teleportHelper({ helper: name, taken, container }: TeleportNames): string {
-  return `/** The elements \`${name}\` has taken. */
+	return `/** The elements \`${name}\` has taken. */
 const ${taken} = new WeakSet<Element>();
 
 /** The element of a Qwik container, as Qwik selects it. */

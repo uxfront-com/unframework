@@ -62,15 +62,15 @@ read like the formatted code the JSX targets already emit (G2).
 ```vue
 <script setup lang="ts">
 export interface BadgeProps {
-  label: string;
-  tone?: "info" | "warn";
+	label: string;
+	tone?: "info" | "warn";
 }
 
 const { label, tone = "info" } = defineProps<BadgeProps>();
 </script>
 
 <template>
-  <span :data-tone="tone">{{ label }}</span>
+	<span :data-tone="tone">{{ label }}</span>
 </template>
 ```
 

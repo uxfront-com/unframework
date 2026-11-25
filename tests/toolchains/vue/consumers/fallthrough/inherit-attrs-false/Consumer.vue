@@ -3,5 +3,5 @@ import Field from "../../../../../integration/cases/fallthrough/inherit-attrs-fa
 </script>
 
 <template>
-  <Field label="Email" />
+	<Field label="Email" />
 </template>

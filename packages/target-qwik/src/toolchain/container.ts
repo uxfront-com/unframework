@@ -17,27 +17,27 @@ const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script>/g;
  * the render is not a single container, rather than guessing which part is the component.
  */
 export function componentHtml(render: string): string {
-  const html = render.trim();
-  const open = new RegExp(`^<${CONTAINER_TAG}(?:\\s[^>]*)?>`).exec(html);
-  const close = `</${CONTAINER_TAG}>`;
-  if (!open || !html.endsWith(close) || html.indexOf(close) !== html.length - close.length) {
-    throw new Error(`Qwik's server render is not one <${CONTAINER_TAG}> container:\n${render}`);
-  }
-  const inner = html.slice(open[0].length, -close.length);
-  let end = inner.length;
-  const scripts = [...inner.matchAll(SCRIPT)];
-  for (let index = scripts.length - 1; index >= 0; index--) {
-    const script = scripts[index]!;
-    if (script.index + script[0].length !== end || !isContainerScript(script[1]!, script[2]!)) {
-      break;
-    }
-    end = script.index;
-  }
-  return inner
-    .slice(0, end)
-    .replaceAll(SCRIPT, (script, attributes: string, body: string) =>
-      isInlineRegistration(attributes, body) ? "" : script,
-    );
+	const html = render.trim();
+	const open = new RegExp(`^<${CONTAINER_TAG}(?:\\s[^>]*)?>`).exec(html);
+	const close = `</${CONTAINER_TAG}>`;
+	if (!open || !html.endsWith(close) || html.indexOf(close) !== html.length - close.length) {
+		throw new Error(`Qwik's server render is not one <${CONTAINER_TAG}> container:\n${render}`);
+	}
+	const inner = html.slice(open[0].length, -close.length);
+	let end = inner.length;
+	const scripts = [...inner.matchAll(SCRIPT)];
+	for (let index = scripts.length - 1; index >= 0; index--) {
+		const script = scripts[index]!;
+		if (script.index + script[0].length !== end || !isContainerScript(script[1]!, script[2]!)) {
+			break;
+		}
+		end = script.index;
+	}
+	return inner
+		.slice(0, end)
+		.replaceAll(SCRIPT, (script, attributes: string, body: string) =>
+			isInlineRegistration(attributes, body) ? "" : script,
+		);
 }
 
 /** The attributes Qwik gives its own inline scripts: none, or a CSP nonce. */
@@ -48,24 +48,24 @@ const QWIK_SCRIPT_ATTRIBUTES = /^(?:\s+nonce="[^"]*")?\s*$/;
  * JSON strings, then the script removes itself, so it never reaches the browser's DOM.
  */
 const INLINE_REGISTRATION =
-  /^\(window\._qwikEv\|\|\(window\._qwikEv=\[\]\)\)\.push\("[^"\\]+"(?:,"[^"\\]+")*\);document\.currentScript\.remove\(\)$/;
+	/^\(window\._qwikEv\|\|\(window\._qwikEv=\[\]\)\)\.push\("[^"\\]+"(?:,"[^"\\]+")*\);document\.currentScript\.remove\(\)$/;
 
 /** Whether a script is an event registration Qwik writes before an element of the component. */
 function isInlineRegistration(attributes: string, body: string): boolean {
-  return QWIK_SCRIPT_ATTRIBUTES.test(attributes) && INLINE_REGISTRATION.test(body);
+	return QWIK_SCRIPT_ATTRIBUTES.test(attributes) && INLINE_REGISTRATION.test(body);
 }
 
 /** Whether a script is one of the container-level scripts Qwik's server renderer writes. */
 function isContainerScript(attributes: string, body: string): boolean {
-  return (
-    // State, vnode data and attribute back-patches: type="qwik/state|vnode|backpatch".
-    /\btype="qwik\//.test(attributes) ||
-    // Sync functions (`document["qFuncs_<instance>"]=…`).
-    /\bq:func="qwik\/json"/.test(attributes) ||
-    // The inlined loader, which `qwikLoader: "never"` should already leave out.
-    /\bid="qwikloader"/.test(attributes) ||
-    // Event registrations, written even with `qwikLoader: "never"` once a handler exists.
-    (QWIK_SCRIPT_ATTRIBUTES.test(attributes) &&
-      body.startsWith("(window._qwikEv||(window._qwikEv=[])).push("))
-  );
+	return (
+		// State, vnode data and attribute back-patches: type="qwik/state|vnode|backpatch".
+		/\btype="qwik\//.test(attributes) ||
+		// Sync functions (`document["qFuncs_<instance>"]=…`).
+		/\bq:func="qwik\/json"/.test(attributes) ||
+		// The inlined loader, which `qwikLoader: "never"` should already leave out.
+		/\bid="qwikloader"/.test(attributes) ||
+		// Event registrations, written even with `qwikLoader: "never"` once a handler exists.
+		(QWIK_SCRIPT_ATTRIBUTES.test(attributes) &&
+			body.startsWith("(window._qwikEv||(window._qwikEv=[])).push("))
+	);
 }

@@ -1,27 +1,27 @@
 // What the Angular class declares for each of a component's bindings (plan §6, ADR-0046), and the
 // names the output file claims beside the source's own.
 import {
-  addPassThroughImports,
-  codeKind,
-  codeNames,
-  ImportSet,
-  NameScope,
-  passThroughImports,
-  sourceNames,
+	addPassThroughImports,
+	codeKind,
+	codeNames,
+	ImportSet,
+	NameScope,
+	passThroughImports,
+	sourceNames,
 } from "@unframework.dev/codegen";
 import { summarizeCode, walk } from "@unframework.dev/ir";
 import type {
-  Binding,
-  BindingId,
-  BindingKind,
-  Code,
-  ComposableMemberApi,
-  EventDeclaration,
-  FunctionCode,
-  SetupItem,
-  UfComponent,
-  UfModule,
-  UseItem,
+	Binding,
+	BindingId,
+	BindingKind,
+	Code,
+	ComposableMemberApi,
+	EventDeclaration,
+	FunctionCode,
+	SetupItem,
+	UfComponent,
+	UfModule,
+	UseItem,
 } from "@unframework.dev/ir";
 
 import { childApi, FALLTHROUGH_MEMBERS } from "./fallthrough.ts";
@@ -65,25 +65,25 @@ import { outputName } from "./outputs.ts";
  *   (`this.toggle_1.toggle()`).
  */
 export type MemberForm =
-  | "input"
-  | "signal"
-  | "linked"
-  | "computed"
-  | "once"
-  | "value"
-  | "query"
-  | "method"
-  | "arrow"
-  | "field"
-  | "loop"
-  | "emit"
-  | "model"
-  | "context"
-  | "instance"
-  | "component"
-  | "module"
-  | "result"
-  | "resultValue";
+	| "input"
+	| "signal"
+	| "linked"
+	| "computed"
+	| "once"
+	| "value"
+	| "query"
+	| "method"
+	| "arrow"
+	| "field"
+	| "loop"
+	| "emit"
+	| "model"
+	| "context"
+	| "instance"
+	| "component"
+	| "module"
+	| "result"
+	| "resultValue";
 
 /**
  * Where a component calls a composable (ADR-0069), a function that needs an injection context,
@@ -103,139 +103,139 @@ export type CallPlacement = "field" | "constructor" | "init";
  * composable with effects the member holding the injector it runs in.
  */
 export interface ComposableCall {
-  item: UseItem;
-  holder: string;
-  placement: CallPlacement;
-  /**
-   * A child of the component's injector, `Injector.create(…)`, which `ngOnDestroy` destroys
-   * where the call sits among the component's own `onUnmounted` hooks. The composable registers
-   * its teardown with `DestroyRef`, which is this injector there: the component's own
-   * `DestroyRef` runs only once Angular has removed the parent's listeners of its outputs, so a
-   * callback the teardown calls could no longer emit to the parent (NG0953).
-   */
-  injector?: string;
+	item: UseItem;
+	holder: string;
+	placement: CallPlacement;
+	/**
+	 * A child of the component's injector, `Injector.create(…)`, which `ngOnDestroy` destroys
+	 * where the call sits among the component's own `onUnmounted` hooks. The composable registers
+	 * its teardown with `DestroyRef`, which is this injector there: the component's own
+	 * `DestroyRef` runs only once Angular has removed the parent's listeners of its outputs, so a
+	 * callback the teardown calls could no longer emit to the parent (NG0953).
+	 */
+	injector?: string;
 }
 
 /** What the emitter knows about a component before it prints anything. */
 export interface Plan {
-  component: UfComponent;
-  module: UfModule;
-  /** The file's module-level names: imports, helpers, directives, beside the source's. */
-  imports: ImportSet;
-  /** The class's member names: the props, the setup's bindings, the events and Angular's hooks. */
-  members: NameScope;
-  /**
-   * The names `ngOnInit` declares (watchers' locals): none the source's code reads or declares,
-   * which its callbacks inside would capture, and none Angular's imports may take. A binding's
-   * own name is free: class code reads a binding through `this.`.
-   */
-  locals: NameScope;
-  /**
-   * The names a function the emitter writes around one of the source's must leave alone: those
-   * the source's function reads or declares, Angular's imports and `Object`.
-   */
-  reserved(fn: FunctionCode): Array<string>;
-  /** How each binding is declared. */
-  forms: ReadonlyMap<BindingId, MemberForm>;
-  /**
-   * The setup `let`s whose initial value reads an input or a lazy member: each is declared
-   * without an initialiser and assigned in `ngOnInit`, in source order (ADR-0046).
-   */
-  seeded: ReadonlySet<BindingId>;
-  /** The events by name. */
-  events: ReadonlyMap<string, EventDeclaration>;
-  /** The names of the list items and indexes: a template statement shadowed by one says `this.`. */
-  loopNames: ReadonlySet<string>;
-  /**
-   * The member the template reads each pass-through name through (an engine's class function),
-   * by its local name (ADR-0064): its own name, unless a member of the class takes it.
-   */
-  recipes: ReadonlyMap<string, string>;
-  /** Each composable's call, in source order (ADR-0069). */
-  calls: ReadonlyArray<ComposableCall>;
-  /**
-   * What a composable returns, read through its call's holder, by the `used*` binding:
-   * `toggle_1.on` (ADR-0069).
-   */
-  results: ReadonlyMap<BindingId, string>;
-  /**
-   * The member the template reads a module's value through, by its binding (ADR-0070): the
-   * value's own name, unless an output, the `class` and `style` inputs or a slot's query takes
-   * it (`currentSave`). Class code reads the value by its module name either way.
-   */
-  moduleMembers: ReadonlyMap<BindingId, string>;
-  /**
-   * The `onMounted` hooks and `watchEffect`s that follow a composable's call with effects in
-   * `ngOnInit`, and are registered there after it, in source order, rather than in the
-   * constructor before it (ADR-0069).
-   */
-  late: ReadonlySet<SetupItem>;
-  /**
-   * The signal that tells the setup has resolved, where it awaits (ADR-0101): `ngOnInit` sets it
-   * once the awaits and the rest of the setup have run, and the template renders behind it.
-   */
-  resolved?: string;
-  /**
-   * The template refs on a child that exposes nothing, which hold its root element (ADR-0118),
-   * by binding: the local name of the child, whose `ufElement` the ref reads.
-   */
-  elementRefs: ReadonlyMap<BindingId, string>;
-  /**
-   * Claims the local name of a helper the file declares, or imports from `_unframework/` where
-   * the helpers are shared (ADR-0121): then a source's components are joined into one module
-   * where it is loaded (ADR-0053), so each imports the helper under one name, its own unless a
-   * component of the source declares it or imports a child by it, and the join writes one import.
-   */
-  helper(base: string): string;
-  /** The shared helpers the file imports, by export name, where the helpers are shared. */
-  shared?: Map<string, string>;
+	component: UfComponent;
+	module: UfModule;
+	/** The file's module-level names: imports, helpers, directives, beside the source's. */
+	imports: ImportSet;
+	/** The class's member names: the props, the setup's bindings, the events and Angular's hooks. */
+	members: NameScope;
+	/**
+	 * The names `ngOnInit` declares (watchers' locals): none the source's code reads or declares,
+	 * which its callbacks inside would capture, and none Angular's imports may take. A binding's
+	 * own name is free: class code reads a binding through `this.`.
+	 */
+	locals: NameScope;
+	/**
+	 * The names a function the emitter writes around one of the source's must leave alone: those
+	 * the source's function reads or declares, Angular's imports and `Object`.
+	 */
+	reserved(fn: FunctionCode): Array<string>;
+	/** How each binding is declared. */
+	forms: ReadonlyMap<BindingId, MemberForm>;
+	/**
+	 * The setup `let`s whose initial value reads an input or a lazy member: each is declared
+	 * without an initialiser and assigned in `ngOnInit`, in source order (ADR-0046).
+	 */
+	seeded: ReadonlySet<BindingId>;
+	/** The events by name. */
+	events: ReadonlyMap<string, EventDeclaration>;
+	/** The names of the list items and indexes: a template statement shadowed by one says `this.`. */
+	loopNames: ReadonlySet<string>;
+	/**
+	 * The member the template reads each pass-through name through (an engine's class function),
+	 * by its local name (ADR-0064): its own name, unless a member of the class takes it.
+	 */
+	recipes: ReadonlyMap<string, string>;
+	/** Each composable's call, in source order (ADR-0069). */
+	calls: ReadonlyArray<ComposableCall>;
+	/**
+	 * What a composable returns, read through its call's holder, by the `used*` binding:
+	 * `toggle_1.on` (ADR-0069).
+	 */
+	results: ReadonlyMap<BindingId, string>;
+	/**
+	 * The member the template reads a module's value through, by its binding (ADR-0070): the
+	 * value's own name, unless an output, the `class` and `style` inputs or a slot's query takes
+	 * it (`currentSave`). Class code reads the value by its module name either way.
+	 */
+	moduleMembers: ReadonlyMap<BindingId, string>;
+	/**
+	 * The `onMounted` hooks and `watchEffect`s that follow a composable's call with effects in
+	 * `ngOnInit`, and are registered there after it, in source order, rather than in the
+	 * constructor before it (ADR-0069).
+	 */
+	late: ReadonlySet<SetupItem>;
+	/**
+	 * The signal that tells the setup has resolved, where it awaits (ADR-0101): `ngOnInit` sets it
+	 * once the awaits and the rest of the setup have run, and the template renders behind it.
+	 */
+	resolved?: string;
+	/**
+	 * The template refs on a child that exposes nothing, which hold its root element (ADR-0118),
+	 * by binding: the local name of the child, whose `ufElement` the ref reads.
+	 */
+	elementRefs: ReadonlyMap<BindingId, string>;
+	/**
+	 * Claims the local name of a helper the file declares, or imports from `_unframework/` where
+	 * the helpers are shared (ADR-0121): then a source's components are joined into one module
+	 * where it is loaded (ADR-0053), so each imports the helper under one name, its own unless a
+	 * component of the source declares it or imports a child by it, and the join writes one import.
+	 */
+	helper(base: string): string;
+	/** The shared helpers the file imports, by export name, where the helpers are shared. */
+	shared?: Map<string, string>;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
 export const ANGULAR_MEMBERS: ReadonlyArray<string> = [
-  "constructor",
-  "ngOnInit",
-  "ngOnDestroy",
-  "ngOnChanges",
-  "ngDoCheck",
+	"constructor",
+	"ngOnInit",
+	"ngOnDestroy",
+	"ngOnChanges",
+	"ngDoCheck",
 ];
 
 /** Every name the output may import from Angular: no local the emitter declares takes one. */
 export const ANGULAR_IMPORTS: ReadonlyArray<string> = [
-  "Component",
-  "AfterRenderRef",
-  "ApplicationRef",
-  "DestroyRef",
-  "Directive",
-  "EffectRef",
-  "ElementRef",
-  "Injector",
-  "OnDestroy",
-  "OnInit",
-  "PLATFORM_ID",
-  "PendingTasks",
-  "Renderer2",
-  "Signal",
-  "InjectionToken",
-  "NgTemplateOutlet",
-  "TemplateRef",
-  "WritableSignal",
-  "afterNextRender",
-  "afterRenderEffect",
-  "computed",
-  "contentChild",
-  "effect",
-  "inject",
-  "input",
-  "isPlatformBrowser",
-  "isPlatformServer",
-  "linkedSignal",
-  "model",
-  "output",
-  "runInInjectionContext",
-  "signal",
-  "untracked",
-  "viewChild",
+	"Component",
+	"AfterRenderRef",
+	"ApplicationRef",
+	"DestroyRef",
+	"Directive",
+	"EffectRef",
+	"ElementRef",
+	"Injector",
+	"OnDestroy",
+	"OnInit",
+	"PLATFORM_ID",
+	"PendingTasks",
+	"Renderer2",
+	"Signal",
+	"InjectionToken",
+	"NgTemplateOutlet",
+	"TemplateRef",
+	"WritableSignal",
+	"afterNextRender",
+	"afterRenderEffect",
+	"computed",
+	"contentChild",
+	"effect",
+	"inject",
+	"input",
+	"isPlatformBrowser",
+	"isPlatformServer",
+	"linkedSignal",
+	"model",
+	"output",
+	"runInInjectionContext",
+	"signal",
+	"untracked",
+	"viewChild",
 ];
 
 /**
@@ -244,170 +244,170 @@ export const ANGULAR_IMPORTS: ReadonlyArray<string> = [
  * (`withOutputNames`) and each narrowed member path of the setup asserted (./narrowing.ts).
  */
 export function planComponent(declared: UfComponent, module: UfModule, shares = false): Plan {
-  const component = assertedSetup(withOutputNames(declared, module));
-  const source = sourceNames(component, module);
-  // The class takes the component's name, unless an import has it (`Component`): see ./index.ts.
-  const imports = new ImportSet(
-    new NameScope([...source].filter((name) => name !== component.name)),
-  );
-  // The imports that pass through, which the template reads through members (ADR-0064).
-  addPassThroughImports(component, module, imports);
-  const events = new Map(component.emits?.events.map((event) => [event.name, event]) ?? []);
-  const memberNames = [
-    ...ANGULAR_MEMBERS,
-    ...component.props.map(({ name }) => name),
-    ...component.bindings.filter(({ kind }) => !isLoopVariable(kind)).map(({ name }) => name),
-    ...[...events.keys()].map(outputName),
-  ];
-  const members = new NameScope(memberNames);
-  // A recipe's member takes no name a member has, those composition declares (the `class` and
-  // `style` inputs, a slot's query) included; the members the emitter claims later (`host`)
-  // then take others. Nor a list's variable's name, which would shadow it in the list, as
-  // `templateMember` keeps the other members the template reads.
-  const loopNames = new Set(
-    component.bindings.filter(({ kind }) => isLoopVariable(kind)).map(({ name }) => name),
-  );
-  const composition = new NameScope([
-    ...memberNames,
-    ...FALLTHROUGH_MEMBERS,
-    ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
-  ]);
-  const recipes = new Map<string, string>();
-  for (const { names } of passThroughImports(component, module)) {
-    for (const { local } of names) {
-      let member = composition.claim(local);
-      while (loopNames.has(member)) {
-        member = composition.claim(local);
-      }
-      members.reserve(member);
-      recipes.set(local, member);
-    }
-  }
-  // A member the template reads takes no name composition declares, nor a list variable's.
-  const claimMember = (name: string) => {
-    let member = composition.claim(name);
-    while (loopNames.has(member)) {
-      member = composition.claim(name);
-    }
-    members.reserve(member);
-    return member;
-  };
-  // A module's value named like an output, the fallthrough inputs or a slot's query keeps its
-  // module name, which class code reads, and the template reads it through another member.
-  const declaredMembers = new Set([
-    ...[...events.keys()].map(outputName),
-    ...FALLTHROUGH_MEMBERS,
-    ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
-  ]);
-  const moduleMembers = new Map(
-    component.bindings
-      .filter(({ kind, name }) => isModuleBinding(kind) && declaredMembers.has(name))
-      .map(({ id, name, kind }) => [id, claimMember(outputSafeName(name, kind))] as const),
-  );
-  const bindingNames = new Set(component.bindings.map(({ name }) => name));
-  const elementRefs = rootElementRefs(component, module);
-  const { forms, seeded, placements, late } = formsOf(component, elementRefs);
-  // Each call's result is held by a member named for its composable (`useMediaQuery` →
-  // `mediaQuery`), past every name of the class, the fallthrough inputs included (ADR-0069).
-  const calls = component.setup.flatMap((item): Array<ComposableCall> => {
-    if (item.kind !== "Use") {
-      return [];
-    }
-    const holder = claimMember(holderName(item.composable));
-    const injector = item.hasEffects
-      ? claimMember(`${holderName(item.composable)}Injector`)
-      : undefined;
-    return [
-      {
-        item,
-        holder,
-        placement: placements.get(item)!,
-        ...(injector === undefined ? {} : { injector }),
-      },
-    ];
-  });
-  // The template reads it, so it takes no name composition declares (ADR-0101).
-  const resolved = component.setup.some((item) => item.kind === "Await")
-    ? claimMember("resolved")
-    : undefined;
-  const results = new Map(
-    calls.flatMap(({ item, holder }) =>
-      item.members.map(({ member, binding }) => [binding, `${holder}.${member}`] as const),
-    ),
-  );
-  // A module's value is read by its module name in class code, so no local shadows it.
-  const locals = new NameScope([
-    ...[...source].filter((name) => !bindingNames.has(name)),
-    ...component.bindings.filter(({ kind }) => isModuleBinding(kind)).map(({ name }) => name),
-    ...ANGULAR_IMPORTS,
-    "Object",
-  ]);
-  const shared = shares ? new Map<string, string>() : undefined;
-  let declaredInSource: Array<string> | undefined;
-  const helper = (base: string): string => {
-    if (!shared) {
-      return imports.claim(base);
-    }
-    const known = shared.get(base);
-    if (known !== undefined) {
-      return known;
-    }
-    // Every name of the helper's that a component of the source declares, or a child it imports
-    // binds, is left, so that each component claims the same name.
-    declaredInSource ??= [
-      ...module.components.flatMap((each) => [...sourceNames(each, module)]),
-      ...(module.imports ?? []).flatMap((entry) => entry.names.map(({ local }) => local)),
-    ];
-    const own = new RegExp(`^${base}(?:_\\d+)*$`);
-    imports.reserve(...declaredInSource.filter((name) => own.test(name)));
-    const local = imports.claim(base);
-    shared.set(base, local);
-    return local;
-  };
-  return {
-    component,
-    module,
-    imports,
-    members,
-    locals,
-    reserved: (fn) => [
-      ...codeNames(fn.body.code, codeKind(fn.body, component)),
-      ...fn.parameters.flatMap((parameter) =>
-        parameter.name === undefined ? (parameter.pattern?.names ?? []) : [parameter.name],
-      ),
-      ...ANGULAR_IMPORTS,
-      "Object",
-    ],
-    forms,
-    seeded,
-    events,
-    loopNames,
-    recipes,
-    calls,
-    results,
-    moduleMembers,
-    late,
-    elementRefs,
-    ...(resolved === undefined ? {} : { resolved }),
-    helper,
-    ...(shared === undefined ? {} : { shared }),
-  };
+	const component = assertedSetup(withOutputNames(declared, module));
+	const source = sourceNames(component, module);
+	// The class takes the component's name, unless an import has it (`Component`): see ./index.ts.
+	const imports = new ImportSet(
+		new NameScope([...source].filter((name) => name !== component.name)),
+	);
+	// The imports that pass through, which the template reads through members (ADR-0064).
+	addPassThroughImports(component, module, imports);
+	const events = new Map(component.emits?.events.map((event) => [event.name, event]) ?? []);
+	const memberNames = [
+		...ANGULAR_MEMBERS,
+		...component.props.map(({ name }) => name),
+		...component.bindings.filter(({ kind }) => !isLoopVariable(kind)).map(({ name }) => name),
+		...[...events.keys()].map(outputName),
+	];
+	const members = new NameScope(memberNames);
+	// A recipe's member takes no name a member has, those composition declares (the `class` and
+	// `style` inputs, a slot's query) included; the members the emitter claims later (`host`)
+	// then take others. Nor a list's variable's name, which would shadow it in the list, as
+	// `templateMember` keeps the other members the template reads.
+	const loopNames = new Set(
+		component.bindings.filter(({ kind }) => isLoopVariable(kind)).map(({ name }) => name),
+	);
+	const composition = new NameScope([
+		...memberNames,
+		...FALLTHROUGH_MEMBERS,
+		...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
+	]);
+	const recipes = new Map<string, string>();
+	for (const { names } of passThroughImports(component, module)) {
+		for (const { local } of names) {
+			let member = composition.claim(local);
+			while (loopNames.has(member)) {
+				member = composition.claim(local);
+			}
+			members.reserve(member);
+			recipes.set(local, member);
+		}
+	}
+	// A member the template reads takes no name composition declares, nor a list variable's.
+	const claimMember = (name: string) => {
+		let member = composition.claim(name);
+		while (loopNames.has(member)) {
+			member = composition.claim(name);
+		}
+		members.reserve(member);
+		return member;
+	};
+	// A module's value named like an output, the fallthrough inputs or a slot's query keeps its
+	// module name, which class code reads, and the template reads it through another member.
+	const declaredMembers = new Set([
+		...[...events.keys()].map(outputName),
+		...FALLTHROUGH_MEMBERS,
+		...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
+	]);
+	const moduleMembers = new Map(
+		component.bindings
+			.filter(({ kind, name }) => isModuleBinding(kind) && declaredMembers.has(name))
+			.map(({ id, name, kind }) => [id, claimMember(outputSafeName(name, kind))] as const),
+	);
+	const bindingNames = new Set(component.bindings.map(({ name }) => name));
+	const elementRefs = rootElementRefs(component, module);
+	const { forms, seeded, placements, late } = formsOf(component, elementRefs);
+	// Each call's result is held by a member named for its composable (`useMediaQuery` →
+	// `mediaQuery`), past every name of the class, the fallthrough inputs included (ADR-0069).
+	const calls = component.setup.flatMap((item): Array<ComposableCall> => {
+		if (item.kind !== "Use") {
+			return [];
+		}
+		const holder = claimMember(holderName(item.composable));
+		const injector = item.hasEffects
+			? claimMember(`${holderName(item.composable)}Injector`)
+			: undefined;
+		return [
+			{
+				item,
+				holder,
+				placement: placements.get(item)!,
+				...(injector === undefined ? {} : { injector }),
+			},
+		];
+	});
+	// The template reads it, so it takes no name composition declares (ADR-0101).
+	const resolved = component.setup.some((item) => item.kind === "Await")
+		? claimMember("resolved")
+		: undefined;
+	const results = new Map(
+		calls.flatMap(({ item, holder }) =>
+			item.members.map(({ member, binding }) => [binding, `${holder}.${member}`] as const),
+		),
+	);
+	// A module's value is read by its module name in class code, so no local shadows it.
+	const locals = new NameScope([
+		...[...source].filter((name) => !bindingNames.has(name)),
+		...component.bindings.filter(({ kind }) => isModuleBinding(kind)).map(({ name }) => name),
+		...ANGULAR_IMPORTS,
+		"Object",
+	]);
+	const shared = shares ? new Map<string, string>() : undefined;
+	let declaredInSource: Array<string> | undefined;
+	const helper = (base: string): string => {
+		if (!shared) {
+			return imports.claim(base);
+		}
+		const known = shared.get(base);
+		if (known !== undefined) {
+			return known;
+		}
+		// Every name of the helper's that a component of the source declares, or a child it imports
+		// binds, is left, so that each component claims the same name.
+		declaredInSource ??= [
+			...module.components.flatMap((each) => [...sourceNames(each, module)]),
+			...(module.imports ?? []).flatMap((entry) => entry.names.map(({ local }) => local)),
+		];
+		const own = new RegExp(`^${base}(?:_\\d+)*$`);
+		imports.reserve(...declaredInSource.filter((name) => own.test(name)));
+		const local = imports.claim(base);
+		shared.set(base, local);
+		return local;
+	};
+	return {
+		component,
+		module,
+		imports,
+		members,
+		locals,
+		reserved: (fn) => [
+			...codeNames(fn.body.code, codeKind(fn.body, component)),
+			...fn.parameters.flatMap((parameter) =>
+				parameter.name === undefined ? (parameter.pattern?.names ?? []) : [parameter.name],
+			),
+			...ANGULAR_IMPORTS,
+			"Object",
+		],
+		forms,
+		seeded,
+		events,
+		loopNames,
+		recipes,
+		calls,
+		results,
+		moduleMembers,
+		late,
+		elementRefs,
+		...(resolved === undefined ? {} : { resolved }),
+		helper,
+		...(shared === undefined ? {} : { shared }),
+	};
 }
 
 /** A module's constant or a value imported from a `.ts` module (ADR-0070). */
 function isModuleBinding(kind: BindingKind): boolean {
-  return kind === "moduleConst" || kind === "import";
+	return kind === "moduleConst" || kind === "import";
 }
 
 /** The member the template reads a module's value through (ADR-0070). */
 export function moduleMember(plan: Plan, binding: Binding): string {
-  return plan.moduleMembers.get(binding.id) ?? binding.name;
+	return plan.moduleMembers.get(binding.id) ?? binding.name;
 }
 
 /** The member a composable's call is held by: its name without `use`, `toggle` for `useToggle`. */
 function holderName(composable: string): string {
-  const name = composable.replace(/^use(?=[A-Z])/, "");
-  return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+	const name = composable.replace(/^use(?=[A-Z])/, "");
+	return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
 }
 
 /**
@@ -421,80 +421,80 @@ function holderName(composable: string): string {
  * renamed the same way.
  */
 function withOutputNames(component: UfComponent, module: UfModule): UfComponent {
-  const events = new Set(component.emits?.events.map(({ name }) => outputName(name)) ?? []);
-  // The members the emitter declares for composition: the `class` and `style` inputs a root
-  // takes from its consumer, and each slot's query (ADR-0056).
-  const declared = new Set([
-    ...FALLTHROUGH_MEMBERS,
-    ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
-  ]);
-  const clashing = component.bindings.filter(
-    ({ name, kind }) =>
-      (events.has(name) || declared.has(name)) &&
-      kind !== "prop" &&
-      kind !== "emit" &&
-      !isModuleBinding(kind) &&
-      !isLoopVariable(kind),
-  );
-  if (clashing.length === 0) {
-    return component;
-  }
-  const taken = new NameScope([
-    ...sourceNames(component, module),
-    ...events,
-    ...declared,
-    ...ANGULAR_MEMBERS,
-    ...ANGULAR_IMPORTS,
-  ]);
-  const renamed = new Map(
-    clashing.map(({ id, name, kind }) => [id, taken.claim(outputSafeName(name, kind))]),
-  );
-  return {
-    ...component,
-    bindings: component.bindings.map((binding) => {
-      const name = renamed.get(binding.id);
-      return name === undefined ? binding : { ...binding, name };
-    }),
-  };
+	const events = new Set(component.emits?.events.map(({ name }) => outputName(name)) ?? []);
+	// The members the emitter declares for composition: the `class` and `style` inputs a root
+	// takes from its consumer, and each slot's query (ADR-0056).
+	const declared = new Set([
+		...FALLTHROUGH_MEMBERS,
+		...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
+	]);
+	const clashing = component.bindings.filter(
+		({ name, kind }) =>
+			(events.has(name) || declared.has(name)) &&
+			kind !== "prop" &&
+			kind !== "emit" &&
+			!isModuleBinding(kind) &&
+			!isLoopVariable(kind),
+	);
+	if (clashing.length === 0) {
+		return component;
+	}
+	const taken = new NameScope([
+		...sourceNames(component, module),
+		...events,
+		...declared,
+		...ANGULAR_MEMBERS,
+		...ANGULAR_IMPORTS,
+	]);
+	const renamed = new Map(
+		clashing.map(({ id, name, kind }) => [id, taken.claim(outputSafeName(name, kind))]),
+	);
+	return {
+		...component,
+		bindings: component.bindings.map((binding) => {
+			const name = renamed.get(binding.id);
+			return name === undefined ? binding : { ...binding, name };
+		}),
+	};
 }
 
 /** The member that queries a slot's template, `titleTemplate` (`angularDialect`'s outlet). */
 export function slotQuery(slot: string): string {
-  return `${slot}Template`;
+	return `${slot}Template`;
 }
 
 /** The name a binding takes beside an event or a declared member of its own name. */
 function outputSafeName(name: string, kind: BindingKind): string {
-  const pascal = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
-  switch (kind) {
-    case "localFn":
-      return `on${pascal}`;
-    case "templateRef":
-      return `${name}Element`;
-    case "state":
-    case "derived":
-    case "localConst":
-    case "awaited":
-    case "localVar":
-    case "prop":
-    case "loopVar":
-    case "emit":
-    case "model":
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    case "moduleConst":
-    case "import":
-    case "argument":
-    case "usedState":
-    case "usedDerived":
-    case "usedFn":
-    case "usedConst":
-      return `current${pascal}`;
-    default:
-      return unreachable(kind);
-  }
+	const pascal = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+	switch (kind) {
+		case "localFn":
+			return `on${pascal}`;
+		case "templateRef":
+			return `${name}Element`;
+		case "state":
+		case "derived":
+		case "localConst":
+		case "awaited":
+		case "localVar":
+		case "prop":
+		case "loopVar":
+		case "emit":
+		case "model":
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		case "moduleConst":
+		case "import":
+		case "argument":
+		case "usedState":
+		case "usedDerived":
+		case "usedFn":
+		case "usedConst":
+			return `current${pascal}`;
+		default:
+			return unreachable(kind);
+	}
 }
 
 /**
@@ -502,206 +502,206 @@ function outputSafeName(name: string, kind: BindingKind): string {
  * order, as a later item may read an earlier one.
  */
 function formsOf(
-  component: UfComponent,
-  elementRefs: ReadonlyMap<BindingId, string>,
+	component: UfComponent,
+	elementRefs: ReadonlyMap<BindingId, string>,
 ): {
-  forms: Map<BindingId, MemberForm>;
-  seeded: Set<BindingId>;
-  placements: Map<UseItem, CallPlacement>;
-  late: Set<SetupItem>;
+	forms: Map<BindingId, MemberForm>;
+	seeded: Set<BindingId>;
+	placements: Map<UseItem, CallPlacement>;
+	late: Set<SetupItem>;
 } {
-  const forms = new Map<BindingId, MemberForm>();
-  const seeded = new Set<BindingId>();
-  const placements = new Map<UseItem, CallPlacement>();
-  const kinds = new Map(component.bindings.map((binding) => [binding.id, binding.kind]));
-  // A value read while the class is constructed cannot read an input (NG0950 for a required
-  // one, the default for another) or what reads one: `computed` and the seeded members are
-  // read lazily instead.
-  const lazy = new Set<BindingId>();
-  const readsLazily = (code: Code) =>
-    [...summarizeCode(code, component).reads].some((id) => {
-      const kind = kinds.get(id);
-      return lazy.has(id) || (kind !== undefined && readLazily(kind));
-    });
-  for (const binding of component.bindings) {
-    switch (binding.kind) {
-      case "prop":
-        forms.set(binding.id, "input");
-        lazy.add(binding.id);
-        break;
-      case "loopVar":
-        forms.set(binding.id, "loop");
-        break;
-      case "emit":
-        forms.set(binding.id, "emit");
-        break;
-      case "state":
-      case "derived":
-      case "templateRef":
-      case "localConst":
-      case "localFn":
-      case "localVar":
-      case "awaited":
-        break;
-      case "slotScope":
-        forms.set(binding.id, "loop");
-        break;
-      case "context":
-        forms.set(binding.id, "context");
-        break;
-      case "component":
-        forms.set(binding.id, "component");
-        break;
-      case "moduleConst":
-      case "import":
-        forms.set(binding.id, "module");
-        break;
-      // A composable's result is its call's (`Use`); a model is its setup item's; `slots` is
-      // read only as slots (`SlotReference`); a composable's argument is no component's.
-      case "usedState":
-      case "usedDerived":
-      case "usedFn":
-      case "usedConst":
-      case "model":
-      case "slots":
-      case "argument":
-        break;
-      default:
-        unreachable(binding.kind);
-    }
-  }
-  const instances = componentRefs(component, elementRefs);
-  const escaping = escapingFunctions(component);
-  // Whether the constructor registers a hook or an effect before the item at hand.
-  let constructs = false;
-  // Whether `ngOnInit` creates a watcher before the item at hand, which a call with effects then
-  // follows there, and whether it makes such a call, which the hooks and effects after it then
-  // follow there too: each keeps its source order among the caller's (ADR-0069).
-  let watches = false;
-  let defers = false;
-  const late = new Set<SetupItem>();
-  for (const item of component.setup) {
-    switch (item.kind) {
-      // A field `ngOnInit` assigns once its promise resolves (ADR-0101): whatever reads it is
-      // deferred as what reads an input is, and every hook and effect after the awaits is
-      // registered there, after them.
-      case "Await":
-        forms.set(item.binding, "value");
-        lazy.add(item.binding);
-        defers = true;
-        break;
-      case "State": {
-        const linked = item.initial !== undefined && readsLazily(item.initial);
-        forms.set(item.binding, linked ? "linked" : "signal");
-        if (linked) {
-          lazy.add(item.binding);
-        }
-        break;
-      }
-      case "Derived":
-        forms.set(item.binding, "computed");
-        break;
-      case "TemplateRef":
-        forms.set(item.binding, instances.has(item.binding) ? "instance" : "query");
-        break;
-      case "Model":
-        forms.set(item.binding, "model");
-        break;
-      case "Id":
-        forms.set(item.binding, "value");
-        break;
-      case "Const": {
-        const once = readsLazily(item.value);
-        forms.set(item.binding, once ? "once" : "value");
-        if (once) {
-          lazy.add(item.binding);
-        }
-        break;
-      }
-      case "Variable":
-        forms.set(item.binding, "field");
-        // A field initialiser runs while the class constructs: one that reads an input would
-        // read none (NG0950) or its default, so the field is assigned in `ngOnInit` instead.
-        if (item.initial !== undefined && readsLazily(item.initial)) {
-          seeded.add(item.binding);
-          lazy.add(item.binding);
-        }
-        break;
-      case "Function":
-        forms.set(item.binding, escaping.has(item.binding) ? "arrow" : "method");
-        break;
-      case "WatchEffect":
-        if (defers) {
-          late.add(item);
-        } else {
-          constructs = true;
-        }
-        break;
-      case "Lifecycle":
-        if (item.hook !== "mounted") {
-          break;
-        }
-        if (defers) {
-          late.add(item);
-        } else {
-          constructs = true;
-        }
-        break;
-      case "Watch":
-        watches = true;
-        break;
-      case "Provide":
-      case "Inject":
-      case "DevCheck":
-        break;
-      case "Use": {
-        // The composable reads a value, and may call a getter, while it sets up (`ref(name())`):
-        // one that reads an input runs only once the inputs are set. A callback runs only from
-        // client code (UF2035), by then.
-        const code = item.arguments.flatMap((argument) => {
-          switch (argument.kind) {
-            case "Value":
-              return [argument.value];
-            case "Getter":
-              return [argument.getter.body];
-            case "Callback":
-              return [];
-            default:
-              return unreachable(argument);
-          }
-        });
-        const placement: CallPlacement =
-          code.some(readsLazily) || (item.hasEffects && (watches || defers))
-            ? "init"
-            : item.hasEffects && constructs
-              ? "constructor"
-              : "field";
-        placements.set(item, placement);
-        if (placement === "constructor") {
-          constructs = true;
-        }
-        if (placement === "init" && item.hasEffects) {
-          defers = true;
-        }
-        for (const { binding } of item.members) {
-          const kind = kinds.get(binding);
-          forms.set(
-            binding,
-            kind === "usedState" || kind === "usedDerived" ? "result" : "resultValue",
-          );
-          // Read lazily where the call runs after the fields, or where it is a derived value,
-          // which may read an input through a getter argument.
-          if (placement === "constructor" || placement === "init" || kind === "usedDerived") {
-            lazy.add(binding);
-          }
-        }
-        break;
-      }
-      default:
-        unreachable(item);
-    }
-  }
-  return { forms, seeded, placements, late };
+	const forms = new Map<BindingId, MemberForm>();
+	const seeded = new Set<BindingId>();
+	const placements = new Map<UseItem, CallPlacement>();
+	const kinds = new Map(component.bindings.map((binding) => [binding.id, binding.kind]));
+	// A value read while the class is constructed cannot read an input (NG0950 for a required
+	// one, the default for another) or what reads one: `computed` and the seeded members are
+	// read lazily instead.
+	const lazy = new Set<BindingId>();
+	const readsLazily = (code: Code) =>
+		[...summarizeCode(code, component).reads].some((id) => {
+			const kind = kinds.get(id);
+			return lazy.has(id) || (kind !== undefined && readLazily(kind));
+		});
+	for (const binding of component.bindings) {
+		switch (binding.kind) {
+			case "prop":
+				forms.set(binding.id, "input");
+				lazy.add(binding.id);
+				break;
+			case "loopVar":
+				forms.set(binding.id, "loop");
+				break;
+			case "emit":
+				forms.set(binding.id, "emit");
+				break;
+			case "state":
+			case "derived":
+			case "templateRef":
+			case "localConst":
+			case "localFn":
+			case "localVar":
+			case "awaited":
+				break;
+			case "slotScope":
+				forms.set(binding.id, "loop");
+				break;
+			case "context":
+				forms.set(binding.id, "context");
+				break;
+			case "component":
+				forms.set(binding.id, "component");
+				break;
+			case "moduleConst":
+			case "import":
+				forms.set(binding.id, "module");
+				break;
+			// A composable's result is its call's (`Use`); a model is its setup item's; `slots` is
+			// read only as slots (`SlotReference`); a composable's argument is no component's.
+			case "usedState":
+			case "usedDerived":
+			case "usedFn":
+			case "usedConst":
+			case "model":
+			case "slots":
+			case "argument":
+				break;
+			default:
+				unreachable(binding.kind);
+		}
+	}
+	const instances = componentRefs(component, elementRefs);
+	const escaping = escapingFunctions(component);
+	// Whether the constructor registers a hook or an effect before the item at hand.
+	let constructs = false;
+	// Whether `ngOnInit` creates a watcher before the item at hand, which a call with effects then
+	// follows there, and whether it makes such a call, which the hooks and effects after it then
+	// follow there too: each keeps its source order among the caller's (ADR-0069).
+	let watches = false;
+	let defers = false;
+	const late = new Set<SetupItem>();
+	for (const item of component.setup) {
+		switch (item.kind) {
+			// A field `ngOnInit` assigns once its promise resolves (ADR-0101): whatever reads it is
+			// deferred as what reads an input is, and every hook and effect after the awaits is
+			// registered there, after them.
+			case "Await":
+				forms.set(item.binding, "value");
+				lazy.add(item.binding);
+				defers = true;
+				break;
+			case "State": {
+				const linked = item.initial !== undefined && readsLazily(item.initial);
+				forms.set(item.binding, linked ? "linked" : "signal");
+				if (linked) {
+					lazy.add(item.binding);
+				}
+				break;
+			}
+			case "Derived":
+				forms.set(item.binding, "computed");
+				break;
+			case "TemplateRef":
+				forms.set(item.binding, instances.has(item.binding) ? "instance" : "query");
+				break;
+			case "Model":
+				forms.set(item.binding, "model");
+				break;
+			case "Id":
+				forms.set(item.binding, "value");
+				break;
+			case "Const": {
+				const once = readsLazily(item.value);
+				forms.set(item.binding, once ? "once" : "value");
+				if (once) {
+					lazy.add(item.binding);
+				}
+				break;
+			}
+			case "Variable":
+				forms.set(item.binding, "field");
+				// A field initialiser runs while the class constructs: one that reads an input would
+				// read none (NG0950) or its default, so the field is assigned in `ngOnInit` instead.
+				if (item.initial !== undefined && readsLazily(item.initial)) {
+					seeded.add(item.binding);
+					lazy.add(item.binding);
+				}
+				break;
+			case "Function":
+				forms.set(item.binding, escaping.has(item.binding) ? "arrow" : "method");
+				break;
+			case "WatchEffect":
+				if (defers) {
+					late.add(item);
+				} else {
+					constructs = true;
+				}
+				break;
+			case "Lifecycle":
+				if (item.hook !== "mounted") {
+					break;
+				}
+				if (defers) {
+					late.add(item);
+				} else {
+					constructs = true;
+				}
+				break;
+			case "Watch":
+				watches = true;
+				break;
+			case "Provide":
+			case "Inject":
+			case "DevCheck":
+				break;
+			case "Use": {
+				// The composable reads a value, and may call a getter, while it sets up (`ref(name())`):
+				// one that reads an input runs only once the inputs are set. A callback runs only from
+				// client code (UF2035), by then.
+				const code = item.arguments.flatMap((argument) => {
+					switch (argument.kind) {
+						case "Value":
+							return [argument.value];
+						case "Getter":
+							return [argument.getter.body];
+						case "Callback":
+							return [];
+						default:
+							return unreachable(argument);
+					}
+				});
+				const placement: CallPlacement =
+					code.some(readsLazily) || (item.hasEffects && (watches || defers))
+						? "init"
+						: item.hasEffects && constructs
+							? "constructor"
+							: "field";
+				placements.set(item, placement);
+				if (placement === "constructor") {
+					constructs = true;
+				}
+				if (placement === "init" && item.hasEffects) {
+					defers = true;
+				}
+				for (const { binding } of item.members) {
+					const kind = kinds.get(binding);
+					forms.set(
+						binding,
+						kind === "usedState" || kind === "usedDerived" ? "result" : "resultValue",
+					);
+					// Read lazily where the call runs after the fields, or where it is a derived value,
+					// which may read an input through a getter argument.
+					if (placement === "constructor" || placement === "init" || kind === "usedDerived") {
+						lazy.add(binding);
+					}
+				}
+				break;
+			}
+			default:
+				unreachable(item);
+		}
+	}
+	return { forms, seeded, placements, late };
 }
 
 /**
@@ -709,23 +709,23 @@ function formsOf(
  * those on a child that exposes nothing, which hold its root element (ADR-0118).
  */
 function componentRefs(
-  component: UfComponent,
-  elementRefs: ReadonlyMap<BindingId, string>,
+	component: UfComponent,
+	elementRefs: ReadonlyMap<BindingId, string>,
 ): Set<BindingId> {
-  const found = new Set<BindingId>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Component" && node.kind !== "Dynamic") {
-        return;
-      }
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Ref" && !elementRefs.has(attribute.binding)) {
-          found.add(attribute.binding);
-        }
-      }
-    },
-  });
-  return found;
+	const found = new Set<BindingId>();
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Component" && node.kind !== "Dynamic") {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Ref" && !elementRefs.has(attribute.binding)) {
+					found.add(attribute.binding);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /**
@@ -733,177 +733,177 @@ function componentRefs(
  * holds the child's root element, which the child declares as `ufElement` (ADR-0118).
  */
 function rootElementRefs(component: UfComponent, module: UfModule): Map<BindingId, string> {
-  const found = new Map<BindingId, string>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Component") {
-        return;
-      }
-      const child = childApi(module, node.component);
-      if (!child || child.exposes || child.refTag === undefined) {
-        return;
-      }
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Ref") {
-          found.set(attribute.binding, node.component);
-        }
-      }
-    },
-  });
-  return found;
+	const found = new Map<BindingId, string>();
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Component") {
+				return;
+			}
+			const child = childApi(module, node.component);
+			if (!child || child.exposes || child.refTag === undefined) {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Ref") {
+					found.set(attribute.binding, node.component);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /** The local functions code passes as a value (`setTimeout(tick, 100)`), which run later. */
 function escapingFunctions(component: UfComponent): Set<BindingId> {
-  const escaping = new Set<BindingId>();
-  const functions = new Set(
-    component.bindings.filter(({ kind }) => isFunction(kind)).map(({ id }) => id),
-  );
-  const visit = (code: Code) => {
-    for (const reference of code.refs) {
-      if (reference.kind === "Binding" && !reference.call && functions.has(reference.binding)) {
-        escaping.add(reference.binding);
-      }
-    }
-  };
-  for (const item of component.setup) {
-    switch (item.kind) {
-      case "State":
-      case "Variable":
-        if (item.initial) {
-          visit(item.initial);
-        }
-        break;
-      case "Const":
-      case "Await":
-        visit(item.value);
-        break;
-      case "Derived":
-        visit(item.getter.body);
-        break;
-      case "Function":
-        visit(item.function.body);
-        break;
-      case "Watch":
-        for (const source of item.sources) {
-          if (source.kind === "Getter") {
-            visit(source.getter.body);
-          }
-        }
-        visit(item.callback.body);
-        break;
-      case "WatchEffect":
-        visit(item.effect.body);
-        break;
-      case "Lifecycle":
-        visit(item.callback.body);
-        break;
-      case "Provide":
-        visit(item.value);
-        break;
-      case "Inject":
-        if (item.fallback) {
-          visit(item.fallback);
-        }
-        break;
-      case "Use":
-        for (const argument of item.arguments) {
-          if (argument.kind === "Value") {
-            visit(argument.value);
-          } else {
-            visit((argument.kind === "Getter" ? argument.getter : argument.callback).body);
-          }
-        }
-        break;
-      case "DevCheck":
-        visit(item.code);
-        break;
-      case "TemplateRef":
-      case "Id":
-      case "Model":
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  // A directive's value that is a function by its name, which its hooks call (ADR-0099).
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Element") {
-        return;
-      }
-      for (const attribute of node.attributes) {
-        if (attribute.kind === "Directive") {
-          visit(attribute.value);
-        }
-      }
-    },
-  });
-  return escaping;
+	const escaping = new Set<BindingId>();
+	const functions = new Set(
+		component.bindings.filter(({ kind }) => isFunction(kind)).map(({ id }) => id),
+	);
+	const visit = (code: Code) => {
+		for (const reference of code.refs) {
+			if (reference.kind === "Binding" && !reference.call && functions.has(reference.binding)) {
+				escaping.add(reference.binding);
+			}
+		}
+	};
+	for (const item of component.setup) {
+		switch (item.kind) {
+			case "State":
+			case "Variable":
+				if (item.initial) {
+					visit(item.initial);
+				}
+				break;
+			case "Const":
+			case "Await":
+				visit(item.value);
+				break;
+			case "Derived":
+				visit(item.getter.body);
+				break;
+			case "Function":
+				visit(item.function.body);
+				break;
+			case "Watch":
+				for (const source of item.sources) {
+					if (source.kind === "Getter") {
+						visit(source.getter.body);
+					}
+				}
+				visit(item.callback.body);
+				break;
+			case "WatchEffect":
+				visit(item.effect.body);
+				break;
+			case "Lifecycle":
+				visit(item.callback.body);
+				break;
+			case "Provide":
+				visit(item.value);
+				break;
+			case "Inject":
+				if (item.fallback) {
+					visit(item.fallback);
+				}
+				break;
+			case "Use":
+				for (const argument of item.arguments) {
+					if (argument.kind === "Value") {
+						visit(argument.value);
+					} else {
+						visit((argument.kind === "Getter" ? argument.getter : argument.callback).body);
+					}
+				}
+				break;
+			case "DevCheck":
+				visit(item.code);
+				break;
+			case "TemplateRef":
+			case "Id":
+			case "Model":
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	// A directive's value that is a function by its name, which its hooks call (ADR-0099).
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Element") {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Directive") {
+					visit(attribute.value);
+				}
+			}
+		},
+	});
+	return escaping;
 }
 
 /** Whether a binding is a list's item or index, which the `@for` declares: no member. */
 export function isLoopVariable(kind: BindingKind): boolean {
-  switch (kind) {
-    case "loopVar":
-      return true;
-    case "prop":
-    case "state":
-    case "derived":
-    case "templateRef":
-    case "localConst":
-    case "awaited":
-    case "localFn":
-    case "localVar":
-    case "emit":
-    case "model":
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    case "moduleConst":
-    case "import":
-    case "argument":
-    case "usedState":
-    case "usedDerived":
-    case "usedFn":
-    case "usedConst":
-      return false;
-    default:
-      return unreachable(kind);
-  }
+	switch (kind) {
+		case "loopVar":
+			return true;
+		case "prop":
+		case "state":
+		case "derived":
+		case "templateRef":
+		case "localConst":
+		case "awaited":
+		case "localFn":
+		case "localVar":
+		case "emit":
+		case "model":
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		case "moduleConst":
+		case "import":
+		case "argument":
+		case "usedState":
+		case "usedDerived":
+		case "usedFn":
+		case "usedConst":
+			return false;
+		default:
+			return unreachable(kind);
+	}
 }
 
 /** Whether a binding is a local function. */
 function isFunction(kind: BindingKind): boolean {
-  switch (kind) {
-    case "localFn":
-      return true;
-    case "prop":
-    case "loopVar":
-    case "state":
-    case "derived":
-    case "templateRef":
-    case "localConst":
-    case "awaited":
-    case "localVar":
-    case "emit":
-    case "model":
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    case "moduleConst":
-    case "import":
-    case "argument":
-    case "usedState":
-    case "usedDerived":
-    case "usedFn":
-    case "usedConst":
-      return false;
-    default:
-      return unreachable(kind);
-  }
+	switch (kind) {
+		case "localFn":
+			return true;
+		case "prop":
+		case "loopVar":
+		case "state":
+		case "derived":
+		case "templateRef":
+		case "localConst":
+		case "awaited":
+		case "localVar":
+		case "emit":
+		case "model":
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		case "moduleConst":
+		case "import":
+		case "argument":
+		case "usedState":
+		case "usedDerived":
+		case "usedFn":
+		case "usedConst":
+			return false;
+		default:
+			return unreachable(kind);
+	}
 }
 
 /**
@@ -913,43 +913,43 @@ function isFunction(kind: BindingKind): boolean {
  * one (`formsOf`).
  */
 function readLazily(kind: BindingKind): boolean {
-  switch (kind) {
-    case "prop":
-    case "model":
-    case "derived":
-    case "context":
-    case "awaited":
-      return true;
-    case "loopVar":
-    case "state":
-    case "templateRef":
-    case "localConst":
-    case "localFn":
-    case "localVar":
-    case "emit":
-    case "slots":
-    case "slotScope":
-    case "component":
-    case "moduleConst":
-    case "import":
-    case "argument":
-    case "usedState":
-    case "usedDerived":
-    case "usedFn":
-    case "usedConst":
-      return false;
-    default:
-      return unreachable(kind);
-  }
+	switch (kind) {
+		case "prop":
+		case "model":
+		case "derived":
+		case "context":
+		case "awaited":
+			return true;
+		case "loopVar":
+		case "state":
+		case "templateRef":
+		case "localConst":
+		case "localFn":
+		case "localVar":
+		case "emit":
+		case "slots":
+		case "slotScope":
+		case "component":
+		case "moduleConst":
+		case "import":
+		case "argument":
+		case "usedState":
+		case "usedDerived":
+		case "usedFn":
+		case "usedConst":
+			return false;
+		default:
+			return unreachable(kind);
+	}
 }
 
 /** The binding a component declares under `id`. */
 export function bindingById(plan: Plan, id: BindingId): Binding {
-  const binding = plan.component.bindings.find((each) => each.id === id);
-  if (!binding) {
-    throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
-  }
-  return binding;
+	const binding = plan.component.bindings.find((each) => each.id === id);
+	if (!binding) {
+		throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
+	}
+	return binding;
 }
 
 /**
@@ -957,70 +957,70 @@ export function bindingById(plan: Plan, id: BindingId): Binding {
  * member (`toggle_1.on`).
  */
 export function memberOf(plan: Plan, binding: Binding): string {
-  return plan.results.get(binding.id) ?? binding.name;
+	return plan.results.get(binding.id) ?? binding.name;
 }
 
 /** What a composable's API says of a member a `Use` item destructures (ADR-0069). */
 export function resultApi(plan: Plan, id: BindingId): ComposableMemberApi {
-  for (const { item } of plan.calls) {
-    const used = item.members.find(({ binding }) => binding === id);
-    if (used === undefined) {
-      continue;
-    }
-    for (const entry of plan.module.imports ?? []) {
-      const name = entry.names.find(
-        (each) => each.kind === "Composable" && each.local === item.composable,
-      );
-      const api = name && entry.api.composables?.find((each) => each.name === name.imported);
-      const member = api?.members.find((each) => each.name === used.member);
-      if (member) {
-        return member;
-      }
-    }
-  }
-  throw new Error(`No composable's API declares the member ${id} reads.`);
+	for (const { item } of plan.calls) {
+		const used = item.members.find(({ binding }) => binding === id);
+		if (used === undefined) {
+			continue;
+		}
+		for (const entry of plan.module.imports ?? []) {
+			const name = entry.names.find(
+				(each) => each.kind === "Composable" && each.local === item.composable,
+			);
+			const api = name && entry.api.composables?.find((each) => each.name === name.imported);
+			const member = api?.members.find((each) => each.name === used.member);
+			if (member) {
+				return member;
+			}
+		}
+	}
+	throw new Error(`No composable's API declares the member ${id} reads.`);
 }
 
 /** A binding's form. */
 export function formOf(plan: Plan, binding: Binding): MemberForm {
-  const form = plan.forms.get(binding.id);
-  if (form === undefined) {
-    throw new Error(`No form for the binding ${binding.id}.`);
-  }
-  return form;
+	const form = plan.forms.get(binding.id);
+	if (form === undefined) {
+		throw new Error(`No form for the binding ${binding.id}.`);
+	}
+	return form;
 }
 
 /** Whether a form is a signal, read by calling it. */
 export function isSignal(form: MemberForm): boolean {
-  switch (form) {
-    case "input":
-    case "signal":
-    case "linked":
-    case "computed":
-    case "once":
-      return true;
-    case "value":
-    case "query":
-    case "method":
-    case "arrow":
-    case "field":
-    case "loop":
-    case "emit":
-    case "instance":
-    case "component":
-    case "module":
-    case "resultValue":
-      return false;
-    case "model":
-    case "context":
-    case "result":
-      return true;
-    default:
-      return unreachable(form);
-  }
+	switch (form) {
+		case "input":
+		case "signal":
+		case "linked":
+		case "computed":
+		case "once":
+			return true;
+		case "value":
+		case "query":
+		case "method":
+		case "arrow":
+		case "field":
+		case "loop":
+		case "emit":
+		case "instance":
+		case "component":
+		case "module":
+		case "resultValue":
+			return false;
+		case "model":
+		case "context":
+		case "result":
+			return true;
+		default:
+			return unreachable(form);
+	}
 }
 
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 export function unreachable(value: never): never {
-  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }

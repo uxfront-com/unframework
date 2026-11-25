@@ -11,32 +11,32 @@ import "../../../dom-target.ts";
 
 /** A section in place, and a toast in `body` with a button that dismisses it. */
 const toasted: StubComponent = {
-  html: "<p>In place</p>",
-  setup(_container, _emit, signal) {
-    const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.setAttribute("role", "dialog");
-    toast.setAttribute("aria-label", "Saved");
-    toast.innerHTML = '<p role="status">Saved</p><button type="button">Dismiss</button>';
-    document.body.append(toast);
-    toast.querySelector("button")!.addEventListener("click", () => toast.remove(), { signal });
-    signal.addEventListener("abort", () => toast.remove());
-  },
+	html: "<p>In place</p>",
+	setup(_container, _emit, signal) {
+		const toast = document.createElement("div");
+		toast.className = "toast";
+		toast.setAttribute("role", "dialog");
+		toast.setAttribute("aria-label", "Saved");
+		toast.innerHTML = '<p role="status">Saved</p><button type="button">Dismiss</button>';
+		document.body.append(toast);
+		toast.querySelector("button")!.addEventListener("click", () => toast.remove(), { signal });
+		signal.addEventListener("abort", () => toast.remove());
+	},
 };
 
 describeTargets("stub/teleport", () => {
-  it("captures and queries the toast after the container", async () => {
-    const view = await mount(toasted);
-    expect(view.html()).toContain("<uf:teleported>");
-    await expect.element(view.getByRole("status")).toHaveTextContent("Saved");
-    // The teleported element itself, which a query chained from it never matches.
-    await expect.element(view.getByRole("dialog", { name: "Saved" })).toBeVisible();
-    await expect
-      .element(view.getByRole("dialog", { name: "Saved" }).getByRole("button"))
-      .toHaveTextContent("Dismiss");
-    await view.expectParity("shown");
-    await view.user.click(view.getByRole("button", { name: "Dismiss" }));
-    expect(view.html()).not.toContain("<uf:teleported>");
-    await view.expectParity("dismissed");
-  });
+	it("captures and queries the toast after the container", async () => {
+		const view = await mount(toasted);
+		expect(view.html()).toContain("<uf:teleported>");
+		await expect.element(view.getByRole("status")).toHaveTextContent("Saved");
+		// The teleported element itself, which a query chained from it never matches.
+		await expect.element(view.getByRole("dialog", { name: "Saved" })).toBeVisible();
+		await expect
+			.element(view.getByRole("dialog", { name: "Saved" }).getByRole("button"))
+			.toHaveTextContent("Dismiss");
+		await view.expectParity("shown");
+		await view.user.click(view.getByRole("button", { name: "Dismiss" }));
+		expect(view.html()).not.toContain("<uf:teleported>");
+		await view.expectParity("dismissed");
+	});
 });

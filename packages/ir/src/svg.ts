@@ -21,7 +21,7 @@ export type Namespace = "html" | "svg";
  * one, see `SVG_HTML_INTEGRATION_POINTS`.) A component's root is in HTML.
  */
 export function elementNamespace(tag: string, parent: Namespace): Namespace {
-  return parent === "svg" || tag === "svg" ? "svg" : "html";
+	return parent === "svg" || tag === "svg" ? "svg" : "html";
 }
 
 /**
@@ -51,18 +51,18 @@ export const SVG_ELEMENTS: ReadonlySet<string> = words(`
  * UF1002 for what a later milestone lowers), and no IR holds one.
  */
 export const SVG_UNRENDERABLE_ELEMENTS: ReadonlyMap<string, string> = table({
-  script:
-    "<script> holds code the compiler cannot analyse, and Vue and Angular drop it from templates.",
-  style:
-    "<style> is not supported: Vue and Angular drop it from templates. A component's styles are a stylesheet it imports.",
-  foreignObject:
-    "<foreignObject> switches back to HTML inside SVG, which the targets do not agree on yet; it lands with a later milestone.",
-  animate:
-    "SMIL animation (<animate>) can set any attribute, a `javascript:` `href` included, and makes the rendering depend on time.",
-  animateMotion: "SMIL animation (<animateMotion>) makes the rendering depend on time.",
-  animateTransform: "SMIL animation (<animateTransform>) makes the rendering depend on time.",
-  set: "SMIL animation (<set>) can set any attribute, a `javascript:` `href` included, and makes the rendering depend on time.",
-  discard: "SMIL animation (<discard>) removes elements over time, and only Chromium knows it.",
+	script:
+		"<script> holds code the compiler cannot analyse, and Vue and Angular drop it from templates.",
+	style:
+		"<style> is not supported: Vue and Angular drop it from templates. A component's styles are a stylesheet it imports.",
+	foreignObject:
+		"<foreignObject> switches back to HTML inside SVG, which the targets do not agree on yet; it lands with a later milestone.",
+	animate:
+		"SMIL animation (<animate>) can set any attribute, a `javascript:` `href` included, and makes the rendering depend on time.",
+	animateMotion: "SMIL animation (<animateMotion>) makes the rendering depend on time.",
+	animateTransform: "SMIL animation (<animateTransform>) makes the rendering depend on time.",
+	set: "SMIL animation (<set>) can set any attribute, a `javascript:` `href` included, and makes the rendering depend on time.",
+	discard: "SMIL animation (<discard>) removes elements over time, and only Chromium knows it.",
 });
 
 /**
@@ -109,8 +109,8 @@ export const SVG_PRESENTATION_ATTRIBUTES: ReadonlySet<string> = words(`
  * per target, and `href` replaces `xlink:href`.
  */
 export const SVG_GLOBAL_ATTRIBUTES: ReadonlySet<string> = new Set([
-  ...words("class id lang role style tabindex"),
-  ...SVG_PRESENTATION_ATTRIBUTES,
+	...words("class id lang role style tabindex"),
+	...SVG_PRESENTATION_ATTRIBUTES,
 ]);
 
 /** The attributes of every filter primitive (`fe*` but the light sources and transfer functions). */
@@ -123,71 +123,71 @@ const FILTER_PRIMITIVE = "height result width x y";
  * attributes SVG 2 removes (`version`, `baseProfile`, `zoomAndPan`, `requiredFeatures`).
  */
 export const SVG_ELEMENT_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = table({
-  circle: words("cx cy pathLength r"),
-  clipPath: words("clipPathUnits"),
-  ellipse: words("cx cy pathLength rx ry"),
-  feBlend: words(`${FILTER_PRIMITIVE} in in2 mode`),
-  feColorMatrix: words(`${FILTER_PRIMITIVE} in type values`),
-  feComponentTransfer: words(`${FILTER_PRIMITIVE} in`),
-  feComposite: words(`${FILTER_PRIMITIVE} in in2 k1 k2 k3 k4 operator`),
-  feConvolveMatrix: words(`
+	circle: words("cx cy pathLength r"),
+	clipPath: words("clipPathUnits"),
+	ellipse: words("cx cy pathLength rx ry"),
+	feBlend: words(`${FILTER_PRIMITIVE} in in2 mode`),
+	feColorMatrix: words(`${FILTER_PRIMITIVE} in type values`),
+	feComponentTransfer: words(`${FILTER_PRIMITIVE} in`),
+	feComposite: words(`${FILTER_PRIMITIVE} in in2 k1 k2 k3 k4 operator`),
+	feConvolveMatrix: words(`
     ${FILTER_PRIMITIVE} bias divisor edgeMode in kernelMatrix kernelUnitLength order
     preserveAlpha targetX targetY
   `),
-  feDiffuseLighting: words(`${FILTER_PRIMITIVE} diffuseConstant in kernelUnitLength surfaceScale`),
-  feDisplacementMap: words(`${FILTER_PRIMITIVE} in in2 scale xChannelSelector yChannelSelector`),
-  feDistantLight: words("azimuth elevation"),
-  feFlood: words(FILTER_PRIMITIVE),
-  feFuncA: words("amplitude exponent intercept offset slope tableValues type"),
-  feFuncB: words("amplitude exponent intercept offset slope tableValues type"),
-  feFuncG: words("amplitude exponent intercept offset slope tableValues type"),
-  feFuncR: words("amplitude exponent intercept offset slope tableValues type"),
-  feGaussianBlur: words(`${FILTER_PRIMITIVE} edgeMode in stdDeviation`),
-  feImage: words(`${FILTER_PRIMITIVE} href preserveAspectRatio`),
-  feMerge: words(FILTER_PRIMITIVE),
-  feMergeNode: words("in"),
-  feMorphology: words(`${FILTER_PRIMITIVE} in operator radius`),
-  feOffset: words(`${FILTER_PRIMITIVE} dx dy in`),
-  fePointLight: words("x y z"),
-  feSpecularLighting: words(`
+	feDiffuseLighting: words(`${FILTER_PRIMITIVE} diffuseConstant in kernelUnitLength surfaceScale`),
+	feDisplacementMap: words(`${FILTER_PRIMITIVE} in in2 scale xChannelSelector yChannelSelector`),
+	feDistantLight: words("azimuth elevation"),
+	feFlood: words(FILTER_PRIMITIVE),
+	feFuncA: words("amplitude exponent intercept offset slope tableValues type"),
+	feFuncB: words("amplitude exponent intercept offset slope tableValues type"),
+	feFuncG: words("amplitude exponent intercept offset slope tableValues type"),
+	feFuncR: words("amplitude exponent intercept offset slope tableValues type"),
+	feGaussianBlur: words(`${FILTER_PRIMITIVE} edgeMode in stdDeviation`),
+	feImage: words(`${FILTER_PRIMITIVE} href preserveAspectRatio`),
+	feMerge: words(FILTER_PRIMITIVE),
+	feMergeNode: words("in"),
+	feMorphology: words(`${FILTER_PRIMITIVE} in operator radius`),
+	feOffset: words(`${FILTER_PRIMITIVE} dx dy in`),
+	fePointLight: words("x y z"),
+	feSpecularLighting: words(`
     ${FILTER_PRIMITIVE} in kernelUnitLength specularConstant specularExponent surfaceScale
   `),
-  feSpotLight: words(`
+	feSpotLight: words(`
     limitingConeAngle pointsAtX pointsAtY pointsAtZ specularExponent x y z
   `),
-  feTile: words(`${FILTER_PRIMITIVE} in`),
-  feTurbulence: words(`${FILTER_PRIMITIVE} baseFrequency numOctaves seed stitchTiles type`),
-  filter: words("filterUnits height primitiveUnits width x y"),
-  image: words("height href preserveAspectRatio width x y"),
-  line: words("pathLength x1 x2 y1 y2"),
-  linearGradient: words("gradientTransform gradientUnits href spreadMethod x1 x2 y1 y2"),
-  marker: words(
-    "markerHeight markerUnits markerWidth orient preserveAspectRatio refX refY viewBox",
-  ),
-  mask: words("height maskContentUnits maskUnits width x y"),
-  mpath: words("href"),
-  path: words("d pathLength"),
-  pattern: words(`
+	feTile: words(`${FILTER_PRIMITIVE} in`),
+	feTurbulence: words(`${FILTER_PRIMITIVE} baseFrequency numOctaves seed stitchTiles type`),
+	filter: words("filterUnits height primitiveUnits width x y"),
+	image: words("height href preserveAspectRatio width x y"),
+	line: words("pathLength x1 x2 y1 y2"),
+	linearGradient: words("gradientTransform gradientUnits href spreadMethod x1 x2 y1 y2"),
+	marker: words(
+		"markerHeight markerUnits markerWidth orient preserveAspectRatio refX refY viewBox",
+	),
+	mask: words("height maskContentUnits maskUnits width x y"),
+	mpath: words("href"),
+	path: words("d pathLength"),
+	pattern: words(`
     height href patternContentUnits patternTransform patternUnits preserveAspectRatio viewBox
     width x y
   `),
-  polygon: words("pathLength points"),
-  polyline: words("pathLength points"),
-  radialGradient: words("cx cy fx fy gradientTransform gradientUnits href r spreadMethod"),
-  rect: words("height pathLength rx ry width x y"),
-  stop: words("offset"),
-  svg: words("height preserveAspectRatio viewBox width x y"),
-  symbol: words("height preserveAspectRatio refX refY viewBox width x y"),
-  text: words("dx dy lengthAdjust rotate textLength x y"),
-  textPath: words("href lengthAdjust method spacing startOffset textLength"),
-  tspan: words("dx dy lengthAdjust rotate textLength x y"),
-  use: words("height href width x y"),
-  view: words("preserveAspectRatio viewBox"),
+	polygon: words("pathLength points"),
+	polyline: words("pathLength points"),
+	radialGradient: words("cx cy fx fy gradientTransform gradientUnits href r spreadMethod"),
+	rect: words("height pathLength rx ry width x y"),
+	stop: words("offset"),
+	svg: words("height preserveAspectRatio viewBox width x y"),
+	symbol: words("height preserveAspectRatio refX refY viewBox width x y"),
+	text: words("dx dy lengthAdjust rotate textLength x y"),
+	textPath: words("href lengthAdjust method spacing startOffset textLength"),
+	tspan: words("dx dy lengthAdjust rotate textLength x y"),
+	use: words("height href width x y"),
+	view: words("preserveAspectRatio viewBox"),
 });
 
 /** Whether a tag is an SVG element a component can render (case-exact). */
 export function isSvgElement(tag: string): boolean {
-  return SVG_ELEMENTS.has(tag);
+	return SVG_ELEMENTS.has(tag);
 }
 
 /**
@@ -202,8 +202,8 @@ export const SVG_DESCRIPTIVE_ATTRIBUTES: ReadonlySet<string> = words("class id l
 
 /** Whether an attribute (case-exact) is an attribute of the SVG element. */
 export function isSvgAttribute(tag: string, name: string): boolean {
-  const own = SVG_DESCRIPTIVE_ELEMENTS.has(tag)
-    ? SVG_DESCRIPTIVE_ATTRIBUTES.has(name)
-    : SVG_GLOBAL_ATTRIBUTES.has(name) || (SVG_ELEMENT_ATTRIBUTES.get(tag)?.has(name) ?? false);
-  return own || ARIA_ATTRIBUTES.has(name) || isDataAttribute(name);
+	const own = SVG_DESCRIPTIVE_ELEMENTS.has(tag)
+		? SVG_DESCRIPTIVE_ATTRIBUTES.has(name)
+		: SVG_GLOBAL_ATTRIBUTES.has(name) || (SVG_ELEMENT_ATTRIBUTES.get(tag)?.has(name) ?? false);
+	return own || ARIA_ATTRIBUTES.has(name) || isDataAttribute(name);
 }

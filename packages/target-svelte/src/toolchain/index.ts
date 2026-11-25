@@ -1,8 +1,8 @@
 import type { Toolchain } from "@unframework.dev/codegen";
 import {
-  lintWithEslint,
-  lintWithOxlint,
-  mergeLintResults,
+	lintWithEslint,
+	lintWithOxlint,
+	mergeLintResults,
 } from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
@@ -16,58 +16,58 @@ import { typecheck } from "./typecheck.ts";
  * the `mount` and `svelte/server` adapters.
  */
 export const toolchain: Toolchain = {
-  name: "svelte",
-  async vite(mode): Promise<UserConfig> {
-    // Loaded on demand: reading `client` or `server` should not load the Vite plugin.
-    const { svelte } = await import("@sveltejs/vite-plugin-svelte");
-    const { parse } = await import("svelte/compiler");
-    return {
-      // The toolchain is the whole configuration: no svelte.config.js is looked up (or logged
-      // as missing). A component that awaits at the top of its instance script compiles under
-      // `experimental.async`, and only that one, since the runtime flag it turns on is the
-      // page's (ADR-0101).
-      plugins: svelte({
-        configFile: false,
-        dynamicCompileOptions: ({ filename, code }) =>
-          filename.endsWith(".svelte") ? componentOptions(parse, code) : undefined,
-      }),
-      resolve: { dedupe: ["svelte"] },
-      // The dependency scanner never sees compiled output: list the runtime entries it imports
-      // (`svelte/events` for the listeners written as attachments), or the first run discovers
-      // them late and reloads mid-test.
-      ...(mode !== "ssr"
-        ? {
-            optimizeDeps: {
-              include: [
-                "svelte",
-                "svelte/events",
-                "svelte/internal/client",
-                "svelte/internal/disclose-version",
-              ],
-            },
-          }
-        : {}),
-    };
-  },
-  client: "@unframework.dev/target-svelte/toolchain/client",
-  server: "@unframework.dev/target-svelte/toolchain/server",
-  hydrate: "@unframework.dev/target-svelte/toolchain/hydrate",
-  frameworkCompile,
-  frameworkEmit,
-  typecheck,
-  // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
-  // ESLint reads the `.svelte` files and the composables' `.svelte.ts` modules, whose runes
-  // eslint-plugin-svelte checks (ADR-0069); a shared `.ts` module (ADR-0070) is oxlint's alone.
-  lint: async (files, context) =>
-    mergeLintResults(
-      await Promise.all([
-        lintWithOxlint(files, context),
-        lintWithEslint(
-          files.filter((file) => /\.svelte(?:\.ts)?$/.test(file)),
-          context,
-        ),
-      ]),
-    ),
+	name: "svelte",
+	async vite(mode): Promise<UserConfig> {
+		// Loaded on demand: reading `client` or `server` should not load the Vite plugin.
+		const { svelte } = await import("@sveltejs/vite-plugin-svelte");
+		const { parse } = await import("svelte/compiler");
+		return {
+			// The toolchain is the whole configuration: no svelte.config.js is looked up (or logged
+			// as missing). A component that awaits at the top of its instance script compiles under
+			// `experimental.async`, and only that one, since the runtime flag it turns on is the
+			// page's (ADR-0101).
+			plugins: svelte({
+				configFile: false,
+				dynamicCompileOptions: ({ filename, code }) =>
+					filename.endsWith(".svelte") ? componentOptions(parse, code) : undefined,
+			}),
+			resolve: { dedupe: ["svelte"] },
+			// The dependency scanner never sees compiled output: list the runtime entries it imports
+			// (`svelte/events` for the listeners written as attachments), or the first run discovers
+			// them late and reloads mid-test.
+			...(mode !== "ssr"
+				? {
+						optimizeDeps: {
+							include: [
+								"svelte",
+								"svelte/events",
+								"svelte/internal/client",
+								"svelte/internal/disclose-version",
+							],
+						},
+					}
+				: {}),
+		};
+	},
+	client: "@unframework.dev/target-svelte/toolchain/client",
+	server: "@unframework.dev/target-svelte/toolchain/server",
+	hydrate: "@unframework.dev/target-svelte/toolchain/hydrate",
+	frameworkCompile,
+	frameworkEmit,
+	typecheck,
+	// L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
+	// ESLint reads the `.svelte` files and the composables' `.svelte.ts` modules, whose runes
+	// eslint-plugin-svelte checks (ADR-0069); a shared `.ts` module (ADR-0070) is oxlint's alone.
+	lint: async (files, context) =>
+		mergeLintResults(
+			await Promise.all([
+				lintWithOxlint(files, context),
+				lintWithEslint(
+					files.filter((file) => /\.svelte(?:\.ts)?$/.test(file)),
+					context,
+				),
+			]),
+		),
 };
 
 export default toolchain;

@@ -4,22 +4,22 @@
 // read the IR's own visitors (`expressionsOf`, `codeOf`), so a kind added to the IR is seen here.
 import { codeOf, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
-  Attribute,
-  BindingId,
-  Code,
-  ComponentAttribute,
-  EventAttribute,
-  FragmentNode,
-  ListenerAttribute,
-  RefAttribute,
-  Expression,
-  FunctionCode,
-  RenderNode,
-  SetupItem,
-  TypeDeclaration,
-  TypeText,
-  UfComponent,
-  UfModule,
+	Attribute,
+	BindingId,
+	Code,
+	ComponentAttribute,
+	EventAttribute,
+	FragmentNode,
+	ListenerAttribute,
+	RefAttribute,
+	Expression,
+	FunctionCode,
+	RenderNode,
+	SetupItem,
+	TypeDeclaration,
+	TypeText,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { typeNames } from "./names.ts";
@@ -28,18 +28,18 @@ import { codeKind, codeNames, collectNames } from "./rewrite.ts";
 
 /** What {@link referencedBindings} counts besides the template's expressions. */
 export interface ReferencedOptions {
-  /**
-   * Whether the lists' keys count: `false` for a target that does not print keys (Solid's
-   * `<For>`), so an index used only as a key is not declared. Default `true`.
-   */
-  includeKeys?: boolean;
-  /**
-   * Whether what runs only in the browser counts: handlers, template refs, the setup's
-   * functions, watchers, `watchEffect` and lifecycle hooks. Default `true`; `false` for a target
-   * that prints none of it (Astro, whose handlers are inert), which reads `liveBindings` for the
-   * setup it keeps.
-   */
-  includeClient?: boolean;
+	/**
+	 * Whether the lists' keys count: `false` for a target that does not print keys (Solid's
+	 * `<For>`), so an index used only as a key is not declared. Default `true`.
+	 */
+	includeKeys?: boolean;
+	/**
+	 * Whether what runs only in the browser counts: handlers, template refs, the setup's
+	 * functions, watchers, `watchEffect` and lifecycle hooks. Default `true`; `false` for a target
+	 * that prints none of it (Astro, whose handlers are inert), which reads `liveBindings` for the
+	 * setup it keeps.
+	 */
+	includeClient?: boolean;
 }
 
 /**
@@ -52,52 +52,52 @@ export interface ReferencedOptions {
  * otherwise be an unused variable (L5).
  */
 export function referencedBindings(
-  scope: UfComponent | RenderNode,
-  options: ReferencedOptions = {},
+	scope: UfComponent | RenderNode,
+	options: ReferencedOptions = {},
 ): Set<BindingId> {
-  const includeKeys = options.includeKeys ?? true;
-  const includeClient = options.includeClient ?? true;
-  const component = "bindings" in scope ? scope : nodeComponent(scope);
-  const found = new Set<BindingId>();
-  for (const { expression, path } of expressionsOf(component)) {
-    if (!includeKeys && path.endsWith("/key")) {
-      continue;
-    }
-    readsOf(expression, found);
-  }
-  if (!includeClient) {
-    for (const item of component.setup) {
-      for (const code of serverCode(item)) {
-        readsOf(code, found);
-      }
-    }
-    return found;
-  }
-  for (const { code } of codeOf(component)) {
-    readsOf(code, found);
-  }
-  for (const item of component.setup) {
-    if (item.kind !== "Watch") {
-      continue;
-    }
-    for (const source of item.sources) {
-      if (source.kind === "Ref") {
-        found.add(source.binding);
-      }
-    }
-  }
-  walk(component.render, {
-    enter(node) {
-      for (const attribute of clientAttributes(node)) {
-        if (attribute.kind === "Ref") {
-          found.add(attribute.binding);
-        } else if (attribute.handler.kind === "Function") {
-          found.add(attribute.handler.binding);
-        }
-      }
-    },
-  });
-  return found;
+	const includeKeys = options.includeKeys ?? true;
+	const includeClient = options.includeClient ?? true;
+	const component = "bindings" in scope ? scope : nodeComponent(scope);
+	const found = new Set<BindingId>();
+	for (const { expression, path } of expressionsOf(component)) {
+		if (!includeKeys && path.endsWith("/key")) {
+			continue;
+		}
+		readsOf(expression, found);
+	}
+	if (!includeClient) {
+		for (const item of component.setup) {
+			for (const code of serverCode(item)) {
+				readsOf(code, found);
+			}
+		}
+		return found;
+	}
+	for (const { code } of codeOf(component)) {
+		readsOf(code, found);
+	}
+	for (const item of component.setup) {
+		if (item.kind !== "Watch") {
+			continue;
+		}
+		for (const source of item.sources) {
+			if (source.kind === "Ref") {
+				found.add(source.binding);
+			}
+		}
+	}
+	walk(component.render, {
+		enter(node) {
+			for (const attribute of clientAttributes(node)) {
+				if (attribute.kind === "Ref") {
+					found.add(attribute.binding);
+				} else if (attribute.handler.kind === "Function") {
+					found.add(attribute.handler.binding);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /**
@@ -105,27 +105,27 @@ export function referencedBindings(
  * ref, and a component's listeners and ref (ADR-0053).
  */
 function clientAttributes(
-  node: RenderNode | FragmentNode,
+	node: RenderNode | FragmentNode,
 ): Array<RefAttribute | EventAttribute | ListenerAttribute> {
-  if (node.kind !== "Element" && node.kind !== "Component") {
-    return [];
-  }
-  const attributes: ReadonlyArray<Attribute | ComponentAttribute> = node.attributes;
-  return attributes.filter(
-    (attribute): attribute is RefAttribute | EventAttribute | ListenerAttribute =>
-      attribute.kind === "Ref" || attribute.kind === "Event" || attribute.kind === "Listener",
-  );
+	if (node.kind !== "Element" && node.kind !== "Component") {
+		return [];
+	}
+	const attributes: ReadonlyArray<Attribute | ComponentAttribute> = node.attributes;
+	return attributes.filter(
+		(attribute): attribute is RefAttribute | EventAttribute | ListenerAttribute =>
+			attribute.kind === "Ref" || attribute.kind === "Event" || attribute.kind === "Listener",
+	);
 }
 
 /** What {@link liveBindings} and {@link liveTypes} start from besides the template. */
 export interface LiveOptions {
-  /** Whether what runs in the browser counts: listeners, template refs, watchers, effects, hooks. */
-  client: boolean;
-  /**
-   * Whether the lists' keys count, as {@link ReferencedOptions.includeKeys}: `false` for a target
-   * that prints no keys (Astro). Default `true`.
-   */
-  includeKeys?: boolean;
+	/** Whether what runs in the browser counts: listeners, template refs, watchers, effects, hooks. */
+	client: boolean;
+	/**
+	 * Whether the lists' keys count, as {@link ReferencedOptions.includeKeys}: `false` for a target
+	 * that prints no keys (Astro). Default `true`.
+	 */
+	includeKeys?: boolean;
 }
 
 /**
@@ -140,146 +140,146 @@ export interface LiveOptions {
  * keys: Astro), what only a list's key reads is not live either.
  */
 export function liveBindings(component: UfComponent, options: LiveOptions): Set<BindingId> {
-  const declarations = new Map<BindingId, SetupItem>();
-  for (const item of component.setup) {
-    if ("binding" in item) {
-      declarations.set(item.binding, item);
-    }
-  }
-  const live = new Set<BindingId>();
-  const pending: Array<BindingId> = [];
-  const reach = (id: BindingId) => {
-    if (live.has(id)) {
-      return;
-    }
-    live.add(id);
-    pending.push(id);
-  };
-  const read = (code: Expression | Code | undefined) => {
-    if (!code) {
-      return;
-    }
-    const found = new Set<BindingId>();
-    readsOf(code, found);
-    for (const id of found) {
-      reach(id);
-    }
-  };
-  const readFunction = (fn: FunctionCode) => {
-    read(fn.body);
-    for (const parameter of fn.parameters) {
-      read(parameter.default);
-    }
-  };
-  for (const { expression, path } of expressionsOf(component)) {
-    if (options.includeKeys === false && path.endsWith("/key")) {
-      continue;
-    }
-    read(expression);
-  }
-  // A development-only block runs where the setup does, on the server too (ADR-0117).
-  for (const item of component.setup) {
-    if (item.kind === "DevCheck") {
-      read(item.code);
-    }
-  }
-  if (options.client) {
-    walk(component.render, {
-      enter(node) {
-        for (const attribute of clientAttributes(node)) {
-          if (attribute.kind === "Ref") {
-            reach(attribute.binding);
-          } else if (attribute.handler.kind === "Function") {
-            reach(attribute.handler.binding);
-          } else {
-            readFunction(attribute.handler.function);
-          }
-        }
-      },
-    });
-    for (const item of component.setup) {
-      switch (item.kind) {
-        case "Watch":
-          for (const source of item.sources) {
-            if (source.kind === "Ref") {
-              reach(source.binding);
-            } else {
-              readFunction(source.getter);
-            }
-          }
-          readFunction(item.callback);
-          break;
-        case "WatchEffect":
-          readFunction(item.effect);
-          break;
-        case "Lifecycle":
-          readFunction(item.callback);
-          break;
-        // The setup always awaits, whatever reads the binding (ADR-0101).
-        case "Await":
-        case "Provide":
-          read(item.value);
-          break;
-        // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
-        // `serverView` does, so this walk reads nothing of it. A development-only block is read
-        // above, client or not.
-        case "Use":
-        case "DevCheck":
-        case "State":
-        case "Derived":
-        case "TemplateRef":
-        case "Id":
-        case "Const":
-        case "Variable":
-        case "Function":
-        case "Model":
-        case "Inject":
-          break;
-        default:
-          unreachable(item);
-      }
-    }
-  }
-  for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
-    const item = declarations.get(id);
-    if (!item) {
-      continue;
-    }
-    switch (item.kind) {
-      case "State":
-      case "Variable":
-        read(item.initial);
-        break;
-      case "Await":
-      case "Const":
-        read(item.value);
-        break;
-      case "Derived":
-        readFunction(item.getter);
-        break;
-      case "Function":
-        readFunction(item.function);
-        break;
-      case "Inject":
-        read(item.fallback);
-        break;
-      // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
-      // `serverView` does, so this walk reads nothing of it.
-      case "Use":
-      case "TemplateRef":
-      case "Id":
-      case "Watch":
-      case "WatchEffect":
-      case "Lifecycle":
-      case "Model":
-      case "Provide":
-      case "DevCheck":
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  return live;
+	const declarations = new Map<BindingId, SetupItem>();
+	for (const item of component.setup) {
+		if ("binding" in item) {
+			declarations.set(item.binding, item);
+		}
+	}
+	const live = new Set<BindingId>();
+	const pending: Array<BindingId> = [];
+	const reach = (id: BindingId) => {
+		if (live.has(id)) {
+			return;
+		}
+		live.add(id);
+		pending.push(id);
+	};
+	const read = (code: Expression | Code | undefined) => {
+		if (!code) {
+			return;
+		}
+		const found = new Set<BindingId>();
+		readsOf(code, found);
+		for (const id of found) {
+			reach(id);
+		}
+	};
+	const readFunction = (fn: FunctionCode) => {
+		read(fn.body);
+		for (const parameter of fn.parameters) {
+			read(parameter.default);
+		}
+	};
+	for (const { expression, path } of expressionsOf(component)) {
+		if (options.includeKeys === false && path.endsWith("/key")) {
+			continue;
+		}
+		read(expression);
+	}
+	// A development-only block runs where the setup does, on the server too (ADR-0117).
+	for (const item of component.setup) {
+		if (item.kind === "DevCheck") {
+			read(item.code);
+		}
+	}
+	if (options.client) {
+		walk(component.render, {
+			enter(node) {
+				for (const attribute of clientAttributes(node)) {
+					if (attribute.kind === "Ref") {
+						reach(attribute.binding);
+					} else if (attribute.handler.kind === "Function") {
+						reach(attribute.handler.binding);
+					} else {
+						readFunction(attribute.handler.function);
+					}
+				}
+			},
+		});
+		for (const item of component.setup) {
+			switch (item.kind) {
+				case "Watch":
+					for (const source of item.sources) {
+						if (source.kind === "Ref") {
+							reach(source.binding);
+						} else {
+							readFunction(source.getter);
+						}
+					}
+					readFunction(item.callback);
+					break;
+				case "WatchEffect":
+					readFunction(item.effect);
+					break;
+				case "Lifecycle":
+					readFunction(item.callback);
+					break;
+				// The setup always awaits, whatever reads the binding (ADR-0101).
+				case "Await":
+				case "Provide":
+					read(item.value);
+					break;
+				// A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
+				// `serverView` does, so this walk reads nothing of it. A development-only block is read
+				// above, client or not.
+				case "Use":
+				case "DevCheck":
+				case "State":
+				case "Derived":
+				case "TemplateRef":
+				case "Id":
+				case "Const":
+				case "Variable":
+				case "Function":
+				case "Model":
+				case "Inject":
+					break;
+				default:
+					unreachable(item);
+			}
+		}
+	}
+	for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
+		const item = declarations.get(id);
+		if (!item) {
+			continue;
+		}
+		switch (item.kind) {
+			case "State":
+			case "Variable":
+				read(item.initial);
+				break;
+			case "Await":
+			case "Const":
+				read(item.value);
+				break;
+			case "Derived":
+				readFunction(item.getter);
+				break;
+			case "Function":
+				readFunction(item.function);
+				break;
+			case "Inject":
+				read(item.fallback);
+				break;
+			// A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
+			// `serverView` does, so this walk reads nothing of it.
+			case "Use":
+			case "TemplateRef":
+			case "Id":
+			case "Watch":
+			case "WatchEffect":
+			case "Lifecycle":
+			case "Model":
+			case "Provide":
+			case "DevCheck":
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	return live;
 }
 
 /**
@@ -293,12 +293,12 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
  * {@link liveBindings} does.
  */
 export function liveTypes(
-  component: UfComponent,
-  module: UfModule,
-  options: LiveOptions,
+	component: UfComponent,
+	module: UfModule,
+	options: LiveOptions,
 ): Array<TypeDeclaration> {
-  const { declared, reached } = reachTypes(component, module, options);
-  return [...declared.values()].filter((declaration) => reached.has(declaration.name));
+	const { declared, reached } = reachTypes(component, module, options);
+	return [...declared.values()].filter((declaration) => reached.has(declaration.name));
 }
 
 /**
@@ -307,193 +307,193 @@ export function liveTypes(
  * read, such as the types it imports (ADR-0067), which a target imports only where they are read.
  */
 export function liveTypeNames(
-  component: UfComponent,
-  module: UfModule,
-  options: LiveOptions,
+	component: UfComponent,
+	module: UfModule,
+	options: LiveOptions,
 ): Set<string> {
-  return reachTypes(component, module, options).names;
+	return reachTypes(component, module, options).names;
 }
 
 function reachTypes(
-  component: UfComponent,
-  module: UfModule,
-  options: LiveOptions,
+	component: UfComponent,
+	module: UfModule,
+	options: LiveOptions,
 ): { declared: Map<string, TypeDeclaration>; reached: Set<string>; names: Set<string> } {
-  const declared = new Map(
-    module.types
-      .filter((declaration) => component.types.includes(declaration.name))
-      .map((declaration) => [declaration.name, declaration]),
-  );
-  const reached = new Set<string>();
-  const names = new Set<string>();
-  const pending: Array<string> = [];
-  const reach = (found: Iterable<string>) => {
-    for (const name of found) {
-      names.add(name);
-      if (!declared.has(name) || reached.has(name)) {
-        continue;
-      }
-      reached.add(name);
-      pending.push(name);
-    }
-  };
-  const type = (text: TypeText | undefined) => {
-    if (text) {
-      reach(typeNames(text));
-    }
-  };
-  const code = (piece: Code) => reach(codeNames(piece.code, codeKind(piece, component)));
-  const fn = (written: FunctionCode) => {
-    for (const parameter of written.parameters) {
-      type(parameter.type);
-    }
-    type(written.returnType);
-    code(written.body);
-  };
-  if (component.propsParameter) {
-    type(component.propsParameter.type);
-  }
-  // A member another file declares is written in that file's names (ADR-0067), which the
-  // component's module does not declare or import.
-  for (const prop of component.props) {
-    if (!prop.declaredBy) {
-      type(prop.type);
-    }
-  }
-  for (const parameter of component.typeParameters ?? []) {
-    type(parameter.constraint);
-    type(parameter.default);
-  }
-  // A slot's props are its public type, as a prop's is (ADR-0054).
-  for (const slot of component.slots?.slots ?? []) {
-    type(slot.props);
-  }
-  for (const declaration of declared.values()) {
-    if (declaration.exported) {
-      reach([declaration.name]);
-    }
-  }
-  const live = liveBindings(component, options);
-  for (const item of component.setup) {
-    // A model is a prop of the output's API, typed whatever reads it (ADR-0055).
-    if (item.kind === "Model") {
-      type(item.type);
-    }
-    const runs = "binding" in item ? live.has(item.binding) : options.client;
-    if (!runs) {
-      continue;
-    }
-    if ("type" in item) {
-      type(item.type);
-    }
-    switch (item.kind) {
-      case "State":
-      case "Variable":
-        if (item.initial) {
-          code(item.initial);
-        }
-        break;
-      case "Await":
-      case "Const":
-        code(item.value);
-        break;
-      case "Derived":
-        fn(item.getter);
-        break;
-      case "Function":
-        fn(item.function);
-        break;
-      case "Watch":
-        for (const source of item.sources) {
-          if (source.kind === "Getter") {
-            fn(source.getter);
-          }
-        }
-        fn(item.callback);
-        break;
-      case "WatchEffect":
-        fn(item.effect);
-        break;
-      case "Lifecycle":
-        fn(item.callback);
-        break;
-      case "Provide":
-        code(item.value);
-        break;
-      case "Inject":
-        if (item.fallback) {
-          code(item.fallback);
-        }
-        break;
-      case "DevCheck":
-        code(item.code);
-        break;
-      // A composable's call: this walk reads nothing of it, so a type that only its arguments
-      // name gets no import on a target that doesn't hand it a `serverView` (ADR-0069).
-      case "Use":
-      case "TemplateRef":
-      case "Id":
-      case "Model":
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  if (options.client) {
-    if (component.emits) {
-      type(component.emits.type);
-      for (const event of component.emits.events) {
-        for (const parameter of event.parameters) {
-          type(parameter.type);
-        }
-      }
-    }
-    walk(component.render, {
-      enter(node) {
-        for (const attribute of clientAttributes(node)) {
-          if (attribute.kind !== "Ref" && attribute.handler.kind === "Inline") {
-            fn(attribute.handler.function);
-          }
-        }
-      },
-    });
-  }
-  for (const { expression, path } of expressionsOf(component)) {
-    if (options.includeKeys === false && path.endsWith("/key")) {
-      continue;
-    }
-    reach(codeNames(expression.code));
-  }
-  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
-    const [statement] = parseStatementsSource(declared.get(name)!.code).statements;
-    const found = new Set<string>();
-    collectNames(statement, found);
-    found.delete(name);
-    reach(found);
-  }
-  return { declared, reached, names };
+	const declared = new Map(
+		module.types
+			.filter((declaration) => component.types.includes(declaration.name))
+			.map((declaration) => [declaration.name, declaration]),
+	);
+	const reached = new Set<string>();
+	const names = new Set<string>();
+	const pending: Array<string> = [];
+	const reach = (found: Iterable<string>) => {
+		for (const name of found) {
+			names.add(name);
+			if (!declared.has(name) || reached.has(name)) {
+				continue;
+			}
+			reached.add(name);
+			pending.push(name);
+		}
+	};
+	const type = (text: TypeText | undefined) => {
+		if (text) {
+			reach(typeNames(text));
+		}
+	};
+	const code = (piece: Code) => reach(codeNames(piece.code, codeKind(piece, component)));
+	const fn = (written: FunctionCode) => {
+		for (const parameter of written.parameters) {
+			type(parameter.type);
+		}
+		type(written.returnType);
+		code(written.body);
+	};
+	if (component.propsParameter) {
+		type(component.propsParameter.type);
+	}
+	// A member another file declares is written in that file's names (ADR-0067), which the
+	// component's module does not declare or import.
+	for (const prop of component.props) {
+		if (!prop.declaredBy) {
+			type(prop.type);
+		}
+	}
+	for (const parameter of component.typeParameters ?? []) {
+		type(parameter.constraint);
+		type(parameter.default);
+	}
+	// A slot's props are its public type, as a prop's is (ADR-0054).
+	for (const slot of component.slots?.slots ?? []) {
+		type(slot.props);
+	}
+	for (const declaration of declared.values()) {
+		if (declaration.exported) {
+			reach([declaration.name]);
+		}
+	}
+	const live = liveBindings(component, options);
+	for (const item of component.setup) {
+		// A model is a prop of the output's API, typed whatever reads it (ADR-0055).
+		if (item.kind === "Model") {
+			type(item.type);
+		}
+		const runs = "binding" in item ? live.has(item.binding) : options.client;
+		if (!runs) {
+			continue;
+		}
+		if ("type" in item) {
+			type(item.type);
+		}
+		switch (item.kind) {
+			case "State":
+			case "Variable":
+				if (item.initial) {
+					code(item.initial);
+				}
+				break;
+			case "Await":
+			case "Const":
+				code(item.value);
+				break;
+			case "Derived":
+				fn(item.getter);
+				break;
+			case "Function":
+				fn(item.function);
+				break;
+			case "Watch":
+				for (const source of item.sources) {
+					if (source.kind === "Getter") {
+						fn(source.getter);
+					}
+				}
+				fn(item.callback);
+				break;
+			case "WatchEffect":
+				fn(item.effect);
+				break;
+			case "Lifecycle":
+				fn(item.callback);
+				break;
+			case "Provide":
+				code(item.value);
+				break;
+			case "Inject":
+				if (item.fallback) {
+					code(item.fallback);
+				}
+				break;
+			case "DevCheck":
+				code(item.code);
+				break;
+			// A composable's call: this walk reads nothing of it, so a type that only its arguments
+			// name gets no import on a target that doesn't hand it a `serverView` (ADR-0069).
+			case "Use":
+			case "TemplateRef":
+			case "Id":
+			case "Model":
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	if (options.client) {
+		if (component.emits) {
+			type(component.emits.type);
+			for (const event of component.emits.events) {
+				for (const parameter of event.parameters) {
+					type(parameter.type);
+				}
+			}
+		}
+		walk(component.render, {
+			enter(node) {
+				for (const attribute of clientAttributes(node)) {
+					if (attribute.kind !== "Ref" && attribute.handler.kind === "Inline") {
+						fn(attribute.handler.function);
+					}
+				}
+			},
+		});
+	}
+	for (const { expression, path } of expressionsOf(component)) {
+		if (options.includeKeys === false && path.endsWith("/key")) {
+			continue;
+		}
+		reach(codeNames(expression.code));
+	}
+	for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+		const [statement] = parseStatementsSource(declared.get(name)!.code).statements;
+		const found = new Set<string>();
+		collectNames(statement, found);
+		found.delete(name);
+		reach(found);
+	}
+	return { declared, reached, names };
 }
 
 /** Adds to `found` the bindings code references: read, called, written or emitted through. */
 function readsOf(code: Expression | Code, found: Set<BindingId>): void {
-  for (const reference of code.refs) {
-    switch (reference.kind) {
-      case "Binding":
-      case "Write":
-      case "Emit":
-        found.add(reference.binding);
-        break;
-      case "Global":
-      case "Event":
-      case "Api":
-      case "Slot":
-      case "Import":
-      case "Dev":
-        break;
-      default:
-        unreachable(reference);
-    }
-  }
+	for (const reference of code.refs) {
+		switch (reference.kind) {
+			case "Binding":
+			case "Write":
+			case "Emit":
+				found.add(reference.binding);
+				break;
+			case "Global":
+			case "Event":
+			case "Api":
+			case "Slot":
+			case "Import":
+			case "Dev":
+				break;
+			default:
+				unreachable(reference);
+		}
+	}
 }
 
 /**
@@ -502,35 +502,35 @@ function readsOf(code: Expression | Code, found: Set<BindingId>): void {
  * effects and hooks run in the browser.
  */
 function serverCode(item: SetupItem): Array<Code> {
-  switch (item.kind) {
-    case "State":
-    case "Variable":
-      return item.initial ? [item.initial] : [];
-    case "Await":
-    case "Const":
-      return [item.value];
-    case "Derived":
-      return [item.getter.body];
-    case "Provide":
-      return [item.value];
-    case "Inject":
-      return item.fallback ? [item.fallback] : [];
-    case "DevCheck":
-      return [item.code];
-    // A composable's call (ADR-0069): this reads nothing of it. Only a render node's setup reaches
-    // it, which is empty.
-    case "Use":
-    case "TemplateRef":
-    case "Id":
-    case "Function":
-    case "Watch":
-    case "WatchEffect":
-    case "Lifecycle":
-    case "Model":
-      return [];
-    default:
-      return unreachable(item);
-  }
+	switch (item.kind) {
+		case "State":
+		case "Variable":
+			return item.initial ? [item.initial] : [];
+		case "Await":
+		case "Const":
+			return [item.value];
+		case "Derived":
+			return [item.getter.body];
+		case "Provide":
+			return [item.value];
+		case "Inject":
+			return item.fallback ? [item.fallback] : [];
+		case "DevCheck":
+			return [item.code];
+		// A composable's call (ADR-0069): this reads nothing of it. Only a render node's setup reaches
+		// it, which is empty.
+		case "Use":
+		case "TemplateRef":
+		case "Id":
+		case "Function":
+		case "Watch":
+		case "WatchEffect":
+		case "Lifecycle":
+		case "Model":
+			return [];
+		default:
+			return unreachable(item);
+	}
 }
 
 /**
@@ -538,19 +538,19 @@ function serverCode(item: SetupItem): Array<Code> {
  * and no setup, so only the node's expressions and handlers are found.
  */
 function nodeComponent(node: RenderNode): UfComponent {
-  return {
-    name: "Node",
-    span: node.span,
-    props: [],
-    types: [],
-    bindings: [],
-    setup: [],
-    // The visitors walk any render node from the root; the type names the roots a component has.
-    render: node as UfComponent["render"],
-  };
+	return {
+		name: "Node",
+		span: node.span,
+		props: [],
+		types: [],
+		bindings: [],
+		setup: [],
+		// The visitors walk any render node from the root; the type names the roots a component has.
+		render: node as UfComponent["render"],
+	};
 }
 
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

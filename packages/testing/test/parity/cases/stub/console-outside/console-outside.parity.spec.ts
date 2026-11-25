@@ -11,25 +11,25 @@ import "../../../dom-target.ts";
 console.warn("[fixture] while the spec evaluates");
 
 beforeAll(() => {
-  console.error("[fixture] in a beforeAll hook");
+	console.error("[fixture] in a beforeAll hook");
 });
 
 describeTargets("stub/console-outside", () => {
-  it.fails("fails the first test on the messages logged before it began", () => {
-    // Asserted, so L13 is the only layer that fails it.
-    expect(capturedConsole().map((entry) => entry.beforeTest)).toEqual([true, true]);
-  });
+	it.fails("fails the first test on the messages logged before it began", () => {
+		// Asserted, so L13 is the only layer that fails it.
+		expect(capturedConsole().map((entry) => entry.beforeTest)).toEqual([true, true]);
+	});
 
-  it("recorded them as L13 of that test, marked as logged before it", ({ task }) => {
-    const before = "before the test: module evaluation, a beforeAll hook or an earlier teardown";
-    expect(task.suite?.tasks[0]?.meta.uf?.layers.L8).toEqual({ status: "pass" });
-    expect(task.suite?.tasks[0]?.meta.uf?.layers.L13).toEqual({
-      status: "fail",
-      message: [
-        "2 unexpected console message(s):",
-        `  console.warn (${before}): [fixture] while the spec evaluates`,
-        `  console.error (${before}): [fixture] in a beforeAll hook`,
-      ].join("\n"),
-    });
-  });
+	it("recorded them as L13 of that test, marked as logged before it", ({ task }) => {
+		const before = "before the test: module evaluation, a beforeAll hook or an earlier teardown";
+		expect(task.suite?.tasks[0]?.meta.uf?.layers.L8).toEqual({ status: "pass" });
+		expect(task.suite?.tasks[0]?.meta.uf?.layers.L13).toEqual({
+			status: "fail",
+			message: [
+				"2 unexpected console message(s):",
+				`  console.warn (${before}): [fixture] while the spec evaluates`,
+				`  console.error (${before}): [fixture] in a beforeAll hook`,
+			].join("\n"),
+		});
+	});
 });

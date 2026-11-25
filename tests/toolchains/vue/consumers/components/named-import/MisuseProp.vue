@@ -4,6 +4,6 @@ import Pill from "../../../../../integration/cases/components/named-import/__out
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Pill.prop:text -->
-  <Pill :text="0" />
+	<!-- @uf-expect TS2322 Pill.prop:text -->
+	<Pill :text="0" />
 </template>

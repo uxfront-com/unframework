@@ -3,5 +3,5 @@ import Badge from "../../../../../integration/cases/types/imported-interface/__o
 </script>
 
 <template>
-  <Badge label="New" tone="danger" />
+	<Badge label="New" tone="danger" />
 </template>

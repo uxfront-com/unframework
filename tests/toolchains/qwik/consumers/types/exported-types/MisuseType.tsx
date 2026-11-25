@@ -2,14 +2,14 @@ import { component$ } from "@qwik.dev/core";
 
 import Button from "../../../../../integration/cases/types/exported-types/__output__/qwik/Button";
 import type {
-  ButtonProps,
-  ButtonSize,
+	ButtonProps,
+	ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/qwik/Button";
 
 export const MisuseType = component$(() => {
-  // @uf-expect TS2322 Button.type:ButtonProps
-  const props: ButtonProps = { label: "Save", tone: "danger" };
-  // @uf-expect TS2322 Button.type:ButtonSize
-  const size: ButtonSize = "huge";
-  return <Button label={props.label} data-size={size} />;
+	// @uf-expect TS2322 Button.type:ButtonProps
+	const props: ButtonProps = { label: "Save", tone: "danger" };
+	// @uf-expect TS2322 Button.type:ButtonSize
+	const size: ButtonSize = "huge";
+	return <Button label={props.label} data-size={size} />;
 });

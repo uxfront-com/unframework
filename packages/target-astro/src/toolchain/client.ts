@@ -12,9 +12,9 @@ import { isAstroComponentRef } from "./protocol.ts";
 import type { AstroRenderRequest, AstroRenderResult } from "./protocol.ts";
 
 declare module "vitest/browser" {
-  interface BrowserCommands {
-    ufAstroRender(request: AstroRenderRequest): Promise<AstroRenderResult>;
-  }
+	interface BrowserCommands {
+		ufAstroRender(request: AstroRenderRequest): Promise<AstroRenderResult>;
+	}
 }
 
 /**
@@ -28,54 +28,54 @@ declare module "vitest/browser" {
  * nothing (`interactivity` is unsupported, and a test that listens requires it).
  */
 export const mount: MountAdapter = async (component, container, options) => {
-  if (!isAstroComponentRef(component)) {
-    throw new TypeError(
-      "Astro mount: expected what a `.uf.tsx` import yields in an Astro browser project ({ __ufTarget: 'astro', id, name }).",
-    );
-  }
-  // The host's transport, or else Vitest's command, which a host outside Vitest never reaches.
-  const renderCommand = options.renderCommand ?? ((request) => commands.ufAstroRender(request));
-  const render = async (props: Readonly<Record<string, unknown>>) => {
-    const copy = { ...props };
-    assertSerialisableProps(copy, "Astro renders on the server");
-    return renderCommand({ id: component.id, props: copy });
-  };
-  const rendered = await render(options.props ?? {});
-  let styles = insert(container, component.name, rendered.html);
-  const clear = () => {
-    container.replaceChildren();
-    for (const style of styles) {
-      style.remove();
-    }
-  };
+	if (!isAstroComponentRef(component)) {
+		throw new TypeError(
+			"Astro mount: expected what a `.uf.tsx` import yields in an Astro browser project ({ __ufTarget: 'astro', id, name }).",
+		);
+	}
+	// The host's transport, or else Vitest's command, which a host outside Vitest never reaches.
+	const renderCommand = options.renderCommand ?? ((request) => commands.ufAstroRender(request));
+	const render = async (props: Readonly<Record<string, unknown>>) => {
+		const copy = { ...props };
+		assertSerialisableProps(copy, "Astro renders on the server");
+		return renderCommand({ id: component.id, props: copy });
+	};
+	const rendered = await render(options.props ?? {});
+	let styles = insert(container, component.name, rendered.html);
+	const clear = () => {
+		container.replaceChildren();
+		for (const style of styles) {
+			style.remove();
+		}
+	};
 
-  return {
-    settle: () => Promise.resolve(),
-    async rerender(props) {
-      const next = await render(props);
-      clear();
-      styles = insert(container, component.name, next.html);
-      return { console: next.console };
-    },
-    unmount: () => {
-      clear();
-      return Promise.resolve();
-    },
-    console: rendered.console,
-  };
+	return {
+		settle: () => Promise.resolve(),
+		async rerender(props) {
+			const next = await render(props);
+			clear();
+			styles = insert(container, component.name, next.html);
+			return { console: next.console };
+		},
+		unmount: () => {
+			clear();
+			return Promise.resolve();
+		},
+		console: rendered.console,
+	};
 };
 
 /** Inserts server HTML into the container, its leading `<style>` elements into `<head>`. */
 function insert(container: HTMLElement, name: string, html: string): Array<HTMLStyleElement> {
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  const styles: Array<HTMLStyleElement> = [];
-  while (template.content.firstChild instanceof HTMLStyleElement) {
-    const style = template.content.firstChild;
-    style.dataset.ufAstroStyle = name;
-    styles.push(style);
-    document.head.append(style);
-  }
-  container.append(template.content);
-  return styles;
+	const template = document.createElement("template");
+	template.innerHTML = html;
+	const styles: Array<HTMLStyleElement> = [];
+	while (template.content.firstChild instanceof HTMLStyleElement) {
+		const style = template.content.firstChild;
+		style.dataset.ufAstroStyle = name;
+		styles.push(style);
+		document.head.append(style);
+	}
+	container.append(template.content);
+	return styles;
 }

@@ -6,45 +6,45 @@ import { readFileSync } from "node:fs";
 
 /** The paths that can change a canary's answer, as globs: `*` within a segment, `**` across them. */
 export const CANARY_PATHS: ReadonlyArray<string> = [
-  // The job that runs them, and the action that installs their dependencies.
-  ".github/workflows/ci.yml",
-  ".github/actions/setup/**",
-  // The harness, with its runner and the files at the package's root that the projects load.
-  "tests/integration/harness/**",
-  "tests/integration/scripts/**",
-  "tests/integration/*.ts",
-  "tests/integration/*.d.ts",
-  "tests/integration/tsconfig*.json",
-  "tests/integration/package.json",
-  // The corpus specs a canary judges. Golden outputs, expectations, baselines and case sources
-  // stay out: the harness's unit tests run the corruptions on every case they apply to, and check
-  // that the output changes.
-  "tests/integration/cases/**/*.test.ts",
-  "tests/integration/cases/**/case.json",
-  // The test kit, and the plugin hooks a canary installs through.
-  "packages/testing/**",
-  "packages/compiler/**",
-  "packages/unplugin/**",
-  // The toolchains that run L3 to L5.
-  "packages/codegen/src/toolchain.ts",
-  "packages/codegen/src/toolchain-node/**",
-  "packages/codegen/src/toolchain-browser/**",
-  "packages/target-*/src/toolchain/**",
-  "tests/toolchains/**",
-  // The root script that runs them, and the versions of Vitest and Playwright.
-  "package.json",
-  "pnpm-workspace.yaml",
-  "pnpm-lock.yaml",
+	// The job that runs them, and the action that installs their dependencies.
+	".github/workflows/ci.yml",
+	".github/actions/setup/**",
+	// The harness, with its runner and the files at the package's root that the projects load.
+	"tests/integration/harness/**",
+	"tests/integration/scripts/**",
+	"tests/integration/*.ts",
+	"tests/integration/*.d.ts",
+	"tests/integration/tsconfig*.json",
+	"tests/integration/package.json",
+	// The corpus specs a canary judges. Golden outputs, expectations, baselines and case sources
+	// stay out: the harness's unit tests run the corruptions on every case they apply to, and check
+	// that the output changes.
+	"tests/integration/cases/**/*.test.ts",
+	"tests/integration/cases/**/case.json",
+	// The test kit, and the plugin hooks a canary installs through.
+	"packages/testing/**",
+	"packages/compiler/**",
+	"packages/unplugin/**",
+	// The toolchains that run L3 to L5.
+	"packages/codegen/src/toolchain.ts",
+	"packages/codegen/src/toolchain-node/**",
+	"packages/codegen/src/toolchain-browser/**",
+	"packages/target-*/src/toolchain/**",
+	"tests/toolchains/**",
+	// The root script that runs them, and the versions of Vitest and Playwright.
+	"package.json",
+	"pnpm-workspace.yaml",
+	"pnpm-lock.yaml",
 ];
 
 /** A glob as a regular expression over a whole path. */
 export function globToRegExp(glob: string): RegExp {
-  const source = glob
-    .replaceAll(/[.+?^${}()|[\]\\]/g, String.raw`\$&`)
-    .replaceAll(/\*\*\/|\*\*|\*/g, (stars) =>
-      stars === "**/" ? "(?:[^/]+/)*" : stars === "**" ? ".*" : "[^/]*",
-    );
-  return new RegExp(`^${source}$`);
+	const source = glob
+		.replaceAll(/[.+?^${}()|[\]\\]/g, String.raw`\$&`)
+		.replaceAll(/\*\*\/|\*\*|\*/g, (stars) =>
+			stars === "**/" ? "(?:[^/]+/)*" : stars === "**" ? ".*" : "[^/]*",
+		);
+	return new RegExp(`^${source}$`);
 }
 
 /**
@@ -60,12 +60,12 @@ export const DOCS_PATHS: ReadonlyArray<string> = ["**/*.md", "docs/**", "apps/we
  * `apps/web/content` or the corpus.
  */
 export const TESTED_DOCS: ReadonlyArray<string> = [
-  // tests/repo/test/targets-page.test.ts renders the table from the targets' cells.
-  "apps/web/content/docs/3.reference/1.targets.md",
-  // tests/repo/test/diagnostics-page.test.ts compares each section with the catalogue.
-  "apps/web/content/docs/3.reference/2.diagnostics.md",
-  // listCases (harness/cases.ts) fails on a stray file in a case's directory.
-  "tests/integration/cases/**",
+	// tests/repo/test/targets-page.test.ts renders the table from the targets' cells.
+	"apps/web/content/docs/3.reference/1.targets.md",
+	// tests/repo/test/diagnostics-page.test.ts compares each section with the catalogue.
+	"apps/web/content/docs/3.reference/2.diagnostics.md",
+	// listCases (harness/cases.ts) fails on a stray file in a case's directory.
+	"tests/integration/cases/**",
 ];
 
 const CANARY_PATTERNS: ReadonlyArray<RegExp> = CANARY_PATHS.map(globToRegExp);
@@ -74,7 +74,7 @@ const TESTED_DOCS_PATTERNS: ReadonlyArray<RegExp> = TESTED_DOCS.map(globToRegExp
 
 /** A name as `git diff` writes it, without the quotes it puts around an unusual one. */
 function unquote(file: string): string {
-  return file.replace(/^"(.*)"$/, "$1");
+	return file.replace(/^"(.*)"$/, "$1");
 }
 
 /**
@@ -84,10 +84,10 @@ function unquote(file: string): string {
  * off, and such a name never skips the canaries (P2).
  */
 export function runsCanaries(files: ReadonlyArray<string>): boolean {
-  return files.some((file) => {
-    const path = unquote(file);
-    return !path.endsWith(".md") && CANARY_PATTERNS.some((pattern) => pattern.test(path));
-  });
+	return files.some((file) => {
+		const path = unquote(file);
+		return !path.endsWith(".md") && CANARY_PATTERNS.some((pattern) => pattern.test(path));
+	});
 }
 
 /**
@@ -96,18 +96,18 @@ export function runsCanaries(files: ReadonlyArray<string>): boolean {
  * Every path on `CANARY_PATHS` is outside `DOCS_PATHS`, so the canaries never run without the tests.
  */
 export function runsTests(files: ReadonlyArray<string>): boolean {
-  const paths = files.filter((file) => file !== "").map(unquote);
-  return (
-    paths.length === 0 ||
-    paths.some(
-      (path) =>
-        !DOCS_PATTERNS.some((pattern) => pattern.test(path)) ||
-        TESTED_DOCS_PATTERNS.some((pattern) => pattern.test(path)),
-    )
-  );
+	const paths = files.filter((file) => file !== "").map(unquote);
+	return (
+		paths.length === 0 ||
+		paths.some(
+			(path) =>
+				!DOCS_PATTERNS.some((pattern) => pattern.test(path)) ||
+				TESTED_DOCS_PATTERNS.some((pattern) => pattern.test(path)),
+		)
+	);
 }
 
 if (import.meta.main) {
-  const files = readFileSync(0, "utf8").split("\n");
-  process.stdout.write(`canaries=${runsCanaries(files)}\ntests=${runsTests(files)}\n`);
+	const files = readFileSync(0, "utf8").split("\n");
+	process.stdout.write(`canaries=${runsCanaries(files)}\ntests=${runsTests(files)}\n`);
 }

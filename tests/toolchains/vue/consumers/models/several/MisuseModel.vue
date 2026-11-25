@@ -7,6 +7,6 @@ const high = ref("ten");
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 PriceRange.model:max -->
-  <PriceRange v-model:max="high" label="Price" />
+	<!-- @uf-expect TS2322 PriceRange.model:max -->
+	<PriceRange v-model:max="high" label="Price" />
 </template>

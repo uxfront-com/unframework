@@ -6,5 +6,5 @@ const tone: Tone = "accent";
 </script>
 
 <template>
-  <Palette :tone="tone" />
+	<Palette :tone="tone" />
 </template>

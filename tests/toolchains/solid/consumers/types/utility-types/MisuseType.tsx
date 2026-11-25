@@ -5,5 +5,5 @@ import type { TextFieldProps } from "../../../../../integration/cases/types/util
 const field: TextFieldProps = { name: "email", label: 1 };
 
 export function MisuseType() {
-  return <TextField name={field.name} label="Email" />;
+	return <TextField name={field.name} label="Email" />;
 }

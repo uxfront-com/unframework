@@ -13,17 +13,17 @@ import "../../../dom-target.ts";
 
 // Update mode would write the artefacts whose absence makes L7 fail here.
 describeTargets("stub/quarantine", () => {
-  it.skipIf(inject("ufHarness").update)(
-    "records a quarantined failure, and a pass under an entry as it is",
-    async ({ task }) => {
-      const view = await mount({ html: "<p>Known differences</p>" });
-      await view.expectParity("initial");
-      expect(task.meta.uf?.layers).toEqual({
-        L7: { status: "quarantined", issue: "#L7" },
-        L9: { status: "skip", reason: NO_INTERACTION_SKIP },
-        L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
-        L11: { status: "pass" },
-      });
-    },
-  );
+	it.skipIf(inject("ufHarness").update)(
+		"records a quarantined failure, and a pass under an entry as it is",
+		async ({ task }) => {
+			const view = await mount({ html: "<p>Known differences</p>" });
+			await view.expectParity("initial");
+			expect(task.meta.uf?.layers).toEqual({
+				L7: { status: "quarantined", issue: "#L7" },
+				L9: { status: "skip", reason: NO_INTERACTION_SKIP },
+				L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
+				L11: { status: "pass" },
+			});
+		},
+	);
 });

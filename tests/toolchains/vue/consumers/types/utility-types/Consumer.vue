@@ -6,5 +6,5 @@ const field: TextFieldProps = { name: "email", label: "Email" };
 </script>
 
 <template>
-  <TextField :name="field.name" :label="field.label" placeholder="you@example.com" required />
+	<TextField :name="field.name" :label="field.label" placeholder="you@example.com" required />
 </template>

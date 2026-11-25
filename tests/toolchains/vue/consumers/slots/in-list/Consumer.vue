@@ -3,7 +3,7 @@ import Steps from "../../../../../integration/cases/slots/in-list/__output__/vue
 </script>
 
 <template>
-  <Steps :steps="['Boil']">
-    <template #marker>*</template>
-  </Steps>
+	<Steps :steps="['Boil']">
+		<template #marker>*</template>
+	</Steps>
 </template>

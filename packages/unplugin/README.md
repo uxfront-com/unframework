@@ -10,7 +10,7 @@ import unframework from "@unframework.dev/unplugin/vite";
 import vue from "@vitejs/plugin-vue";
 
 export default {
-  plugins: [unframework({ target: "vue" }), vue()],
+	plugins: [unframework({ target: "vue" }), vue()],
 };
 ```
 
@@ -25,7 +25,7 @@ On Vite you can leave `target` out, and the framework's plugin in your configura
 
 ```ts
 export default {
-  plugins: [unframework(), vue()],
+	plugins: [unframework(), vue()],
 };
 ```
 
@@ -73,7 +73,7 @@ plugin first, as its installation guide does:
 import styleframe from "styleframe/plugin/vite";
 
 export default {
-  plugins: [styleframe(), unframework({ target: "vue" }), vue()],
+	plugins: [styleframe(), unframework({ target: "vue" }), vue()],
 };
 ```
 
@@ -327,8 +327,8 @@ A package can ship its `.uf.tsx` and `.uf.ts` files for its consumers to compile
 
 ```json
 {
-  "name": "@acme/ui",
-  "exports": { "./source/*": "./src/*", "./button": "./src/Button.uf.tsx" }
+	"name": "@acme/ui",
+	"exports": { "./source/*": "./src/*", "./button": "./src/Button.uf.tsx" }
 }
 ```
 
@@ -416,7 +416,7 @@ import unframework from "@unframework.dev/unplugin/astro";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  integrations: [unframework()],
+	integrations: [unframework()],
 });
 ```
 

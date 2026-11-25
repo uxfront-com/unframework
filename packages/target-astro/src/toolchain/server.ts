@@ -13,9 +13,9 @@ let container: Promise<AstroContainer> | undefined;
  * no doctype, and no `<style>` (the component is not imported with `?container`).
  */
 export const renderToString: SsrRenderer = async (component, options) => {
-  if (!isAstroComponentFactory(component)) {
-    throw new TypeError("Astro renderToString: expected a compiled Astro component.");
-  }
-  container ??= AstroContainer.create();
-  return (await container).renderToString(component, { props: { ...options.props } });
+	if (!isAstroComponentFactory(component)) {
+		throw new TypeError("Astro renderToString: expected a compiled Astro component.");
+	}
+	container ??= AstroContainer.create();
+	return (await container).renderToString(component, { props: { ...options.props } });
 };

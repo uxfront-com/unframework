@@ -19,37 +19,37 @@ const MISMATCH = /\[svelte\] hydration_|svelte\.dev\/e\/hydration_/;
  * differ, which the `DOM` and `client agreement` sub-checks see.
  */
 export const hydrate: HydrateAdapter = async (component, container, html, { props, on }) => {
-  const listeners = listenerProps(on);
-  const current = reactiveProps({ ...props, ...listeners });
-  const mismatches: Array<string> = [];
-  container.innerHTML = html;
-  const { warn } = console;
-  console.warn = (...args: Array<unknown>) => {
-    const message = args.map(String).join(" ");
-    if (MISMATCH.test(message)) {
-      mismatches.push(message.replaceAll("%c", ""));
-    }
-    warn(...args);
-  };
-  let instance: Record<string, unknown>;
-  try {
-    instance = hydrateComponent(component as Component<Record<string, unknown>>, {
-      target: container,
-      props: current.props,
-      recover: false,
-    });
-    flushSync();
-  } finally {
-    console.warn = warn;
-  }
-  return {
-    settle: () => settled(),
-    async rerender(next) {
-      current.replace({ ...next, ...listeners });
-      flushSync();
-      await settled();
-    },
-    unmount: () => unmount(instance),
-    takeMismatches: () => mismatches.splice(0),
-  };
+	const listeners = listenerProps(on);
+	const current = reactiveProps({ ...props, ...listeners });
+	const mismatches: Array<string> = [];
+	container.innerHTML = html;
+	const { warn } = console;
+	console.warn = (...args: Array<unknown>) => {
+		const message = args.map(String).join(" ");
+		if (MISMATCH.test(message)) {
+			mismatches.push(message.replaceAll("%c", ""));
+		}
+		warn(...args);
+	};
+	let instance: Record<string, unknown>;
+	try {
+		instance = hydrateComponent(component as Component<Record<string, unknown>>, {
+			target: container,
+			props: current.props,
+			recover: false,
+		});
+		flushSync();
+	} finally {
+		console.warn = warn;
+	}
+	return {
+		settle: () => settled(),
+		async rerender(next) {
+			current.replace({ ...next, ...listeners });
+			flushSync();
+			await settled();
+		},
+		unmount: () => unmount(instance),
+		takeMismatches: () => mismatches.splice(0),
+	};
 };

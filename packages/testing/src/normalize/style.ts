@@ -7,11 +7,11 @@ import { cssPropertiesOverlap } from "@unframework.dev/ir";
  * the same source values, so only their formatting differs.
  */
 export interface Declaration {
-  /** Lowercase, except custom properties (`--x`), which are case-sensitive. */
-  property: string;
-  /** Whitespace collapsed outside strings; `undefined` for a chunk without a colon. */
-  value: string | undefined;
-  important: boolean;
+	/** Lowercase, except custom properties (`--x`), which are case-sensitive. */
+	property: string;
+	/** Whitespace collapsed outside strings; `undefined` for a chunk without a colon. */
+	value: string | undefined;
+	important: boolean;
 }
 
 /** CSS whitespace (not every Unicode space: U+00A0 is part of a value). */
@@ -23,81 +23,81 @@ const CSS_SPACE = /[ \t\n\r\f]/;
  * with comments replaced.
  */
 function scan(text: string, onChar: (char: string, depth: number, out: string) => string): string {
-  let out = "";
-  let quote = "";
-  let depth = 0;
-  for (let index = 0; index < text.length; index++) {
-    const char = text[index]!;
-    if (char === "\\" && index + 1 < text.length) {
-      out += char + text[++index];
-    } else if (quote) {
-      out += char;
-      if (char === quote) {
-        quote = "";
-      }
-    } else if (char === "/" && text[index + 1] === "*") {
-      const end = text.indexOf("*/", index + 2);
-      index = end === -1 ? text.length : end + 1;
-      out = onChar(" ", depth, out);
-    } else {
-      if (char === '"' || char === "'") {
-        quote = char;
-      } else if (char === "(") {
-        depth++;
-      } else if (char === ")" && depth > 0) {
-        depth--;
-      }
-      out = onChar(char, depth, out);
-    }
-  }
-  return out;
+	let out = "";
+	let quote = "";
+	let depth = 0;
+	for (let index = 0; index < text.length; index++) {
+		const char = text[index]!;
+		if (char === "\\" && index + 1 < text.length) {
+			out += char + text[++index];
+		} else if (quote) {
+			out += char;
+			if (char === quote) {
+				quote = "";
+			}
+		} else if (char === "/" && text[index + 1] === "*") {
+			const end = text.indexOf("*/", index + 2);
+			index = end === -1 ? text.length : end + 1;
+			out = onChar(" ", depth, out);
+		} else {
+			if (char === '"' || char === "'") {
+				quote = char;
+			} else if (char === "(") {
+				depth++;
+			} else if (char === ")" && depth > 0) {
+				depth--;
+			}
+			out = onChar(char, depth, out);
+		}
+	}
+	return out;
 }
 
 /** Splits at top-level `separator`s, at most `limit` parts. */
 function split(text: string, separator: string, limit: number): Array<string> {
-  const parts: Array<string> = [];
-  const last = scan(text, (char, depth, out) => {
-    if (char === separator && depth === 0 && parts.length < limit - 1) {
-      parts.push(out);
-      return "";
-    }
-    return out + char;
-  });
-  parts.push(last);
-  return parts;
+	const parts: Array<string> = [];
+	const last = scan(text, (char, depth, out) => {
+		if (char === separator && depth === 0 && parts.length < limit - 1) {
+			parts.push(out);
+			return "";
+		}
+		return out + char;
+	});
+	parts.push(last);
+	return parts;
 }
 
 /** Collapses runs of whitespace outside strings to one space, and trims. */
 function collapse(text: string): string {
-  return scan(text, (char, _depth, out) =>
-    CSS_SPACE.test(char) ? (out.endsWith(" ") ? out : `${out} `) : out + char,
-  ).trim();
+	return scan(text, (char, _depth, out) =>
+		CSS_SPACE.test(char) ? (out.endsWith(" ") ? out : `${out} `) : out + char,
+	).trim();
 }
 
 const IMPORTANT = /\s*!\s*important$/i;
 
 /** Parses a declaration list (the value of a `style` attribute). */
 export function parseStyle(text: string): Array<Declaration> {
-  const declarations: Array<Declaration> = [];
-  for (const chunk of split(text, ";", Number.POSITIVE_INFINITY)) {
-    if (collapse(chunk) === "") {
-      continue;
-    }
-    const [name, rest] = split(chunk, ":", 2);
-    if (rest === undefined) {
-      declarations.push({ property: collapse(chunk), value: undefined, important: false });
-      continue;
-    }
-    const property = collapse(name!);
-    const value = collapse(rest);
-    const important = IMPORTANT.test(value);
-    declarations.push({
-      property: property.startsWith("--") ? property : property.toLowerCase(),
-      value: important ? value.replace(IMPORTANT, "") : value,
-      important,
-    });
-  }
-  return declarations;
+	const declarations: Array<Declaration> = [];
+	for (const chunk of split(text, ";", Number.POSITIVE_INFINITY)) {
+		if (collapse(chunk) === "") {
+			continue;
+		}
+		const [name, rest] = split(chunk, ":", 2);
+		if (rest === undefined) {
+			declarations.push({ property: collapse(chunk), value: undefined, important: false });
+			continue;
+		}
+		const property = collapse(name!);
+		const value = collapse(rest);
+		const important = IMPORTANT.test(value);
+		declarations.push({
+			property: property.startsWith("--") ? property : property.toLowerCase(),
+			value: important ? value.replace(IMPORTANT, "") : value,
+			important,
+		});
+	}
+	return declarations;
 }
 
 /**
@@ -110,20 +110,20 @@ export function parseStyle(text: string): Array<Declaration> {
  * values (`styleValue`, the Angular host check) and never rewrites a `style` attribute.
  */
 export function dedupeDeclarations(declarations: ReadonlyArray<Declaration>): Array<Declaration> {
-  const winners = new Map<string, Declaration>();
-  for (const declaration of declarations) {
-    if (declaration.value === undefined) {
-      continue;
-    }
-    const previous = winners.get(declaration.property);
-    if (!previous || declaration.important || !previous.important) {
-      winners.set(declaration.property, declaration);
-    }
-  }
-  return declarations.filter(
-    (declaration) =>
-      declaration.value === undefined || winners.get(declaration.property) === declaration,
-  );
+	const winners = new Map<string, Declaration>();
+	for (const declaration of declarations) {
+		if (declaration.value === undefined) {
+			continue;
+		}
+		const previous = winners.get(declaration.property);
+		if (!previous || declaration.important || !previous.important) {
+			winners.set(declaration.property, declaration);
+		}
+	}
+	return declarations.filter(
+		(declaration) =>
+			declaration.value === undefined || winners.get(declaration.property) === declaration,
+	);
 }
 
 /**
@@ -131,13 +131,13 @@ export function dedupeDeclarations(declarations: ReadonlyArray<Declaration>): Ar
  * separated by one space, with ` !important` before the semicolon.
  */
 export function printStyle(declarations: ReadonlyArray<Declaration>): string {
-  return declarations
-    .map(({ property, value, important }) =>
-      value === undefined
-        ? `${property};`
-        : `${property}: ${value}${important ? " !important" : ""};`,
-    )
-    .join(" ");
+	return declarations
+		.map(({ property, value, important }) =>
+			value === undefined
+				? `${property};`
+				: `${property}: ${value}${important ? " !important" : ""};`,
+		)
+		.join(" ");
 }
 
 /**
@@ -145,15 +145,15 @@ export function printStyle(declarations: ReadonlyArray<Declaration>): string {
  * and its longhand: whichever comes last wins), if any.
  */
 export function styleValue(
-  style: string | undefined,
-  ...properties: ReadonlyArray<string>
+	style: string | undefined,
+	...properties: ReadonlyArray<string>
 ): string | undefined {
-  if (style === undefined) {
-    return undefined;
-  }
-  return dedupeDeclarations(parseStyle(style))
-    .findLast((declaration) => properties.includes(declaration.property))
-    ?.value?.toLowerCase();
+	if (style === undefined) {
+		return undefined;
+	}
+	return dedupeDeclarations(parseStyle(style))
+		.findLast((declaration) => properties.includes(declaration.property))
+		?.value?.toLowerCase();
 }
 
 /**
@@ -165,15 +165,15 @@ export function styleValue(
  * the CSSOM's, or static declarations first).
  */
 export function sortDeclarations(declarations: ReadonlyArray<Declaration>): Array<Declaration> {
-  const ordered = declarations.some((declaration, index) =>
-    declarations
-      .slice(index + 1)
-      .some((other) => cssPropertiesOverlap(declaration.property, other.property)),
-  );
-  // By UTF-16 code units, so the order never depends on a locale.
-  return ordered
-    ? [...declarations]
-    : declarations.toSorted((a, b) =>
-        a.property < b.property ? -1 : a.property > b.property ? 1 : 0,
-      );
+	const ordered = declarations.some((declaration, index) =>
+		declarations
+			.slice(index + 1)
+			.some((other) => cssPropertiesOverlap(declaration.property, other.property)),
+	);
+	// By UTF-16 code units, so the order never depends on a locale.
+	return ordered
+		? [...declarations]
+		: declarations.toSorted((a, b) =>
+				a.property < b.property ? -1 : a.property > b.property ? 1 : 0,
+			);
 }

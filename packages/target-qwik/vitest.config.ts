@@ -21,30 +21,30 @@ const toolchainDir = fileURLToPath(new URL("../../tests/toolchains/qwik", import
  * tests' `.uf.tsx` sources as this target emits them (test/sources.ts).
  */
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          include: ["test/*.test.ts"],
-          exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
-          environment: "node",
-        },
-      },
-      {
-        ...(await toolchain.vite("ssr", { root: fixtures, toolchainDir })),
-        test: { name: "ssr", include: ["test/ssr/*.test.ts"], environment: "node" },
-      },
-      browserProject({
-        provider: playwright(),
-        vite: await (async () => {
-          const vite = await toolchain.vite("browser", { root, toolchainDir });
-          return { ...vite, plugins: [ufSources(), ...(vite.plugins ?? [])] };
-        })(),
-        modules: { target, extension: ".tsx", formatted: true },
-      }),
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					include: ["test/*.test.ts"],
+					exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
+					environment: "node",
+				},
+			},
+			{
+				...(await toolchain.vite("ssr", { root: fixtures, toolchainDir })),
+				test: { name: "ssr", include: ["test/ssr/*.test.ts"], environment: "node" },
+			},
+			browserProject({
+				provider: playwright(),
+				vite: await (async () => {
+					const vite = await toolchain.vite("browser", { root, toolchainDir });
+					return { ...vite, plugins: [ufSources(), ...(vite.plugins ?? [])] };
+				})(),
+				modules: { target, extension: ".tsx", formatted: true },
+			}),
+		],
+	},
 });
 
 export default config;

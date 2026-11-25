@@ -19,52 +19,52 @@ let harness: HarnessContext;
 let runs = 0;
 
 beforeEach(() => {
-  const root = mkdtempSync(join(tmpdir(), "uf-visual-"));
-  // A fresh run id per test: the reference's captures are kept per run.
-  const runId = `run-${(runs += 1)}`;
-  harness = {
-    runId,
-    casesDir: join(root, "cases"),
-    reference: "vue",
-    update: false,
-    pixels: "live",
-    canary: null,
-    baselineEnvironment: null,
-    browser: "chromium",
-    ledgerDir: join(root, ".reports", "ledger", runId),
-    liveDir: join(root, ".live", runId),
-    diffsDir: join(root, ".reports", "diffs", runId),
-    quarantine: [],
-    cases: { "basics/hello": {} },
-  };
+	const root = mkdtempSync(join(tmpdir(), "uf-visual-"));
+	// A fresh run id per test: the reference's captures are kept per run.
+	const runId = `run-${(runs += 1)}`;
+	harness = {
+		runId,
+		casesDir: join(root, "cases"),
+		reference: "vue",
+		update: false,
+		pixels: "live",
+		canary: null,
+		baselineEnvironment: null,
+		browser: "chromium",
+		ledgerDir: join(root, ".reports", "ledger", runId),
+		liveDir: join(root, ".live", runId),
+		diffsDir: join(root, ".reports", "diffs", runId),
+		quarantine: [],
+		cases: { "basics/hello": {} },
+	};
 });
 
 /** A solid-colour PNG. */
 function png(width: number, height: number, red = 255): Buffer {
-  const image = new PNG({ width, height });
-  for (let index = 0; index < image.data.length; index += 4) {
-    image.data[index] = red;
-    image.data[index + 1] = 255;
-    image.data[index + 2] = 255;
-    image.data[index + 3] = 255;
-  }
-  return PNG.sync.write(image);
+	const image = new PNG({ width, height });
+	for (let index = 0; index < image.data.length; index += 4) {
+		image.data[index] = red;
+		image.data[index + 1] = 255;
+		image.data[index + 2] = 255;
+		image.data[index + 3] = 255;
+	}
+	return PNG.sync.write(image);
 }
 
 const geometry = (width = 100): GeometrySnapshot => ({
-  version: 1,
-  nodes: { "p[0]": { box: [8, 8, width, 24], style: { color: "rgb(0, 0, 0)" } } },
+	version: 1,
+	nodes: { "p[0]": { box: [8, 8, width, 24], style: { color: "rgb(0, 0, 0)" } } },
 });
 
 type Fonts = Array<{ familyName: string; isCustomFont: boolean; glyphCount: number }>;
 
 interface FakeBrowser {
-  /** What each screenshot returns, in order; the last one repeats. */
-  shots: Array<Buffer>;
-  /** The fonts CDP reports for every element under the container, or per node id. */
-  fonts: Fonts | Record<number, Fonts>;
-  /** Whether the capture container is in the document. */
-  found?: boolean;
+	/** What each screenshot returns, in order; the last one repeats. */
+	shots: Array<Buffer>;
+	/** The fonts CDP reports for every element under the container, or per node id. */
+	fonts: Fonts | Record<number, Fonts>;
+	/** Whether the capture container is in the document. */
+	found?: boolean;
 }
 
 /**
@@ -73,629 +73,629 @@ interface FakeBrowser {
  * shadow root.
  */
 const pierced = (marker: string | undefined) => ({
-  root: {
-    nodeId: 1,
-    nodeType: 9,
-    children: [
-      {
-        nodeId: 2,
-        nodeType: 1,
-        localName: "iframe",
-        contentDocument: {
-          nodeId: 3,
-          nodeType: 9,
-          children: [
-            {
-              nodeId: 10,
-              nodeType: 1,
-              localName: "div",
-              attributes: [
-                "data-testid",
-                "uf-root-1",
-                ...(marker ? ["data-uf-capture", marker] : []),
-              ],
-              children: [
-                {
-                  nodeId: 11,
-                  nodeType: 1,
-                  localName: "p",
-                  children: [{ nodeId: 12, nodeType: 3 }],
-                  pseudoElements: [
-                    { nodeId: 13, nodeType: 1, localName: "", pseudoType: "before" },
-                  ],
-                },
-                {
-                  nodeId: 14,
-                  nodeType: 1,
-                  localName: "textarea",
-                  shadowRoots: [
-                    {
-                      nodeId: 15,
-                      nodeType: 11,
-                      children: [{ nodeId: 16, nodeType: 1, localName: "div" }],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      },
-    ],
-  },
+	root: {
+		nodeId: 1,
+		nodeType: 9,
+		children: [
+			{
+				nodeId: 2,
+				nodeType: 1,
+				localName: "iframe",
+				contentDocument: {
+					nodeId: 3,
+					nodeType: 9,
+					children: [
+						{
+							nodeId: 10,
+							nodeType: 1,
+							localName: "div",
+							attributes: [
+								"data-testid",
+								"uf-root-1",
+								...(marker ? ["data-uf-capture", marker] : []),
+							],
+							children: [
+								{
+									nodeId: 11,
+									nodeType: 1,
+									localName: "p",
+									children: [{ nodeId: 12, nodeType: 3 }],
+									pseudoElements: [
+										{ nodeId: 13, nodeType: 1, localName: "", pseudoType: "before" },
+									],
+								},
+								{
+									nodeId: 14,
+									nodeType: 1,
+									localName: "textarea",
+									shadowRoots: [
+										{
+											nodeId: 15,
+											nodeType: 11,
+											children: [{ nodeId: 16, nodeType: 1, localName: "div" }],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			},
+		],
+	},
 });
 
 /** The part of a CDP session the font audit calls. */
 interface FakeCdp {
-  send(method: string, params?: { nodeId?: number }): Promise<unknown>;
+	send(method: string, params?: { nodeId?: number }): Promise<unknown>;
 }
 
 function context(target: string, browser: FakeBrowser, overrides: Partial<HarnessContext> = {}) {
-  let shot = 0;
-  const cdp: FakeCdp = {
-    async send(method: string, params?: { nodeId?: number }) {
-      switch (method) {
-        case "DOM.getDocument":
-          return pierced(browser.found === false ? undefined : "m-1");
-        case "CSS.getPlatformFontsForNode":
-          return {
-            fonts: Array.isArray(browser.fonts)
-              ? browser.fonts
-              : (browser.fonts[params?.nodeId ?? 0] ?? inter),
-          };
-        default:
-          return {};
-      }
-    },
-  };
-  const fake = {
-    project: {
-      name: `browser:${target}`,
-      getProvidedContext: () => ({ target, ufHarness: { ...harness, ...overrides } }),
-    },
-    page: { context: () => ({ newCDPSession: async () => cdp }) },
-    iframe: {
-      locator: () => ({
-        screenshot: async () => browser.shots[Math.min((shot += 1) - 1, browser.shots.length - 1)]!,
-      }),
-    },
-  };
-  return fake as unknown as VisualCommandContext;
+	let shot = 0;
+	const cdp: FakeCdp = {
+		async send(method: string, params?: { nodeId?: number }) {
+			switch (method) {
+				case "DOM.getDocument":
+					return pierced(browser.found === false ? undefined : "m-1");
+				case "CSS.getPlatformFontsForNode":
+					return {
+						fonts: Array.isArray(browser.fonts)
+							? browser.fonts
+							: (browser.fonts[params?.nodeId ?? 0] ?? inter),
+					};
+				default:
+					return {};
+			}
+		},
+	};
+	const fake = {
+		project: {
+			name: `browser:${target}`,
+			getProvidedContext: () => ({ target, ufHarness: { ...harness, ...overrides } }),
+		},
+		page: { context: () => ({ newCDPSession: async () => cdp }) },
+		iframe: {
+			locator: () => ({
+				screenshot: async () => browser.shots[Math.min((shot += 1) - 1, browser.shots.length - 1)]!,
+			}),
+		},
+	};
+	return fake as unknown as VisualCommandContext;
 }
 
 const inter = [{ familyName: "Inter", isCustomFont: true, glyphCount: 13 }];
 const request = (snapshot: GeometrySnapshot = geometry()): CaptureRequest => ({
-  element: { selector: 'internal:testid=[data-testid="uf-root-1"s]', locator: "" },
-  case: "basics/hello",
-  name: "initial",
-  geometry: snapshot,
-  marker: "m-1",
+	element: { selector: 'internal:testid=[data-testid="uf-root-1"s]', locator: "" },
+	case: "basics/hello",
+	name: "initial",
+	geometry: snapshot,
+	marker: "m-1",
 });
 
 const baselines = () => {
-  const dir = join(harness.casesDir, "basics", "hello");
-  return {
-    geometry: join(dir, "__expected__", "geometry.initial.json"),
-    png: join(dir, "__screenshots__", "initial-chromium-linux.png"),
-  };
+	const dir = join(harness.casesDir, "basics", "hello");
+	return {
+		geometry: join(dir, "__expected__", "geometry.initial.json"),
+		png: join(dir, "__screenshots__", "initial-chromium-linux.png"),
+	};
 };
 const commit = (path: string, contents: string | Buffer) => {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, contents);
+	mkdirSync(dirname(path), { recursive: true });
+	writeFileSync(path, contents);
 };
 
 describe("ufVisualCapture with live pixels", () => {
-  it("publishes the reference's capture, which is the expectation, and writes nothing committed", async () => {
-    const result = await ufVisualCapture(
-      context("vue", { shots: [png(20, 10)], fonts: inter }),
-      request(),
-    );
-    expect(result).toMatchObject({
-      pass: true,
-      outcome: "published-reference",
-      role: "reference",
-      mode: "check+live",
-    });
-    expect(existsSync(join(harness.liveDir, "basics/hello", "initial.png"))).toBe(true);
-    expect(existsSync(baselines().geometry)).toBe(false);
-  });
+	it("publishes the reference's capture, which is the expectation, and writes nothing committed", async () => {
+		const result = await ufVisualCapture(
+			context("vue", { shots: [png(20, 10)], fonts: inter }),
+			request(),
+		);
+		expect(result).toMatchObject({
+			pass: true,
+			outcome: "published-reference",
+			role: "reference",
+			mode: "check+live",
+		});
+		expect(existsSync(join(harness.liveDir, "basics/hello", "initial.png"))).toBe(true);
+		expect(existsSync(baselines().geometry)).toBe(false);
+	});
 
-  it("matches a follower that renders the same", async () => {
-    await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
-    const result = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: inter }),
-      request(),
-    );
-    expect(result).toMatchObject({
-      pass: true,
-      outcome: "matched",
-      role: "follower",
-      diffPixels: 0,
-    });
-  });
+	it("matches a follower that renders the same", async () => {
+		await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
+		const result = await ufVisualCapture(
+			context("react", { shots: [png(20, 10)], fonts: inter }),
+			request(),
+		);
+		expect(result).toMatchObject({
+			pass: true,
+			outcome: "matched",
+			role: "follower",
+			diffPixels: 0,
+		});
+	});
 
-  it("fails a follower whose geometry differs, first, with the deltas and the images", async () => {
-    await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
-    const result = await ufVisualCapture(
-      context("react", { shots: [png(20, 10, 0)], fonts: inter }),
-      request(geometry(101)),
-    );
-    expect(result.outcome).toBe("geometry-mismatch");
-    expect(result.message).toContain("p[0]  box: [8,8,100,24] → [8,8,101,24]");
-    expect(result.message).toContain("200 pixel(s) differ");
-    expect(result.attachments.map((attachment) => attachment.name)).toEqual([
-      "reference",
-      "actual",
-      "diff",
-    ]);
-    expect(existsSync(join(harness.diffsDir, "basics/hello", "initial.react", "diff.png"))).toBe(
-      true,
-    );
-  });
+	it("fails a follower whose geometry differs, first, with the deltas and the images", async () => {
+		await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
+		const result = await ufVisualCapture(
+			context("react", { shots: [png(20, 10, 0)], fonts: inter }),
+			request(geometry(101)),
+		);
+		expect(result.outcome).toBe("geometry-mismatch");
+		expect(result.message).toContain("p[0]  box: [8,8,100,24] → [8,8,101,24]");
+		expect(result.message).toContain("200 pixel(s) differ");
+		expect(result.attachments.map((attachment) => attachment.name)).toEqual([
+			"reference",
+			"actual",
+			"diff",
+		]);
+		expect(existsSync(join(harness.diffsDir, "basics/hello", "initial.react", "diff.png"))).toBe(
+			true,
+		);
+	});
 
-  it("fails a follower whose pixels differ, counting exact RGBA differences", async () => {
-    await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
-    const result = await ufVisualCapture(
-      context("svelte", { shots: [png(20, 10, 254)], fonts: inter }),
-      request(),
-    );
-    expect(result).toMatchObject({ pass: false, outcome: "pixel-mismatch", diffPixels: 200 });
-  });
+	it("fails a follower whose pixels differ, counting exact RGBA differences", async () => {
+		await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
+		const result = await ufVisualCapture(
+			context("svelte", { shots: [png(20, 10, 254)], fonts: inter }),
+			request(),
+		);
+		expect(result).toMatchObject({ pass: false, outcome: "pixel-mismatch", diffPixels: 200 });
+	});
 
-  it("fails a follower whose capture has another size", async () => {
-    await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
-    const result = await ufVisualCapture(
-      context("solid", { shots: [png(20, 12)], fonts: inter }),
-      request(),
-    );
-    expect(result.outcome).toBe("size-mismatch");
-    expect(result.message).toContain("The capture is 20×12px");
-  });
+	it("fails a follower whose capture has another size", async () => {
+		await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
+		const result = await ufVisualCapture(
+			context("solid", { shots: [png(20, 12)], fonts: inter }),
+			request(),
+		);
+		expect(result.outcome).toBe("size-mismatch");
+		expect(result.message).toContain("The capture is 20×12px");
+	});
 
-  it("accepts pixel differences within a tolerance that has a reason", async () => {
-    await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
-    const result = await ufVisualCapture(
-      context("qwik", { shots: [png(20, 10, 254)], fonts: inter }),
-      {
-        ...request(),
-        tolerance: { maxDiffPixels: 200, reason: "sub-pixel antialiasing in the fixture" },
-      },
-    );
-    expect(result).toMatchObject({
-      pass: true,
-      outcome: "matched-within-tolerance",
-      diffPixels: 200,
-    });
-    await expect(
-      ufVisualCapture(context("qwik", { shots: [png(20, 10)], fonts: inter }), {
-        ...request(),
-        tolerance: { maxDiffPixels: 1, reason: "" },
-      }),
-    ).rejects.toThrow(/tolerance needs a reason/);
-  });
+	it("accepts pixel differences within a tolerance that has a reason", async () => {
+		await ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), request());
+		const result = await ufVisualCapture(
+			context("qwik", { shots: [png(20, 10, 254)], fonts: inter }),
+			{
+				...request(),
+				tolerance: { maxDiffPixels: 200, reason: "sub-pixel antialiasing in the fixture" },
+			},
+		);
+		expect(result).toMatchObject({
+			pass: true,
+			outcome: "matched-within-tolerance",
+			diffPixels: 200,
+		});
+		await expect(
+			ufVisualCapture(context("qwik", { shots: [png(20, 10)], fonts: inter }), {
+				...request(),
+				tolerance: { maxDiffPixels: 1, reason: "" },
+			}),
+		).rejects.toThrow(/tolerance needs a reason/);
+	});
 
-  it("fails a follower when the reference captured nothing in this run", async () => {
-    const result = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: inter }),
-      request(),
-    );
-    expect(result.outcome).toBe("missing-reference-capture");
-    expect(result.message).toMatch(
-      /The reference target \(vue\) did not capture basics\/hello\/initial/,
-    );
-  });
+	it("fails a follower when the reference captured nothing in this run", async () => {
+		const result = await ufVisualCapture(
+			context("react", { shots: [png(20, 10)], fonts: inter }),
+			request(),
+		);
+		expect(result.outcome).toBe("missing-reference-capture");
+		expect(result.message).toMatch(
+			/The reference target \(vue\) did not capture basics\/hello\/initial/,
+		);
+	});
 });
 
 describe("ufVisualCapture when the reference did not finish the case (ADR-0091)", () => {
-  /** The run's projects: each target's browser project, and the SSR projects. */
-  const projects = (...targets: Array<string>) => [
-    ...targets.map((target) => ({
-      name: `browser:${target}`,
-      config: { browser: { enabled: true } },
-      getProvidedContext: () => ({ target }),
-    })),
-    ...["vue", "react"].map((target) => ({
-      name: `ssr:${target}`,
-      config: { browser: { enabled: false } },
-      getProvidedContext: () => ({ target }),
-    })),
-  ];
-  /** A command context in a run of these browser projects. */
-  const inRun = (
-    target: string,
-    run: ReturnType<typeof projects>,
-    overrides: Partial<HarnessContext> = {},
-  ) => {
-    const fake = context(target, { shots: [png(20, 10)], fonts: inter }, overrides);
-    return { ...fake, project: { ...fake.project, vitest: { projects: run } } };
-  };
-  const finish = (target: string, caseId = "basics/hello") =>
-    ufSpecFinished(inRun(target, projects("vue", "react")), { case: caseId });
+	/** The run's projects: each target's browser project, and the SSR projects. */
+	const projects = (...targets: Array<string>) => [
+		...targets.map((target) => ({
+			name: `browser:${target}`,
+			config: { browser: { enabled: true } },
+			getProvidedContext: () => ({ target }),
+		})),
+		...["vue", "react"].map((target) => ({
+			name: `ssr:${target}`,
+			config: { browser: { enabled: false } },
+			getProvidedContext: () => ({ target }),
+		})),
+	];
+	/** A command context in a run of these browser projects. */
+	const inRun = (
+		target: string,
+		run: ReturnType<typeof projects>,
+		overrides: Partial<HarnessContext> = {},
+	) => {
+		const fake = context(target, { shots: [png(20, 10)], fonts: inter }, overrides);
+		return { ...fake, project: { ...fake.project, vitest: { projects: run } } };
+	};
+	const finish = (target: string, caseId = "basics/hello") =>
+		ufSpecFinished(inRun(target, projects("vue", "react")), { case: caseId });
 
-  it("names the reference's project when it is in the run and never finished the case", async () => {
-    const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
-    expect(result).toMatchObject({
-      pass: false,
-      outcome: "reference-not-run",
-      role: "follower",
-      referenceProject: "browser:vue",
-    });
-    expect(result.message).toContain(
-      "The reference's browser project (browser:vue) did not finish basics/hello's spec file",
-    );
-  });
+	it("names the reference's project when it is in the run and never finished the case", async () => {
+		const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
+		expect(result).toMatchObject({
+			pass: false,
+			outcome: "reference-not-run",
+			role: "follower",
+			referenceProject: "browser:vue",
+		});
+		expect(result.message).toContain(
+			"The reference's browser project (browser:vue) did not finish basics/hello's spec file",
+		);
+	});
 
-  it("fails a follower whose reference finished the case without capturing the scenario", async () => {
-    finish("vue");
-    const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
-    expect(result.outcome).toBe("missing-reference-capture");
-    expect(result.referenceProject).toBeUndefined();
-  });
+	it("fails a follower whose reference finished the case without capturing the scenario", async () => {
+		finish("vue");
+		const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
+		expect(result.outcome).toBe("missing-reference-capture");
+		expect(result.referenceProject).toBeUndefined();
+	});
 
-  it("fails a follower whose reference project is filtered out of the run", async () => {
-    const result = await ufVisualCapture(inRun("react", projects("react")), request());
-    expect(result.outcome).toBe("missing-reference-capture");
-    expect(result.message).toContain("must not be filtered out with --project");
-  });
+	it("fails a follower whose reference project is filtered out of the run", async () => {
+		const result = await ufVisualCapture(inRun("react", projects("react")), request());
+		expect(result.outcome).toBe("missing-reference-capture");
+		expect(result.message).toContain("must not be filtered out with --project");
+	});
 
-  it("reads only the reference's browser project, never its SSR project", async () => {
-    const result = await ufVisualCapture(
-      inRun(
-        "react",
-        projects("react").filter((project) => project.name !== "ssr:react"),
-      ),
-      request(),
-    );
-    expect(result.outcome).toBe("missing-reference-capture");
-  });
+	it("reads only the reference's browser project, never its SSR project", async () => {
+		const result = await ufVisualCapture(
+			inRun(
+				"react",
+				projects("react").filter((project) => project.name !== "ssr:react"),
+			),
+			request(),
+		);
+		expect(result.outcome).toBe("missing-reference-capture");
+	});
 
-  it("reads the finished files of this run only", async () => {
-    finish("vue");
-    const result = await ufVisualCapture(
-      inRun("react", projects("vue", "react"), { runId: `${harness.runId}-next` }),
-      request(),
-    );
-    expect(result.outcome).toBe("reference-not-run");
-  });
+	it("reads the finished files of this run only", async () => {
+		finish("vue");
+		const result = await ufVisualCapture(
+			inRun("react", projects("vue", "react"), { runId: `${harness.runId}-next` }),
+			request(),
+		);
+		expect(result.outcome).toBe("reference-not-run");
+	});
 
-  it("reads the reference of a case that names its own", async () => {
-    harness.cases["semantics/listbox"] = { reference: "react" };
-    const result = await ufVisualCapture(inRun("vue", projects("vue", "react")), {
-      ...request(),
-      case: "semantics/listbox",
-    });
-    expect(result).toMatchObject({
-      outcome: "reference-not-run",
-      referenceProject: "browser:react",
-    });
-    finish("react", "semantics/listbox");
-    const after = await ufVisualCapture(inRun("vue", projects("vue", "react")), {
-      ...request(),
-      case: "semantics/listbox",
-    });
-    expect(after.outcome).toBe("missing-reference-capture");
-  });
+	it("reads the reference of a case that names its own", async () => {
+		harness.cases["semantics/listbox"] = { reference: "react" };
+		const result = await ufVisualCapture(inRun("vue", projects("vue", "react")), {
+			...request(),
+			case: "semantics/listbox",
+		});
+		expect(result).toMatchObject({
+			outcome: "reference-not-run",
+			referenceProject: "browser:react",
+		});
+		finish("react", "semantics/listbox");
+		const after = await ufVisualCapture(inRun("vue", projects("vue", "react")), {
+			...request(),
+			case: "semantics/listbox",
+		});
+		expect(after.outcome).toBe("missing-reference-capture");
+	});
 
-  it("applies in update mode too, where the followers read the reference's writes", async () => {
-    const update = {
-      update: true,
-      pixels: "baseline" as const,
-      baselineEnvironment: BASELINE_ENVIRONMENT,
-    };
-    const result = await ufVisualCapture(
-      inRun("react", projects("vue", "react"), update),
-      request(),
-    );
-    expect(result).toMatchObject({ outcome: "reference-not-run", mode: "update+baseline" });
-  });
+	it("applies in update mode too, where the followers read the reference's writes", async () => {
+		const update = {
+			update: true,
+			pixels: "baseline" as const,
+			baselineEnvironment: BASELINE_ENVIRONMENT,
+		};
+		const result = await ufVisualCapture(
+			inRun("react", projects("vue", "react"), update),
+			request(),
+		);
+		expect(result).toMatchObject({ outcome: "reference-not-run", mode: "update+baseline" });
+	});
 
-  it("matches as before once the reference has captured the scenario", async () => {
-    await ufVisualCapture(inRun("vue", projects("vue", "react")), request());
-    const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
-    expect(result).toMatchObject({ pass: true, outcome: "matched" });
-  });
+	it("matches as before once the reference has captured the scenario", async () => {
+		await ufVisualCapture(inRun("vue", projects("vue", "react")), request());
+		const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
+		expect(result).toMatchObject({ pass: true, outcome: "matched" });
+	});
 
-  it("refuses to record a case that is not in the corpus", () => {
-    expect(() => finish("vue", "../outside")).toThrow(/Unknown case/);
-  });
+	it("refuses to record a case that is not in the corpus", () => {
+		expect(() => finish("vue", "../outside")).toThrow(/Unknown case/);
+	});
 });
 
 describe("ufVisualCapture with baseline pixels", () => {
-  const baseline = { pixels: "baseline" } as const;
+	const baseline = { pixels: "baseline" } as const;
 
-  it("compares every target, the reference included, with the committed baselines", async () => {
-    commit(baselines().geometry, `${JSON.stringify(geometry(), null, 2)}\n`);
-    commit(baselines().png, png(20, 10));
-    for (const target of ["vue", "react"]) {
-      const result = await ufVisualCapture(
-        context(target, { shots: [png(20, 10)], fonts: inter }, baseline),
-        request(),
-      );
-      expect(result).toMatchObject({ pass: true, outcome: "matched", mode: "check+baseline" });
-    }
-    const drift = await ufVisualCapture(
-      context("vue", { shots: [png(20, 10)], fonts: inter }, baseline),
-      request(geometry(99)),
-    );
-    expect(drift.outcome).toBe("geometry-mismatch");
-    expect(drift.message).toContain(
-      "Geometry and computed styles differ from cases/basics/hello/__expected__/geometry.initial.json (1)",
-    );
-  });
+	it("compares every target, the reference included, with the committed baselines", async () => {
+		commit(baselines().geometry, `${JSON.stringify(geometry(), null, 2)}\n`);
+		commit(baselines().png, png(20, 10));
+		for (const target of ["vue", "react"]) {
+			const result = await ufVisualCapture(
+				context(target, { shots: [png(20, 10)], fonts: inter }, baseline),
+				request(),
+			);
+			expect(result).toMatchObject({ pass: true, outcome: "matched", mode: "check+baseline" });
+		}
+		const drift = await ufVisualCapture(
+			context("vue", { shots: [png(20, 10)], fonts: inter }, baseline),
+			request(geometry(99)),
+		);
+		expect(drift.outcome).toBe("geometry-mismatch");
+		expect(drift.message).toContain(
+			"Geometry and computed styles differ from cases/basics/hello/__expected__/geometry.initial.json (1)",
+		);
+	});
 
-  it("fails on missing baselines, naming the command that writes them", async () => {
-    const result = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: inter }, baseline),
-      request(),
-    );
-    expect(result.outcome).toBe("missing-artefact");
-    expect(result.message).toBe(
-      "Missing artefact cases/basics/hello/__expected__/geometry.initial.json and cases/basics/hello/__screenshots__/initial-chromium-linux.png. Run `pnpm test:baselines` to write it (the reference target, vue, in the Linux image).",
-    );
-  });
+	it("fails on missing baselines, naming the command that writes them", async () => {
+		const result = await ufVisualCapture(
+			context("react", { shots: [png(20, 10)], fonts: inter }, baseline),
+			request(),
+		);
+		expect(result.outcome).toBe("missing-artefact");
+		expect(result.message).toBe(
+			"Missing artefact cases/basics/hello/__expected__/geometry.initial.json and cases/basics/hello/__screenshots__/initial-chromium-linux.png. Run `pnpm test:baselines` to write it (the reference target, vue, in the Linux image).",
+		);
+	});
 
-  it("lets only the reference write in update mode, and the followers compare with it", async () => {
-    const update = {
-      pixels: "baseline",
-      update: true,
-      baselineEnvironment: BASELINE_ENVIRONMENT,
-    } as const;
-    const follower = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: inter }, update),
-      request(),
-    );
-    expect(follower.outcome).toBe("missing-reference-capture");
-    expect(existsSync(baselines().png)).toBe(false);
+	it("lets only the reference write in update mode, and the followers compare with it", async () => {
+		const update = {
+			pixels: "baseline",
+			update: true,
+			baselineEnvironment: BASELINE_ENVIRONMENT,
+		} as const;
+		const follower = await ufVisualCapture(
+			context("react", { shots: [png(20, 10)], fonts: inter }, update),
+			request(),
+		);
+		expect(follower.outcome).toBe("missing-reference-capture");
+		expect(existsSync(baselines().png)).toBe(false);
 
-    const reference = await ufVisualCapture(
-      context("vue", { shots: [png(20, 10)], fonts: inter }, update),
-      request(),
-    );
-    expect(reference).toMatchObject({
-      pass: true,
-      outcome: "wrote-reference",
-      mode: "update+baseline",
-    });
-    expect(JSON.parse(readFileSync(baselines().geometry, "utf8"))).toEqual(geometry());
-    expect(PNG.sync.read(readFileSync(baselines().png)).width).toBe(20);
+		const reference = await ufVisualCapture(
+			context("vue", { shots: [png(20, 10)], fonts: inter }, update),
+			request(),
+		);
+		expect(reference).toMatchObject({
+			pass: true,
+			outcome: "wrote-reference",
+			mode: "update+baseline",
+		});
+		expect(JSON.parse(readFileSync(baselines().geometry, "utf8"))).toEqual(geometry());
+		expect(PNG.sync.read(readFileSync(baselines().png)).width).toBe(20);
 
-    const after = await ufVisualCapture(
-      context("react", { shots: [png(20, 10, 0)], fonts: inter }, update),
-      request(),
-    );
-    expect(after.outcome).toBe("pixel-mismatch");
-    expect(PNG.sync.read(readFileSync(baselines().png)).data[0]).toBe(255);
-  });
+		const after = await ufVisualCapture(
+			context("react", { shots: [png(20, 10, 0)], fonts: inter }, update),
+			request(),
+		);
+		expect(after.outcome).toBe("pixel-mismatch");
+		expect(PNG.sync.read(readFileSync(baselines().png)).data[0]).toBe(255);
+	});
 
-  it("refuses to write the committed baselines outside the baseline environment", async () => {
-    for (const baselineEnvironment of [
-      null,
-      "mcr.microsoft.com/playwright:v1.63.0-noble linux/arm64",
-    ]) {
-      const result = await ufVisualCapture(
-        context(
-          "vue",
-          { shots: [png(20, 10)], fonts: inter },
-          { pixels: "baseline", update: true, baselineEnvironment },
-        ),
-        request(),
-      );
-      expect(result).toMatchObject({ pass: false, outcome: "refused-write" });
-      expect(result.message).toContain(
-        `the committed baselines come from ${BASELINE_ENVIRONMENT} (\`pnpm test:baselines\`)`,
-      );
-    }
-    expect(existsSync(baselines().png)).toBe(false);
-    expect(existsSync(baselines().geometry)).toBe(false);
-  });
+	it("refuses to write the committed baselines outside the baseline environment", async () => {
+		for (const baselineEnvironment of [
+			null,
+			"mcr.microsoft.com/playwright:v1.63.0-noble linux/arm64",
+		]) {
+			const result = await ufVisualCapture(
+				context(
+					"vue",
+					{ shots: [png(20, 10)], fonts: inter },
+					{ pixels: "baseline", update: true, baselineEnvironment },
+				),
+				request(),
+			);
+			expect(result).toMatchObject({ pass: false, outcome: "refused-write" });
+			expect(result.message).toContain(
+				`the committed baselines come from ${BASELINE_ENVIRONMENT} (\`pnpm test:baselines\`)`,
+			);
+		}
+		expect(existsSync(baselines().png)).toBe(false);
+		expect(existsSync(baselines().geometry)).toBe(false);
+	});
 
-  it("names the reference's capture, not the committed file, when that is what geometry is compared with", async () => {
-    const update = {
-      pixels: "baseline",
-      update: true,
-      baselineEnvironment: BASELINE_ENVIRONMENT,
-    } as const;
-    await ufVisualCapture(
-      context("vue", { shots: [png(20, 10)], fonts: inter }, update),
-      request(),
-    );
-    const result = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: inter }, update),
-      request(geometry(101)),
-    );
-    expect(result.message).toContain(
-      "Geometry and computed styles differ from vue's capture in this run (1)",
-    );
-    expect(result.message).not.toContain("geometry.initial.json");
-  });
+	it("names the reference's capture, not the committed file, when that is what geometry is compared with", async () => {
+		const update = {
+			pixels: "baseline",
+			update: true,
+			baselineEnvironment: BASELINE_ENVIRONMENT,
+		} as const;
+		await ufVisualCapture(
+			context("vue", { shots: [png(20, 10)], fonts: inter }, update),
+			request(),
+		);
+		const result = await ufVisualCapture(
+			context("react", { shots: [png(20, 10)], fonts: inter }, update),
+			request(geometry(101)),
+		);
+		expect(result.message).toContain(
+			"Geometry and computed styles differ from vue's capture in this run (1)",
+		);
+		expect(result.message).not.toContain("geometry.initial.json");
+	});
 });
 
 describe("ufVisualCapture's preconditions", () => {
-  it("fails text rendered with a font outside the bundle, before comparing", async () => {
-    const result = await ufVisualCapture(
-      context("vue", {
-        shots: [png(20, 10)],
-        fonts: {
-          11: [...inter, { familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }],
-        },
-      }),
-      request(),
-    );
-    expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
-    expect(result.message).toContain('<p> rendered 2 glyph(s) with "Hiragino Sans" (system font)');
-  });
+	it("fails text rendered with a font outside the bundle, before comparing", async () => {
+		const result = await ufVisualCapture(
+			context("vue", {
+				shots: [png(20, 10)],
+				fonts: {
+					11: [...inter, { familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }],
+				},
+			}),
+			request(),
+		);
+		expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
+		expect(result.message).toContain('<p> rendered 2 glyph(s) with "Hiragino Sans" (system font)');
+	});
 
-  it("audits user-agent shadow roots and generated content, named after their element", async () => {
-    const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
-    const result = await ufVisualCapture(
-      context("vue", { shots: [png(20, 10)], fonts: { 13: fallback, 16: fallback } }),
-      request(),
-    );
-    expect(result.outcome).toBe("font-fallback");
-    expect(result.message).toBe(
-      [
-        "Text rendered with a font outside the bundle:",
-        '  <p>::before rendered 2 glyph(s) with "Hiragino Sans" (system font)',
-        '  <textarea> rendered 2 glyph(s) with "Hiragino Sans" (system font)',
-      ].join("\n"),
-    );
-  });
+	it("audits user-agent shadow roots and generated content, named after their element", async () => {
+		const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
+		const result = await ufVisualCapture(
+			context("vue", { shots: [png(20, 10)], fonts: { 13: fallback, 16: fallback } }),
+			request(),
+		);
+		expect(result.outcome).toBe("font-fallback");
+		expect(result.message).toBe(
+			[
+				"Text rendered with a font outside the bundle:",
+				'  <p>::before rendered 2 glyph(s) with "Hiragino Sans" (system font)',
+				'  <textarea> rendered 2 glyph(s) with "Hiragino Sans" (system font)',
+			].join("\n"),
+		);
+	});
 
-  it("skips the font audit outside Chromium, where CDP cannot say which font drew a glyph", async () => {
-    const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
-    // A page whose CDP session fails, as Firefox's and WebKit's do.
-    const noCdp = (target: string) =>
-      Object.assign(
-        context(target, { shots: [png(20, 10)], fonts: fallback }, { browser: "firefox" }),
-        {
-          page: {
-            context: () => ({
-              newCDPSession: async () => {
-                throw new Error("CDP session: only Chromium");
-              },
-            }),
-          },
-        },
-      );
-    expect(FONT_AUDIT_SKIP).toMatch(/only Chromium/);
-    await ufVisualCapture(noCdp("vue"), request());
-    const result = await ufVisualCapture(noCdp("react"), request());
-    expect(result).toMatchObject({ pass: true, outcome: "matched", role: "follower" });
-  });
+	it("skips the font audit outside Chromium, where CDP cannot say which font drew a glyph", async () => {
+		const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
+		// A page whose CDP session fails, as Firefox's and WebKit's do.
+		const noCdp = (target: string) =>
+			Object.assign(
+				context(target, { shots: [png(20, 10)], fonts: fallback }, { browser: "firefox" }),
+				{
+					page: {
+						context: () => ({
+							newCDPSession: async () => {
+								throw new Error("CDP session: only Chromium");
+							},
+						}),
+					},
+				},
+			);
+		expect(FONT_AUDIT_SKIP).toMatch(/only Chromium/);
+		await ufVisualCapture(noCdp("vue"), request());
+		const result = await ufVisualCapture(noCdp("react"), request());
+		expect(result).toMatchObject({ pass: true, outcome: "matched", role: "follower" });
+	});
 
-  it("lets the families the project lists draw a live capture (ADR-0105)", async () => {
-    const system = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
-    const web = [{ familyName: "Inkline Sans", isCustomFont: true, glyphCount: 1 }];
-    const listed = { pixels: "live", liveFonts: ["Hiragino Sans", "Inkline Sans"] } as const;
-    const reference = await ufVisualCapture(
-      context("vue", { shots: [png(20, 10)], fonts: [...inter, ...system] }, listed),
-      request(),
-    );
-    expect(reference).toMatchObject({ pass: true, outcome: "published-reference" });
-    const follower = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: web }, listed),
-      request(),
-    );
-    expect(follower).toMatchObject({ pass: true, outcome: "matched" });
-    // Without the list, the bundled font alone.
-    const bundled = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: web }, { liveFonts: [] }),
-      request(),
-    );
-    expect(bundled).toMatchObject({ pass: false, outcome: "font-fallback" });
-  });
+	it("lets the families the project lists draw a live capture (ADR-0105)", async () => {
+		const system = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
+		const web = [{ familyName: "Inkline Sans", isCustomFont: true, glyphCount: 1 }];
+		const listed = { pixels: "live", liveFonts: ["Hiragino Sans", "Inkline Sans"] } as const;
+		const reference = await ufVisualCapture(
+			context("vue", { shots: [png(20, 10)], fonts: [...inter, ...system] }, listed),
+			request(),
+		);
+		expect(reference).toMatchObject({ pass: true, outcome: "published-reference" });
+		const follower = await ufVisualCapture(
+			context("react", { shots: [png(20, 10)], fonts: web }, listed),
+			request(),
+		);
+		expect(follower).toMatchObject({ pass: true, outcome: "matched" });
+		// Without the list, the bundled font alone.
+		const bundled = await ufVisualCapture(
+			context("react", { shots: [png(20, 10)], fonts: web }, { liveFonts: [] }),
+			request(),
+		);
+		expect(bundled).toMatchObject({ pass: false, outcome: "font-fallback" });
+	});
 
-  it("still fails a fallback when a listed font doesn't load, naming the font that drew", async () => {
-    const result = await ufVisualCapture(
-      context(
-        "vue",
-        {
-          shots: [png(20, 10)],
-          fonts: [{ familyName: "Helvetica", isCustomFont: false, glyphCount: 4 }],
-        },
-        { pixels: "live", liveFonts: ["Inkline Sans"] },
-      ),
-      request(),
-    );
-    expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
-    expect(result.message).toContain('rendered 4 glyph(s) with "Helvetica" (system font)');
-  });
+	it("still fails a fallback when a listed font doesn't load, naming the font that drew", async () => {
+		const result = await ufVisualCapture(
+			context(
+				"vue",
+				{
+					shots: [png(20, 10)],
+					fonts: [{ familyName: "Helvetica", isCustomFont: false, glyphCount: 4 }],
+				},
+				{ pixels: "live", liveFonts: ["Inkline Sans"] },
+			),
+			request(),
+		);
+		expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
+		expect(result.message).toContain('rendered 4 glyph(s) with "Helvetica" (system font)');
+	});
 
-  it("keeps the bundled font alone for committed baselines, whatever the project lists", async () => {
-    commit(baselines().png, png(20, 10));
-    commit(baselines().geometry, `${JSON.stringify(geometry(), null, 2)}\n`);
-    for (const target of ["vue", "react"]) {
-      const result = await ufVisualCapture(
-        context(
-          target,
-          {
-            shots: [png(20, 10)],
-            fonts: [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }],
-          },
-          { pixels: "baseline", liveFonts: ["Hiragino Sans"] },
-        ),
-        request(),
-      );
-      expect(result, target).toMatchObject({ pass: false, outcome: "font-fallback" });
-    }
-  });
+	it("keeps the bundled font alone for committed baselines, whatever the project lists", async () => {
+		commit(baselines().png, png(20, 10));
+		commit(baselines().geometry, `${JSON.stringify(geometry(), null, 2)}\n`);
+		for (const target of ["vue", "react"]) {
+			const result = await ufVisualCapture(
+				context(
+					target,
+					{
+						shots: [png(20, 10)],
+						fonts: [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }],
+					},
+					{ pixels: "baseline", liveFonts: ["Hiragino Sans"] },
+				),
+				request(),
+			);
+			expect(result, target).toMatchObject({ pass: false, outcome: "font-fallback" });
+		}
+	});
 
-  it("asks for every element's fonts before it waits for an answer (UXF-896)", async () => {
-    // A session that answers only once the audit has stopped sending: an audit that waits for
-    // each answer before its next request would wait here for ever, so the release below is
-    // what lets it finish, once every request is in.
-    const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
-    const asked: Array<number> = [];
-    let release = () => {};
-    const released = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const held: FakeCdp = {
-      async send(method, params) {
-        if (method === "DOM.getDocument") {
-          return pierced("m-1");
-        }
-        if (method !== "CSS.getPlatformFontsForNode") {
-          return {};
-        }
-        const nodeId = params?.nodeId ?? 0;
-        asked.push(nodeId);
-        await released;
-        return { fonts: nodeId === 13 ? fallback : inter };
-      },
-    };
-    const capture = ufVisualCapture(
-      Object.assign(context("vue", { shots: [png(20, 10)], fonts: inter }), {
-        page: { context: () => ({ newCDPSession: async () => held }) },
-      }),
-      request(),
-    );
-    // The container, the paragraph, its ::before, the textarea and its shadow root's div.
-    await expect.poll(() => asked.toSorted((a, b) => a - b)).toEqual([10, 11, 13, 14, 16]);
-    release();
-    const result = await capture;
-    // The answers are read in the elements' order, as before.
-    expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
-    expect(result.message).toContain('<p>::before rendered 2 glyph(s) with "Hiragino Sans"');
-  });
+	it("asks for every element's fonts before it waits for an answer (UXF-896)", async () => {
+		// A session that answers only once the audit has stopped sending: an audit that waits for
+		// each answer before its next request would wait here for ever, so the release below is
+		// what lets it finish, once every request is in.
+		const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
+		const asked: Array<number> = [];
+		let release = () => {};
+		const released = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const held: FakeCdp = {
+			async send(method, params) {
+				if (method === "DOM.getDocument") {
+					return pierced("m-1");
+				}
+				if (method !== "CSS.getPlatformFontsForNode") {
+					return {};
+				}
+				const nodeId = params?.nodeId ?? 0;
+				asked.push(nodeId);
+				await released;
+				return { fonts: nodeId === 13 ? fallback : inter };
+			},
+		};
+		const capture = ufVisualCapture(
+			Object.assign(context("vue", { shots: [png(20, 10)], fonts: inter }), {
+				page: { context: () => ({ newCDPSession: async () => held }) },
+			}),
+			request(),
+		);
+		// The container, the paragraph, its ::before, the textarea and its shadow root's div.
+		await expect.poll(() => asked.toSorted((a, b) => a - b)).toEqual([10, 11, 13, 14, 16]);
+		release();
+		const result = await capture;
+		// The answers are read in the elements' order, as before.
+		expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
+		expect(result.message).toContain('<p>::before rendered 2 glyph(s) with "Hiragino Sans"');
+	});
 
-  it("rejects a web font that is not the bundled one", async () => {
-    const result = await ufVisualCapture(
-      context("vue", {
-        shots: [png(20, 10)],
-        fonts: [{ familyName: "Roboto", isCustomFont: true, glyphCount: 1 }],
-      }),
-      request(),
-    );
-    expect(result.message).toContain('rendered 1 glyph(s) with "Roboto"');
-  });
+	it("rejects a web font that is not the bundled one", async () => {
+		const result = await ufVisualCapture(
+			context("vue", {
+				shots: [png(20, 10)],
+				fonts: [{ familyName: "Roboto", isCustomFont: true, glyphCount: 1 }],
+			}),
+			request(),
+		);
+		expect(result.message).toContain('rendered 1 glyph(s) with "Roboto"');
+	});
 
-  it("fails when two consecutive screenshots never agree", async () => {
-    const shots = Array.from({ length: 12 }, (_, index) => png(20, 10, index));
-    const result = await ufVisualCapture(context("vue", { shots, fonts: inter }), request());
-    expect(result).toMatchObject({ pass: false, outcome: "unstable" });
-  });
+	it("fails when two consecutive screenshots never agree", async () => {
+		const shots = Array.from({ length: 12 }, (_, index) => png(20, 10, index));
+		const result = await ufVisualCapture(context("vue", { shots, fonts: inter }), request());
+		expect(result).toMatchObject({ pass: false, outcome: "unstable" });
+	});
 
-  it("refuses a container the font audit cannot find, and malformed requests", async () => {
-    await expect(
-      ufVisualCapture(
-        context("vue", { shots: [png(20, 10)], fonts: inter, found: false }),
-        request(),
-      ),
-    ).rejects.toThrow(/could not find the capture container m-1/);
-    for (const name of ["Initial", "after--click", "open-"]) {
-      await expect(
-        ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), {
-          ...request(),
-          name,
-        }),
-      ).rejects.toThrow(/kebab-case/);
-    }
-    await expect(
-      ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), {
-        ...request(),
-        case: "../x",
-      }),
-    ).rejects.toThrow(/Unknown case/);
-  });
+	it("refuses a container the font audit cannot find, and malformed requests", async () => {
+		await expect(
+			ufVisualCapture(
+				context("vue", { shots: [png(20, 10)], fonts: inter, found: false }),
+				request(),
+			),
+		).rejects.toThrow(/could not find the capture container m-1/);
+		for (const name of ["Initial", "after--click", "open-"]) {
+			await expect(
+				ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), {
+					...request(),
+					name,
+				}),
+			).rejects.toThrow(/kebab-case/);
+		}
+		await expect(
+			ufVisualCapture(context("vue", { shots: [png(20, 10)], fonts: inter }), {
+				...request(),
+				case: "../x",
+			}),
+		).rejects.toThrow(/Unknown case/);
+	});
 });

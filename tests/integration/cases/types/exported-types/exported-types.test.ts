@@ -6,11 +6,11 @@ import { expect } from "vitest";
 import Button from "./Button.uf.tsx";
 
 describeTargets("types/exported-types", () => {
-  it("renders with its exported props type", async () => {
-    const view = await mountScenario(Button, "secondary");
-    await view.expectParity("secondary");
-    await expect
-      .element(view.getByRole("button", { name: "Cancel" }))
-      .toHaveClass("button button-secondary");
-  });
+	it("renders with its exported props type", async () => {
+		const view = await mountScenario(Button, "secondary");
+		await view.expectParity("secondary");
+		await expect
+			.element(view.getByRole("button", { name: "Cancel" }))
+			.toHaveClass("button button-secondary");
+	});
 });

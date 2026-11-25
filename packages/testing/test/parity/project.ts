@@ -24,55 +24,55 @@ const scratch = join(packageRoot, ".uf-tmp", "parity");
 
 /** Every case directory under `cases/<area>/<name>`, with its case.json. */
 function fixtureCases(): Record<string, CaseConfig> {
-  const cases: Record<string, CaseConfig> = {};
-  for (const area of readdirSync(casesDir)) {
-    for (const name of readdirSync(join(casesDir, area))) {
-      const file = join(casesDir, area, name, "case.json");
-      cases[`${area}/${name}`] = existsSync(file)
-        ? (JSON.parse(readFileSync(file, "utf8")) as CaseConfig)
-        : {};
-    }
-  }
-  return cases;
+	const cases: Record<string, CaseConfig> = {};
+	for (const area of readdirSync(casesDir)) {
+		for (const name of readdirSync(join(casesDir, area))) {
+			const file = join(casesDir, area, name, "case.json");
+			cases[`${area}/${name}`] = existsSync(file)
+				? (JSON.parse(readFileSync(file, "utf8")) as CaseConfig)
+				: {};
+		}
+	}
+	return cases;
 }
 
 /** The harness context of the fixture run. */
 export function fixtureHarness(
-  env: Readonly<Record<string, string | undefined>>,
-  argv: ReadonlyArray<string> = process.argv,
+	env: Readonly<Record<string, string | undefined>>,
+	argv: ReadonlyArray<string> = process.argv,
 ): HarnessContext {
-  return createHarnessRun({
-    root: scratch,
-    casesDir,
-    reference: "dom",
-    mode: resolveHarnessMode({ env, platform: process.platform, argv, liveOnly: true }),
-    quarantine: [
-      // The quarantine case: L7 fails (no artefacts) and is recorded as quarantined, not failed.
-      { case: "stub/quarantine", target: "dom", layer: "L7", reason: "fixture", issue: "#L7" },
-      // L11 passes: one test cannot tell a stale entry from one another test of the cell still
-      // needs, so the pass is recorded as it is (the run's reporter decides, per cell).
-      { case: "stub/quarantine", target: "dom", layer: "L11", reason: "fixture", issue: "#L11" },
-      // A warning after the last test, recorded on the file as quarantined (late-console.test.ts).
-      {
-        case: "stub/late-console-known",
-        target: "dom",
-        layer: "L13",
-        reason: "fixture",
-        issue: "#late",
-      },
-      // A failing assertion, recorded as quarantined: the test passes unless another layer fails.
-      { case: "stub/behaviour-known", target: "dom", layer: "L8", reason: "fixture", issue: "#L8" },
-      // An entry whose case passes L8: the run's reporter fails it as stale (behaviour.test.ts).
-      {
-        case: "stub/behaviour-stale",
-        target: "dom",
-        layer: "L8",
-        reason: "fixture",
-        issue: "#stale",
-      },
-    ],
-    cases: fixtureCases(),
-  });
+	return createHarnessRun({
+		root: scratch,
+		casesDir,
+		reference: "dom",
+		mode: resolveHarnessMode({ env, platform: process.platform, argv, liveOnly: true }),
+		quarantine: [
+			// The quarantine case: L7 fails (no artefacts) and is recorded as quarantined, not failed.
+			{ case: "stub/quarantine", target: "dom", layer: "L7", reason: "fixture", issue: "#L7" },
+			// L11 passes: one test cannot tell a stale entry from one another test of the cell still
+			// needs, so the pass is recorded as it is (the run's reporter decides, per cell).
+			{ case: "stub/quarantine", target: "dom", layer: "L11", reason: "fixture", issue: "#L11" },
+			// A warning after the last test, recorded on the file as quarantined (late-console.test.ts).
+			{
+				case: "stub/late-console-known",
+				target: "dom",
+				layer: "L13",
+				reason: "fixture",
+				issue: "#late",
+			},
+			// A failing assertion, recorded as quarantined: the test passes unless another layer fails.
+			{ case: "stub/behaviour-known", target: "dom", layer: "L8", reason: "fixture", issue: "#L8" },
+			// An entry whose case passes L8: the run's reporter fails it as stale (behaviour.test.ts).
+			{
+				case: "stub/behaviour-stale",
+				target: "dom",
+				layer: "L8",
+				reason: "fixture",
+				issue: "#stale",
+			},
+		],
+		cases: fixtureCases(),
+	});
 }
 
 /** The reason the stub gives for the one capability it lacks. */
@@ -83,12 +83,12 @@ export const STUB_LISTBOX_REASON = "the stub target renders no list box";
  * requires it is skipped for (`stub/requires`).
  */
 export const STUB_CAPABILITIES: Capabilities = Object.fromEntries(
-  CAPABILITY_NAMES.map((name): [string, CapabilityCell] => [
-    name,
-    name === "listbox"
-      ? { support: "unsupported", code: "UF4001", severity: "info", reason: STUB_LISTBOX_REASON }
-      : { support: "native" },
-  ]),
+	CAPABILITY_NAMES.map((name): [string, CapabilityCell] => [
+		name,
+		name === "listbox"
+			? { support: "unsupported", code: "UF4001", severity: "info", reason: STUB_LISTBOX_REASON }
+			: { support: "native" },
+	]),
 ) as Capabilities;
 
 /**
@@ -98,25 +98,25 @@ export const STUB_CAPABILITIES: Capabilities = Object.fromEntries(
  * that fail on purpose.
  */
 export function parityProject(
-  env: Readonly<Record<string, string | undefined>> = process.env,
-  include: ReadonlyArray<string> = ["test/parity/cases/**/*.parity.spec.ts"],
+	env: Readonly<Record<string, string | undefined>> = process.env,
+	include: ReadonlyArray<string> = ["test/parity/cases/**/*.parity.spec.ts"],
 ): TestProjectInlineConfiguration {
-  return {
-    extends: false,
-    test: {
-      name: "parity",
-      root: packageRoot,
-      include: [...include],
-      provide: {
-        target: "dom",
-        ufHarness: fixtureHarness(env),
-        ufCapabilities: STUB_CAPABILITIES,
-      },
-      // The harness's: the setup bounds `expect.element` by the poll timeout, and requires one.
-      expect: { requireAssertions: true, poll: { timeout: 5000 } },
-      browser: parityBrowser({ name: "parity" }),
-    },
-  };
+	return {
+		extends: false,
+		test: {
+			name: "parity",
+			root: packageRoot,
+			include: [...include],
+			provide: {
+				target: "dom",
+				ufHarness: fixtureHarness(env),
+				ufCapabilities: STUB_CAPABILITIES,
+			},
+			// The harness's: the setup bounds `expect.element` by the poll timeout, and requires one.
+			expect: { requireAssertions: true, poll: { timeout: 5000 } },
+			browser: parityBrowser({ name: "parity" }),
+		},
+	};
 }
 
 /**
@@ -124,14 +124,14 @@ export function parityProject(
  * mounts with, and the main component is the case's `component.ts`, which the spec imports.
  */
 function stubHydrationRender(
-  _context: unknown,
-  request: { case: string; props: Record<string, unknown> },
+	_context: unknown,
+	request: { case: string; props: Record<string, unknown> },
 ): { html: string; console: []; module: string } {
-  const html = request.props.server;
-  if (typeof html !== "string") {
-    throw new Error("A hydrate fixture passes its server HTML as `server`.");
-  }
-  return { html, console: [], module: `/test/parity/cases/${request.case}/component.ts` };
+	const html = request.props.server;
+	if (typeof html !== "string") {
+		throw new Error("A hydrate fixture passes its server HTML as `server`.");
+	}
+	return { html, console: [], module: `/test/parity/cases/${request.case}/component.ts` };
 }
 
 /**
@@ -140,25 +140,25 @@ function stubHydrationRender(
  * `*.hydrate.spec.ts` specs, which check that each of L12's own sub-checks fails on its own.
  */
 export function hydrateParityProject(
-  env: Readonly<Record<string, string | undefined>> = process.env,
+	env: Readonly<Record<string, string | undefined>> = process.env,
 ): TestProjectInlineConfiguration {
-  return {
-    extends: false,
-    test: {
-      name: "parity-hydrate",
-      root: packageRoot,
-      include: ["test/parity/cases/hydrate/**/*.hydrate.spec.ts"],
-      provide: {
-        target: "dom",
-        ufHarness: fixtureHarness(env),
-        ufCapabilities: STUB_CAPABILITIES,
-        ufHydrate: true,
-      },
-      expect: { requireAssertions: true, poll: { timeout: 5000 } },
-      browser: parityBrowser({
-        name: "parity-hydrate",
-        commands: { ufHydrationRender: stubHydrationRender },
-      }),
-    },
-  };
+	return {
+		extends: false,
+		test: {
+			name: "parity-hydrate",
+			root: packageRoot,
+			include: ["test/parity/cases/hydrate/**/*.hydrate.spec.ts"],
+			provide: {
+				target: "dom",
+				ufHarness: fixtureHarness(env),
+				ufCapabilities: STUB_CAPABILITIES,
+				ufHydrate: true,
+			},
+			expect: { requireAssertions: true, poll: { timeout: 5000 } },
+			browser: parityBrowser({
+				name: "parity-hydrate",
+				commands: { ufHydrationRender: stubHydrationRender },
+			}),
+		},
+	};
 }

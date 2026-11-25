@@ -12,43 +12,43 @@ import type { RenderContext } from "./render.ts";
  * that the first did not is reported.
  */
 export function probe(render: RenderContext): RenderContext {
-  return {
-    ...render,
-    reporter: new Reporter(render.reporter.file),
-    // Each tag lowers the props' rest it spreads once, so a later tag's must not find the first
-    // tag's spread (UF2001, ADR-0122).
-    ...(render.restProps ? { restProps: { ...render.restProps } } : {}),
-    bindings: [...render.bindings],
-    attached: new Map(render.attached),
-    loopVariables: new Map(render.loopVariables),
-    facts: {
-      nestedCalls: [...render.facts.nestedCalls],
-      getterKinds: new Map(render.facts.getterKinds),
-      tickCallbacks: [...render.facts.tickCallbacks],
-      passed: new Map(render.facts.passed),
-    },
-  };
+	return {
+		...render,
+		reporter: new Reporter(render.reporter.file),
+		// Each tag lowers the props' rest it spreads once, so a later tag's must not find the first
+		// tag's spread (UF2001, ADR-0122).
+		...(render.restProps ? { restProps: { ...render.restProps } } : {}),
+		bindings: [...render.bindings],
+		attached: new Map(render.attached),
+		loopVariables: new Map(render.loopVariables),
+		facts: {
+			nestedCalls: [...render.facts.nestedCalls],
+			getterKinds: new Map(render.facts.getterKinds),
+			tickCallbacks: [...render.facts.tickCallbacks],
+			passed: new Map(render.facts.passed),
+		},
+	};
 }
 
 /** Reports what each later candidate's check found that the first one's did not. */
 export function merge(
-  render: RenderContext,
-  mark: number,
-  probes: ReadonlyArray<RenderContext>,
+	render: RenderContext,
+	mark: number,
+	probes: ReadonlyArray<RenderContext>,
 ): void {
-  const seen = new Set(
-    render.reporter.diagnostics
-      .slice(mark)
-      .map((each) => `${each.code} ${each.span.start} ${each.message}`),
-  );
-  for (const each of probes) {
-    for (const diagnostic of each.reporter.diagnostics) {
-      const key = `${diagnostic.code} ${diagnostic.span.start} ${diagnostic.message}`;
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      render.reporter.diagnostics.push(diagnostic);
-    }
-  }
+	const seen = new Set(
+		render.reporter.diagnostics
+			.slice(mark)
+			.map((each) => `${each.code} ${each.span.start} ${each.message}`),
+	);
+	for (const each of probes) {
+		for (const diagnostic of each.reporter.diagnostics) {
+			const key = `${diagnostic.code} ${diagnostic.span.start} ${diagnostic.message}`;
+			if (seen.has(key)) {
+				continue;
+			}
+			seen.add(key);
+			render.reporter.diagnostics.push(diagnostic);
+		}
+	}
 }

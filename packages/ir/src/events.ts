@@ -22,102 +22,102 @@ import { table, words } from "./tables.ts";
  * ({@link UNSUPPORTED_EVENTS}).
  */
 export const DOM_EVENTS: ReadonlyMap<string, string> = table({
-  abort: "UIEvent",
-  animationcancel: "AnimationEvent",
-  animationend: "AnimationEvent",
-  animationiteration: "AnimationEvent",
-  animationstart: "AnimationEvent",
-  auxclick: "PointerEvent",
-  beforeinput: "InputEvent",
-  beforetoggle: "ToggleEvent",
-  blur: "FocusEvent",
-  cancel: "Event",
-  canplay: "Event",
-  canplaythrough: "Event",
-  change: "Event",
-  click: "PointerEvent",
-  close: "Event",
-  command: "Event",
-  compositionend: "CompositionEvent",
-  compositionstart: "CompositionEvent",
-  compositionupdate: "CompositionEvent",
-  contextmenu: "PointerEvent",
-  copy: "ClipboardEvent",
-  cut: "ClipboardEvent",
-  dblclick: "MouseEvent",
-  drag: "DragEvent",
-  dragend: "DragEvent",
-  dragenter: "DragEvent",
-  dragleave: "DragEvent",
-  dragover: "DragEvent",
-  dragstart: "DragEvent",
-  drop: "DragEvent",
-  durationchange: "Event",
-  emptied: "Event",
-  encrypted: "MediaEncryptedEvent",
-  ended: "Event",
-  error: "ErrorEvent",
-  focus: "FocusEvent",
-  focusin: "FocusEvent",
-  focusout: "FocusEvent",
-  formdata: "FormDataEvent",
-  fullscreenchange: "Event",
-  fullscreenerror: "Event",
-  gotpointercapture: "PointerEvent",
-  input: "InputEvent",
-  invalid: "Event",
-  keydown: "KeyboardEvent",
-  keypress: "KeyboardEvent",
-  keyup: "KeyboardEvent",
-  load: "Event",
-  loadeddata: "Event",
-  loadedmetadata: "Event",
-  loadstart: "Event",
-  lostpointercapture: "PointerEvent",
-  mousedown: "MouseEvent",
-  mouseenter: "MouseEvent",
-  mouseleave: "MouseEvent",
-  mousemove: "MouseEvent",
-  mouseout: "MouseEvent",
-  mouseover: "MouseEvent",
-  mouseup: "MouseEvent",
-  paste: "ClipboardEvent",
-  pause: "Event",
-  play: "Event",
-  playing: "Event",
-  pointercancel: "PointerEvent",
-  pointerdown: "PointerEvent",
-  pointerenter: "PointerEvent",
-  pointerleave: "PointerEvent",
-  pointermove: "PointerEvent",
-  pointerout: "PointerEvent",
-  pointerover: "PointerEvent",
-  pointerup: "PointerEvent",
-  progress: "ProgressEvent",
-  ratechange: "Event",
-  reset: "Event",
-  scroll: "Event",
-  scrollend: "Event",
-  securitypolicyviolation: "SecurityPolicyViolationEvent",
-  seeked: "Event",
-  seeking: "Event",
-  select: "Event",
-  stalled: "Event",
-  submit: "SubmitEvent",
-  suspend: "Event",
-  timeupdate: "Event",
-  toggle: "ToggleEvent",
-  touchcancel: "TouchEvent",
-  touchend: "TouchEvent",
-  touchmove: "TouchEvent",
-  touchstart: "TouchEvent",
-  transitioncancel: "TransitionEvent",
-  transitionend: "TransitionEvent",
-  transitionrun: "TransitionEvent",
-  transitionstart: "TransitionEvent",
-  volumechange: "Event",
-  waiting: "Event",
-  wheel: "WheelEvent",
+	abort: "UIEvent",
+	animationcancel: "AnimationEvent",
+	animationend: "AnimationEvent",
+	animationiteration: "AnimationEvent",
+	animationstart: "AnimationEvent",
+	auxclick: "PointerEvent",
+	beforeinput: "InputEvent",
+	beforetoggle: "ToggleEvent",
+	blur: "FocusEvent",
+	cancel: "Event",
+	canplay: "Event",
+	canplaythrough: "Event",
+	change: "Event",
+	click: "PointerEvent",
+	close: "Event",
+	command: "Event",
+	compositionend: "CompositionEvent",
+	compositionstart: "CompositionEvent",
+	compositionupdate: "CompositionEvent",
+	contextmenu: "PointerEvent",
+	copy: "ClipboardEvent",
+	cut: "ClipboardEvent",
+	dblclick: "MouseEvent",
+	drag: "DragEvent",
+	dragend: "DragEvent",
+	dragenter: "DragEvent",
+	dragleave: "DragEvent",
+	dragover: "DragEvent",
+	dragstart: "DragEvent",
+	drop: "DragEvent",
+	durationchange: "Event",
+	emptied: "Event",
+	encrypted: "MediaEncryptedEvent",
+	ended: "Event",
+	error: "ErrorEvent",
+	focus: "FocusEvent",
+	focusin: "FocusEvent",
+	focusout: "FocusEvent",
+	formdata: "FormDataEvent",
+	fullscreenchange: "Event",
+	fullscreenerror: "Event",
+	gotpointercapture: "PointerEvent",
+	input: "InputEvent",
+	invalid: "Event",
+	keydown: "KeyboardEvent",
+	keypress: "KeyboardEvent",
+	keyup: "KeyboardEvent",
+	load: "Event",
+	loadeddata: "Event",
+	loadedmetadata: "Event",
+	loadstart: "Event",
+	lostpointercapture: "PointerEvent",
+	mousedown: "MouseEvent",
+	mouseenter: "MouseEvent",
+	mouseleave: "MouseEvent",
+	mousemove: "MouseEvent",
+	mouseout: "MouseEvent",
+	mouseover: "MouseEvent",
+	mouseup: "MouseEvent",
+	paste: "ClipboardEvent",
+	pause: "Event",
+	play: "Event",
+	playing: "Event",
+	pointercancel: "PointerEvent",
+	pointerdown: "PointerEvent",
+	pointerenter: "PointerEvent",
+	pointerleave: "PointerEvent",
+	pointermove: "PointerEvent",
+	pointerout: "PointerEvent",
+	pointerover: "PointerEvent",
+	pointerup: "PointerEvent",
+	progress: "ProgressEvent",
+	ratechange: "Event",
+	reset: "Event",
+	scroll: "Event",
+	scrollend: "Event",
+	securitypolicyviolation: "SecurityPolicyViolationEvent",
+	seeked: "Event",
+	seeking: "Event",
+	select: "Event",
+	stalled: "Event",
+	submit: "SubmitEvent",
+	suspend: "Event",
+	timeupdate: "Event",
+	toggle: "ToggleEvent",
+	touchcancel: "TouchEvent",
+	touchend: "TouchEvent",
+	touchmove: "TouchEvent",
+	touchstart: "TouchEvent",
+	transitioncancel: "TransitionEvent",
+	transitionend: "TransitionEvent",
+	transitionrun: "TransitionEvent",
+	transitionstart: "TransitionEvent",
+	volumechange: "Event",
+	waiting: "Event",
+	wheel: "WheelEvent",
 });
 
 /**
@@ -125,26 +125,26 @@ export const DOM_EVENTS: ReadonlyMap<string, string> = table({
  * `<body>` name them, but a listener on any element of a component never runs (UF3006).
  */
 export const WINDOW_EVENTS: ReadonlyMap<string, string> = table({
-  afterprint: "Event",
-  beforeprint: "Event",
-  beforeunload: "BeforeUnloadEvent",
-  gamepadconnected: "GamepadEvent",
-  gamepaddisconnected: "GamepadEvent",
-  hashchange: "HashChangeEvent",
-  languagechange: "Event",
-  message: "MessageEvent",
-  messageerror: "MessageEvent",
-  offline: "Event",
-  online: "Event",
-  pagehide: "PageTransitionEvent",
-  pagereveal: "PageRevealEvent",
-  pageshow: "PageTransitionEvent",
-  pageswap: "PageSwapEvent",
-  popstate: "PopStateEvent",
-  rejectionhandled: "PromiseRejectionEvent",
-  storage: "StorageEvent",
-  unhandledrejection: "PromiseRejectionEvent",
-  unload: "Event",
+	afterprint: "Event",
+	beforeprint: "Event",
+	beforeunload: "BeforeUnloadEvent",
+	gamepadconnected: "GamepadEvent",
+	gamepaddisconnected: "GamepadEvent",
+	hashchange: "HashChangeEvent",
+	languagechange: "Event",
+	message: "MessageEvent",
+	messageerror: "MessageEvent",
+	offline: "Event",
+	online: "Event",
+	pagehide: "PageTransitionEvent",
+	pagereveal: "PageRevealEvent",
+	pageshow: "PageTransitionEvent",
+	pageswap: "PageSwapEvent",
+	popstate: "PopStateEvent",
+	rejectionhandled: "PromiseRejectionEvent",
+	storage: "StorageEvent",
+	unhandledrejection: "PromiseRejectionEvent",
+	unload: "Event",
 });
 
 /**
@@ -153,20 +153,20 @@ export const WINDOW_EVENTS: ReadonlyMap<string, string> = table({
  * (UF3006) rather than as an unknown attribute.
  */
 export const UNSUPPORTED_EVENTS: ReadonlyMap<string, string> = table({
-  beforematch:
-    "the authoring types (Vue's JSX types) do not declare it, and it fires only on content hidden `until-found`",
-  contextlost: "the authoring types do not declare it: it fires on a `<canvas>` losing its context",
-  contextrestored:
-    "the authoring types do not declare it: it fires on a `<canvas>` getting its context back",
-  cuechange: "the authoring types do not declare it: it fires on a `<track>`",
-  dragexit: "no browser fires it any more: HTML removed it",
-  pointerrawupdate: "the authoring types do not declare it, and only secure contexts fire it",
-  resize:
-    "only the window and media elements receive it, and the authoring types do not declare it",
-  selectionchange:
-    "the document receives it, and text controls only in some browsers; the authoring types do not declare it",
-  selectstart: "the authoring types do not declare it",
-  slotchange: "it fires on a `<slot>`, which a component does not render",
+	beforematch:
+		"the authoring types (Vue's JSX types) do not declare it, and it fires only on content hidden `until-found`",
+	contextlost: "the authoring types do not declare it: it fires on a `<canvas>` losing its context",
+	contextrestored:
+		"the authoring types do not declare it: it fires on a `<canvas>` getting its context back",
+	cuechange: "the authoring types do not declare it: it fires on a `<track>`",
+	dragexit: "no browser fires it any more: HTML removed it",
+	pointerrawupdate: "the authoring types do not declare it, and only secure contexts fire it",
+	resize:
+		"only the window and media elements receive it, and the authoring types do not declare it",
+	selectionchange:
+		"the document receives it, and text controls only in some browsers; the authoring types do not declare it",
+	selectstart: "the authoring types do not declare it",
+	slotchange: "it fires on a `<slot>`, which a component does not render",
 });
 
 /**
@@ -183,38 +183,38 @@ export const PASSIVE_EVENTS: ReadonlySet<string> = words("wheel touchstart touch
  * interface or one it extends (`MouseEvent` for a `click`, whose interface is `PointerEvent`).
  */
 export const EVENT_INTERFACES: ReadonlyMap<string, string | null> = table<string | null>({
-  Event: null,
-  UIEvent: "Event",
-  MouseEvent: "UIEvent",
-  PointerEvent: "MouseEvent",
-  DragEvent: "MouseEvent",
-  WheelEvent: "MouseEvent",
-  KeyboardEvent: "UIEvent",
-  FocusEvent: "UIEvent",
-  InputEvent: "UIEvent",
-  CompositionEvent: "UIEvent",
-  TouchEvent: "UIEvent",
-  AnimationEvent: "Event",
-  TransitionEvent: "Event",
-  ClipboardEvent: "Event",
-  SubmitEvent: "Event",
-  ToggleEvent: "Event",
-  ErrorEvent: "Event",
-  ProgressEvent: "Event",
-  FormDataEvent: "Event",
-  SecurityPolicyViolationEvent: "Event",
-  MediaEncryptedEvent: "Event",
+	Event: null,
+	UIEvent: "Event",
+	MouseEvent: "UIEvent",
+	PointerEvent: "MouseEvent",
+	DragEvent: "MouseEvent",
+	WheelEvent: "MouseEvent",
+	KeyboardEvent: "UIEvent",
+	FocusEvent: "UIEvent",
+	InputEvent: "UIEvent",
+	CompositionEvent: "UIEvent",
+	TouchEvent: "UIEvent",
+	AnimationEvent: "Event",
+	TransitionEvent: "Event",
+	ClipboardEvent: "Event",
+	SubmitEvent: "Event",
+	ToggleEvent: "Event",
+	ErrorEvent: "Event",
+	ProgressEvent: "Event",
+	FormDataEvent: "Event",
+	SecurityPolicyViolationEvent: "Event",
+	MediaEncryptedEvent: "Event",
 });
 
 /** Whether an event interface is `ancestor` or extends it (`PointerEvent` extends `MouseEvent`). */
 export function extendsEventInterface(name: string, ancestor: string): boolean {
-  for (let current: string | null | undefined = name; current;) {
-    if (current === ancestor) {
-      return true;
-    }
-    current = EVENT_INTERFACES.get(current);
-  }
-  return false;
+	for (let current: string | null | undefined = name; current;) {
+		if (current === ancestor) {
+			return true;
+		}
+		current = EVENT_INTERFACES.get(current);
+	}
+	return false;
 }
 
 /** The members both the DOM's `Event` and every React synthetic event carry. */
@@ -245,34 +245,34 @@ const MOUSE_EVENT_MEMBERS = `
  * gets React's mouse event).
  */
 export const PORTABLE_EVENT_MEMBERS: ReadonlyMap<string, ReadonlySet<string>> = new Map(
-  Object.entries({
-    Event: EVENT_MEMBERS,
-    UIEvent: UI_EVENT_MEMBERS,
-    MouseEvent: MOUSE_EVENT_MEMBERS,
-    PointerEvent: `${MOUSE_EVENT_MEMBERS} height isPrimary pointerId pointerType pressure tangentialPressure tiltX tiltY twist width`,
-    DragEvent: `${MOUSE_EVENT_MEMBERS} dataTransfer`,
-    WheelEvent: `${MOUSE_EVENT_MEMBERS} deltaMode deltaX deltaY deltaZ`,
-    KeyboardEvent: `${UI_EVENT_MEMBERS} altKey code ctrlKey getModifierState key location metaKey repeat shiftKey`,
-    FocusEvent: `${EVENT_MEMBERS} relatedTarget`,
-    InputEvent: `${EVENT_MEMBERS} data`,
-    CompositionEvent: `${EVENT_MEMBERS} data`,
-    TouchEvent: `${UI_EVENT_MEMBERS} altKey changedTouches ctrlKey metaKey shiftKey targetTouches touches`,
-    AnimationEvent: `${EVENT_MEMBERS} animationName elapsedTime pseudoElement`,
-    TransitionEvent: `${EVENT_MEMBERS} elapsedTime propertyName pseudoElement`,
-    ClipboardEvent: `${EVENT_MEMBERS} clipboardData`,
-    SubmitEvent: `${EVENT_MEMBERS} submitter`,
-    ToggleEvent: `${EVENT_MEMBERS} newState oldState`,
-    ErrorEvent: `${EVENT_MEMBERS} colno error filename lineno message`,
-    ProgressEvent: `${EVENT_MEMBERS} lengthComputable loaded total`,
-    FormDataEvent: `${EVENT_MEMBERS} formData`,
-    SecurityPolicyViolationEvent: `${EVENT_MEMBERS} blockedURI columnNumber disposition documentURI effectiveDirective lineNumber originalPolicy referrer sample sourceFile statusCode violatedDirective`,
-    MediaEncryptedEvent: `${EVENT_MEMBERS} initData initDataType`,
-  }).map(([name, members]) => [name, words(members)]),
+	Object.entries({
+		Event: EVENT_MEMBERS,
+		UIEvent: UI_EVENT_MEMBERS,
+		MouseEvent: MOUSE_EVENT_MEMBERS,
+		PointerEvent: `${MOUSE_EVENT_MEMBERS} height isPrimary pointerId pointerType pressure tangentialPressure tiltX tiltY twist width`,
+		DragEvent: `${MOUSE_EVENT_MEMBERS} dataTransfer`,
+		WheelEvent: `${MOUSE_EVENT_MEMBERS} deltaMode deltaX deltaY deltaZ`,
+		KeyboardEvent: `${UI_EVENT_MEMBERS} altKey code ctrlKey getModifierState key location metaKey repeat shiftKey`,
+		FocusEvent: `${EVENT_MEMBERS} relatedTarget`,
+		InputEvent: `${EVENT_MEMBERS} data`,
+		CompositionEvent: `${EVENT_MEMBERS} data`,
+		TouchEvent: `${UI_EVENT_MEMBERS} altKey changedTouches ctrlKey metaKey shiftKey targetTouches touches`,
+		AnimationEvent: `${EVENT_MEMBERS} animationName elapsedTime pseudoElement`,
+		TransitionEvent: `${EVENT_MEMBERS} elapsedTime propertyName pseudoElement`,
+		ClipboardEvent: `${EVENT_MEMBERS} clipboardData`,
+		SubmitEvent: `${EVENT_MEMBERS} submitter`,
+		ToggleEvent: `${EVENT_MEMBERS} newState oldState`,
+		ErrorEvent: `${EVENT_MEMBERS} colno error filename lineno message`,
+		ProgressEvent: `${EVENT_MEMBERS} lengthComputable loaded total`,
+		FormDataEvent: `${EVENT_MEMBERS} formData`,
+		SecurityPolicyViolationEvent: `${EVENT_MEMBERS} blockedURI columnNumber disposition documentURI effectiveDirective lineNumber originalPolicy referrer sample sourceFile statusCode violatedDirective`,
+		MediaEncryptedEvent: `${EVENT_MEMBERS} initData initDataType`,
+	}).map(([name, members]) => [name, words(members)]),
 );
 
 /** The members of {@link PORTABLE_EVENT_MEMBERS} that are methods: a handler only calls them. */
 export const EVENT_METHODS: ReadonlySet<string> = words(
-  "preventDefault stopPropagation getModifierState",
+	"preventDefault stopPropagation getModifierState",
 );
 
 /**
@@ -282,15 +282,15 @@ export const EVENT_METHODS: ReadonlySet<string> = words(
  * `beforeinput`'s synthetic event holds `data` alone, which its `InputEvent` entry reflects.
  */
 const PORTABLE_OVERRIDES: ReadonlyMap<string, string> = new Map([
-  ...[
-    ...words(`
+	...[
+		...words(`
       abort cancel canplay canplaythrough change close durationchange emptied encrypted ended error
       fullscreenchange fullscreenerror input invalid load loadeddata loadedmetadata loadstart pause
       play playing progress ratechange reset scroll scrollend seeked seeking select stalled suspend
       timeupdate transitioncancel transitionrun transitionstart volumechange waiting
     `),
-  ].map((event) => [event, "Event"] as const),
-  ...[...words("auxclick click contextmenu")].map((event) => [event, "MouseEvent"] as const),
+	].map((event) => [event, "Event"] as const),
+	...[...words("auxclick click contextmenu")].map((event) => [event, "MouseEvent"] as const),
 ]);
 
 /**
@@ -300,5 +300,5 @@ const PORTABLE_OVERRIDES: ReadonlyMap<string, string> = new Map([
  * `formdata`, `securitypolicyviolation`) keeps its DOM interface: React listens to it natively.
  */
 export const PORTABLE_EVENT_INTERFACES: ReadonlyMap<string, string> = new Map(
-  [...DOM_EVENTS].map(([event, dom]) => [event, PORTABLE_OVERRIDES.get(event) ?? dom]),
+	[...DOM_EVENTS].map(([event, dom]) => [event, PORTABLE_OVERRIDES.get(event) ?? dom]),
 );

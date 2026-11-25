@@ -5,5 +5,5 @@ import type { FieldProps } from "../../../../../integration/cases/types/child-ty
 const field: FieldProps = { name: 1, label: "Email" };
 
 export function MisuseType() {
-  return <Field name="email" label={field.label} />;
+	return <Field name="email" label={field.label} />;
 }

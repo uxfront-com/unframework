@@ -5,14 +5,14 @@ import type { Component } from "solid-js";
  * "comp is not a function", far from the import that went wrong.
  */
 export function asComponent(value: unknown): Component<Record<string, unknown>> {
-  if (isComponent(value)) {
-    return value;
-  }
-  throw new TypeError(
-    `Expected a Solid component, received ${value === null ? "null" : typeof value}.`,
-  );
+	if (isComponent(value)) {
+		return value;
+	}
+	throw new TypeError(
+		`Expected a Solid component, received ${value === null ? "null" : typeof value}.`,
+	);
 }
 
 function isComponent(value: unknown): value is Component<Record<string, unknown>> {
-  return typeof value === "function";
+	return typeof value === "function";
 }

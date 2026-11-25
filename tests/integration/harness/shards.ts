@@ -21,24 +21,24 @@ export const SSR_SHARDS: Readonly<Record<string, number>> = { angular: 4 };
  * target runs, of which a project runs the first ones. Each count is in one place.
  */
 export const SHARDS: Readonly<Record<ShardKind, number>> = {
-  "canaries-corpus": 4,
-  ssr: Math.max(1, ...Object.values(SSR_SHARDS)),
+	"canaries-corpus": 4,
+	ssr: Math.max(1, ...Object.values(SSR_SHARDS)),
 };
 
 /** The share of `items` that shard `index` of `count` takes: every item whose position, modulo
  * the count, is the index. Over `0 … count - 1`, the shards hold every item exactly once. */
 export function shardOf<T>(items: ReadonlyArray<T>, index: number, count: number): Array<T> {
-  if (!Number.isInteger(count) || count < 1) {
-    throw new Error(`A shard count must be a whole number of at least 1, not ${count}.`);
-  }
-  if (!Number.isInteger(index) || index < 0 || index >= count) {
-    throw new Error(`Shard ${index} is not one of the ${count} shards (0 to ${count - 1}).`);
-  }
-  return items.filter((_, position) => position % count === index);
+	if (!Number.isInteger(count) || count < 1) {
+		throw new Error(`A shard count must be a whole number of at least 1, not ${count}.`);
+	}
+	if (!Number.isInteger(index) || index < 0 || index >= count) {
+		throw new Error(`Shard ${index} is not one of the ${count} shards (0 to ${count - 1}).`);
+	}
+	return items.filter((_, position) => position % count === index);
 }
 
 /** The shard files of a kind, relative to the integration root: `harness/<kind>.<k>.<suffix>`. */
 export function shardFiles(kind: ShardKind, count: number = SHARDS[kind]): Array<string> {
-  const suffix = kind === "ssr" ? "test.ts" : "unit.test.ts";
-  return Array.from({ length: count }, (_, index) => `harness/${kind}.${index}.${suffix}`);
+	const suffix = kind === "ssr" ? "test.ts" : "unit.test.ts";
+	return Array.from({ length: count }, (_, index) => `harness/${kind}.${index}.${suffix}`);
 }

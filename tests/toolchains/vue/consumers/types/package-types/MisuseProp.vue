@@ -3,6 +3,6 @@ import Status from "../../../../../integration/cases/types/package-types/__outpu
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Status.prop:interval -->
-  <Status label="Feed" value="tick" interval="fast" />
+	<!-- @uf-expect TS2322 Status.prop:interval -->
+	<Status label="Feed" value="tick" interval="fast" />
 </template>

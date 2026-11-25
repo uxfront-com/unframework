@@ -25,15 +25,15 @@ export const toolchainDir: string = join(repoRoot, "tests/toolchains/vue");
 
 /** Every file under a directory, recursively, as absolute paths. */
 function filesUnder(directory: string): Array<string> {
-  return readdirSync(directory, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => join(entry.parentPath, entry.name))
-    .toSorted();
+	return readdirSync(directory, { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile())
+		.map((entry) => join(entry.parentPath, entry.name))
+		.toSorted();
 }
 
 /** The committed Vue golden outputs of the integration corpus. */
 export function goldenFiles(): Array<string> {
-  return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.vue$/.test(path));
+	return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.vue$/.test(path));
 }
 
 /**
@@ -41,7 +41,7 @@ export function goldenFiles(): Array<string> {
  * output tree (ADR-0070), whose types a `defineProps<X>()` imports (ADR-0067).
  */
 export function goldenModules(): Array<string> {
-  return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.ts$/.test(path));
+	return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.ts$/.test(path));
 }
 
 /**
@@ -49,38 +49,38 @@ export function goldenModules(): Array<string> {
  * case of several, ADR-0057), with the directory its golden outputs live in.
  */
 export function corpus(): Array<{ name: string; module: UfModule; outputDir: string }> {
-  return filesUnder(casesDir)
-    .filter((path) => /\/__output__\/ir(?:\.[^./]+)?\.json$/.test(path))
-    .map((path) => {
-      const directory = path.slice(0, path.lastIndexOf("/__output__/"));
-      const stem = /ir\.([^./]+)\.json$/.exec(path)?.[1];
-      return {
-        name: `${directory.slice(casesDir.length + 1)}${stem ? ` (${stem})` : ""}`,
-        module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
-        outputDir: join(directory, "__output__", "vue"),
-      };
-    });
+	return filesUnder(casesDir)
+		.filter((path) => /\/__output__\/ir(?:\.[^./]+)?\.json$/.test(path))
+		.map((path) => {
+			const directory = path.slice(0, path.lastIndexOf("/__output__/"));
+			const stem = /ir\.([^./]+)\.json$/.exec(path)?.[1];
+			return {
+				name: `${directory.slice(casesDir.length + 1)}${stem ? ` (${stem})` : ""}`,
+				module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
+				outputDir: join(directory, "__output__", "vue"),
+			};
+		});
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */
 export async function emitFormatted(module: UfModule): Promise<Array<OutputFile>> {
-  const context: EmitContext = {
-    module,
-    options: undefined,
-    report: (diagnostic) => {
-      throw new Error(`unexpected diagnostic: ${diagnostic.message}`);
-    },
-  };
-  const files = module.components.flatMap((component) => target.emit(component, context));
-  return Promise.all(
-    files.map(async (file) => {
-      const outcome = await formatOutput(file);
-      if (outcome.error) {
-        throw new Error(`${file.path} does not format: ${outcome.error}`);
-      }
-      return outcome.file;
-    }),
-  );
+	const context: EmitContext = {
+		module,
+		options: undefined,
+		report: (diagnostic) => {
+			throw new Error(`unexpected diagnostic: ${diagnostic.message}`);
+		},
+	};
+	const files = module.components.flatMap((component) => target.emit(component, context));
+	return Promise.all(
+		files.map(async (file) => {
+			const outcome = await formatOutput(file);
+			if (outcome.error) {
+				throw new Error(`${file.path} does not format: ${outcome.error}`);
+			}
+			return outcome.file;
+		}),
+	);
 }
 
 /**
@@ -88,30 +88,30 @@ export async function emitFormatted(module: UfModule): Promise<Array<OutputFile>
  * a test emits only from IR the compiler would hand the target.
  */
 export function lower(source: string, file = "Case.uf.tsx"): UfModule {
-  const { module, diagnostics } = analyze(parseModule(file, source));
-  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-  if (!module || errors.length) {
-    throw new Error(`the analyser rejects the source: ${errors.map((e) => e.message).join("; ")}`);
-  }
-  const broken = checkInvariants(module);
-  if (broken.length) {
-    throw new Error(`invalid IR: ${JSON.stringify(broken)}`);
-  }
-  return module;
+	const { module, diagnostics } = analyze(parseModule(file, source));
+	const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+	if (!module || errors.length) {
+		throw new Error(`the analyser rejects the source: ${errors.map((e) => e.message).join("; ")}`);
+	}
+	const broken = checkInvariants(module);
+	if (broken.length) {
+		throw new Error(`invalid IR: ${JSON.stringify(broken)}`);
+	}
+	return module;
 }
 
 /** The single file this target emits for a source's one component, formatted or as printed. */
 export async function emitSource(source: string, format = true): Promise<string> {
-  const module = lower(source);
-  const files = format
-    ? await emitFormatted(module)
-    : module.components.flatMap((component) =>
-        target.emit(component, { module, options: undefined, report: () => {} }),
-      );
-  if (files.length !== 1) {
-    throw new Error(`expected one file, got ${files.length}`);
-  }
-  return files[0]!.contents;
+	const module = lower(source);
+	const files = format
+		? await emitFormatted(module)
+		: module.components.flatMap((component) =>
+				target.emit(component, { module, options: undefined, report: () => {} }),
+			);
+	if (files.length !== 1) {
+		throw new Error(`expected one file, got ${files.length}`);
+	}
+	return files[0]!.contents;
 }
 
 let compiled = 0;
@@ -124,72 +124,72 @@ let compiled = 0;
  * `props` as root props. Fails on any warning from the compiler or from Vue.
  */
 export async function renderSfc(
-  contents: string,
-  props: Record<string, unknown>,
-  { inline, ssr = true }: { inline: boolean; ssr?: boolean },
+	contents: string,
+	props: Record<string, unknown>,
+	{ inline, ssr = true }: { inline: boolean; ssr?: boolean },
 ): Promise<string> {
-  const id = `sfc-${compiled++}`;
-  const filename = `${id}.vue`;
-  const { descriptor, errors } = parse(contents, { filename });
-  if (errors.length) {
-    throw new Error(`parse: ${errors.map(String).join("; ")}`);
-  }
-  const warnings: Array<string> = [];
-  const warn = console.warn;
-  console.warn = (...args: Array<unknown>) => void warnings.push(args.join(" "));
-  let code: string;
-  try {
-    const onWarn = (warning: { message: string }) => void warnings.push(warning.message);
-    const script = descriptor.scriptSetup
-      ? compileScript(descriptor, {
-          id,
-          inlineTemplate: inline,
-          templateOptions: {
-            ssr,
-            ssrCssVars: [],
-            transformAssetUrls: false,
-            compilerOptions: { onWarn },
-          },
-        })
-      : undefined;
-    if (script && inline) {
-      code = script.content;
-    } else {
-      const template = compileTemplate({
-        source: descriptor.template!.content,
-        ast: descriptor.template!.ast,
-        filename,
-        id,
-        ssr,
-        ssrCssVars: [],
-        transformAssetUrls: false,
-        compilerOptions: {
-          onWarn,
-          ...(script
-            ? { bindingMetadata: script.bindings, expressionPlugins: ["typescript"] }
-            : {}),
-        },
-      });
-      if (template.errors.length) {
-        throw new Error(`template: ${template.errors.join("; ")}`);
-      }
-      const component = script
-        ? script.content.replace("export default ", "const component = ")
-        : "const component = {};";
-      const render = ssr ? "ssrRender = ssrRender" : "render = render";
-      code = `${component}\n${template.code}\ncomponent.${render};\nexport default component;\n`;
-    }
-  } finally {
-    console.warn = warn;
-  }
-  const { default: component } = await importScratch<{ default: Component }>(`${id}.ts`, code);
-  const app = createSSRApp(component, props);
-  app.config.warnHandler = (message) => void warnings.push(message);
-  const html = await renderToString(app);
-  if (warnings.length) {
-    throw new Error(`warnings: ${warnings.join("\n")}`);
-  }
-  return html;
+	const id = `sfc-${compiled++}`;
+	const filename = `${id}.vue`;
+	const { descriptor, errors } = parse(contents, { filename });
+	if (errors.length) {
+		throw new Error(`parse: ${errors.map(String).join("; ")}`);
+	}
+	const warnings: Array<string> = [];
+	const warn = console.warn;
+	console.warn = (...args: Array<unknown>) => void warnings.push(args.join(" "));
+	let code: string;
+	try {
+		const onWarn = (warning: { message: string }) => void warnings.push(warning.message);
+		const script = descriptor.scriptSetup
+			? compileScript(descriptor, {
+					id,
+					inlineTemplate: inline,
+					templateOptions: {
+						ssr,
+						ssrCssVars: [],
+						transformAssetUrls: false,
+						compilerOptions: { onWarn },
+					},
+				})
+			: undefined;
+		if (script && inline) {
+			code = script.content;
+		} else {
+			const template = compileTemplate({
+				source: descriptor.template!.content,
+				ast: descriptor.template!.ast,
+				filename,
+				id,
+				ssr,
+				ssrCssVars: [],
+				transformAssetUrls: false,
+				compilerOptions: {
+					onWarn,
+					...(script
+						? { bindingMetadata: script.bindings, expressionPlugins: ["typescript"] }
+						: {}),
+				},
+			});
+			if (template.errors.length) {
+				throw new Error(`template: ${template.errors.join("; ")}`);
+			}
+			const component = script
+				? script.content.replace("export default ", "const component = ")
+				: "const component = {};";
+			const render = ssr ? "ssrRender = ssrRender" : "render = render";
+			code = `${component}\n${template.code}\ncomponent.${render};\nexport default component;\n`;
+		}
+	} finally {
+		console.warn = warn;
+	}
+	const { default: component } = await importScratch<{ default: Component }>(`${id}.ts`, code);
+	const app = createSSRApp(component, props);
+	app.config.warnHandler = (message) => void warnings.push(message);
+	const html = await renderToString(app);
+	if (warnings.length) {
+		throw new Error(`warnings: ${warnings.join("\n")}`);
+	}
+	return html;
 }
 
 const scratch: Array<string> = [];
@@ -199,33 +199,33 @@ const scratch: Array<string> = [];
  * `vue` like the package itself does. {@link removeScratch} deletes it.
  */
 export function scratchDir(): string {
-  mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
-  const directory = mkdtempSync(join(packageDir, ".uf-tmp", "test-"));
-  scratch.push(directory);
-  return directory;
+	mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
+	const directory = mkdtempSync(join(packageDir, ".uf-tmp", "test-"));
+	scratch.push(directory);
+	return directory;
 }
 
 /** Deletes every scratch directory this test file created. */
 export function removeScratch(): void {
-  for (const directory of scratch.splice(0)) {
-    rmSync(directory, { recursive: true, force: true });
-  }
+	for (const directory of scratch.splice(0)) {
+		rmSync(directory, { recursive: true, force: true });
+	}
 }
 
 /** Writes files into a fresh scratch directory and returns their absolute paths by name. */
 export function writeScratch(files: Record<string, string>): Record<string, string> {
-  const directory = scratchDir();
-  return Object.fromEntries(
-    Object.entries(files).map(([name, contents]) => {
-      const path = join(directory, name);
-      writeFileSync(path, contents);
-      return [name, path];
-    }),
-  );
+	const directory = scratchDir();
+	return Object.fromEntries(
+		Object.entries(files).map(([name, contents]) => {
+			const path = join(directory, name);
+			writeFileSync(path, contents);
+			return [name, path];
+		}),
+	);
 }
 
 /** Imports an ES module written to a scratch file. */
 export async function importScratch<T>(name: string, code: string): Promise<T> {
-  const { [name]: path } = writeScratch({ [name]: code });
-  return (await import(pathToFileURL(path!).href)) as T;
+	const { [name]: path } = writeScratch({ [name]: code });
+	return (await import(pathToFileURL(path!).href)) as T;
 }

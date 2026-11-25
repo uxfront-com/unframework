@@ -3,23 +3,23 @@
 // child-root rule), and the content a parent fills into a child whose sheets use `:slotted()`
 // carries `data-uf-<childScopeId>-s`. A target owns only how its child takes them (P6).
 import type {
-  ComponentStylesApi,
-  RenderNode,
-  Span,
-  UfComponent,
-  UfModule,
+	ComponentStylesApi,
+	RenderNode,
+	Span,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { scopeStylesheet } from "./scoper.ts";
 
 /** The attribute that scopes a component's elements to its sheets, `data-uf-<scopeId>`. */
 export function scopeAttribute(scopeId: string): string {
-  return `data-uf-${scopeId}`;
+	return `data-uf-${scopeId}`;
 }
 
 /** The attribute a child's `:slotted()` rules match, `data-uf-<scopeId>-s`. */
 export function slottedAttribute(scopeId: string): string {
-  return `data-uf-${scopeId}-s`;
+	return `data-uf-${scopeId}-s`;
 }
 
 /**
@@ -32,30 +32,30 @@ export function slottedAttribute(scopeId: string): string {
  * attributes on these nodes, by their spans.
  */
 export function scopeRoots(component: UfComponent): Array<Span> {
-  if (component.inheritAttrs === false) {
-    return [];
-  }
-  const { render } = component;
-  if (render.kind === "Element") {
-    return [render.span];
-  }
-  if (render.children.length !== 1) {
-    return [];
-  }
-  const [root] = render.children as [RenderNode];
-  if (root.kind !== "If") {
-    return single(root);
-  }
-  return root.branches.flatMap((branch) =>
-    branch.children.length === 1 ? single(branch.children[0]!) : [],
-  );
+	if (component.inheritAttrs === false) {
+		return [];
+	}
+	const { render } = component;
+	if (render.kind === "Element") {
+		return [render.span];
+	}
+	if (render.children.length !== 1) {
+		return [];
+	}
+	const [root] = render.children as [RenderNode];
+	if (root.kind !== "If") {
+		return single(root);
+	}
+	return root.branches.flatMap((branch) =>
+		branch.children.length === 1 ? single(branch.children[0]!) : [],
+	);
 }
 
 /** A node's span where it is one element, component or `<component is>`, which Vue scopes. */
 function single(node: RenderNode): Array<Span> {
-  return node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
-    ? [node.span]
-    : [];
+	return node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
+		? [node.span]
+		: [];
 }
 
 /**
@@ -64,29 +64,29 @@ function single(node: RenderNode): Array<Span> {
  * with the same id. `undefined` for a child without a sheet.
  */
 export function childStyles(module: UfModule, local: string): ComponentStylesApi | undefined {
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) {
-      continue;
-    }
-    const api = entry.api.components.find((each) =>
-      imported.imported === "default"
-        ? each.export === "default"
-        : each.export === "named" && each.name === imported.imported,
-    );
-    return api?.styles;
-  }
-  const own = module.components.find((component) => component.name === local);
-  if (!own?.scopeId) {
-    return undefined;
-  }
-  const scopeId = own.scopeId;
-  return {
-    scopeId,
-    slotted: (own.styles ?? []).some(
-      (sheet) => scopeStylesheet(sheet.specifier, sheet.source, scopeId).slotted,
-    ),
-  };
+	for (const entry of module.imports ?? []) {
+		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+		if (!imported) {
+			continue;
+		}
+		const api = entry.api.components.find((each) =>
+			imported.imported === "default"
+				? each.export === "default"
+				: each.export === "named" && each.name === imported.imported,
+		);
+		return api?.styles;
+	}
+	const own = module.components.find((component) => component.name === local);
+	if (!own?.scopeId) {
+		return undefined;
+	}
+	const scopeId = own.scopeId;
+	return {
+		scopeId,
+		slotted: (own.styles ?? []).some(
+			(sheet) => scopeStylesheet(sheet.specifier, sheet.source, scopeId).slotted,
+		),
+	};
 }
 
 /**
@@ -94,14 +94,14 @@ export function childStyles(module: UfModule, local: string): ComponentStylesApi
  * a `<component is>`): one for each child whose sheets use `:slotted()`.
  */
 export function slottedAttributes(
-  module: UfModule | undefined,
-  children: ReadonlyArray<string>,
+	module: UfModule | undefined,
+	children: ReadonlyArray<string>,
 ): Array<string> {
-  if (!module) {
-    return [];
-  }
-  return children.flatMap((child) => {
-    const styles = childStyles(module, child);
-    return styles?.slotted ? [slottedAttribute(styles.scopeId)] : [];
-  });
+	if (!module) {
+		return [];
+	}
+	return children.flatMap((child) => {
+		const styles = childStyles(module, child);
+		return styles?.slotted ? [slottedAttribute(styles.scopeId)] : [];
+	});
 }

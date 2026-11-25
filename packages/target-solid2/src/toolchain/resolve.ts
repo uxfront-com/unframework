@@ -8,14 +8,14 @@ import type { Plugin } from "vite";
 
 /** Solid 2's runtime packages: what an output, the adapters and Solid itself import. */
 export const SOLID_PACKAGES: ReadonlyArray<string> = [
-  "solid-js",
-  "@solidjs/web",
-  "@solidjs/signals",
+	"solid-js",
+	"@solidjs/web",
+	"@solidjs/signals",
 ];
 
 /** Whether a specifier names one of Solid 2's packages or a subpath of one. */
 export function isSolidSpecifier(specifier: string): boolean {
-  return SOLID_PACKAGES.some((name) => specifier === name || specifier.startsWith(`${name}/`));
+	return SOLID_PACKAGES.some((name) => specifier === name || specifier.startsWith(`${name}/`));
 }
 
 /**
@@ -31,17 +31,17 @@ const IMPORTED: ReadonlyArray<string> = ["solid-js", "@solidjs/web"];
  * root or from the importer.
  */
 export function resolveSolid(toolchainDir: string): Plugin {
-  const importer = join(toolchainDir, "package.json");
-  return {
-    name: "unframework:solid2-resolve",
-    enforce: "pre",
-    async resolveId(source, _importer, options) {
-      if (!IMPORTED.some((name) => source === name || source.startsWith(`${name}/`))) {
-        return null;
-      }
-      return this.resolve(source, importer, { ...options, skipSelf: true });
-    },
-  };
+	const importer = join(toolchainDir, "package.json");
+	return {
+		name: "unframework:solid2-resolve",
+		enforce: "pre",
+		async resolveId(source, _importer, options) {
+			if (!IMPORTED.some((name) => source === name || source.startsWith(`${name}/`))) {
+				return null;
+			}
+			return this.resolve(source, importer, { ...options, skipSelf: true });
+		},
+	};
 }
 
 /**
@@ -52,29 +52,29 @@ export function resolveSolid(toolchainDir: string): Plugin {
  * root, past every plugin: Solid 2 is served as it is instead, through `resolveSolid`.
  */
 export function undedupeSolid(): Plugin {
-  return {
-    name: "unframework:solid2-undedupe",
-    config(config) {
-      const dedupe = config.resolve?.dedupe;
-      if (dedupe) {
-        config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
-      }
-      const include = config.optimizeDeps?.include;
-      if (include) {
-        config.optimizeDeps!.include = include.filter((name) => !isSolidSpecifier(name));
-      }
-    },
-    configEnvironment(name, config) {
-      const dedupe = config.resolve?.dedupe;
-      if (dedupe) {
-        config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
-      }
-      // In a browser test, the plugin resolves every environment with the `browser` condition, the
-      // server's too, where a hydrate project renders the HTML it hydrates (L12, ADR-0095).
-      const conditions = config.resolve?.conditions;
-      if (name === "ssr" && conditions?.includes("browser")) {
-        config.resolve!.conditions = conditions.filter((condition) => condition !== "browser");
-      }
-    },
-  };
+	return {
+		name: "unframework:solid2-undedupe",
+		config(config) {
+			const dedupe = config.resolve?.dedupe;
+			if (dedupe) {
+				config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+			}
+			const include = config.optimizeDeps?.include;
+			if (include) {
+				config.optimizeDeps!.include = include.filter((name) => !isSolidSpecifier(name));
+			}
+		},
+		configEnvironment(name, config) {
+			const dedupe = config.resolve?.dedupe;
+			if (dedupe) {
+				config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+			}
+			// In a browser test, the plugin resolves every environment with the `browser` condition, the
+			// server's too, where a hydrate project renders the HTML it hydrates (L12, ADR-0095).
+			const conditions = config.resolve?.conditions;
+			if (name === "ssr" && conditions?.includes("browser")) {
+				config.resolve!.conditions = conditions.filter((condition) => condition !== "browser");
+			}
+		},
+	};
 }

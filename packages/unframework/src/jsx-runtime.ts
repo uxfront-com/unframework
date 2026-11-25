@@ -13,11 +13,11 @@
  * The probes in ../probes pin exactly what this catches.
  */
 import type {
-  ClassValue,
-  StyleValue,
-  UpstreamEvents,
-  UpstreamHTMLAttributes,
-  UpstreamIntrinsicElements,
+	ClassValue,
+	StyleValue,
+	UpstreamEvents,
+	UpstreamHTMLAttributes,
+	UpstreamIntrinsicElements,
 } from "./jsx-upstream.ts";
 
 // Unique symbols are per declaration: these are declared once, here, and only re-exported.
@@ -31,7 +31,7 @@ declare const typedComponent: unique symbol;
  * the open layer-1 signatures, so misspelt events and models become errors too.
  */
 export interface TypedComponent {
-  readonly [typedComponent]: true;
+	readonly [typedComponent]: true;
 }
 
 /** One child of a JSX element. Slot functions and `.map` callbacks return these. */
@@ -44,7 +44,7 @@ export type Children = Child | ReadonlyArray<Children>;
  * Slot props are `any` under stock tsgo (layer 1); the content mapper types them.
  */
 export interface SlotObject {
-  readonly [slot: string]: ((props: any) => Children) | undefined;
+	readonly [slot: string]: ((props: any) => Children) | undefined;
 }
 
 /**
@@ -52,10 +52,10 @@ export interface SlotObject {
  * phantom `templateRefTarget` key with `RefAttribute`.
  */
 export interface TemplateRef<T> {
-  /** `null` until the element is mounted. */
-  readonly value: T | null;
-  /** Phantom, type-only: never exists at runtime. */
-  readonly [templateRefTarget]: (element: T) => void;
+	/** `null` until the element is mounted. */
+	readonly value: T | null;
+	/** Phantom, type-only: never exists at runtime. */
+	readonly [templateRefTarget]: (element: T) => void;
 }
 
 /**
@@ -63,15 +63,15 @@ export interface TemplateRef<T> {
  * `TemplateRef<HTMLElement>` may hold an `<input>`, a `TemplateRef<HTMLButtonElement>` may not.
  */
 export interface RefAttribute<E> {
-  readonly [templateRefTarget]: (element: E) => void;
+	readonly [templateRefTarget]: (element: E) => void;
 }
 
 /** The DOM element type of a tag, for `ref`. */
 export type DomElementFor<K> = K extends keyof HTMLElementTagNameMap
-  ? HTMLElementTagNameMap[K]
-  : K extends keyof SVGElementTagNameMap
-    ? SVGElementTagNameMap[K]
-    : Element;
+	? HTMLElementTagNameMap[K]
+	: K extends keyof SVGElementTagNameMap
+		? SVGElementTagNameMap[K]
+		: Element;
 
 /**
  * The events of the compiler's vocabulary (ADR-0047) the upstream declares on no element but a few
@@ -79,23 +79,23 @@ export type DomElementFor<K> = K extends keyof HTMLElementTagNameMap
  * target receives. lib.dom dispatches each as an `Event`.
  */
 export interface OwnedEvents {
-  onCancel: Event;
-  onClose: Event;
-  onCommand: Event;
+	onCancel: Event;
+	onClose: Event;
+	onCommand: Event;
 }
 
 /** The owned events' listeners, on every element. */
 export type OwnedEventHandlers = {
-  [K in keyof OwnedEvents]?: ((event: OwnedEvents[K]) => void) | undefined;
+	[K in keyof OwnedEvents]?: ((event: OwnedEvents[K]) => void) | undefined;
 };
 
 /** Vue's event-option suffixes (plan §4.3): `onClickCapture`, `onClickOnce`, `onClickPassive`. */
 export type EventOptionSuffix = "Capture" | "Once" | "Passive";
 /** The upstream has no event-option handlers, so they are derived from its event map and ours. */
 export type EventOptionHandlers = {
-  [K in keyof UpstreamEvents as `${K}${EventOptionSuffix}`]?: (event: UpstreamEvents[K]) => void;
+	[K in keyof UpstreamEvents as `${K}${EventOptionSuffix}`]?: (event: UpstreamEvents[K]) => void;
 } & {
-  [K in keyof OwnedEvents as `${K}${EventOptionSuffix}`]?: (event: OwnedEvents[K]) => void;
+	[K in keyof OwnedEvents as `${K}${EventOptionSuffix}`]?: (event: OwnedEvents[K]) => void;
 };
 
 /**
@@ -103,10 +103,10 @@ export type EventOptionHandlers = {
  * are written with `_` because JSX attribute names cannot contain `.`.
  */
 export interface VModelAttributes {
-  "v-model"?: unknown;
-  "v-model_trim"?: unknown;
-  "v-model_lazy"?: unknown;
-  "v-model_number"?: unknown;
+	"v-model"?: unknown;
+	"v-model_trim"?: unknown;
+	"v-model_lazy"?: unknown;
+	"v-model_number"?: unknown;
 }
 
 /** Keys unframework defines itself; removed from the upstream before `OwnedElementAttributes` is added. */
@@ -119,41 +119,41 @@ export type OwnedKeys = "key" | "ref" | "children";
 export type ListKey = string | number;
 
 export interface OwnedElementAttributes<E> {
-  key?: ListKey | undefined;
-  ref?: RefAttribute<E> | undefined;
-  children?: Children;
+	key?: ListKey | undefined;
+	ref?: RefAttribute<E> | undefined;
+	children?: Children;
 }
 
 /** HTML void elements: children are an error. */
 export type VoidElementTag =
-  | "area"
-  | "base"
-  | "br"
-  | "col"
-  | "embed"
-  | "hr"
-  | "img"
-  | "input"
-  | "link"
-  | "meta"
-  | "source"
-  | "track"
-  | "wbr";
+	| "area"
+	| "base"
+	| "br"
+	| "col"
+	| "embed"
+	| "hr"
+	| "img"
+	| "input"
+	| "link"
+	| "meta"
+	| "source"
+	| "track"
+	| "wbr";
 
 type FormControlTag = "input" | "textarea" | "select";
 
 export type ElementAttributes<K extends keyof UpstreamIntrinsicElements> = Omit<
-  UpstreamIntrinsicElements[K],
-  OwnedKeys
+	UpstreamIntrinsicElements[K],
+	OwnedKeys
 > &
-  OwnedElementAttributes<DomElementFor<K>> &
-  OwnedEventHandlers &
-  EventOptionHandlers &
-  (K extends VoidElementTag ? { children?: never } : unknown) &
-  (K extends FormControlTag ? VModelAttributes : unknown);
+	OwnedElementAttributes<DomElementFor<K>> &
+	OwnedEventHandlers &
+	EventOptionHandlers &
+	(K extends VoidElementTag ? { children?: never } : unknown) &
+	(K extends FormControlTag ? VModelAttributes : unknown);
 
 export type UfIntrinsicElements = {
-  [K in keyof UpstreamIntrinsicElements]: ElementAttributes<K>;
+	[K in keyof UpstreamIntrinsicElements]: ElementAttributes<K>;
 };
 
 /**
@@ -161,21 +161,21 @@ export type UfIntrinsicElements = {
  * (plan §4.3). The upstream's own `is?: string` is omitted: it would widen `is` to any string.
  */
 export interface DynamicComponentAttributes
-  extends Omit<UpstreamHTMLAttributes, OwnedKeys | "is">, OwnedEventHandlers, EventOptionHandlers {
-  is: keyof UpstreamIntrinsicElements | ((props: any) => JSX.Element | null);
-  key?: ListKey | undefined;
-  ref?: RefAttribute<any> | undefined;
-  children?: Children | SlotObject;
-  [attribute: string]: unknown;
+	extends Omit<UpstreamHTMLAttributes, OwnedKeys | "is">, OwnedEventHandlers, EventOptionHandlers {
+	is: keyof UpstreamIntrinsicElements | ((props: any) => JSX.Element | null);
+	key?: ListKey | undefined;
+	ref?: RefAttribute<any> | undefined;
+	children?: Children | SlotObject;
+	[attribute: string]: unknown;
 }
 
 /** Custom elements (`<my-element>`): typed global attributes, and any other attribute. */
 export interface CustomElementAttributes
-  extends Omit<UpstreamHTMLAttributes, OwnedKeys>, OwnedEventHandlers, EventOptionHandlers {
-  key?: ListKey | undefined;
-  ref?: RefAttribute<HTMLElement> | undefined;
-  children?: Children;
-  [attribute: string]: unknown;
+	extends Omit<UpstreamHTMLAttributes, OwnedKeys>, OwnedEventHandlers, EventOptionHandlers {
+	key?: ListKey | undefined;
+	ref?: RefAttribute<HTMLElement> | undefined;
+	children?: Children;
+	[attribute: string]: unknown;
 }
 
 /** The attributes of any element, as one union of each element's own. */
@@ -184,10 +184,10 @@ type AnyElementAttributes = UpstreamIntrinsicElements[keyof UpstreamIntrinsicEle
 type AnyKeyOf<T> = T extends unknown ? keyof T : never;
 /** What the members of a union that have `K` take for it. */
 type ValueAt<T, K extends PropertyKey> = T extends unknown
-  ? K extends keyof T
-    ? T[K]
-    : never
-  : never;
+	? K extends keyof T
+		? T[K]
+		: never
+	: never;
 
 /**
  * Every attribute of an element (`id`, `title`, `type`, `placeholder`, …), typed as the elements
@@ -196,9 +196,9 @@ type ValueAt<T, K extends PropertyKey> = T extends unknown
  * falls through to its root (ADR-0118): layer 2 checks it against that element.
  */
 export type NativeAttributes = {
-  [
-    K in Exclude<AnyKeyOf<AnyElementAttributes>, OwnedKeys | "class" | "style" | `on${string}`>
-  ]?: ValueAt<AnyElementAttributes, K>;
+	[
+		K in Exclude<AnyKeyOf<AnyElementAttributes>, OwnedKeys | "class" | "style" | `on${string}`>
+	]?: ValueAt<AnyElementAttributes, K>;
 };
 
 /**
@@ -209,65 +209,65 @@ export type NativeAttributes = {
  * named like an attribute keeps its own type.
  */
 export interface ComponentAttributes extends NativeAttributes {
-  key?: ListKey | undefined;
-  /**
-   * A component ref: what it exposes (`defineExpose`), typed by the content mapper, or else its root
-   * element (ADR-0118).
-   */
-  ref?: RefAttribute<any> | undefined;
-  /** Fallthrough onto the component's root element. */
-  class?: ClassValue | undefined;
-  style?: StyleValue | undefined;
-  /** The default slot (JSX children) or a slot object. */
-  children?: Children | SlotObject;
-  /**
-   * `v-model={x.value}` and `v-model:open={x.value}`, for documentation and completions only:
-   * TypeScript never checks an undeclared hyphenated JSX attribute, nor matches one against an index
-   * signature. The content mapper declares each model as an explicit `"v-model:open"?: T` prop,
-   * which is checked.
-   */
-  "v-model"?: unknown;
-  [model: `v-model:${string}`]: unknown;
-  /** `onChange={…}`: an event declared with `defineEmits`, or a listener that falls through. */
-  [event: `on${Capitalize<string>}`]: ((...payload: Array<any>) => unknown) | undefined;
+	key?: ListKey | undefined;
+	/**
+	 * A component ref: what it exposes (`defineExpose`), typed by the content mapper, or else its root
+	 * element (ADR-0118).
+	 */
+	ref?: RefAttribute<any> | undefined;
+	/** Fallthrough onto the component's root element. */
+	class?: ClassValue | undefined;
+	style?: StyleValue | undefined;
+	/** The default slot (JSX children) or a slot object. */
+	children?: Children | SlotObject;
+	/**
+	 * `v-model={x.value}` and `v-model:open={x.value}`, for documentation and completions only:
+	 * TypeScript never checks an undeclared hyphenated JSX attribute, nor matches one against an index
+	 * signature. The content mapper declares each model as an explicit `"v-model:open"?: T` prop,
+	 * which is checked.
+	 */
+	"v-model"?: unknown;
+	[model: `v-model:${string}`]: unknown;
+	/** `onChange={…}`: an event declared with `defineEmits`, or a listener that falls through. */
+	[event: `on${Capitalize<string>}`]: ((...payload: Array<any>) => unknown) | undefined;
 }
 
 export declare namespace JSX {
-  /**
-   * The result of a JSX expression. Opaque: a template fragment the compiler lowers per target (a
-   * VNode on Vue, a ReactNode on React, markup on Svelte, Angular and Astro), never a value the
-   * source may inspect.
-   */
-  interface Element {
-    readonly [elementBrand]: "unframework.element";
-  }
-  interface ElementChildrenAttribute {
-    children: {};
-  }
-  /**
-   * What may be written as a tag: an intrinsic element's name, or a component that returns JSX,
-   * `null`, or, for an async component, a promise of either (ADR-0101). A component that returns
-   * anything else, a string included, stays TS2786.
-   */
-  type ElementType =
-    | string
-    | ((props: any) => Element | null)
-    | ((props: any) => Promise<Element | null>);
-  interface IntrinsicElements extends UfIntrinsicElements {
-    component: DynamicComponentAttributes;
-    [customElement: `${string}-${string}`]: CustomElementAttributes;
-  }
-  /** Only what every value-based element accepts. The open layer-1 surface is in `LibraryManagedAttributes`. */
-  interface IntrinsicAttributes {
-    key?: ListKey | undefined;
-  }
-  /**
-   * TypeScript checks a component's attributes against `LibraryManagedAttributes<typeof C, P> &
-   * IntrinsicAttributes`. A stock component gets the open layer-1 surface; one the content mapper has
-   * branded gets its declared props plus `ref`, `class` and `style` only. (`IntrinsicAttributes`
-   * could not do this: it is intersected into every component, branded or not.)
-   */
-  type LibraryManagedAttributes<C, P> = C extends TypedComponent
-    ? P & Pick<ComponentAttributes, "ref" | "class" | "style">
-    : P & Omit<ComponentAttributes, keyof P>;
+	/**
+	 * The result of a JSX expression. Opaque: a template fragment the compiler lowers per target (a
+	 * VNode on Vue, a ReactNode on React, markup on Svelte, Angular and Astro), never a value the
+	 * source may inspect.
+	 */
+	interface Element {
+		readonly [elementBrand]: "unframework.element";
+	}
+	interface ElementChildrenAttribute {
+		children: {};
+	}
+	/**
+	 * What may be written as a tag: an intrinsic element's name, or a component that returns JSX,
+	 * `null`, or, for an async component, a promise of either (ADR-0101). A component that returns
+	 * anything else, a string included, stays TS2786.
+	 */
+	type ElementType =
+		| string
+		| ((props: any) => Element | null)
+		| ((props: any) => Promise<Element | null>);
+	interface IntrinsicElements extends UfIntrinsicElements {
+		component: DynamicComponentAttributes;
+		[customElement: `${string}-${string}`]: CustomElementAttributes;
+	}
+	/** Only what every value-based element accepts. The open layer-1 surface is in `LibraryManagedAttributes`. */
+	interface IntrinsicAttributes {
+		key?: ListKey | undefined;
+	}
+	/**
+	 * TypeScript checks a component's attributes against `LibraryManagedAttributes<typeof C, P> &
+	 * IntrinsicAttributes`. A stock component gets the open layer-1 surface; one the content mapper has
+	 * branded gets its declared props plus `ref`, `class` and `style` only. (`IntrinsicAttributes`
+	 * could not do this: it is intersected into every component, branded or not.)
+	 */
+	type LibraryManagedAttributes<C, P> = C extends TypedComponent
+		? P & Pick<ComponentAttributes, "ref" | "class" | "style">
+		: P & Omit<ComponentAttributes, keyof P>;
 }

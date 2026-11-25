@@ -13,7 +13,7 @@ const REPOSITORY = fileURLToPath(new URL("../../../../", import.meta.url));
 export const inRepository = (path: string): string => join(REPOSITORY, path);
 
 const SOURCES = {
-  "src/Card.uf.tsx": `import { CardTitle } from "./CardTitle.uf.tsx";
+	"src/Card.uf.tsx": `import { CardTitle } from "./CardTitle.uf.tsx";
 import { formatLabel } from "./shared/format";
 
 import "./Card.css";
@@ -26,13 +26,13 @@ export default function Card(props: { label: string }) {
   );
 }
 `,
-  "src/CardTitle.uf.tsx": `export function CardTitle(props: { label: string }) {
+	"src/CardTitle.uf.tsx": `export function CardTitle(props: { label: string }) {
   return <h2>{props.label}</h2>;
 }
 `,
-  "src/Card.css": ".card {\n  color: red;\n}\n",
-  "src/shared/format.ts": "export const formatLabel = (label: string): string => label.trim();\n",
-  "src/useToggle.uf.ts": `import { ref } from "@uxfront/unframework";
+	"src/Card.css": ".card {\n  color: red;\n}\n",
+	"src/shared/format.ts": "export const formatLabel = (label: string): string => label.trim();\n",
+	"src/useToggle.uf.ts": `import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);
@@ -42,70 +42,70 @@ export function useToggle(initial: boolean) {
 };
 
 export const SOURCE_TREE: ReadonlyArray<string> = [
-  "source/Card.css",
-  "source/Card.uf.tsx",
-  "source/CardTitle.uf.tsx",
-  "source/shared/format.ts",
-  "source/useToggle.uf.ts",
+	"source/Card.css",
+	"source/Card.uf.tsx",
+	"source/CardTitle.uf.tsx",
+	"source/shared/format.ts",
+	"source/useToggle.uf.ts",
 ];
 
 export interface DesignSystem {
-  /** `unframework.config.ts`'s fields, as JSON. */
-  config: Record<string, unknown>;
-  /** Packages `node_modules` links to, each by its path in `tests/integration/node_modules`. */
-  frameworks?: ReadonlyArray<string>;
-  /** Files beside or over the sources. */
-  files?: Readonly<Record<string, string>>;
-  /** A directory to put the project in, for what its path does. */
-  under?: string;
-  /**
-   * Where `frameworks` are installed, relative to the repository: tests/integration, or
-   * tests/toolchains/solid2 for Solid 2, which only that toolchain installs (ADR-0102).
-   */
-  frameworksFrom?: string;
-  /** Replaces the project's `package.json`, or leaves it out with `null`. */
-  manifest?: string | null;
+	/** `unframework.config.ts`'s fields, as JSON. */
+	config: Record<string, unknown>;
+	/** Packages `node_modules` links to, each by its path in `tests/integration/node_modules`. */
+	frameworks?: ReadonlyArray<string>;
+	/** Files beside or over the sources. */
+	files?: Readonly<Record<string, string>>;
+	/** A directory to put the project in, for what its path does. */
+	under?: string;
+	/**
+	 * Where `frameworks` are installed, relative to the repository: tests/integration, or
+	 * tests/toolchains/solid2 for Solid 2, which only that toolchain installs (ADR-0102).
+	 */
+	frameworksFrom?: string;
+	/** Replaces the project's `package.json`, or leaves it out with `null`. */
+	manifest?: string | null;
 }
 
 /** A project that compiles a small design system, as a team would lay it out. */
 export function designSystem(options: DesignSystem): string {
-  const {
-    config,
-    frameworks = [],
-    frameworksFrom = "tests/integration",
-    files = {},
-    under = "",
-    manifest,
-  } = options;
-  const owned: Record<string, string> =
-    manifest === null
-      ? {}
-      : {
-          "package.json":
-            manifest ??
-            JSON.stringify({ name: "demo-ds", version: "1.2.3", license: "MIT", private: true }),
-        };
-  const root = join(project({}), under);
-  write(root, {
-    ...SOURCES,
-    ...owned,
-    "unframework.config.ts": `export default ${JSON.stringify(config)};\n`,
-    ...files,
-  });
-  for (const name of frameworks) {
-    const link = join(root, "node_modules", name);
-    mkdirSync(dirname(link), { recursive: true });
-    symlinkSync(inRepository(`${frameworksFrom}/node_modules/${name}`), link);
-  }
-  return root;
+	const {
+		config,
+		frameworks = [],
+		frameworksFrom = "tests/integration",
+		files = {},
+		under = "",
+		manifest,
+	} = options;
+	const owned: Record<string, string> =
+		manifest === null
+			? {}
+			: {
+					"package.json":
+						manifest ??
+						JSON.stringify({ name: "demo-ds", version: "1.2.3", license: "MIT", private: true }),
+				};
+	const root = join(project({}), under);
+	write(root, {
+		...SOURCES,
+		...owned,
+		"unframework.config.ts": `export default ${JSON.stringify(config)};\n`,
+		...files,
+	});
+	for (const name of frameworks) {
+		const link = join(root, "node_modules", name);
+		mkdirSync(dirname(link), { recursive: true });
+		symlinkSync(inRepository(`${frameworksFrom}/node_modules/${name}`), link);
+	}
+	return root;
 }
 
 const consumers: Array<string> = [];
 
 afterEach(() => {
-  for (const directory of consumers.splice(0)) {
-    rmSync(directory, { recursive: true, force: true });
-  }
+	for (const directory of consumers.splice(0)) {
+		rmSync(directory, { recursive: true, force: true });
+	}
 });
 
 /**
@@ -114,40 +114,40 @@ afterEach(() => {
  * toolchain's `.uf-tmp`, as the toolchain's own temporary configs do.
  */
 export function consumer(
-  root: string,
-  target: string,
-  files: Readonly<Record<string, string>>,
-  compilerOptions: Readonly<Record<string, unknown>> = {},
+	root: string,
+	target: string,
+	files: Readonly<Record<string, string>>,
+	compilerOptions: Readonly<Record<string, unknown>> = {},
 ): string {
-  const parent = join(inRepository(`tests/toolchains/${target}`), ".uf-tmp");
-  mkdirSync(parent, { recursive: true });
-  const directory = mkdtempSync(join(parent, "consumer-"));
-  consumers.push(directory);
-  mkdirSync(join(directory, "node_modules"));
-  symlinkSync(join(root, "dist", "package"), join(directory, "node_modules", "demo-ds"));
-  writeFileSync(
-    join(directory, "tsconfig.json"),
-    JSON.stringify({
-      extends: "../../tsconfig.json",
-      compilerOptions,
-      include: Object.keys(files),
-    }),
-  );
-  for (const [path, contents] of Object.entries(files)) {
-    writeFileSync(join(directory, path), contents);
-  }
-  return directory;
+	const parent = join(inRepository(`tests/toolchains/${target}`), ".uf-tmp");
+	mkdirSync(parent, { recursive: true });
+	const directory = mkdtempSync(join(parent, "consumer-"));
+	consumers.push(directory);
+	mkdirSync(join(directory, "node_modules"));
+	symlinkSync(join(root, "dist", "package"), join(directory, "node_modules", "demo-ds"));
+	writeFileSync(
+		join(directory, "tsconfig.json"),
+		JSON.stringify({
+			extends: "../../tsconfig.json",
+			compilerOptions,
+			include: Object.keys(files),
+		}),
+	);
+	for (const [path, contents] of Object.entries(files)) {
+		writeFileSync(join(directory, path), contents);
+	}
+	return directory;
 }
 
 /** Runs a checker from its package's `node_modules/.bin`, and gives its exit code and output. */
 export function check(
-  from: string,
-  bin: string,
-  args: ReadonlyArray<string>,
+	from: string,
+	bin: string,
+	args: ReadonlyArray<string>,
 ): { code: number | null; output: string } {
-  const result = spawnSync(join(inRepository(from), "node_modules", ".bin", bin), [...args], {
-    cwd: inRepository(from),
-    encoding: "utf8",
-  });
-  return { code: result.status, output: `${result.stdout}${result.stderr}` };
+	const result = spawnSync(join(inRepository(from), "node_modules", ".bin", bin), [...args], {
+		cwd: inRepository(from),
+		encoding: "utf8",
+	});
+	return { code: result.status, output: `${result.stdout}${result.stderr}` };
 }

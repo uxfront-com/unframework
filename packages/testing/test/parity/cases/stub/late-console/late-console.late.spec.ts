@@ -8,12 +8,12 @@ import { describeTargets, mount } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
 
 describeTargets("stub/late-console", () => {
-  afterAll(() => {
-    console.warn("[fixture] after the last test");
-  });
+	afterAll(() => {
+		console.warn("[fixture] after the last test");
+	});
 
-  it("renders", async () => {
-    const view = await mount({ html: "<p>Late</p>" });
-    await expect.element(view.getByText("Late")).toBeVisible();
-  });
+	it("renders", async () => {
+		const view = await mount({ html: "<p>Late</p>" });
+		await expect.element(view.getByText("Late")).toBeVisible();
+	});
 });

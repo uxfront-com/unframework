@@ -8,41 +8,41 @@ import { expect } from "vitest";
 import StarRating from "./StarRating.uf.tsx";
 
 describeTargets("semantics/emit", () => {
-  it("renders five unselected stars", async () => {
-    const view = await mountScenario(StarRating, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("status")).toHaveTextContent("0 of 5");
-    await expect.element(view.getByRole("button", { name: "5 stars" })).toBeVisible();
-  });
+	it("renders five unselected stars", async () => {
+		const view = await mountScenario(StarRating, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("status")).toHaveTextContent("0 of 5");
+		await expect.element(view.getByRole("button", { name: "5 stars" })).toBeVisible();
+	});
 
-  it("emits before and after a write, in order", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(StarRating, "initial");
-    await view.user.click(view.getByRole("button", { name: "3 stars" }));
-    await view.expectParity("rated-three");
-    await expect.element(view.getByRole("status")).toHaveTextContent("3 of 5");
-    expect(view.events()).toEqual([
-      ["preview", 3],
-      ["rate", 3, 0],
-    ]);
-  });
+	it("emits before and after a write, in order", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(StarRating, "initial");
+		await view.user.click(view.getByRole("button", { name: "3 stars" }));
+		await view.expectParity("rated-three");
+		await expect.element(view.getByRole("status")).toHaveTextContent("3 of 5");
+		expect(view.events()).toEqual([
+			["preview", 3],
+			["rate", 3, 0],
+		]);
+	});
 
-  it(
-    "emits in a loop, then an event with no payload",
-    { requires: ["interactivity"] },
-    async () => {
-      const view = await mountScenario(StarRating, "initial");
-      await view.user.click(view.getByRole("button", { name: "2 stars" }));
-      await view.user.click(view.getByRole("button", { name: "Clear" }));
-      await view.expectParity("cleared");
-      await expect.element(view.getByRole("status")).toHaveTextContent("0 of 5");
-      expect(view.emitted("cleared")).toEqual([[]]);
-      expect(view.events()).toEqual([
-        ["preview", 2],
-        ["rate", 2, 0],
-        ["preview", 1],
-        ["preview", 0],
-        ["cleared"],
-      ]);
-    },
-  );
+	it(
+		"emits in a loop, then an event with no payload",
+		{ requires: ["interactivity"] },
+		async () => {
+			const view = await mountScenario(StarRating, "initial");
+			await view.user.click(view.getByRole("button", { name: "2 stars" }));
+			await view.user.click(view.getByRole("button", { name: "Clear" }));
+			await view.expectParity("cleared");
+			await expect.element(view.getByRole("status")).toHaveTextContent("0 of 5");
+			expect(view.emitted("cleared")).toEqual([[]]);
+			expect(view.events()).toEqual([
+				["preview", 2],
+				["rate", 2, 0],
+				["preview", 1],
+				["preview", 0],
+				["cleared"],
+			]);
+		},
+	);
 });

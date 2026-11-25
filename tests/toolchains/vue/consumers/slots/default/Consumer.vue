@@ -3,7 +3,7 @@ import Panel from "../../../../../integration/cases/slots/default/__output__/vue
 </script>
 
 <template>
-  <Panel title="Hello">
-    <p>Body</p>
-  </Panel>
+	<Panel title="Hello">
+		<p>Body</p>
+	</Panel>
 </template>

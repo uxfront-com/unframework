@@ -4,8 +4,8 @@ import seoData from "#seo-data";
 
 // The fields read below. Nitro's types don't see the collections Docus defines.
 interface DocsPage {
-  path: string;
-  meta: { sitemap?: boolean };
+	path: string;
+	meta: { sitemap?: boolean };
 }
 
 /**
@@ -22,41 +22,41 @@ interface DocsPage {
  * before the layers'. Docus still adds the route to the prerendered ones.
  */
 export default defineEventHandler(async (event) => {
-  const { siteUrl } = useRuntimeConfig(event).public;
-  const pages = (await queryCollection(event, "docs" as never).all()) as Array<DocsPage>;
+	const { siteUrl } = useRuntimeConfig(event).public;
+	const pages = (await queryCollection(event, "docs" as never).all()) as Array<DocsPage>;
 
-  const paths = [
-    "/",
-    ...pages
-      .filter((page) => page.meta.sitemap !== false && !isNavigationPath(page.path))
-      .map((page) => page.path),
-  ];
+	const paths = [
+		"/",
+		...pages
+			.filter((page) => page.meta.sitemap !== false && !isNavigationPath(page.path))
+			.map((page) => page.path),
+	];
 
-  setHeader(event, "Content-Type", "application/xml");
-  return [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...paths.map((path) => {
-      const lastmod = seoData.lastmod[path];
-      return [
-        "  <url>",
-        `    <loc>${escapeXml(siteUrl + path)}</loc>`,
-        ...(lastmod ? [`    <lastmod>${escapeXml(lastmod)}</lastmod>`] : []),
-        "  </url>",
-      ].join("\n");
-    }),
-    "</urlset>",
-  ].join("\n");
+	setHeader(event, "Content-Type", "application/xml");
+	return [
+		'<?xml version="1.0" encoding="UTF-8"?>',
+		'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+		...paths.map((path) => {
+			const lastmod = seoData.lastmod[path];
+			return [
+				"  <url>",
+				`    <loc>${escapeXml(siteUrl + path)}</loc>`,
+				...(lastmod ? [`    <lastmod>${escapeXml(lastmod)}</lastmod>`] : []),
+				"  </url>",
+			].join("\n");
+		}),
+		"</urlset>",
+	].join("\n");
 });
 
 const XML_ENTITIES: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&apos;",
+	"&": "&amp;",
+	"<": "&lt;",
+	">": "&gt;",
+	'"': "&quot;",
+	"'": "&apos;",
 };
 
 function escapeXml(value: string) {
-  return value.replaceAll(/[&<>"']/g, (char) => XML_ENTITIES[char]!);
+	return value.replaceAll(/[&<>"']/g, (char) => XML_ENTITIES[char]!);
 }

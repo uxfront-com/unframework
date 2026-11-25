@@ -15,127 +15,127 @@ import List from "../fixtures/List.uf.tsx";
 import styles from "../fixtures/Counter.css";
 
 function renderLabel() {
-  // JSX returned from a helper (plan §4.6). Caught by: compiler (UF3012).
-  return <b>From a helper</b>;
+	// JSX returned from a helper (plan §4.6). Caught by: compiler (UF3012).
+	return <b>From a helper</b>;
 }
 
 export function BlindSpots() {
-  const open = ref(false);
-  const list = ref<number[]>([]);
-  const form = ref({ name: "" });
-  const label = <b>JSX in a variable</b>;
+	const open = ref(false);
+	const list = ref<number[]>([]);
+	const form = ref({ name: "" });
+	const label = <b>JSX in a variable</b>;
 
-  return (
-    <div class={styles}>
-      {/* Event payload type: `next` is any. Caught by: content mapper (layer 3), outputs (layer 4). */}
-      <Counter onChange={(next: string) => next.toUpperCase()} />
-      {/* Unknown or misspelt event on a component. Caught by: compiler UF3xxx (layer 2). */}
-      <Counter onChnage={() => {}} />
-      {/* Children for a component that declares no default slot. Caught by: compiler. */}
-      <Counter>Unexpected children</Counter>
-      {/* Unknown model name and model type. Caught by: compiler (name), content mapper (type). */}
-      <Dialog label="x" v-model:opne={open.value} v-model:open={42} />
-      {/* A slot the child never declares, and slot-prop typos. Caught by: compiler (key), mapper (props). */}
-      <List items={[]}>{{ footer: () => "x", item: ({ itme }) => itme }}</List>
-      {/* Hyphenated names are exempt from excess-property checks in JSX (TypeScript rule).
+	return (
+		<div class={styles}>
+			{/* Event payload type: `next` is any. Caught by: content mapper (layer 3), outputs (layer 4). */}
+			<Counter onChange={(next: string) => next.toUpperCase()} />
+			{/* Unknown or misspelt event on a component. Caught by: compiler UF3xxx (layer 2). */}
+			<Counter onChnage={() => {}} />
+			{/* Children for a component that declares no default slot. Caught by: compiler. */}
+			<Counter>Unexpected children</Counter>
+			{/* Unknown model name and model type. Caught by: compiler (name), content mapper (type). */}
+			<Dialog label="x" v-model:opne={open.value} v-model:open={42} />
+			{/* A slot the child never declares, and slot-prop typos. Caught by: compiler (key), mapper (props). */}
+			<List items={[]}>{{ footer: () => "x", item: ({ itme }) => itme }}</List>
+			{/* Hyphenated names are exempt from excess-property checks in JSX (TypeScript rule).
           Caught by: compiler (aria-* against the ARIA list; v-model spellings). */}
-      <div aria-hiddenn="true" v-modl={open.value} v-model_trimm={open.value} />
-      {/* v-model on an element that has no value. Caught by: compiler. */}
-      <div v-model={open.value} />
-      {/* v-model on a non-assignable expression. Caught by: compiler (plan §4.3). */}
-      <input v-model={open.value && "x"} />
-      {/* Open string unions upstream declares as `... | (string & {})`. Inherited by design. */}
-      <input type="definitely-not-a-type" autocomplete="nonsense" />
-      {/* JSX outside the returned tree (plan §4.6). Caught by: compiler (UF3012). */}
-      {label}
-      {renderLabel()}
-      {/* In-place mutation (ADR-0008). Caught by: compiler (UF2004), with a fix. */}
-      <button type="button" onClick={() => list.value.push(1)}>
-        Push
-      </button>
-      <button type="button" onClick={() => (form.value.name = "Ada")}>
-        Rename
-      </button>
-      {/* Non-deterministic rendering (plan §4.5). Caught by: compiler (UF3019). */}
-      <span>{Math.random()}</span>
-    </div>
-  );
+			<div aria-hiddenn="true" v-modl={open.value} v-model_trimm={open.value} />
+			{/* v-model on an element that has no value. Caught by: compiler. */}
+			<div v-model={open.value} />
+			{/* v-model on a non-assignable expression. Caught by: compiler (plan §4.3). */}
+			<input v-model={open.value && "x"} />
+			{/* Open string unions upstream declares as `... | (string & {})`. Inherited by design. */}
+			<input type="definitely-not-a-type" autocomplete="nonsense" />
+			{/* JSX outside the returned tree (plan §4.6). Caught by: compiler (UF3012). */}
+			{label}
+			{renderLabel()}
+			{/* In-place mutation (ADR-0008). Caught by: compiler (UF2004), with a fix. */}
+			<button type="button" onClick={() => list.value.push(1)}>
+				Push
+			</button>
+			<button type="button" onClick={() => (form.value.name = "Ada")}>
+				Rename
+			</button>
+			{/* Non-deterministic rendering (plan §4.5). Caught by: compiler (UF3019). */}
+			<span>{Math.random()}</span>
+		</div>
+	);
 }
 
 // The props and static JSX of M1 (ADR-0034 to ADR-0040): mistakes the types accept, which the
 // compiler reports.
 export function M1BlindSpots({
-  label,
-  items,
-  active,
+	label,
+	items,
+	active,
 }: {
-  label: string;
-  items: string[];
-  active: boolean;
+	label: string;
+	items: string[];
+	active: boolean;
 }) {
-  return (
-    <section>
-      {/* A number on a length, which React and Qwik write with `px`. Caught by: compiler (UF3018). */}
-      <div style={{ marginTop: 2 }} />
-      {/* A kebab-case style key. Caught by: compiler (UF3004), with a fix to `marginTop`. */}
-      <div style={{ "margin-top": "2px" }} />
-      {/* A boolean on a data attribute, which Qwik drops when false. Caught by: compiler (UF3018). */}
-      <div data-active={active} />
-      {/* SVG's old `xlinkHref`. Caught by: compiler (UF3004), with a fix to `href`. */}
-      <svg>
-        <use xlinkHref="#icon" />
-      </svg>
-      {/* Markup rendered unescaped (ADR-0097). Caught by: compiler (UF3051, a warning). */}
-      <div innerHTML="<b>x</b>" />
-      {/* Children JSX renders as nothing and templates as text. Caught by: compiler (UF3016, UF1002). */}
-      <p>
-        {true}
-        {123n}
-      </p>
-      {/* An array of children. Caught by: compiler (UF3012, UF3016). */}
-      <p>{["a", <i>b</i>]}</p>
-      {/* A list without keys, and a key outside a list. Caught by: compiler (UF3013, UF3014). */}
-      <ul>
-        {items.map((item) => (
-          <li>{item}</li>
-        ))}
-      </ul>
-      <p key="intro">Intro</p>
-      {/* A list item that is a fragment. Caught by: compiler (UF3015). */}
-      <ul>
-        {items.map((item) => (
-          <>
-            <li>{item}</li>
-          </>
-        ))}
-      </ul>
-      {/* `??` on a value that is never nullish, which Angular rejects. Caught by: compiler (UF3023). */}
-      <p>{label ?? "Untitled"}</p>
-      {/* Sorting a prop in place. Caught by: compiler (UF3021), with a fix to `toSorted`. */}
-      <p>{items.sort().join(", ")}</p>
-      {/* Formatting by the machine's locale. Caught by: compiler (UF3019). */}
-      <p>{label.length.toLocaleString()}</p>
-    </section>
-  );
+	return (
+		<section>
+			{/* A number on a length, which React and Qwik write with `px`. Caught by: compiler (UF3018). */}
+			<div style={{ marginTop: 2 }} />
+			{/* A kebab-case style key. Caught by: compiler (UF3004), with a fix to `marginTop`. */}
+			<div style={{ "margin-top": "2px" }} />
+			{/* A boolean on a data attribute, which Qwik drops when false. Caught by: compiler (UF3018). */}
+			<div data-active={active} />
+			{/* SVG's old `xlinkHref`. Caught by: compiler (UF3004), with a fix to `href`. */}
+			<svg>
+				<use xlinkHref="#icon" />
+			</svg>
+			{/* Markup rendered unescaped (ADR-0097). Caught by: compiler (UF3051, a warning). */}
+			<div innerHTML="<b>x</b>" />
+			{/* Children JSX renders as nothing and templates as text. Caught by: compiler (UF3016, UF1002). */}
+			<p>
+				{true}
+				{123n}
+			</p>
+			{/* An array of children. Caught by: compiler (UF3012, UF3016). */}
+			<p>{["a", <i>b</i>]}</p>
+			{/* A list without keys, and a key outside a list. Caught by: compiler (UF3013, UF3014). */}
+			<ul>
+				{items.map((item) => (
+					<li>{item}</li>
+				))}
+			</ul>
+			<p key="intro">Intro</p>
+			{/* A list item that is a fragment. Caught by: compiler (UF3015). */}
+			<ul>
+				{items.map((item) => (
+					<>
+						<li>{item}</li>
+					</>
+				))}
+			</ul>
+			{/* `??` on a value that is never nullish, which Angular rejects. Caught by: compiler (UF3023). */}
+			<p>{label ?? "Untitled"}</p>
+			{/* Sorting a prop in place. Caught by: compiler (UF3021), with a fix to `toSorted`. */}
+			<p>{items.sort().join(", ")}</p>
+			{/* Formatting by the machine's locale. Caught by: compiler (UF3019). */}
+			<p>{label.length.toLocaleString()}</p>
+		</section>
+	);
 }
 
 // A conditional root: a component returns an element or a fragment. Caught by: compiler
 // (UF1102), with a fix that wraps it in a fragment.
 export function ConditionalRoot({ show }: { show: boolean }) {
-  return show ? <p>Shown</p> : null;
+	return show ? <p>Shown</p> : null;
 }
 
 export function ConditionalReturn({ show }: { show: boolean }) {
-  // An early or conditional return (plan §4.6). Caught by: compiler (UF2012).
-  if (!show) return null;
-  return <div />;
+	// An early or conditional return (plan §4.6). Caught by: compiler (UF2012).
+	if (!show) return null;
+	return <div />;
 }
 
 export function MisplacedReactiveApis({ show }: { show: boolean }) {
-  const count = ref(0);
-  // A lifecycle hook inside a condition, and a reactive API inside a nested function (plan §4.6).
-  // Caught by: compiler (UF2005).
-  if (show) onMounted(() => {});
-  const later = () => computed(() => count.value * 2);
-  return <output>{later().value}</output>;
+	const count = ref(0);
+	// A lifecycle hook inside a condition, and a reactive API inside a nested function (plan §4.6).
+	// Caught by: compiler (UF2005).
+	if (show) onMounted(() => {});
+	const later = () => computed(() => count.value * 2);
+	return <output>{later().value}</output>;
 }

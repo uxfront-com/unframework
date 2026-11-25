@@ -14,223 +14,223 @@ import { BROWSER_ENGINES, caseOfFile } from "../harness.ts";
 import type { HarnessContext } from "../harness.ts";
 import type { UfLayerMeta } from "../layers.ts";
 import {
-  buildPartialMatrix,
-  MATRIX_VERSION,
-  narrowing,
-  settleQuarantine,
-  stringifyMatrix,
-  withoutProjects,
+	buildPartialMatrix,
+	MATRIX_VERSION,
+	narrowing,
+	settleQuarantine,
+	stringifyMatrix,
+	withoutProjects,
 } from "./matrix.ts";
 import type { PartialMatrix, ProjectRecord, ProjectScope, Shard } from "./matrix.ts";
 
 /** The part of a Vitest test case the reporter reads. */
 interface ReportedTest {
-  project: { name: string };
-  fullName: string;
-  meta(): { uf?: UfLayerMeta };
-  result(): { state: "passed" | "failed" | "skipped" | "pending" };
+	project: { name: string };
+	fullName: string;
+	meta(): { uf?: UfLayerMeta };
+	result(): { state: "passed" | "failed" | "skipped" | "pending" };
 }
 
 /** The part of a Vitest test module the reporter reads. */
 interface ReportedModule {
-  project: { name: string };
-  meta(): { uf?: UfLayerMeta };
-  children: { allTests(): Iterable<ReportedTest> };
+	project: { name: string };
+	meta(): { uf?: UfLayerMeta };
+	children: { allTests(): Iterable<ReportedTest> };
 }
 
 /** The part of a Vitest project the reporter reads. */
 interface ReportedProject {
-  name: string;
-  config: { root: string; include: Array<string> };
-  getProvidedContext(): { ufHarness?: HarnessContext; ufOnly?: Array<string> };
+	name: string;
+	config: { root: string; include: Array<string> };
+	getProvidedContext(): { ufHarness?: HarnessContext; ufOnly?: Array<string> };
 }
 
 /** The part of the Vitest instance the reporter reads. */
 interface ReportedVitest {
-  projects: ReadonlyArray<ReportedProject>;
-  config: {
-    testNamePattern?: RegExp | undefined;
-    shard?: { index: number; count: number } | undefined;
-    watch?: boolean;
-    /** `--changed [since]`. */
-    changed?: boolean | string | undefined;
-    /** `vitest related <files>`, and the files `--changed` found. */
-    related?: ReadonlyArray<string> | undefined;
-    /** `--tags-filter`. */
-    tagsFilter?: ReadonlyArray<string> | undefined;
-  };
-  logger: { log(...messages: Array<unknown>): void; error(...messages: Array<unknown>): void };
-  /** Internal: the CLI's file filters. */
-  filenamePattern?: ReadonlyArray<string> | undefined;
+	projects: ReadonlyArray<ReportedProject>;
+	config: {
+		testNamePattern?: RegExp | undefined;
+		shard?: { index: number; count: number } | undefined;
+		watch?: boolean;
+		/** `--changed [since]`. */
+		changed?: boolean | string | undefined;
+		/** `vitest related <files>`, and the files `--changed` found. */
+		related?: ReadonlyArray<string> | undefined;
+		/** `--tags-filter`. */
+		tagsFilter?: ReadonlyArray<string> | undefined;
+	};
+	logger: { log(...messages: Array<unknown>): void; error(...messages: Array<unknown>): void };
+	/** Internal: the CLI's file filters. */
+	filenamePattern?: ReadonlyArray<string> | undefined;
 }
 
 /** Options for {@link ParityReporter}. */
 export interface ParityReporterOptions {
-  /** Where partial matrices go: `parity-matrix.<run>.json`. */
-  reportsDir: string;
-  /** Every project the config defines; a run of all of them is named `all`, and is complete. */
-  allProjects?: ReadonlyArray<string>;
-  /**
-   * A canary run's directory: its matrix goes to `<canaryDir>/parity-matrix.json`, where the
-   * canary runner reads it, and it supersedes no partial matrix.
-   */
-  canaryDir?: string;
+	/** Where partial matrices go: `parity-matrix.<run>.json`. */
+	reportsDir: string;
+	/** Every project the config defines; a run of all of them is named `all`, and is complete. */
+	allProjects?: ReadonlyArray<string>;
+	/**
+	 * A canary run's directory: its matrix goes to `<canaryDir>/parity-matrix.json`, where the
+	 * canary runner reads it, and it supersedes no partial matrix.
+	 */
+	canaryDir?: string;
 }
 
 /** The parity reporter. Add it to `test.reporters` next to Vitest's own. */
 export class ParityReporter {
-  readonly #options: ParityReporterOptions;
-  #vitest: ReportedVitest | undefined;
-  /** The matrix of the last finished run, for tooling and tests. */
-  matrix: PartialMatrix | undefined;
+	readonly #options: ParityReporterOptions;
+	#vitest: ReportedVitest | undefined;
+	/** The matrix of the last finished run, for tooling and tests. */
+	matrix: PartialMatrix | undefined;
 
-  constructor(options: ParityReporterOptions) {
-    this.#options = options;
-  }
+	constructor(options: ParityReporterOptions) {
+		this.#options = options;
+	}
 
-  onInit(vitest: ReportedVitest): void {
-    this.#vitest = vitest;
-  }
+	onInit(vitest: ReportedVitest): void {
+		this.#vitest = vitest;
+	}
 
-  onTestRunEnd(
-    testModules: ReadonlyArray<ReportedModule>,
-    errors: ReadonlyArray<unknown>,
-    reason: string,
-  ): void {
-    const vitest = this.#vitest;
-    if (!vitest) {
-      throw new Error("[uf:parity] onTestRunEnd ran before onInit.");
-    }
-    if (reason === "interrupted") {
-      vitest.logger.error("[uf:parity] The run was interrupted: no parity matrix written.");
-      return;
-    }
-    const projects = [...new Set(vitest.projects.map((project) => project.name))].sort();
-    const harness = vitest.projects
-      .map((project) => project.getProvidedContext().ufHarness)
-      .find((context) => context !== undefined);
-    const filtered = filterOf(vitest);
-    const shard: Shard | null = vitest.config.shard
-      ? { index: vitest.config.shard.index, count: vitest.config.shard.count }
-      : null;
-    // A shard runs whole files: its skips are real, but it may hold no file of a project.
-    const narrowed = narrowing({ filtered, shard });
-    const problems: Array<string> = [];
-    const counts = new Map<string, number>(projects.map((name) => [name, 0]));
-    const records: Array<ProjectRecord> = [];
-    const named = new Set<string>();
-    for (const module of testModules) {
-      const fileRecord = module.meta().uf;
-      if (fileRecord) {
-        records.push({ project: module.project.name, record: fileRecord });
-      }
-      for (const test of module.children.allTests()) {
-        counts.set(test.project.name, (counts.get(test.project.name) ?? 0) + 1);
-        // A record carries the parity scenarios the test checked too: a scenario one target
-        // leaves out shows in no cell, so the summary compares each target's with the reference's,
-        // test by test, by a name every target gives the test alike.
-        const meta = test.meta().uf;
-        const key = meta && testKey(test.fullName, meta.target);
-        // A hydrate project runs the browser project's tests again (L12, ADR-0095): their
-        // scenarios are judged there, so its records feed the cells alone, and never replace
-        // the browser project's test records, a skip by the hydration capability included.
-        const record =
-          meta && (isHydrateProject(test.project.name) ? { ...meta } : { ...meta, test: key });
-        if (record && key !== undefined) {
-          records.push({ project: test.project.name, record });
-          const identity = JSON.stringify([test.project.name, record.case, key]);
-          if (named.has(identity)) {
-            problems.push(
-              `${test.project.name}: two tests of ${record.case} are named "${key}". Each test of a case has a name of its own: the summary compares each target's tests with the reference's by name.`,
-            );
-          }
-          named.add(identity);
-        }
-        if (!filtered && test.result().state === "skipped" && !skipsWithReasons(record)) {
-          problems.push(
-            `${test.project.name}: "${test.fullName}" was skipped without recording why. A harness test never skips silently (plan §7.7): record each layer it skips, with the reason, before skipping.`,
-          );
-        }
-      }
-    }
+	onTestRunEnd(
+		testModules: ReadonlyArray<ReportedModule>,
+		errors: ReadonlyArray<unknown>,
+		reason: string,
+	): void {
+		const vitest = this.#vitest;
+		if (!vitest) {
+			throw new Error("[uf:parity] onTestRunEnd ran before onInit.");
+		}
+		if (reason === "interrupted") {
+			vitest.logger.error("[uf:parity] The run was interrupted: no parity matrix written.");
+			return;
+		}
+		const projects = [...new Set(vitest.projects.map((project) => project.name))].sort();
+		const harness = vitest.projects
+			.map((project) => project.getProvidedContext().ufHarness)
+			.find((context) => context !== undefined);
+		const filtered = filterOf(vitest);
+		const shard: Shard | null = vitest.config.shard
+			? { index: vitest.config.shard.index, count: vitest.config.shard.count }
+			: null;
+		// A shard runs whole files: its skips are real, but it may hold no file of a project.
+		const narrowed = narrowing({ filtered, shard });
+		const problems: Array<string> = [];
+		const counts = new Map<string, number>(projects.map((name) => [name, 0]));
+		const records: Array<ProjectRecord> = [];
+		const named = new Set<string>();
+		for (const module of testModules) {
+			const fileRecord = module.meta().uf;
+			if (fileRecord) {
+				records.push({ project: module.project.name, record: fileRecord });
+			}
+			for (const test of module.children.allTests()) {
+				counts.set(test.project.name, (counts.get(test.project.name) ?? 0) + 1);
+				// A record carries the parity scenarios the test checked too: a scenario one target
+				// leaves out shows in no cell, so the summary compares each target's with the reference's,
+				// test by test, by a name every target gives the test alike.
+				const meta = test.meta().uf;
+				const key = meta && testKey(test.fullName, meta.target);
+				// A hydrate project runs the browser project's tests again (L12, ADR-0095): their
+				// scenarios are judged there, so its records feed the cells alone, and never replace
+				// the browser project's test records, a skip by the hydration capability included.
+				const record =
+					meta && (isHydrateProject(test.project.name) ? { ...meta } : { ...meta, test: key });
+				if (record && key !== undefined) {
+					records.push({ project: test.project.name, record });
+					const identity = JSON.stringify([test.project.name, record.case, key]);
+					if (named.has(identity)) {
+						problems.push(
+							`${test.project.name}: two tests of ${record.case} are named "${key}". Each test of a case has a name of its own: the summary compares each target's tests with the reference's by name.`,
+						);
+					}
+					named.add(identity);
+				}
+				if (!filtered && test.result().state === "skipped" && !skipsWithReasons(record)) {
+					problems.push(
+						`${test.project.name}: "${test.fullName}" was skipped without recording why. A harness test never skips silently (plan §7.7): record each layer it skips, with the reason, before skipping.`,
+					);
+				}
+			}
+		}
 
-    const empty = projects.filter((name) => !counts.get(name));
-    if (empty.length) {
-      if (narrowed) {
-        vitest.logger.log(
-          `[uf:parity] Not checking for empty projects: the run covers only ${narrowed}. Empty: ${empty.join(", ")}.`,
-        );
-      } else {
-        problems.push(
-          `${empty.length} selected project(s) collected zero tests: ${empty.join(", ")}. A project that runs nothing verifies nothing.`,
-        );
-      }
-    }
+		const empty = projects.filter((name) => !counts.get(name));
+		if (empty.length) {
+			if (narrowed) {
+				vitest.logger.log(
+					`[uf:parity] Not checking for empty projects: the run covers only ${narrowed}. Empty: ${empty.join(", ")}.`,
+				);
+			} else {
+				problems.push(
+					`${empty.length} selected project(s) collected zero tests: ${empty.join(", ")}. A project that runs nothing verifies nothing.`,
+				);
+			}
+		}
 
-    const all = runName(projects, this.#options.allProjects);
-    const complete = !narrowed && all === "all" && this.#options.allProjects !== undefined;
-    const matrix = buildPartialMatrix({
-      // Each shard's matrix has a name of its own: CI's parity job downloads them side by side.
-      run: [
-        all,
-        ...(shard ? [`shard-${shard.index}-of-${shard.count}`] : []),
-        ...(filtered ? [`filtered-${hash(filtered)}`] : []),
-      ].join("+"),
-      projects,
-      records,
-      finishedAt: new Date().toISOString(),
-      mode: harness
-        ? { update: harness.update, pixels: harness.pixels, canary: harness.canary }
-        : null,
-      filtered,
-      shard,
-      empty,
-      quarantine: harness?.quarantine ?? [],
-      reference: harness?.reference ?? null,
-      references: Object.fromEntries(
-        Object.entries(harness?.cases ?? {}).flatMap(([id, config]) =>
-          config.reference ? [[id, config.reference]] : [],
-        ),
-      ),
-      // What the summary quotes when a reference's project stopped before it finished a case
-      // its followers compare with (ADR-0091): Vitest reports the closed connection only here.
-      errors: [...new Set(errors.map((error) => errorMessages(error).join("; caused by: ")))],
-    });
-    if (complete) {
-      // Every record of every cell is here: a quarantined cell that no longer fails is stale.
-      problems.push(...settleQuarantine(matrix.cases, matrix.quarantine, { stale: true }));
-    } else if (matrix.quarantine.length) {
-      vitest.logger.log(
-        "[uf:parity] Quarantine entries are checked for staleness when every project runs (or in the merged summary).",
-      );
-    }
-    this.matrix = matrix;
+		const all = runName(projects, this.#options.allProjects);
+		const complete = !narrowed && all === "all" && this.#options.allProjects !== undefined;
+		const matrix = buildPartialMatrix({
+			// Each shard's matrix has a name of its own: CI's parity job downloads them side by side.
+			run: [
+				all,
+				...(shard ? [`shard-${shard.index}-of-${shard.count}`] : []),
+				...(filtered ? [`filtered-${hash(filtered)}`] : []),
+			].join("+"),
+			projects,
+			records,
+			finishedAt: new Date().toISOString(),
+			mode: harness
+				? { update: harness.update, pixels: harness.pixels, canary: harness.canary }
+				: null,
+			filtered,
+			shard,
+			empty,
+			quarantine: harness?.quarantine ?? [],
+			reference: harness?.reference ?? null,
+			references: Object.fromEntries(
+				Object.entries(harness?.cases ?? {}).flatMap(([id, config]) =>
+					config.reference ? [[id, config.reference]] : [],
+				),
+			),
+			// What the summary quotes when a reference's project stopped before it finished a case
+			// its followers compare with (ADR-0091): Vitest reports the closed connection only here.
+			errors: [...new Set(errors.map((error) => errorMessages(error).join("; caused by: ")))],
+		});
+		if (complete) {
+			// Every record of every cell is here: a quarantined cell that no longer fails is stale.
+			problems.push(...settleQuarantine(matrix.cases, matrix.quarantine, { stale: true }));
+		} else if (matrix.quarantine.length) {
+			vitest.logger.log(
+				"[uf:parity] Quarantine entries are checked for staleness when every project runs (or in the merged summary).",
+			);
+		}
+		this.matrix = matrix;
 
-    if (this.#options.canaryDir) {
-      mkdirSync(this.#options.canaryDir, { recursive: true });
-      writeFileSync(join(this.#options.canaryDir, "parity-matrix.json"), stringifyMatrix(matrix));
-    } else {
-      mkdirSync(this.#options.reportsDir, { recursive: true });
-      const file = join(this.#options.reportsDir, `parity-matrix.${matrix.run}.json`);
-      writeFileSync(file, stringifyMatrix(matrix));
-      if (!narrowed) {
-        const scopes = scopesOf(vitest.projects, records, harness);
-        for (const line of supersede(this.#options.reportsDir, file, new Set(projects), scopes)) {
-          vitest.logger.log(`[uf:parity] ${line}`);
-        }
-      }
-      vitest.logger.log(
-        `[uf:parity] ${records.length} record(s) from ${projects.length} project(s) → ${file}`,
-      );
-    }
+		if (this.#options.canaryDir) {
+			mkdirSync(this.#options.canaryDir, { recursive: true });
+			writeFileSync(join(this.#options.canaryDir, "parity-matrix.json"), stringifyMatrix(matrix));
+		} else {
+			mkdirSync(this.#options.reportsDir, { recursive: true });
+			const file = join(this.#options.reportsDir, `parity-matrix.${matrix.run}.json`);
+			writeFileSync(file, stringifyMatrix(matrix));
+			if (!narrowed) {
+				const scopes = scopesOf(vitest.projects, records, harness);
+				for (const line of supersede(this.#options.reportsDir, file, new Set(projects), scopes)) {
+					vitest.logger.log(`[uf:parity] ${line}`);
+				}
+			}
+			vitest.logger.log(
+				`[uf:parity] ${records.length} record(s) from ${projects.length} project(s) → ${file}`,
+			);
+		}
 
-    if (problems.length) {
-      vitest.logger.error(
-        `[uf:parity] ${problems.length} problem(s) beyond the failed tests:\n  ${problems.join("\n  ")}`,
-      );
-      process.exitCode = 1;
-    }
-  }
+		if (problems.length) {
+			vitest.logger.error(
+				`[uf:parity] ${problems.length} problem(s) beyond the failed tests:\n  ${problems.join("\n  ")}`,
+			);
+			process.exitCode = 1;
+		}
+	}
 }
 
 /**
@@ -239,28 +239,28 @@ export class ParityReporter {
  * supersedes nothing; unlike a shard's, its skipped tests may be ones it filtered out.
  */
 function filterOf(vitest: ReportedVitest): string | null {
-  const reasons: Array<string> = [];
-  if (vitest.filenamePattern?.length) {
-    reasons.push(`files matching ${vitest.filenamePattern.join(", ")}`);
-  }
-  if (vitest.config.testNamePattern) {
-    reasons.push(`tests named ${vitest.config.testNamePattern}`);
-  }
-  const { changed, related, tagsFilter } = vitest.config;
-  if (changed) {
-    reasons.push(
-      `files affected by ${changed === true ? "uncommitted changes" : `changes since ${changed}`}`,
-    );
-  } else if (related?.length) {
-    reasons.push(`tests related to ${related.join(", ")}`);
-  }
-  if (tagsFilter?.length) {
-    reasons.push(`tests tagged ${tagsFilter.join(" ")}`);
-  }
-  if (vitest.config.watch) {
-    reasons.push("watch mode, which reruns only what changed");
-  }
-  return reasons.length ? reasons.join("; ") : null;
+	const reasons: Array<string> = [];
+	if (vitest.filenamePattern?.length) {
+		reasons.push(`files matching ${vitest.filenamePattern.join(", ")}`);
+	}
+	if (vitest.config.testNamePattern) {
+		reasons.push(`tests named ${vitest.config.testNamePattern}`);
+	}
+	const { changed, related, tagsFilter } = vitest.config;
+	if (changed) {
+		reasons.push(
+			`files affected by ${changed === true ? "uncommitted changes" : `changes since ${changed}`}`,
+		);
+	} else if (related?.length) {
+		reasons.push(`tests related to ${related.join(", ")}`);
+	}
+	if (tagsFilter?.length) {
+		reasons.push(`tests tagged ${tagsFilter.join(" ")}`);
+	}
+	if (vitest.config.watch) {
+		reasons.push("watch mode, which reruns only what changed");
+	}
+	return reasons.length ? reasons.join("; ") : null;
 }
 
 /**
@@ -268,41 +268,41 @@ function filterOf(vitest: ReportedVitest): string | null {
  * [vue] > increments` → `state/counter > increments`): the same on every target.
  */
 export function testKey(fullName: string, target: string): string {
-  const suffix = ` [${target}]`;
-  return fullName
-    .split(" > ")
-    .map((part) => (part.endsWith(suffix) ? part.slice(0, -suffix.length) : part))
-    .join(" > ");
+	const suffix = ` [${target}]`;
+	return fullName
+		.split(" > ")
+		.map((part) => (part.endsWith(suffix) ? part.slice(0, -suffix.length) : part))
+		.join(" > ");
 }
 
 /** Whether a skipped test recorded every layer it skipped, each with a reason. */
 function skipsWithReasons(record: UfLayerMeta | undefined): boolean {
-  const outcomes = Object.values(record?.layers ?? {});
-  return outcomes.length > 0 && outcomes.every((outcome) => outcome.status === "skip");
+	const outcomes = Object.values(record?.layers ?? {});
+	return outcomes.length > 0 && outcomes.every((outcome) => outcome.status === "skip");
 }
 
 /** A file-name-safe name for the selected projects: `all`, or the project names. */
 export function runName(
-  projects: ReadonlyArray<string>,
-  allProjects?: ReadonlyArray<string>,
+	projects: ReadonlyArray<string>,
+	allProjects?: ReadonlyArray<string>,
 ): string {
-  const selected = [...new Set(projects)].sort();
-  if (allProjects && [...new Set(allProjects)].sort().join("\n") === selected.join("\n")) {
-    return "all";
-  }
-  const joined = selected.map((name) => name.replaceAll(/[^a-zA-Z0-9-]+/g, "-")).join("+");
-  if (joined.length <= 80) {
-    return joined || "none";
-  }
-  return `${joined.slice(0, 60)}+${hash(joined)}`;
+	const selected = [...new Set(projects)].sort();
+	if (allProjects && [...new Set(allProjects)].sort().join("\n") === selected.join("\n")) {
+		return "all";
+	}
+	const joined = selected.map((name) => name.replaceAll(/[^a-zA-Z0-9-]+/g, "-")).join("+");
+	if (joined.length <= 80) {
+		return joined || "none";
+	}
+	return `${joined.slice(0, 60)}+${hash(joined)}`;
 }
 
 function hash(text: string): string {
-  let value = 0;
-  for (const char of text) {
-    value = (Math.imul(value, 31) + char.charCodeAt(0)) >>> 0;
-  }
-  return value.toString(36);
+	let value = 0;
+	for (const char of text) {
+		value = (Math.imul(value, 31) + char.charCodeAt(0)) >>> 0;
+	}
+	return value.toString(36);
 }
 
 /**
@@ -310,30 +310,30 @@ function hash(text: string): string {
  * matrix, `parity-matrix.<engine>.json` (ADR-0066), is not: no run is named after an engine.
  */
 export function isPartialMatrixFile(name: string): boolean {
-  const run = /^parity-matrix\.(.+)\.json$/.exec(name)?.[1];
-  return run !== undefined && !(BROWSER_ENGINES as ReadonlyArray<string>).includes(run);
+	const run = /^parity-matrix\.(.+)\.json$/.exec(name)?.[1];
+	return run !== undefined && !(BROWSER_ENGINES as ReadonlyArray<string>).includes(run);
 }
 
 /** The partial matrices in a directory, by file. Throws on one that is not a current matrix. */
 export function readPartialMatrices(reportsDir: string): Map<string, PartialMatrix> {
-  const matrices = new Map<string, PartialMatrix>();
-  if (!existsSync(reportsDir)) {
-    return matrices;
-  }
-  for (const name of readdirSync(reportsDir).sort()) {
-    if (!isPartialMatrixFile(name)) {
-      continue;
-    }
-    const file = join(reportsDir, name);
-    const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;
-    if (matrix.version !== MATRIX_VERSION || !matrix.byProject) {
-      throw new Error(
-        `[uf] ${file} is a parity matrix of version ${String(matrix.version)}, not ${MATRIX_VERSION}: rerun the tests to replace it.`,
-      );
-    }
-    matrices.set(file, matrix);
-  }
-  return matrices;
+	const matrices = new Map<string, PartialMatrix>();
+	if (!existsSync(reportsDir)) {
+		return matrices;
+	}
+	for (const name of readdirSync(reportsDir).sort()) {
+		if (!isPartialMatrixFile(name)) {
+			continue;
+		}
+		const file = join(reportsDir, name);
+		const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;
+		if (matrix.version !== MATRIX_VERSION || !matrix.byProject) {
+			throw new Error(
+				`[uf] ${file} is a parity matrix of version ${String(matrix.version)}, not ${MATRIX_VERSION}: rerun the tests to replace it.`,
+			);
+		}
+		matrices.set(file, matrix);
+	}
+	return matrices;
 }
 
 /**
@@ -346,22 +346,22 @@ export function readPartialMatrices(reportsDir: string): Map<string, PartialMatr
  * and names no cases re-judged all of it.
  */
 function scopesOf(
-  projects: ReadonlyArray<ReportedProject>,
-  records: ReadonlyArray<ProjectRecord>,
-  harness: HarnessContext | undefined,
+	projects: ReadonlyArray<ReportedProject>,
+	records: ReadonlyArray<ProjectRecord>,
+	harness: HarnessContext | undefined,
 ): Map<string, ProjectScope> {
-  const scopes = new Map<string, ProjectScope>();
-  for (const project of projects) {
-    const targets = new Set(
-      records.filter((entry) => entry.project === project.name).map((entry) => entry.record.target),
-    );
-    const cases = project.getProvidedContext().ufOnly ?? includedCases(project, harness);
-    scopes.set(project.name, {
-      ...(targets.size ? { targets } : {}),
-      ...(cases ? { cases: new Set(cases) } : {}),
-    });
-  }
-  return scopes;
+	const scopes = new Map<string, ProjectScope>();
+	for (const project of projects) {
+		const targets = new Set(
+			records.filter((entry) => entry.project === project.name).map((entry) => entry.record.target),
+		);
+		const cases = project.getProvidedContext().ufOnly ?? includedCases(project, harness);
+		scopes.set(project.name, {
+			...(targets.size ? { targets } : {}),
+			...(cases ? { cases: new Set(cases) } : {}),
+		});
+	}
+	return scopes;
 }
 
 /**
@@ -370,18 +370,18 @@ function scopesOf(
  * cases alone, and gives every other project a pattern or a harness file.
  */
 function includedCases(
-  project: ReportedProject,
-  harness: HarnessContext | undefined,
+	project: ReportedProject,
+	harness: HarnessContext | undefined,
 ): Array<string> | undefined {
-  const { root, include } = project.config;
-  if (!harness || !include.length || include.some((entry) => /[*?[\]{}!]/.test(entry))) {
-    return undefined;
-  }
-  try {
-    return include.map((entry) => caseOfFile(resolve(root, entry), harness));
-  } catch {
-    return undefined;
-  }
+	const { root, include } = project.config;
+	if (!harness || !include.length || include.some((entry) => /[*?[\]{}!]/.test(entry))) {
+		return undefined;
+	}
+	try {
+		return include.map((entry) => caseOfFile(resolve(root, entry), harness));
+	} catch {
+		return undefined;
+	}
 }
 
 /**
@@ -391,49 +391,49 @@ function includedCases(
  * too, as nothing can merge it. Returns what it did.
  */
 function supersede(
-  reportsDir: string,
-  written: string,
-  projects: ReadonlySet<string>,
-  scopes: ReadonlyMap<string, ProjectScope>,
+	reportsDir: string,
+	written: string,
+	projects: ReadonlySet<string>,
+	scopes: ReadonlyMap<string, ProjectScope>,
 ): Array<string> {
-  const done: Array<string> = [];
-  for (const name of readdirSync(reportsDir).sort()) {
-    if (!isPartialMatrixFile(name)) {
-      continue;
-    }
-    const file = join(reportsDir, name);
-    if (file === written) {
-      continue;
-    }
-    const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;
-    if (matrix.version !== MATRIX_VERSION || !matrix.byProject) {
-      rmSync(file);
-      done.push(`Removed ${name}: a matrix of an older format.`);
-      continue;
-    }
-    const kept = withoutProjects(matrix, projects, scopes);
-    if (kept === matrix) {
-      continue;
-    }
-    if (kept) {
-      writeFileSync(file, stringifyMatrix(kept));
-      const superseded = matrix.projects.filter(
-        (project) =>
-          !kept.projects.includes(project) ||
-          kept.byProject[project] !== matrix.byProject[project] ||
-          kept.scenariosByProject[project] !== matrix.scenariosByProject[project] ||
-          kept.testsByProject[project] !== matrix.testsByProject[project],
-      );
-      done.push(`Superseded ${superseded.length} project(s) of ${name}.`);
-    } else {
-      rmSync(file);
-      done.push(`Superseded ${name}.`);
-    }
-  }
-  return done;
+	const done: Array<string> = [];
+	for (const name of readdirSync(reportsDir).sort()) {
+		if (!isPartialMatrixFile(name)) {
+			continue;
+		}
+		const file = join(reportsDir, name);
+		if (file === written) {
+			continue;
+		}
+		const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;
+		if (matrix.version !== MATRIX_VERSION || !matrix.byProject) {
+			rmSync(file);
+			done.push(`Removed ${name}: a matrix of an older format.`);
+			continue;
+		}
+		const kept = withoutProjects(matrix, projects, scopes);
+		if (kept === matrix) {
+			continue;
+		}
+		if (kept) {
+			writeFileSync(file, stringifyMatrix(kept));
+			const superseded = matrix.projects.filter(
+				(project) =>
+					!kept.projects.includes(project) ||
+					kept.byProject[project] !== matrix.byProject[project] ||
+					kept.scenariosByProject[project] !== matrix.scenariosByProject[project] ||
+					kept.testsByProject[project] !== matrix.testsByProject[project],
+			);
+			done.push(`Superseded ${superseded.length} project(s) of ${name}.`);
+		} else {
+			rmSync(file);
+			done.push(`Superseded ${name}.`);
+		}
+	}
+	return done;
 }
 
 /** Whether a project is a hydrate project (`hydrate:<target>`, L12, ADR-0095). */
 export function isHydrateProject(name: string): boolean {
-  return name.startsWith("hydrate:");
+	return name.startsWith("hydrate:");
 }

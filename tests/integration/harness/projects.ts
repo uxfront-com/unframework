@@ -23,17 +23,17 @@ import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
 import { builtinTargets } from "@unframework.dev/compiler";
 import type { TargetName } from "@unframework.dev/compiler";
 import {
-  caseReferences,
-  formatError,
-  groupOrder,
-  parityBrowser,
-  recordCompiledModule,
+	caseReferences,
+	formatError,
+	groupOrder,
+	parityBrowser,
+	recordCompiledModule,
 } from "@unframework.dev/testing/node";
 import type {
-  HarnessContext,
-  HarnessMode,
-  LayerName,
-  ProjectKind,
+	HarnessContext,
+	HarnessMode,
+	LayerName,
+	ProjectKind,
 } from "@unframework.dev/testing/node";
 import type { UnframeworkOptions } from "@unframework.dev/unplugin/vite";
 import type { Plugin } from "vite";
@@ -54,17 +54,17 @@ import { ufMapStack } from "./thrown.ts";
 
 /** What every project factory needs. */
 export interface HarnessSetup {
-  harness: HarnessContext;
-  mode: HarnessMode;
-  targets: ReadonlyArray<string>;
-  /** `--project` patterns from the command line; unselected projects load no toolchain. */
-  projectFilter?: ReadonlyArray<string> | undefined;
-  /**
-   * The targets some case names as its own reference (ADR-0057), each with those cases: their
-   * `ssr:` and `browser:` projects run on those cases alone. A target the run leaves out joins
-   * with them, so the other targets have the case's expectations and pixels to compare with.
-   */
-  referencesOnly?: Readonly<Record<string, ReadonlyArray<string>>>;
+	harness: HarnessContext;
+	mode: HarnessMode;
+	targets: ReadonlyArray<string>;
+	/** `--project` patterns from the command line; unselected projects load no toolchain. */
+	projectFilter?: ReadonlyArray<string> | undefined;
+	/**
+	 * The targets some case names as its own reference (ADR-0057), each with those cases: their
+	 * `ssr:` and `browser:` projects run on those cases alone. A target the run leaves out joins
+	 * with them, so the other targets have the case's expectations and pixels to compare with.
+	 */
+	referencesOnly?: Readonly<Record<string, ReadonlyArray<string>>>;
 }
 
 /**
@@ -74,18 +74,18 @@ export interface HarnessSetup {
  * cases, and leaves the caller's filters and options to Vitest.
  */
 export function referencesOnly(
-  cases: Readonly<Record<string, { reference?: string }>>,
-  targets: ReadonlyArray<string>,
-  pass: boolean = process.env.UF_REFERENCE_PASS === "1",
+	cases: Readonly<Record<string, { reference?: string }>>,
+	targets: ReadonlyArray<string>,
+	pass: boolean = process.env.UF_REFERENCE_PASS === "1",
 ): Record<string, Array<string>> {
-  const only: Record<string, Array<string>> = {};
-  for (const [id, config] of Object.entries(cases)) {
-    if (config.reference === undefined || (!pass && targets.includes(config.reference))) {
-      continue;
-    }
-    (only[config.reference] ??= []).push(id);
-  }
-  return only;
+	const only: Record<string, Array<string>> = {};
+	for (const [id, config] of Object.entries(cases)) {
+		if (config.reference === undefined || (!pass && targets.includes(config.reference))) {
+			continue;
+		}
+		(only[config.reference] ??= []).push(id);
+	}
+	return only;
 }
 
 /** What every node project runs with, unless its toolchain needs otherwise. */
@@ -93,9 +93,9 @@ const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as
 
 /** The layers each kind of project records, which an unavailable project fails. */
 const LAYERS_OF: Record<"ssr" | "browser" | "hydrate", Array<LayerName>> = {
-  ssr: ["L6", "L13"],
-  browser: ["L7", "L8", "L9", "L10", "L11", "L13", "L14"],
-  hydrate: ["L12"],
+	ssr: ["L6", "L13"],
+	browser: ["L7", "L8", "L9", "L10", "L11", "L13", "L14"],
+	hydrate: ["L12"],
 };
 
 /** The budgets' project: left out of a run that does not name it, so `pnpm test` stays short. */
@@ -103,61 +103,61 @@ export const BENCH_PROJECT = "bench";
 
 /** The name of every project of the default run, in order: what a run of all of them covers. */
 export function projectNames(targets: ReadonlyArray<string>): Array<string> {
-  return [
-    "compile",
-    "harness",
-    ...targets.map((target) => `toolchain:${target}`),
-    ...targets.map((target) => `ssr:${target}`),
-    ...targets.map((target) => `browser:${target}`),
-    ...targets.map((target) => `hydrate:${target}`),
-  ];
+	return [
+		"compile",
+		"harness",
+		...targets.map((target) => `toolchain:${target}`),
+		...targets.map((target) => `ssr:${target}`),
+		...targets.map((target) => `browser:${target}`),
+		...targets.map((target) => `hydrate:${target}`),
+	];
 }
 
 /** What CI's parity job requires: the default run's projects, and the `Bench` job's. */
 export function parityProjects(targets: ReadonlyArray<string>): Array<string> {
-  return [...projectNames(targets), BENCH_PROJECT];
+	return [...projectNames(targets), BENCH_PROJECT];
 }
 
 /** Every project of the harness. */
 export function harnessProjects(setup: HarnessSetup): Array<TestProjectConfiguration> {
-  return [
-    nodeProject(setup, "compile", "compile", undefined, ["harness/compile.test.ts"]),
-    nodeProject(setup, "harness", "harness", undefined, ["harness/*.unit.test.ts"]),
-    // By its exact name: a wildcard that selects everything still means the default run.
-    ...(setup.projectFilter?.includes(BENCH_PROJECT)
-      ? [
-          nodeProject(setup, BENCH_PROJECT, "bench", undefined, ["harness/bench.test.ts"], {
-            // Every timed iteration, then each target's compile and bundle of the corpus.
-            hookTimeout: 1_800_000,
-          }),
-        ]
-      : []),
-    ...setup.targets.map((target) =>
-      nodeProject(
-        setup,
-        `toolchain:${target}`,
-        "toolchain",
-        target,
-        // The production proof of `isDev` beside L3 to L5 (ADR-0117).
-        ["harness/toolchain.test.ts", "harness/dev-only.test.ts"],
-        {
-          // One framework compile and one checker run over the whole corpus, in beforeAll.
-          hookTimeout: 300_000,
-        },
-      ),
-    ),
-    ...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
-    ...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
-    ...setup.targets.map((target) => lazyProject(setup, "hydrate", target, hydrateProject)),
-    ...Object.keys(setup.referencesOnly ?? {}).flatMap((target) =>
-      setup.targets.includes(target)
-        ? []
-        : [
-            lazyProject(setup, "ssr", target, ssrProject),
-            lazyProject(setup, "browser", target, browserProject),
-          ],
-    ),
-  ];
+	return [
+		nodeProject(setup, "compile", "compile", undefined, ["harness/compile.test.ts"]),
+		nodeProject(setup, "harness", "harness", undefined, ["harness/*.unit.test.ts"]),
+		// By its exact name: a wildcard that selects everything still means the default run.
+		...(setup.projectFilter?.includes(BENCH_PROJECT)
+			? [
+					nodeProject(setup, BENCH_PROJECT, "bench", undefined, ["harness/bench.test.ts"], {
+						// Every timed iteration, then each target's compile and bundle of the corpus.
+						hookTimeout: 1_800_000,
+					}),
+				]
+			: []),
+		...setup.targets.map((target) =>
+			nodeProject(
+				setup,
+				`toolchain:${target}`,
+				"toolchain",
+				target,
+				// The production proof of `isDev` beside L3 to L5 (ADR-0117).
+				["harness/toolchain.test.ts", "harness/dev-only.test.ts"],
+				{
+					// One framework compile and one checker run over the whole corpus, in beforeAll.
+					hookTimeout: 300_000,
+				},
+			),
+		),
+		...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
+		...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
+		...setup.targets.map((target) => lazyProject(setup, "hydrate", target, hydrateProject)),
+		...Object.keys(setup.referencesOnly ?? {}).flatMap((target) =>
+			setup.targets.includes(target)
+				? []
+				: [
+						lazyProject(setup, "ssr", target, ssrProject),
+						lazyProject(setup, "browser", target, browserProject),
+					],
+		),
+	];
 }
 
 /**
@@ -167,7 +167,7 @@ export function harnessProjects(setup: HarnessSetup): Array<TestProjectConfigura
  * at once ran the nightly's WebKit job out of memory.
  */
 export function fileParallelism(mode: Pick<HarnessMode, "browser">): boolean {
-  return mode.browser === undefined || mode.browser === "chromium";
+	return mode.browser === undefined || mode.browser === "chromium";
 }
 
 /**
@@ -177,7 +177,7 @@ export function fileParallelism(mode: Pick<HarnessMode, "browser">): boolean {
  * the framework load once per page, not once per file.
  */
 export const FRESH_PAGE_PER_FILE: Readonly<Record<string, string>> = {
-  vue: "Vue's development build rethrows an error that a lifecycle hook throws out of its post-flush queue, which then never runs again on that page. sourcemaps/mounted-throws throws there on purpose (L14), so no later spec file's mounted hooks would run.",
+	vue: "Vue's development build rethrows an error that a lifecycle hook throws out of its post-flush queue, which then never runs again on that page. sourcemaps/mounted-throws throws there on purpose (L14), so no later spec file's mounted hooks would run.",
 };
 
 /**
@@ -187,16 +187,16 @@ export const FRESH_PAGE_PER_FILE: Readonly<Record<string, string>> = {
  * A target takes one case at most: two could meet on one page, and a second needs another design.
  */
 export const LEAVES_PAGE_UNUSABLE: Readonly<Record<string, { case: string; reason: string }>> = {
-  vue: {
-    case: "sourcemaps/mounted-throws",
-    reason:
-      "Its child's onMounted throws on purpose (L14). Vue's development build rethrows the error out of its post-flush queue, which then never runs again on that page, so no later spec file's mounted hooks would run.",
-  },
+	vue: {
+		case: "sourcemaps/mounted-throws",
+		reason:
+			"Its child's onMounted throws on purpose (L14). Vue's development build rethrows the error out of its post-flush queue, which then never runs again on that page, so no later spec file's mounted hooks would run.",
+	},
 };
 
 /** A project's `maxWorkers`, when it has its own page count. */
 function pagesOption(pages: number | undefined): { maxWorkers?: number } {
-  return pages === undefined ? {} : { maxWorkers: pages };
+	return pages === undefined ? {} : { maxWorkers: pages };
 }
 
 /**
@@ -206,48 +206,48 @@ function pagesOption(pages: number | undefined): { maxWorkers?: number } {
  * file a `-t` run skips, which starved the few tests the run keeps.
  */
 export function isolatesFiles(kind: "browser" | "hydrate", target: string): boolean {
-  return kind === "browser" && Object.hasOwn(FRESH_PAGE_PER_FILE, target);
+	return kind === "browser" && Object.hasOwn(FRESH_PAGE_PER_FILE, target);
 }
 
 /** A project of the harness, as `harnessProjects` lists it: what its group depends on. */
 export interface ProjectEntry {
-  name: string;
-  kind: ProjectKind;
-  target: string | undefined;
+	name: string;
+	kind: ProjectKind;
+	target: string | undefined;
 }
 
 /** Every project `harnessProjects` makes, with its kind and target, in the same order. */
 export function projectEntries(setup: HarnessSetup): Array<ProjectEntry> {
-  const extra = Object.keys(setup.referencesOnly ?? {}).filter(
-    (target) => !setup.targets.includes(target),
-  );
-  return [
-    { name: "compile", kind: "compile", target: undefined },
-    { name: "harness", kind: "harness", target: undefined },
-    ...(setup.projectFilter?.includes(BENCH_PROJECT)
-      ? [{ name: BENCH_PROJECT, kind: "bench" as const, target: undefined }]
-      : []),
-    ...setup.targets.map((target) => ({
-      name: `toolchain:${target}`,
-      kind: "toolchain" as const,
-      target,
-    })),
-    ...setup.targets.map((target) => ({ name: `ssr:${target}`, kind: "ssr" as const, target })),
-    ...setup.targets.map((target) => ({
-      name: `browser:${target}`,
-      kind: "browser" as const,
-      target,
-    })),
-    ...setup.targets.map((target) => ({
-      name: `hydrate:${target}`,
-      kind: "hydrate" as const,
-      target,
-    })),
-    ...extra.flatMap((target) => [
-      { name: `ssr:${target}`, kind: "ssr" as const, target },
-      { name: `browser:${target}`, kind: "browser" as const, target },
-    ]),
-  ];
+	const extra = Object.keys(setup.referencesOnly ?? {}).filter(
+		(target) => !setup.targets.includes(target),
+	);
+	return [
+		{ name: "compile", kind: "compile", target: undefined },
+		{ name: "harness", kind: "harness", target: undefined },
+		...(setup.projectFilter?.includes(BENCH_PROJECT)
+			? [{ name: BENCH_PROJECT, kind: "bench" as const, target: undefined }]
+			: []),
+		...setup.targets.map((target) => ({
+			name: `toolchain:${target}`,
+			kind: "toolchain" as const,
+			target,
+		})),
+		...setup.targets.map((target) => ({ name: `ssr:${target}`, kind: "ssr" as const, target })),
+		...setup.targets.map((target) => ({
+			name: `browser:${target}`,
+			kind: "browser" as const,
+			target,
+		})),
+		...setup.targets.map((target) => ({
+			name: `hydrate:${target}`,
+			kind: "hydrate" as const,
+			target,
+		})),
+		...extra.flatMap((target) => [
+			{ name: `ssr:${target}`, kind: "ssr" as const, target },
+			{ name: `browser:${target}`, kind: "browser" as const, target },
+		]),
+	];
 }
 
 /** The tester pages the reference's browser project opens for each CPU, while it runs alone. */
@@ -270,38 +270,38 @@ export const MAX_REFERENCE_PAGES = 28;
  * `--maxWorkers` the caller gives keep their own.
  */
 export function referencePages(
-  setup: HarnessSetup,
-  cpus: number,
-  argv: ReadonlyArray<string> = process.argv,
-  env: Readonly<Record<string, string | undefined>> = process.env,
+	setup: HarnessSetup,
+	cpus: number,
+	argv: ReadonlyArray<string> = process.argv,
+	env: Readonly<Record<string, string | undefined>> = process.env,
 ): number | undefined {
-  // An update run writes artefacts, so it keeps the page count it has always had.
-  if (setup.mode.update || !fileParallelism(setup.mode)) {
-    return undefined;
-  }
-  if (env.VITEST_MAX_WORKERS !== undefined) {
-    return undefined;
-  }
-  if (argv.some((arg) => /^--max-?workers(=|$)/i.test(arg))) {
-    return undefined;
-  }
-  const selected = projectEntries(setup).filter((entry) =>
-    isSelected(entry.name, setup.projectFilter),
-  );
-  const reference = selected.find(
-    (entry) => entry.kind === "browser" && entry.target === REFERENCE,
-  );
-  if (!reference) {
-    return undefined;
-  }
-  const group = projectGroup(setup, reference.kind, reference.target);
-  const shared = selected.some(
-    (entry) => entry !== reference && projectGroup(setup, entry.kind, entry.target) === group,
-  );
-  if (shared) {
-    return undefined;
-  }
-  return Math.min(MAX_REFERENCE_PAGES, Math.max(1, Math.round(cpus * REFERENCE_PAGES_PER_CPU)));
+	// An update run writes artefacts, so it keeps the page count it has always had.
+	if (setup.mode.update || !fileParallelism(setup.mode)) {
+		return undefined;
+	}
+	if (env.VITEST_MAX_WORKERS !== undefined) {
+		return undefined;
+	}
+	if (argv.some((arg) => /^--max-?workers(=|$)/i.test(arg))) {
+		return undefined;
+	}
+	const selected = projectEntries(setup).filter((entry) =>
+		isSelected(entry.name, setup.projectFilter),
+	);
+	const reference = selected.find(
+		(entry) => entry.kind === "browser" && entry.target === REFERENCE,
+	);
+	if (!reference) {
+		return undefined;
+	}
+	const group = projectGroup(setup, reference.kind, reference.target);
+	const shared = selected.some(
+		(entry) => entry !== reference && projectGroup(setup, entry.kind, entry.target) === group,
+	);
+	if (shared) {
+		return undefined;
+	}
+	return Math.min(MAX_REFERENCE_PAGES, Math.max(1, Math.round(cpus * REFERENCE_PAGES_PER_CPU)));
 }
 
 /**
@@ -309,46 +309,46 @@ export function referencePages(
  * run's targets, then the case references it adds (`referencesOnly`).
  */
 export function projectGroup(
-  setup: HarnessSetup,
-  kind: ProjectKind,
-  target: string | undefined,
+	setup: HarnessSetup,
+	kind: ProjectKind,
+	target: string | undefined,
 ): number {
-  const targets = [
-    ...setup.targets,
-    ...Object.keys(setup.referencesOnly ?? {}).filter((name) => !setup.targets.includes(name)),
-  ];
-  return groupOrder(kind, target, setup.mode, REFERENCE, caseReferences(setup.harness), targets);
+	const targets = [
+		...setup.targets,
+		...Object.keys(setup.referencesOnly ?? {}).filter((name) => !setup.targets.includes(name)),
+	];
+	return groupOrder(kind, target, setup.mode, REFERENCE, caseReferences(setup.harness), targets);
 }
 
 function nodeProject(
-  setup: HarnessSetup,
-  name: string,
-  kind: ProjectKind,
-  target: string | undefined,
-  include: Array<string>,
-  test: UserWorkspaceConfig["test"] = {},
+	setup: HarnessSetup,
+	name: string,
+	kind: ProjectKind,
+	target: string | undefined,
+	include: Array<string>,
+	test: UserWorkspaceConfig["test"] = {},
 ): UserWorkspaceConfig & { extends: false } {
-  return {
-    extends: false,
-    test: {
-      ...NODE_TEST,
-      name,
-      root: ROOT,
-      include,
-      provide: { ...(target ? { target } : {}), ufHarness: setup.harness },
-      sequence: {
-        groupOrder: projectGroup(setup, kind, target),
-      },
-      ...test,
-    },
-  };
+	return {
+		extends: false,
+		test: {
+			...NODE_TEST,
+			name,
+			root: ROOT,
+			include,
+			provide: { ...(target ? { target } : {}), ufHarness: setup.harness },
+			sequence: {
+				groupOrder: projectGroup(setup, kind, target),
+			},
+			...test,
+		},
+	};
 }
 
 type ProjectFactory = (
-  setup: HarnessSetup,
-  target: string,
-  toolchain: Toolchain,
-  unframework: (options: UnframeworkOptions) => Array<Plugin>,
+	setup: HarnessSetup,
+	target: string,
+	toolchain: Toolchain,
+	unframework: (options: UnframeworkOptions) => Array<Plugin>,
 ) => Promise<UserWorkspaceConfig>;
 
 /**
@@ -357,33 +357,33 @@ type ProjectFactory = (
  * with the reason.
  */
 function lazyProject(
-  setup: HarnessSetup,
-  kind: "ssr" | "browser" | "hydrate",
-  target: string,
-  factory: ProjectFactory,
+	setup: HarnessSetup,
+	kind: "ssr" | "browser" | "hydrate",
+	target: string,
+	factory: ProjectFactory,
 ): () => Promise<UserWorkspaceConfig> {
-  const name = `${kind}:${target}`;
-  return async () => {
-    if (!isSelected(name, setup.projectFilter)) {
-      // Not selected with --project: Vitest drops it, so its toolchain need not load.
-      return { extends: false, test: { name, root: ROOT, include: [] } } as UserWorkspaceConfig;
-    }
-    try {
-      const [toolchain, unplugin] = await Promise.all([
-        loadToolchain(target),
-        import("@unframework.dev/unplugin/vite"),
-      ]);
-      return await factory(setup, target, toolchain, unplugin.default);
-    } catch (error) {
-      const project = nodeProject(setup, name, kind, target, ["harness/unavailable.test.ts"]);
-      project.test!.provide = {
-        target,
-        ufHarness: setup.harness,
-        ufUnavailable: { project: name, layers: LAYERS_OF[kind], message: describeError(error) },
-      };
-      return project;
-    }
-  };
+	const name = `${kind}:${target}`;
+	return async () => {
+		if (!isSelected(name, setup.projectFilter)) {
+			// Not selected with --project: Vitest drops it, so its toolchain need not load.
+			return { extends: false, test: { name, root: ROOT, include: [] } } as UserWorkspaceConfig;
+		}
+		try {
+			const [toolchain, unplugin] = await Promise.all([
+				loadToolchain(target),
+				import("@unframework.dev/unplugin/vite"),
+			]);
+			return await factory(setup, target, toolchain, unplugin.default);
+		} catch (error) {
+			const project = nodeProject(setup, name, kind, target, ["harness/unavailable.test.ts"]);
+			project.test!.provide = {
+				target,
+				ufHarness: setup.harness,
+				ufUnavailable: { project: name, layers: LAYERS_OF[kind], message: describeError(error) },
+			};
+			return project;
+		}
+	};
 }
 
 /**
@@ -394,26 +394,26 @@ function lazyProject(
  * changes the output on purpose, unless it is the guard's own.
  */
 function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOptions {
-  const guard = guardsGoldens(setup.mode.canary);
-  return {
-    target: target as UnframeworkOptions["target"],
-    onCompile: (event) => {
-      recordCompiledModule(event);
-      return guard ? goldenGuard(event) : undefined;
-    },
-    // Each case is an output tree of its own, whose golden files hold its helper modules
-    // (ADR-0121): the guard compares them with the unplugin's.
-    helperRoot: (file) => file.slice(0, file.lastIndexOf("/")),
-    plugins: canaryPlugins(
-      setup.mode.canary,
-      target,
-      Object.fromEntries(
-        Object.entries(setup.harness.cases).flatMap(([id, config]) =>
-          config.reference ? [[id, config.reference]] : [],
-        ),
-      ),
-    ),
-  };
+	const guard = guardsGoldens(setup.mode.canary);
+	return {
+		target: target as UnframeworkOptions["target"],
+		onCompile: (event) => {
+			recordCompiledModule(event);
+			return guard ? goldenGuard(event) : undefined;
+		},
+		// Each case is an output tree of its own, whose golden files hold its helper modules
+		// (ADR-0121): the guard compares them with the unplugin's.
+		helperRoot: (file) => file.slice(0, file.lastIndexOf("/")),
+		plugins: canaryPlugins(
+			setup.mode.canary,
+			target,
+			Object.fromEntries(
+				Object.entries(setup.harness.cases).flatMap(([id, config]) =>
+					config.reference ? [[id, config.reference]] : [],
+				),
+			),
+		),
+	};
 }
 
 /**
@@ -421,13 +421,13 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
  * to spread into a project's plugins: empty for every other run.
  */
 function servedMapCanary(setup: HarnessSetup, target: string): Array<Plugin> {
-  const plugin = canaryServePlugin(
-    setup.mode.canary,
-    target,
-    setup.harness.casesDir,
-    listCases(setup.harness.casesDir),
-  );
-  return plugin ? [plugin] : [];
+	const plugin = canaryServePlugin(
+		setup.mode.canary,
+		target,
+		setup.harness.casesDir,
+		listCases(setup.harness.casesDir),
+	);
+	return plugin ? [plugin] : [];
 }
 
 /**
@@ -436,12 +436,12 @@ function servedMapCanary(setup: HarnessSetup, target: string): Array<Plugin> {
  * and a server of the toolchain's own (Astro's render server) loads the engines' plugins too.
  */
 function toolchainContext(target: string): ToolchainContext {
-  return {
-    toolchainDir: toolchainDir(target),
-    root: ROOT,
-    declarations: ENGINE_DECLARATIONS,
-    plugins: enginePlugins,
-  };
+	return {
+		toolchainDir: toolchainDir(target),
+		root: ROOT,
+		declarations: ENGINE_DECLARATIONS,
+		plugins: enginePlugins,
+	};
 }
 
 /**
@@ -450,48 +450,48 @@ function toolchainContext(target: string): ToolchainContext {
  * file each would leave some files without a test, which fails them.
  */
 export function ssrShardCount(setup: Pick<HarnessSetup, "referencesOnly">, target: string): number {
-  return setup.referencesOnly?.[target] ? 1 : (SSR_SHARDS[target] ?? 1);
+	return setup.referencesOnly?.[target] ? 1 : (SSR_SHARDS[target] ?? 1);
 }
 
 const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework) => {
-  const shards = ssrShardCount(setup, target);
-  const context = toolchainContext(target);
-  const fragment = await toolchain.vite("ssr", context);
-  const config = mergeConfig(
-    {
-      root: ROOT,
-      // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
-      plugins: [
-        ...(await enginePlugins()),
-        ...unframework(unpluginOptions(setup, target)),
-        ...servedMapCanary(setup, target),
-      ],
-    },
-    fragment,
-  );
-  return {
-    ...config,
-    extends: false,
-    test: projectTest(target, fragment.test, NODE_TEST, {
-      name: `ssr:${target}`,
-      root: ROOT,
-      include: shardFiles("ssr", shards),
-      provide: {
-        target,
-        ufHarness: setup.harness,
-        ufServer: toolchain.server,
-        ufSsrShards: shards,
-        ...(setup.referencesOnly?.[target] ? { ufOnly: [...setup.referencesOnly[target]] } : {}),
-      },
-      sequence: {
-        groupOrder: projectGroup(setup, "ssr", target),
-      },
-    }),
-  } as UserWorkspaceConfig;
+	const shards = ssrShardCount(setup, target);
+	const context = toolchainContext(target);
+	const fragment = await toolchain.vite("ssr", context);
+	const config = mergeConfig(
+		{
+			root: ROOT,
+			// The engines' plugins resolve the imports every output keeps as written (ADR-0064).
+			plugins: [
+				...(await enginePlugins()),
+				...unframework(unpluginOptions(setup, target)),
+				...servedMapCanary(setup, target),
+			],
+		},
+		fragment,
+	);
+	return {
+		...config,
+		extends: false,
+		test: projectTest(target, fragment.test, NODE_TEST, {
+			name: `ssr:${target}`,
+			root: ROOT,
+			include: shardFiles("ssr", shards),
+			provide: {
+				target,
+				ufHarness: setup.harness,
+				ufServer: toolchain.server,
+				ufSsrShards: shards,
+				...(setup.referencesOnly?.[target] ? { ufOnly: [...setup.referencesOnly[target]] } : {}),
+			},
+			sequence: {
+				groupOrder: projectGroup(setup, "ssr", target),
+			},
+		}),
+	} as UserWorkspaceConfig;
 };
 
 const browserProject: ProjectFactory = (setup, target, toolchain, unframework) =>
-  pageProject("browser", setup, target, toolchain, unframework);
+	pageProject("browser", setup, target, toolchain, unframework);
 
 /**
  * A hydrate project (L12, ADR-0095): the browser project's specs and pages, built from the
@@ -502,119 +502,119 @@ const browserProject: ProjectFactory = (setup, target, toolchain, unframework) =
  * browser project does, and skips every test by that capability.
  */
 const hydrateProject: ProjectFactory = (setup, target, toolchain, unframework) =>
-  pageProject("hydrate", setup, target, toolchain, unframework);
+	pageProject("hydrate", setup, target, toolchain, unframework);
 
 /** A project whose specs run in a page: a browser or a hydrate project. */
 async function pageProject(
-  kind: "browser" | "hydrate",
-  setup: HarnessSetup,
-  target: string,
-  toolchain: Toolchain,
-  unframework: (options: UnframeworkOptions) => Array<Plugin>,
+	kind: "browser" | "hydrate",
+	setup: HarnessSetup,
+	target: string,
+	toolchain: Toolchain,
+	unframework: (options: UnframeworkOptions) => Array<Plugin>,
 ): Promise<UserWorkspaceConfig> {
-  const name = `${kind}:${target}`;
-  const context = toolchainContext(target);
-  const hydrates = kind === "hydrate" && toolchain.hydrate !== undefined;
-  const fragment = await toolchain.vite(hydrates ? "hydrate" : "browser", context);
-  // The cases this target has no output for, or cannot compile yet: their specs load against a
-  // stand-in, so each test is skipped with the expected errors, or fails every browser layer
-  // with the stand-in's cause (harness/no-output.ts).
-  const cases = listCases(setup.harness.casesDir);
-  const noOutput = noOutputCases(cases, target);
-  const standIns = standInCases(cases, target, setup.harness.quarantine);
-  const config = mergeConfig(
-    {
-      root: ROOT,
-      plugins: [
-        noOutputPlugin(cases, standInReasons(noOutput, standIns)),
-        noErrorBroadcast(),
-        ...(hydrates ? [ssrExternals(fragment), hydrationRunners()] : []),
-        // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
-        ...(await enginePlugins()),
-        ...pageCompilers(kind, setup, target, unframework),
-        ...servedMapCanary(setup, target),
-      ],
-      // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
-      // Styleframe's recipes import (ADR-0064): listed up front, because one discovered mid-run
-      // reloads the page (the browser-projects ADR).
-      optimizeDeps: {
-        include: [
-          "@unframework.dev/testing > axe-core",
-          "@unframework.dev/testing > parse5",
-          "@styleframe/runtime",
-        ],
-      },
-    },
-    fragment,
-  );
-  return {
-    ...config,
-    extends: false,
-    test: projectTest(
-      target,
-      fragment.test,
-      {
-        testTimeout: 60_000,
-        expect: {
-          // A locator that never matches fails in seconds, not at the test timeout. The testing
-          // setup gives `expect.element` this timeout too: Vitest 5 does not (element-timeout.ts).
-          poll: { timeout: 5000 },
-          // A test without an assertion fails L8: every spec asserts what it rendered (ADR-0043).
-          requireAssertions: true,
-        },
-      },
-      {
-        name,
-        root: ROOT,
-        // A target the run adds as some case's reference runs that case alone.
-        include: setup.referencesOnly?.[target]
-          ? cases
-              .filter((info) => setup.referencesOnly![target]!.includes(info.id) && info.spec)
-              .map((info) => relative(ROOT, info.spec!).split(sep).join("/"))
-          : ["cases/**/*.test.ts"],
-        setupFiles: [
-          resolveModule("@unframework.dev/testing/setup"),
-          resolveModule(`@unframework.dev/testing/${target}`),
-          // After the mount adapter's registration, which the hydrate adapter joins.
-          ...(hydrates ? [hydrateSetup(target)] : []),
-        ],
-        // The target's capability matrix as plain data: the browser skips a test that requires
-        // a capability the target lacks, and imports no target (ADR-0050). A test of a case the
-        // target has no output for that is not skipped so fails, with the expected errors.
-        provide: {
-          target,
-          ufHarness: setup.harness,
-          ufCapabilities: builtinTargets[target as TargetName].capabilities,
-          ufNoOutput: noOutput,
-          ufStandIn: standIns,
-          ...(kind === "hydrate" ? { ufHydrate: true, ufServer: toolchain.server } : {}),
-        },
-        sequence: { groupOrder: projectGroup(setup, kind, target) },
-        // Spec files share a page, but in a browser project whose target's runtime cannot
-        // (ADR-0092). The hydrate projects always share theirs (ADR-0106).
-        isolate: isolatesFiles(kind, target),
-        // Outside Chromium, parallel tester pages in one engine take the focus from each other.
-        ...(fileParallelism(setup.mode) ? {} : { fileParallelism: false }),
-        ...(kind === "browser" && target === REFERENCE
-          ? pagesOption(referencePages(setup, availableParallelism()))
-          : {}),
-        browser: {
-          ...parityBrowser({
-            name,
-            commands: {
-              ...toolchain.browserCommands?.(context),
-              ufMapStack,
-              ...(hydrates ? { ufHydrationRender } : {}),
-            },
-            browser: setup.mode.browser ?? "chromium",
-          }),
-          // Vitest's failure screenshots go next to the spec by default, among the committed
-          // baselines, where the compile project would report them as stale artefacts.
-          screenshotDirectory: FAILURE_SCREENSHOTS_DIR,
-        },
-      },
-    ),
-  } as UserWorkspaceConfig;
+	const name = `${kind}:${target}`;
+	const context = toolchainContext(target);
+	const hydrates = kind === "hydrate" && toolchain.hydrate !== undefined;
+	const fragment = await toolchain.vite(hydrates ? "hydrate" : "browser", context);
+	// The cases this target has no output for, or cannot compile yet: their specs load against a
+	// stand-in, so each test is skipped with the expected errors, or fails every browser layer
+	// with the stand-in's cause (harness/no-output.ts).
+	const cases = listCases(setup.harness.casesDir);
+	const noOutput = noOutputCases(cases, target);
+	const standIns = standInCases(cases, target, setup.harness.quarantine);
+	const config = mergeConfig(
+		{
+			root: ROOT,
+			plugins: [
+				noOutputPlugin(cases, standInReasons(noOutput, standIns)),
+				noErrorBroadcast(),
+				...(hydrates ? [ssrExternals(fragment), hydrationRunners()] : []),
+				// The engines' plugins resolve the imports every output keeps as written (ADR-0064).
+				...(await enginePlugins()),
+				...pageCompilers(kind, setup, target, unframework),
+				...servedMapCanary(setup, target),
+			],
+			// The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
+			// Styleframe's recipes import (ADR-0064): listed up front, because one discovered mid-run
+			// reloads the page (the browser-projects ADR).
+			optimizeDeps: {
+				include: [
+					"@unframework.dev/testing > axe-core",
+					"@unframework.dev/testing > parse5",
+					"@styleframe/runtime",
+				],
+			},
+		},
+		fragment,
+	);
+	return {
+		...config,
+		extends: false,
+		test: projectTest(
+			target,
+			fragment.test,
+			{
+				testTimeout: 60_000,
+				expect: {
+					// A locator that never matches fails in seconds, not at the test timeout. The testing
+					// setup gives `expect.element` this timeout too: Vitest 5 does not (element-timeout.ts).
+					poll: { timeout: 5000 },
+					// A test without an assertion fails L8: every spec asserts what it rendered (ADR-0043).
+					requireAssertions: true,
+				},
+			},
+			{
+				name,
+				root: ROOT,
+				// A target the run adds as some case's reference runs that case alone.
+				include: setup.referencesOnly?.[target]
+					? cases
+							.filter((info) => setup.referencesOnly![target]!.includes(info.id) && info.spec)
+							.map((info) => relative(ROOT, info.spec!).split(sep).join("/"))
+					: ["cases/**/*.test.ts"],
+				setupFiles: [
+					resolveModule("@unframework.dev/testing/setup"),
+					resolveModule(`@unframework.dev/testing/${target}`),
+					// After the mount adapter's registration, which the hydrate adapter joins.
+					...(hydrates ? [hydrateSetup(target)] : []),
+				],
+				// The target's capability matrix as plain data: the browser skips a test that requires
+				// a capability the target lacks, and imports no target (ADR-0050). A test of a case the
+				// target has no output for that is not skipped so fails, with the expected errors.
+				provide: {
+					target,
+					ufHarness: setup.harness,
+					ufCapabilities: builtinTargets[target as TargetName].capabilities,
+					ufNoOutput: noOutput,
+					ufStandIn: standIns,
+					...(kind === "hydrate" ? { ufHydrate: true, ufServer: toolchain.server } : {}),
+				},
+				sequence: { groupOrder: projectGroup(setup, kind, target) },
+				// Spec files share a page, but in a browser project whose target's runtime cannot
+				// (ADR-0092). The hydrate projects always share theirs (ADR-0106).
+				isolate: isolatesFiles(kind, target),
+				// Outside Chromium, parallel tester pages in one engine take the focus from each other.
+				...(fileParallelism(setup.mode) ? {} : { fileParallelism: false }),
+				...(kind === "browser" && target === REFERENCE
+					? pagesOption(referencePages(setup, availableParallelism()))
+					: {}),
+				browser: {
+					...parityBrowser({
+						name,
+						commands: {
+							...toolchain.browserCommands?.(context),
+							ufMapStack,
+							...(hydrates ? { ufHydrationRender } : {}),
+						},
+						browser: setup.mode.browser ?? "chromium",
+					}),
+					// Vitest's failure screenshots go next to the spec by default, among the committed
+					// baselines, where the compile project would report them as stale artefacts.
+					screenshotDirectory: FAILURE_SCREENSHOTS_DIR,
+				},
+			},
+		),
+	} as UserWorkspaceConfig;
 }
 
 /**
@@ -624,30 +624,30 @@ async function pageProject(
  * the server's HTML stays right (ADR-0095).
  */
 function pageCompilers(
-  kind: "browser" | "hydrate",
-  setup: HarnessSetup,
-  target: string,
-  unframework: (options: UnframeworkOptions) => Array<Plugin>,
+	kind: "browser" | "hydrate",
+	setup: HarnessSetup,
+	target: string,
+	unframework: (options: UnframeworkOptions) => Array<Plugin>,
 ): Array<Plugin> {
-  const options = unpluginOptions(setup, target);
-  const canary = setup.mode.canary ? findCanary(setup.mode.canary) : undefined;
-  if (kind !== "hydrate" || !canary?.clientOnly) {
-    return unframework(options);
-  }
-  return [
-    ...onEnvironments(unframework(options), (name) => name === "client"),
-    ...onEnvironments(unframework({ ...options, plugins: [] }), (name) => name !== "client"),
-  ];
+	const options = unpluginOptions(setup, target);
+	const canary = setup.mode.canary ? findCanary(setup.mode.canary) : undefined;
+	if (kind !== "hydrate" || !canary?.clientOnly) {
+		return unframework(options);
+	}
+	return [
+		...onEnvironments(unframework(options), (name) => name === "client"),
+		...onEnvironments(unframework({ ...options, plugins: [] }), (name) => name !== "client"),
+	];
 }
 
 /** Plugins that apply to the environments `applies` names alone. */
 function onEnvironments(plugins: Array<Plugin>, applies: (name: string) => boolean): Array<Plugin> {
-  return plugins.map((plugin) => ({
-    ...plugin,
-    applyToEnvironment: (environment) =>
-      applies(environment.name) &&
-      (plugin.applyToEnvironment ? plugin.applyToEnvironment(environment) : true),
-  }));
+	return plugins.map((plugin) => ({
+		...plugin,
+		applyToEnvironment: (environment) =>
+			applies(environment.name) &&
+			(plugin.applyToEnvironment ? plugin.applyToEnvironment(environment) : true),
+	}));
 }
 
 /**
@@ -655,7 +655,7 @@ function onEnvironments(plugins: Array<Plugin>, applies: (name: string) => boole
  * file: the hydrate projects are the harness's own, so their registrations are too.
  */
 function hydrateSetup(target: string): string {
-  return fileURLToPath(new URL(`./hydrate-setup/${target}.ts`, import.meta.url));
+	return fileURLToPath(new URL(`./hydrate-setup/${target}.ts`, import.meta.url));
 }
 
 /**
@@ -668,23 +668,23 @@ function hydrateSetup(target: string): string {
  * `noExternal: true`, so this adds the toolchain's list back, after Vitest's hook.
  */
 export function ssrExternals(fragment: ViteUserConfig): Plugin {
-  const external = fragment.environments?.ssr?.resolve?.external;
-  const names = Array.isArray(external) ? external : [];
-  return {
-    name: "uf-harness:hydrate-ssr-externals",
-    enforce: "post",
-    configEnvironment: {
-      order: "post",
-      handler(name, config) {
-        if (name !== "ssr" || !names.length) {
-          return;
-        }
-        const current = config.resolve?.external;
-        config.resolve ??= {};
-        config.resolve.external = [...(Array.isArray(current) ? current : []), ...names];
-      },
-    },
-  };
+	const external = fragment.environments?.ssr?.resolve?.external;
+	const names = Array.isArray(external) ? external : [];
+	return {
+		name: "uf-harness:hydrate-ssr-externals",
+		enforce: "post",
+		configEnvironment: {
+			order: "post",
+			handler(name, config) {
+				if (name !== "ssr" || !names.length) {
+					return;
+				}
+				const current = config.resolve?.external;
+				config.resolve ??= {};
+				config.resolve.external = [...(Array.isArray(current) ? current : []), ...names];
+			},
+		},
+	};
 }
 
 /**
@@ -696,24 +696,24 @@ export function ssrExternals(fragment: ViteUserConfig): Plugin {
  * client would log the error in whatever test runs instead, and fail that test's L13.
  */
 export function noErrorBroadcast(): Plugin {
-  return {
-    name: "uf-harness:no-error-broadcast",
-    configureServer(server) {
-      const hot = server.environments.client.hot;
-      const send = hot.send.bind(hot);
-      hot.send = (...args: Array<unknown>) => {
-        const [payload] = args;
-        if (typeof payload === "object" && payload !== null && "type" in payload) {
-          if (payload.type === "error") {
-            return;
-          }
-        }
-        // `send` is overloaded, so the wrapper passes on the arguments as they came.
-        // oxlint-disable-next-line quality/no-reflect-apply
-        Reflect.apply(send, undefined, args);
-      };
-    },
-  };
+	return {
+		name: "uf-harness:no-error-broadcast",
+		configureServer(server) {
+			const hot = server.environments.client.hot;
+			const send = hot.send.bind(hot);
+			hot.send = (...args: Array<unknown>) => {
+				const [payload] = args;
+				if (typeof payload === "object" && payload !== null && "type" in payload) {
+					if (payload.type === "error") {
+						return;
+					}
+				}
+				// `send` is overloaded, so the wrapper passes on the arguments as they came.
+				// oxlint-disable-next-line quality/no-reflect-apply
+				Reflect.apply(send, undefined, args);
+			};
+		},
+	};
 }
 
 type ProjectTest = NonNullable<UserWorkspaceConfig["test"]>;
@@ -724,29 +724,29 @@ type ProjectTest = NonNullable<UserWorkspaceConfig["test"]>;
  * option would silently lose it, so that throws. Setup files add up: the harness's run first.
  */
 export function projectTest(
-  target: string,
-  fragment: ViteUserConfig["test"],
-  defaults: ProjectTest,
-  owned: ProjectTest,
+	target: string,
+	fragment: ViteUserConfig["test"],
+	defaults: ProjectTest,
+	owned: ProjectTest,
 ): ProjectTest {
-  const toolchain = (fragment ?? {}) as ProjectTest;
-  const taken = Object.keys(toolchain).filter((key) => key !== "setupFiles" && key in owned);
-  if (taken.length) {
-    throw new Error(
-      `The ${target} toolchain's Vite configuration sets ${taken.map((key) => `test.${key}`).join(", ")}, which the harness owns in its projects.`,
-    );
-  }
-  const setupFiles = [owned.setupFiles ?? [], toolchain.setupFiles ?? []].flat();
-  return {
-    ...defaults,
-    ...toolchain,
-    ...owned,
-    ...(setupFiles.length ? { setupFiles } : {}),
-  };
+	const toolchain = (fragment ?? {}) as ProjectTest;
+	const taken = Object.keys(toolchain).filter((key) => key !== "setupFiles" && key in owned);
+	if (taken.length) {
+		throw new Error(
+			`The ${target} toolchain's Vite configuration sets ${taken.map((key) => `test.${key}`).join(", ")}, which the harness owns in its projects.`,
+		);
+	}
+	const setupFiles = [owned.setupFiles ?? [], toolchain.setupFiles ?? []].flat();
+	return {
+		...defaults,
+		...toolchain,
+		...owned,
+		...(setupFiles.length ? { setupFiles } : {}),
+	};
 }
 
 function resolveModule(specifier: string): string {
-  return fileURLToPath(import.meta.resolve(specifier));
+	return fileURLToPath(import.meta.resolve(specifier));
 }
 
 /**
@@ -754,52 +754,52 @@ function resolveModule(specifier: string): string {
  * Without patterns every project is selected.
  */
 export function isSelected(name: string, patterns: ReadonlyArray<string> | undefined): boolean {
-  if (!patterns?.length) {
-    return true;
-  }
-  if (
-    patterns.some((pattern) => pattern.startsWith("!") && toRegExp(pattern.slice(1)).test(name))
-  ) {
-    return false;
-  }
-  const positives = patterns.filter((pattern) => !pattern.startsWith("!"));
-  return !positives.length || positives.some((pattern) => toRegExp(pattern).test(name));
+	if (!patterns?.length) {
+		return true;
+	}
+	if (
+		patterns.some((pattern) => pattern.startsWith("!") && toRegExp(pattern.slice(1)).test(name))
+	) {
+		return false;
+	}
+	const positives = patterns.filter((pattern) => !pattern.startsWith("!"));
+	return !positives.length || positives.some((pattern) => toRegExp(pattern).test(name));
 }
 
 /** A `--project` pattern as Vitest matches it (`wildcardPatternToRegExp`): case-insensitive. */
 function toRegExp(pattern: string): RegExp {
-  const parts = pattern
-    .split("*")
-    .map((part) => part.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`));
-  return new RegExp(`^${parts.join(".*")}$`, "i");
+	const parts = pattern
+		.split("*")
+		.map((part) => part.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`));
+	return new RegExp(`^${parts.join(".*")}$`, "i");
 }
 
 /** The `--project` (`-p`) patterns of a Vitest command line, in each spelling Vitest accepts. */
 export function projectPatterns(argv: ReadonlyArray<string>): Array<string> {
-  const patterns: Array<string> = [];
-  for (let index = 0; index < argv.length; index += 1) {
-    const option = /^(?:--project|-p)(?:=(.*))?$/s.exec(argv[index]!);
-    if (!option) {
-      continue;
-    }
-    if (option[1] !== undefined) {
-      patterns.push(option[1]);
-    } else if (argv[index + 1] !== undefined) {
-      patterns.push(argv[(index += 1)]!);
-    }
-  }
-  return patterns;
+	const patterns: Array<string> = [];
+	for (let index = 0; index < argv.length; index += 1) {
+		const option = /^(?:--project|-p)(?:=(.*))?$/s.exec(argv[index]!);
+		if (!option) {
+			continue;
+		}
+		if (option[1] !== undefined) {
+			patterns.push(option[1]);
+		} else if (argv[index + 1] !== undefined) {
+			patterns.push(argv[(index += 1)]!);
+		}
+	}
+	return patterns;
 }
 
 /** An error and its causes, for a test report. */
 function describeError(error: unknown): string {
-  const lines = [formatError(error)];
-  let cause = error instanceof Error ? error.cause : undefined;
-  while (cause !== undefined) {
-    lines.push(
-      `caused by: ${cause instanceof Error ? (cause.stack ?? cause.message) : formatError(cause)}`,
-    );
-    cause = cause instanceof Error ? cause.cause : undefined;
-  }
-  return lines.join("\n");
+	const lines = [formatError(error)];
+	let cause = error instanceof Error ? error.cause : undefined;
+	while (cause !== undefined) {
+		lines.push(
+			`caused by: ${cause instanceof Error ? (cause.stack ?? cause.message) : formatError(cause)}`,
+		);
+		cause = cause instanceof Error ? cause.cause : undefined;
+	}
+	return lines.join("\n");
 }

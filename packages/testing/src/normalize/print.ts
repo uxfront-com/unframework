@@ -6,19 +6,19 @@ import type { TreeElement, TreeParent } from "./tree.ts";
  * still treats as void.
  */
 const VOID_ELEMENTS: ReadonlySet<string> = new Set(
-  "area base basefont bgsound br col embed frame hr img input keygen link meta param source track wbr".split(
-    " ",
-  ),
+	"area base basefont bgsound br col embed frame hr img input keygen link meta param source track wbr".split(
+		" ",
+	),
 );
 
 const NAMED_ESCAPES: Readonly<Record<string, string>> = {
-  '"': String.raw`\"`,
-  "\\": String.raw`\\`,
-  "\b": String.raw`\b`,
-  "\f": String.raw`\f`,
-  "\n": String.raw`\n`,
-  "\r": String.raw`\r`,
-  "\t": String.raw`\t`,
+	'"': String.raw`\"`,
+	"\\": String.raw`\\`,
+	"\b": String.raw`\b`,
+	"\f": String.raw`\f`,
+	"\n": String.raw`\n`,
+	"\r": String.raw`\r`,
+	"\t": String.raw`\t`,
 };
 
 /**
@@ -28,11 +28,11 @@ const NAMED_ESCAPES: Readonly<Record<string, string>> = {
  * variation selectors, which change a glyph without a visible character of their own.
  */
 const NEEDS_ESCAPE =
-  /["\\\p{C}\p{Zl}\p{Zp}\p{Variation_Selector}\u{a0}\u{1680}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]/gu;
+	/["\\\p{C}\p{Zl}\p{Zp}\p{Variation_Selector}\u{a0}\u{1680}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]/gu;
 
 /** {@link NEEDS_ESCAPE} and every combining mark, for text that is not in NFC. */
 const NEEDS_ESCAPE_DECOMPOSED =
-  /["\\\p{C}\p{Zl}\p{Zp}\p{Variation_Selector}\p{M}\u{a0}\u{1680}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]/gu;
+	/["\\\p{C}\p{Zl}\p{Zp}\p{Variation_Selector}\p{M}\u{a0}\u{1680}\u{2000}-\u{200a}\u{202f}\u{205f}\u{3000}]/gu;
 
 /**
  * Writes a string as a JSON string literal in which every invisible or ambiguous character is
@@ -44,16 +44,16 @@ const NEEDS_ESCAPE_DECOMPOSED =
  * marks as they are, so scripts that need them stay readable.
  */
 export function quote(text: string): string {
-  const escaped = text.replace(
-    text.normalize("NFC") === text ? NEEDS_ESCAPE : NEEDS_ESCAPE_DECOMPOSED,
-    (char) =>
-      NAMED_ESCAPES[char] ??
-      Array.from(
-        { length: char.length },
-        (_, index) => `\\u${char.charCodeAt(index).toString(16).padStart(4, "0")}`,
-      ).join(""),
-  );
-  return `"${escaped}"`;
+	const escaped = text.replace(
+		text.normalize("NFC") === text ? NEEDS_ESCAPE : NEEDS_ESCAPE_DECOMPOSED,
+		(char) =>
+			NAMED_ESCAPES[char] ??
+			Array.from(
+				{ length: char.length },
+				(_, index) => `\\u${char.charCodeAt(index).toString(16).padStart(4, "0")}`,
+			).join(""),
+	);
+	return `"${escaped}"`;
 }
 
 /**
@@ -87,45 +87,45 @@ export function quote(text: string): string {
  * ```
  */
 export function printTree(root: TreeParent): string {
-  const lines: Array<string> = [];
-  printChildren(root, "", lines);
-  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+	const lines: Array<string> = [];
+	printChildren(root, "", lines);
+	return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
 }
 
 function printChildren(parent: TreeParent, indent: string, lines: Array<string>): void {
-  let text: string | undefined;
-  const flush = () => {
-    if (text !== undefined) {
-      lines.push(indent + quote(text));
-    }
-    text = undefined;
-  };
-  for (const node of childrenOf(parent)) {
-    if (isText(node)) {
-      text = (text ?? "") + node.value;
-    } else if (isElement(node)) {
-      flush();
-      printElement(node, indent, lines);
-    }
-  }
-  flush();
+	let text: string | undefined;
+	const flush = () => {
+		if (text !== undefined) {
+			lines.push(indent + quote(text));
+		}
+		text = undefined;
+	};
+	for (const node of childrenOf(parent)) {
+		if (isText(node)) {
+			text = (text ?? "") + node.value;
+		} else if (isElement(node)) {
+			flush();
+			printElement(node, indent, lines);
+		}
+	}
+	flush();
 }
 
 function printElement(element: TreeElement, indent: string, lines: Array<string>): void {
-  const attributes = element.attrs
-    .map((attribute) => ` ${attributeName(attribute)}=${quote(attribute.value)}`)
-    .join("");
-  const start = `${indent}<${element.tagName}${attributes}>`;
-  if (element.namespaceURI === HTML_NAMESPACE && VOID_ELEMENTS.has(element.tagName)) {
-    lines.push(start);
-    return;
-  }
-  const end = `</${element.tagName}>`;
-  if (!childrenOf(element).some((node) => isElement(node) || isText(node))) {
-    lines.push(start + end);
-    return;
-  }
-  lines.push(start);
-  printChildren(element, `${indent}  `, lines);
-  lines.push(indent + end);
+	const attributes = element.attrs
+		.map((attribute) => ` ${attributeName(attribute)}=${quote(attribute.value)}`)
+		.join("");
+	const start = `${indent}<${element.tagName}${attributes}>`;
+	if (element.namespaceURI === HTML_NAMESPACE && VOID_ELEMENTS.has(element.tagName)) {
+		lines.push(start);
+		return;
+	}
+	const end = `</${element.tagName}>`;
+	if (!childrenOf(element).some((node) => isElement(node) || isText(node))) {
+		lines.push(start + end);
+		return;
+	}
+	lines.push(start);
+	printChildren(element, `${indent}  `, lines);
+	lines.push(indent + end);
 }

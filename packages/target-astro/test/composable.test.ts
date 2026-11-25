@@ -20,42 +20,42 @@ afterAll(() => scratch.remove());
 const cases = await compileComposableCases("astro");
 
 describe("astro composable cases", () => {
-  it.each(cases)(
-    "compiles $id and passes L3 to L5",
-    { timeout: 60_000 },
-    async ({ id, sources }) => {
-      const errors = sources.flatMap(({ diagnostics }) =>
-        diagnostics.filter(({ severity }) => severity === "error"),
-      );
-      expect(errors).toEqual([]);
-      // Two sources that import one module each copy it, the same.
-      const files = new Map<string, string>();
-      for (const output of sources.flatMap(({ outputs }) => outputs)) {
-        expect(files.get(output.path) ?? output.contents, output.path).toBe(output.contents);
-        files.set(output.path, output.contents);
-      }
-      expect([...files.keys()].some((path) => path.endsWith(".astro"))).toBe(true);
-      const directory = join(scratch.path, id);
-      mkdirSync(directory, { recursive: true });
-      const written = [...files].map(([path, contents]) => {
-        const file = join(directory, path);
-        writeFileSync(file, contents);
-        return { path: file, contents };
-      });
-      const paths = written.map(({ path }) => path);
-      const context = { toolchainDir, root: directory };
-      const compiled = await toolchain.frameworkCompile(written, context);
-      for (const path of paths) {
-        expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
-      }
-      const checked = await toolchain.typecheck(paths, context);
-      for (const path of paths) {
-        expect(checked.get(path) ?? [], path).toEqual([]);
-      }
-      const linted = await toolchain.lint(paths, context);
-      for (const [path, messages] of linted) {
-        expect(messages, path).toEqual([]);
-      }
-    },
-  );
+	it.each(cases)(
+		"compiles $id and passes L3 to L5",
+		{ timeout: 60_000 },
+		async ({ id, sources }) => {
+			const errors = sources.flatMap(({ diagnostics }) =>
+				diagnostics.filter(({ severity }) => severity === "error"),
+			);
+			expect(errors).toEqual([]);
+			// Two sources that import one module each copy it, the same.
+			const files = new Map<string, string>();
+			for (const output of sources.flatMap(({ outputs }) => outputs)) {
+				expect(files.get(output.path) ?? output.contents, output.path).toBe(output.contents);
+				files.set(output.path, output.contents);
+			}
+			expect([...files.keys()].some((path) => path.endsWith(".astro"))).toBe(true);
+			const directory = join(scratch.path, id);
+			mkdirSync(directory, { recursive: true });
+			const written = [...files].map(([path, contents]) => {
+				const file = join(directory, path);
+				writeFileSync(file, contents);
+				return { path: file, contents };
+			});
+			const paths = written.map(({ path }) => path);
+			const context = { toolchainDir, root: directory };
+			const compiled = await toolchain.frameworkCompile(written, context);
+			for (const path of paths) {
+				expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
+			}
+			const checked = await toolchain.typecheck(paths, context);
+			for (const path of paths) {
+				expect(checked.get(path) ?? [], path).toEqual([]);
+			}
+			const linted = await toolchain.lint(paths, context);
+			for (const [path, messages] of linted) {
+				expect(messages, path).toEqual([]);
+			}
+		},
+	);
 });

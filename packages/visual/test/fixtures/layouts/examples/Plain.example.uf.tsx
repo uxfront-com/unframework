@@ -4,10 +4,10 @@
  * @layout none
  */
 export default function Plain() {
-  return (
-    <>
-      <span>One</span>
-      <span>Two</span>
-    </>
-  );
+	return (
+		<>
+			<span>One</span>
+			<span>Two</span>
+		</>
+	);
 }

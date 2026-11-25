@@ -11,13 +11,13 @@
 import { angularDialect, candidateAttributes } from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
 import type {
-  ComponentApi,
-  ComponentNode,
-  DynamicNode,
-  ElementNode,
-  FragmentNode,
-  UfComponent,
-  UfModule,
+	ComponentApi,
+	ComponentNode,
+	DynamicNode,
+	ElementNode,
+	FragmentNode,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { ELEMENT_INTERFACES } from "./elements.ts";
@@ -39,11 +39,11 @@ export const FALLTHROUGH_ATTRIBUTE = "ufFallthrough";
  * is renamed.
  */
 export const FALLTHROUGH_MEMBERS: ReadonlyArray<string> = [
-  "class",
-  "style",
-  ATTRIBUTES_INPUT,
-  LISTENERS_INPUT,
-  ELEMENT_MEMBER,
+	"class",
+	"style",
+	ATTRIBUTES_INPUT,
+	LISTENERS_INPUT,
+	ELEMENT_MEMBER,
 ];
 
 /**
@@ -53,55 +53,55 @@ export const FALLTHROUGH_MEMBERS: ReadonlyArray<string> = [
  * `@case`.
  */
 export function fallthroughRoot(
-  render: ElementNode | FragmentNode,
+	render: ElementNode | FragmentNode,
 ): ElementNode | ComponentNode | DynamicNode | undefined {
-  if (render.kind === "Element") {
-    return render;
-  }
-  const [only] = render.children;
-  if (render.children.length !== 1) {
-    return undefined;
-  }
-  if (only?.kind === "Element" || only?.kind === "Component") {
-    return only;
-  }
-  return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
-    ? only
-    : undefined;
+	if (render.kind === "Element") {
+		return render;
+	}
+	const [only] = render.children;
+	if (render.children.length !== 1) {
+		return undefined;
+	}
+	if (only?.kind === "Element" || only?.kind === "Component") {
+		return only;
+	}
+	return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
+		? only
+		: undefined;
 }
 
 /** How a component takes what its consumer passes it. */
 export interface FallthroughPlan {
-  /**
-   * The node that takes it: the root element or component, or, with `inheritAttrs: false`, the
-   * element that spreads the props' rest.
-   */
-  target: ElementNode | ComponentNode | DynamicNode;
-  /** Whether {@link target} is the rest's element. */
-  rest: boolean;
-  /**
-   * Whether the component declares the records' inputs: not where its root component takes no
-   * attribute of its own, which would then have no input to bind them to.
-   */
-  passes: boolean;
-  /** The event map its listeners are typed by: the SVG one for an `<svg>`. */
-  events: "HTMLElementEventMap" | "SVGElementEventMap";
+	/**
+	 * The node that takes it: the root element or component, or, with `inheritAttrs: false`, the
+	 * element that spreads the props' rest.
+	 */
+	target: ElementNode | ComponentNode | DynamicNode;
+	/** Whether {@link target} is the rest's element. */
+	rest: boolean;
+	/**
+	 * Whether the component declares the records' inputs: not where its root component takes no
+	 * attribute of its own, which would then have no input to bind them to.
+	 */
+	passes: boolean;
+	/** The event map its listeners are typed by: the SVG one for an `<svg>`. */
+	events: "HTMLElementEventMap" | "SVGElementEventMap";
 }
 
 /** What a parent reads of a child, its own module's or another's. */
 export interface ChildApi {
-  /** Whether it exposes functions, so a ref on it holds them and no element. */
-  exposes: boolean;
-  /** The tag of the element a ref on it holds, where it exposes nothing. */
-  refTag?: string;
-  /** The tag of the element what a consumer passes lands on. */
-  fallthroughTag?: string;
-  /**
-   * The attribute that puts the element what a consumer passes would land on in a literal region
-   * (`title="a {{ b }}"`, ADR-0037): Angular binds nothing there, so the child takes nothing,
-   * and a parent reports what it passes (UF1002, ADR-0122). Absent otherwise.
-   */
-  literal?: string;
+	/** Whether it exposes functions, so a ref on it holds them and no element. */
+	exposes: boolean;
+	/** The tag of the element a ref on it holds, where it exposes nothing. */
+	refTag?: string;
+	/** The tag of the element what a consumer passes lands on. */
+	fallthroughTag?: string;
+	/**
+	 * The attribute that puts the element what a consumer passes would land on in a literal region
+	 * (`title="a {{ b }}"`, ADR-0037): Angular binds nothing there, so the child takes nothing,
+	 * and a parent reports what it passes (UF1002, ADR-0122). Absent otherwise.
+	 */
+	literal?: string;
 }
 
 /**
@@ -109,119 +109,119 @@ export interface ChildApi {
  * module's own component, read as the analyser reads it (`fillRootComponents`).
  */
 export function childApi(
-  module: UfModule,
-  local: string,
-  seen: ReadonlySet<string> = new Set(),
+	module: UfModule,
+	local: string,
+	seen: ReadonlySet<string> = new Set(),
 ): ChildApi | undefined {
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) {
-      continue;
-    }
-    const api = entry.api.components.find((each: ComponentApi) =>
-      imported.imported === "default"
-        ? each.export === "default"
-        : each.export === "named" && each.name === imported.imported,
-    );
-    if (!api) {
-      return undefined;
-    }
-    // A `<component is>` root's first tag stands for them all: every tag takes what falls
-    // through, and a ref holds whichever renders (ADR-0122).
-    const refTag = api.refTag ?? api.refTags?.[0];
-    const takes = api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
-    // The element's own static attributes are in its API: one holding `{{` puts it in a literal
-    // region (`literalRegion`), where `class` and `style` are bound apart.
-    const literal =
-      takes === undefined
-        ? undefined
-        : api.fallthroughOwn?.attributes.find(
-            ({ name, value }) =>
-              name !== "class" &&
-              name !== "style" &&
-              typeof value === "string" &&
-              value.includes("{{"),
-          )?.name;
-    const fallthroughTag = literal === undefined ? takes : undefined;
-    return {
-      exposes: api.exposes.length > 0,
-      ...(refTag === undefined ? {} : { refTag }),
-      ...(fallthroughTag === undefined ? {} : { fallthroughTag }),
-      ...(literal === undefined ? {} : { literal }),
-    };
-  }
-  const own = module.components.find((each) => each.name === local);
-  if (!own || seen.has(local)) {
-    return undefined;
-  }
-  const next = new Set([...seen, local]);
-  const exposes = (own.exposes?.functions.length ?? 0) > 0;
-  const root = fallthroughRoot(own.render);
-  const rootChild = root?.kind === "Component" ? childApi(module, root.component, next) : undefined;
-  const rootTag =
-    root?.kind === "Element"
-      ? root.tag
-      : root?.kind === "Dynamic" && root.candidates[0]?.kind === "Tag"
-        ? root.candidates[0].tag
-        : undefined;
-  const refTag = exposes
-    ? undefined
-    : (rootTag ?? (rootChild && !rootChild.exposes ? rootChild.refTag : undefined));
-  const rest = own.inheritAttrs === false ? restElement(own.render)?.element : undefined;
-  const takes = own.inheritAttrs === false ? rest?.tag : (rootTag ?? rootChild?.fallthroughTag);
-  const literal =
-    takes === undefined
-      ? rootChild?.literal
-      : literalAttribute(
-          rest
-            ? [rest]
-            : root?.kind === "Dynamic"
-              ? tagElements(root)
-              : root?.kind === "Element"
-                ? [root]
-                : [],
-        );
-  const fallthroughTag = literal === undefined ? takes : undefined;
-  return {
-    exposes,
-    ...(refTag === undefined ? {} : { refTag }),
-    ...(fallthroughTag === undefined ? {} : { fallthroughTag }),
-    ...(literal === undefined ? {} : { literal }),
-  };
+	for (const entry of module.imports ?? []) {
+		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+		if (!imported) {
+			continue;
+		}
+		const api = entry.api.components.find((each: ComponentApi) =>
+			imported.imported === "default"
+				? each.export === "default"
+				: each.export === "named" && each.name === imported.imported,
+		);
+		if (!api) {
+			return undefined;
+		}
+		// A `<component is>` root's first tag stands for them all: every tag takes what falls
+		// through, and a ref holds whichever renders (ADR-0122).
+		const refTag = api.refTag ?? api.refTags?.[0];
+		const takes = api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+		// The element's own static attributes are in its API: one holding `{{` puts it in a literal
+		// region (`literalRegion`), where `class` and `style` are bound apart.
+		const literal =
+			takes === undefined
+				? undefined
+				: api.fallthroughOwn?.attributes.find(
+						({ name, value }) =>
+							name !== "class" &&
+							name !== "style" &&
+							typeof value === "string" &&
+							value.includes("{{"),
+					)?.name;
+		const fallthroughTag = literal === undefined ? takes : undefined;
+		return {
+			exposes: api.exposes.length > 0,
+			...(refTag === undefined ? {} : { refTag }),
+			...(fallthroughTag === undefined ? {} : { fallthroughTag }),
+			...(literal === undefined ? {} : { literal }),
+		};
+	}
+	const own = module.components.find((each) => each.name === local);
+	if (!own || seen.has(local)) {
+		return undefined;
+	}
+	const next = new Set([...seen, local]);
+	const exposes = (own.exposes?.functions.length ?? 0) > 0;
+	const root = fallthroughRoot(own.render);
+	const rootChild = root?.kind === "Component" ? childApi(module, root.component, next) : undefined;
+	const rootTag =
+		root?.kind === "Element"
+			? root.tag
+			: root?.kind === "Dynamic" && root.candidates[0]?.kind === "Tag"
+				? root.candidates[0].tag
+				: undefined;
+	const refTag = exposes
+		? undefined
+		: (rootTag ?? (rootChild && !rootChild.exposes ? rootChild.refTag : undefined));
+	const rest = own.inheritAttrs === false ? restElement(own.render)?.element : undefined;
+	const takes = own.inheritAttrs === false ? rest?.tag : (rootTag ?? rootChild?.fallthroughTag);
+	const literal =
+		takes === undefined
+			? rootChild?.literal
+			: literalAttribute(
+					rest
+						? [rest]
+						: root?.kind === "Dynamic"
+							? tagElements(root)
+							: root?.kind === "Element"
+								? [root]
+								: [],
+				);
+	const fallthroughTag = literal === undefined ? takes : undefined;
+	return {
+		exposes,
+		...(refTag === undefined ? {} : { refTag }),
+		...(fallthroughTag === undefined ? {} : { fallthroughTag }),
+		...(literal === undefined ? {} : { literal }),
+	};
 }
 
 /** Each tag of a `<component is>` over tags as the element its `@case` writes. */
 function tagElements(root: DynamicNode): Array<ElementNode> {
-  return root.candidates.flatMap((candidate) =>
-    candidate.kind === "Tag"
-      ? [
-          {
-            kind: "Element" as const,
-            tag: candidate.tag,
-            attributes: candidateAttributes(root, candidate.tag),
-            children: root.children,
-            span: root.span,
-          },
-        ]
-      : [],
-  );
+	return root.candidates.flatMap((candidate) =>
+		candidate.kind === "Tag"
+			? [
+					{
+						kind: "Element" as const,
+						tag: candidate.tag,
+						attributes: candidateAttributes(root, candidate.tag),
+						children: root.children,
+						span: root.span,
+					},
+				]
+			: [],
+	);
 }
 
 /** The static attribute holding `{{` that puts one of `elements` in a literal region (ADR-0037). */
 function literalAttribute(elements: ReadonlyArray<ElementNode>): string | undefined {
-  for (const element of elements) {
-    if (angularDialect.literalRegion?.(element) === undefined) {
-      continue;
-    }
-    const found = element.attributes.find(
-      (attribute) =>
-        attribute.kind === "Static" && attribute.value !== true && attribute.value.includes("{{"),
-    );
-    if (found?.kind === "Static") {
-      return found.name;
-    }
-  }
-  return undefined;
+	for (const element of elements) {
+		if (angularDialect.literalRegion?.(element) === undefined) {
+			continue;
+		}
+		const found = element.attributes.find(
+			(attribute) =>
+				attribute.kind === "Static" && attribute.value !== true && attribute.value.includes("{{"),
+		);
+		if (found?.kind === "Static") {
+			return found.name;
+		}
+	}
+	return undefined;
 }
 
 /**
@@ -231,74 +231,74 @@ function literalAttribute(elements: ReadonlyArray<ElementNode>): string | undefi
  * nothing on (`{{` in an attribute, ADR-0037) takes nothing.
  */
 export function planFallthrough(
-  component: UfComponent,
-  module: UfModule,
+	component: UfComponent,
+	module: UfModule,
 ): FallthroughPlan | undefined {
-  if (component.inheritAttrs === false) {
-    const found = restElement(component.render);
-    if (!found || angularDialect.literalRegion?.(found.element) !== undefined) {
-      return undefined;
-    }
-    return {
-      target: found.element,
-      rest: true,
-      passes: true,
-      events: found.svg ? "SVGElementEventMap" : "HTMLElementEventMap",
-    };
-  }
-  const root = fallthroughRoot(component.render);
-  if (!root) {
-    return undefined;
-  }
-  if (root.kind === "Element") {
-    if (angularDialect.literalRegion?.(root) !== undefined) {
-      return undefined;
-    }
-    return { target: root, rest: false, passes: true, events: eventsOf(root.tag) };
-  }
-  if (root.kind === "Dynamic") {
-    // Each `@case` is an element of its own tag, which takes the consumer's `class` and `style`
-    // (ADR-0119), and binds the directive that puts the rest on it (ADR-0122).
-    const bindable = root.candidates.every(
-      (candidate) =>
-        candidate.kind === "Tag" &&
-        angularDialect.literalRegion?.({
-          kind: "Element",
-          tag: candidate.tag,
-          attributes: candidateAttributes(root, candidate.tag),
-          children: root.children,
-          span: root.span,
-        }) === undefined,
-    );
-    if (!bindable) {
-      return undefined;
-    }
-    return { target: root, rest: false, passes: true, events: "HTMLElementEventMap" };
-  }
-  const child = childApi(module, root.component);
-  const tag = child?.fallthroughTag;
-  return {
-    target: root,
-    rest: false,
-    passes: tag !== undefined,
-    events: eventsOf(tag),
-  };
+	if (component.inheritAttrs === false) {
+		const found = restElement(component.render);
+		if (!found || angularDialect.literalRegion?.(found.element) !== undefined) {
+			return undefined;
+		}
+		return {
+			target: found.element,
+			rest: true,
+			passes: true,
+			events: found.svg ? "SVGElementEventMap" : "HTMLElementEventMap",
+		};
+	}
+	const root = fallthroughRoot(component.render);
+	if (!root) {
+		return undefined;
+	}
+	if (root.kind === "Element") {
+		if (angularDialect.literalRegion?.(root) !== undefined) {
+			return undefined;
+		}
+		return { target: root, rest: false, passes: true, events: eventsOf(root.tag) };
+	}
+	if (root.kind === "Dynamic") {
+		// Each `@case` is an element of its own tag, which takes the consumer's `class` and `style`
+		// (ADR-0119), and binds the directive that puts the rest on it (ADR-0122).
+		const bindable = root.candidates.every(
+			(candidate) =>
+				candidate.kind === "Tag" &&
+				angularDialect.literalRegion?.({
+					kind: "Element",
+					tag: candidate.tag,
+					attributes: candidateAttributes(root, candidate.tag),
+					children: root.children,
+					span: root.span,
+				}) === undefined,
+		);
+		if (!bindable) {
+			return undefined;
+		}
+		return { target: root, rest: false, passes: true, events: "HTMLElementEventMap" };
+	}
+	const child = childApi(module, root.component);
+	const tag = child?.fallthroughTag;
+	return {
+		target: root,
+		rest: false,
+		passes: tag !== undefined,
+		events: eventsOf(tag),
+	};
 }
 
 /** The event map of the element a tag names. */
 function eventsOf(tag: string | undefined): FallthroughPlan["events"] {
-  return tag === "svg" ? "SVGElementEventMap" : "HTMLElementEventMap";
+	return tag === "svg" ? "SVGElementEventMap" : "HTMLElementEventMap";
 }
 
 /** The element a ref on the component holds, which it declares as {@link ELEMENT_MEMBER}. */
 export interface RootElementPlan {
-  /** Its root, which carries the template ref the query reads. */
-  root: ElementNode | ComponentNode | DynamicNode;
-  /**
-   * The DOM interface of a root element (`HTMLButtonElement`), or of each tag of a `<component
-   * is>` root, whose element of each `@case` carries the template ref (ADR-0122).
-   */
-  type?: string;
+	/** Its root, which carries the template ref the query reads. */
+	root: ElementNode | ComponentNode | DynamicNode;
+	/**
+	 * The DOM interface of a root element (`HTMLButtonElement`), or of each tag of a `<component
+	 * is>` root, whose element of each `@case` carries the template ref (ADR-0122).
+	 */
+	type?: string;
 }
 
 /**
@@ -307,60 +307,60 @@ export interface RootElementPlan {
  * holds no element.
  */
 export function planRootElement(
-  component: UfComponent,
-  module: UfModule,
+	component: UfComponent,
+	module: UfModule,
 ): RootElementPlan | undefined {
-  if (component.exposes?.functions.length) {
-    return undefined;
-  }
-  const root = fallthroughRoot(component.render);
-  if (!root) {
-    return undefined;
-  }
-  // Whichever tag renders, in its `@case` (ADR-0122).
-  if (root.kind === "Dynamic") {
-    const types = root.candidates.map((candidate) =>
-      candidate.kind === "Tag" ? ELEMENT_INTERFACES.get(candidate.tag) : undefined,
-    );
-    if (types.some((type) => type === undefined)) {
-      return undefined;
-    }
-    return { root, type: [...new Set(types)].join(" | ") };
-  }
-  if (root.kind === "Element") {
-    const type = ELEMENT_INTERFACES.get(root.tag);
-    if (type === undefined || angularDialect.literalRegion?.(root) !== undefined) {
-      return undefined;
-    }
-    return { root, type };
-  }
-  const child = childApi(module, root.component, new Set([component.name]));
-  return child && !child.exposes && child.refTag !== undefined ? { root } : undefined;
+	if (component.exposes?.functions.length) {
+		return undefined;
+	}
+	const root = fallthroughRoot(component.render);
+	if (!root) {
+		return undefined;
+	}
+	// Whichever tag renders, in its `@case` (ADR-0122).
+	if (root.kind === "Dynamic") {
+		const types = root.candidates.map((candidate) =>
+			candidate.kind === "Tag" ? ELEMENT_INTERFACES.get(candidate.tag) : undefined,
+		);
+		if (types.some((type) => type === undefined)) {
+			return undefined;
+		}
+		return { root, type: [...new Set(types)].join(" | ") };
+	}
+	if (root.kind === "Element") {
+		const type = ELEMENT_INTERFACES.get(root.tag);
+		if (type === undefined || angularDialect.literalRegion?.(root) !== undefined) {
+			return undefined;
+		}
+		return { root, type };
+	}
+	const child = childApi(module, root.component, new Set([component.name]));
+	return child && !child.exposes && child.refTag !== undefined ? { root } : undefined;
 }
 
 /** The element that spreads the props' rest, which the analyser allows on one element. */
 function restElement(
-  render: UfComponent["render"],
+	render: UfComponent["render"],
 ): { element: ElementNode; svg: boolean } | undefined {
-  let found: { element: ElementNode; svg: boolean } | undefined;
-  const svg: Array<boolean> = [];
-  walk(render, {
-    enter(node) {
-      if (found || node.kind !== "Element") {
-        return;
-      }
-      svg.push(node.tag === "svg" || svg.at(-1) === true);
-      if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
-        found = { element: node, svg: svg.at(-1)! };
-      }
-    },
-    leave(node) {
-      if (node.kind === "Element") {
-        svg.pop();
-      }
-    },
-  });
-  return found;
+	let found: { element: ElementNode; svg: boolean } | undefined;
+	const svg: Array<boolean> = [];
+	walk(render, {
+		enter(node) {
+			if (found || node.kind !== "Element") {
+				return;
+			}
+			svg.push(node.tag === "svg" || svg.at(-1) === true);
+			if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+				found = { element: node, svg: svg.at(-1)! };
+			}
+		},
+		leave(node) {
+			if (node.kind === "Element") {
+				svg.pop();
+			}
+		},
+	});
+	return found;
 }
 
 /**
@@ -376,17 +376,17 @@ function restElement(
  * after the element's own listeners are added, so those run first.
  */
 export function fallthroughDirectiveCode(
-  names: { listeners: string; directive?: string },
-  events: FallthroughPlan["events"],
-  core: (name: string, type?: boolean) => string,
-  common: (name: string) => string,
+	names: { listeners: string; directive?: string },
+	events: FallthroughPlan["events"],
+	core: (name: string, type?: boolean) => string,
+	common: (name: string) => string,
 ): string {
-  const { directive: className, listeners } = names;
-  const type = listenersTypeCode(listeners, events);
-  if (className === undefined) {
-    return type;
-  }
-  return `${type}\n${fallthroughClassCode(className, listeners, core, common)}`;
+	const { directive: className, listeners } = names;
+	const type = listenersTypeCode(listeners, events);
+	if (className === undefined) {
+		return type;
+	}
+	return `${type}\n${fallthroughClassCode(className, listeners, core, common)}`;
 }
 
 /**
@@ -395,59 +395,59 @@ export function fallthroughDirectiveCode(
  * directive is shared in `_unframework/` (ADR-0121) and so takes either.
  */
 export function fallthroughClassCode(
-  className: string,
-  listeners: string,
-  core: (name: string, type?: boolean) => string,
-  common: (name: string) => string,
+	className: string,
+	listeners: string,
+	core: (name: string, type?: boolean) => string,
+	common: (name: string) => string,
 ): string {
-  return [
-    "/**",
-    " * Puts what a consumer passes the component, and the component does not declare, on the element",
-    " * that takes it (ADR-0118): the attributes, the consumer's winning over the element's own, and",
-    " * the native listeners, which run after the element's own.",
-    " */",
-    `@${core("Directive")}({ selector: "[${FALLTHROUGH_ATTRIBUTE}]" })`,
-    `export class ${className} implements ${core("OnChanges", true)}, ${core("OnDestroy", true)} {`,
-    `  readonly ${FALLTHROUGH_ATTRIBUTE} = ${core("input")}.required<{`,
-    "    attributes: Record<string, unknown> | undefined;",
-    `    listeners: ${listeners} | undefined;`,
-    "  }>();",
-    `  private readonly element = ${core("inject")}<${core("ElementRef")}<Element>>(${core("ElementRef")});`,
-    `  private readonly renderer = ${core("inject")}(${core("Renderer2")});`,
-    `  private readonly browser = ${common("isPlatformBrowser")}(${core("inject")}(${core("PLATFORM_ID")}));`,
-    "  private readonly listening = new Map<string, { handler: unknown; stop: () => void }>();",
-    "  private written: Record<string, unknown> = {};",
-    "",
-    "  ngOnChanges(): void {",
-    "    const element = this.element.nativeElement;",
-    `    const { attributes = {}, listeners = {} } = this.${FALLTHROUGH_ATTRIBUTE}();`,
-    "    for (const name of Object.keys(this.written)) {",
-    "      if (!(name in attributes)) this.renderer.removeAttribute(element, name);",
-    "    }",
-    "    for (const [name, value] of Object.entries(attributes)) {",
-    "      if (value === null || value === undefined) this.renderer.removeAttribute(element, name);",
-    "      else this.renderer.setAttribute(element, name, String(value));",
-    "    }",
-    "    this.written = attributes;",
-    "    if (!this.browser) return;",
-    "    const handlers = new Map(Object.entries(listeners));",
-    "    for (const [event, { handler, stop }] of this.listening) {",
-    "      if (handlers.get(event) === handler) continue;",
-    "      stop();",
-    "      this.listening.delete(event);",
-    "    }",
-    "    for (const [event, handler] of handlers) {",
-    "      if (handler === undefined || this.listening.has(event)) continue;",
-    "      this.listening.set(event, { handler, stop: this.renderer.listen(element, event, handler) });",
-    "    }",
-    "  }",
-    "",
-    "  ngOnDestroy(): void {",
-    "    for (const { stop } of this.listening.values()) stop();",
-    "  }",
-    "}",
-    "",
-  ].join("\n");
+	return [
+		"/**",
+		" * Puts what a consumer passes the component, and the component does not declare, on the element",
+		" * that takes it (ADR-0118): the attributes, the consumer's winning over the element's own, and",
+		" * the native listeners, which run after the element's own.",
+		" */",
+		`@${core("Directive")}({ selector: "[${FALLTHROUGH_ATTRIBUTE}]" })`,
+		`export class ${className} implements ${core("OnChanges", true)}, ${core("OnDestroy", true)} {`,
+		`  readonly ${FALLTHROUGH_ATTRIBUTE} = ${core("input")}.required<{`,
+		"    attributes: Record<string, unknown> | undefined;",
+		`    listeners: ${listeners} | undefined;`,
+		"  }>();",
+		`  private readonly element = ${core("inject")}<${core("ElementRef")}<Element>>(${core("ElementRef")});`,
+		`  private readonly renderer = ${core("inject")}(${core("Renderer2")});`,
+		`  private readonly browser = ${common("isPlatformBrowser")}(${core("inject")}(${core("PLATFORM_ID")}));`,
+		"  private readonly listening = new Map<string, { handler: unknown; stop: () => void }>();",
+		"  private written: Record<string, unknown> = {};",
+		"",
+		"  ngOnChanges(): void {",
+		"    const element = this.element.nativeElement;",
+		`    const { attributes = {}, listeners = {} } = this.${FALLTHROUGH_ATTRIBUTE}();`,
+		"    for (const name of Object.keys(this.written)) {",
+		"      if (!(name in attributes)) this.renderer.removeAttribute(element, name);",
+		"    }",
+		"    for (const [name, value] of Object.entries(attributes)) {",
+		"      if (value === null || value === undefined) this.renderer.removeAttribute(element, name);",
+		"      else this.renderer.setAttribute(element, name, String(value));",
+		"    }",
+		"    this.written = attributes;",
+		"    if (!this.browser) return;",
+		"    const handlers = new Map(Object.entries(listeners));",
+		"    for (const [event, { handler, stop }] of this.listening) {",
+		"      if (handlers.get(event) === handler) continue;",
+		"      stop();",
+		"      this.listening.delete(event);",
+		"    }",
+		"    for (const [event, handler] of handlers) {",
+		"      if (handler === undefined || this.listening.has(event)) continue;",
+		"      this.listening.set(event, { handler, stop: this.renderer.listen(element, event, handler) });",
+		"    }",
+		"  }",
+		"",
+		"  ngOnDestroy(): void {",
+		"    for (const { stop } of this.listening.values()) stop();",
+		"  }",
+		"}",
+		"",
+	].join("\n");
 }
 
 /**
@@ -455,15 +455,15 @@ export function fallthroughClassCode(
  * exports it, from the module where it is shared (ADR-0121).
  */
 export function listenersTypeCode(
-  name: string,
-  events: FallthroughPlan["events"],
-  exported = false,
+	name: string,
+	events: FallthroughPlan["events"],
+	exported = false,
 ): string {
-  return [
-    events === "SVGElementEventMap"
-      ? "/** A native listener of each event a consumer passes an SVG element, by name (ADR-0118). */"
-      : "/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */",
-    `${exported ? "export " : ""}type ${name} = { [K in keyof ${events}]?: (event: ${events}[K]) => void };`,
-    "",
-  ].join("\n");
+	return [
+		events === "SVGElementEventMap"
+			? "/** A native listener of each event a consumer passes an SVG element, by name (ADR-0118). */"
+			: "/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */",
+		`${exported ? "export " : ""}type ${name} = { [K in keyof ${events}]?: (event: ${events}[K]) => void };`,
+		"",
+	].join("\n");
 }

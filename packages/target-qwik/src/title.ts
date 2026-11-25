@@ -6,23 +6,23 @@
 // `<option>`'s `children` as `string` too, so an option's text follows the same rule, and a
 // `v-model` still selects an option without a `value` by its text as written (`optionSource`).
 import {
-  expressionCode,
-  js,
-  nullishText,
-  Placeholders,
-  printExpression,
-  textTemplate,
+	expressionCode,
+	js,
+	nullishText,
+	Placeholders,
+	printExpression,
+	textTemplate,
 } from "@unframework.dev/codegen";
 import type { JsxContext, TextPart } from "@unframework.dev/codegen";
 import type {
-  ComponentNode,
-  ElementNode,
-  Expression,
-  FragmentNode,
-  IfNode,
-  RenderNode,
-  TextNode,
-  UfModule,
+	ComponentNode,
+	ElementNode,
+	Expression,
+	FragmentNode,
+	IfNode,
+	RenderNode,
+	TextNode,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { isTextValue, propReadKinds } from "./values.ts";
@@ -32,9 +32,9 @@ type JsExpression = Exclude<TextPart, string>;
 
 /** What a title's parts are printed with. */
 interface TitleContext {
-  readonly jsx: JsxContext;
-  readonly module: UfModule;
-  readonly placeholders: Placeholders;
+	readonly jsx: JsxContext;
+	readonly module: UfModule;
+	readonly placeholders: Placeholders;
 }
 
 /** The children each `<option>` {@link qwikTitles} rewrote held in the source. */
@@ -45,7 +45,7 @@ const optionSources = new WeakMap<ElementNode, ReadonlyArray<RenderNode>>();
  * string: what a `v-model` selects an option without a `value` by (./composition.ts).
  */
 export function optionSource(option: ElementNode): ReadonlyArray<RenderNode> {
-  return optionSources.get(option) ?? option.children;
+	return optionSources.get(option) ?? option.children;
 }
 
 /**
@@ -53,65 +53,65 @@ export function optionSource(option: ElementNode): ReadonlyArray<RenderNode> {
  * {@link titleChildren} writes them.
  */
 export function qwikTitles(
-  root: ElementNode | FragmentNode,
-  jsx: JsxContext,
-  module: UfModule,
+	root: ElementNode | FragmentNode,
+	jsx: JsxContext,
+	module: UfModule,
 ): ElementNode | FragmentNode {
-  const element = (node: ElementNode): ElementNode => {
-    if (node.tag === "title") {
-      return { ...node, children: titleChildren(node.children, { jsx, module }) };
-    }
-    if (node.tag === "option") {
-      const option = { ...node, children: titleChildren(node.children, { jsx, module }) };
-      optionSources.set(option, node.children);
-      return option;
-    }
-    return { ...node, children: node.children.map(child) };
-  };
-  const component = (node: ComponentNode): ComponentNode => ({
-    ...node,
-    fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })),
-  });
-  const child = (node: RenderNode): RenderNode => {
-    switch (node.kind) {
-      case "Element":
-        return element(node);
-      case "If":
-        return {
-          ...node,
-          branches: node.branches.map((branch) => ({
-            ...branch,
-            children: branch.children.map(child),
-          })),
-        };
-      case "For":
-        return {
-          ...node,
-          body: node.body.kind === "Element" ? element(node.body) : component(node.body),
-        };
-      case "Text":
-      case "Interpolation":
-        return node;
-      case "Component":
-        return component(node);
-      case "SlotOutlet":
-        return { ...node, fallback: node.fallback.map(child) };
-      case "Dynamic":
-        return {
-          ...node,
-          children: node.children.map(child),
-          ...(node.fills
-            ? { fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })) }
-            : {}),
-        };
-      case "Teleport":
-      case "Transition":
-        return { ...node, children: node.children.map(child) };
-      default:
-        return node satisfies never;
-    }
-  };
-  return root.kind === "Element" ? element(root) : { ...root, children: root.children.map(child) };
+	const element = (node: ElementNode): ElementNode => {
+		if (node.tag === "title") {
+			return { ...node, children: titleChildren(node.children, { jsx, module }) };
+		}
+		if (node.tag === "option") {
+			const option = { ...node, children: titleChildren(node.children, { jsx, module }) };
+			optionSources.set(option, node.children);
+			return option;
+		}
+		return { ...node, children: node.children.map(child) };
+	};
+	const component = (node: ComponentNode): ComponentNode => ({
+		...node,
+		fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })),
+	});
+	const child = (node: RenderNode): RenderNode => {
+		switch (node.kind) {
+			case "Element":
+				return element(node);
+			case "If":
+				return {
+					...node,
+					branches: node.branches.map((branch) => ({
+						...branch,
+						children: branch.children.map(child),
+					})),
+				};
+			case "For":
+				return {
+					...node,
+					body: node.body.kind === "Element" ? element(node.body) : component(node.body),
+				};
+			case "Text":
+			case "Interpolation":
+				return node;
+			case "Component":
+				return component(node);
+			case "SlotOutlet":
+				return { ...node, fallback: node.fallback.map(child) };
+			case "Dynamic":
+				return {
+					...node,
+					children: node.children.map(child),
+					...(node.fills
+						? { fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })) }
+						: {}),
+				};
+			case "Teleport":
+			case "Transition":
+				return { ...node, children: node.children.map(child) };
+			default:
+				return node satisfies never;
+		}
+	};
+	return root.kind === "Element" ? element(root) : { ...root, children: root.children.map(child) };
 }
 
 /**
@@ -121,29 +121,29 @@ export function qwikTitles(
  * throws on one rather than drop it (a target that throws is reported by the compiler).
  */
 function titleChildren(
-  children: ReadonlyArray<RenderNode>,
-  options: Omit<TitleContext, "placeholders">,
+	children: ReadonlyArray<RenderNode>,
+	options: Omit<TitleContext, "placeholders">,
 ): Array<RenderNode> {
-  const [only] = children;
-  if (!only) {
-    return [];
-  }
-  const context: TitleContext = { ...options, placeholders: new Placeholders() };
-  if (children.length === 1 && only.kind === "Text") {
-    return [only];
-  }
-  if (children.length === 1 && only.kind === "Interpolation" && isText(only.value, context)) {
-    return [only];
-  }
-  const value = children.length === 1 ? alone(only, context) : text(children, context, false);
-  const span = { start: only.span.start, end: children.at(-1)!.span.end };
-  if (typeof value === "string") {
-    return value ? [{ kind: "Text", value, span }] : [];
-  }
-  const code = context.placeholders.print(() => printExpression(value));
-  // Printed here, each part spelled by the context: the expression holds no reference for a
-  // rewrite to spell again.
-  return [{ kind: "Interpolation", value: { code, span, refs: [] }, span }];
+	const [only] = children;
+	if (!only) {
+		return [];
+	}
+	const context: TitleContext = { ...options, placeholders: new Placeholders() };
+	if (children.length === 1 && only.kind === "Text") {
+		return [only];
+	}
+	if (children.length === 1 && only.kind === "Interpolation" && isText(only.value, context)) {
+		return [only];
+	}
+	const value = children.length === 1 ? alone(only, context) : text(children, context, false);
+	const span = { start: only.span.start, end: children.at(-1)!.span.end };
+	if (typeof value === "string") {
+		return value ? [{ kind: "Text", value, span }] : [];
+	}
+	const code = context.placeholders.print(() => printExpression(value));
+	// Printed here, each part spelled by the context: the expression holds no reference for a
+	// rewrite to spell again.
+	return [{ kind: "Interpolation", value: { code, span, refs: [] }, span }];
 }
 
 /**
@@ -153,33 +153,33 @@ function titleChildren(
  * otherwise in a template literal. Its text when nothing in it renders a value.
  */
 function alone(node: RenderNode, context: TitleContext): JsExpression | string {
-  switch (node.kind) {
-    case "If":
-      return chain(node, (children) => branchValue(children, context), undefinedValue(), context);
-    case "Interpolation": {
-      if (isText(node.value, context)) {
-        return expression(node.value, context);
-      }
-      const kinds = propReadKinds(node.value, context.jsx.component, context.module);
-      if (kinds && [...kinds].every((kind) => ["string", "null", "undefined"].includes(kind))) {
-        const value = expression(node.value, context, "operand");
-        return js.logicalExpression("??", value, js.stringLiteral(""));
-      }
-      return text([node], context, false);
-    }
-    default:
-      return text([node], context, false);
-  }
+	switch (node.kind) {
+		case "If":
+			return chain(node, (children) => branchValue(children, context), undefinedValue(), context);
+		case "Interpolation": {
+			if (isText(node.value, context)) {
+				return expression(node.value, context);
+			}
+			const kinds = propReadKinds(node.value, context.jsx.component, context.module);
+			if (kinds && [...kinds].every((kind) => ["string", "null", "undefined"].includes(kind))) {
+				const value = expression(node.value, context, "operand");
+				return js.logicalExpression("??", value, js.stringLiteral(""));
+			}
+			return text([node], context, false);
+		}
+		default:
+			return text([node], context, false);
+	}
 }
 
 /** A branch of a conditional that is the title's whole value: see {@link alone}. */
 function branchValue(children: ReadonlyArray<RenderNode>, context: TitleContext): JsExpression {
-  const [only] = children;
-  if (!only) {
-    return undefinedValue();
-  }
-  const value = children.length === 1 ? alone(only, context) : text(children, context, false);
-  return typeof value === "string" ? js.stringLiteral(value) : value;
+	const [only] = children;
+	if (!only) {
+		return undefinedValue();
+	}
+	const value = children.length === 1 ? alone(only, context) : text(children, context, false);
+	return typeof value === "string" ? js.stringLiteral(value) : value;
 }
 
 /**
@@ -187,22 +187,22 @@ function branchValue(children: ReadonlyArray<RenderNode>, context: TitleContext)
  * renders a value. Inside another template literal (`inner`), one part needs none of its own.
  */
 function text(
-  nodes: ReadonlyArray<RenderNode>,
-  context: TitleContext,
-  inner: boolean,
+	nodes: ReadonlyArray<RenderNode>,
+	context: TitleContext,
+	inner: boolean,
 ): JsExpression | string {
-  const parts: Array<TextPart> = [];
-  for (const node of nodes) {
-    const value = node.kind === "Text" ? node.value : templatePart(node, context);
-    if (value !== undefined) {
-      parts.push(value);
-    }
-  }
-  const [only] = parts;
-  if (inner && parts.length === 1 && typeof only !== "string") {
-    return only!;
-  }
-  return textTemplate(parts);
+	const parts: Array<TextPart> = [];
+	for (const node of nodes) {
+		const value = node.kind === "Text" ? node.value : templatePart(node, context);
+		if (value !== undefined) {
+			parts.push(value);
+		}
+	}
+	const [only] = parts;
+	if (inner && parts.length === 1 && typeof only !== "string") {
+		return only!;
+	}
+	return textTemplate(parts);
 }
 
 /**
@@ -210,36 +210,36 @@ function text(
  * always renders nothing (`c ? null : undefined`).
  */
 function templatePart(
-  node: Exclude<RenderNode, TextNode>,
-  context: TitleContext,
+	node: Exclude<RenderNode, TextNode>,
+	context: TitleContext,
 ): JsExpression | undefined {
-  switch (node.kind) {
-    case "Interpolation":
-      return interpolationPart(node.value, context);
-    case "If":
-      return chain(
-        node,
-        (children) => {
-          const value = text(children, context, true);
-          return typeof value === "string" ? js.stringLiteral(value) : value;
-        },
-        js.stringLiteral(""),
-        context,
-      );
-    case "Element":
-    case "For":
-    case "Teleport":
-    case "Transition":
-      throw new Error(
-        `An SVG <title> holds only text, and the IR's invariants rule out an ${node.kind} in one.`,
-      );
-    case "Component":
-    case "SlotOutlet":
-    case "Dynamic":
-      return undefined;
-    default:
-      return node satisfies never;
-  }
+	switch (node.kind) {
+		case "Interpolation":
+			return interpolationPart(node.value, context);
+		case "If":
+			return chain(
+				node,
+				(children) => {
+					const value = text(children, context, true);
+					return typeof value === "string" ? js.stringLiteral(value) : value;
+				},
+				js.stringLiteral(""),
+				context,
+			);
+		case "Element":
+		case "For":
+		case "Teleport":
+		case "Transition":
+			throw new Error(
+				`An SVG <title> holds only text, and the IR's invariants rule out an ${node.kind} in one.`,
+			);
+		case "Component":
+		case "SlotOutlet":
+		case "Dynamic":
+			return undefined;
+		default:
+			return node satisfies never;
+	}
 }
 
 /**
@@ -248,51 +248,51 @@ function templatePart(
  * allows. A prop whose declared type is never nullish needs no guard.
  */
 function interpolationPart(value: Expression, context: TitleContext): JsExpression | undefined {
-  const kinds = propReadKinds(value, context.jsx.component, context.module);
-  if (kinds && !kinds.has("null") && !kinds.has("undefined") && !kinds.has("other")) {
-    return expression(value, context);
-  }
-  return nullishText(expressionCode(value, context.jsx), context.placeholders);
+	const kinds = propReadKinds(value, context.jsx.component, context.module);
+	if (kinds && !kinds.has("null") && !kinds.has("undefined") && !kinds.has("other")) {
+		return expression(value, context);
+	}
+	return nullishText(expressionCode(value, context.jsx), context.placeholders);
 }
 
 /** A conditional as a ternary chain: each branch's value, then `otherwise` if none renders. */
 function chain(
-  node: IfNode,
-  value: (children: ReadonlyArray<RenderNode>) => JsExpression,
-  otherwise: JsExpression,
-  context: TitleContext,
+	node: IfNode,
+	value: (children: ReadonlyArray<RenderNode>) => JsExpression,
+	otherwise: JsExpression,
+	context: TitleContext,
 ): JsExpression {
-  const branches = [...node.branches];
-  const last = branches.at(-1);
-  let result = otherwise;
-  if (last && !last.condition) {
-    result = value(last.children);
-    branches.pop();
-  }
-  for (const each of branches.toReversed()) {
-    result = js.conditionalExpression(
-      expression(each.condition!, context, "test"),
-      value(each.children),
-      result,
-    );
-  }
-  return result;
+	const branches = [...node.branches];
+	const last = branches.at(-1);
+	let result = otherwise;
+	if (last && !last.condition) {
+		result = value(last.children);
+		branches.pop();
+	}
+	for (const each of branches.toReversed()) {
+		result = js.conditionalExpression(
+			expression(each.condition!, context, "test"),
+			value(each.children),
+			result,
+		);
+	}
+	return result;
 }
 
 /** Whether a value types as `string | undefined`, as Qwik's `<title>` takes it. */
 function isText(value: Expression, context: TitleContext): boolean {
-  return isTextValue(value, context.jsx.component, context.module);
+	return isTextValue(value, context.jsx.component, context.module);
 }
 
 /** An expression's code in a placeholder, parenthesised where `slot` needs it. */
 function expression(
-  value: Expression,
-  context: TitleContext,
-  slot: "argument" | "operand" | "test" = "argument",
+	value: Expression,
+	context: TitleContext,
+	slot: "argument" | "operand" | "test" = "argument",
 ): JsExpression {
-  return context.placeholders.expression(expressionCode(value, context.jsx), slot);
+	return context.placeholders.expression(expressionCode(value, context.jsx), slot);
 }
 
 function undefinedValue(): JsExpression {
-  return js.identifier("undefined");
+	return js.identifier("undefined");
 }

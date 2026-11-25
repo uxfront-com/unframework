@@ -27,13 +27,13 @@ whole value of a top-level `const` that declares one name, with an optional anno
 
 ```tsx
 export default async function Profile({ id }: { id: string }) {
-  const user = await loadUser(id);
-  const visits = ref(user.visits);
-  return (
-    <p>
-      {user.name} {visits.value}
-    </p>
-  );
+	const user = await loadUser(id);
+	const visits = ref(user.visits);
+	return (
+		<p>
+			{user.name} {visits.value}
+		</p>
+	);
 }
 ```
 

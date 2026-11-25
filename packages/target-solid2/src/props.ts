@@ -19,23 +19,23 @@ type Statement = Parameters<typeof js.program>[0][number];
 
 /** How the component takes its props, and how its code reads them and calls its listeners. */
 export interface SolidProps {
-  /** The component's parameters: none, or the props object. */
-  parameters: Array<Parameter>;
-  /** What the component runs before its setup: `const props = mergeProps(…)`. */
-  statements: Array<Statement>;
-  /**
-   * The props object's name, which reads a prop and calls an event's listener
-   * (`props.onChange?.(…)`): absent when the output reads nothing through it.
-   */
-  object?: string;
-  /** How code spells a read of a prop: `props.label`, or as written in the object form. */
-  read(binding: Binding, written: string): string;
-  /**
-   * The interface of the component's events, `export interface CounterEvents { onChange?: …}`,
-   * which the props parameter's type takes beside the props type (ADR-0047): absent for a
-   * component that declares no events.
-   */
-  events?: TypeDeclaration;
+	/** The component's parameters: none, or the props object. */
+	parameters: Array<Parameter>;
+	/** What the component runs before its setup: `const props = mergeProps(…)`. */
+	statements: Array<Statement>;
+	/**
+	 * The props object's name, which reads a prop and calls an event's listener
+	 * (`props.onChange?.(…)`): absent when the output reads nothing through it.
+	 */
+	object?: string;
+	/** How code spells a read of a prop: `props.label`, or as written in the object form. */
+	read(binding: Binding, written: string): string;
+	/**
+	 * The interface of the component's events, `export interface CounterEvents { onChange?: …}`,
+	 * which the props parameter's type takes beside the props type (ADR-0047): absent for a
+	 * component that declares no events.
+	 */
+	events?: TypeDeclaration;
 }
 
 /**
@@ -61,128 +61,128 @@ export interface SolidProps {
  * read too (`referencedBindings` counts client code).
  */
 export function solidProps(
-  component: UfComponent,
-  imports: ImportSet,
-  placeholders: Placeholders,
-  composition: { types: ReadonlyArray<string>; reads: boolean },
+	component: UfComponent,
+	imports: ImportSet,
+	placeholders: Placeholders,
+	composition: { types: ReadonlyArray<string>; reads: boolean },
 ): SolidProps {
-  const parameter = component.propsParameter;
-  const generated = eventsInterface(component, imports);
-  const events = generated?.declaration;
-  const emitted = component.emits !== undefined && emitsAny(component);
-  // A component without props still takes the scope attributes of the styled parents that
-  // render it, as an object (ADR-0063).
-  const typeCode =
-    [parameter?.type.code, generated?.reference, ...composition.types]
-      .filter(Boolean)
-      .join(" & ") || "object";
-  const type = () => placeholders.type(typeCode);
-  if (!parameter && !events && !composition.types.length && !composition.reads) {
-    return { parameters: [], statements: [], read: asWritten };
-  }
-  const referenced = referencedBindings(component, { includeKeys: false });
-  const read = component.props.filter(
-    (prop) => prop.binding !== undefined && referenced.has(prop.binding),
-  );
-  const unread = (): SolidProps => {
-    // An object form's name `_` and more says it is unused already: it stays the source's
-    // (oxlint still reports a bare `_`).
-    const name =
-      parameter?.form === "object" && /^_./.test(parameter.name!)
-        ? parameter.name!
-        : imports.claim("_props");
-    return {
-      parameters: [js.bindingIdentifier(name, type())],
-      statements: [],
-      read: asWritten,
-      ...(events ? { events } : {}),
-    };
-  };
-  if (read.length === 0 && !emitted && !composition.reads) {
-    return unread();
-  }
-  if (!parameter || parameter.form === "object") {
-    // The source's own name, which every reference already spells (`props.label`), or `props`
-    // for a component that takes only its events' listeners. An object form only composition
-    // reads (fallthrough, slots, models) and whose name says it is unused (`_`, `_unused`) takes
-    // `props`: no source code spells it.
-    const kept = parameter && (read.length || emitted || !parameter.name!.startsWith("_"));
-    const name = kept ? parameter.name! : imports.claim("props");
-    return {
-      parameters: [js.bindingIdentifier(name, type())],
-      statements: [],
-      object: name,
-      read: asWritten,
-      ...(events ? { events } : {}),
-    };
-  }
-  // In the order the source's pattern lists them, where the author wrote them: bindings are in
-  // source order.
-  const order = new Map(component.bindings.map((binding, index) => [binding.id, index]));
-  const defaults = read
-    .filter((prop): prop is Prop & { default: NonNullable<Prop["default"]> } =>
-      Boolean(prop.default),
-    )
-    .toSorted((a, b) => order.get(a.binding!)! - order.get(b.binding!)!);
-  const raw = defaults.length ? imports.claim("rawProps") : undefined;
-  const props = imports.claim("props");
-  const shared = {
-    object: props,
-    read: (binding: Binding) => `${props}.${binding.name}`,
-    ...(events ? { events } : {}),
-  };
-  if (!raw) {
-    return { parameters: [js.bindingIdentifier(props, type())], statements: [], ...shared };
-  }
-  // `merge` takes the last source's key, so each default is a getter over the prop that applies
-  // the default where the prop is `undefined`, absent or passed as such.
-  const merge = imports.add("solid-js", "merge");
-  const getters = (value: (prop: (typeof defaults)[number]) => string) =>
-    defaults
-      .map(
-        (prop) =>
-          `get ${prop.name}() {\nreturn ${raw}.${prop.name} === undefined ? ${value(prop)} : ${raw}.${prop.name};\n}`,
-      )
-      .join(",\n");
-  if (!defaults.some((prop) => holdsContainer(parseExpression(prop.default.code)))) {
-    return {
-      parameters: [js.bindingIdentifier(raw, type())],
-      statements: [
-        placeholders.statements(
-          `const ${props} = ${merge}(${raw}, {\n${getters((prop) => `(${prop.default.code})`)}\n});`,
-        ),
-      ],
-      ...shared,
-    };
-  }
-  // A default that is or holds an object or array literal is evaluated once, into `defaults`,
-  // annotated with the props' own types, so the getter gives one value each time it is read, as
-  // a destructured default is evaluated once. `satisfies` would keep the literal's own type, which
-  // lacks the optional members its value leaves out (`{ title: "t" }` for `Attrs`), and a read of
-  // the prop would fail L4. Scalars stay in their getters.
-  const named = imports.claim("defaults");
-  const keys = defaults.map((prop) => JSON.stringify(prop.name)).join(" | ");
-  const annotation = `Required<Pick<${parameter.type.code}, ${keys}>>`;
-  const values = defaults.map((prop) => `${prop.name}: ${`(${prop.default.code})`}`).join(",\n");
-  return {
-    parameters: [js.bindingIdentifier(raw, type())],
-    statements: [
-      placeholders.statements(
-        `const ${named}: ${annotation} = {\n${values}\n};\nconst ${props} = ${merge}(${raw}, {\n${getters((prop) => `${named}.${prop.name}`)}\n});`,
-      ),
-    ],
-    ...shared,
-  };
+	const parameter = component.propsParameter;
+	const generated = eventsInterface(component, imports);
+	const events = generated?.declaration;
+	const emitted = component.emits !== undefined && emitsAny(component);
+	// A component without props still takes the scope attributes of the styled parents that
+	// render it, as an object (ADR-0063).
+	const typeCode =
+		[parameter?.type.code, generated?.reference, ...composition.types]
+			.filter(Boolean)
+			.join(" & ") || "object";
+	const type = () => placeholders.type(typeCode);
+	if (!parameter && !events && !composition.types.length && !composition.reads) {
+		return { parameters: [], statements: [], read: asWritten };
+	}
+	const referenced = referencedBindings(component, { includeKeys: false });
+	const read = component.props.filter(
+		(prop) => prop.binding !== undefined && referenced.has(prop.binding),
+	);
+	const unread = (): SolidProps => {
+		// An object form's name `_` and more says it is unused already: it stays the source's
+		// (oxlint still reports a bare `_`).
+		const name =
+			parameter?.form === "object" && /^_./.test(parameter.name!)
+				? parameter.name!
+				: imports.claim("_props");
+		return {
+			parameters: [js.bindingIdentifier(name, type())],
+			statements: [],
+			read: asWritten,
+			...(events ? { events } : {}),
+		};
+	};
+	if (read.length === 0 && !emitted && !composition.reads) {
+		return unread();
+	}
+	if (!parameter || parameter.form === "object") {
+		// The source's own name, which every reference already spells (`props.label`), or `props`
+		// for a component that takes only its events' listeners. An object form only composition
+		// reads (fallthrough, slots, models) and whose name says it is unused (`_`, `_unused`) takes
+		// `props`: no source code spells it.
+		const kept = parameter && (read.length || emitted || !parameter.name!.startsWith("_"));
+		const name = kept ? parameter.name! : imports.claim("props");
+		return {
+			parameters: [js.bindingIdentifier(name, type())],
+			statements: [],
+			object: name,
+			read: asWritten,
+			...(events ? { events } : {}),
+		};
+	}
+	// In the order the source's pattern lists them, where the author wrote them: bindings are in
+	// source order.
+	const order = new Map(component.bindings.map((binding, index) => [binding.id, index]));
+	const defaults = read
+		.filter((prop): prop is Prop & { default: NonNullable<Prop["default"]> } =>
+			Boolean(prop.default),
+		)
+		.toSorted((a, b) => order.get(a.binding!)! - order.get(b.binding!)!);
+	const raw = defaults.length ? imports.claim("rawProps") : undefined;
+	const props = imports.claim("props");
+	const shared = {
+		object: props,
+		read: (binding: Binding) => `${props}.${binding.name}`,
+		...(events ? { events } : {}),
+	};
+	if (!raw) {
+		return { parameters: [js.bindingIdentifier(props, type())], statements: [], ...shared };
+	}
+	// `merge` takes the last source's key, so each default is a getter over the prop that applies
+	// the default where the prop is `undefined`, absent or passed as such.
+	const merge = imports.add("solid-js", "merge");
+	const getters = (value: (prop: (typeof defaults)[number]) => string) =>
+		defaults
+			.map(
+				(prop) =>
+					`get ${prop.name}() {\nreturn ${raw}.${prop.name} === undefined ? ${value(prop)} : ${raw}.${prop.name};\n}`,
+			)
+			.join(",\n");
+	if (!defaults.some((prop) => holdsContainer(parseExpression(prop.default.code)))) {
+		return {
+			parameters: [js.bindingIdentifier(raw, type())],
+			statements: [
+				placeholders.statements(
+					`const ${props} = ${merge}(${raw}, {\n${getters((prop) => `(${prop.default.code})`)}\n});`,
+				),
+			],
+			...shared,
+		};
+	}
+	// A default that is or holds an object or array literal is evaluated once, into `defaults`,
+	// annotated with the props' own types, so the getter gives one value each time it is read, as
+	// a destructured default is evaluated once. `satisfies` would keep the literal's own type, which
+	// lacks the optional members its value leaves out (`{ title: "t" }` for `Attrs`), and a read of
+	// the prop would fail L4. Scalars stay in their getters.
+	const named = imports.claim("defaults");
+	const keys = defaults.map((prop) => JSON.stringify(prop.name)).join(" | ");
+	const annotation = `Required<Pick<${parameter.type.code}, ${keys}>>`;
+	const values = defaults.map((prop) => `${prop.name}: ${`(${prop.default.code})`}`).join(",\n");
+	return {
+		parameters: [js.bindingIdentifier(raw, type())],
+		statements: [
+			placeholders.statements(
+				`const ${named}: ${annotation} = {\n${values}\n};\nconst ${props} = ${merge}(${raw}, {\n${getters((prop) => `${named}.${prop.name}`)}\n});`,
+			),
+		],
+		...shared,
+	};
 }
 
 /** A prop's read as the source writes it: the object form's own `props.label`. */
 function asWritten(_binding: Binding, written: string): string {
-  return written;
+	return written;
 }
 
 /** A component's event as Solid's props name its listener: `onChange` for `change`. */
 export function eventProp(event: string): string {
-  return `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
+	return `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
 }
 
 /**
@@ -193,39 +193,39 @@ export function eventProp(event: string): string {
  * (`CounterEvents`, or `CounterEvents_1` beside a source name).
  */
 function eventsInterface(
-  component: UfComponent,
-  imports: ImportSet,
+	component: UfComponent,
+	imports: ImportSet,
 ): GeneratedInterface | undefined {
-  const { emits } = component;
-  if (!emits) {
-    return undefined;
-  }
-  const name = imports.claim(`${component.name}Events`);
-  const members = emits.events.map((event) => {
-    const parameters = event.parameters
-      .map((member) => `${member.name}${member.optional ? "?" : ""}: ${member.type.code}`)
-      .join(", ");
-    return `  ${eventProp(event.name)}?: (${parameters}) => void;`;
-  });
-  return generatedInterface(component, name, members, emits.span);
+	const { emits } = component;
+	if (!emits) {
+		return undefined;
+	}
+	const name = imports.claim(`${component.name}Events`);
+	const members = emits.events.map((event) => {
+		const parameters = event.parameters
+			.map((member) => `${member.name}${member.optional ? "?" : ""}: ${member.type.code}`)
+			.join(", ");
+		return `  ${eventProp(event.name)}?: (${parameters}) => void;`;
+	});
+	return generatedInterface(component, name, members, emits.span);
 }
 
 /** Whether any code of a component emits one of its events. */
 function emitsAny(component: UfComponent): boolean {
-  return codeOf(component).some(({ code }) => code.refs.some((ref) => ref.kind === "Emit"));
+	return codeOf(component).some(({ code }) => code.refs.some((ref) => ref.kind === "Emit"));
 }
 
 /** Whether a default is or holds an object or array literal (`{ title: "t" }`, `["info"]`). */
 function holdsContainer(node: unknown): boolean {
-  if (Array.isArray(node)) {
-    return node.some(holdsContainer);
-  }
-  if (typeof node !== "object" || node === null) {
-    return false;
-  }
-  const { type } = node as { type?: unknown };
-  if (type === "ObjectExpression" || type === "ArrayExpression") {
-    return true;
-  }
-  return Object.entries(node).some(([key, value]) => key !== "type" && holdsContainer(value));
+	if (Array.isArray(node)) {
+		return node.some(holdsContainer);
+	}
+	if (typeof node !== "object" || node === null) {
+		return false;
+	}
+	const { type } = node as { type?: unknown };
+	if (type === "ObjectExpression" || type === "ArrayExpression") {
+		return true;
+	}
+	return Object.entries(node).some(([key, value]) => key !== "type" && holdsContainer(value));
 }

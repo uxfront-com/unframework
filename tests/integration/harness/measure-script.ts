@@ -5,14 +5,14 @@
 import { spawn, spawnSync } from "node:child_process";
 import type { SpawnSyncOptions } from "node:child_process";
 import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
+	chmodSync,
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	renameSync,
+	rmSync,
+	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
@@ -32,9 +32,9 @@ export const KIB_PER_MIB = 1024;
 export const HOG_KIB: number = 300 * KIB_PER_MIB;
 export const CEILING: Array<string> = ["--max-rss-gib", "0.2"];
 export const SLEEPER_AND_WAIT: Array<string> = [
-  "sh",
-  "-c",
-  "sleep 60 >/dev/null 2>&1 & echo $!; wait",
+	"sh",
+	"-c",
+	"sleep 60 >/dev/null 2>&1 & echo $!; wait",
 ];
 export const DETACHED_SLEEPER = `const { spawn } = require("node:child_process");
     const sleeper = spawn("sleep", ["60"], { detached: true, stdio: "ignore" });
@@ -62,8 +62,8 @@ export const node = (script: string): Array<string> => [process.execPath, "-e", 
 
 /** `kill(pid, 0)` also succeeds on a zombie. */
 export function isAlive(pid: number): boolean {
-  const { stdout } = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8" });
-  return stdout.trim() !== "" && !stdout.trim().startsWith("Z");
+	const { stdout } = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8" });
+	return stdout.trim() !== "" && !stdout.trim().startsWith("Z");
 }
 
 /** The limit ends a command the tool failed to stop, which would otherwise hang the suite. */
@@ -75,33 +75,33 @@ const LIMIT_MS = 30_000;
  * word missing from an empty `stderr`.
  */
 export function runTool(
-  args: ReadonlyArray<string>,
-  options: SpawnSyncOptions = {},
+	args: ReadonlyArray<string>,
+	options: SpawnSyncOptions = {},
 ): { status: number | null; out: string; err: string } {
-  const result = spawnSync(process.execPath, [SCRIPT, ...args], {
-    ...options,
-    encoding: "utf8",
-    timeout: LIMIT_MS,
-  });
-  if (result.error) {
-    throw new Error(`The tool did not exit within ${LIMIT_MS / 1000} s: ${result.error.message}`);
-  }
-  if (result.signal) {
-    throw new Error(`The tool was ended by ${result.signal}`);
-  }
-  return { status: result.status, out: result.stdout, err: result.stderr };
+	const result = spawnSync(process.execPath, [SCRIPT, ...args], {
+		...options,
+		encoding: "utf8",
+		timeout: LIMIT_MS,
+	});
+	if (result.error) {
+		throw new Error(`The tool did not exit within ${LIMIT_MS / 1000} s: ${result.error.message}`);
+	}
+	if (result.signal) {
+		throw new Error(`The tool was ended by ${result.signal}`);
+	}
+	return { status: result.status, out: result.stdout, err: result.stderr };
 }
 
 const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
 
 /** What a file's tests that assert an amount of memory use. */
 export interface DeclaredRss {
-  /** The environment that puts the test's `ps` first on `PATH`, for the tool. */
-  env: () => NodeJS.ProcessEnv;
-  /** Declares a process's RSS, whole or not at all: by a rename. */
-  declare: (pid: number, kib: number) => void;
-  /** Script that declares the running process's RSS, before what follows it. */
-  holds: (kib: number) => string;
+	/** The environment that puts the test's `ps` first on `PATH`, for the tool. */
+	env: () => NodeJS.ProcessEnv;
+	/** Declares a process's RSS, whole or not at all: by a rename. */
+	declare: (pid: number, kib: number) => void;
+	/** Script that declares the running process's RSS, before what follows it. */
+	holds: (kib: number) => string;
 }
 
 /**
@@ -116,21 +116,21 @@ export interface DeclaredRss {
  * later process could reuse the PID.
  */
 export function declaredRss(): DeclaredRss {
-  let root = "";
-  let declaredDir = "";
-  let env: NodeJS.ProcessEnv = {};
-  beforeAll(() => {
-    const realPs = spawnSync("sh", ["-c", "command -v ps"], { encoding: "utf8" }).stdout.trim();
-    expect(realPs, "the real ps").toMatch(/^\//);
-    root = mkdtempSync(join(tmpdir(), "uf-measure-"));
-    const binDir = join(root, "bin");
-    declaredDir = join(root, "rss");
-    mkdirSync(binDir);
-    mkdirSync(declaredDir);
-    const fakePs = join(binDir, "ps");
-    writeFileSync(
-      fakePs,
-      `#!/bin/sh
+	let root = "";
+	let declaredDir = "";
+	let env: NodeJS.ProcessEnv = {};
+	beforeAll(() => {
+		const realPs = spawnSync("sh", ["-c", "command -v ps"], { encoding: "utf8" }).stdout.trim();
+		expect(realPs, "the real ps").toMatch(/^\//);
+		root = mkdtempSync(join(tmpdir(), "uf-measure-"));
+		const binDir = join(root, "bin");
+		declaredDir = join(root, "rss");
+		mkdirSync(binDir);
+		mkdirSync(declaredDir);
+		const fakePs = join(binDir, "ps");
+		writeFileSync(
+			fakePs,
+			`#!/bin/sh
 n=0 pid_at=0 rss_at=0 previous=
 for arg in "$@"; do
   if [ "$previous" = "-o" ]; then
@@ -165,59 +165,59 @@ NF == 0 { print; next }
   print head kib substr(rest, RLENGTH + 1)
 }'
 `,
-    );
-    chmodSync(fakePs, 0o755);
-    env = { ...process.env, PATH: `${binDir}${delimiter}${process.env.PATH ?? ""}` };
-  });
-  afterEach(() => {
-    if (!declaredDir) {
-      return;
-    }
-    rmSync(declaredDir, { recursive: true, force: true });
-    mkdirSync(declaredDir);
-  });
-  afterAll(() => {
-    if (root) {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-  return {
-    env: () => env,
-    declare: (pid, kib) => {
-      const file = join(declaredDir, String(pid));
-      writeFileSync(`${file}.tmp`, String(kib));
-      renameSync(`${file}.tmp`, file);
-    },
-    holds: (kib) => `{
+		);
+		chmodSync(fakePs, 0o755);
+		env = { ...process.env, PATH: `${binDir}${delimiter}${process.env.PATH ?? ""}` };
+	});
+	afterEach(() => {
+		if (!declaredDir) {
+			return;
+		}
+		rmSync(declaredDir, { recursive: true, force: true });
+		mkdirSync(declaredDir);
+	});
+	afterAll(() => {
+		if (root) {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+	return {
+		env: () => env,
+		declare: (pid, kib) => {
+			const file = join(declaredDir, String(pid));
+			writeFileSync(`${file}.tmp`, String(kib));
+			renameSync(`${file}.tmp`, file);
+		},
+		holds: (kib) => `{
       const fs = require("node:fs");
       const file = ${JSON.stringify(declaredDir)} + "/" + process.pid;
       fs.writeFileSync(file + ".tmp", "${kib}");
       fs.renameSync(file + ".tmp", file);
     }`,
-  };
+	};
 }
 
 /** What a file's tests of the script use, under its own label. */
 export interface ScriptHarness {
-  label: string;
-  reportFile: string;
-  /** Runs a command through the tool, and reads the report it leaves. */
-  measure: (
-    command: ReadonlyArray<string>,
-    options?: { flags?: ReadonlyArray<string>; env?: NodeJS.ProcessEnv },
-  ) => { status: number | null; out: string; err: string; report: MeasureReport | undefined };
-  /**
-   * Runs a command through the tool, and sends the signals once the command has printed a PID,
-   * kept to kill after the test. It waits for the tool's exit, not its pipe, which a tree the
-   * tool failed to stop would hold open.
-   */
-  interrupt: (
-    command: ReadonlyArray<string>,
-    signals: ReadonlyArray<NodeJS.Signals>,
-    nodeArgs?: ReadonlyArray<string>,
-  ) => Promise<{ status: number | null; pid: number }>;
-  /** The first PID the command printed, kept to kill after the test. */
-  sleeperOf: (out: string) => number;
+	label: string;
+	reportFile: string;
+	/** Runs a command through the tool, and reads the report it leaves. */
+	measure: (
+		command: ReadonlyArray<string>,
+		options?: { flags?: ReadonlyArray<string>; env?: NodeJS.ProcessEnv },
+	) => { status: number | null; out: string; err: string; report: MeasureReport | undefined };
+	/**
+	 * Runs a command through the tool, and sends the signals once the command has printed a PID,
+	 * kept to kill after the test. It waits for the tool's exit, not its pipe, which a tree the
+	 * tool failed to stop would hold open.
+	 */
+	interrupt: (
+		command: ReadonlyArray<string>,
+		signals: ReadonlyArray<NodeJS.Signals>,
+		nodeArgs?: ReadonlyArray<string>,
+	) => Promise<{ status: number | null; pid: number }>;
+	/** The first PID the command printed, kept to kill after the test. */
+	sleeperOf: (out: string) => number;
 }
 
 /**
@@ -225,62 +225,62 @@ export interface ScriptHarness {
  * registers the hooks that kill each test's sleepers and delete the report.
  */
 export function scriptHarness(label: string): ScriptHarness {
-  // Real reports, in the directory the tool writes.
-  const reportFile = join(REPORTS_DIR, "measure", `${label}.json`);
-  const sleepers: Array<number> = [];
+	// Real reports, in the directory the tool writes.
+	const reportFile = join(REPORTS_DIR, "measure", `${label}.json`);
+	const sleepers: Array<number> = [];
 
-  afterEach(() => {
-    for (const pid of sleepers.splice(0)) {
-      try {
-        process.kill(pid, "SIGKILL");
-      } catch {
-        // It has gone, as the test asked of it.
-      }
-    }
-  });
-  afterAll(() => {
-    rmSync(reportFile, { force: true });
-  });
+	afterEach(() => {
+		for (const pid of sleepers.splice(0)) {
+			try {
+				process.kill(pid, "SIGKILL");
+			} catch {
+				// It has gone, as the test asked of it.
+			}
+		}
+	});
+	afterAll(() => {
+		rmSync(reportFile, { force: true });
+	});
 
-  const sleeperOf = (out: string) => {
-    const pid = Number(/^(\d+)$/m.exec(out)?.[1]);
-    expect(pid).toBeGreaterThan(1);
-    sleepers.push(pid);
-    return pid;
-  };
+	const sleeperOf = (out: string) => {
+		const pid = Number(/^(\d+)$/m.exec(out)?.[1]);
+		expect(pid).toBeGreaterThan(1);
+		sleepers.push(pid);
+		return pid;
+	};
 
-  return {
-    label,
-    reportFile,
-    measure: (command, options = {}) => {
-      rmSync(reportFile, { force: true });
-      const result = runTool([label, ...(options.flags ?? []), "--", ...command], {
-        env: options.env,
-      });
-      const report = existsSync(reportFile)
-        ? (JSON.parse(readFileSync(reportFile, "utf8")) as MeasureReport)
-        : undefined;
-      return { ...result, report };
-    },
-    interrupt: async (command, signals, nodeArgs = []) => {
-      rmSync(reportFile, { force: true });
-      const tool = spawn(process.execPath, [...nodeArgs, SCRIPT, label, "--", ...command], {
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-      const exited = new Promise<number | null>((resolve) => {
-        tool.once("exit", (code) => resolve(code));
-      });
-      const out = await new Promise<string>((resolve) => {
-        tool.stdout.once("data", (chunk: Buffer) => resolve(chunk.toString()));
-      });
-      const pid = sleeperOf(out);
-      for (const signal of signals) {
-        tool.kill(signal);
-        // Two signals of a kind sent at once may arrive as one.
-        await delay(100);
-      }
-      return { status: await exited, pid };
-    },
-    sleeperOf,
-  };
+	return {
+		label,
+		reportFile,
+		measure: (command, options = {}) => {
+			rmSync(reportFile, { force: true });
+			const result = runTool([label, ...(options.flags ?? []), "--", ...command], {
+				env: options.env,
+			});
+			const report = existsSync(reportFile)
+				? (JSON.parse(readFileSync(reportFile, "utf8")) as MeasureReport)
+				: undefined;
+			return { ...result, report };
+		},
+		interrupt: async (command, signals, nodeArgs = []) => {
+			rmSync(reportFile, { force: true });
+			const tool = spawn(process.execPath, [...nodeArgs, SCRIPT, label, "--", ...command], {
+				stdio: ["ignore", "pipe", "ignore"],
+			});
+			const exited = new Promise<number | null>((resolve) => {
+				tool.once("exit", (code) => resolve(code));
+			});
+			const out = await new Promise<string>((resolve) => {
+				tool.stdout.once("data", (chunk: Buffer) => resolve(chunk.toString()));
+			});
+			const pid = sleeperOf(out);
+			for (const signal of signals) {
+				tool.kill(signal);
+				// Two signals of a kind sent at once may arrive as one.
+				await delay(100);
+			}
+			return { status: await exited, pid };
+		},
+		sleeperOf,
+	};
 }

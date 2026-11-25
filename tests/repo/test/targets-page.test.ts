@@ -18,90 +18,90 @@ const page = readFileSync(join(root, "apps/web/content/docs/3.reference/1.target
 
 /** Each target by the name the page writes it with. */
 const NAMES: Readonly<Record<TargetName, string>> = {
-  react: "React",
-  vue: "Vue",
-  svelte: "Svelte",
-  angular: "Angular",
-  solid: "Solid",
-  solid2: "Solid 2",
-  qwik: "Qwik",
-  astro: "Astro",
+	react: "React",
+	vue: "Vue",
+	svelte: "Svelte",
+	angular: "Angular",
+	solid: "Solid",
+	solid2: "Solid 2",
+	qwik: "Qwik",
+	astro: "Astro",
 };
 
 /** A cell as the table writes it: `native`, `emulated` and its helper, or `unsupported`. */
 function written(cell: CapabilityCell): string {
-  return cell.support === "emulated" ? `emulated \`${cell.helper}\`` : cell.support;
+	return cell.support === "emulated" ? `emulated \`${cell.helper}\`` : cell.support;
 }
 
 /** The cells of a Markdown table row, trimmed. */
 const cellsOf = (line: string) =>
-  line
-    .slice(1, -1)
-    .split("|")
-    .map((cell) => cell.trim());
+	line
+		.slice(1, -1)
+		.split("|")
+		.map((cell) => cell.trim());
 
 /** The capability table: its header's cells, and each row's, by the row's capability. */
 function capabilityTable(): { header: Array<string>; rows: Array<Array<string>> } {
-  const lines = page.split("\n");
-  const start = lines.findIndex((line) => /^\| Capability +\|/.test(line));
-  if (start < 0) {
-    throw new Error("The targets page has no capability table.");
-  }
-  const header = cellsOf(lines[start]!);
-  const rows: Array<Array<string>> = [];
-  for (const line of lines.slice(start + 2)) {
-    if (!line.startsWith("|")) {
-      break;
-    }
-    rows.push(cellsOf(line));
-  }
-  return { header, rows };
+	const lines = page.split("\n");
+	const start = lines.findIndex((line) => /^\| Capability +\|/.test(line));
+	if (start < 0) {
+		throw new Error("The targets page has no capability table.");
+	}
+	const header = cellsOf(lines[start]!);
+	const rows: Array<Array<string>> = [];
+	for (const line of lines.slice(start + 2)) {
+		if (!line.startsWith("|")) {
+			break;
+		}
+		rows.push(cellsOf(line));
+	}
+	return { header, rows };
 }
 
 /** The notes under the table: each bullet's bold heading (`**Qwik, `late-prop`**`). */
 function notes(): Array<string> {
-  return [...page.matchAll(/^- \*\*([^*]+)\*\*/gm)].map((match) => match[1]!);
+	return [...page.matchAll(/^- \*\*([^*]+)\*\*/gm)].map((match) => match[1]!);
 }
 
 describe("the targets reference page", () => {
-  it("has a row for every capability, in the matrix's order, and a column for every target", () => {
-    const { header, rows } = capabilityTable();
-    expect(header.slice(0, 2)).toEqual(["Capability", "What it covers"]);
-    expect(header.slice(2).toSorted()).toEqual(TARGET_NAMES.map((name) => NAMES[name]).toSorted());
-    expect(rows.map((row) => row[0])).toEqual(CAPABILITY_NAMES.map((name) => `\`${name}\``));
-    for (const row of rows) {
-      expect(row[1], row[0]).not.toBe("");
-    }
-  });
+	it("has a row for every capability, in the matrix's order, and a column for every target", () => {
+		const { header, rows } = capabilityTable();
+		expect(header.slice(0, 2)).toEqual(["Capability", "What it covers"]);
+		expect(header.slice(2).toSorted()).toEqual(TARGET_NAMES.map((name) => NAMES[name]).toSorted());
+		expect(rows.map((row) => row[0])).toEqual(CAPABILITY_NAMES.map((name) => `\`${name}\``));
+		for (const row of rows) {
+			expect(row[1], row[0]).not.toBe("");
+		}
+	});
 
-  it("writes each target's cell as the target declares it", () => {
-    const { header, rows } = capabilityTable();
-    const expected = rows.map((row, index) => [
-      row[0],
-      row[1],
-      ...header.slice(2).map((column) => {
-        const target = TARGET_NAMES.find((name) => NAMES[name] === column)!;
-        return written(builtinTargets[target].capabilities[CAPABILITY_NAMES[index]!]);
-      }),
-    ]);
-    expect(rows).toEqual(expected);
-  });
+	it("writes each target's cell as the target declares it", () => {
+		const { header, rows } = capabilityTable();
+		const expected = rows.map((row, index) => [
+			row[0],
+			row[1],
+			...header.slice(2).map((column) => {
+				const target = TARGET_NAMES.find((name) => NAMES[name] === column)!;
+				return written(builtinTargets[target].capabilities[CAPABILITY_NAMES[index]!]);
+			}),
+		]);
+		expect(rows).toEqual(expected);
+	});
 
-  it("has a note under the table for every cell that is not native", () => {
-    const headings = notes();
-    const missing = TARGET_NAMES.flatMap((target) =>
-      CAPABILITY_NAMES.filter(
-        (capability) => builtinTargets[target].capabilities[capability].support !== "native",
-      )
-        .filter(
-          (capability) =>
-            !headings.some(
-              (heading) =>
-                heading.startsWith(`${NAMES[target]}, `) && heading.includes(`\`${capability}\``),
-            ),
-        )
-        .map((capability) => `${NAMES[target]}, \`${capability}\``),
-    );
-    expect(missing).toEqual([]);
-  });
+	it("has a note under the table for every cell that is not native", () => {
+		const headings = notes();
+		const missing = TARGET_NAMES.flatMap((target) =>
+			CAPABILITY_NAMES.filter(
+				(capability) => builtinTargets[target].capabilities[capability].support !== "native",
+			)
+				.filter(
+					(capability) =>
+						!headings.some(
+							(heading) =>
+								heading.startsWith(`${NAMES[target]}, `) && heading.includes(`\`${capability}\``),
+						),
+				)
+				.map((capability) => `${NAMES[target]}, \`${capability}\``),
+		);
+		expect(missing).toEqual([]);
+	});
 });

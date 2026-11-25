@@ -3,7 +3,7 @@ import Level from "../../../../../integration/cases/context/nested/__output__/vu
 </script>
 
 <template>
-  <Level title="Book">
-    <Level title="Part" />
-  </Level>
+	<Level title="Book">
+		<Level title="Part" />
+	</Level>
 </template>

@@ -15,51 +15,51 @@
 // branch's accessor (src/narrowing.ts), and a prop narrowed in its own function is a property
 // TypeScript narrows (`props.user`): neither needs one.
 import type {
-  Binding,
-  BindingReference,
-  Code,
-  CodeReference,
-  FunctionCode,
-  NarrowedPath,
-  Span,
+	Binding,
+	BindingReference,
+	Code,
+	CodeReference,
+	FunctionCode,
+	NarrowedPath,
+	Span,
 } from "@unframework.dev/ir";
 
 /** Whether Solid's spelling of a binding of this kind loses a narrowing in `scope`. */
 export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): boolean {
-  switch (kind) {
-    // A composable's state and derived values are accessors too (ADR-0069).
-    case "state":
-    case "derived":
-    case "usedState":
-    case "usedDerived":
-      return scope !== "template";
-    case "prop":
-      return scope === "closure";
-    case "loopVar":
-    case "templateRef":
-    case "localConst":
-    case "localFn":
-    case "localVar":
-    case "emit":
-    // A constant the resource's record hands on, read as written (ADR-0101).
-    case "awaited":
-      return false;
-    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-    case "model":
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    // Read as written (ADR-0069, ADR-0070).
-    case "moduleConst":
-    case "import":
-    case "argument":
-    case "usedFn":
-    case "usedConst":
-      return false;
-    default:
-      return unreachable(kind);
-  }
+	switch (kind) {
+		// A composable's state and derived values are accessors too (ADR-0069).
+		case "state":
+		case "derived":
+		case "usedState":
+		case "usedDerived":
+			return scope !== "template";
+		case "prop":
+			return scope === "closure";
+		case "loopVar":
+		case "templateRef":
+		case "localConst":
+		case "localFn":
+		case "localVar":
+		case "emit":
+		// A constant the resource's record hands on, read as written (ADR-0101).
+		case "awaited":
+			return false;
+		// Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+		case "model":
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		// Read as written (ADR-0069, ADR-0070).
+		case "moduleConst":
+		case "import":
+		case "argument":
+		case "usedFn":
+		case "usedConst":
+			return false;
+		default:
+			return unreachable(kind);
+	}
 }
 
 // A path starts where its reference does, and no edit falls inside one: a path is the reference
@@ -68,12 +68,12 @@ export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): 
 
 /** Whether a reference's own read is asserted: its whole span is a narrowed path that needs it. */
 export function assertedWhole(reference: BindingReference, binding: Binding): boolean {
-  const length = reference.span.end - reference.span.start;
-  return (
-    reference.narrowed?.some(
-      ({ span, scope }) => span.end - span.start === length && assertsIn(binding.kind, scope),
-    ) === true
-  );
+	const length = reference.span.end - reference.span.start;
+	return (
+		reference.narrowed?.some(
+			({ span, scope }) => span.end - span.start === length && assertsIn(binding.kind, scope),
+		) === true
+	);
 }
 
 /**
@@ -81,10 +81,10 @@ export function assertedWhole(reference: BindingReference, binding: Binding): bo
  * an assertion, in the code's offsets.
  */
 export function assertedPathEnds(reference: BindingReference, binding: Binding): Array<number> {
-  const length = reference.span.end - reference.span.start;
-  return (reference.narrowed ?? [])
-    .filter(({ span, scope }) => span.end - span.start > length && assertsIn(binding.kind, scope))
-    .map(({ span }) => reference.span.start + span.end - span.start);
+	const length = reference.span.end - reference.span.start;
+	return (reference.narrowed ?? [])
+		.filter(({ span, scope }) => span.end - span.start > length && assertsIn(binding.kind, scope))
+		.map(({ span }) => reference.span.start + span.end - span.start);
 }
 
 /**
@@ -93,84 +93,84 @@ export function assertedPathEnds(reference: BindingReference, binding: Binding):
  * path does holds its `!`.
  */
 export function assertedCode(
-  code: Code,
-  bindingOf: (reference: BindingReference) => Binding,
+	code: Code,
+	bindingOf: (reference: BindingReference) => Binding,
 ): Code {
-  const at = code.refs
-    .flatMap((reference) =>
-      reference.kind === "Binding" ? assertedPathEnds(reference, bindingOf(reference)) : [],
-    )
-    .toSorted((a, b) => a - b);
-  if (at.length === 0) {
-    return code;
-  }
-  const offset = code.span.start;
-  let text = "";
-  let from = 0;
-  for (const position of at) {
-    text += `${code.code.slice(from, position - offset)}!`;
-    from = position - offset;
-  }
-  text += code.code.slice(from);
-  const start = (position: number) => position + at.filter((each) => each < position).length;
-  const end = (position: number) => position + at.filter((each) => each <= position).length;
-  const moved = (span: Span): Span => ({ start: start(span.start), end: end(span.end) });
-  return {
-    code: text,
-    span: { start: code.span.start, end: end(code.span.end) },
-    refs: code.refs.map((reference) => movedReference(reference, moved)),
-  };
+	const at = code.refs
+		.flatMap((reference) =>
+			reference.kind === "Binding" ? assertedPathEnds(reference, bindingOf(reference)) : [],
+		)
+		.toSorted((a, b) => a - b);
+	if (at.length === 0) {
+		return code;
+	}
+	const offset = code.span.start;
+	let text = "";
+	let from = 0;
+	for (const position of at) {
+		text += `${code.code.slice(from, position - offset)}!`;
+		from = position - offset;
+	}
+	text += code.code.slice(from);
+	const start = (position: number) => position + at.filter((each) => each < position).length;
+	const end = (position: number) => position + at.filter((each) => each <= position).length;
+	const moved = (span: Span): Span => ({ start: start(span.start), end: end(span.end) });
+	return {
+		code: text,
+		span: { start: code.span.start, end: end(code.span.end) },
+		refs: code.refs.map((reference) => movedReference(reference, moved)),
+	};
 }
 
 /** A function whose body is {@link assertedCode}'s. */
 export function assertedFunction(
-  fn: FunctionCode,
-  bindingOf: (reference: BindingReference) => Binding,
+	fn: FunctionCode,
+	bindingOf: (reference: BindingReference) => Binding,
 ): FunctionCode {
-  const body = assertedCode(fn.body, bindingOf);
-  return body === fn.body ? fn : { ...fn, body };
+	const body = assertedCode(fn.body, bindingOf);
+	return body === fn.body ? fn : { ...fn, body };
 }
 
 /** A reference with each of its spans moved. */
 function movedReference(reference: CodeReference, moved: (span: Span) => Span): CodeReference {
-  switch (reference.kind) {
-    case "Binding":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        ...(reference.narrowed
-          ? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
-          : {}),
-      };
-    case "Write":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        target: moved(reference.target),
-        ...(reference.value ? { value: moved(reference.value) } : {}),
-        ...(reference.narrowed
-          ? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
-          : {}),
-      };
-    case "Emit":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        arguments: reference.arguments.map(moved),
-      };
-    case "Global":
-    case "Import":
-    case "Event":
-    case "Api":
-    case "Slot":
-    case "Dev":
-      return { ...reference, span: moved(reference.span) };
-    default:
-      return unreachable(reference);
-  }
+	switch (reference.kind) {
+		case "Binding":
+			return {
+				...reference,
+				span: moved(reference.span),
+				...(reference.narrowed
+					? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
+					: {}),
+			};
+		case "Write":
+			return {
+				...reference,
+				span: moved(reference.span),
+				target: moved(reference.target),
+				...(reference.value ? { value: moved(reference.value) } : {}),
+				...(reference.narrowed
+					? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
+					: {}),
+			};
+		case "Emit":
+			return {
+				...reference,
+				span: moved(reference.span),
+				arguments: reference.arguments.map(moved),
+			};
+		case "Global":
+		case "Import":
+		case "Event":
+		case "Api":
+		case "Slot":
+		case "Dev":
+			return { ...reference, span: moved(reference.span) };
+		default:
+			return unreachable(reference);
+	}
 }
 
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

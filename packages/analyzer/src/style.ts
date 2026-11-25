@@ -5,17 +5,17 @@
 
 import type { Fix } from "@unframework.dev/diagnostics";
 import {
-  angularLowercases,
-  angularMisreads,
-  createBoundStyle,
-  createStaticStyle,
-  createStyleAttribute,
-  CSS_PROPERTIES,
-  cssPropertiesOverlap,
-  cssValueProblem,
-  isCssPropertyName,
-  isCustomProperty,
-  UNITLESS_PROPERTIES,
+	angularLowercases,
+	angularMisreads,
+	createBoundStyle,
+	createStaticStyle,
+	createStyleAttribute,
+	CSS_PROPERTIES,
+	cssPropertiesOverlap,
+	cssValueProblem,
+	isCssPropertyName,
+	isCustomProperty,
+	UNITLESS_PROPERTIES,
 } from "@unframework.dev/ir";
 import type { Span, StyleAttribute, StyleDeclaration } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
@@ -39,35 +39,35 @@ import type { Kinds } from "./types/kinds.ts";
  * (`CSS_SHORTHANDS`).
  */
 const VENDOR_PROPERTIES: ReadonlySet<string> = new Set([
-  "-webkit-border-horizontal-spacing",
-  "-webkit-border-vertical-spacing",
-  "-webkit-box-align",
-  "-webkit-box-direction",
-  "-webkit-box-flex",
-  "-webkit-box-ordinal-group",
-  "-webkit-box-orient",
-  "-webkit-box-pack",
-  "-webkit-box-reflect",
-  "-webkit-font-smoothing",
-  "-webkit-line-clamp",
-  "-webkit-locale",
-  "-webkit-mask-box-image-outset",
-  "-webkit-mask-box-image-repeat",
-  "-webkit-mask-box-image-slice",
-  "-webkit-mask-box-image-source",
-  "-webkit-mask-box-image-width",
-  "-webkit-mask-position-x",
-  "-webkit-mask-position-y",
-  "-webkit-rtl-ordering",
-  "-webkit-tap-highlight-color",
-  "-webkit-text-combine",
-  "-webkit-text-decorations-in-effect",
-  "-webkit-text-fill-color",
-  "-webkit-text-security",
-  "-webkit-text-stroke-color",
-  "-webkit-text-stroke-width",
-  "-webkit-user-drag",
-  "-webkit-user-modify",
+	"-webkit-border-horizontal-spacing",
+	"-webkit-border-vertical-spacing",
+	"-webkit-box-align",
+	"-webkit-box-direction",
+	"-webkit-box-flex",
+	"-webkit-box-ordinal-group",
+	"-webkit-box-orient",
+	"-webkit-box-pack",
+	"-webkit-box-reflect",
+	"-webkit-font-smoothing",
+	"-webkit-line-clamp",
+	"-webkit-locale",
+	"-webkit-mask-box-image-outset",
+	"-webkit-mask-box-image-repeat",
+	"-webkit-mask-box-image-slice",
+	"-webkit-mask-box-image-source",
+	"-webkit-mask-box-image-width",
+	"-webkit-mask-position-x",
+	"-webkit-mask-position-y",
+	"-webkit-rtl-ordering",
+	"-webkit-tap-highlight-color",
+	"-webkit-text-combine",
+	"-webkit-text-decorations-in-effect",
+	"-webkit-text-fill-color",
+	"-webkit-text-security",
+	"-webkit-text-stroke-color",
+	"-webkit-text-stroke-width",
+	"-webkit-user-drag",
+	"-webkit-user-modify",
 ]);
 
 /**
@@ -76,49 +76,49 @@ const VENDOR_PROPERTIES: ReadonlySet<string> = new Set([
  * neither list (`UNITLESS_PROPERTIES` holds those in both), both add `px`.
  */
 const REACT_UNITLESS: ReadonlySet<string> = new Set([
-  "fill-opacity",
-  "flood-opacity",
-  "stop-opacity",
-  "stroke-dasharray",
-  "stroke-dashoffset",
-  "stroke-miterlimit",
-  "stroke-opacity",
-  "stroke-width",
+	"fill-opacity",
+	"flood-opacity",
+	"stop-opacity",
+	"stroke-dasharray",
+	"stroke-dashoffset",
+	"stroke-miterlimit",
+	"stroke-opacity",
+	"stroke-width",
 ]);
 
 /** A `style` lowered: the attribute, when nothing in it was reported. */
 export interface LoweredStyle {
-  attribute: StyleAttribute | undefined;
-  /** Whether the style sets nothing, which renders as no `style` attribute. */
-  empty: boolean;
-  /** Whether a value is bound: written as anything but a string literal. */
-  binds: boolean;
+	attribute: StyleAttribute | undefined;
+	/** Whether the style sets nothing, which renders as no `style` attribute. */
+	empty: boolean;
+	/** Whether a value is bound: written as anything but a string literal. */
+	binds: boolean;
 }
 
 /** The declarations seen so far, for the overlap check. */
 class Declarations {
-  readonly #seen: Array<{ property: string; at: Span }> = [];
-  readonly declarations: Array<StyleDeclaration> = [];
+	readonly #seen: Array<{ property: string; at: Span }> = [];
+	readonly declarations: Array<StyleDeclaration> = [];
 
-  /** Reports a property another declaration sets already, or overlaps (UF3022). */
-  claim(property: string, at: Span, reporter: Reporter): void {
-    const other = this.#seen.find((seen) => cssPropertiesOverlap(seen.property, property));
-    this.#seen.push({ property, at });
-    if (!other) {
-      return;
-    }
-    reporter.report(
-      "UF3022",
-      at,
-      other.property === property
-        ? `This \`style\` sets \`${property}\` twice: the targets that write a style as an object keep one.`
-        : `This \`style\` sets \`${property}\` and \`${other.property}\`, which set the same thing: the targets that write a style as an object cannot keep the order that decides it.`,
-      {
-        help: "Set each property once, with its final value.",
-        related: [{ span: other.at, message: "Also set here" }],
-      },
-    );
-  }
+	/** Reports a property another declaration sets already, or overlaps (UF3022). */
+	claim(property: string, at: Span, reporter: Reporter): void {
+		const other = this.#seen.find((seen) => cssPropertiesOverlap(seen.property, property));
+		this.#seen.push({ property, at });
+		if (!other) {
+			return;
+		}
+		reporter.report(
+			"UF3022",
+			at,
+			other.property === property
+				? `This \`style\` sets \`${property}\` twice: the targets that write a style as an object keep one.`
+				: `This \`style\` sets \`${property}\` and \`${other.property}\`, which set the same thing: the targets that write a style as an object cannot keep the order that decides it.`,
+			{
+				help: "Set each property once, with its final value.",
+				related: [{ span: other.at, message: "Also set here" }],
+			},
+		);
+	}
 }
 
 /**
@@ -126,74 +126,74 @@ class Declarations {
  * map it back to the source) or `style={"…"}`.
  */
 export function lowerStaticStyle(
-  value: string,
-  pieces: ReadonlyArray<Piece>,
-  at: Span,
-  reporter: Reporter,
+	value: string,
+	pieces: ReadonlyArray<Piece>,
+	at: Span,
+	reporter: Reporter,
 ): LoweredStyle {
-  const mark = reporter.diagnostics.length;
-  const where = mapper(value, pieces, at);
-  const parsed = parseDeclarations(value);
-  for (const error of parsed.errors) {
-    reporter.report(
-      "UF3022",
-      where(error.span),
-      `This \`style\` is not valid CSS: ${error.message}.`,
-      {
-        help: "Write declarations as `property: value`, separated by `;`.",
-      },
-    );
-  }
-  if (parsed.errors.length) {
-    return { attribute: undefined, empty: false, binds: false };
-  }
-  if (!parsed.declarations.length) {
-    return { attribute: undefined, empty: true, binds: false };
-  }
-  const declarations = new Declarations();
-  for (const declaration of parsed.declarations) {
-    const property = propertyOf(declaration.property, where(declaration.propertySpan), reporter);
-    if (property === undefined) {
-      continue;
-    }
-    declarations.claim(property, where(declaration.propertySpan), reporter);
-    if (staticValueProblem(property, declaration.value, where(declaration.valueSpan), reporter)) {
-      continue;
-    }
-    declarations.declarations.push(
-      createStaticStyle(property, declaration.value, where(declaration.span)),
-    );
-  }
-  return {
-    attribute: reporter.hasErrorsSince(mark)
-      ? undefined
-      : createStyleAttribute(declarations.declarations, at),
-    empty: false,
-    binds: false,
-  };
+	const mark = reporter.diagnostics.length;
+	const where = mapper(value, pieces, at);
+	const parsed = parseDeclarations(value);
+	for (const error of parsed.errors) {
+		reporter.report(
+			"UF3022",
+			where(error.span),
+			`This \`style\` is not valid CSS: ${error.message}.`,
+			{
+				help: "Write declarations as `property: value`, separated by `;`.",
+			},
+		);
+	}
+	if (parsed.errors.length) {
+		return { attribute: undefined, empty: false, binds: false };
+	}
+	if (!parsed.declarations.length) {
+		return { attribute: undefined, empty: true, binds: false };
+	}
+	const declarations = new Declarations();
+	for (const declaration of parsed.declarations) {
+		const property = propertyOf(declaration.property, where(declaration.propertySpan), reporter);
+		if (property === undefined) {
+			continue;
+		}
+		declarations.claim(property, where(declaration.propertySpan), reporter);
+		if (staticValueProblem(property, declaration.value, where(declaration.valueSpan), reporter)) {
+			continue;
+		}
+		declarations.declarations.push(
+			createStaticStyle(property, declaration.value, where(declaration.span)),
+		);
+	}
+	return {
+		attribute: reporter.hasErrorsSince(mark)
+			? undefined
+			: createStyleAttribute(declarations.declarations, at),
+		empty: false,
+		binds: false,
+	};
 }
 
 /** Maps a span of a decoded value back to the source, through the pieces that wrote it. */
 function mapper(value: string, pieces: ReadonlyArray<Piece>, at: Span): (range: Span) => Span {
-  // Each UTF-16 unit of the value, and the piece that wrote it.
-  const origins: Array<Piece> = [];
-  for (const piece of pieces) {
-    for (let unit = 0; unit < piece.value.length; unit++) {
-      origins.push(piece);
-    }
-  }
-  return (range) => {
-    if (origins.length !== value.length) {
-      return at;
-    }
-    const first = origins[range.start];
-    const last = origins[range.end - 1];
-    if (range.start === range.end) {
-      const offset = first?.start ?? origins.at(-1)?.end ?? at.start;
-      return { start: offset, end: offset };
-    }
-    return { start: first!.start, end: last!.end };
-  };
+	// Each UTF-16 unit of the value, and the piece that wrote it.
+	const origins: Array<Piece> = [];
+	for (const piece of pieces) {
+		for (let unit = 0; unit < piece.value.length; unit++) {
+			origins.push(piece);
+		}
+	}
+	return (range) => {
+		if (origins.length !== value.length) {
+			return at;
+		}
+		const first = origins[range.start];
+		const last = origins[range.end - 1];
+		if (range.start === range.end) {
+			const offset = first?.start ?? origins.at(-1)?.end ?? at.start;
+			return { start: offset, end: offset };
+		}
+		return { start: first!.start, end: last!.end };
+	};
 }
 
 /**
@@ -202,22 +202,22 @@ function mapper(value: string, pieces: ReadonlyArray<Piece>, at: Span): (range: 
  * custom property with an upper-case letter (UF3022).
  */
 function propertyOf(written: string, at: Span, reporter: Reporter): string | undefined {
-  if (isCustomProperty(written)) {
-    return lowerCaseCustomProperty(written, at, reporter) ? written : undefined;
-  }
-  const property = written.toLowerCase();
-  if (isCssPropertyName(property)) {
-    if (CSS_PROPERTIES.has(property)) {
-      return property;
-    }
-    reportUnknownProperty(written, property, at, reporter);
-    return undefined;
-  }
-  if (property.startsWith("-")) {
-    return vendorProperty(written, property, at, reporter) ? property : undefined;
-  }
-  reporter.report("UF3022", at, `\`${written}\` is not a CSS property name.`);
-  return undefined;
+	if (isCustomProperty(written)) {
+		return lowerCaseCustomProperty(written, at, reporter) ? written : undefined;
+	}
+	const property = written.toLowerCase();
+	if (isCssPropertyName(property)) {
+		if (CSS_PROPERTIES.has(property)) {
+			return property;
+		}
+		reportUnknownProperty(written, property, at, reporter);
+		return undefined;
+	}
+	if (property.startsWith("-")) {
+		return vendorProperty(written, property, at, reporter) ? property : undefined;
+	}
+	reporter.report("UF3022", at, `\`${written}\` is not a CSS property name.`);
+	return undefined;
 }
 
 /**
@@ -226,23 +226,23 @@ function propertyOf(written: string, at: Span, reporter: Reporter): string | und
  * on the server and not in a client.
  */
 function vendorProperty(written: string, property: string, at: Span, reporter: Reporter): boolean {
-  if (VENDOR_PROPERTIES.has(property)) {
-    return true;
-  }
-  const standard = property.replace(/^-[a-z]+-/, "");
-  reporter.report(
-    "UF3022",
-    at,
-    CSS_PROPERTIES.has(standard)
-      ? `\`${written}\` has a standard name, \`${standard}\`, which every browser applies alike.`
-      : `\`${written}\` is not a vendor-prefixed property Chromium computes on its own: a browser drops one it does not know, which a server still writes.`,
-    {
-      help: CSS_PROPERTIES.has(standard)
-        ? `Write \`${standard}\`.`
-        : "Write the standard property, or the longhands of a prefixed shorthand.",
-    },
-  );
-  return false;
+	if (VENDOR_PROPERTIES.has(property)) {
+		return true;
+	}
+	const standard = property.replace(/^-[a-z]+-/, "");
+	reporter.report(
+		"UF3022",
+		at,
+		CSS_PROPERTIES.has(standard)
+			? `\`${written}\` has a standard name, \`${standard}\`, which every browser applies alike.`
+			: `\`${written}\` is not a vendor-prefixed property Chromium computes on its own: a browser drops one it does not know, which a server still writes.`,
+		{
+			help: CSS_PROPERTIES.has(standard)
+				? `Write \`${standard}\`.`
+				: "Write the standard property, or the longhands of a prefixed shorthand.",
+		},
+	);
+	return false;
 }
 
 /**
@@ -252,18 +252,18 @@ function vendorProperty(written: string, property: string, at: Span, reporter: R
  * it there.
  */
 function lowerCaseCustomProperty(property: string, at: Span, reporter: Reporter): boolean {
-  if (!angularLowercases(property)) {
-    return true;
-  }
-  reporter.report(
-    "UF3022",
-    at,
-    `\`${property}\` has an upper-case letter, and Angular's server renderer lowercases a custom property's name.`,
-    {
-      help: `Write \`${property.toLowerCase()}\`, and read it as \`var(${property.toLowerCase()})\`.`,
-    },
-  );
-  return false;
+	if (!angularLowercases(property)) {
+		return true;
+	}
+	reporter.report(
+		"UF3022",
+		at,
+		`\`${property}\` has an upper-case letter, and Angular's server renderer lowercases a custom property's name.`,
+		{
+			help: `Write \`${property.toLowerCase()}\`, and read it as \`var(${property.toLowerCase()})\`.`,
+		},
+	);
+	return false;
 }
 
 /**
@@ -271,292 +271,292 @@ function lowerCaseCustomProperty(property: string, at: Span, reporter: Reporter)
  * applies and Solid's lint rejects. The help names the known property one edit or two away.
  */
 function reportUnknownProperty(
-  written: string,
-  property: string,
-  at: Span,
-  reporter: Reporter,
+	written: string,
+	property: string,
+	at: Span,
+	reporter: Reporter,
 ): void {
-  const near = nearestProperty(property);
-  reporter.report("UF3022", at, `\`${written}\` is not a CSS property: no browser applies it.`, {
-    help: near
-      ? `Did you mean \`${near}\`?`
-      : "Write a CSS property, or a custom property (`--name`) for your own value.",
-  });
+	const near = nearestProperty(property);
+	reporter.report("UF3022", at, `\`${written}\` is not a CSS property: no browser applies it.`, {
+		help: near
+			? `Did you mean \`${near}\`?`
+			: "Write a CSS property, or a custom property (`--name`) for your own value.",
+	});
 }
 
 /** The known property closest to a name, at most two edits away, if there is one. */
 function nearestProperty(name: string): string | undefined {
-  let best: string | undefined;
-  let distance = 3;
-  for (const property of CSS_PROPERTIES) {
-    if (Math.abs(property.length - name.length) >= distance) {
-      continue;
-    }
-    const found = editDistance(name, property);
-    if (found < distance) {
-      best = property;
-      distance = found;
-    }
-  }
-  return best;
+	let best: string | undefined;
+	let distance = 3;
+	for (const property of CSS_PROPERTIES) {
+		if (Math.abs(property.length - name.length) >= distance) {
+			continue;
+		}
+		const found = editDistance(name, property);
+		if (found < distance) {
+			best = property;
+			distance = found;
+		}
+	}
+	return best;
 }
 
 /** Levenshtein distance. */
 function editDistance(a: string, b: string): number {
-  let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
-  for (let i = 1; i <= a.length; i++) {
-    const current = [i];
-    for (let j = 1; j <= b.length; j++) {
-      current[j] = Math.min(
-        previous[j]! + 1,
-        current[j - 1]! + 1,
-        previous[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
-      );
-    }
-    previous = current;
-  }
-  return previous[b.length]!;
+	let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+	for (let i = 1; i <= a.length; i++) {
+		const current = [i];
+		for (let j = 1; j <= b.length; j++) {
+			current[j] = Math.min(
+				previous[j]! + 1,
+				current[j - 1]! + 1,
+				previous[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
+			);
+		}
+		previous = current;
+	}
+	return previous[b.length]!;
 }
 
 /** Reports a static value the targets cannot write alike, and returns whether it did. */
 function staticValueProblem(
-  property: string,
-  value: string,
-  at: Span,
-  reporter: Reporter,
+	property: string,
+	value: string,
+	at: Span,
+	reporter: Reporter,
 ): boolean {
-  if (/!\s*important\s*$/i.test(value)) {
-    reporter.report(
-      "UF3022",
-      at,
-      `\`${property}\` is \`!important\`, which React's and Solid's style objects drop.`,
-      { help: "Remove `!important`, and raise the rule's specificity in a stylesheet instead." },
-    );
-    return true;
-  }
-  const problem = cssValueProblem(value);
-  if (problem) {
-    reporter.report(
-      "UF3022",
-      at,
-      value === ""
-        ? `\`${property}\` has no value.`
-        : `\`${property}\`'s value ${problem}: the targets write each value into a declaration of their own.`,
-      { help: "Write one CSS value." },
-    );
-    return true;
-  }
-  if (angularMisreads(value)) {
-    reporter.report(
-      "UF3022",
-      at,
-      `Angular's style parser reads \`${property}\`'s value differently: it knows neither escapes nor comments, and counts the parentheses inside strings.`,
-      {
-        help: 'Put the other quote around a string that holds a quote (`\'a"b\'`), write a parenthesis inside a string as an escape (`"\\28"`), and leave out comments that hold a quote, a parenthesis or a `;`.',
-      },
-    );
-    return true;
-  }
-  return false;
+	if (/!\s*important\s*$/i.test(value)) {
+		reporter.report(
+			"UF3022",
+			at,
+			`\`${property}\` is \`!important\`, which React's and Solid's style objects drop.`,
+			{ help: "Remove `!important`, and raise the rule's specificity in a stylesheet instead." },
+		);
+		return true;
+	}
+	const problem = cssValueProblem(value);
+	if (problem) {
+		reporter.report(
+			"UF3022",
+			at,
+			value === ""
+				? `\`${property}\` has no value.`
+				: `\`${property}\`'s value ${problem}: the targets write each value into a declaration of their own.`,
+			{ help: "Write one CSS value." },
+		);
+		return true;
+	}
+	if (angularMisreads(value)) {
+		reporter.report(
+			"UF3022",
+			at,
+			`Angular's style parser reads \`${property}\`'s value differently: it knows neither escapes nor comments, and counts the parentheses inside strings.`,
+			{
+				help: 'Put the other quote around a string that holds a quote (`\'a"b\'`), write a parenthesis inside a string as an escape (`"\\28"`), and leave out comments that hold a quote, a parenthesis or a `;`.',
+			},
+		);
+		return true;
+	}
+	return false;
 }
 
 /** A style object's key's property: camel case for standard properties, quoted custom ones. */
 function keyProperty(key: string): { property: string; kebab: boolean; vendor: boolean } {
-  if (key.startsWith("--")) {
-    return { property: key, kebab: false, vendor: false };
-  }
-  if (key.includes("-")) {
-    return { property: key.toLowerCase(), kebab: true, vendor: key.startsWith("-") };
-  }
-  const vendor = /^(Webkit|Moz|ms|O)[A-Z]/.test(key);
-  return {
-    property: key.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
-    kebab: false,
-    vendor,
-  };
+	if (key.startsWith("--")) {
+		return { property: key, kebab: false, vendor: false };
+	}
+	if (key.includes("-")) {
+		return { property: key.toLowerCase(), kebab: true, vendor: key.startsWith("-") };
+	}
+	const vendor = /^(Webkit|Moz|ms|O)[A-Z]/.test(key);
+	return {
+		property: key.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
+		kebab: false,
+		vendor,
+	};
 }
 
 /** `margin-top` as a style object's key: `marginTop`. */
 function camelCase(property: string): string {
-  return property.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+	return property.replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /** Lowers `style={{ … }}`. */
 export function lowerStyleObject(node: AST.ObjectExpression, context: RenderContext): LoweredStyle {
-  const { reporter, source } = context;
-  const mark = reporter.diagnostics.length;
-  const declarations = new Declarations();
-  const properties = node.properties.flatMap((property) => {
-    if (
-      property.type === "SpreadElement" ||
-      property.computed ||
-      property.method ||
-      property.kind !== "init"
-    ) {
-      reporter.report(
-        "UF3022",
-        property.type === "SpreadElement" ? property : property.key,
-        property.type === "SpreadElement"
-          ? "A `style` object cannot spread another object: the targets write each declaration they can see."
-          : property.computed
-            ? "A `style` object's keys are CSS properties: no computed keys."
-            : "A `style` object's values are CSS values: no methods, getters or setters.",
-        { help: 'Write each property as a key: `{ marginTop: gap, "--gap": size }`.' },
-      );
-      return [];
-    }
-    const { key } = property;
-    const name =
-      key.type === "Identifier"
-        ? key.name
-        : key.type === "Literal" && typeof key.value === "string"
-          ? key.value
-          : undefined;
-    if (name === undefined) {
-      reporter.report(
-        "UF3022",
-        key,
-        "A `style` object's keys are CSS properties: write them as names or strings.",
-      );
-      return [];
-    }
-    return [{ property, key, name, read: keyProperty(name) }];
-  });
-  const counts = new Map<string, number>();
-  for (const { read } of properties) {
-    counts.set(read.property, (counts.get(read.property) ?? 0) + 1);
-  }
-  for (const { property, key, name, read } of properties) {
-    const at = span(key);
-    if (read.vendor) {
-      if (!vendorProperty(name, read.property, at, reporter)) {
-        continue;
-      }
-    } else if (!isCssPropertyName(read.property)) {
-      reporter.report("UF3022", at, `\`${name}\` is not a CSS property name.`);
-      continue;
-    } else if (!isCustomProperty(read.property) && !CSS_PROPERTIES.has(read.property)) {
-      reportUnknownProperty(name, read.property, at, reporter);
-      continue;
-    }
-    if (isCustomProperty(read.property) && !lowerCaseCustomProperty(read.property, at, reporter)) {
-      continue;
-    }
-    if (read.kebab) {
-      const camel = camelCase(read.property);
-      // A rename that would set a property twice changes which value wins: no fix then.
-      const fixes: Array<Fix> =
-        counts.get(read.property) === 1 && !property.shorthand
-          ? [
-              {
-                title: `Write \`${camel}\``,
-                confidence: "safe",
-                edits: [{ span: at, text: camel }],
-              },
-            ]
-          : [];
-      reporter.report(
-        "UF3004",
-        at,
-        `The style key for \`${read.property}\` is written \`${camel}\`: style objects take camel-case keys, as React's and Vue's do.`,
-        { fixes },
-      );
-    }
-    declarations.claim(read.property, at, reporter);
-    const value = property.value;
-    if (isStaticString(value)) {
-      const text = valueOf(value).trim();
-      if (reportCharacters(value, source, reporter)) {
-        continue;
-      }
-      if (staticValueProblem(read.property, text, span(value), reporter)) {
-        continue;
-      }
-      declarations.declarations.push(createStaticStyle(read.property, text, span(property)));
-      continue;
-    }
-    // React and Qwik leave a 0 bare, as every other target does: `margin: 0` is `margin: 0`.
-    if (
-      value.type === "Literal" &&
-      value.value === 0 &&
-      !isCustomProperty(read.property) &&
-      !UNITLESS_PROPERTIES.has(read.property)
-    ) {
-      declarations.declarations.push(createStaticStyle(read.property, "0", span(property)));
-      continue;
-    }
-    const checked = checkExpression(value, context);
-    const kinds = outside(
-      checked.kinds,
-      isCustomProperty(read.property) || UNITLESS_PROPERTIES.has(read.property)
-        ? ["string", "number", "null", "undefined"]
-        : ["string", "null", "undefined"],
-    );
-    if (kinds.length) {
-      const number =
-        kinds.includes("number") &&
-        value.type === "Literal" &&
-        typeof value.value === "number" &&
-        kinds.length === 1;
-      // React leaves a number on SVG's stroke and opacity properties bare, as their CSS does,
-      // so its meaning there is the number as a string.
-      const bare = REACT_UNITLESS.has(read.property);
-      const fixed = number ? `"${String(value.value)}${bare ? "" : "px"}"` : "";
-      reporter.report(
-        "UF3018",
-        value,
-        kinds.includes("number")
-          ? `A number on \`${read.property}\` renders with \`px\` on ${bare ? "Qwik" : "React and Qwik"} and without a unit on the others.`
-          : `A style value renders as a CSS value, and this one can be ${describe(kinds)}, which the targets render differently.`,
-        {
-          help: kinds.includes("number")
-            ? bare
-              ? 'Write it as a string: `"2"`, or `String(width)`.'
-              : 'Write the unit: `"4px"`, or a template literal such as `` `${gap}px` ``.'
-            : "Write a string, or `undefined` to leave the declaration out.",
-          ...(number
-            ? {
-                fixes: [
-                  {
-                    title: `Write \`${fixed}\``,
-                    confidence: "likely" as const,
-                    edits: [{ span: span(value), text: fixed }],
-                  },
-                ],
-              }
-            : {}),
-        },
-      );
-      continue;
-    }
-    declarations.declarations.push(
-      createBoundStyle(read.property, checked.expression, span(property)),
-    );
-  }
-  // As written once fixed: a number its fix writes with `px` is a static string then.
-  const binds =
-    properties.length !== node.properties.length ||
-    properties.some(
-      ({ property, read }) =>
-        !isStaticString(property.value) &&
-        !(
-          property.value.type === "Literal" &&
-          typeof property.value.value === "number" &&
-          !isCustomProperty(read.property) &&
-          !UNITLESS_PROPERTIES.has(read.property)
-        ),
-    );
-  if (reporter.hasErrorsSince(mark)) {
-    return { attribute: undefined, empty: false, binds };
-  }
-  if (!properties.length) {
-    return { attribute: undefined, empty: true, binds };
-  }
-  return {
-    attribute: createStyleAttribute(declarations.declarations, span(node)),
-    empty: false,
-    binds,
-  };
+	const { reporter, source } = context;
+	const mark = reporter.diagnostics.length;
+	const declarations = new Declarations();
+	const properties = node.properties.flatMap((property) => {
+		if (
+			property.type === "SpreadElement" ||
+			property.computed ||
+			property.method ||
+			property.kind !== "init"
+		) {
+			reporter.report(
+				"UF3022",
+				property.type === "SpreadElement" ? property : property.key,
+				property.type === "SpreadElement"
+					? "A `style` object cannot spread another object: the targets write each declaration they can see."
+					: property.computed
+						? "A `style` object's keys are CSS properties: no computed keys."
+						: "A `style` object's values are CSS values: no methods, getters or setters.",
+				{ help: 'Write each property as a key: `{ marginTop: gap, "--gap": size }`.' },
+			);
+			return [];
+		}
+		const { key } = property;
+		const name =
+			key.type === "Identifier"
+				? key.name
+				: key.type === "Literal" && typeof key.value === "string"
+					? key.value
+					: undefined;
+		if (name === undefined) {
+			reporter.report(
+				"UF3022",
+				key,
+				"A `style` object's keys are CSS properties: write them as names or strings.",
+			);
+			return [];
+		}
+		return [{ property, key, name, read: keyProperty(name) }];
+	});
+	const counts = new Map<string, number>();
+	for (const { read } of properties) {
+		counts.set(read.property, (counts.get(read.property) ?? 0) + 1);
+	}
+	for (const { property, key, name, read } of properties) {
+		const at = span(key);
+		if (read.vendor) {
+			if (!vendorProperty(name, read.property, at, reporter)) {
+				continue;
+			}
+		} else if (!isCssPropertyName(read.property)) {
+			reporter.report("UF3022", at, `\`${name}\` is not a CSS property name.`);
+			continue;
+		} else if (!isCustomProperty(read.property) && !CSS_PROPERTIES.has(read.property)) {
+			reportUnknownProperty(name, read.property, at, reporter);
+			continue;
+		}
+		if (isCustomProperty(read.property) && !lowerCaseCustomProperty(read.property, at, reporter)) {
+			continue;
+		}
+		if (read.kebab) {
+			const camel = camelCase(read.property);
+			// A rename that would set a property twice changes which value wins: no fix then.
+			const fixes: Array<Fix> =
+				counts.get(read.property) === 1 && !property.shorthand
+					? [
+							{
+								title: `Write \`${camel}\``,
+								confidence: "safe",
+								edits: [{ span: at, text: camel }],
+							},
+						]
+					: [];
+			reporter.report(
+				"UF3004",
+				at,
+				`The style key for \`${read.property}\` is written \`${camel}\`: style objects take camel-case keys, as React's and Vue's do.`,
+				{ fixes },
+			);
+		}
+		declarations.claim(read.property, at, reporter);
+		const value = property.value;
+		if (isStaticString(value)) {
+			const text = valueOf(value).trim();
+			if (reportCharacters(value, source, reporter)) {
+				continue;
+			}
+			if (staticValueProblem(read.property, text, span(value), reporter)) {
+				continue;
+			}
+			declarations.declarations.push(createStaticStyle(read.property, text, span(property)));
+			continue;
+		}
+		// React and Qwik leave a 0 bare, as every other target does: `margin: 0` is `margin: 0`.
+		if (
+			value.type === "Literal" &&
+			value.value === 0 &&
+			!isCustomProperty(read.property) &&
+			!UNITLESS_PROPERTIES.has(read.property)
+		) {
+			declarations.declarations.push(createStaticStyle(read.property, "0", span(property)));
+			continue;
+		}
+		const checked = checkExpression(value, context);
+		const kinds = outside(
+			checked.kinds,
+			isCustomProperty(read.property) || UNITLESS_PROPERTIES.has(read.property)
+				? ["string", "number", "null", "undefined"]
+				: ["string", "null", "undefined"],
+		);
+		if (kinds.length) {
+			const number =
+				kinds.includes("number") &&
+				value.type === "Literal" &&
+				typeof value.value === "number" &&
+				kinds.length === 1;
+			// React leaves a number on SVG's stroke and opacity properties bare, as their CSS does,
+			// so its meaning there is the number as a string.
+			const bare = REACT_UNITLESS.has(read.property);
+			const fixed = number ? `"${String(value.value)}${bare ? "" : "px"}"` : "";
+			reporter.report(
+				"UF3018",
+				value,
+				kinds.includes("number")
+					? `A number on \`${read.property}\` renders with \`px\` on ${bare ? "Qwik" : "React and Qwik"} and without a unit on the others.`
+					: `A style value renders as a CSS value, and this one can be ${describe(kinds)}, which the targets render differently.`,
+				{
+					help: kinds.includes("number")
+						? bare
+							? 'Write it as a string: `"2"`, or `String(width)`.'
+							: 'Write the unit: `"4px"`, or a template literal such as `` `${gap}px` ``.'
+						: "Write a string, or `undefined` to leave the declaration out.",
+					...(number
+						? {
+								fixes: [
+									{
+										title: `Write \`${fixed}\``,
+										confidence: "likely" as const,
+										edits: [{ span: span(value), text: fixed }],
+									},
+								],
+							}
+						: {}),
+				},
+			);
+			continue;
+		}
+		declarations.declarations.push(
+			createBoundStyle(read.property, checked.expression, span(property)),
+		);
+	}
+	// As written once fixed: a number its fix writes with `px` is a static string then.
+	const binds =
+		properties.length !== node.properties.length ||
+		properties.some(
+			({ property, read }) =>
+				!isStaticString(property.value) &&
+				!(
+					property.value.type === "Literal" &&
+					typeof property.value.value === "number" &&
+					!isCustomProperty(read.property) &&
+					!UNITLESS_PROPERTIES.has(read.property)
+				),
+		);
+	if (reporter.hasErrorsSince(mark)) {
+		return { attribute: undefined, empty: false, binds };
+	}
+	if (!properties.length) {
+		return { attribute: undefined, empty: true, binds };
+	}
+	return {
+		attribute: createStyleAttribute(declarations.declarations, span(node)),
+		empty: false,
+		binds,
+	};
 }
 
 /**
@@ -566,30 +566,30 @@ export function lowerStyleObject(node: AST.ObjectExpression, context: RenderCont
  * and values are.
  */
 export function lowerStyleValue(node: AST.Expression, context: RenderContext): LoweredStyle {
-  const { reporter } = context;
-  const mark = reporter.diagnostics.length;
-  const checked = checkExpression(node, context);
-  const leaves = objectLeaves(node);
-  for (const leaf of leaves) {
-    checkObjectLeaf(leaf, context, mark);
-  }
-  const problem = styleValueProblem(checked.kinds, leaves.map(span));
-  if (problem) {
-    reporter.report("UF3018", problem.at ?? node, problem.message, {
-      help: problem.help,
-      ...(problem.at
-        ? { related: [{ span: span(node), message: "The style is bound here" }] }
-        : {}),
-    });
-  }
-  if (reporter.hasErrorsSince(mark)) {
-    return { attribute: undefined, empty: false, binds: true };
-  }
-  return {
-    attribute: createStyleAttribute([], span(node), checked.expression),
-    empty: false,
-    binds: true,
-  };
+	const { reporter } = context;
+	const mark = reporter.diagnostics.length;
+	const checked = checkExpression(node, context);
+	const leaves = objectLeaves(node);
+	for (const leaf of leaves) {
+		checkObjectLeaf(leaf, context, mark);
+	}
+	const problem = styleValueProblem(checked.kinds, leaves.map(span));
+	if (problem) {
+		reporter.report("UF3018", problem.at ?? node, problem.message, {
+			help: problem.help,
+			...(problem.at
+				? { related: [{ span: span(node), message: "The style is bound here" }] }
+				: {}),
+		});
+	}
+	if (reporter.hasErrorsSince(mark)) {
+		return { attribute: undefined, empty: false, binds: true };
+	}
+	return {
+		attribute: createStyleAttribute([], span(node), checked.expression),
+		empty: false,
+		binds: true,
+	};
 }
 
 /**
@@ -598,14 +598,14 @@ export function lowerStyleValue(node: AST.Expression, context: RenderContext): L
  * lacks, so the outputs would not type-check (TS2322).
  */
 export function interfaceProblem(attribute: "class" | "style"): { message: string; help: string } {
-  const rejects =
-    attribute === "class"
-      ? "Qwik's type for `class` rejects: it has an index signature"
-      : "Vue's and Qwik's types for `style` reject: they have an index signature";
-  return {
-    message: `This ${attribute} object is typed by an \`interface\`, which ${rejects}, which an interface lacks.`,
-    help: "Declare the type with `type` instead: `type Look = { color?: string }`.",
-  };
+	const rejects =
+		attribute === "class"
+			? "Qwik's type for `class` rejects: it has an index signature"
+			: "Vue's and Qwik's types for `style` reject: they have an index signature";
+	return {
+		message: `This ${attribute} object is typed by an \`interface\`, which ${rejects}, which an interface lacks.`,
+		help: "Declare the type with `type` instead: `type Look = { color?: string }`.",
+	};
 }
 
 /**
@@ -613,20 +613,20 @@ export function interfaceProblem(attribute: "class" | "style"): { message: strin
  * of `??` and `||`, the right of `&&`, inside parentheses. Each is checked where it is written.
  */
 function objectLeaves(node: AST.Expression): Array<AST.ObjectExpression> {
-  switch (node.type) {
-    case "ObjectExpression":
-      return [node];
-    case "ParenthesizedExpression":
-      return objectLeaves(node.expression);
-    case "ConditionalExpression":
-      return [...objectLeaves(node.consequent), ...objectLeaves(node.alternate)];
-    case "LogicalExpression":
-      return node.operator === "&&"
-        ? objectLeaves(node.right)
-        : [...objectLeaves(node.left), ...objectLeaves(node.right)];
-    default:
-      return [];
-  }
+	switch (node.type) {
+		case "ObjectExpression":
+			return [node];
+		case "ParenthesizedExpression":
+			return objectLeaves(node.expression);
+		case "ConditionalExpression":
+			return [...objectLeaves(node.consequent), ...objectLeaves(node.alternate)];
+		case "LogicalExpression":
+			return node.operator === "&&"
+				? objectLeaves(node.right)
+				: [...objectLeaves(node.left), ...objectLeaves(node.right)];
+		default:
+			return [];
+	}
 }
 
 /**
@@ -636,41 +636,41 @@ function objectLeaves(node: AST.Expression): Array<AST.ObjectExpression> {
  * and Vue's server writes `WebkitLineClamp` as `webkit-line-clamp`, which no browser applies.
  */
 function checkObjectLeaf(leaf: AST.ObjectExpression, context: RenderContext, mark: number): void {
-  const { reporter } = context;
-  const scratch = new Reporter(reporter.file);
-  lowerStyleObject(leaf, { ...context, reporter: scratch });
-  const reported = new Set(
-    reporter.diagnostics
-      .slice(mark)
-      .map(({ code, span: at, message }) => `${code} ${at.start}:${at.end} ${message}`),
-  );
-  for (const diagnostic of scratch.diagnostics) {
-    const key = `${diagnostic.code} ${diagnostic.span.start}:${diagnostic.span.end} ${diagnostic.message}`;
-    if (!reported.has(key)) {
-      reporter.diagnostics.push(diagnostic);
-    }
-  }
-  for (const property of leaf.properties) {
-    if (property.type === "SpreadElement" || property.computed) {
-      continue;
-    }
-    const { key } = property;
-    const name =
-      key.type === "Identifier"
-        ? key.name
-        : key.type === "Literal" && typeof key.value === "string"
-          ? key.value
-          : undefined;
-    if (name === undefined || !keyProperty(name).vendor) {
-      continue;
-    }
-    reporter.report(
-      "UF3018",
-      key,
-      `\`${name}\` is copied as written where the style is not an object literal, and Vue's server writes a prefixed key without its leading dash, which no browser applies.`,
-      { help: "Write the style object in place, `style={{ … }}`, or bind a declaration list." },
-    );
-  }
+	const { reporter } = context;
+	const scratch = new Reporter(reporter.file);
+	lowerStyleObject(leaf, { ...context, reporter: scratch });
+	const reported = new Set(
+		reporter.diagnostics
+			.slice(mark)
+			.map(({ code, span: at, message }) => `${code} ${at.start}:${at.end} ${message}`),
+	);
+	for (const diagnostic of scratch.diagnostics) {
+		const key = `${diagnostic.code} ${diagnostic.span.start}:${diagnostic.span.end} ${diagnostic.message}`;
+		if (!reported.has(key)) {
+			reporter.diagnostics.push(diagnostic);
+		}
+	}
+	for (const property of leaf.properties) {
+		if (property.type === "SpreadElement" || property.computed) {
+			continue;
+		}
+		const { key } = property;
+		const name =
+			key.type === "Identifier"
+				? key.name
+				: key.type === "Literal" && typeof key.value === "string"
+					? key.value
+					: undefined;
+		if (name === undefined || !keyProperty(name).vendor) {
+			continue;
+		}
+		reporter.report(
+			"UF3018",
+			key,
+			`\`${name}\` is copied as written where the style is not an object literal, and Vue's server writes a prefixed key without its leading dash, which no browser applies.`,
+			{ help: "Write the style object in place, `style={{ … }}`, or bind a declaration list." },
+		);
+	}
 }
 
 /**
@@ -678,68 +678,68 @@ function checkObjectLeaf(leaf: AST.ObjectExpression, context: RenderContext, mar
  * `inPlace` are the object literals the value is checked as, whose shapes it skips.
  */
 export function styleValueProblem(
-  kinds: Kinds,
-  inPlace: ReadonlyArray<Span> = [],
+	kinds: Kinds,
+	inPlace: ReadonlyArray<Span> = [],
 ): { message: string; help: string; at?: Span } | undefined {
-  const others = outside(kinds, ["string", "object", "null", "undefined"]);
-  if (others.length) {
-    return {
-      message: `A \`style\` renders a style object or a declaration list, and this one can be ${describe(others)}, which the targets render differently.`,
-      help: 'Bind an object, `{ color: tone, "--gap": gap }`, a string of declarations, or `undefined` for no style.',
-    };
-  }
-  for (const shape of kinds.objects ?? []) {
-    if (shape.interface) {
-      return interfaceProblem("style");
-    }
-    // An object literal the value is checked as in place: its own checks cover its members.
-    const members = [...shape.members().values()];
-    const literal = members.some(({ key }) =>
-      inPlace.some((at) => key.start >= at.start && key.end <= at.end),
-    );
-    if (literal) {
-      continue;
-    }
-    // A declared type's members, or an object literal's anywhere in the value (a conditional's
-    // branch, a `computed`), each checked as a key and a value written in place.
-    for (const [name, member] of shape.members()) {
-      const read = keyProperty(name);
-      const property = read.property;
-      if (
-        read.kebab ||
-        read.vendor ||
-        !isCssPropertyName(property) ||
-        (!isCustomProperty(property) && !CSS_PROPERTIES.has(property)) ||
-        angularLowercases(property)
-      ) {
-        return {
-          at: member.key,
-          message: `A style object's keys are standard properties in camel case or custom properties in lower case, and \`${name}\` is not one.`,
-          help: 'Name each member as an object literal\'s key: `marginTop`, or `"--gap"`.',
-        };
-      }
-      const value = member.kinds();
-      // A literal 0 renders as `0` everywhere, as `margin: 0` does written in place.
-      const zero = value.numbers?.size === 1 && value.numbers.has(0);
-      const values = outside(
-        zero
-          ? {
-              ...value,
-              primitives: new Set([...value.primitives].filter((kind) => kind !== "number")),
-            }
-          : value,
-        isCustomProperty(property) || UNITLESS_PROPERTIES.has(property)
-          ? ["string", "number", "null", "undefined"]
-          : ["string", "null", "undefined"],
-      );
-      if (values.length) {
-        return {
-          at: member.key,
-          message: `A style value renders as a CSS value, and \`${name}\` can be ${describe(values)}, which the targets render differently.`,
-          help: "Type it as a string, or `undefined` to leave the declaration out.",
-        };
-      }
-    }
-  }
-  return undefined;
+	const others = outside(kinds, ["string", "object", "null", "undefined"]);
+	if (others.length) {
+		return {
+			message: `A \`style\` renders a style object or a declaration list, and this one can be ${describe(others)}, which the targets render differently.`,
+			help: 'Bind an object, `{ color: tone, "--gap": gap }`, a string of declarations, or `undefined` for no style.',
+		};
+	}
+	for (const shape of kinds.objects ?? []) {
+		if (shape.interface) {
+			return interfaceProblem("style");
+		}
+		// An object literal the value is checked as in place: its own checks cover its members.
+		const members = [...shape.members().values()];
+		const literal = members.some(({ key }) =>
+			inPlace.some((at) => key.start >= at.start && key.end <= at.end),
+		);
+		if (literal) {
+			continue;
+		}
+		// A declared type's members, or an object literal's anywhere in the value (a conditional's
+		// branch, a `computed`), each checked as a key and a value written in place.
+		for (const [name, member] of shape.members()) {
+			const read = keyProperty(name);
+			const property = read.property;
+			if (
+				read.kebab ||
+				read.vendor ||
+				!isCssPropertyName(property) ||
+				(!isCustomProperty(property) && !CSS_PROPERTIES.has(property)) ||
+				angularLowercases(property)
+			) {
+				return {
+					at: member.key,
+					message: `A style object's keys are standard properties in camel case or custom properties in lower case, and \`${name}\` is not one.`,
+					help: 'Name each member as an object literal\'s key: `marginTop`, or `"--gap"`.',
+				};
+			}
+			const value = member.kinds();
+			// A literal 0 renders as `0` everywhere, as `margin: 0` does written in place.
+			const zero = value.numbers?.size === 1 && value.numbers.has(0);
+			const values = outside(
+				zero
+					? {
+							...value,
+							primitives: new Set([...value.primitives].filter((kind) => kind !== "number")),
+						}
+					: value,
+				isCustomProperty(property) || UNITLESS_PROPERTIES.has(property)
+					? ["string", "number", "null", "undefined"]
+					: ["string", "null", "undefined"],
+			);
+			if (values.length) {
+				return {
+					at: member.key,
+					message: `A style value renders as a CSS value, and \`${name}\` can be ${describe(values)}, which the targets render differently.`,
+					help: "Type it as a string, or `undefined` to leave the declaration out.",
+				};
+			}
+		}
+	}
+	return undefined;
 }

@@ -27,14 +27,14 @@ export const STATE_HELPER = "createState";
  * watchers too, as Vue's refs are (`ownedWrite`).
  */
 export function stateHelperCode(
-  name: string,
-  {
-    createSignal,
-    getObserver,
-    request,
-  }: { createSignal: string; getObserver: string; request?: string },
+	name: string,
+	{
+		createSignal,
+		getObserver,
+		request,
+	}: { createSignal: string; getObserver: string; request?: string },
 ): string {
-  return `/**
+	return `/**
  * Vue's \`ref\`: a signal whose read returns the value last written, as Vue's does, and tracks the
  * signal where something observes it. Solid applies a write when it flushes.
  */
@@ -66,7 +66,7 @@ export const REF_HELPER = "clearedRef";
  * in the branch that renders the element, and returns the callback.
  */
 export function refHelperCode(name: string, onCleanup: string): string {
-  return `/** A \`ref\` that calls \`callback\` with its element, and \`clear\` once the element is removed. */
+	return `/** A \`ref\` that calls \`callback\` with its element, and \`clear\` once the element is removed. */
 function ${name}<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
   ${onCleanup}(clear);
   return callback;
@@ -84,38 +84,38 @@ export const NEXT_TICK_HELPER = "nextTick";
 
 /** What kinds of watcher one output declares, which decide the helpers' signatures. */
 export interface WatcherUses {
-  /** A watcher of one source, lazy or immediate. */
-  single: { lazy: boolean; immediate: boolean };
-  /** A watcher of an array of sources, lazy or immediate. */
-  array: { lazy: boolean; immediate: boolean };
-  /**
-   * A watcher that runs before the DOM updates (Vue's default), or after it (`flush: "post"`,
-   * and every `watchEffect`).
-   */
-  flush: { pre: boolean; post: boolean };
+	/** A watcher of one source, lazy or immediate. */
+	single: { lazy: boolean; immediate: boolean };
+	/** A watcher of an array of sources, lazy or immediate. */
+	array: { lazy: boolean; immediate: boolean };
+	/**
+	 * A watcher that runs before the DOM updates (Vue's default), or after it (`flush: "post"`,
+	 * and every `watchEffect`).
+	 */
+	flush: { pre: boolean; post: boolean };
 }
 
 /** The names the helpers' code refers to: Solid's imports and the helpers, as the scope took them. */
 export interface HelperNames {
-  createReaction: string;
-  createRoot: string;
-  runWithOwner: string;
-  onSettled: string;
-  untrack: string;
-  /** The `watch` helper, where the output has a watcher. */
-  watcher?: string;
-  /** The `watchEffect` helper, where the output has one. */
-  watchEffect?: string;
-  /** The array helper's type of the values of an array of sources, when arrays are watched. */
-  values?: string;
-  /** The scheduler's queue (`queuedWatchers`), function (`queueWatcher`) and flag. */
-  queue: string;
-  schedule: string;
-  queued: string;
-  /** The scheduler's request for a flush, which `createState` calls as it writes. */
-  request: string;
-  /** Solid's `flush`. */
-  flush: string;
+	createReaction: string;
+	createRoot: string;
+	runWithOwner: string;
+	onSettled: string;
+	untrack: string;
+	/** The `watch` helper, where the output has a watcher. */
+	watcher?: string;
+	/** The `watchEffect` helper, where the output has one. */
+	watchEffect?: string;
+	/** The array helper's type of the values of an array of sources, when arrays are watched. */
+	values?: string;
+	/** The scheduler's queue (`queuedWatchers`), function (`queueWatcher`) and flag. */
+	queue: string;
+	schedule: string;
+	queued: string;
+	/** The scheduler's request for a flush, which `createState` calls as it writes. */
+	request: string;
+	/** Solid's `flush`. */
+	flush: string;
 }
 
 /**
@@ -142,53 +142,53 @@ export interface HelperNames {
  * printed: one source watched lazily is the common case, with a helper of its own.
  */
 export function watcherHelperCode(uses: WatcherUses, names: HelperNames): string {
-  const { onSettled } = names;
-  // Where the output has watchers of both timings, a call says `flush: "post"` as the source does,
-  // and the scheduler keeps two queues; where every watcher has one timing, one queue serves.
-  const both = uses.flush.post && uses.flush.pre;
-  const immediate = uses.single.immediate || uses.array.immediate;
-  const arrays = uses.array.lazy || uses.array.immediate;
-  const timing = both
-    ? 'before the DOM updates (after it, with `flush: "post"`)'
-    : uses.flush.post
-      ? "after the DOM updates"
-      : "before the DOM updates";
-  const parts = [schedulerCode(names, both)];
-  const effect = names.watchEffect ? [watchEffectCode(names.watchEffect, names, both)] : [];
-  if (!names.watcher) {
-    return [...parts, ...effect].join("\n\n");
-  }
-  const name = names.watcher;
-  const doc = docComment(
-    [
-      `Vue's \`watch\`: once ${arrays && !(uses.single.lazy || uses.single.immediate) ? "a value `sources` read has" : "the value `source` reads has"} changed (by \`Object.is\`), calls \`callback\``,
-      `back when the code that changed it has finished, ${timing},`,
-      "with the value at its last callback and a cleanup registrar, whose cleanups run before the",
-      "next callback and when the component is removed.",
-      ...(immediate
-        ? [
-            "With `immediate`, it also calls back at once, during the setup, without a previous value.",
-          ]
-        : []),
-    ].join(" "),
-  );
-  /** The queue a watcher goes to, and its call of the scheduler. */
-  const queueOf = both
-    ? `options?.flush === "post" ? ${names.queue}.post : ${names.queue}.pre`
-    : names.queue;
-  const schedule = both ? `${names.schedule}(queue, run)` : `${names.schedule}(run)`;
-  const declareQueue = both ? `\n  const queue = ${queueOf};` : "";
-  const dequeue = both ? "queue.delete(run)" : `${names.queue}.delete(run)`;
-  const stop = `  ${onSettled}(() => () => {
+	const { onSettled } = names;
+	// Where the output has watchers of both timings, a call says `flush: "post"` as the source does,
+	// and the scheduler keeps two queues; where every watcher has one timing, one queue serves.
+	const both = uses.flush.post && uses.flush.pre;
+	const immediate = uses.single.immediate || uses.array.immediate;
+	const arrays = uses.array.lazy || uses.array.immediate;
+	const timing = both
+		? 'before the DOM updates (after it, with `flush: "post"`)'
+		: uses.flush.post
+			? "after the DOM updates"
+			: "before the DOM updates";
+	const parts = [schedulerCode(names, both)];
+	const effect = names.watchEffect ? [watchEffectCode(names.watchEffect, names, both)] : [];
+	if (!names.watcher) {
+		return [...parts, ...effect].join("\n\n");
+	}
+	const name = names.watcher;
+	const doc = docComment(
+		[
+			`Vue's \`watch\`: once ${arrays && !(uses.single.lazy || uses.single.immediate) ? "a value `sources` read has" : "the value `source` reads has"} changed (by \`Object.is\`), calls \`callback\``,
+			`back when the code that changed it has finished, ${timing},`,
+			"with the value at its last callback and a cleanup registrar, whose cleanups run before the",
+			"next callback and when the component is removed.",
+			...(immediate
+				? [
+						"With `immediate`, it also calls back at once, during the setup, without a previous value.",
+					]
+				: []),
+		].join(" "),
+	);
+	/** The queue a watcher goes to, and its call of the scheduler. */
+	const queueOf = both
+		? `options?.flush === "post" ? ${names.queue}.post : ${names.queue}.pre`
+		: names.queue;
+	const schedule = both ? `${names.schedule}(queue, run)` : `${names.schedule}(run)`;
+	const declareQueue = both ? `\n  const queue = ${queueOf};` : "";
+	const dequeue = both ? "queue.delete(run)" : `${names.queue}.delete(run)`;
+	const stop = `  ${onSettled}(() => () => {
     ${dequeue};
     for (const cleanup of cleanups.splice(0)) cleanup();
     dispose();
   });`;
-  const track = reactionCode(names, schedule);
-  /** The callback's cleanup registrar's type. */
-  const registrar = "(cleanup: () => void) => void";
-  if (!arrays && !uses.single.immediate) {
-    parts.push(`${doc}
+	const track = reactionCode(names, schedule);
+	/** The callback's cleanup registrar's type. */
+	const registrar = "(cleanup: () => void) => void";
+	if (!arrays && !uses.single.immediate) {
+		parts.push(`${doc}
 function ${name}<T>(
   source: () => T,
   callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${both ? `\n  options?: { flush: "post" },` : ""}
@@ -215,73 +215,73 @@ ${stop}
     callback(value, previous, (cleanup) => cleanups.push(cleanup));
   }
 }`);
-    return [...parts, ...effect].join("\n\n");
-  }
-  // The options each overload takes: a lazy watcher's only where some watcher runs before the DOM
-  // updates and some after it.
-  const lazyOptions = both ? `\n  options?: { flush: "post" },` : "";
-  const immediateOptions = both
-    ? `\n  options: { immediate: true; flush?: "post" },`
-    : `\n  options: { immediate: true },`;
-  const optionsType = immediate
-    ? both
-      ? `{ immediate?: true; flush?: "post" }`
-      : `{ immediate: true }`
-    : both
-      ? `{ flush: "post" }`
-      : undefined;
-  const values = names.values!;
-  const overloads: Array<string> = [];
-  if (uses.single.lazy) {
-    overloads.push(
-      `function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
-    );
-  }
-  if (uses.single.immediate) {
-    overloads.push(
-      `function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T | undefined, onCleanup: ${registrar}) => unknown,${immediateOptions}\n): void;`,
-    );
-  }
-  if (uses.array.lazy) {
-    overloads.push(
-      `function ${name}<const S extends readonly (() => unknown)[]>(\n  sources: S,\n  callback: (values: ${values}<S>, previous: ${values}<S>, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
-    );
-  }
-  if (uses.array.immediate) {
-    overloads.push(
-      `function ${name}<const S extends readonly (() => unknown)[]>(\n  sources: S,\n  callback: (\n    values: ${values}<S>,\n    previous: Partial<${values}<S>>,\n    onCleanup: ${registrar},\n  ) => unknown,${immediateOptions}\n): void;`,
-    );
-  }
-  // An immediate watcher's test: its options, where immediate is the only option there is.
-  const isImmediate = both ? "options?.immediate" : "options";
-  // During the setup, whose reads Solid 2 checks are tracked or said not to be.
-  const first = immediate
-    ? `\n  if (${isImmediate}) ${names.untrack}(() => call(last, undefined));`
-    : "";
-  const singles = uses.single.lazy || uses.single.immediate;
-  // The single form passes the one value; the array form the values, `[]` before the first call.
-  const callback = arrays
-    ? singles
-      ? `    if (typeof source === "function") {
+		return [...parts, ...effect].join("\n\n");
+	}
+	// The options each overload takes: a lazy watcher's only where some watcher runs before the DOM
+	// updates and some after it.
+	const lazyOptions = both ? `\n  options?: { flush: "post" },` : "";
+	const immediateOptions = both
+		? `\n  options: { immediate: true; flush?: "post" },`
+		: `\n  options: { immediate: true },`;
+	const optionsType = immediate
+		? both
+			? `{ immediate?: true; flush?: "post" }`
+			: `{ immediate: true }`
+		: both
+			? `{ flush: "post" }`
+			: undefined;
+	const values = names.values!;
+	const overloads: Array<string> = [];
+	if (uses.single.lazy) {
+		overloads.push(
+			`function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
+		);
+	}
+	if (uses.single.immediate) {
+		overloads.push(
+			`function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T | undefined, onCleanup: ${registrar}) => unknown,${immediateOptions}\n): void;`,
+		);
+	}
+	if (uses.array.lazy) {
+		overloads.push(
+			`function ${name}<const S extends readonly (() => unknown)[]>(\n  sources: S,\n  callback: (values: ${values}<S>, previous: ${values}<S>, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
+		);
+	}
+	if (uses.array.immediate) {
+		overloads.push(
+			`function ${name}<const S extends readonly (() => unknown)[]>(\n  sources: S,\n  callback: (\n    values: ${values}<S>,\n    previous: Partial<${values}<S>>,\n    onCleanup: ${registrar},\n  ) => unknown,${immediateOptions}\n): void;`,
+		);
+	}
+	// An immediate watcher's test: its options, where immediate is the only option there is.
+	const isImmediate = both ? "options?.immediate" : "options";
+	// During the setup, whose reads Solid 2 checks are tracked or said not to be.
+	const first = immediate
+		? `\n  if (${isImmediate}) ${names.untrack}(() => call(last, undefined));`
+		: "";
+	const singles = uses.single.lazy || uses.single.immediate;
+	// The single form passes the one value; the array form the values, `[]` before the first call.
+	const callback = arrays
+		? singles
+			? `    if (typeof source === "function") {
       callback(values[0] as never, previous?.[0] as never, register);
     } else {
       callback(values as never, (previous ?? []) as never, register);
     }`
-      : `    callback(values as never, (previous ?? []) as never, register);`
-    : `    callback(values[0] as never, previous?.[0] as never, register);`;
-  // The implementation's first parameter: one source, an array, or either.
-  const parameter = !arrays
-    ? "source: () => unknown"
-    : singles
-      ? "source: (() => unknown) | readonly (() => unknown)[]"
-      : "sources: readonly (() => unknown)[]";
-  const sources = !arrays
-    ? "\n  const sources = [source];"
-    : singles
-      ? `\n  // An array of sources changes when one of its values does: one source is an array of one.\n  const sources = typeof source === "function" ? [source] : source;`
-      : "";
-  parts.push(
-    `${doc}
+			: `    callback(values as never, (previous ?? []) as never, register);`
+		: `    callback(values[0] as never, previous?.[0] as never, register);`;
+	// The implementation's first parameter: one source, an array, or either.
+	const parameter = !arrays
+		? "source: () => unknown"
+		: singles
+			? "source: (() => unknown) | readonly (() => unknown)[]"
+			: "sources: readonly (() => unknown)[]";
+	const sources = !arrays
+		? "\n  const sources = [source];"
+		: singles
+			? `\n  // An array of sources changes when one of its values does: one source is an array of one.\n  const sources = typeof source === "function" ? [source] : source;`
+			: "";
+	parts.push(
+		`${doc}
 ${overloads.join("\n")}
 function ${name}(
   ${parameter},
@@ -314,15 +314,15 @@ ${stop}
 ${callback}
   }
 }`,
-    ...effect,
-  );
-  if (arrays) {
-    parts.push(
-      `/** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
+		...effect,
+	);
+	if (arrays) {
+		parts.push(
+			`/** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
 type ${values}<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V : never };`,
-    );
-  }
-  return parts.join("\n\n");
+		);
+	}
+	return parts.join("\n\n");
 }
 
 /**
@@ -332,10 +332,10 @@ type ${values}<S> = { -readonly [K in keyof S]: S[K] extends () => infer V ? V :
  * component is removed.
  */
 function watchEffectCode(name: string, names: HelperNames, both: boolean): string {
-  const { onSettled } = names;
-  const queue = both ? `${names.queue}.post` : names.queue;
-  const schedule = both ? `${names.schedule}(${queue}, run)` : `${names.schedule}(run)`;
-  return `/**
+	const { onSettled } = names;
+	const queue = both ? `${names.queue}.post` : names.queue;
+	const schedule = both ? `${names.schedule}(${queue}, run)` : `${names.schedule}(run)`;
+	return `/**
  * Vue's \`watchEffect\` over the values it reads (\`sources\`): runs \`effect\` once the component has
  * mounted, then again after the DOM updates once one of them has been written, with a cleanup
  * registrar, whose cleanups run before its next run and when the component is removed.
@@ -373,8 +373,8 @@ ${reactionCode(names, schedule)}
  * disposes it.
  */
 function reactionCode(names: HelperNames, schedule: string): string {
-  const { createReaction, createRoot, runWithOwner } = names;
-  return `  const [track, dispose] = ${runWithOwner}(null, () =>
+	const { createReaction, createRoot, runWithOwner } = names;
+	return `  const [track, dispose] = ${runWithOwner}(null, () =>
     ${createRoot}((stop) => [${createReaction}(() => ${schedule}), stop] as const),
   );`;
 }
@@ -389,16 +389,16 @@ function reactionCode(names: HelperNames, schedule: string): string {
  * (a prop's, a composable's) queues it from its reaction, when Solid flushes.
  */
 function schedulerCode(names: HelperNames, both: boolean): string {
-  const { queue, schedule, queued, request, flush } = names;
-  const requestCode = `/** Queues the flush of the watchers, once, in a microtask. */
+	const { queue, schedule, queued, request, flush } = names;
+	const requestCode = `/** Queues the flush of the watchers, once, in a microtask. */
 function ${request}(): void {
   if (${queued}) return;
   ${queued} = true;
   queueMicrotask(() => {
     try {
       ${flush}();${
-        both
-          ? `
+				both
+					? `
       do {
         for (const watcher of ${queue}.pre) {
           ${queue}.pre.delete(watcher);
@@ -412,20 +412,20 @@ function ${request}(): void {
           if (${queue}.pre.size) break;
         }
       } while (${queue}.pre.size || ${queue}.post.size);`
-          : `
+					: `
       for (const watcher of ${queue}) {
         ${queue}.delete(watcher);
         watcher();
         ${flush}();
       }`
-      }
+			}
     } finally {
       ${queued} = false;
     }
   });
 }`;
-  if (!both) {
-    return `/** The watchers whose sources have changed since the last flush, in the order they changed. */
+	if (!both) {
+		return `/** The watchers whose sources have changed since the last flush, in the order they changed. */
 const ${queue} = new Set<() => void>();
 let ${queued} = false;
 
@@ -440,8 +440,8 @@ function ${schedule}(run: () => void): void {
 }
 
 ${requestCode}`;
-  }
-  return `/**
+	}
+	return `/**
  * The watchers whose sources have changed since the last flush, in the order they changed: those
  * that run before the DOM updates, and those that run after it.
  */
@@ -463,20 +463,20 @@ ${requestCode}`;
 
 /** A JSDoc comment of prose, wrapped at 100 columns as the formatter leaves comments. */
 function docComment(text: string): string {
-  const lines: Array<string> = [];
-  let line = "";
-  for (const word of text.split(" ")) {
-    if (line && ` * ${line} ${word}`.length > 100) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = line ? `${line} ${word}` : word;
-    }
-  }
-  if (line) {
-    lines.push(line);
-  }
-  return `/**\n${lines.map((each) => ` * ${each}`).join("\n")}\n */`;
+	const lines: Array<string> = [];
+	let line = "";
+	for (const word of text.split(" ")) {
+		if (line && ` * ${line} ${word}`.length > 100) {
+			lines.push(line);
+			line = word;
+		} else {
+			line = line ? `${line} ${word}` : word;
+		}
+	}
+	if (line) {
+		lines.push(line);
+	}
+	return `/**\n${lines.map((each) => ` * ${each}`).join("\n")}\n */`;
 }
 
 /**
@@ -486,7 +486,7 @@ function docComment(text: string): string {
  * microtasks on, after all of them. Client code awaits it (`nextTick(callback)` is UF2025).
  */
 export function nextTickHelperCode(name: string): string {
-  return `/**
+	return `/**
  * Resolves once the DOM has updated and the watchers have run: Solid applies writes on a microtask
  * queued at the first write, which queues the watchers of a write the component didn't make.
  */

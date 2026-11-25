@@ -9,10 +9,10 @@ import { expect } from "vitest";
 import NetworkBadge from "./NetworkBadge.uf.tsx";
 
 describeTargets("semantics/effects-client-only", () => {
-  it("updates the badge once mounted in the browser", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(NetworkBadge, "initial");
-    await view.expectParity("mounted");
-    await expect.element(view.getByRole("status")).toHaveTextContent("Online");
-    await expect.element(view.getByRole("status")).toHaveAttribute("data-checked", "yes");
-  });
+	it("updates the badge once mounted in the browser", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(NetworkBadge, "initial");
+		await view.expectParity("mounted");
+		await expect.element(view.getByRole("status")).toHaveTextContent("Online");
+		await expect.element(view.getByRole("status")).toHaveAttribute("data-checked", "yes");
+	});
 });

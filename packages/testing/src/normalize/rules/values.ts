@@ -22,57 +22,57 @@ import type { TreeParent } from "../tree.ts";
  * already been through the CSSOM, so the DOM path needs no such guess.
  */
 export function canonicalizeStyles(root: TreeParent): void {
-  forEachElement(root, (element) => {
-    element.attrs = element.attrs.flatMap((attribute) => {
-      if (attributeName(attribute) !== "style") {
-        return [attribute];
-      }
-      const declarations = parseStyle(attribute.value).filter(
-        (declaration) => declaration.value !== "",
-      );
-      if (!declarations.length) {
-        return [];
-      }
-      attribute.value = printStyle(sortDeclarations(declarations));
-      return [attribute];
-    });
-  });
+	forEachElement(root, (element) => {
+		element.attrs = element.attrs.flatMap((attribute) => {
+			if (attributeName(attribute) !== "style") {
+				return [attribute];
+			}
+			const declarations = parseStyle(attribute.value).filter(
+				(declaration) => declaration.value !== "",
+			);
+			if (!declarations.length) {
+				return [];
+			}
+			attribute.value = printStyle(sortDeclarations(declarations));
+			return [attribute];
+		});
+	});
 }
 
 /** Boolean attributes every HTML element can have. */
 const GLOBAL_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
-  "autofocus",
-  "hidden",
-  "inert",
-  "itemscope",
+	"autofocus",
+	"hidden",
+	"inert",
+	"itemscope",
 ]);
 
 /** Boolean attributes per HTML element, from the HTML standard's attribute index. */
 const BOOLEAN_ATTRIBUTES: Readonly<Record<string, ReadonlyArray<string>>> = {
-  audio: ["autoplay", "controls", "loop", "muted"],
-  button: ["disabled", "formnovalidate"],
-  details: ["open"],
-  dialog: ["open"],
-  fieldset: ["disabled"],
-  form: ["novalidate"],
-  iframe: ["allowfullscreen"],
-  img: ["ismap"],
-  input: ["alpha", "checked", "disabled", "formnovalidate", "multiple", "readonly", "required"],
-  link: ["disabled"],
-  ol: ["reversed"],
-  optgroup: ["disabled"],
-  option: ["disabled", "selected"],
-  script: ["async", "defer", "nomodule"],
-  select: ["disabled", "multiple", "required"],
-  template: [
-    "shadowrootclonable",
-    "shadowrootcustomelementregistry",
-    "shadowrootdelegatesfocus",
-    "shadowrootserializable",
-  ],
-  textarea: ["disabled", "readonly", "required"],
-  track: ["default"],
-  video: ["autoplay", "controls", "loop", "muted", "playsinline"],
+	audio: ["autoplay", "controls", "loop", "muted"],
+	button: ["disabled", "formnovalidate"],
+	details: ["open"],
+	dialog: ["open"],
+	fieldset: ["disabled"],
+	form: ["novalidate"],
+	iframe: ["allowfullscreen"],
+	img: ["ismap"],
+	input: ["alpha", "checked", "disabled", "formnovalidate", "multiple", "readonly", "required"],
+	link: ["disabled"],
+	ol: ["reversed"],
+	optgroup: ["disabled"],
+	option: ["disabled", "selected"],
+	script: ["async", "defer", "nomodule"],
+	select: ["disabled", "multiple", "required"],
+	template: [
+		"shadowrootclonable",
+		"shadowrootcustomelementregistry",
+		"shadowrootdelegatesfocus",
+		"shadowrootserializable",
+	],
+	textarea: ["disabled", "readonly", "required"],
+	track: ["default"],
+	video: ["autoplay", "controls", "loop", "muted", "playsinline"],
 };
 
 /**
@@ -87,20 +87,20 @@ const BOOLEAN_ATTRIBUTES: Readonly<Record<string, ReadonlyArray<string>>> = {
  * its client writes `name=""` as its server does, so ADR-0094 drops that exception.
  */
 export function canonicalizeBooleanAttributes(root: TreeParent): void {
-  forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) {
-      return;
-    }
-    const own = BOOLEAN_ATTRIBUTES[element.tagName] ?? [];
-    for (const attribute of element.attrs) {
-      const name = attributeName(attribute);
-      if (!GLOBAL_BOOLEAN_ATTRIBUTES.has(name) && !own.includes(name)) {
-        continue;
-      }
-      const value = attribute.value.toLowerCase();
-      if (value === name) {
-        attribute.value = "";
-      }
-    }
-  });
+	forEachElement(root, (element) => {
+		if (element.namespaceURI !== HTML_NAMESPACE) {
+			return;
+		}
+		const own = BOOLEAN_ATTRIBUTES[element.tagName] ?? [];
+		for (const attribute of element.attrs) {
+			const name = attributeName(attribute);
+			if (!GLOBAL_BOOLEAN_ATTRIBUTES.has(name) && !own.includes(name)) {
+				continue;
+			}
+			const value = attribute.value.toLowerCase();
+			if (value === name) {
+				attribute.value = "";
+			}
+		}
+	});
 }

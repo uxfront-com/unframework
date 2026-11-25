@@ -8,38 +8,38 @@ const at = { start: 0, end: 0 } as const;
 
 /** Whether a name can be written as an identifier (and so as a bare property key). */
 function isIdentifierName(name: string): boolean {
-  return /^[A-Za-z_$][\w$]*$/.test(name);
+	return /^[A-Za-z_$][\w$]*$/.test(name);
 }
 
 // --- Identifiers and literals ---------------------------------------------------------------
 
 export function identifier(name: string): AST.IdentifierReference {
-  return { type: "Identifier", name, ...at };
+	return { type: "Identifier", name, ...at };
 }
 
 /** A binding identifier, with a type annotation when given (`props: Props`). */
 export function bindingIdentifier(
-  name: string,
-  typeAnnotation?: AST.TSType,
+	name: string,
+	typeAnnotation?: AST.TSType,
 ): AST.BindingIdentifier {
-  return {
-    type: "Identifier",
-    name,
-    ...(typeAnnotation ? { typeAnnotation: tsTypeAnnotation(typeAnnotation) } : {}),
-    ...at,
-  };
+	return {
+		type: "Identifier",
+		name,
+		...(typeAnnotation ? { typeAnnotation: tsTypeAnnotation(typeAnnotation) } : {}),
+		...at,
+	};
 }
 
 export function stringLiteral(value: string): AST.StringLiteral {
-  return { type: "Literal", value, raw: JSON.stringify(value), ...at };
+	return { type: "Literal", value, raw: JSON.stringify(value), ...at };
 }
 
 export function booleanLiteral(value: boolean): AST.BooleanLiteral {
-  return { type: "Literal", value, raw: String(value), ...at };
+	return { type: "Literal", value, raw: String(value), ...at };
 }
 
 export function nullLiteral(): AST.NullLiteral {
-  return { type: "Literal", value: null, raw: "null", ...at };
+	return { type: "Literal", value: null, raw: "null", ...at };
 }
 
 /**
@@ -48,127 +48,127 @@ export function nullLiteral(): AST.NullLiteral {
  * are. A negative number is a unary minus.
  */
 export function numberLiteral(value: number): AST.NumericLiteral | AST.UnaryExpression {
-  if (value < 0 || Object.is(value, -0)) {
-    return unaryExpression("-", numberLiteral(-value));
-  }
-  return { type: "Literal", value, raw: String(value), ...at };
+	if (value < 0 || Object.is(value, -0)) {
+		return unaryExpression("-", numberLiteral(-value));
+	}
+	return { type: "Literal", value, raw: String(value), ...at };
 }
 
 /** A template literal without expressions. Escapes backticks, `${` and backslashes. */
 export function templateLiteral(text: string): AST.TemplateLiteral {
-  const raw = text
-    .replaceAll("\\", String.raw`\\`)
-    .replaceAll("`", "\\`")
-    .replaceAll("${", "\\${");
-  return {
-    type: "TemplateLiteral",
-    quasis: [{ type: "TemplateElement", value: { raw, cooked: text }, tail: true, ...at }],
-    expressions: [],
-    ...at,
-  } as unknown as AST.TemplateLiteral;
+	const raw = text
+		.replaceAll("\\", String.raw`\\`)
+		.replaceAll("`", "\\`")
+		.replaceAll("${", "\\${");
+	return {
+		type: "TemplateLiteral",
+		quasis: [{ type: "TemplateElement", value: { raw, cooked: text }, tail: true, ...at }],
+		expressions: [],
+		...at,
+	} as unknown as AST.TemplateLiteral;
 }
 
 // --- Programs and modules -------------------------------------------------------------------
 
 export function program(body: Array<AST.Statement>): AST.Program {
-  return { type: "Program", sourceType: "module", hashbang: null, body, ...at };
+	return { type: "Program", sourceType: "module", hashbang: null, body, ...at };
 }
 
 export function importDeclaration(
-  source: string,
-  specifiers: Array<AST.ImportDeclarationSpecifier>,
-  importKind: "value" | "type" = "value",
+	source: string,
+	specifiers: Array<AST.ImportDeclarationSpecifier>,
+	importKind: "value" | "type" = "value",
 ): AST.ImportDeclaration {
-  return {
-    type: "ImportDeclaration",
-    specifiers,
-    source: stringLiteral(source),
-    attributes: [],
-    phase: null,
-    importKind,
-    ...at,
-  };
+	return {
+		type: "ImportDeclaration",
+		specifiers,
+		source: stringLiteral(source),
+		attributes: [],
+		phase: null,
+		importKind,
+		...at,
+	};
 }
 
 export function importSpecifier(
-  imported: string,
-  local: string = imported,
-  importKind: "value" | "type" = "value",
+	imported: string,
+	local: string = imported,
+	importKind: "value" | "type" = "value",
 ): AST.ImportSpecifier {
-  return {
-    type: "ImportSpecifier",
-    imported: identifier(imported),
-    local: bindingIdentifier(local),
-    importKind,
-    ...at,
-  };
+	return {
+		type: "ImportSpecifier",
+		imported: identifier(imported),
+		local: bindingIdentifier(local),
+		importKind,
+		...at,
+	};
 }
 
 export function importDefaultSpecifier(local: string): AST.ImportDefaultSpecifier {
-  return {
-    type: "ImportDefaultSpecifier",
-    local: bindingIdentifier(local),
-    ...at,
-  };
+	return {
+		type: "ImportDefaultSpecifier",
+		local: bindingIdentifier(local),
+		...at,
+	};
 }
 
 export function exportDefault(
-  declaration: AST.ExportDefaultDeclarationKind,
+	declaration: AST.ExportDefaultDeclarationKind,
 ): AST.ExportDefaultDeclaration {
-  return {
-    type: "ExportDefaultDeclaration",
-    declaration,
-    exportKind: "value",
-    ...at,
-  };
+	return {
+		type: "ExportDefaultDeclaration",
+		declaration,
+		exportKind: "value",
+		...at,
+	};
 }
 
 export function exportNamed(declaration: AST.Declaration): AST.ExportNamedDeclaration {
-  return {
-    type: "ExportNamedDeclaration",
-    declaration,
-    specifiers: [],
-    source: null,
-    exportKind: "value",
-    attributes: [],
-    ...at,
-  };
+	return {
+		type: "ExportNamedDeclaration",
+		declaration,
+		specifiers: [],
+		source: null,
+		exportKind: "value",
+		attributes: [],
+		...at,
+	};
 }
 
 /** `export { local, local as alias, local as default };` */
 export function exportList(
-  local: string,
-  names: ReadonlyArray<string>,
+	local: string,
+	names: ReadonlyArray<string>,
 ): AST.ExportNamedDeclaration {
-  return {
-    type: "ExportNamedDeclaration",
-    declaration: null,
-    specifiers: names.map((name) => ({
-      type: "ExportSpecifier",
-      local: identifier(local),
-      exported: identifier(name),
-      exportKind: "value",
-      ...at,
-    })),
-    source: null,
-    exportKind: "value",
-    attributes: [],
-    ...at,
-  };
+	return {
+		type: "ExportNamedDeclaration",
+		declaration: null,
+		specifiers: names.map((name) => ({
+			type: "ExportSpecifier",
+			local: identifier(local),
+			exported: identifier(name),
+			exportKind: "value",
+			...at,
+		})),
+		source: null,
+		exportKind: "value",
+		attributes: [],
+		...at,
+	};
 }
 
 // --- Statements -----------------------------------------------------------------------------
 
 export function blockStatement(body: Array<AST.Statement>): AST.BlockStatement {
-  return { type: "BlockStatement", body, ...at };
+	return { type: "BlockStatement", body, ...at };
 }
 
 export function returnStatement(argument: AST.Expression | null): AST.ReturnStatement {
-  return { type: "ReturnStatement", argument, ...at };
+	return { type: "ReturnStatement", argument, ...at };
 }
 
 export function expressionStatement(expression: AST.Expression): AST.ExpressionStatement {
-  return { type: "ExpressionStatement", expression, ...at };
+	return { type: "ExpressionStatement", expression, ...at };
 }
 
 /**
@@ -176,19 +176,19 @@ export function expressionStatement(expression: AST.Expression): AST.ExpressionS
  * (another `if` for `else if`).
  */
 export function ifStatement(
-  test: AST.Expression,
-  consequent: AST.Statement | Array<AST.Statement>,
-  alternate?: AST.Statement | Array<AST.Statement>,
+	test: AST.Expression,
+	consequent: AST.Statement | Array<AST.Statement>,
+	alternate?: AST.Statement | Array<AST.Statement>,
 ): AST.IfStatement {
-  const statement = (body: AST.Statement | Array<AST.Statement>) =>
-    Array.isArray(body) ? blockStatement(body) : body;
-  return {
-    type: "IfStatement",
-    test,
-    consequent: statement(consequent),
-    alternate: alternate === undefined ? null : statement(alternate),
-    ...at,
-  };
+	const statement = (body: AST.Statement | Array<AST.Statement>) =>
+		Array.isArray(body) ? blockStatement(body) : body;
+	return {
+		type: "IfStatement",
+		test,
+		consequent: statement(consequent),
+		alternate: alternate === undefined ? null : statement(alternate),
+		...at,
+	};
 }
 
 /**
@@ -197,112 +197,112 @@ export function ifStatement(
  * `let timer: number | undefined;` takes no initialiser (`null`).
  */
 export function variableDeclaration(
-  kind: "const" | "let",
-  name: string | AST.ObjectPattern | AST.ArrayPattern,
-  init: AST.Expression | null,
-  typeAnnotation?: AST.TSType,
+	kind: "const" | "let",
+	name: string | AST.ObjectPattern | AST.ArrayPattern,
+	init: AST.Expression | null,
+	typeAnnotation?: AST.TSType,
 ): AST.VariableDeclaration {
-  const id = typeof name === "string" ? bindingIdentifier(name, typeAnnotation) : name;
-  return {
-    type: "VariableDeclaration",
-    kind,
-    declare: false,
-    declarations: [{ type: "VariableDeclarator", id, init, definite: false, ...at }],
-    ...at,
-  };
+	const id = typeof name === "string" ? bindingIdentifier(name, typeAnnotation) : name;
+	return {
+		type: "VariableDeclaration",
+		kind,
+		declare: false,
+		declarations: [{ type: "VariableDeclarator", id, init, definite: false, ...at }],
+		...at,
+	};
 }
 
 // --- Functions and calls --------------------------------------------------------------------
 
 export function functionDeclaration(
-  name: string,
-  params: Array<AST.ParamPattern>,
-  body: Array<AST.Statement>,
-  options: { returnType?: AST.TSType; async?: boolean } = {},
+	name: string,
+	params: Array<AST.ParamPattern>,
+	body: Array<AST.Statement>,
+	options: { returnType?: AST.TSType; async?: boolean } = {},
 ): AST.Function {
-  return {
-    type: "FunctionDeclaration",
-    id: bindingIdentifier(name),
-    generator: false,
-    async: Boolean(options.async),
-    declare: false,
-    params,
-    body: blockStatement(body),
-    expression: false,
-    typeParameters: null,
-    returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
-    ...at,
-  } as unknown as AST.Function;
+	return {
+		type: "FunctionDeclaration",
+		id: bindingIdentifier(name),
+		generator: false,
+		async: Boolean(options.async),
+		declare: false,
+		params,
+		body: blockStatement(body),
+		expression: false,
+		typeParameters: null,
+		returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
+		...at,
+	} as unknown as AST.Function;
 }
 
 /** `(params) => body`, or `async (params): T => body` with the options. */
 export function arrowFunction(
-  params: Array<AST.ParamPattern>,
-  body: Array<AST.Statement> | AST.Expression,
-  options: { async?: boolean; returnType?: AST.TSType } = {},
+	params: Array<AST.ParamPattern>,
+	body: Array<AST.Statement> | AST.Expression,
+	options: { async?: boolean; returnType?: AST.TSType } = {},
 ): AST.ArrowFunctionExpression {
-  const expression = !Array.isArray(body);
-  return {
-    type: "ArrowFunctionExpression",
-    id: null,
-    generator: false,
-    async: Boolean(options.async),
-    params,
-    body: expression ? body : blockStatement(body),
-    expression,
-    typeParameters: null,
-    returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
-    ...at,
-  } as unknown as AST.ArrowFunctionExpression;
+	const expression = !Array.isArray(body);
+	return {
+		type: "ArrowFunctionExpression",
+		id: null,
+		generator: false,
+		async: Boolean(options.async),
+		params,
+		body: expression ? body : blockStatement(body),
+		expression,
+		typeParameters: null,
+		returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
+		...at,
+	} as unknown as AST.ArrowFunctionExpression;
 }
 
 /** A call, with type arguments when given (`component$<Props>(…)`, `input<string>()`). */
 export function callExpression(
-  callee: AST.Expression,
-  args: Array<AST.Argument>,
-  typeArguments: ReadonlyArray<AST.TSType> = [],
+	callee: AST.Expression,
+	args: Array<AST.Argument>,
+	typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.CallExpression {
-  return {
-    type: "CallExpression",
-    callee,
-    arguments: args,
-    optional: false,
-    typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
-    ...at,
-  };
+	return {
+		type: "CallExpression",
+		callee,
+		arguments: args,
+		optional: false,
+		typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
+		...at,
+	};
 }
 
 /** `new callee(args)`, with type arguments when given (`new Map<string, number>()`). */
 export function newExpression(
-  callee: AST.Expression,
-  args: Array<AST.Argument>,
-  typeArguments: ReadonlyArray<AST.TSType> = [],
+	callee: AST.Expression,
+	args: Array<AST.Argument>,
+	typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.NewExpression {
-  return {
-    type: "NewExpression",
-    callee,
-    arguments: args,
-    typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
-    ...at,
-  };
+	return {
+		type: "NewExpression",
+		callee,
+		arguments: args,
+		typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
+		...at,
+	};
 }
 
 /** `await argument`. */
 export function awaitExpression(argument: AST.Expression): AST.AwaitExpression {
-  return { type: "AwaitExpression", argument, ...at };
+	return { type: "AwaitExpression", argument, ...at };
 }
 
 /** A rest parameter, `...parts: unknown[]`. */
 export function restElement(name: string, typeAnnotation?: AST.TSType): AST.FormalParameterRest {
-  return {
-    type: "RestElement",
-    argument: bindingIdentifier(name),
-    decorators: [],
-    optional: false,
-    typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
-    value: null,
-    ...at,
-  };
+	return {
+		type: "RestElement",
+		argument: bindingIdentifier(name),
+		decorators: [],
+		optional: false,
+		typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
+		value: null,
+		...at,
+	};
 }
 
 // --- Patterns -------------------------------------------------------------------------------
@@ -312,17 +312,17 @@ export function restElement(name: string, typeAnnotation?: AST.TSType): AST.Form
  * with its default when given (see {@link bindingProperty}).
  */
 export function objectPattern(
-  properties: Array<AST.BindingProperty | AST.BindingRestElement>,
-  typeAnnotation?: AST.TSType,
+	properties: Array<AST.BindingProperty | AST.BindingRestElement>,
+	typeAnnotation?: AST.TSType,
 ): AST.ObjectPattern {
-  return {
-    type: "ObjectPattern",
-    decorators: [],
-    properties,
-    optional: false,
-    typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
-    ...at,
-  };
+	return {
+		type: "ObjectPattern",
+		decorators: [],
+		properties,
+		optional: false,
+		typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
+		...at,
+	};
 }
 
 /**
@@ -330,64 +330,64 @@ export function objectPattern(
  * (`null`).
  */
 export function arrayPattern(
-  elements: Array<string | AST.BindingPattern | null>,
-  typeAnnotation?: AST.TSType,
+	elements: Array<string | AST.BindingPattern | null>,
+	typeAnnotation?: AST.TSType,
 ): AST.ArrayPattern {
-  return {
-    type: "ArrayPattern",
-    decorators: [],
-    elements: elements.map((element) =>
-      typeof element === "string" ? bindingIdentifier(element) : element,
-    ),
-    optional: false,
-    typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
-    ...at,
-  };
+	return {
+		type: "ArrayPattern",
+		decorators: [],
+		elements: elements.map((element) =>
+			typeof element === "string" ? bindingIdentifier(element) : element,
+		),
+		optional: false,
+		typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
+		...at,
+	};
 }
 
 /** The rest of an object pattern, `...rest`. */
 export function bindingRestElement(name: string): AST.BindingRestElement {
-  return {
-    type: "RestElement",
-    decorators: [],
-    argument: bindingIdentifier(name),
-    optional: false,
-    typeAnnotation: null,
-    value: null,
-    ...at,
-  };
+	return {
+		type: "RestElement",
+		decorators: [],
+		argument: bindingIdentifier(name),
+		optional: false,
+		typeAnnotation: null,
+		value: null,
+		...at,
+	};
 }
 
 /** A shorthand property of an object pattern, `name` or `name = defaultValue`. */
 export function bindingProperty(name: string, defaultValue?: AST.Expression): AST.BindingProperty {
-  return {
-    type: "Property",
-    kind: "init",
-    key: identifier(name),
-    value: defaultValue
-      ? assignmentPattern(bindingIdentifier(name), defaultValue)
-      : bindingIdentifier(name),
-    method: false,
-    shorthand: true,
-    computed: false,
-    ...at,
-  };
+	return {
+		type: "Property",
+		kind: "init",
+		key: identifier(name),
+		value: defaultValue
+			? assignmentPattern(bindingIdentifier(name), defaultValue)
+			: bindingIdentifier(name),
+		method: false,
+		shorthand: true,
+		computed: false,
+		...at,
+	};
 }
 
 /** `left = right`, a binding with a default. */
 export function assignmentPattern(
-  left: AST.BindingPattern,
-  right: AST.Expression,
+	left: AST.BindingPattern,
+	right: AST.Expression,
 ): AST.AssignmentPattern {
-  return {
-    type: "AssignmentPattern",
-    decorators: [],
-    left,
-    right,
-    optional: false,
-    typeAnnotation: null,
-    ...at,
-  };
+	return {
+		type: "AssignmentPattern",
+		decorators: [],
+		left,
+		right,
+		optional: false,
+		typeAnnotation: null,
+		...at,
+	};
 }
 
 // --- Expressions ----------------------------------------------------------------------------
@@ -398,87 +398,87 @@ export function assignmentPattern(
  * wrapped in {@link chainExpression}, once, around its outermost link.
  */
 export function memberExpression(
-  object: AST.Expression,
-  member: string | AST.Expression,
-  options: { optional?: boolean } = {},
+	object: AST.Expression,
+	member: string | AST.Expression,
+	options: { optional?: boolean } = {},
 ): AST.MemberExpression {
-  const computed = typeof member !== "string" || !isIdentifierName(member);
-  return {
-    type: "MemberExpression",
-    object,
-    property:
-      typeof member !== "string" ? member : computed ? stringLiteral(member) : identifier(member),
-    computed,
-    optional: Boolean(options.optional),
-    ...at,
-  } as AST.MemberExpression;
+	const computed = typeof member !== "string" || !isIdentifierName(member);
+	return {
+		type: "MemberExpression",
+		object,
+		property:
+			typeof member !== "string" ? member : computed ? stringLiteral(member) : identifier(member),
+		computed,
+		optional: Boolean(options.optional),
+		...at,
+	} as AST.MemberExpression;
 }
 
 /** An optional chain, around the outermost link of a chain holding `?.`. */
 export function chainExpression(expression: AST.ChainElement): AST.ChainExpression {
-  return { type: "ChainExpression", expression, ...at };
+	return { type: "ChainExpression", expression, ...at };
 }
 
 export function conditionalExpression(
-  test: AST.Expression,
-  consequent: AST.Expression,
-  alternate: AST.Expression,
+	test: AST.Expression,
+	consequent: AST.Expression,
+	alternate: AST.Expression,
 ): AST.ConditionalExpression {
-  return { type: "ConditionalExpression", test, consequent, alternate, ...at };
+	return { type: "ConditionalExpression", test, consequent, alternate, ...at };
 }
 
 export function logicalExpression(
-  operator: AST.LogicalOperator,
-  left: AST.Expression,
-  right: AST.Expression,
+	operator: AST.LogicalOperator,
+	left: AST.Expression,
+	right: AST.Expression,
 ): AST.LogicalExpression {
-  return { type: "LogicalExpression", operator, left, right, ...at };
+	return { type: "LogicalExpression", operator, left, right, ...at };
 }
 
 export function binaryExpression(
-  operator: AST.BinaryOperator,
-  left: AST.Expression,
-  right: AST.Expression,
+	operator: AST.BinaryOperator,
+	left: AST.Expression,
+	right: AST.Expression,
 ): AST.BinaryExpression {
-  return { type: "BinaryExpression", operator, left, right, ...at };
+	return { type: "BinaryExpression", operator, left, right, ...at };
 }
 
 export function unaryExpression(
-  operator: AST.UnaryOperator,
-  argument: AST.Expression,
+	operator: AST.UnaryOperator,
+	argument: AST.Expression,
 ): AST.UnaryExpression {
-  return { type: "UnaryExpression", operator, prefix: true, argument, ...at };
+	return { type: "UnaryExpression", operator, prefix: true, argument, ...at };
 }
 
 /** `this`. */
 export function thisExpression(): AST.ThisExpression {
-  return { type: "ThisExpression", ...at };
+	return { type: "ThisExpression", ...at };
 }
 
 /** `left = right`, or a compound assignment (`left += right`, `left ??= right`). */
 export function assignmentExpression(
-  operator: AST.AssignmentOperator,
-  left: AST.IdentifierReference | AST.MemberExpression,
-  right: AST.Expression,
+	operator: AST.AssignmentOperator,
+	left: AST.IdentifierReference | AST.MemberExpression,
+	right: AST.Expression,
 ): AST.AssignmentExpression {
-  return { type: "AssignmentExpression", operator, left, right, ...at };
+	return { type: "AssignmentExpression", operator, left, right, ...at };
 }
 
 /** `argument++`, `argument--`, or with `prefix` `++argument`. */
 export function updateExpression(
-  operator: AST.UpdateOperator,
-  argument: AST.IdentifierReference | AST.MemberExpression,
-  prefix = false,
+	operator: AST.UpdateOperator,
+	argument: AST.IdentifierReference | AST.MemberExpression,
+	prefix = false,
 ): AST.UpdateExpression {
-  return { type: "UpdateExpression", operator, prefix, argument, ...at };
+	return { type: "UpdateExpression", operator, prefix, argument, ...at };
 }
 
 export function arrayExpression(elements: Array<AST.ArrayExpressionElement>): AST.ArrayExpression {
-  return { type: "ArrayExpression", elements, ...at };
+	return { type: "ArrayExpression", elements, ...at };
 }
 
 export function spreadElement(argument: AST.Expression): AST.SpreadElement {
-  return { type: "SpreadElement", argument, ...at };
+	return { type: "SpreadElement", argument, ...at };
 }
 
 /**
@@ -486,20 +486,20 @@ export function spreadElement(argument: AST.Expression): AST.SpreadElement {
  * otherwise (`"--gap"`, `"aria-label"`). `shorthand` writes `{ name }`.
  */
 export function property(
-  key: string,
-  value: AST.Expression,
-  options: { shorthand?: boolean } = {},
+	key: string,
+	value: AST.Expression,
+	options: { shorthand?: boolean } = {},
 ): AST.ObjectProperty {
-  return {
-    type: "Property",
-    key: isIdentifierName(key) ? identifier(key) : stringLiteral(key),
-    value,
-    kind: "init",
-    method: false,
-    shorthand: Boolean(options.shorthand) && isIdentifierName(key),
-    computed: false,
-    ...at,
-  };
+	return {
+		type: "Property",
+		key: isIdentifierName(key) ? identifier(key) : stringLiteral(key),
+		value,
+		kind: "init",
+		method: false,
+		shorthand: Boolean(options.shorthand) && isIdentifierName(key),
+		computed: false,
+		...at,
+	};
 }
 
 /**
@@ -507,122 +507,122 @@ export function property(
  * spreads.
  */
 export function objectExpression(
-  properties: Array<[key: string, value: AST.Expression] | AST.ObjectPropertyKind>,
+	properties: Array<[key: string, value: AST.Expression] | AST.ObjectPropertyKind>,
 ): AST.ObjectExpression {
-  return {
-    type: "ObjectExpression",
-    properties: properties.map((entry) =>
-      Array.isArray(entry) ? property(entry[0], entry[1]) : entry,
-    ),
-    ...at,
-  };
+	return {
+		type: "ObjectExpression",
+		properties: properties.map((entry) =>
+			Array.isArray(entry) ? property(entry[0], entry[1]) : entry,
+		),
+		...at,
+	};
 }
 
 /** `expression satisfies type`. */
 export function satisfiesExpression(
-  expression: AST.Expression,
-  type: AST.TSType,
+	expression: AST.Expression,
+	type: AST.TSType,
 ): AST.TSSatisfiesExpression {
-  return { type: "TSSatisfiesExpression", expression, typeAnnotation: type, ...at };
+	return { type: "TSSatisfiesExpression", expression, typeAnnotation: type, ...at };
 }
 
 /** `expression as type`. */
 export function asExpression(expression: AST.Expression, type: AST.TSType): AST.TSAsExpression {
-  return { type: "TSAsExpression", expression, typeAnnotation: type, ...at };
+	return { type: "TSAsExpression", expression, typeAnnotation: type, ...at };
 }
 
 // --- Types ----------------------------------------------------------------------------------
 
 export function tsTypeAnnotation(type: AST.TSType): AST.TSTypeAnnotation {
-  return { type: "TSTypeAnnotation", typeAnnotation: type, ...at };
+	return { type: "TSTypeAnnotation", typeAnnotation: type, ...at };
 }
 
 /** A reference to a named type, with type arguments when given (`Partial<Props>`). */
 export function typeReference(
-  name: string,
-  typeArguments: ReadonlyArray<AST.TSType> = [],
+	name: string,
+	typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.TSTypeReference {
-  return {
-    type: "TSTypeReference",
-    typeName: identifier(name),
-    typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
-    ...at,
-  };
+	return {
+		type: "TSTypeReference",
+		typeName: identifier(name),
+		typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
+		...at,
+	};
 }
 
 function typeParameterInstantiation(
-  params: ReadonlyArray<AST.TSType>,
+	params: ReadonlyArray<AST.TSType>,
 ): AST.TSTypeParameterInstantiation {
-  return { type: "TSTypeParameterInstantiation", params: [...params], ...at };
+	return { type: "TSTypeParameterInstantiation", params: [...params], ...at };
 }
 
 /** The keyword types a helper's signature needs. */
 export type KeywordType =
-  | "unknown"
-  | "string"
-  | "number"
-  | "boolean"
-  | "undefined"
-  | "null"
-  | "never"
-  | "void";
+	| "unknown"
+	| "string"
+	| "number"
+	| "boolean"
+	| "undefined"
+	| "null"
+	| "never"
+	| "void";
 
 const KEYWORD_TYPES = {
-  unknown: "TSUnknownKeyword",
-  string: "TSStringKeyword",
-  number: "TSNumberKeyword",
-  boolean: "TSBooleanKeyword",
-  undefined: "TSUndefinedKeyword",
-  null: "TSNullKeyword",
-  never: "TSNeverKeyword",
-  void: "TSVoidKeyword",
+	unknown: "TSUnknownKeyword",
+	string: "TSStringKeyword",
+	number: "TSNumberKeyword",
+	boolean: "TSBooleanKeyword",
+	undefined: "TSUndefinedKeyword",
+	null: "TSNullKeyword",
+	never: "TSNeverKeyword",
+	void: "TSVoidKeyword",
 } as const satisfies Record<KeywordType, string>;
 
 export function keywordType(keyword: KeywordType): AST.TSType {
-  return { type: KEYWORD_TYPES[keyword], ...at };
+	return { type: KEYWORD_TYPES[keyword], ...at };
 }
 
 /** `element[]`. */
 export function arrayType(element: AST.TSType): AST.TSArrayType {
-  return { type: "TSArrayType", elementType: element, ...at };
+	return { type: "TSArrayType", elementType: element, ...at };
 }
 
 /** `a | b`. */
 export function unionType(types: ReadonlyArray<AST.TSType>): AST.TSUnionType {
-  return { type: "TSUnionType", types: [...types], ...at };
+	return { type: "TSUnionType", types: [...types], ...at };
 }
 
 // --- Classes --------------------------------------------------------------------------------
 
 export function decorator(expression: AST.Expression): AST.Decorator {
-  return { type: "Decorator", expression, ...at };
+	return { type: "Decorator", expression, ...at };
 }
 
 /** A class, with the interfaces it implements by name (`implements OnInit`). */
 export function classDeclaration(
-  name: string,
-  decorators: Array<AST.Decorator>,
-  body: Array<AST.ClassElement> = [],
-  options: { implements?: ReadonlyArray<string> } = {},
+	name: string,
+	decorators: Array<AST.Decorator>,
+	body: Array<AST.ClassElement> = [],
+	options: { implements?: ReadonlyArray<string> } = {},
 ): AST.Class {
-  return {
-    type: "ClassDeclaration",
-    decorators,
-    id: bindingIdentifier(name),
-    typeParameters: null,
-    superClass: null,
-    superTypeArguments: null,
-    implements: (options.implements ?? []).map((interfaceName): AST.TSClassImplements => ({
-      type: "TSClassImplements",
-      expression: identifier(interfaceName),
-      typeArguments: null,
-      ...at,
-    })),
-    body: { type: "ClassBody", body, ...at },
-    abstract: false,
-    declare: false,
-    ...at,
-  };
+	return {
+		type: "ClassDeclaration",
+		decorators,
+		id: bindingIdentifier(name),
+		typeParameters: null,
+		superClass: null,
+		superTypeArguments: null,
+		implements: (options.implements ?? []).map((interfaceName): AST.TSClassImplements => ({
+			type: "TSClassImplements",
+			expression: identifier(interfaceName),
+			typeArguments: null,
+			...at,
+		})),
+		body: { type: "ClassBody", body, ...at },
+		abstract: false,
+		declare: false,
+		...at,
+	};
 }
 
 /**
@@ -630,31 +630,31 @@ export function classDeclaration(
  * `protected readonly Math = Math;`.
  */
 export function propertyDefinition(
-  name: string,
-  value: AST.Expression | null,
-  options: {
-    readonly?: boolean;
-    static?: boolean;
-    accessibility?: AST.TSAccessibility;
-    typeAnnotation?: AST.TSType;
-  } = {},
+	name: string,
+	value: AST.Expression | null,
+	options: {
+		readonly?: boolean;
+		static?: boolean;
+		accessibility?: AST.TSAccessibility;
+		typeAnnotation?: AST.TSType;
+	} = {},
 ): AST.PropertyDefinition {
-  return {
-    type: "PropertyDefinition",
-    decorators: [],
-    key: identifier(name),
-    typeAnnotation: options.typeAnnotation ? tsTypeAnnotation(options.typeAnnotation) : null,
-    value,
-    computed: false,
-    static: Boolean(options.static),
-    declare: false,
-    override: false,
-    optional: false,
-    definite: false,
-    readonly: Boolean(options.readonly),
-    accessibility: options.accessibility ?? null,
-    ...at,
-  };
+	return {
+		type: "PropertyDefinition",
+		decorators: [],
+		key: identifier(name),
+		typeAnnotation: options.typeAnnotation ? tsTypeAnnotation(options.typeAnnotation) : null,
+		value,
+		computed: false,
+		static: Boolean(options.static),
+		declare: false,
+		override: false,
+		optional: false,
+		definite: false,
+		readonly: Boolean(options.readonly),
+		accessibility: options.accessibility ?? null,
+		...at,
+	};
 }
 
 /**
@@ -663,43 +663,43 @@ export function propertyDefinition(
  * (Angular's effects).
  */
 export function methodDefinition(
-  name: string,
-  params: Array<AST.ParamPattern>,
-  body: Array<AST.Statement>,
-  options: {
-    kind?: "method" | "constructor";
-    async?: boolean;
-    static?: boolean;
-    accessibility?: AST.TSAccessibility;
-    returnType?: AST.TSType;
-  } = {},
+	name: string,
+	params: Array<AST.ParamPattern>,
+	body: Array<AST.Statement>,
+	options: {
+		kind?: "method" | "constructor";
+		async?: boolean;
+		static?: boolean;
+		accessibility?: AST.TSAccessibility;
+		returnType?: AST.TSType;
+	} = {},
 ): AST.MethodDefinition {
-  const kind = options.kind ?? "method";
-  return {
-    type: "MethodDefinition",
-    decorators: [],
-    key: identifier(kind === "constructor" ? "constructor" : name),
-    value: {
-      type: "FunctionExpression",
-      id: null,
-      generator: false,
-      async: Boolean(options.async),
-      declare: false,
-      params,
-      body: blockStatement(body),
-      expression: false,
-      typeParameters: null,
-      returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
-      ...at,
-    } as unknown as AST.Function,
-    kind,
-    computed: false,
-    static: Boolean(options.static),
-    override: false,
-    optional: false,
-    accessibility: options.accessibility ?? null,
-    ...at,
-  };
+	const kind = options.kind ?? "method";
+	return {
+		type: "MethodDefinition",
+		decorators: [],
+		key: identifier(kind === "constructor" ? "constructor" : name),
+		value: {
+			type: "FunctionExpression",
+			id: null,
+			generator: false,
+			async: Boolean(options.async),
+			declare: false,
+			params,
+			body: blockStatement(body),
+			expression: false,
+			typeParameters: null,
+			returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
+			...at,
+		} as unknown as AST.Function,
+		kind,
+		computed: false,
+		static: Boolean(options.static),
+		override: false,
+		optional: false,
+		accessibility: options.accessibility ?? null,
+		...at,
+	};
 }
 
 // --- JSX ------------------------------------------------------------------------------------
@@ -709,86 +709,86 @@ export function methodDefinition(
  * `Foo.Bar`.
  */
 export function jsxName(name: string): AST.JSXElementName {
-  const namespaced = /^([^:.]+):([^:.]+)$/.exec(name);
-  if (namespaced) {
-    return {
-      type: "JSXNamespacedName",
-      namespace: jsxIdentifier(namespaced[1]!),
-      name: jsxIdentifier(namespaced[2]!),
-      ...at,
-    };
-  }
-  const [first, ...rest] = name.split(".");
-  return rest.reduce<AST.JSXElementName>(
-    (object, part) =>
-      ({
-        type: "JSXMemberExpression",
-        object,
-        property: jsxIdentifier(part),
-        ...at,
-      }) as AST.JSXMemberExpression,
-    jsxIdentifier(first!),
-  );
+	const namespaced = /^([^:.]+):([^:.]+)$/.exec(name);
+	if (namespaced) {
+		return {
+			type: "JSXNamespacedName",
+			namespace: jsxIdentifier(namespaced[1]!),
+			name: jsxIdentifier(namespaced[2]!),
+			...at,
+		};
+	}
+	const [first, ...rest] = name.split(".");
+	return rest.reduce<AST.JSXElementName>(
+		(object, part) =>
+			({
+				type: "JSXMemberExpression",
+				object,
+				property: jsxIdentifier(part),
+				...at,
+			}) as AST.JSXMemberExpression,
+		jsxIdentifier(first!),
+	);
 }
 
 function jsxIdentifier(name: string): AST.JSXIdentifier {
-  return { type: "JSXIdentifier", name, ...at };
+	return { type: "JSXIdentifier", name, ...at };
 }
 
 /** `name`, `name="value"` or `name={expression}`: a string value is quoted as given. */
 export function jsxAttribute(
-  name: string,
-  value: AST.JSXAttributeValue | string | null = null,
+	name: string,
+	value: AST.JSXAttributeValue | string | null = null,
 ): AST.JSXAttribute {
-  return {
-    type: "JSXAttribute",
-    name: jsxName(name) as AST.JSXAttributeName,
-    value: typeof value === "string" ? { type: "Literal", value, raw: `"${value}"`, ...at } : value,
-    ...at,
-  };
+	return {
+		type: "JSXAttribute",
+		name: jsxName(name) as AST.JSXAttributeName,
+		value: typeof value === "string" ? { type: "Literal", value, raw: `"${value}"`, ...at } : value,
+		...at,
+	};
 }
 
 /** `{...argument}` on an element. */
 export function jsxSpreadAttribute(argument: AST.Expression): AST.JSXSpreadAttribute {
-  return { type: "JSXSpreadAttribute", argument, ...at };
+	return { type: "JSXSpreadAttribute", argument, ...at };
 }
 
 /** `{expression}`, as a child or an attribute value. */
 export function jsxExpressionContainer(expression: AST.Expression): AST.JSXExpressionContainer {
-  return { type: "JSXExpressionContainer", expression, ...at };
+	return { type: "JSXExpressionContainer", expression, ...at };
 }
 
 /** An element, self-closing when it has no children. */
 export function jsxElement(
-  name: string,
-  attributes: Array<AST.JSXAttributeItem> = [],
-  children: Array<AST.JSXChild> = [],
+	name: string,
+	attributes: Array<AST.JSXAttributeItem> = [],
+	children: Array<AST.JSXChild> = [],
 ): AST.JSXElement {
-  const elementName = jsxName(name);
-  const selfClosing = children.length === 0;
-  return {
-    type: "JSXElement",
-    openingElement: {
-      type: "JSXOpeningElement",
-      name: elementName,
-      attributes,
-      selfClosing,
-      typeArguments: null,
-      ...at,
-    },
-    closingElement: selfClosing ? null : { type: "JSXClosingElement", name: elementName, ...at },
-    children,
-    ...at,
-  };
+	const elementName = jsxName(name);
+	const selfClosing = children.length === 0;
+	return {
+		type: "JSXElement",
+		openingElement: {
+			type: "JSXOpeningElement",
+			name: elementName,
+			attributes,
+			selfClosing,
+			typeArguments: null,
+			...at,
+		},
+		closingElement: selfClosing ? null : { type: "JSXClosingElement", name: elementName, ...at },
+		children,
+		...at,
+	};
 }
 
 /** `<>…</>`. */
 export function jsxFragment(children: Array<AST.JSXChild>): AST.JSXFragment {
-  return {
-    type: "JSXFragment",
-    openingFragment: { type: "JSXOpeningFragment", ...at },
-    children,
-    closingFragment: { type: "JSXClosingFragment", ...at },
-    ...at,
-  };
+	return {
+		type: "JSXFragment",
+		openingFragment: { type: "JSXOpeningFragment", ...at },
+		children,
+		closingFragment: { type: "JSXClosingFragment", ...at },
+		...at,
+	};
 }

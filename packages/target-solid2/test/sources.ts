@@ -6,7 +6,7 @@
 
 /** File name (without `.uf.tsx`) → source. */
 export const SOURCES: Readonly<Record<string, string>> = {
-  Badge: `export interface BadgeProps {
+	Badge: `export interface BadgeProps {
   label: string;
   tone?: "info" | "warn";
   count?: number;
@@ -46,7 +46,7 @@ export default function Badge({
   );
 }
 `,
-  LinkCard: `interface LinkAttrs {
+	LinkCard: `interface LinkAttrs {
   href: string;
   title?: string;
   class?: string;
@@ -76,7 +76,7 @@ export function LinkCard(props: LinkCardProps) {
   );
 }
 `,
-  TodoList: `interface Todo {
+	TodoList: `interface Todo {
   id: string;
   title: string;
   done?: boolean;
@@ -117,7 +117,7 @@ export default function TodoList({ todos, heading, busy, empty = "Nothing to do.
   );
 }
 `,
-  Address: `export interface AddressProps {
+	Address: `export interface AddressProps {
   name: string;
   street: string;
   city?: string;
@@ -135,7 +135,7 @@ export default function Address({ name, street, city }: AddressProps) {
   );
 }
 `,
-  Swatch: `interface Paint {
+	Swatch: `interface Paint {
   fill?: string;
   id?: string;
 }
@@ -168,22 +168,22 @@ export default function Swatch({ colour, turn, paint, order }: SwatchProps) {
   );
 }
 `,
-  // Without fallthrough, nothing reads its props: `_props`.
-  Plain: `import { defineOptions } from "@uxfront/unframework";
+	// Without fallthrough, nothing reads its props: `_props`.
+	Plain: `import { defineOptions } from "@uxfront/unframework";
 
 export default function Plain(_: { note?: string }) {
   defineOptions({ inheritAttrs: false });
   return <p>Nothing to read.</p>;
 }
 `,
-  // Branches that read what their tests narrow (src/narrowing.ts), each the source's ternary:
-  // truthiness, a negation, a chain, an `&&` whose left side is a string, reads inside the
-  // branch (a ternary in an attribute, a class toggle, a nested <Show>), `?.`, a list's item,
-  // comparisons, `typeof`, string, template-literal and boolean discriminants, a static text
-  // branch the server would not escape, an object default (`mergeProps`), an else that reads
-  // through `?.` what its test reads only where it holds, a list's callback and an arrow
-  // that read a narrowed prop, and branches of one interpolation that read another prop.
-  Narrowing: `interface Account {
+	// Branches that read what their tests narrow (src/narrowing.ts), each the source's ternary:
+	// truthiness, a negation, a chain, an `&&` whose left side is a string, reads inside the
+	// branch (a ternary in an attribute, a class toggle, a nested <Show>), `?.`, a list's item,
+	// comparisons, `typeof`, string, template-literal and boolean discriminants, a static text
+	// branch the server would not escape, an object default (`mergeProps`), an else that reads
+	// through `?.` what its test reads only where it holds, a list's callback and an arrow
+	// that read a narrowed prop, and branches of one interpolation that read another prop.
+	Narrowing: `interface Account {
   name: string;
   nick?: string;
   admin?: boolean;
@@ -310,10 +310,10 @@ export default function Narrowing({
   );
 }
 `,
-  // Literal types: unions with a falsy literal (`""`, `0`), which a truthiness test removes and
-  // Solid's keyed `NonNullable<T>` keeps, so each `when` that is the test is `test || undefined`;
-  // and array defaults of literal-union values, whose literal type `satisfies` would keep.
-  Literals: `type Tone = "info" | "warn";
+	// Literal types: unions with a falsy literal (`""`, `0`), which a truthiness test removes and
+	// Solid's keyed `NonNullable<T>` keeps, so each `when` that is the test is `test || undefined`;
+	// and array defaults of literal-union values, whose literal type `satisfies` would keep.
+	Literals: `type Tone = "info" | "warn";
 
 export interface LiteralsProps {
   limit: number | "";
@@ -338,12 +338,12 @@ export default function Literals({ limit, rows, box, tones = ["info"], sizes = [
   );
 }
 `,
-  // Narrowing forms the analyser accepts (packages/analyzer/test/narrowing.test.ts and its spread
-  // cases in bindings.test.ts), which every target's checker narrows, Solid's included: a
-  // destructured prop read in a list's callback or an arrow, which TypeScript narrows there as a
-  // parameter, and a property of one through `?.`, as TypeScript forgets a property's narrowing
-  // in a callback; and elses that read through `?.` what their tests read only where they hold.
-  NarrowingForms: `interface Inner {
+	// Narrowing forms the analyser accepts (packages/analyzer/test/narrowing.test.ts and its spread
+	// cases in bindings.test.ts), which every target's checker narrows, Solid's included: a
+	// destructured prop read in a list's callback or an arrow, which TypeScript narrows there as a
+	// parameter, and a property of one through `?.`, as TypeScript forgets a property's narrowing
+	// in a callback; and elses that read through `?.` what their tests read only where they hold.
+	NarrowingForms: `interface Inner {
   title: string;
   other?: string;
 }
@@ -437,10 +437,10 @@ export default function NarrowingForms({ box, items, maybe, on, rows, count, not
   );
 }
 `,
-  // M2 (ADR-0045 to ADR-0049): every watcher the helper takes (one source and an array, lazy
-  // and immediate, the array's values annotated as a mutable tuple), `watchEffect` with a cleanup
-  // parameter named otherwise, writes the scheduler coalesces, and emits.
-  Watchers: `import { defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";
+	// M2 (ADR-0045 to ADR-0049): every watcher the helper takes (one source and an array, lazy
+	// and immediate, the array's values annotated as a mutable tuple), `watchEffect` with a cleanup
+	// parameter named otherwise, writes the scheduler coalesces, and emits.
+	Watchers: `import { defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export interface WatchersProps {
   label: string;
@@ -537,11 +537,11 @@ export default function Watchers({ label }: WatchersProps) {
   );
 }
 `,
-  // Listeners: Solid's event props, options as native listeners, the plain listeners of an event
-  // the component also listens to once made native, two listeners of one event on one element
-  // (the second added from its `ref` callback, with a template ref), a plain and a once listener
-  // of one phase in both orders (both added from the `ref` callback), and `focus`/`change`.
-  Listeners: `import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
+	// Listeners: Solid's event props, options as native listeners, the plain listeners of an event
+	// the component also listens to once made native, two listeners of one event on one element
+	// (the second added from its `ref` callback, with a template ref), a plain and a once listener
+	// of one phase in both orders (both added from the `ref` callback), and `focus`/`change`.
+	Listeners: `import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Listeners() {
   const emit = defineEmits<{ logged: [entries: string[]] }>();
@@ -615,11 +615,11 @@ export default function Listeners() {
   );
 }
 `,
-  // Lifecycle, refs and the rest of the setup: hoisted constants and functions, a setup \`let\`,
-  // state no code writes, an id, \`onMounted\`/\`onUnmounted\`, a template ref in a branch and
-  // one kept in a setup \`let\` typed \`T | null\` for the teardown, an async handler, and
-  // \`nextTick\`.
-  Lifecycle: `import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef } from "@uxfront/unframework";
+	// Lifecycle, refs and the rest of the setup: hoisted constants and functions, a setup \`let\`,
+	// state no code writes, an id, \`onMounted\`/\`onUnmounted\`, a template ref in a branch and
+	// one kept in a setup \`let\` typed \`T | null\` for the teardown, an async handler, and
+	// \`nextTick\`.
+	Lifecycle: `import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef } from "@uxfront/unframework";
 
 export interface LifecycleProps {
   title: string;
@@ -708,9 +708,9 @@ export default function Lifecycle({ title }: LifecycleProps) {
   );
 }
 `,
-  // Listeners whose event Solid's props type otherwise than the DOM: \`click\` taken as a
-  // \`PointerEvent\`, \`encrypted\` off a media element. Each goes through its element's \`ref\`.
-  DomTypes: `import { ref } from "@uxfront/unframework";
+	// Listeners whose event Solid's props type otherwise than the DOM: \`click\` taken as a
+	// \`PointerEvent\`, \`encrypted\` off a media element. Each goes through its element's \`ref\`.
+	DomTypes: `import { ref } from "@uxfront/unframework";
 
 export default function DomTypes() {
   const last = ref("none");
@@ -729,12 +729,12 @@ export default function DomTypes() {
   );
 }
 `,
-  // Where client code's synchronous runs run, each coalesced by the watchers' scheduler: a
-  // timer's callback, a promise continuation (untracked, \`solid/reactivity\`), an async
-  // function's continuation and its run that declares between two changes; an async
-  // \`watchEffect\`; a pre watcher deriving what a post watcher measures in the DOM; and an arrow
-  // a setup function hands to another (untracked, \`solid/reactivity\`).
-  Runs: `import { defineEmits, onMounted, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
+	// Where client code's synchronous runs run, each coalesced by the watchers' scheduler: a
+	// timer's callback, a promise continuation (untracked, \`solid/reactivity\`), an async
+	// function's continuation and its run that declares between two changes; an async
+	// \`watchEffect\`; a pre watcher deriving what a post watcher measures in the DOM; and an arrow
+	// a setup function hands to another (untracked, \`solid/reactivity\`).
+	Runs: `import { defineEmits, onMounted, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
 
 export interface RunsProps {
   label: string;
@@ -848,11 +848,11 @@ export default function Runs({ label }: RunsProps) {
   );
 }
 `,
-  // Runs that cross blocks (an \`await\` assigned, a \`try\` and its \`catch\`, a guard, a local
-  // arrow called twice), which the scheduler coalesces as any other; callbacks
-  // \`solid/reactivity\` reads as tracked (a continuation reading in \`filter\`'s callback, an
-  // arrow kept in a variable); and \`onUnmounted\` hooks that run after every cleanup, in order.
-  AsyncRuns: `import { defineEmits, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";
+	// Runs that cross blocks (an \`await\` assigned, a \`try\` and its \`catch\`, a guard, a local
+	// arrow called twice), which the scheduler coalesces as any other; callbacks
+	// \`solid/reactivity\` reads as tracked (a continuation reading in \`filter\`'s callback, an
+	// arrow kept in a variable); and \`onUnmounted\` hooks that run after every cleanup, in order.
+	AsyncRuns: `import { defineEmits, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function AsyncRuns() {
   const emit = defineEmits<{
@@ -985,12 +985,12 @@ export default function AsyncRuns() {
   );
 }
 `,
-  // The run shapes a lexical \`batch\` could not hold, which the watchers' scheduler coalesces as
-  // Vue's does (ADR-0048): two awaited writes in one function, a guard before an awaited call of
-  // a function that writes first, an \`await\` that may not run (\`??\`), a throw after a write in
-  // a \`try\`, a callback parameter and an object's arrows called after an \`await\`, a \`catch\`
-  // that returns, a validate-then-save guard, and a statement with two \`await\`s.
-  Coalesced: `import { defineEmits, ref, watch } from "@uxfront/unframework";
+	// The run shapes a lexical \`batch\` could not hold, which the watchers' scheduler coalesces as
+	// Vue's does (ADR-0048): two awaited writes in one function, a guard before an awaited call of
+	// a function that writes first, an \`await\` that may not run (\`??\`), a throw after a write in
+	// a \`try\`, a callback parameter and an object's arrows called after an \`await\`, a \`catch\`
+	// that returns, a validate-then-save guard, and a statement with two \`await\`s.
+	Coalesced: `import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export default function Coalesced() {
   const emit = defineEmits<{
@@ -1176,15 +1176,15 @@ export default function Coalesced() {
   );
 }
 `,
-  // Reads a condition narrows (\`BindingReference.narrowed\`, src/asserted.ts), which Solid's
-  // calls and a prop's property in a closure would lose: a state read whole and through a member
-  // path, after a test and a guard clause, in a derived value, a watcher, a template expression
-  // and a \`when\` (whose arrow's parameter TypeScript narrows itself), and a destructured prop
-  // read in a timer's callback after a guard. L4 checks every assertion it needs.
-  // A compound write's target a condition narrows (ADR-0046): its operator reads it, through a
-  // call TypeScript never narrows, so the read is asserted; a plain write, \`??=\`, and a target
-  // that cannot be absent are not.
-  NarrowedWrites: `import { ref } from "@uxfront/unframework";
+	// Reads a condition narrows (\`BindingReference.narrowed\`, src/asserted.ts), which Solid's
+	// calls and a prop's property in a closure would lose: a state read whole and through a member
+	// path, after a test and a guard clause, in a derived value, a watcher, a template expression
+	// and a \`when\` (whose arrow's parameter TypeScript narrows itself), and a destructured prop
+	// read in a timer's callback after a guard. L4 checks every assertion it needs.
+	// A compound write's target a condition narrows (ADR-0046): its operator reads it, through a
+	// call TypeScript never narrows, so the read is asserted; a plain write, \`??=\`, and a target
+	// that cannot be absent are not.
+	NarrowedWrites: `import { ref } from "@uxfront/unframework";
 
 export default function NarrowedWrites() {
   const count = ref<number | null>(null);
@@ -1226,7 +1226,7 @@ export default function NarrowedWrites() {
   );
 }
 `,
-  NarrowedReads: `import { computed, defineEmits, ref, watch } from "@uxfront/unframework";
+	NarrowedReads: `import { computed, defineEmits, ref, watch } from "@uxfront/unframework";
 
 interface Member {
   id: number;
@@ -1340,9 +1340,9 @@ export default function NarrowedReads({ owner, members }: NarrowedReadsProps) {
   );
 }
 `,
-  // Branches whose tests narrow nothing, read as everywhere else (a comparison, a value whose
-  // type has no union), beside one a literal union narrows: L4 checks the plain reads.
-  PlainBranches: `import { computed, ref } from "@uxfront/unframework";
+	// Branches whose tests narrow nothing, read as everywhere else (a comparison, a value whose
+	// type has no union), beside one a literal union narrows: L4 checks the plain reads.
+	PlainBranches: `import { computed, ref } from "@uxfront/unframework";
 
 type Tone = "info" | "warning";
 
@@ -1380,9 +1380,9 @@ export default function PlainBranches({ count, tags, tone, member }: PlainBranch
   );
 }
 `,
-  // Branches narrowed on state, whose \`when\` reads each signal once, and a handler inside a
-  // narrowed branch, which reads the branch's accessor.
-  NarrowedState: `import { defineEmits, ref } from "@uxfront/unframework";
+	// Branches narrowed on state, whose \`when\` reads each signal once, and a handler inside a
+	// narrowed branch, which reads the branch's accessor.
+	NarrowedState: `import { defineEmits, ref } from "@uxfront/unframework";
 
 interface User {
   name: string;
@@ -1418,9 +1418,9 @@ export default function NarrowedState({ member }: NarrowedStateProps) {
   );
 }
 `,
-  // A keyed branch (its expressions narrow its value further) gives plain names, which an
-  // interpolated conditional prints as \`<Show>\` (\`solid/prefer-show\`).
-  KeyedNames: `export default function KeyedNames({ nick, user }: { nick?: string; user?: { name?: string } }) {
+	// A keyed branch (its expressions narrow its value further) gives plain names, which an
+	// interpolated conditional prints as \`<Show>\` (\`solid/prefer-show\`).
+	KeyedNames: `export default function KeyedNames({ nick, user }: { nick?: string; user?: { name?: string } }) {
   return (
     <div>
       {nick && <p>{nick.length > 2 ? nick : "-"}</p>}
@@ -1429,11 +1429,11 @@ export default function NarrowedState({ member }: NarrowedStateProps) {
   );
 }
 `,
-  // Composition's forms the corpus does not reach (src/composition.ts, src/models.ts): slots
-  // tested in a condition and in an attribute, a required model, text models that may be
-  // nullish, a `<textarea>` with a modifier, a root spread's `class`, and a `<select>`'s options
-  // in a conditional and without a `value`.
-  TestedSlots: `import { defineSlots } from "@uxfront/unframework";
+	// Composition's forms the corpus does not reach (src/composition.ts, src/models.ts): slots
+	// tested in a condition and in an attribute, a required model, text models that may be
+	// nullish, a `<textarea>` with a modifier, a root spread's `class`, and a `<select>`'s options
+	// in a conditional and without a `value`.
+	TestedSlots: `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function TestedSlots() {
@@ -1446,7 +1446,7 @@ export default function TestedSlots() {
   );
 }
 `,
-  RequiredModel: `import { defineModel } from "@uxfront/unframework";
+	RequiredModel: `import { defineModel } from "@uxfront/unframework";
 
 export default function RequiredModel() {
   const text = defineModel<string>("text", { required: true });
@@ -1457,7 +1457,7 @@ export default function RequiredModel() {
   );
 }
 `,
-  NullableFields: `import { ref } from "@uxfront/unframework";
+	NullableFields: `import { ref } from "@uxfront/unframework";
 
 export default function NullableFields() {
   const name = ref<string | null>(null);
@@ -1472,11 +1472,11 @@ export default function NullableFields() {
   );
 }
 `,
-  SpreadRoot: `export default function SpreadRoot({ attrs }: { attrs: { class: string; title: string } }) {
+	SpreadRoot: `export default function SpreadRoot({ attrs }: { attrs: { class: string; title: string } }) {
   return <div {...attrs}>x</div>;
 }
 `,
-  ConditionalOptions: `import { ref } from "@uxfront/unframework";
+	ConditionalOptions: `import { ref } from "@uxfront/unframework";
 
 export default function ConditionalOptions({ extra }: { extra: boolean }) {
   const size = ref("l");
@@ -1495,10 +1495,10 @@ export default function ConditionalOptions({ extra }: { extra: boolean }) {
   );
 }
 `,
-  // Slots a list's row tests, a tested slot the component forwards, options matched by an
-  // interpolated text, options a child component renders, and a modified textarea whose model
-  // may be nullish (test/composition.browser.test.ts mounts the first four).
-  RowSlots: `import { defineSlots } from "@uxfront/unframework";
+	// Slots a list's row tests, a tested slot the component forwards, options matched by an
+	// interpolated text, options a child component renders, and a modified textarea whose model
+	// may be nullish (test/composition.browser.test.ts mounts the first four).
+	RowSlots: `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function RowSlots({ items }: { items: string[] }) {
@@ -1515,7 +1515,7 @@ export default function RowSlots({ items }: { items: string[] }) {
   );
 }
 `,
-  KeyedRows: `export interface Row {
+	KeyedRows: `export interface Row {
   id: number;
   label: string;
 }
@@ -1532,7 +1532,7 @@ export default function KeyedRows({ rows }: { rows: Row[] }) {
   );
 }
 `,
-  ForwardedSlot: `import { defineSlots } from "@uxfront/unframework";
+	ForwardedSlot: `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function ForwardedSlot({ depth }: { depth: number }) {
@@ -1546,7 +1546,7 @@ export default function ForwardedSlot({ depth }: { depth: number }) {
   );
 }
 `,
-  OptionText: `import { ref } from "@uxfront/unframework";
+	OptionText: `import { ref } from "@uxfront/unframework";
 
 export default function OptionText({ unit }: { unit: string }) {
   const amount = ref("2 kg");
@@ -1558,7 +1558,7 @@ export default function OptionText({ unit }: { unit: string }) {
   );
 }
 `,
-  SelectRows: `import { ref } from "@uxfront/unframework";
+	SelectRows: `import { ref } from "@uxfront/unframework";
 
 export default function SelectRows({ values }: { values: string[] }) {
   const size = ref("y");
@@ -1575,10 +1575,10 @@ function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;
 }
 `,
-  // A parent that writes its child's prop, then awaits `nextTick()`: the child's watcher of the
-  // prop has run by then, as on Vue, though the child's scheduler only learns of the write when
-  // Solid flushes it (test/behaviour.browser.test.ts mounts it).
-  TickParent: `import { defineEmits, nextTick, ref, watch } from "@uxfront/unframework";
+	// A parent that writes its child's prop, then awaits `nextTick()`: the child's watcher of the
+	// prop has run by then, as on Vue, though the child's scheduler only learns of the write when
+	// Solid flushes it (test/behaviour.browser.test.ts mounts it).
+	TickParent: `import { defineEmits, nextTick, ref, watch } from "@uxfront/unframework";
 
 export default function TickParent() {
   const emit = defineEmits<{ checked: [seen: number] }>();
@@ -1610,8 +1610,8 @@ function TickChild({ count }: { count: number }) {
   return <output>{count}</output>;
 }
 `,
-  // TickParent's child, as its own output file imports it.
-  TickChild: `import { defineEmits, watch } from "@uxfront/unframework";
+	// TickParent's child, as its own output file imports it.
+	TickChild: `import { defineEmits, watch } from "@uxfront/unframework";
 
 export function TickChild({ count }: { count: number }) {
   const emit = defineEmits<{ seen: [value: number] }>();
@@ -1622,29 +1622,29 @@ export function TickChild({ count }: { count: number }) {
   return <output>{count}</output>;
 }
 `,
-  // SelectRows's child, as its own output file imports it.
-  SelectRow: `export function SelectRow({ value }: { value: string }) {
+	// SelectRows's child, as its own output file imports it.
+	SelectRow: `export function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;
 }
 `,
-  NullableArea: `import { ref } from "@uxfront/unframework";
+	NullableArea: `import { ref } from "@uxfront/unframework";
 
 export default function NullableArea() {
   const note = ref<string>();
   return <textarea aria-label="Note" v-model_trim={note.value} />;
 }
 `,
-  // A number field that recasts its text once it changes, and a `<select>` whose state matches
-  // none of its options, as Vue's `vModelText` and `vModelSelect` do
-  // (test/composition.browser.test.ts mounts both).
-  NumberText: `import { ref } from "@uxfront/unframework";
+	// A number field that recasts its text once it changes, and a `<select>` whose state matches
+	// none of its options, as Vue's `vModelText` and `vModelSelect` do
+	// (test/composition.browser.test.ts mounts both).
+	NumberText: `import { ref } from "@uxfront/unframework";
 
 export default function NumberText() {
   const weight = ref(1);
   return <input aria-label="Weight" v-model_number={weight.value} />;
 }
 `,
-  UnmatchedSelect: `import { ref } from "@uxfront/unframework";
+	UnmatchedSelect: `import { ref } from "@uxfront/unframework";
 
 export default function UnmatchedSelect() {
   const size = ref("xl");
@@ -1664,9 +1664,9 @@ export default function UnmatchedSelect() {
   );
 }
 `,
-  // A `<select>` whose selected option leaves its list while the state stays
-  // (test/composition.browser.test.ts mounts it).
-  ListedSelect: `import { ref } from "@uxfront/unframework";
+	// A `<select>` whose selected option leaves its list while the state stays
+	// (test/composition.browser.test.ts mounts it).
+	ListedSelect: `import { ref } from "@uxfront/unframework";
 
 export default function ListedSelect() {
   const size = ref("m");
@@ -1687,8 +1687,8 @@ export default function ListedSelect() {
   );
 }
 `,
-  // A template ref beside a `v-model` that needs the element's `ref` too: one `ref` callback.
-  TemplateRefModel: `import { ref, useTemplateRef } from "@uxfront/unframework";
+	// A template ref beside a `v-model` that needs the element's `ref` too: one `ref` callback.
+	TemplateRefModel: `import { ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function TemplateRefModel() {
   const box = useTemplateRef<HTMLInputElement>();
@@ -1703,7 +1703,7 @@ export default function TemplateRefModel() {
   );
 }
 `,
-  RefSelect: `import { ref, useTemplateRef } from "@uxfront/unframework";
+	RefSelect: `import { ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function RefSelect({ values }: { values: string[] }) {
   const field = useTemplateRef<HTMLSelectElement>();
@@ -1726,7 +1726,7 @@ function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;
 }
 `,
-  RefMarkedSelect: `import { ref, useTemplateRef } from "@uxfront/unframework";
+	RefMarkedSelect: `import { ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function RefMarkedSelect() {
   const field = useTemplateRef<HTMLSelectElement>();
@@ -1744,11 +1744,11 @@ export default function RefMarkedSelect() {
   );
 }
 `,
-  // What falls through (ADR-0118): a root with a declared prop named like an attribute, a
-  // declared event named like a DOM one, its own listeners, a template ref and a model's listener;
-  // a rest spread on an inner element with a listener and a class of its own; and a root
-  // without fallthrough whose own `ref` callback hands the consumer's the element too.
-  FallthroughChip: `import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
+	// What falls through (ADR-0118): a root with a declared prop named like an attribute, a
+	// declared event named like a DOM one, its own listeners, a template ref and a model's listener;
+	// a rest spread on an inner element with a listener and a class of its own; and a root
+	// without fallthrough whose own `ref` callback hands the consumer's the element too.
+	FallthroughChip: `import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function FallthroughChip({ title, label }: { title: string; label: string }) {
   const emit = defineEmits<{ click: [label: string]; pick: [] }>();
@@ -1776,7 +1776,7 @@ export default function FallthroughChip({ title, label }: { title: string; label
   );
 }
 `,
-  FallthroughField: `import { defineOptions, ref } from "@uxfront/unframework";
+	FallthroughField: `import { defineOptions, ref } from "@uxfront/unframework";
 
 export default function FallthroughField({ label, ...rest }: { label: string }) {
   defineOptions({ inheritAttrs: false });
@@ -1795,9 +1795,9 @@ export default function FallthroughField({ label, ...rest }: { label: string }) 
   );
 }
 `,
-  // A consumer of a child that exposes nothing: its ref holds the child's root, and the
-  // attributes and listeners the child does not declare type-check against that root's.
-  FallthroughForm: `import { ref, useTemplateRef } from "@uxfront/unframework";
+	// A consumer of a child that exposes nothing: its ref holds the child's root, and the
+	// attributes and listeners the child does not declare type-check against that root's.
+	FallthroughForm: `import { ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function FallthroughForm() {
   const name = useTemplateRef<HTMLInputElement>();
@@ -1822,12 +1822,12 @@ function FallthroughInput({ label }: { label: string }) {
   return <input aria-label={label} onKeydown={(event) => event.stopPropagation()} />;
 }
 `,
-  // FallthroughForm's child, as its own output file imports it.
-  FallthroughInput: `export function FallthroughInput({ label }: { label: string }) {
+	// FallthroughForm's child, as its own output file imports it.
+	FallthroughInput: `export function FallthroughInput({ label }: { label: string }) {
   return <input aria-label={label} onKeydown={(event) => event.stopPropagation()} />;
 }
 `,
-  FallthroughRoot: `import { defineOptions, onMounted, useTemplateRef } from "@uxfront/unframework";
+	FallthroughRoot: `import { defineOptions, onMounted, useTemplateRef } from "@uxfront/unframework";
 
 export default function FallthroughRoot({ label }: { label: string }) {
   defineOptions({ inheritAttrs: false });

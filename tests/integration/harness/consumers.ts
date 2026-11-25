@@ -22,19 +22,19 @@ export type ConsumerKind = "prop" | "event" | "model" | "slot" | "type";
 
 /** One `@uf-expect` directive. */
 export interface Expectation {
-  /** The misuse's line (1-based): the line after the directive. */
-  line: number;
-  /** The checker's code, `TS2322` or an `NG` code. */
-  code: string;
-  /** The declaration the misuse breaks, `FileRow.prop:path`. */
-  declaration: string;
-  kind: ConsumerKind;
+	/** The misuse's line (1-based): the line after the directive. */
+	line: number;
+	/** The checker's code, `TS2322` or an `NG` code. */
+	code: string;
+	/** The declaration the misuse breaks, `FileRow.prop:path`. */
+	declaration: string;
+	kind: ConsumerKind;
 }
 
 /** A fixture, and the file the checker read for it: itself, or its copy under a canary. */
 export interface Fixture {
-  path: string;
-  checked: string;
+	path: string;
+	checked: string;
 }
 
 /**
@@ -52,54 +52,54 @@ export type ConsumerGap = ConsumerKind | "named-slot" | "generic-slot-props" | "
  * table). A directive that names one fails: a gap is declared, never filled with a weaker check.
  */
 export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = {
-  angular: {
-    "generic-slot-props":
-      "Angular infers a component's type parameter from its inputs alone, so a slot directive's context takes the parameter's constraint, or `any` without one (UF4004, ADR-0068)",
-  },
-  astro: {
-    event: "Astro has no events: its `interactivity` cell is unsupported",
-    "named-slot": "Astro does not type a named slot without props, which renders through `<slot>`",
-  },
-  solid: {
-    "model-setter":
-      "Solid's setter of a signal (`onValueChange={setCount}`) is assignable to any model's change callback: only the model's value is checked",
-  },
-  solid2: {
-    "model-setter":
-      "Solid's setter of a signal (`onValueChange={setCount}`) is assignable to any model's change callback: only the model's value is checked",
-  },
+	angular: {
+		"generic-slot-props":
+			"Angular infers a component's type parameter from its inputs alone, so a slot directive's context takes the parameter's constraint, or `any` without one (UF4004, ADR-0068)",
+	},
+	astro: {
+		event: "Astro has no events: its `interactivity` cell is unsupported",
+		"named-slot": "Astro does not type a named slot without props, which renders through `<slot>`",
+	},
+	solid: {
+		"model-setter":
+			"Solid's setter of a signal (`onValueChange={setCount}`) is assignable to any model's change callback: only the model's value is checked",
+	},
+	solid2: {
+		"model-setter":
+			"Solid's setter of a signal (`onValueChange={setCount}`) is assignable to any model's change callback: only the model's value is checked",
+	},
 };
 
 /** A whole directive line: nothing may follow it but the end of an HTML comment. */
 const DIRECTIVE =
-  /@uf-expect\s+((?:TS|NG)\d+)\s+([A-Z][A-Za-z0-9]*)\.(prop|event|model|slot|type):([A-Za-z][A-Za-z0-9]*)\s*(?:-->)?\s*$/;
+	/@uf-expect\s+((?:TS|NG)\d+)\s+([A-Z][A-Za-z0-9]*)\.(prop|event|model|slot|type):([A-Za-z][A-Za-z0-9]*)\s*(?:-->)?\s*$/;
 
 /** A target's consumer fixtures: `tests/toolchains/<target>/consumers`. */
 export function consumersDir(target: string): string {
-  return join(toolchainDir(target), "consumers");
+	return join(toolchainDir(target), "consumers");
 }
 
 /** The cases a target has consumer fixtures for, as `area/name`, sorted. */
 export function consumerCases(target: string): Array<string> {
-  const root = consumersDir(target);
-  if (!existsSync(root)) {
-    return [];
-  }
-  return directories(root).flatMap((area) =>
-    directories(join(root, area)).map((name) => `${area}/${name}`),
-  );
+	const root = consumersDir(target);
+	if (!existsSync(root)) {
+		return [];
+	}
+	return directories(root).flatMap((area) =>
+		directories(join(root, area)).map((name) => `${area}/${name}`),
+	);
 }
 
 /** A case's consumer fixtures for a target (absolute paths, sorted): none without a tree. */
 export function consumerFixtures(target: string, caseId: string): Array<string> {
-  const directory = join(consumersDir(target), ...caseId.split("/"));
-  if (!existsSync(directory)) {
-    return [];
-  }
-  return readdirSync(directory)
-    .toSorted()
-    .map((entry) => join(directory, entry))
-    .filter((path) => statSync(path).isFile());
+	const directory = join(consumersDir(target), ...caseId.split("/"));
+	if (!existsSync(directory)) {
+		return [];
+	}
+	return readdirSync(directory)
+		.toSorted()
+		.map((entry) => join(directory, entry))
+		.filter((path) => statSync(path).isFile());
 }
 
 /**
@@ -108,46 +108,46 @@ export function consumerFixtures(target: string, caseId: string): Array<string> 
  * relative path to the cases directory is the one thing a copy changes, so its lines stay put.
  */
 export function copyFixtures(
-  fixtures: ReadonlyArray<string>,
-  root: string,
-  caseId: string,
+	fixtures: ReadonlyArray<string>,
+	root: string,
+	caseId: string,
 ): Array<Fixture> {
-  return fixtures.map((path) => {
-    const checked = join(root, "consumers", ...caseId.split("/"), basename(path));
-    const from = posix(relative(dirname(path), CASES_DIR));
-    const to = posix(relative(dirname(checked), join(root, "cases")));
-    mkdirSync(dirname(checked), { recursive: true });
-    writeFileSync(checked, readFileSync(path, "utf8").replaceAll(`"${from}/`, `"${to}/`));
-    return { path, checked };
-  });
+	return fixtures.map((path) => {
+		const checked = join(root, "consumers", ...caseId.split("/"), basename(path));
+		const from = posix(relative(dirname(path), CASES_DIR));
+		const to = posix(relative(dirname(checked), join(root, "cases")));
+		mkdirSync(dirname(checked), { recursive: true });
+		writeFileSync(checked, readFileSync(path, "utf8").replaceAll(`"${from}/`, `"${to}/`));
+		return { path, checked };
+	});
 }
 
 /** A fixture's directives, and the lines of every `@uf-expect` that does not read as one. */
 export function readExpectations(contents: string): {
-  expectations: Array<Expectation>;
-  malformed: Array<number>;
+	expectations: Array<Expectation>;
+	malformed: Array<number>;
 } {
-  const expectations: Array<Expectation> = [];
-  const malformed: Array<number> = [];
-  contents.split(/\r?\n/).forEach((text, index) => {
-    if (!text.includes("@uf-expect")) {
-      return;
-    }
-    // One directive a line: a second would claim the same misuse line.
-    const match = text.split("@uf-expect").length === 2 ? DIRECTIVE.exec(text) : null;
-    if (!match) {
-      malformed.push(index + 1);
-      return;
-    }
-    const [, code, component, kind, name] = match;
-    expectations.push({
-      line: index + 2,
-      code: code!,
-      declaration: `${component!}.${kind!}:${name!}`,
-      kind: kind as ConsumerKind,
-    });
-  });
-  return { expectations, malformed };
+	const expectations: Array<Expectation> = [];
+	const malformed: Array<number> = [];
+	contents.split(/\r?\n/).forEach((text, index) => {
+		if (!text.includes("@uf-expect")) {
+			return;
+		}
+		// One directive a line: a second would claim the same misuse line.
+		const match = text.split("@uf-expect").length === 2 ? DIRECTIVE.exec(text) : null;
+		if (!match) {
+			malformed.push(index + 1);
+			return;
+		}
+		const [, code, component, kind, name] = match;
+		expectations.push({
+			line: index + 2,
+			code: code!,
+			declaration: `${component!}.${kind!}:${name!}`,
+			kind: kind as ConsumerKind,
+		});
+	});
+	return { expectations, malformed };
 }
 
 /**
@@ -156,55 +156,55 @@ export function readExpectations(contents: string): {
  * case's IR that the target can check (`gaps`, {@link CONSUMER_GAPS} by default).
  */
 export function consumerProblems(
-  target: string,
-  info: Pick<CaseInfo, "id" | "dir">,
-  fixtures: ReadonlyArray<Fixture>,
-  results: ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>,
-  gaps: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = CONSUMER_GAPS,
+	target: string,
+	info: Pick<CaseInfo, "id" | "dir">,
+	fixtures: ReadonlyArray<Fixture>,
+	results: ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>,
+	gaps: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = CONSUMER_GAPS,
 ): Array<string> {
-  if (!fixtures.length) {
-    return [];
-  }
-  const declarations = caseDeclarations(info);
-  return fixtures.flatMap(({ path, checked }) => {
-    const shown = posix(relative(REPO_ROOT, path));
-    const messages = results.get(checked);
-    if (!messages) {
-      return [`${shown}: the checker reported nothing for this file.`];
-    }
-    const { expectations, malformed } = readExpectations(readFileSync(path, "utf8"));
-    const problems = malformed.map(
-      (line) =>
-        `${shown}:${line}: a directive reads \`@uf-expect <code> <Component>.<prop|event|model|slot|type>:<name>\`.`,
-    );
-    for (const { line, code, declaration, kind } of expectations) {
-      const found = declarations.get(declaration);
-      const source = found?.at;
-      const own = gaps[target] ?? {};
-      const part = found?.part;
-      const gap = own[kind] ?? (part === undefined ? undefined : own[part]);
-      if (gap) {
-        const what = own[kind] ? kind : part!;
-        problems.push(
-          `${shown}:${line}: ${target} cannot check a component's ${what.endsWith("s") ? what : `${what}s`} (${gap}).`,
-        );
-      } else if (!source) {
-        problems.push(`${shown}:${line}: ${declaration} is not declared in ${info.id}'s IR.`);
-      } else if (!messages.some((message) => message.code === code && message.line === line)) {
-        problems.push(
-          `${shown}:${line}: expected ${code} for ${declaration} (${source}), got none`,
-        );
-      }
-    }
-    for (const message of messages) {
-      if (expectations.some(({ code, line }) => message.code === code && message.line === line)) {
-        continue;
-      }
-      const at = message.line === undefined ? "" : `:${message.line}`;
-      problems.push(`${shown}${at}: unexpected ${message.code ?? "diagnostic"} ${message.message}`);
-    }
-    return problems;
-  });
+	if (!fixtures.length) {
+		return [];
+	}
+	const declarations = caseDeclarations(info);
+	return fixtures.flatMap(({ path, checked }) => {
+		const shown = posix(relative(REPO_ROOT, path));
+		const messages = results.get(checked);
+		if (!messages) {
+			return [`${shown}: the checker reported nothing for this file.`];
+		}
+		const { expectations, malformed } = readExpectations(readFileSync(path, "utf8"));
+		const problems = malformed.map(
+			(line) =>
+				`${shown}:${line}: a directive reads \`@uf-expect <code> <Component>.<prop|event|model|slot|type>:<name>\`.`,
+		);
+		for (const { line, code, declaration, kind } of expectations) {
+			const found = declarations.get(declaration);
+			const source = found?.at;
+			const own = gaps[target] ?? {};
+			const part = found?.part;
+			const gap = own[kind] ?? (part === undefined ? undefined : own[part]);
+			if (gap) {
+				const what = own[kind] ? kind : part!;
+				problems.push(
+					`${shown}:${line}: ${target} cannot check a component's ${what.endsWith("s") ? what : `${what}s`} (${gap}).`,
+				);
+			} else if (!source) {
+				problems.push(`${shown}:${line}: ${declaration} is not declared in ${info.id}'s IR.`);
+			} else if (!messages.some((message) => message.code === code && message.line === line)) {
+				problems.push(
+					`${shown}:${line}: expected ${code} for ${declaration} (${source}), got none`,
+				);
+			}
+		}
+		for (const message of messages) {
+			if (expectations.some(({ code, line }) => message.code === code && message.line === line)) {
+				continue;
+			}
+			const at = message.line === undefined ? "" : `:${message.line}`;
+			problems.push(`${shown}${at}: unexpected ${message.code ?? "diagnostic"} ${message.message}`);
+		}
+		return problems;
+	});
 }
 
 /**
@@ -216,50 +216,50 @@ export function consumerProblems(
  * module it comes from, `types.ts:2`.
  */
 function caseDeclarations(
-  info: Pick<CaseInfo, "dir">,
+	info: Pick<CaseInfo, "dir">,
 ): Map<string, { at: string; part?: Exclude<ConsumerGap, ConsumerKind> }> {
-  const directory = join(info.dir, "__output__");
-  const declarations = new Map<string, { at: string; part?: Exclude<ConsumerGap, ConsumerKind> }>();
-  const snapshots = existsSync(directory)
-    ? readdirSync(directory).filter((entry) => /^ir(?:\.[^.]+)?\.json$/.test(entry))
-    : [];
-  for (const snapshot of snapshots.toSorted()) {
-    const module = JSON.parse(readFileSync(join(directory, snapshot), "utf8")) as UfModule;
-    const file = basename(module.file);
-    const source = readFileSync(join(info.dir, file), "utf8");
-    const at = (offset: number) => `${file}:${source.slice(0, offset).split("\n").length}`;
-    const exported = exportedTypes(info, module, at);
-    for (const component of module.components) {
-      for (const [name, where] of exported) {
-        declarations.set(`${component.name}.type:${name}`, { at: where });
-      }
-      for (const prop of component.props) {
-        declarations.set(`${component.name}.prop:${prop.name}`, { at: at(prop.span.start) });
-      }
-      for (const event of component.emits?.events ?? []) {
-        declarations.set(`${component.name}.event:${event.name}`, { at: at(event.span.start) });
-      }
-      for (const item of component.setup) {
-        if (item.kind !== "Model") {
-          continue;
-        }
-        declarations.set(`${component.name}.model:${item.name}`, { at: at(item.span.start) });
-      }
-      const typeParameters = new Set(component.typeParameters?.map(({ name }) => name));
-      for (const slot of component.slots?.slots ?? []) {
-        const generic = slot.references?.some((name) => typeParameters.has(name));
-        declarations.set(`${component.name}.slot:${slot.name}`, {
-          at: at(slot.span.start),
-          ...(!slot.props
-            ? { part: "named-slot" as const }
-            : generic
-              ? { part: "generic-slot-props" as const }
-              : {}),
-        });
-      }
-    }
-  }
-  return declarations;
+	const directory = join(info.dir, "__output__");
+	const declarations = new Map<string, { at: string; part?: Exclude<ConsumerGap, ConsumerKind> }>();
+	const snapshots = existsSync(directory)
+		? readdirSync(directory).filter((entry) => /^ir(?:\.[^.]+)?\.json$/.test(entry))
+		: [];
+	for (const snapshot of snapshots.toSorted()) {
+		const module = JSON.parse(readFileSync(join(directory, snapshot), "utf8")) as UfModule;
+		const file = basename(module.file);
+		const source = readFileSync(join(info.dir, file), "utf8");
+		const at = (offset: number) => `${file}:${source.slice(0, offset).split("\n").length}`;
+		const exported = exportedTypes(info, module, at);
+		for (const component of module.components) {
+			for (const [name, where] of exported) {
+				declarations.set(`${component.name}.type:${name}`, { at: where });
+			}
+			for (const prop of component.props) {
+				declarations.set(`${component.name}.prop:${prop.name}`, { at: at(prop.span.start) });
+			}
+			for (const event of component.emits?.events ?? []) {
+				declarations.set(`${component.name}.event:${event.name}`, { at: at(event.span.start) });
+			}
+			for (const item of component.setup) {
+				if (item.kind !== "Model") {
+					continue;
+				}
+				declarations.set(`${component.name}.model:${item.name}`, { at: at(item.span.start) });
+			}
+			const typeParameters = new Set(component.typeParameters?.map(({ name }) => name));
+			for (const slot of component.slots?.slots ?? []) {
+				const generic = slot.references?.some((name) => typeParameters.has(name));
+				declarations.set(`${component.name}.slot:${slot.name}`, {
+					at: at(slot.span.start),
+					...(!slot.props
+						? { part: "named-slot" as const }
+						: generic
+							? { part: "generic-slot-props" as const }
+							: {}),
+				});
+			}
+		}
+	}
+	return declarations;
 }
 
 /**
@@ -268,48 +268,48 @@ function caseDeclarations(
  * declaration in the case's module it names (`./types` is `types.ts`), or else the re-export's.
  */
 function exportedTypes(
-  info: Pick<CaseInfo, "dir">,
-  module: UfModule,
-  at: (offset: number) => string,
+	info: Pick<CaseInfo, "dir">,
+	module: UfModule,
+	at: (offset: number) => string,
 ): Map<string, string> {
-  const types = new Map<string, string>();
-  for (const declaration of module.types) {
-    if (declaration.exported) {
-      types.set(declaration.name, at(declaration.span.start));
-    }
-  }
-  for (const typeExport of module.typeExports ?? []) {
-    if (typeExport.kind === "Declaration") {
-      types.set(typeExport.name, at(typeExport.span.start));
-      continue;
-    }
-    const from = [typeExport.specifier, `${typeExport.specifier}.ts`]
-      .map((specifier) => join(info.dir, specifier))
-      .find((path) => existsSync(path) && statSync(path).isFile());
-    const text = from === undefined ? undefined : readFileSync(from, "utf8");
-    for (const name of typeExport.names) {
-      const line = text
-        ?.split("\n")
-        .findIndex((each) =>
-          new RegExp(`^(?:export\\s+)?(?:interface|type)\\s+${name.imported}\\b`).test(each),
-        );
-      types.set(
-        name.exported,
-        from !== undefined && line !== undefined && line !== -1
-          ? `${basename(from)}:${line + 1}`
-          : at(name.span.start),
-      );
-    }
-  }
-  return types;
+	const types = new Map<string, string>();
+	for (const declaration of module.types) {
+		if (declaration.exported) {
+			types.set(declaration.name, at(declaration.span.start));
+		}
+	}
+	for (const typeExport of module.typeExports ?? []) {
+		if (typeExport.kind === "Declaration") {
+			types.set(typeExport.name, at(typeExport.span.start));
+			continue;
+		}
+		const from = [typeExport.specifier, `${typeExport.specifier}.ts`]
+			.map((specifier) => join(info.dir, specifier))
+			.find((path) => existsSync(path) && statSync(path).isFile());
+		const text = from === undefined ? undefined : readFileSync(from, "utf8");
+		for (const name of typeExport.names) {
+			const line = text
+				?.split("\n")
+				.findIndex((each) =>
+					new RegExp(`^(?:export\\s+)?(?:interface|type)\\s+${name.imported}\\b`).test(each),
+				);
+			types.set(
+				name.exported,
+				from !== undefined && line !== undefined && line !== -1
+					? `${basename(from)}:${line + 1}`
+					: at(name.span.start),
+			);
+		}
+	}
+	return types;
 }
 
 function directories(path: string): Array<string> {
-  return readdirSync(path)
-    .filter((entry) => statSync(join(path, entry)).isDirectory())
-    .toSorted();
+	return readdirSync(path)
+		.filter((entry) => statSync(join(path, entry)).isDirectory())
+		.toSorted();
 }
 
 function posix(path: string): string {
-  return path.split(sep).join("/");
+	return path.split(sep).join("/");
 }

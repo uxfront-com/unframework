@@ -7,14 +7,14 @@ import type { ParenthesesSlot } from "../rewrite.ts";
 const at = { start: 0, end: 0 } as const;
 
 interface Slot {
-  /** The placeholder node: its name is set on each attempt to print. */
-  node: { name: string };
-  /** The code it stands for, parenthesised where needed. */
-  code: string;
-  /** Whether it stands for statements, whose placeholder oxc-codegen ends with a `;`. */
-  statements: boolean;
-  /** Whether its code ends with a line comment, which must not swallow what follows. */
-  lineComment: boolean;
+	/** The placeholder node: its name is set on each attempt to print. */
+	node: { name: string };
+	/** The code it stands for, parenthesised where needed. */
+	code: string;
+	/** Whether it stands for statements, whose placeholder oxc-codegen ends with a `;`. */
+	statements: boolean;
+	/** Whether its code ends with a line comment, which must not swallow what follows. */
+	lineComment: boolean;
 }
 
 /**
@@ -29,148 +29,148 @@ interface Slot {
  * text of the output (a string, a copied declaration) can be mistaken for one.
  */
 export class Placeholders {
-  readonly #slots: Array<Slot> = [];
+	readonly #slots: Array<Slot> = [];
 
-  /**
-   * An expression slot holding `code`, which must be exactly one expression (it is parsed to
-   * check that: anything else throws, as a compiler bug). It is wrapped in parentheses when
-   * `slot` needs them (`argument` by default: see `ParenthesesSlot`), and a trailing line
-   * comment gets a line break so it cannot swallow what follows.
-   */
-  expression(code: string, slot: ParenthesesSlot = "argument"): AST.IdentifierReference {
-    const { expression, comments } = parseExpressionSource(code);
-    let text = code;
-    if (comments.some((comment) => comment.type === "Line" && comment.end === code.length)) {
-      text = `${text}\n`;
-    }
-    if (parenthesesNeeded(expression, code, slot)) {
-      text = `(${text})`;
-    }
-    return this.#add(text);
-  }
+	/**
+	 * An expression slot holding `code`, which must be exactly one expression (it is parsed to
+	 * check that: anything else throws, as a compiler bug). It is wrapped in parentheses when
+	 * `slot` needs them (`argument` by default: see `ParenthesesSlot`), and a trailing line
+	 * comment gets a line break so it cannot swallow what follows.
+	 */
+	expression(code: string, slot: ParenthesesSlot = "argument"): AST.IdentifierReference {
+		const { expression, comments } = parseExpressionSource(code);
+		let text = code;
+		if (comments.some((comment) => comment.type === "Line" && comment.end === code.length)) {
+			text = `${text}\n`;
+		}
+		if (parenthesesNeeded(expression, code, slot)) {
+			text = `(${text})`;
+		}
+		return this.#add(text);
+	}
 
-  /**
-   * A type slot holding a type as the source writes it (a props annotation, an inline object
-   * type), in a position that takes any type: an annotation or a type argument.
-   */
-  type(code: string): AST.TSTypeReference {
-    return {
-      type: "TSTypeReference",
-      typeName: this.#add(code),
-      typeArguments: null,
-      ...at,
-    };
-  }
+	/**
+	 * A type slot holding a type as the source writes it (a props annotation, an inline object
+	 * type), in a position that takes any type: an annotation or a type argument.
+	 */
+	type(code: string): AST.TSTypeReference {
+		return {
+			type: "TSTypeReference",
+			typeName: this.#add(code),
+			typeArguments: null,
+			...at,
+		};
+	}
 
-  /**
-   * A parameter slot holding one parameter as the source writes it (`event: MouseEvent`,
-   * `[unit]: string[] = ["x"]`, `...rest: string[]`, from `parameterText`), for a function a
-   * target builds (a method). It must be exactly one parameter: anything else throws.
-   */
-  parameter(code: string): AST.BindingIdentifier {
-    const { statements } = parseStatementsSource(`(${code}) => {};`);
-    const [statement] = statements;
-    const arrow =
-      statement?.type === "ExpressionStatement" &&
-      statement.expression.type === "ArrowFunctionExpression"
-        ? statement.expression
-        : undefined;
-    if (statements.length !== 1 || arrow?.params.length !== 1) {
-      throw new Error(`Cannot parse \`${code}\` as one parameter.`);
-    }
-    return this.#add(code);
-  }
+	/**
+	 * A parameter slot holding one parameter as the source writes it (`event: MouseEvent`,
+	 * `[unit]: string[] = ["x"]`, `...rest: string[]`, from `parameterText`), for a function a
+	 * target builds (a method). It must be exactly one parameter: anything else throws.
+	 */
+	parameter(code: string): AST.BindingIdentifier {
+		const { statements } = parseStatementsSource(`(${code}) => {};`);
+		const [statement] = statements;
+		const arrow =
+			statement?.type === "ExpressionStatement" &&
+			statement.expression.type === "ArrowFunctionExpression"
+				? statement.expression
+				: undefined;
+		if (statements.length !== 1 || arrow?.params.length !== 1) {
+			throw new Error(`Cannot parse \`${code}\` as one parameter.`);
+		}
+		return this.#add(code);
+	}
 
-  /**
-   * A statement slot holding a list of statements as the source writes them (a function's
-   * body without its braces, `functionBodyText`), for a body a target builds (a method, a
-   * hook's callback). It is parsed to check it, as an expression is. The last statement gets the
-   * semicolon it may lack, so a statement printed after it cannot continue it (`f()` before
-   * `(a)` would be one call), and a trailing line comment gets a line break unless one follows.
-   */
-  statements(code: string): AST.ExpressionStatement {
-    const { statements, comments } = parseStatementsSource(code);
-    let text = code;
-    const last = statements.at(-1);
-    if (last && UNTERMINATED.has(last.type) && code[last.end - 1] !== ";") {
-      text = `${code.slice(0, last.end)};${code.slice(last.end)}`;
-    }
-    const lineComment = comments.some(
-      (comment) => comment.type === "Line" && comment.end === code.length,
-    );
-    const node = this.#add(text, { statements: true, lineComment });
-    return { type: "ExpressionStatement", expression: node, ...at };
-  }
+	/**
+	 * A statement slot holding a list of statements as the source writes them (a function's
+	 * body without its braces, `functionBodyText`), for a body a target builds (a method, a
+	 * hook's callback). It is parsed to check it, as an expression is. The last statement gets the
+	 * semicolon it may lack, so a statement printed after it cannot continue it (`f()` before
+	 * `(a)` would be one call), and a trailing line comment gets a line break unless one follows.
+	 */
+	statements(code: string): AST.ExpressionStatement {
+		const { statements, comments } = parseStatementsSource(code);
+		let text = code;
+		const last = statements.at(-1);
+		if (last && UNTERMINATED.has(last.type) && code[last.end - 1] !== ";") {
+			text = `${code.slice(0, last.end)};${code.slice(last.end)}`;
+		}
+		const lineComment = comments.some(
+			(comment) => comment.type === "Line" && comment.end === code.length,
+		);
+		const node = this.#add(text, { statements: true, lineComment });
+		return { type: "ExpressionStatement", expression: node, ...at };
+	}
 
-  #add(
-    code: string,
-    kind: { statements: boolean; lineComment: boolean } = { statements: false, lineComment: false },
-  ): AST.IdentifierReference {
-    const node = { type: "Identifier", name: "", ...at } as AST.IdentifierReference;
-    this.#slots.push({ node, code, ...kind });
-    return node;
-  }
+	#add(
+		code: string,
+		kind: { statements: boolean; lineComment: boolean } = { statements: false, lineComment: false },
+	): AST.IdentifierReference {
+		const node = { type: "Identifier", name: "", ...at } as AST.IdentifierReference;
+		this.#slots.push({ node, code, ...kind });
+		return node;
+	}
 
-  /** How many placeholders there are. */
-  get size(): number {
-    return this.#slots.length;
-  }
+	/** How many placeholders there are. */
+	get size(): number {
+		return this.#slots.length;
+	}
 
-  /**
-   * Runs `print`, which prints an AST holding these placeholders, and returns its output with
-   * each placeholder replaced by its code. A placeholder is named `$uf<n>$<index>$`; when the
-   * output holds the prefix `$uf<n>$` anywhere else (a string that happens to spell one), the
-   * next `n` is tried, so the result is deterministic. A statement slot takes the `;` printed
-   * after it. Throws when a placeholder is missing from the output or printed twice: a target
-   * bug.
-   */
-  print(print: () => string): string {
-    const count = this.#slots.length;
-    const printed = (): string => {
-      const output = print();
-      if (this.#slots.length !== count) {
-        throw new Error("Placeholders were made while printing: build the AST first.");
-      }
-      return output;
-    };
-    if (count === 0) {
-      return printed();
-    }
-    // Each prefix the output's own text spells takes one of its `$uf`s beside the
-    // placeholders', so a free prefix turns up within that many attempts; past them, a
-    // placeholder was printed twice.
-    let attempts = Infinity;
-    for (let attempt = 0; ; attempt++) {
-      const prefix = `$uf${attempt}$`;
-      for (const [index, { node }] of this.#slots.entries()) {
-        node.name = `${prefix}${index}$`;
-      }
-      const output = printed();
-      if (attempts === Infinity) {
-        attempts = output.split("$uf").length - 1 - count;
-      }
-      const found = locate(output, prefix, this.#slots.length);
-      if (found === "collision" && attempt < attempts) {
-        continue;
-      }
-      if (found === "collision") {
-        throw new Error("A placeholder was printed twice: use each placeholder node once.");
-      }
-      if (typeof found === "string") {
-        throw new Error(found);
-      }
-      let result = "";
-      let last = 0;
-      for (const { index, start, end } of found) {
-        const slot = this.#slots[index]!;
-        const after = slot.statements && output[end] === ";" ? end + 1 : end;
-        const broken = slot.lineComment && output[after] !== "\n";
-        result += `${output.slice(last, start)}${slot.code}${broken ? "\n" : ""}`;
-        last = after;
-      }
-      return result + output.slice(last);
-    }
-  }
+	/**
+	 * Runs `print`, which prints an AST holding these placeholders, and returns its output with
+	 * each placeholder replaced by its code. A placeholder is named `$uf<n>$<index>$`; when the
+	 * output holds the prefix `$uf<n>$` anywhere else (a string that happens to spell one), the
+	 * next `n` is tried, so the result is deterministic. A statement slot takes the `;` printed
+	 * after it. Throws when a placeholder is missing from the output or printed twice: a target
+	 * bug.
+	 */
+	print(print: () => string): string {
+		const count = this.#slots.length;
+		const printed = (): string => {
+			const output = print();
+			if (this.#slots.length !== count) {
+				throw new Error("Placeholders were made while printing: build the AST first.");
+			}
+			return output;
+		};
+		if (count === 0) {
+			return printed();
+		}
+		// Each prefix the output's own text spells takes one of its `$uf`s beside the
+		// placeholders', so a free prefix turns up within that many attempts; past them, a
+		// placeholder was printed twice.
+		let attempts = Infinity;
+		for (let attempt = 0; ; attempt++) {
+			const prefix = `$uf${attempt}$`;
+			for (const [index, { node }] of this.#slots.entries()) {
+				node.name = `${prefix}${index}$`;
+			}
+			const output = printed();
+			if (attempts === Infinity) {
+				attempts = output.split("$uf").length - 1 - count;
+			}
+			const found = locate(output, prefix, this.#slots.length);
+			if (found === "collision" && attempt < attempts) {
+				continue;
+			}
+			if (found === "collision") {
+				throw new Error("A placeholder was printed twice: use each placeholder node once.");
+			}
+			if (typeof found === "string") {
+				throw new Error(found);
+			}
+			let result = "";
+			let last = 0;
+			for (const { index, start, end } of found) {
+				const slot = this.#slots[index]!;
+				const after = slot.statements && output[end] === ";" ? end + 1 : end;
+				const broken = slot.lineComment && output[after] !== "\n";
+				result += `${output.slice(last, start)}${slot.code}${broken ? "\n" : ""}`;
+				last = after;
+			}
+			return result + output.slice(last);
+		}
+	}
 }
 
 /**
@@ -178,19 +178,19 @@ export class Placeholders {
  * continue without a semicolon: blocks, `if`, loops and `try` end with a statement of their own.
  */
 const UNTERMINATED: ReadonlySet<string> = new Set([
-  "ExpressionStatement",
-  "VariableDeclaration",
-  "ReturnStatement",
-  "ThrowStatement",
-  "BreakStatement",
-  "ContinueStatement",
-  "DoWhileStatement",
+	"ExpressionStatement",
+	"VariableDeclaration",
+	"ReturnStatement",
+	"ThrowStatement",
+	"BreakStatement",
+	"ContinueStatement",
+	"DoWhileStatement",
 ]);
 
 interface Occurrence {
-  index: number;
-  start: number;
-  end: number;
+	index: number;
+	start: number;
+	end: number;
 }
 
 /**
@@ -199,20 +199,20 @@ interface Occurrence {
  * a message when a placeholder is missing.
  */
 function locate(output: string, prefix: string, count: number): Array<Occurrence> | string {
-  const found: Array<Occurrence> = [];
-  const seen = new Set<number>();
-  for (let start = output.indexOf(prefix); start >= 0; start = output.indexOf(prefix, start + 1)) {
-    const match = /^(\d+)\$/.exec(output.slice(start + prefix.length));
-    const index = match ? Number(match[1]) : -1;
-    if (!match || index >= count || seen.has(index)) {
-      return "collision";
-    }
-    seen.add(index);
-    found.push({ index, start, end: start + prefix.length + match[0].length });
-  }
-  if (found.length !== count) {
-    const missing = Array.from({ length: count }, (_, index) => index).filter((i) => !seen.has(i));
-    return `Placeholders ${missing.join(", ")} were not printed: each placeholder node must be in the printed AST once.`;
-  }
-  return found;
+	const found: Array<Occurrence> = [];
+	const seen = new Set<number>();
+	for (let start = output.indexOf(prefix); start >= 0; start = output.indexOf(prefix, start + 1)) {
+		const match = /^(\d+)\$/.exec(output.slice(start + prefix.length));
+		const index = match ? Number(match[1]) : -1;
+		if (!match || index >= count || seen.has(index)) {
+			return "collision";
+		}
+		seen.add(index);
+		found.push({ index, start, end: start + prefix.length + match[0].length });
+	}
+	if (found.length !== count) {
+		const missing = Array.from({ length: count }, (_, index) => index).filter((i) => !seen.has(i));
+		return `Placeholders ${missing.join(", ")} were not printed: each placeholder node must be in the printed AST once.`;
+	}
+	return found;
 }

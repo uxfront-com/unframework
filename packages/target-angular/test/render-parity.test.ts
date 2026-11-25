@@ -28,45 +28,45 @@ afterAll(removeScratch);
  * error handler logs the errors (NG0904) it renders without the value.
  */
 async function render(
-  suite: ParitySuite,
-  format: boolean,
+	suite: ParitySuite,
+	format: boolean,
 ): Promise<{ rendered: Array<DomNode>; logged: Array<string> }> {
-  const [file] = await emitParity(target, suite, { format });
-  const directory = scratchDir();
-  const { transform } = await ngtscPlugin();
-  const { code } = await transform(join(directory, "RenderParity.uf.tsx.ts"), file!.contents);
-  const compiled = join(directory, "render-parity.js");
-  writeFileSync(compiled, code);
-  const component = ((await import(pathToFileURL(compiled).href)) as { default: unknown }).default;
-  const logged: Array<string> = [];
-  const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
-  const spies = [
-    vi.spyOn(console, "error").mockImplementation(capture),
-    vi.spyOn(console, "warn").mockImplementation(capture),
-  ];
-  let html: string;
-  try {
-    html = await renderToString(component, { props: parityProps(suite) });
-  } finally {
-    for (const spy of spies) {
-      spy.mockRestore();
-    }
-  }
-  const [host, ...rest] = parseHtml(html);
-  expect(rest).toEqual([]);
-  expect(host).toMatchObject({ tag: "uf-render-parity" });
-  return { rendered: typeof host === "object" ? host.children : [], logged };
+	const [file] = await emitParity(target, suite, { format });
+	const directory = scratchDir();
+	const { transform } = await ngtscPlugin();
+	const { code } = await transform(join(directory, "RenderParity.uf.tsx.ts"), file!.contents);
+	const compiled = join(directory, "render-parity.js");
+	writeFileSync(compiled, code);
+	const component = ((await import(pathToFileURL(compiled).href)) as { default: unknown }).default;
+	const logged: Array<string> = [];
+	const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
+	const spies = [
+		vi.spyOn(console, "error").mockImplementation(capture),
+		vi.spyOn(console, "warn").mockImplementation(capture),
+	];
+	let html: string;
+	try {
+		html = await renderToString(component, { props: parityProps(suite) });
+	} finally {
+		for (const spy of spies) {
+			spy.mockRestore();
+		}
+	}
+	const [host, ...rest] = parseHtml(html);
+	expect(rest).toEqual([]);
+	expect(host).toMatchObject({ tag: "uf-render-parity" });
+	return { rendered: typeof host === "object" ? host.children : [], logged };
 }
 
 describe.each([true, false])("angular output (formatted: %s), rendered by Angular", (format) => {
-  it.each(paritySuites())(
-    "renders $title exactly as the reference describes them",
-    async (suite) => {
-      const { rendered, logged } = await render(suite, format);
-      expect(logged).toEqual([]);
-      for (const { name, expected, actual } of compareCases(rendered, suite)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    },
-  );
+	it.each(paritySuites())(
+		"renders $title exactly as the reference describes them",
+		async (suite) => {
+			const { rendered, logged } = await render(suite, format);
+			expect(logged).toEqual([]);
+			for (const { name, expected, actual } of compareCases(rendered, suite)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		},
+	);
 });

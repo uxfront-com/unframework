@@ -6,10 +6,10 @@ import { encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import type { SourceMapSegment } from "@jridgewell/trace-mapping";
 import type { OutputFile, SourceMapV3 } from "@unframework.dev/codegen";
 import {
-  builtinTargets,
-  compile,
-  createFileResolver,
-  TARGET_NAMES,
+	builtinTargets,
+	compile,
+	createFileResolver,
+	TARGET_NAMES,
 } from "@unframework.dev/compiler";
 import type { CompileResult, CompilerPlugin, TargetName } from "@unframework.dev/compiler";
 import { applyFixes } from "@unframework.dev/diagnostics";
@@ -18,15 +18,15 @@ import { describe, expect, it } from "vitest";
 
 import { canaryMaps } from "./canaries.ts";
 import {
-  checkFixes,
-  comparedSegments,
-  expectationProblems,
-  formattingProblems,
-  moduleCopyProblems,
-  nondeterminism,
-  referenceProblems,
-  sourceMapProblems,
-  stylesheetProblems,
+	checkFixes,
+	comparedSegments,
+	expectationProblems,
+	formattingProblems,
+	moduleCopyProblems,
+	nondeterminism,
+	referenceProblems,
+	sourceMapProblems,
+	stylesheetProblems,
 } from "./compile-checks.ts";
 
 const filename = "fixture/badge/Badge.uf.tsx";
@@ -34,568 +34,568 @@ const filename = "fixture/badge/Badge.uf.tsx";
 const fixable = 'export default function Badge() {\n  return <p className="badge">New</p>;\n}\n';
 
 function compileWith(source: string, plugins: Array<CompilerPlugin> = []): Promise<CompileResult> {
-  return compile(source, { filename, targets: TARGET_NAMES, plugins });
+	return compile(source, { filename, targets: TARGET_NAMES, plugins });
 }
 
 const recompile = async (source: string) => (await compileWith(source)).diagnostics;
 
 /** Compiles for Astro alone: the one target whose capability cells report notes (`info`). */
 const astro = async (source: string) =>
-  (await compile(source, { filename, targets: ["astro"] })).diagnostics;
+	(await compile(source, { filename, targets: ["astro"] })).diagnostics;
 
 describe("checkFixes (L1)", () => {
-  it("passes when every fix applies and the source recompiles clean", async () => {
-    const { diagnostics } = await compileWith(fixable);
-    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["UF3004"]);
-    expect(diagnostics[0]!.fixes).toHaveLength(1);
-    for (const target of TARGET_NAMES) {
-      await expect(checkFixes(fixable, diagnostics, target, recompile)).resolves.toBeUndefined();
-    }
-  });
+	it("passes when every fix applies and the source recompiles clean", async () => {
+		const { diagnostics } = await compileWith(fixable);
+		expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["UF3004"]);
+		expect(diagnostics[0]!.fixes).toHaveLength(1);
+		for (const target of TARGET_NAMES) {
+			await expect(checkFixes(fixable, diagnostics, target, recompile)).resolves.toBeUndefined();
+		}
+	});
 
-  it("passes a fix that lets the compiler report a target's notes, which are no problems", async () => {
-    // `onKeyDown` is UF3004 (rename to `onKeydown`): the module lowers only once it is fixed, and
-    // then Astro notes its inert listener (UF4001, info), which the first compile could not.
-    const listener =
-      'export default function Field() {\n  return <input aria-label="Name" onKeyDown={() => {}} />;\n}\n';
-    const diagnostics = await astro(listener);
-    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["UF3004"]);
-    const after = await astro(applyFixes(listener, diagnostics[0]!.fixes!));
-    expect(after.map(({ code, severity, target }) => [code, severity, target])).toEqual([
-      ["UF4001", "info", "astro"],
-    ]);
-    await expect(checkFixes(listener, diagnostics, "astro", astro)).resolves.toBeUndefined();
-  });
+	it("passes a fix that lets the compiler report a target's notes, which are no problems", async () => {
+		// `onKeyDown` is UF3004 (rename to `onKeydown`): the module lowers only once it is fixed, and
+		// then Astro notes its inert listener (UF4001, info), which the first compile could not.
+		const listener =
+			'export default function Field() {\n  return <input aria-label="Name" onKeyDown={() => {}} />;\n}\n';
+		const diagnostics = await astro(listener);
+		expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["UF3004"]);
+		const after = await astro(applyFixes(listener, diagnostics[0]!.fixes!));
+		expect(after.map(({ code, severity, target }) => [code, severity, target])).toEqual([
+			["UF4001", "info", "astro"],
+		]);
+		await expect(checkFixes(listener, diagnostics, "astro", astro)).resolves.toBeUndefined();
+	});
 
-  it("passes a fix that brings a capability cell's warning, whatever its severity", async () => {
-    // UF2007's likely fix turns the setup's snapshot of an optional prop into a derived value
-    // that reads it, which Qwik declares a late prop may not reach (`late-prop`, a warning).
-    const snapshot = [
-      "export interface SeedsProps {",
-      "  start: number;",
-      "  label?: string;",
-      "}",
-      "",
-      'export default function Seeds({ start, label = "Seeds" }: SeedsProps) {',
-      "  const prefix = `${label}:`;",
-      "  return (",
-      "    <p>",
-      "      {prefix} {start}",
-      "    </p>",
-      "  );",
-      "}",
-      "",
-    ].join("\n");
-    const { diagnostics } = await compileWith(snapshot);
-    expect(diagnostics.map(({ code, fixes }) => [code, fixes?.length])).toEqual([["UF2007", 1]]);
-    const after = await recompile(applyFixes(snapshot, diagnostics[0]!.fixes!));
-    expect(after.map(({ code, severity, target }) => [code, severity, target])).toEqual([
-      ["UF4001", "warning", "qwik"],
-    ]);
-    for (const target of TARGET_NAMES) {
-      await expect(checkFixes(snapshot, diagnostics, target, recompile)).resolves.toBeUndefined();
-    }
-    // Only the target's own cell, in its own words: a matrix that does not declare the
-    // capability unsupported leaves the warning a new diagnostic the fix brought.
-    const { qwik } = builtinTargets;
-    const supported = {
-      ...qwik.capabilities,
-      "late-prop": { support: "native" as const },
-    };
-    await expect(checkFixes(snapshot, diagnostics, "qwik", recompile, supported)).rejects.toThrow(
-      /does not recompile clean:\n[\s\S]*\+ UF4001 The qwik target does not support late-prop: /,
-    );
-  });
+	it("passes a fix that brings a capability cell's warning, whatever its severity", async () => {
+		// UF2007's likely fix turns the setup's snapshot of an optional prop into a derived value
+		// that reads it, which Qwik declares a late prop may not reach (`late-prop`, a warning).
+		const snapshot = [
+			"export interface SeedsProps {",
+			"  start: number;",
+			"  label?: string;",
+			"}",
+			"",
+			'export default function Seeds({ start, label = "Seeds" }: SeedsProps) {',
+			"  const prefix = `${label}:`;",
+			"  return (",
+			"    <p>",
+			"      {prefix} {start}",
+			"    </p>",
+			"  );",
+			"}",
+			"",
+		].join("\n");
+		const { diagnostics } = await compileWith(snapshot);
+		expect(diagnostics.map(({ code, fixes }) => [code, fixes?.length])).toEqual([["UF2007", 1]]);
+		const after = await recompile(applyFixes(snapshot, diagnostics[0]!.fixes!));
+		expect(after.map(({ code, severity, target }) => [code, severity, target])).toEqual([
+			["UF4001", "warning", "qwik"],
+		]);
+		for (const target of TARGET_NAMES) {
+			await expect(checkFixes(snapshot, diagnostics, target, recompile)).resolves.toBeUndefined();
+		}
+		// Only the target's own cell, in its own words: a matrix that does not declare the
+		// capability unsupported leaves the warning a new diagnostic the fix brought.
+		const { qwik } = builtinTargets;
+		const supported = {
+			...qwik.capabilities,
+			"late-prop": { support: "native" as const },
+		};
+		await expect(checkFixes(snapshot, diagnostics, "qwik", recompile, supported)).rejects.toThrow(
+			/does not recompile clean:\n[\s\S]*\+ UF4001 The qwik target does not support late-prop: /,
+		);
+	});
 
-  it("fails a fix that does not remove its diagnostic", async () => {
-    const { diagnostics } = await compileWith(fixable);
-    // The fix rewrites the attribute's name as it was: the source does not change.
-    const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
-      ...diagnostic,
-      fixes: diagnostic.fixes?.map((fix) => ({
-        ...fix,
-        edits: fix.edits.map((edit) => ({ ...edit, text: "className" })),
-      })),
-    }));
-    await expect(checkFixes(fixable, broken, "react", recompile)).rejects.toThrow(
-      /Applying the fixes of UF3004 does not recompile clean:\n[\s\S]*\+ UF3004 /,
-    );
-  });
+	it("fails a fix that does not remove its diagnostic", async () => {
+		const { diagnostics } = await compileWith(fixable);
+		// The fix rewrites the attribute's name as it was: the source does not change.
+		const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
+			...diagnostic,
+			fixes: diagnostic.fixes?.map((fix) => ({
+				...fix,
+				edits: fix.edits.map((edit) => ({ ...edit, text: "className" })),
+			})),
+		}));
+		await expect(checkFixes(fixable, broken, "react", recompile)).rejects.toThrow(
+			/Applying the fixes of UF3004 does not recompile clean:\n[\s\S]*\+ UF3004 /,
+		);
+	});
 
-  it("fails a fix that brings another diagnostic", async () => {
-    const { diagnostics } = await compileWith(fixable);
-    // `<p id="uf-id-1" class="badge">`: the reserved id prefix is UF3005.
-    const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
-      ...diagnostic,
-      fixes: diagnostic.fixes?.map((fix) => ({
-        ...fix,
-        edits: fix.edits.map((edit) => ({ ...edit, text: 'id="uf-id-1" class' })),
-      })),
-    }));
-    await expect(checkFixes(fixable, broken, "vue", recompile)).rejects.toThrow(
-      /does not recompile clean:\n[\s\S]*\+ UF3005 /,
-    );
-  });
+	it("fails a fix that brings another diagnostic", async () => {
+		const { diagnostics } = await compileWith(fixable);
+		// `<p id="uf-id-1" class="badge">`: the reserved id prefix is UF3005.
+		const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
+			...diagnostic,
+			fixes: diagnostic.fixes?.map((fix) => ({
+				...fix,
+				edits: fix.edits.map((edit) => ({ ...edit, text: 'id="uf-id-1" class' })),
+			})),
+		}));
+		await expect(checkFixes(fixable, broken, "vue", recompile)).rejects.toThrow(
+			/does not recompile clean:\n[\s\S]*\+ UF3005 /,
+		);
+	});
 });
 
 describe("nondeterminism (L2)", () => {
-  it("passes two compiles of one source", async () => {
-    const [first, second] = await Promise.all([compileWith(fixable), compileWith(fixable)]);
-    for (const target of TARGET_NAMES) {
-      expect(nondeterminism(first, second, target)).toBe(undefined);
-    }
-  });
+	it("passes two compiles of one source", async () => {
+		const [first, second] = await Promise.all([compileWith(fixable), compileWith(fixable)]);
+		for (const target of TARGET_NAMES) {
+			expect(nondeterminism(first, second, target)).toBe(undefined);
+		}
+	});
 
-  it("names the difference between two compiles that differ", async () => {
-    let compiles = 0;
-    const counter = (): CompilerPlugin => {
-      compiles += 1;
-      const run = compiles;
-      return {
-        name: "counter",
-        output: (files) =>
-          files.map((file) => ({ ...file, contents: `${file.contents}// ${run}\n` })),
-      };
-    };
-    const source = 'export default function Badge() {\n  return <p class="badge">New</p>;\n}\n';
-    const first = await compileWith(source, [counter()]);
-    const second = await compileWith(source, [counter()]);
-    expect(nondeterminism(first, second, "svelte")).toMatch(
-      /^Compiling twice gave different results:\n[\s\S]*\+ .*\/\/ 2/,
-    );
-  });
+	it("names the difference between two compiles that differ", async () => {
+		let compiles = 0;
+		const counter = (): CompilerPlugin => {
+			compiles += 1;
+			const run = compiles;
+			return {
+				name: "counter",
+				output: (files) =>
+					files.map((file) => ({ ...file, contents: `${file.contents}// ${run}\n` })),
+			};
+		};
+		const source = 'export default function Badge() {\n  return <p class="badge">New</p>;\n}\n';
+		const first = await compileWith(source, [counter()]);
+		const second = await compileWith(source, [counter()]);
+		expect(nondeterminism(first, second, "svelte")).toMatch(
+			/^Compiling twice gave different results:\n[\s\S]*\+ .*\/\/ 2/,
+		);
+	});
 });
 
 describe("formattingProblems (L2)", () => {
-  it("passes the compiler's formatted output on every target", async () => {
-    const source = 'export default function Badge() {\n  return <p class="badge">New</p>;\n}\n';
-    const { outputs } = await compileWith(source);
-    for (const target of TARGET_NAMES) {
-      expect(await formattingProblems(target, outputs[target]!), target).toEqual([]);
-    }
-  });
+	it("passes the compiler's formatted output on every target", async () => {
+		const source = 'export default function Badge() {\n  return <p class="badge">New</p>;\n}\n';
+		const { outputs } = await compileWith(source);
+		for (const target of TARGET_NAMES) {
+			expect(await formattingProblems(target, outputs[target]!), target).toEqual([]);
+		}
+	});
 
-  it("fails output that formatting would change, code and markup alike", async () => {
-    expect(
-      await formattingProblems("react", [
-        { path: "Badge.tsx", contents: "export const  badge  =  1\n" },
-      ]),
-    ).toEqual([expect.stringMatching(/^react\/Badge\.tsx is not formatted idempotently:\n/)]);
-    expect(
-      await formattingProblems("vue", [
-        { path: "Badge.vue", contents: "<template>\n</template>\n\n" },
-      ]),
-    ).toEqual([expect.stringMatching(/^vue\/Badge\.vue is not formatted idempotently:\n/)]);
-  });
+	it("fails output that formatting would change, code and markup alike", async () => {
+		expect(
+			await formattingProblems("react", [
+				{ path: "Badge.tsx", contents: "export const  badge  =  1\n" },
+			]),
+		).toEqual([expect.stringMatching(/^react\/Badge\.tsx is not formatted idempotently:\n/)]);
+		expect(
+			await formattingProblems("vue", [
+				{ path: "Badge.vue", contents: "<template>\n</template>\n\n" },
+			]),
+		).toEqual([expect.stringMatching(/^vue\/Badge\.vue is not formatted idempotently:\n/)]);
+	});
 
-  it("fails output that no longer parses", async () => {
-    expect(
-      await formattingProblems("solid", [
-        { path: "Badge.tsx", contents: "export const badge = <p>a</span>;\n" },
-      ]),
-    ).toEqual([expect.stringMatching(/^solid\/Badge\.tsx does not parse when formatted again: /)]);
-  });
+	it("fails output that no longer parses", async () => {
+		expect(
+			await formattingProblems("solid", [
+				{ path: "Badge.tsx", contents: "export const badge = <p>a</span>;\n" },
+			]),
+		).toEqual([expect.stringMatching(/^solid\/Badge\.tsx does not parse when formatted again: /)]);
+	});
 });
 
 describe("expectationProblems (L1)", () => {
-  const internal = {
-    code: "UF9001",
-    severity: "error",
-    message: "The angular target failed on Probe: Cannot parse `await` as statements",
-    target: "angular",
-  };
+	const internal = {
+		code: "UF9001",
+		severity: "error",
+		message: "The angular target failed on Probe: Cannot parse `await` as statements",
+		target: "angular",
+	};
 
-  it("fails an internal error on its own target, in any case", () => {
-    for (const hasSpec of [true, false]) {
-      expect(expectationProblems([internal], "angular", hasSpec)).toEqual([
-        expect.stringMatching(
-          /^The case expects the internal error UF9001 \(The angular target failed/,
-        ),
-      ]);
-      expect(expectationProblems([internal], "react", hasSpec)).toEqual([]);
-    }
-    // One without a target is every target's.
-    const { target: _target, ...everywhere } = internal;
-    expect(expectationProblems([everywhere], "react", false)).toHaveLength(1);
-  });
+	it("fails an internal error on its own target, in any case", () => {
+		for (const hasSpec of [true, false]) {
+			expect(expectationProblems([internal], "angular", hasSpec)).toEqual([
+				expect.stringMatching(
+					/^The case expects the internal error UF9001 \(The angular target failed/,
+				),
+			]);
+			expect(expectationProblems([internal], "react", hasSpec)).toEqual([]);
+		}
+		// One without a target is every target's.
+		const { target: _target, ...everywhere } = internal;
+		expect(expectationProblems([everywhere], "react", false)).toHaveLength(1);
+	});
 
-  it("passes a feature case's error that its target declares for a capability it lacks", async () => {
-    // Vue declares `listbox` unsupported, with an error (ADR-0033).
-    const source =
-      'export default function Pick() {\n  return (\n    <select aria-label="Size" size="2">\n      <option>S</option>\n      <option>M</option>\n    </select>\n  );\n}\n';
-    const { diagnostics } = await compileWith(source);
-    const vue = diagnostics.filter((diagnostic) => diagnostic.target === "vue");
-    expect(vue.map(({ code, severity }) => [code, severity])).toEqual([["UF4001", "error"]]);
-    for (const target of TARGET_NAMES) {
-      expect(expectationProblems(diagnostics, target, true), target).toEqual([]);
-    }
-  });
+	it("passes a feature case's error that its target declares for a capability it lacks", async () => {
+		// Vue declares `listbox` unsupported, with an error (ADR-0033).
+		const source =
+			'export default function Pick() {\n  return (\n    <select aria-label="Size" size="2">\n      <option>S</option>\n      <option>M</option>\n    </select>\n  );\n}\n';
+		const { diagnostics } = await compileWith(source);
+		const vue = diagnostics.filter((diagnostic) => diagnostic.target === "vue");
+		expect(vue.map(({ code, severity }) => [code, severity])).toEqual([["UF4001", "error"]]);
+		for (const target of TARGET_NAMES) {
+			expect(expectationProblems(diagnostics, target, true), target).toEqual([]);
+		}
+	});
 
-  it("fails any other error in a case with a spec, and lets a diagnostics case expect it", () => {
-    const undeclared = {
-      code: "UF4001",
-      severity: "error",
-      message:
-        "The react target does not declare whether it supports listbox, so the compiler treats it as unsupported.",
-      target: "react",
-    };
-    const analyser = { code: "UF2004", severity: "error", message: "A state is changed in place." };
-    expect(expectationProblems([undeclared, analyser], "react", true)).toEqual([
-      expect.stringMatching(
-        /^The case has a spec, yet expects the error UF4001 for react \(The react target does not declare/,
-      ),
-      expect.stringMatching(/^The case has a spec, yet expects the error UF2004 for react/),
-    ]);
-    expect(expectationProblems([undeclared, analyser], "react", false)).toEqual([]);
-    // A warning or a note is no error: Astro's inert listeners are notes.
-    expect(expectationProblems([{ ...analyser, severity: "warning" }], "react", true)).toEqual([]);
-  });
+	it("fails any other error in a case with a spec, and lets a diagnostics case expect it", () => {
+		const undeclared = {
+			code: "UF4001",
+			severity: "error",
+			message:
+				"The react target does not declare whether it supports listbox, so the compiler treats it as unsupported.",
+			target: "react",
+		};
+		const analyser = { code: "UF2004", severity: "error", message: "A state is changed in place." };
+		expect(expectationProblems([undeclared, analyser], "react", true)).toEqual([
+			expect.stringMatching(
+				/^The case has a spec, yet expects the error UF4001 for react \(The react target does not declare/,
+			),
+			expect.stringMatching(/^The case has a spec, yet expects the error UF2004 for react/),
+		]);
+		expect(expectationProblems([undeclared, analyser], "react", false)).toEqual([]);
+		// A warning or a note is no error: Astro's inert listeners are notes.
+		expect(expectationProblems([{ ...analyser, severity: "warning" }], "react", true)).toEqual([]);
+	});
 });
 
 describe("referenceProblems (L1, ADR-0057)", () => {
-  const LISTBOX =
-    'export default function Pick() {\n  return (\n    <select aria-label="Size" size="2">\n      <option>S</option>\n      <option>M</option>\n    </select>\n  );\n}\n';
-  const PLAIN = "export default function Hello() {\n  return <p>Hello</p>;\n}\n";
+	const LISTBOX =
+		'export default function Pick() {\n  return (\n    <select aria-label="Size" size="2">\n      <option>S</option>\n      <option>M</option>\n    </select>\n  );\n}\n';
+	const PLAIN = "export default function Hello() {\n  return <p>Hello</p>;\n}\n";
 
-  it("lets a case Vue has no output for name a target whose cell is native", async () => {
-    const { diagnostics } = await compileWith(LISTBOX);
-    expect(referenceProblems(diagnostics, true, "vue", "react")).toEqual([]);
-  });
+	it("lets a case Vue has no output for name a target whose cell is native", async () => {
+		const { diagnostics } = await compileWith(LISTBOX);
+		expect(referenceProblems(diagnostics, true, "vue", "react")).toEqual([]);
+	});
 
-  it("asks a case Vue has no output for to name one", async () => {
-    const { diagnostics } = await compileWith(LISTBOX);
-    expect(referenceProblems(diagnostics, true, "vue", undefined)).toEqual([
-      expect.stringMatching(
-        /^vue, the run's reference, has no output for the case: it leaves listbox unsupported/,
-      ),
-    ]);
-  });
+	it("asks a case Vue has no output for to name one", async () => {
+		const { diagnostics } = await compileWith(LISTBOX);
+		expect(referenceProblems(diagnostics, true, "vue", undefined)).toEqual([
+			expect.stringMatching(
+				/^vue, the run's reference, has no output for the case: it leaves listbox unsupported/,
+			),
+		]);
+	});
 
-  it("refuses a reference the run's reference does not need, and one on a case without a spec", async () => {
-    const plain = await compileWith(PLAIN);
-    expect(referenceProblems(plain.diagnostics, true, "vue", "react")).toEqual([
-      expect.stringMatching(/^The case names react as its reference, yet vue renders it/),
-    ]);
-    expect(referenceProblems(plain.diagnostics, false, "vue", "react")).toEqual([
-      expect.stringMatching(/^The case names a reference, and has no spec/),
-    ]);
-    const listbox = await compileWith(LISTBOX);
-    expect(referenceProblems(listbox.diagnostics, true, "react", "vue")).toEqual([
-      expect.stringMatching(/^The case names vue as its reference, yet react renders it/),
-    ]);
-  });
+	it("refuses a reference the run's reference does not need, and one on a case without a spec", async () => {
+		const plain = await compileWith(PLAIN);
+		expect(referenceProblems(plain.diagnostics, true, "vue", "react")).toEqual([
+			expect.stringMatching(/^The case names react as its reference, yet vue renders it/),
+		]);
+		expect(referenceProblems(plain.diagnostics, false, "vue", "react")).toEqual([
+			expect.stringMatching(/^The case names a reference, and has no spec/),
+		]);
+		const listbox = await compileWith(LISTBOX);
+		expect(referenceProblems(listbox.diagnostics, true, "react", "vue")).toEqual([
+			expect.stringMatching(/^The case names vue as its reference, yet react renders it/),
+		]);
+	});
 });
 
 describe("stylesheetProblems (ADR-0063)", () => {
-  const CARD =
-    'import "./Card.css";\n\nexport default function Card() {\n  return <p class="card">Hi</p>;\n}\n';
-  const files: Record<string, string> = { "/fixture/badge/Card.css": ".card { color: red }\n" };
-  const resolve = createFileResolver({
-    root: "/",
-    readFile: (path) => Promise.resolve(files[path]),
-  });
+	const CARD =
+		'import "./Card.css";\n\nexport default function Card() {\n  return <p class="card">Hi</p>;\n}\n';
+	const files: Record<string, string> = { "/fixture/badge/Card.css": ".card { color: red }\n" };
+	const resolve = createFileResolver({
+		root: "/",
+		readFile: (path) => Promise.resolve(files[path]),
+	});
 
-  it("passes every target's scoped sheet the compiler emits", async () => {
-    const result = await compile(CARD, {
-      filename: "fixture/badge/Card.uf.tsx",
-      targets: TARGET_NAMES,
-      resolve,
-    });
-    // Only the sheet order Angular and Qwik declare, for information (ADR-0063).
-    expect(
-      result.diagnostics.map(({ code, severity, target }) => [code, severity, target]),
-    ).toEqual([
-      ["UF4002", "info", "angular"],
-      ["UF4002", "info", "qwik"],
-    ]);
-    for (const target of TARGET_NAMES) {
-      const outputs = result.outputs[target] ?? [];
-      expect(outputs.map((file) => file.path)).toContain("Card.uf.tsx.css");
-      expect(stylesheetProblems(target, outputs)).toEqual([]);
-    }
-  });
+	it("passes every target's scoped sheet the compiler emits", async () => {
+		const result = await compile(CARD, {
+			filename: "fixture/badge/Card.uf.tsx",
+			targets: TARGET_NAMES,
+			resolve,
+		});
+		// Only the sheet order Angular and Qwik declare, for information (ADR-0063).
+		expect(
+			result.diagnostics.map(({ code, severity, target }) => [code, severity, target]),
+		).toEqual([
+			["UF4002", "info", "angular"],
+			["UF4002", "info", "qwik"],
+		]);
+		for (const target of TARGET_NAMES) {
+			const outputs = result.outputs[target] ?? [];
+			expect(outputs.map((file) => file.path)).toContain("Card.uf.tsx.css");
+			expect(stylesheetProblems(target, outputs)).toEqual([]);
+		}
+	});
 
-  it("reports a sheet lightningcss cannot read, or whose at-rule it does not know", () => {
-    expect(
-      stylesheetProblems("vue", [
-        { path: "Card.vue", contents: "<template><p>{</p></template>\n" },
-        { path: "Card.uf.tsx.css", contents: ".card[data-uf-0a1b2c3d] > { color: red }" },
-        { path: "Other.uf.tsx.css", contents: "@unknown { .a { color: red } }" },
-      ]),
-    ).toEqual([
-      "vue/Card.uf.tsx.css is not valid CSS at offset 26: Invalid dangling combinator in selector",
-      "vue/Other.uf.tsx.css is not valid CSS at offset 8: Unknown at rule: @unknown",
-    ]);
-  });
+	it("reports a sheet lightningcss cannot read, or whose at-rule it does not know", () => {
+		expect(
+			stylesheetProblems("vue", [
+				{ path: "Card.vue", contents: "<template><p>{</p></template>\n" },
+				{ path: "Card.uf.tsx.css", contents: ".card[data-uf-0a1b2c3d] > { color: red }" },
+				{ path: "Other.uf.tsx.css", contents: "@unknown { .a { color: red } }" },
+			]),
+		).toEqual([
+			"vue/Card.uf.tsx.css is not valid CSS at offset 26: Invalid dangling combinator in selector",
+			"vue/Other.uf.tsx.css is not valid CSS at offset 8: Unknown at rule: @unknown",
+		]);
+	});
 });
 
 describe("moduleCopyProblems (L2, ADR-0070)", () => {
-  const tokens = "export const SIZE = 8;\n";
-  const modules = [{ path: "tokens.ts", contents: tokens }];
+	const tokens = "export const SIZE = 8;\n";
+	const modules = [{ path: "tokens.ts", contents: tokens }];
 
-  it("passes a copy of a case's module that equals it, and a tree that holds none", () => {
-    const outputs = new Map([
-      ["Card.vue", "<template><p>Hi</p></template>\n"],
-      ["tokens.ts", tokens],
-    ]);
-    expect(moduleCopyProblems("vue", outputs, modules)).toEqual([]);
-    expect(moduleCopyProblems("vue", new Map([["Card.vue", ""]]), modules)).toEqual([]);
-  });
+	it("passes a copy of a case's module that equals it, and a tree that holds none", () => {
+		const outputs = new Map([
+			["Card.vue", "<template><p>Hi</p></template>\n"],
+			["tokens.ts", tokens],
+		]);
+		expect(moduleCopyProblems("vue", outputs, modules)).toEqual([]);
+		expect(moduleCopyProblems("vue", new Map([["Card.vue", ""]]), modules)).toEqual([]);
+	});
 
-  it("reports a copy that differs from its module, with the difference", () => {
-    const [problem, ...rest] = moduleCopyProblems(
-      "react",
-      new Map([["tokens.ts", "export const SIZE = 9;\n"]]),
-      modules,
-    );
-    expect(rest).toEqual([]);
-    expect(problem).toMatch(/^react\/tokens\.ts is not the case's tokens\.ts unchanged:\n/);
-    expect(problem).toMatch(/^\+ export const SIZE = 9;$/m);
-  });
+	it("reports a copy that differs from its module, with the difference", () => {
+		const [problem, ...rest] = moduleCopyProblems(
+			"react",
+			new Map([["tokens.ts", "export const SIZE = 9;\n"]]),
+			modules,
+		);
+		expect(rest).toEqual([]);
+		expect(problem).toMatch(/^react\/tokens\.ts is not the case's tokens\.ts unchanged:\n/);
+		expect(problem).toMatch(/^\+ export const SIZE = 9;$/m);
+	});
 });
 
 describe("sourceMapProblems (L14)", () => {
-  const card = `export default function Card({ label }: { label: string }) {
+	const card = `export default function Card({ label }: { label: string }) {
   const shout = () => label.toUpperCase();
   return <button class="card" onClick={shout}>{label}</button>;
 }
 `;
-  const source = { filename: "fixture/card/Card.uf.tsx", text: card };
-  const none = new Set<string>();
-  const compiled = (target: TargetName = "react") =>
-    compile(card, { filename: source.filename, targets: [target], sourceMap: true });
-  const mapped = async (target: TargetName = "react"): Promise<Array<OutputFile>> =>
-    (await compiled(target)).outputs[target]!;
-  /** The shared helper modules of a compile, which map onto themselves (ADR-0121). */
-  const helpers = async (target: TargetName = "react") =>
-    new Set((await compiled(target)).helpers[target]);
-  /** The map of the one file, changed. */
-  const withMap = (file: OutputFile, map: Partial<SourceMapV3>): OutputFile => ({
-    ...file,
-    map: { ...file.map!, ...map },
-  });
+	const source = { filename: "fixture/card/Card.uf.tsx", text: card };
+	const none = new Set<string>();
+	const compiled = (target: TargetName = "react") =>
+		compile(card, { filename: source.filename, targets: [target], sourceMap: true });
+	const mapped = async (target: TargetName = "react"): Promise<Array<OutputFile>> =>
+		(await compiled(target)).outputs[target]!;
+	/** The shared helper modules of a compile, which map onto themselves (ADR-0121). */
+	const helpers = async (target: TargetName = "react") =>
+		new Set((await compiled(target)).helpers[target]);
+	/** The map of the one file, changed. */
+	const withMap = (file: OutputFile, map: Partial<SourceMapV3>): OutputFile => ({
+		...file,
+		map: { ...file.map!, ...map },
+	});
 
-  it("passes every target's maps of a real compile", async () => {
-    for (const target of TARGET_NAMES) {
-      expect(
-        sourceMapProblems(target, await mapped(target), source, await helpers(target)),
-        target,
-      ).toEqual([]);
-    }
-  });
+	it("passes every target's maps of a real compile", async () => {
+		for (const target of TARGET_NAMES) {
+			expect(
+				sourceMapProblems(target, await mapped(target), source, await helpers(target)),
+				target,
+			).toEqual([]);
+		}
+	});
 
-  it("maps a helper module onto itself, and fails one taken for the component's", async () => {
-    const files = await mapped();
-    const helper = files.find((file) => file.path.startsWith("_unframework/"))!;
-    expect(helper.path).toBe("_unframework/cx.ts");
-    expect(sourceMapProblems("react", [helper], source, await helpers())).toEqual([]);
-    expect(sourceMapProblems("react", [helper], source, none)).toEqual([
-      'react/_unframework/cx.ts\'s map names ["cx.ts"], not its source Card.uf.tsx.',
-    ]);
-  });
+	it("maps a helper module onto itself, and fails one taken for the component's", async () => {
+		const files = await mapped();
+		const helper = files.find((file) => file.path.startsWith("_unframework/"))!;
+		expect(helper.path).toBe("_unframework/cx.ts");
+		expect(sourceMapProblems("react", [helper], source, await helpers())).toEqual([]);
+		expect(sourceMapProblems("react", [helper], source, none)).toEqual([
+			'react/_unframework/cx.ts\'s map names ["cx.ts"], not its source Card.uf.tsx.',
+		]);
+	});
 
-  it("fails an output with no map", async () => {
-    const [file] = await mapped();
-    const { map: _map, ...bare } = file!;
-    expect(sourceMapProblems("react", [bare], source, none)).toEqual([
-      `react/${file!.path} has no source map.`,
-    ]);
-  });
+	it("fails an output with no map", async () => {
+		const [file] = await mapped();
+		const { map: _map, ...bare } = file!;
+		expect(sourceMapProblems("react", [bare], source, none)).toEqual([
+			`react/${file!.path} has no source map.`,
+		]);
+	});
 
-  it("fails a map that names another source, or more than one", async () => {
-    const [file] = await mapped();
-    for (const sources of [["Other.uf.tsx"], ["Card.uf.tsx", "Card.uf.tsx"], []]) {
-      expect(
-        sourceMapProblems("react", [withMap(file!, { sources })], source, none)[0],
-        sources.join(),
-      ).toMatch(/map names .*, not its source Card\.uf\.tsx/);
-    }
-  });
+	it("fails a map that names another source, or more than one", async () => {
+		const [file] = await mapped();
+		for (const sources of [["Other.uf.tsx"], ["Card.uf.tsx", "Card.uf.tsx"], []]) {
+			expect(
+				sourceMapProblems("react", [withMap(file!, { sources })], source, none)[0],
+				sources.join(),
+			).toMatch(/map names .*, not its source Card\.uf\.tsx/);
+		}
+	});
 
-  it("fails a map that resolves outside the output's own directory", async () => {
-    const [file] = await mapped();
-    const nested = { ...file!, path: `nested/${file!.path}` };
-    expect(sourceMapProblems("react", [nested], source, none)[0]).toMatch(/not its source/);
-    expect(
-      sourceMapProblems("react", [withMap(nested, { sources: ["../Card.uf.tsx"] })], source, none),
-    ).toEqual([]);
-  });
+	it("fails a map that resolves outside the output's own directory", async () => {
+		const [file] = await mapped();
+		const nested = { ...file!, path: `nested/${file!.path}` };
+		expect(sourceMapProblems("react", [nested], source, none)[0]).toMatch(/not its source/);
+		expect(
+			sourceMapProblems("react", [withMap(nested, { sources: ["../Card.uf.tsx"] })], source, none),
+		).toEqual([]);
+	});
 
-  it("fails a map that holds other content", async () => {
-    const [file] = await mapped();
-    expect(
-      sourceMapProblems("react", [withMap(file!, { sourcesContent: ["// other"] })], source, none),
-    ).toEqual([`react/${file!.path}'s map does not hold the content of its source Card.uf.tsx.`]);
-  });
+	it("fails a map that holds other content", async () => {
+		const [file] = await mapped();
+		expect(
+			sourceMapProblems("react", [withMap(file!, { sourcesContent: ["// other"] })], source, none),
+		).toEqual([`react/${file!.path}'s map does not hold the content of its source Card.uf.tsx.`]);
+	});
 
-  it("fails a segment shifted a column, and reports each map once", async () => {
-    const files = await mapped();
-    const shifted = canaryMaps("L14-map-shifted", files);
-    expect(shifted).not.toEqual(files);
-    expect(sourceMapProblems("react", shifted, source, await helpers())).toEqual([
-      expect.stringMatching(
-        /^react\/\S+'s map has 1 wrong segment\(s\), the first at \d+:\d+ reads "/,
-      ),
-    ]);
-  });
+	it("fails a segment shifted a column, and reports each map once", async () => {
+		const files = await mapped();
+		const shifted = canaryMaps("L14-map-shifted", files);
+		expect(shifted).not.toEqual(files);
+		expect(sourceMapProblems("react", shifted, source, await helpers())).toEqual([
+			expect.stringMatching(
+				/^react\/\S+'s map has 1 wrong segment\(s\), the first at \d+:\d+ reads "/,
+			),
+		]);
+	});
 
-  it("fails mappings that point outside the output or the source", async () => {
-    const [file] = await mapped();
-    const beyond = encodedMappings(new TraceMap({ ...file!.map!, mappings: [[[0, 0, 9999, 0]]] }));
-    expect(
-      sourceMapProblems("react", [withMap(file!, { mappings: beyond })], source, none)[0],
-    ).toMatch(/1 wrong segment\(s\), the first at 1:0 points outside its files/);
-    expect(
-      sourceMapProblems(
-        "react",
-        [withMap(file!, { mappings: ";".repeat(99_999) + "AAAA" })],
-        source,
-        none,
-      )[0],
-    ).toMatch(/points outside its files/);
-  });
+	it("fails mappings that point outside the output or the source", async () => {
+		const [file] = await mapped();
+		const beyond = encodedMappings(new TraceMap({ ...file!.map!, mappings: [[[0, 0, 9999, 0]]] }));
+		expect(
+			sourceMapProblems("react", [withMap(file!, { mappings: beyond })], source, none)[0],
+		).toMatch(/1 wrong segment\(s\), the first at 1:0 points outside its files/);
+		expect(
+			sourceMapProblems(
+				"react",
+				[withMap(file!, { mappings: ";".repeat(99_999) + "AAAA" })],
+				source,
+				none,
+			)[0],
+		).toMatch(/points outside its files/);
+	});
 
-  it("fails mappings that are not VLQ, which the decoder would read as zeros", async () => {
-    const [file] = await mapped();
-    expect(
-      sourceMapProblems("react", [withMap(file!, { mappings: "AAAA,!!!" })], source, none),
-    ).toEqual([`react/${file!.path}'s map does not decode: its mappings are not VLQ.`]);
-  });
+	it("fails mappings that are not VLQ, which the decoder would read as zeros", async () => {
+		const [file] = await mapped();
+		expect(
+			sourceMapProblems("react", [withMap(file!, { mappings: "AAAA,!!!" })], source, none),
+		).toEqual([`react/${file!.path}'s map does not decode: its mappings are not VLQ.`]);
+	});
 
-  it("counts only the segments that compare text", async () => {
-    const [file] = await mapped();
-    const encoded = (lines: Array<Array<SourceMapSegment>>) =>
-      encodedMappings(new TraceMap({ ...file!.map!, names: ["label"], mappings: lines }));
-    expect(
-      comparedSegments(
-        withMap(file!, {
-          names: ["label"],
-          mappings: encoded([
-            [
-              [0, 0, 0, 0],
-              [1, 0, 0, 1, 0],
-            ],
-          ]),
-        }),
-      ),
-    ).toBe(1);
-    const { map: _map, ...bare } = file!;
-    expect(comparedSegments(bare)).toBe(0);
-    expect(
-      comparedSegments(
-        withMap(file!, { sources: [file!.path.slice(file!.path.lastIndexOf("/") + 1)] }),
-      ),
-    ).toBe(0);
-  });
+	it("counts only the segments that compare text", async () => {
+		const [file] = await mapped();
+		const encoded = (lines: Array<Array<SourceMapSegment>>) =>
+			encodedMappings(new TraceMap({ ...file!.map!, names: ["label"], mappings: lines }));
+		expect(
+			comparedSegments(
+				withMap(file!, {
+					names: ["label"],
+					mappings: encoded([
+						[
+							[0, 0, 0, 0],
+							[1, 0, 0, 1, 0],
+						],
+					]),
+				}),
+			),
+		).toBe(1);
+		const { map: _map, ...bare } = file!;
+		expect(comparedSegments(bare)).toBe(0);
+		expect(
+			comparedSegments(
+				withMap(file!, { sources: [file!.path.slice(file!.path.lastIndexOf("/") + 1)] }),
+			),
+		).toBe(0);
+	});
 
-  it("does not compare the text of a segment with a name, which a target respells", async () => {
-    const [file] = await mapped();
-    const named = encodedMappings(
-      new TraceMap({ ...file!.map!, names: ["label"], mappings: [[[0, 0, 0, 0, 0]]] }),
-    );
-    expect(
-      sourceMapProblems(
-        "react",
-        [withMap(file!, { names: ["label"], mappings: named })],
-        source,
-        none,
-      ),
-    ).toEqual([]);
-  });
+	it("does not compare the text of a segment with a name, which a target respells", async () => {
+		const [file] = await mapped();
+		const named = encodedMappings(
+			new TraceMap({ ...file!.map!, names: ["label"], mappings: [[[0, 0, 0, 0, 0]]] }),
+		);
+		expect(
+			sourceMapProblems(
+				"react",
+				[withMap(file!, { names: ["label"], mappings: named })],
+				source,
+				none,
+			),
+		).toEqual([]);
+	});
 
-  it("reads a segment for the source token's length: a longer number the output starts with passes", () => {
-    const text = "const size = 5.;\n";
-    const file: OutputFile = {
-      path: "Size.ts",
-      contents: "const size = 5.0;\n",
-      map: {
-        version: 3,
-        file: "Size.ts",
-        sources: ["Size.uf.tsx"],
-        sourcesContent: [text],
-        names: [],
-        mappings: encodedMappings(
-          new TraceMap({
-            version: 3,
-            sources: ["Size.uf.tsx"],
-            names: [],
-            mappings: [[[13, 0, 0, 13]]],
-          }),
-        ),
-      },
-    };
-    expect(sourceMapProblems("react", [file], { filename: "x/Size.uf.tsx", text }, none)).toEqual(
-      [],
-    );
-  });
+	it("reads a segment for the source token's length: a longer number the output starts with passes", () => {
+		const text = "const size = 5.;\n";
+		const file: OutputFile = {
+			path: "Size.ts",
+			contents: "const size = 5.0;\n",
+			map: {
+				version: 3,
+				file: "Size.ts",
+				sources: ["Size.uf.tsx"],
+				sourcesContent: [text],
+				names: [],
+				mappings: encodedMappings(
+					new TraceMap({
+						version: 3,
+						sources: ["Size.uf.tsx"],
+						names: [],
+						mappings: [[[13, 0, 0, 13]]],
+					}),
+				),
+			},
+		};
+		expect(sourceMapProblems("react", [file], { filename: "x/Size.uf.tsx", text }, none)).toEqual(
+			[],
+		);
+	});
 
-  it("holds a copy of a shared module to its own name and content", async () => {
-    const contents = "export const size = 1;\n";
-    const file = await copyWithIdentityMap(contents);
-    const modules = new Set([file.path]);
-    expect(sourceMapProblems("react", [file], source, modules)).toEqual([]);
-    expect(sourceMapProblems("react", [file], source, none)[0]).toMatch(/not its source Card/);
-    expect(
-      sourceMapProblems(
-        "react",
-        [withMap(file, { sourcesContent: [`${contents}// edited\n`] })],
-        source,
-        modules,
-      ),
-    ).toEqual([`react/${file.path}'s map does not hold the content of its source ${file.path}.`]);
-  });
+	it("holds a copy of a shared module to its own name and content", async () => {
+		const contents = "export const size = 1;\n";
+		const file = await copyWithIdentityMap(contents);
+		const modules = new Set([file.path]);
+		expect(sourceMapProblems("react", [file], source, modules)).toEqual([]);
+		expect(sourceMapProblems("react", [file], source, none)[0]).toMatch(/not its source Card/);
+		expect(
+			sourceMapProblems(
+				"react",
+				[withMap(file, { sourcesContent: [`${contents}// edited\n`] })],
+				source,
+				modules,
+			),
+		).toEqual([`react/${file.path}'s map does not hold the content of its source ${file.path}.`]);
+	});
 
-  it("fails a scoped sheet whose map has segments, and passes one without", async () => {
-    const sheet = await styledSheet();
-    expect(sheet.map!.mappings.replaceAll(";", "")).toBe("");
-    expect(sourceMapProblems("react", [sheet], styled, none)).toEqual([]);
-    const segmented = encodedMappings(new TraceMap({ ...sheet.map!, mappings: [[[0, 0, 0, 0]]] }));
-    expect(
-      sourceMapProblems("react", [withMap(sheet, { mappings: segmented })], styled, none),
-    ).toEqual([`react/${sheet.path}'s map has 1 segment(s): a scoped sheet has none.`]);
-  });
+	it("fails a scoped sheet whose map has segments, and passes one without", async () => {
+		const sheet = await styledSheet();
+		expect(sheet.map!.mappings.replaceAll(";", "")).toBe("");
+		expect(sourceMapProblems("react", [sheet], styled, none)).toEqual([]);
+		const segmented = encodedMappings(new TraceMap({ ...sheet.map!, mappings: [[[0, 0, 0, 0]]] }));
+		expect(
+			sourceMapProblems("react", [withMap(sheet, { mappings: segmented })], styled, none),
+		).toEqual([`react/${sheet.path}'s map has 1 segment(s): a scoped sheet has none.`]);
+	});
 });
 
 const styled = {
-  filename: "fixture/badge/Badge.uf.tsx",
-  text: 'import "./Badge.css";\n\nexport default function Badge() {\n  return <p class="badge">New</p>;\n}\n',
+	filename: "fixture/badge/Badge.uf.tsx",
+	text: 'import "./Badge.css";\n\nexport default function Badge() {\n  return <p class="badge">New</p>;\n}\n',
 };
 
 /** A real compile's copy of a shared module, whose map is the compiler's `identityMapped`. */
 async function copyWithIdentityMap(contents: string): Promise<OutputFile> {
-  const text =
-    'import { size } from "./size.ts";\n\nexport default function Box() {\n  return <p>{size}</p>;\n}\n';
-  const result = await compile(text, {
-    filename: "fixture/box/Box.uf.tsx",
-    targets: ["react"],
-    sourceMap: true,
-    resolve: createFileResolver({
-      root: "/cases",
-      readFile: async (path) => (path === "/cases/fixture/box/size.ts" ? contents : undefined),
-    }),
-  });
-  const copy = result.outputs.react!.find(({ path }) => path === "size.ts");
-  if (!copy) {
-    throw new Error(JSON.stringify(result.diagnostics));
-  }
-  return copy;
+	const text =
+		'import { size } from "./size.ts";\n\nexport default function Box() {\n  return <p>{size}</p>;\n}\n';
+	const result = await compile(text, {
+		filename: "fixture/box/Box.uf.tsx",
+		targets: ["react"],
+		sourceMap: true,
+		resolve: createFileResolver({
+			root: "/cases",
+			readFile: async (path) => (path === "/cases/fixture/box/size.ts" ? contents : undefined),
+		}),
+	});
+	const copy = result.outputs.react!.find(({ path }) => path === "size.ts");
+	if (!copy) {
+		throw new Error(JSON.stringify(result.diagnostics));
+	}
+	return copy;
 }
 
 /** A real compile's scoped sheet. */
 async function styledSheet(): Promise<OutputFile> {
-  const result = await compile(styled.text, {
-    filename: styled.filename,
-    targets: ["react"],
-    sourceMap: true,
-    resolve: createFileResolver({
-      root: "/cases",
-      readFile: async (path) =>
-        path === "/cases/fixture/badge/Badge.css" ? ".badge { color: red; }\n" : undefined,
-    }),
-  });
-  const sheet = result.outputs.react!.find(({ path }) => path.endsWith(".css"));
-  if (!sheet) {
-    throw new Error(JSON.stringify(result.diagnostics));
-  }
-  return sheet;
+	const result = await compile(styled.text, {
+		filename: styled.filename,
+		targets: ["react"],
+		sourceMap: true,
+		resolve: createFileResolver({
+			root: "/cases",
+			readFile: async (path) =>
+				path === "/cases/fixture/badge/Badge.css" ? ".badge { color: red; }\n" : undefined,
+		}),
+	});
+	const sheet = result.outputs.react!.find(({ path }) => path.endsWith(".css"));
+	if (!sheet) {
+		throw new Error(JSON.stringify(result.diagnostics));
+	}
+	return sheet;
 }

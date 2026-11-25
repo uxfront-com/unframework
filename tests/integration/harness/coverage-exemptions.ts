@@ -6,13 +6,13 @@ import type { TargetName } from "@unframework.dev/compiler";
 
 /** The families of IR kinds the gate requires a case for (`KIND_RECORDS` in `coverage.ts`). */
 export type KindFamily =
-  | "node"
-  | "attribute"
-  | "binding"
-  | "setup item"
-  | "handler"
-  | "watch source"
-  | "code reference";
+	| "node"
+	| "attribute"
+	| "binding"
+	| "setup item"
+	| "handler"
+	| "watch source"
+	| "code reference";
 
 /**
  * Each target's M3 lane, which emits composition: until it lands, the target reports a case's
@@ -22,11 +22,11 @@ const LANES: Readonly<Partial<Record<Exclude<TargetName, "vue">, string>>> = {};
 
 /** The lanes of every target but those whose cell is unsupported. */
 function lanesBut(
-  ...unsupported: Array<Exclude<TargetName, "vue">>
+	...unsupported: Array<Exclude<TargetName, "vue">>
 ): Partial<Record<TargetName, string>> {
-  return Object.fromEntries(
-    Object.entries(LANES).filter(([target]) => !unsupported.includes(target as never)),
-  );
+	return Object.fromEntries(
+		Object.entries(LANES).filter(([target]) => !unsupported.includes(target as never)),
+	);
 }
 
 /**
@@ -34,35 +34,35 @@ function lanesBut(
  * its corpus case.
  */
 export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<string, string>>>>> =
-  {};
+	{};
 
 /** Why no case triggers a config or tooling code: `compile()` never raises one. */
 const RAISED_OUTSIDE_COMPILE =
-  "raised by the CLI or the bundler plugin outside `compile()`; tested in its package";
+	"raised by the CLI or the bundler plugin outside `compile()`; tested in its package";
 
 /** Catalogued diagnostic codes that no case triggers, and why none can. */
 export const EXEMPT_CODES: Readonly<Record<string, string>> = {
-  UF7001: RAISED_OUTSIDE_COMPILE,
-  UF7002: RAISED_OUTSIDE_COMPILE,
-  UF7003: RAISED_OUTSIDE_COMPILE,
-  UF7004: RAISED_OUTSIDE_COMPILE,
-  UF7005: RAISED_OUTSIDE_COMPILE,
-  UF7006: RAISED_OUTSIDE_COMPILE,
-  UF7007: RAISED_OUTSIDE_COMPILE,
-  UF7008: RAISED_OUTSIDE_COMPILE,
-  UF7009: RAISED_OUTSIDE_COMPILE,
-  UF7010: RAISED_OUTSIDE_COMPILE,
-  UF7011:
-    "raised by @unframework.dev/visual for an example with props, outside `compile()`; tested in that package",
-  UF7012:
-    "raised by @unframework.dev/visual's preview for a malformed tag in an example's doc comment, outside `compile()`; tested in that package",
-  UF8001:
-    "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
-  UF9001:
-    "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  UF9002:
-    "internal: a map that can't follow formatting, with too few words matching or a markup file's blocks changed, is a compiler bug, and a file past the diff's bound is UF9003; tested in codegen",
-  UF9003: "raised past a size bound; tested in codegen",
+	UF7001: RAISED_OUTSIDE_COMPILE,
+	UF7002: RAISED_OUTSIDE_COMPILE,
+	UF7003: RAISED_OUTSIDE_COMPILE,
+	UF7004: RAISED_OUTSIDE_COMPILE,
+	UF7005: RAISED_OUTSIDE_COMPILE,
+	UF7006: RAISED_OUTSIDE_COMPILE,
+	UF7007: RAISED_OUTSIDE_COMPILE,
+	UF7008: RAISED_OUTSIDE_COMPILE,
+	UF7009: RAISED_OUTSIDE_COMPILE,
+	UF7010: RAISED_OUTSIDE_COMPILE,
+	UF7011:
+		"raised by @unframework.dev/visual for an example with props, outside `compile()`; tested in that package",
+	UF7012:
+		"raised by @unframework.dev/visual's preview for a malformed tag in an example's doc comment, outside `compile()`; tested in that package",
+	UF8001:
+		"Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
+	UF9001:
+		"An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
+	UF9002:
+		"internal: a map that can't follow formatting, with too few words matching or a markup file's blocks changed, is a compiler bug, and a file past the diff's bound is UF9003; tested in codegen",
+	UF9003: "raised past a size bound; tested in codegen",
 };
 
 /**
@@ -70,31 +70,31 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
  * entry names.
  */
 export const EXEMPT_CAPABILITIES: Readonly<
-  Partial<Record<CapabilityName, string | Partial<Record<TargetName, string>>>>
+	Partial<Record<CapabilityName, string | Partial<Record<TargetName, string>>>>
 > = {
-  component: lanesBut(),
-  "component-event": lanesBut("astro"),
-  "default-slot": lanesBut(),
-  "named-slot": lanesBut(),
-  "scoped-slot": lanesBut(),
-  "slot-fallback": lanesBut(),
-  "default-slot-presence": lanesBut("angular", "qwik"),
-  "slot-forwarding": lanesBut(),
-  model: lanesBut(),
-  "two-way-binding": lanesBut("astro"),
-  "model-array": lanesBut("astro"),
-  "model-modifiers": lanesBut("astro"),
-  fallthrough: lanesBut(),
-  expose: lanesBut("astro"),
-  context: lanesBut("astro"),
-  "reactive-context": lanesBut("astro"),
-  "dynamic-component": lanesBut(),
-  // Every case runs in the hydrate projects, which check it on each target that hydrates (L12,
-  // ADR-0095): no IR kind requires it, so no case can name it.
-  hydration: "verified by the hydrate projects (L12), not required by any IR kind",
-  // Every keyed list asks for it, and only a reorder in the browser shows it: the specs that
-  // reorder or replace a list's items require it (semantics/keyed-lists,
-  // control-flow/keyed-reorder-focus, ADR-0096).
-  "keyed-identity":
-    "verified by the specs that require it (semantics/keyed-lists, control-flow/keyed-reorder-focus), not required by any IR kind",
+	component: lanesBut(),
+	"component-event": lanesBut("astro"),
+	"default-slot": lanesBut(),
+	"named-slot": lanesBut(),
+	"scoped-slot": lanesBut(),
+	"slot-fallback": lanesBut(),
+	"default-slot-presence": lanesBut("angular", "qwik"),
+	"slot-forwarding": lanesBut(),
+	model: lanesBut(),
+	"two-way-binding": lanesBut("astro"),
+	"model-array": lanesBut("astro"),
+	"model-modifiers": lanesBut("astro"),
+	fallthrough: lanesBut(),
+	expose: lanesBut("astro"),
+	context: lanesBut("astro"),
+	"reactive-context": lanesBut("astro"),
+	"dynamic-component": lanesBut(),
+	// Every case runs in the hydrate projects, which check it on each target that hydrates (L12,
+	// ADR-0095): no IR kind requires it, so no case can name it.
+	hydration: "verified by the hydrate projects (L12), not required by any IR kind",
+	// Every keyed list asks for it, and only a reorder in the browser shows it: the specs that
+	// reorder or replace a list's items require it (semantics/keyed-lists,
+	// control-flow/keyed-reorder-focus, ADR-0096).
+	"keyed-identity":
+		"verified by the specs that require it (semantics/keyed-lists, control-flow/keyed-reorder-focus), not required by any IR kind",
 };

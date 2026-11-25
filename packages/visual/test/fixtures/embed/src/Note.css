@@ -1,7 +1,7 @@
 /* Styleframe writes a theme as `.<name>-theme, [data-theme="<name>"]`: the dark one recolours. */
 .note {
-  color: rgb(10, 20, 30);
+	color: rgb(10, 20, 30);
 }
 [data-theme="dark"] .note {
-  color: rgb(230, 240, 250);
+	color: rgb(230, 240, 250);
 }

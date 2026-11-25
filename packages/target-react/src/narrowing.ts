@@ -8,12 +8,12 @@
 // (`userRef.current!.name`). A template's condition around a handler takes the rendered value
 // instead (./plan.ts, `narrowedReads`), which TypeScript narrows as the source's, kinds included.
 import type {
-  Binding,
-  BindingReference,
-  Code,
-  CodeReference,
-  NarrowedPath,
-  Span,
+	Binding,
+	BindingReference,
+	Code,
+	CodeReference,
+	NarrowedPath,
+	Span,
 } from "@unframework.dev/ir";
 
 import type { ReactPlan } from "./plan.ts";
@@ -24,51 +24,51 @@ import type { ReactPlan } from "./plan.ts";
  * holds of a prop read through its mirror. `start` is where the source has the read.
  */
 export function assertedPaths(
-  plan: ReactPlan,
-  reference: BindingReference,
-  binding: Binding,
-  start: number = reference.span.start,
+	plan: ReactPlan,
+	reference: BindingReference,
+	binding: Binding,
+	start: number = reference.span.start,
 ): Array<NarrowedPath> {
-  if (!reference.narrowed || plan.narrowedReads.has(start)) {
-    return [];
-  }
-  switch (binding.kind) {
-    case "derived":
-      return plan.derived.get(binding.id)?.current
-        ? reference.narrowed.filter(({ scope }) => scope !== "template")
-        : [];
-    // A composable's ref or derived value, which client code reads through the hook's live
-    // reader (ADR-0069).
-    case "usedState":
-    case "usedDerived":
-      return reference.narrowed.filter(({ scope }) => scope !== "template");
-    // A composable's getter or callback argument is mirrored as a prop is (ADR-0069).
-    case "prop":
-    case "argument":
-      return plan.propMirrors.has(binding.id)
-        ? reference.narrowed.filter(({ scope }) => scope === "closure")
-        : [];
-    case "state":
-    case "templateRef":
-    case "loopVar":
-    case "localConst":
-    case "awaited":
-    case "localFn":
-    case "localVar":
-    case "emit":
-    case "model":
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    case "moduleConst":
-    case "import":
-    case "usedFn":
-    case "usedConst":
-      return [];
-    default:
-      return binding.kind satisfies never;
-  }
+	if (!reference.narrowed || plan.narrowedReads.has(start)) {
+		return [];
+	}
+	switch (binding.kind) {
+		case "derived":
+			return plan.derived.get(binding.id)?.current
+				? reference.narrowed.filter(({ scope }) => scope !== "template")
+				: [];
+		// A composable's ref or derived value, which client code reads through the hook's live
+		// reader (ADR-0069).
+		case "usedState":
+		case "usedDerived":
+			return reference.narrowed.filter(({ scope }) => scope !== "template");
+		// A composable's getter or callback argument is mirrored as a prop is (ADR-0069).
+		case "prop":
+		case "argument":
+			return plan.propMirrors.has(binding.id)
+				? reference.narrowed.filter(({ scope }) => scope === "closure")
+				: [];
+		case "state":
+		case "templateRef":
+		case "loopVar":
+		case "localConst":
+		case "awaited":
+		case "localFn":
+		case "localVar":
+		case "emit":
+		case "model":
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		case "moduleConst":
+		case "import":
+		case "usedFn":
+		case "usedConst":
+			return [];
+		default:
+			return binding.kind satisfies never;
+	}
 }
 
 /**
@@ -78,101 +78,101 @@ export function assertedPaths(
  * the source has it.
  */
 export function assertedCode(
-  code: Code,
-  asserts: (reference: BindingReference) => ReadonlyArray<NarrowedPath>,
+	code: Code,
+	asserts: (reference: BindingReference) => ReadonlyArray<NarrowedPath>,
 ): { code: Code; original: (position: number) => number } {
-  const at = code.refs
-    .flatMap((reference) =>
-      reference.kind === "Binding"
-        ? asserts(reference)
-            .filter(({ span }) => span.end > reference.span.end)
-            .map(({ span }) => span.end)
-        : [],
-    )
-    .toSorted((a, b) => a - b);
-  if (at.length === 0) {
-    return { code, original: (position) => position };
-  }
-  const offset = code.span.start;
-  let text = "";
-  let from = 0;
-  for (const position of at) {
-    text += `${code.code.slice(from, position - offset)}!`;
-    from = position - offset;
-  }
-  text += code.code.slice(from);
-  // A span that ends where a path does holds its `!`; one that starts there follows it.
-  const start = (position: number) => position + at.filter((each) => each < position).length;
-  const end = (position: number) => position + at.filter((each) => each <= position).length;
-  const moved = (span: Span): Span => ({ start: start(span.start), end: end(span.end) });
-  const starts = new Map(
-    code.refs.flatMap((reference) =>
-      spansOf(reference).map((span) => [start(span.start), span.start]),
-    ),
-  );
-  return {
-    code: {
-      code: text,
-      span: { start: code.span.start, end: end(code.span.end) },
-      refs: code.refs.map((reference) => movedReference(reference, moved)),
-    },
-    original: (position) => starts.get(position) ?? position,
-  };
+	const at = code.refs
+		.flatMap((reference) =>
+			reference.kind === "Binding"
+				? asserts(reference)
+						.filter(({ span }) => span.end > reference.span.end)
+						.map(({ span }) => span.end)
+				: [],
+		)
+		.toSorted((a, b) => a - b);
+	if (at.length === 0) {
+		return { code, original: (position) => position };
+	}
+	const offset = code.span.start;
+	let text = "";
+	let from = 0;
+	for (const position of at) {
+		text += `${code.code.slice(from, position - offset)}!`;
+		from = position - offset;
+	}
+	text += code.code.slice(from);
+	// A span that ends where a path does holds its `!`; one that starts there follows it.
+	const start = (position: number) => position + at.filter((each) => each < position).length;
+	const end = (position: number) => position + at.filter((each) => each <= position).length;
+	const moved = (span: Span): Span => ({ start: start(span.start), end: end(span.end) });
+	const starts = new Map(
+		code.refs.flatMap((reference) =>
+			spansOf(reference).map((span) => [start(span.start), span.start]),
+		),
+	);
+	return {
+		code: {
+			code: text,
+			span: { start: code.span.start, end: end(code.span.end) },
+			refs: code.refs.map((reference) => movedReference(reference, moved)),
+		},
+		original: (position) => starts.get(position) ?? position,
+	};
 }
 
 /** The spans of a reference, its own first. */
 function spansOf(reference: CodeReference): Array<Span> {
-  switch (reference.kind) {
-    case "Binding":
-      return [reference.span, ...(reference.narrowed ?? []).map(({ span }) => span)];
-    case "Write":
-      return [reference.span, reference.target, ...(reference.value ? [reference.value] : [])];
-    case "Emit":
-      return [reference.span, ...reference.arguments];
-    case "Global":
-    case "Import":
-    case "Event":
-    case "Api":
-    case "Slot":
-    case "Dev":
-      return [reference.span];
-    default:
-      return reference satisfies never;
-  }
+	switch (reference.kind) {
+		case "Binding":
+			return [reference.span, ...(reference.narrowed ?? []).map(({ span }) => span)];
+		case "Write":
+			return [reference.span, reference.target, ...(reference.value ? [reference.value] : [])];
+		case "Emit":
+			return [reference.span, ...reference.arguments];
+		case "Global":
+		case "Import":
+		case "Event":
+		case "Api":
+		case "Slot":
+		case "Dev":
+			return [reference.span];
+		default:
+			return reference satisfies never;
+	}
 }
 
 /** A reference with each of its spans moved. */
 function movedReference(reference: CodeReference, moved: (span: Span) => Span): CodeReference {
-  switch (reference.kind) {
-    case "Binding":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        ...(reference.narrowed
-          ? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
-          : {}),
-      };
-    case "Write":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        target: moved(reference.target),
-        ...(reference.value ? { value: moved(reference.value) } : {}),
-      };
-    case "Emit":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        arguments: reference.arguments.map(moved),
-      };
-    case "Global":
-    case "Import":
-    case "Event":
-    case "Api":
-    case "Slot":
-    case "Dev":
-      return { ...reference, span: moved(reference.span) };
-    default:
-      return reference satisfies never;
-  }
+	switch (reference.kind) {
+		case "Binding":
+			return {
+				...reference,
+				span: moved(reference.span),
+				...(reference.narrowed
+					? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
+					: {}),
+			};
+		case "Write":
+			return {
+				...reference,
+				span: moved(reference.span),
+				target: moved(reference.target),
+				...(reference.value ? { value: moved(reference.value) } : {}),
+			};
+		case "Emit":
+			return {
+				...reference,
+				span: moved(reference.span),
+				arguments: reference.arguments.map(moved),
+			};
+		case "Global":
+		case "Import":
+		case "Event":
+		case "Api":
+		case "Slot":
+		case "Dev":
+			return { ...reference, span: moved(reference.span) };
+		default:
+			return reference satisfies never;
+	}
 }

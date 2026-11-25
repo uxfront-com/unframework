@@ -10,24 +10,24 @@ import type { TreeParent } from "../tree.ts";
  * before rule 2 removes that attribute, and a `<style>` the source writes stays.
  */
 export function removeQwikStyles(root: TreeParent, target?: NormalizeTarget): void {
-  if (target !== "qwik") {
-    return;
-  }
-  remove(root);
+	if (target !== "qwik") {
+		return;
+	}
+	remove(root);
 }
 
 function remove(root: TreeParent): void {
-  const children = childrenOf(root);
-  const kept = children.filter(
-    (node) =>
-      !isElement(node) || node.tagName !== "style" || getAttribute(node, "q:style") === undefined,
-  );
-  if (kept.length !== children.length) {
-    replaceChildren(root, kept);
-  }
-  for (const node of kept) {
-    if (isElement(node)) {
-      remove(node);
-    }
-  }
+	const children = childrenOf(root);
+	const kept = children.filter(
+		(node) =>
+			!isElement(node) || node.tagName !== "style" || getAttribute(node, "q:style") === undefined,
+	);
+	if (kept.length !== children.length) {
+		replaceChildren(root, kept);
+	}
+	for (const node of kept) {
+		if (isElement(node)) {
+			remove(node);
+		}
+	}
 }

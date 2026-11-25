@@ -19,36 +19,36 @@ import { asComponent } from "./component.ts";
  * its own `act` calls (ADR-0050), so such work is never reported as an update outside `act`.
  */
 export const mount: MountAdapter = async (component, container, options) => {
-  const type = asComponent(component);
-  const listeners = listenerProps(options.on);
-  const element = (props: Readonly<Record<string, unknown>>) =>
-    createElement(type, { ...props, ...listeners });
-  const root = createRoot(container);
-  try {
-    // A render error inside `act` rejects here, rather than surfacing as a global error.
-    await act(async () => root.render(element(options.props ?? {})));
-  } catch (error) {
-    try {
-      await act(async () => root.unmount());
-    } catch (cleanup) {
-      throw new AggregateError([error, cleanup], "React failed to render, then to unmount.", {
-        cause: cleanup,
-      });
-    }
-    throw error;
-  }
-  return {
-    async settle() {
-      await act(async () => {});
-      // What the scheduler queued outside `act` runs in a task of its own (a MessageChannel).
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 0);
-      });
-    },
-    async rerender(props) {
-      await act(async () => root.render(element(props)));
-    },
-    interact: (action) => act(action),
-    unmount: () => act(async () => root.unmount()),
-  };
+	const type = asComponent(component);
+	const listeners = listenerProps(options.on);
+	const element = (props: Readonly<Record<string, unknown>>) =>
+		createElement(type, { ...props, ...listeners });
+	const root = createRoot(container);
+	try {
+		// A render error inside `act` rejects here, rather than surfacing as a global error.
+		await act(async () => root.render(element(options.props ?? {})));
+	} catch (error) {
+		try {
+			await act(async () => root.unmount());
+		} catch (cleanup) {
+			throw new AggregateError([error, cleanup], "React failed to render, then to unmount.", {
+				cause: cleanup,
+			});
+		}
+		throw error;
+	}
+	return {
+		async settle() {
+			await act(async () => {});
+			// What the scheduler queued outside `act` runs in a task of its own (a MessageChannel).
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		},
+		async rerender(props) {
+			await act(async () => root.render(element(props)));
+		},
+		interact: (action) => act(action),
+		unmount: () => act(async () => root.unmount()),
+	};
 };

@@ -15,53 +15,53 @@ import type { Tone } from "ui-kit/tokens";
 import type { Local } from "#local";
 
 export function Exported(props: ButtonProps) {
-  return props;
+	return props;
 }
 
 export function StarExport(props: BaseProps & { tone: Tone }) {
-  return props;
+	return props;
 }
 
 export function ScopedTypes(props: Tagged) {
-  return props;
+	return props;
 }
 
 export function DefinitelyTyped(props: PlainProps) {
-  return props;
+	return props;
 }
 
 export function Utility(props: Partial<ButtonProps>) {
-  return props;
+	return props;
 }
 
 export function NotInstalled(props: Missing) {
-  return props;
+	return props;
 }
 
 export function NotExported(props: Hidden) {
-  return props;
+	return props;
 }
 
 export function SubpathImport(props: Local) {
-  return props;
+	return props;
 }
 
 export function PackageSubpathImport(props: Kit) {
-  return props;
+	return props;
 }
 
 export function RootCopy(props: Twin) {
-  return props;
+	return props;
 }
 
 export function NestedCopy(props: Uses) {
-  return props;
+	return props;
 }
 
 export function DependencyOfADependency(props: DeepProps) {
-  return props;
+	return props;
 }
 
 export function Typings(props: OldProps) {
-  return props;
+	return props;
 }

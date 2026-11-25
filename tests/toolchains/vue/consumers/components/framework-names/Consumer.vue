@@ -3,5 +3,5 @@ import Step from "../../../../../integration/cases/components/framework-names/__
 </script>
 
 <template>
-  <Step step="review" />
+	<Step step="review" />
 </template>

@@ -11,9 +11,9 @@ import { basename, dirname, join } from "node:path";
 
 import type { Diagnostic, Optimizer, TransformModulesOptions } from "@qwik.dev/optimizer";
 import type {
-  FrameworkCompileResult,
-  ToolchainFile,
-  ToolchainMessage,
+	FrameworkCompileResult,
+	ToolchainFile,
+	ToolchainMessage,
 } from "@unframework.dev/codegen";
 import { assertFilesToCompile } from "@unframework.dev/codegen/toolchain-node";
 import { parseSync } from "oxc-parser";
@@ -28,50 +28,50 @@ let optimizer: Promise<Optimizer> | undefined;
  * the optimizer throws on gets that error, so one bad file never hides the others.
  */
 export async function compileWithOptimizer(
-  files: ReadonlyArray<ToolchainFile>,
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
-  assertFilesToCompile(files);
-  optimizer ??= loadOptimizer();
-  const qwik = await optimizer;
-  const results = new Map<string, FrameworkCompileResult>();
-  for (const file of files) {
-    const result: FrameworkCompileResult = { errors: syntaxErrors(file), warnings: [] };
-    const seen = new Set<string>();
-    for (const isServer of [false, true]) {
-      const options: TransformModulesOptions = {
-        input: [{ path: basename(file.path), code: file.contents }],
-        srcDir: dirname(file.path),
-        entryStrategy: { type: "segment" },
-        minify: "simplify",
-        transpileTs: true,
-        transpileJsx: true,
-        explicitExtensions: true,
-        mode: "dev",
-        isServer,
-      };
-      let diagnostics: ReadonlyArray<Diagnostic>;
-      try {
-        ({ diagnostics } = await qwik.transformModules(options));
-      } catch (error) {
-        result.errors.push({
-          message: `The Qwik optimizer threw on the ${isServer ? "server" : "client"} pass: ${error instanceof Error ? error.message : String(error)}`,
-        });
-        continue;
-      }
-      // The client and server passes report most problems twice; keep one of each.
-      for (const diagnostic of diagnostics) {
-        const message = toMessage(diagnostic);
-        const key = `${diagnostic.category}|${message.code}|${message.line}|${message.column}|${message.message}`;
-        if (seen.has(key)) {
-          continue;
-        }
-        seen.add(key);
-        (diagnostic.category === "warning" ? result.warnings : result.errors).push(message);
-      }
-    }
-    results.set(file.path, result);
-  }
-  return results;
+	assertFilesToCompile(files);
+	optimizer ??= loadOptimizer();
+	const qwik = await optimizer;
+	const results = new Map<string, FrameworkCompileResult>();
+	for (const file of files) {
+		const result: FrameworkCompileResult = { errors: syntaxErrors(file), warnings: [] };
+		const seen = new Set<string>();
+		for (const isServer of [false, true]) {
+			const options: TransformModulesOptions = {
+				input: [{ path: basename(file.path), code: file.contents }],
+				srcDir: dirname(file.path),
+				entryStrategy: { type: "segment" },
+				minify: "simplify",
+				transpileTs: true,
+				transpileJsx: true,
+				explicitExtensions: true,
+				mode: "dev",
+				isServer,
+			};
+			let diagnostics: ReadonlyArray<Diagnostic>;
+			try {
+				({ diagnostics } = await qwik.transformModules(options));
+			} catch (error) {
+				result.errors.push({
+					message: `The Qwik optimizer threw on the ${isServer ? "server" : "client"} pass: ${error instanceof Error ? error.message : String(error)}`,
+				});
+				continue;
+			}
+			// The client and server passes report most problems twice; keep one of each.
+			for (const diagnostic of diagnostics) {
+				const message = toMessage(diagnostic);
+				const key = `${diagnostic.category}|${message.code}|${message.line}|${message.column}|${message.message}`;
+				if (seen.has(key)) {
+					continue;
+				}
+				seen.add(key);
+				(diagnostic.category === "warning" ? result.warnings : result.errors).push(message);
+			}
+		}
+		results.set(file.path, result);
+	}
+	return results;
 }
 
 /**
@@ -80,33 +80,33 @@ export async function compileWithOptimizer(
  * optimizer folds `isDev` to `true`, as Qwik's Vite plugin does in a dev build (ADR-0117).
  */
 export async function emitWithOptimizer(
-  files: ReadonlyArray<ToolchainFile>,
-  mode: "production" | "development" = "production",
+	files: ReadonlyArray<ToolchainFile>,
+	mode: "production" | "development" = "production",
 ): Promise<Map<string, Array<ToolchainFile>>> {
-  assertFilesToCompile(files);
-  optimizer ??= loadOptimizer();
-  const qwik = await optimizer;
-  const emitted = new Map<string, Array<ToolchainFile>>();
-  for (const file of files) {
-    const { modules } = await qwik.transformModules({
-      input: [{ path: basename(file.path), code: file.contents }],
-      srcDir: dirname(file.path),
-      entryStrategy: { type: "segment" },
-      minify: "simplify",
-      transpileTs: true,
-      transpileJsx: true,
-      explicitExtensions: true,
-      mode: mode === "production" ? "prod" : "dev",
-      isServer: false,
-    });
-    emitted.set(
-      file.path,
-      modules
-        .toSorted((a, b) => Number(a.segment !== null) - Number(b.segment !== null))
-        .map(({ path, code }) => ({ path: join(dirname(file.path), path), contents: code })),
-    );
-  }
-  return emitted;
+	assertFilesToCompile(files);
+	optimizer ??= loadOptimizer();
+	const qwik = await optimizer;
+	const emitted = new Map<string, Array<ToolchainFile>>();
+	for (const file of files) {
+		const { modules } = await qwik.transformModules({
+			input: [{ path: basename(file.path), code: file.contents }],
+			srcDir: dirname(file.path),
+			entryStrategy: { type: "segment" },
+			minify: "simplify",
+			transpileTs: true,
+			transpileJsx: true,
+			explicitExtensions: true,
+			mode: mode === "production" ? "prod" : "dev",
+			isServer: false,
+		});
+		emitted.set(
+			file.path,
+			modules
+				.toSorted((a, b) => Number(a.segment !== null) - Number(b.segment !== null))
+				.map(({ path, code }) => ({ path: join(dirname(file.path), path), contents: code })),
+		);
+	}
+	return emitted;
 }
 
 /**
@@ -114,24 +114,24 @@ export async function emitWithOptimizer(
  * on first use: the harness imports every toolchain to build its configuration.
  */
 async function loadOptimizer(): Promise<Optimizer> {
-  const ours = versionOf("@qwik.dev/optimizer", require);
-  const core = createRequire(require.resolve("@qwik.dev/core/package.json"));
-  const theirs = versionOf("@qwik.dev/optimizer", core);
-  if (ours !== theirs) {
-    throw new Error(
-      `L3 cannot start: @qwik.dev/core runs @qwik.dev/optimizer@${theirs}, but the Qwik toolchain loads ${ours}. Pin them to the same version.`,
-    );
-  }
-  const { createOptimizer } = await import("@qwik.dev/optimizer");
-  return createOptimizer();
+	const ours = versionOf("@qwik.dev/optimizer", require);
+	const core = createRequire(require.resolve("@qwik.dev/core/package.json"));
+	const theirs = versionOf("@qwik.dev/optimizer", core);
+	if (ours !== theirs) {
+		throw new Error(
+			`L3 cannot start: @qwik.dev/core runs @qwik.dev/optimizer@${theirs}, but the Qwik toolchain loads ${ours}. Pin them to the same version.`,
+		);
+	}
+	const { createOptimizer } = await import("@qwik.dev/optimizer");
+	return createOptimizer();
 }
 
 function versionOf(name: string, from: NodeJS.Require): string {
-  const manifest: unknown = JSON.parse(readFileSync(from.resolve(`${name}/package.json`), "utf8"));
-  if (typeof manifest !== "object" || manifest === null || !("version" in manifest)) {
-    throw new Error(`${name}'s package.json has no version.`);
-  }
-  return String(manifest.version);
+	const manifest: unknown = JSON.parse(readFileSync(from.resolve(`${name}/package.json`), "utf8"));
+	if (typeof manifest !== "object" || manifest === null || !("version" in manifest)) {
+		throw new Error(`${name}'s package.json has no version.`);
+	}
+	return String(manifest.version);
 }
 
 /**
@@ -139,26 +139,26 @@ function versionOf(name: string, from: NodeJS.Require): string {
  * ADR-0070) as TypeScript, and returns its syntax errors with 1-based positions.
  */
 function syntaxErrors(file: ToolchainFile): Array<ToolchainMessage> {
-  const lang = file.path.endsWith(".ts") ? "ts" : "tsx";
-  const { errors } = parseSync(file.path, file.contents, { lang, sourceType: "module" });
-  return errors.map((error) => {
-    const offset = error.labels[0]?.start ?? 0;
-    const before = file.contents.slice(0, offset).split("\n");
-    return {
-      message: `Not valid ${lang.toUpperCase()}: ${error.message}`,
-      line: before.length,
-      column: before.at(-1)!.length + 1,
-      code: `${lang.toUpperCase()}_SYNTAX`,
-    };
-  });
+	const lang = file.path.endsWith(".ts") ? "ts" : "tsx";
+	const { errors } = parseSync(file.path, file.contents, { lang, sourceType: "module" });
+	return errors.map((error) => {
+		const offset = error.labels[0]?.start ?? 0;
+		const before = file.contents.slice(0, offset).split("\n");
+		return {
+			message: `Not valid ${lang.toUpperCase()}: ${error.message}`,
+			line: before.length,
+			column: before.at(-1)!.length + 1,
+			code: `${lang.toUpperCase()}_SYNTAX`,
+		};
+	});
 }
 
 /** The optimizer's lines and columns are both 1-based, as the toolchain contract's are. */
 function toMessage(diagnostic: Diagnostic): ToolchainMessage {
-  const [at] = diagnostic.highlights ?? [];
-  return {
-    message: diagnostic.message,
-    ...(at ? { line: at.startLine, column: at.startCol } : {}),
-    ...(diagnostic.code ? { code: diagnostic.code } : {}),
-  };
+	const [at] = diagnostic.highlights ?? [];
+	return {
+		message: diagnostic.message,
+		...(at ? { line: at.startLine, column: at.startCol } : {}),
+		...(diagnostic.code ? { code: diagnostic.code } : {}),
+	};
 }

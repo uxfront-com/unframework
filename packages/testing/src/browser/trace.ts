@@ -12,91 +12,91 @@ export const TRACE_VERSION = 1;
 
 /** One scripted step, after it settled. */
 export interface TraceStep {
-  /**
-   * What happened, the same on every target: the action, the locator under the view's root,
-   * and the action's arguments as JSON (`click getByRole('button', { name: '+3' })`,
-   * `fill getByLabelText('Name') "Ada"`, `rerender {"label":"New"}`).
-   */
-  action: string;
-  /** The normalised DOM, one line each, the focused element marked `uf:focused`. */
-  dom: Array<string>;
-  /** Playwright's ARIA snapshot of the root, one line each. */
-  aria: Array<string>;
-  /**
-   * The events emitted since the step before (or since the mount), grouped by name: names
-   * sorted, each name's argument lists in the order they came (the order of different effects
-   * one run triggers is not part of the contract, ADR-0050).
-   */
-  events: Record<string, Array<Array<unknown>>>;
+	/**
+	 * What happened, the same on every target: the action, the locator under the view's root,
+	 * and the action's arguments as JSON (`click getByRole('button', { name: '+3' })`,
+	 * `fill getByLabelText('Name') "Ada"`, `rerender {"label":"New"}`).
+	 */
+	action: string;
+	/** The normalised DOM, one line each, the focused element marked `uf:focused`. */
+	dom: Array<string>;
+	/** Playwright's ARIA snapshot of the root, one line each. */
+	aria: Array<string>;
+	/**
+	 * The events emitted since the step before (or since the mount), grouped by name: names
+	 * sorted, each name's argument lists in the order they came (the order of different effects
+	 * one run triggers is not part of the contract, ADR-0050).
+	 */
+	events: Record<string, Array<Array<unknown>>>;
 }
 
 /** What a view's trace needs to record a step: its DOM, its ARIA tree and its events so far. */
 export interface TraceSource {
-  /** The view's root, `uf-root-N`, for messages. */
-  readonly root: string;
-  /** The normalised DOM and the renaming of its generated ids. */
-  dom(): { html: string; ids: Map<string, string> };
-  aria(): Promise<string>;
-  /** Every event the component emitted since it mounted. */
-  readonly events: ReadonlyArray<EmittedEvent>;
+	/** The view's root, `uf-root-N`, for messages. */
+	readonly root: string;
+	/** The normalised DOM and the renaming of its generated ids. */
+	dom(): { html: string; ids: Map<string, string> };
+	aria(): Promise<string>;
+	/** Every event the component emitted since it mounted. */
+	readonly events: ReadonlyArray<EmittedEvent>;
 }
 
 /** The steps of one view not yet compared, and the events they have seen. */
 export class Trace {
-  readonly #source: TraceSource;
-  #steps: Array<TraceStep> = [];
-  /** How many of the view's events earlier steps took. */
-  #cursor = 0;
+	readonly #source: TraceSource;
+	#steps: Array<TraceStep> = [];
+	/** How many of the view's events earlier steps took. */
+	#cursor = 0;
 
-  constructor(source: TraceSource) {
-    this.#source = source;
-    open.add(this);
-  }
+	constructor(source: TraceSource) {
+		this.#source = source;
+		open.add(this);
+	}
 
-  /** Records a step, after the action settled. */
-  async record(action: string): Promise<void> {
-    const { html, ids } = this.#source.dom();
-    // The ids the ARIA tree and a payload carry are renamed as this step's DOM renames them.
-    const names = new Map(ids);
-    const aria = renameGeneratedIds(await this.#source.aria(), names);
-    const events = this.#source.events.slice(this.#cursor);
-    this.#cursor += events.length;
-    this.#steps.push({
-      action,
-      dom: lines(html),
-      aria: lines(aria),
-      events: groupEvents(
-        events.map((event) => ({
-          ...event,
-          args: renumberIds(event.args, names) as Array<unknown>,
-        })),
-      ),
-    });
-  }
+	/** Records a step, after the action settled. */
+	async record(action: string): Promise<void> {
+		const { html, ids } = this.#source.dom();
+		// The ids the ARIA tree and a payload carry are renamed as this step's DOM renames them.
+		const names = new Map(ids);
+		const aria = renameGeneratedIds(await this.#source.aria(), names);
+		const events = this.#source.events.slice(this.#cursor);
+		this.#cursor += events.length;
+		this.#steps.push({
+			action,
+			dom: lines(html),
+			aria: lines(aria),
+			events: groupEvents(
+				events.map((event) => ({
+					...event,
+					args: renumberIds(event.args, names) as Array<unknown>,
+				})),
+			),
+		});
+	}
 
-  /** The steps since the previous call, which `expectParity` compares; the trace forgets them. */
-  take(): Array<TraceStep> {
-    return this.#steps.splice(0);
-  }
+	/** The steps since the previous call, which `expectParity` compares; the trace forgets them. */
+	take(): Array<TraceStep> {
+		return this.#steps.splice(0);
+	}
 
-  /** How many steps are waiting to be compared. */
-  get length(): number {
-    return this.#steps.length;
-  }
+	/** How many steps are waiting to be compared. */
+	get length(): number {
+		return this.#steps.length;
+	}
 
-  /** Forgets the steps since the trace held `length` of them: they are no scenario to compare. */
-  forget(length: number): void {
-    this.#steps.length = length;
-  }
+	/** Forgets the steps since the trace held `length` of them: they are no scenario to compare. */
+	forget(length: number): void {
+		this.#steps.length = length;
+	}
 
-  /** The steps not taken yet, as a message, or nothing. */
-  leftover(): string | undefined {
-    if (!this.#steps.length) {
-      return undefined;
-    }
-    const actions = this.#steps.map((step) => step.action).join("; ");
-    return `${this.#steps.length} step(s) of ${this.#source.root} were never compared (${actions}): every view.user action and rerender is followed by an expectParity, which compares its trace.`;
-  }
+	/** The steps not taken yet, as a message, or nothing. */
+	leftover(): string | undefined {
+		if (!this.#steps.length) {
+			return undefined;
+		}
+		const actions = this.#steps.map((step) => step.action).join("; ");
+		return `${this.#steps.length} step(s) of ${this.#source.root} were never compared (${actions}): every view.user action and rerender is followed by an expectParity, which compares its trace.`;
+	}
 }
 
 /** Every trace of the current test, which the setup file judges when it ends. */
@@ -107,18 +107,18 @@ const open = new Set<Trace>();
  * forgets every trace: the setup file calls it when a test ends.
  */
 export function closeTraces(): Array<string> {
-  const messages = [...open].flatMap((trace) => trace.leftover() ?? []);
-  open.clear();
-  return messages;
+	const messages = [...open].flatMap((trace) => trace.leftover() ?? []);
+	open.clear();
+	return messages;
 }
 
 /** A trace file's contents: pretty JSON, so a diff names the line that changed. */
 export function traceFile(steps: ReadonlyArray<TraceStep>): string {
-  return `${JSON.stringify({ version: TRACE_VERSION, steps }, null, 2)}\n`;
+	return `${JSON.stringify({ version: TRACE_VERSION, steps }, null, 2)}\n`;
 }
 
 /** Text as lines, without the final line break. */
 function lines(text: string): Array<string> {
-  const trimmed = text.replace(/\n+$/, "");
-  return trimmed ? trimmed.split("\n") : [];
+	const trimmed = text.replace(/\n+$/, "");
+	return trimmed ? trimmed.split("\n") : [];
 }

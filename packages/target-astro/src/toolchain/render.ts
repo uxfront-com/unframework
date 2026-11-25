@@ -11,36 +11,36 @@ import { join } from "node:path";
 import { formatWithOptions } from "node:util";
 
 import type {
-  CapturedConsoleMessage,
-  ToolchainCommand,
-  ToolchainContext,
+	CapturedConsoleMessage,
+	ToolchainCommand,
+	ToolchainContext,
 } from "@unframework.dev/codegen";
 import type * as AstroContainerModule from "astro/container";
 import type { experimental_AstroContainer as AstroContainer } from "astro/container";
 import type {
-  DevEnvironment,
-  EnvironmentModuleNode,
-  Plugin,
-  RunnableDevEnvironment,
-  ViteDevServer,
+	DevEnvironment,
+	EnvironmentModuleNode,
+	Plugin,
+	RunnableDevEnvironment,
+	ViteDevServer,
 } from "vite";
 
 import { astroViteConfig } from "./config.ts";
 import {
-  ASTRO_VIRTUAL_ID,
-  astroComponentRef,
-  isAstroComponentFactory,
-  splitQuery,
+	ASTRO_VIRTUAL_ID,
+	astroComponentRef,
+	isAstroComponentFactory,
+	splitQuery,
 } from "./protocol.ts";
 import type { AstroRenderRequest, AstroRenderResult } from "./protocol.ts";
 import { compiledAstroSource } from "./sources.ts";
 
 interface RenderServer {
-  server: ViteDevServer;
-  ssr: RunnableDevEnvironment;
-  container: AstroContainer;
-  /** The source each virtual id was last loaded with, to notice a recompile. */
-  served: Map<string, string>;
+	server: ViteDevServer;
+	ssr: RunnableDevEnvironment;
+	container: AstroContainer;
+	/** The source each virtual id was last loaded with, to notice a recompile. */
+	served: Map<string, string>;
 }
 
 const servers = new Map<string, Promise<RenderServer>>();
@@ -51,25 +51,25 @@ const servers = new Map<string, Promise<RenderServer>>();
  * until the render server asks.
  */
 export interface ChildModules {
-  /** The virtual id an import of a compiled module names, as the browser project resolves it. */
-  resolve(specifier: string, importer: string): Promise<string | undefined>;
-  /** Compiles a virtual id in the browser project, which records its Astro source. */
-  load(id: string): Promise<void>;
-  /**
-   * The sheet the browser project's pipeline serves for an emitted sheet's id (ADR-0063), as
-   * the unframework plugin (and any canary) gives it.
-   */
-  sheet(id: string): Promise<string>;
-  /**
-   * The static module the browser project's pipeline serves for a module of composables' id
-   * (`/abs/useToggle.uf.ts`, ADR-0069), as the unframework plugin compiles it.
-   */
-  composable(id: string): Promise<string>;
-  /**
-   * The shared helper module the browser project's pipeline serves for a helper's id
-   * (`/abs/_unframework/astro/scopeAttributes.ts`, ADR-0121), as the unframework plugin emitted it.
-   */
-  helper(id: string): Promise<string>;
+	/** The virtual id an import of a compiled module names, as the browser project resolves it. */
+	resolve(specifier: string, importer: string): Promise<string | undefined>;
+	/** Compiles a virtual id in the browser project, which records its Astro source. */
+	load(id: string): Promise<void>;
+	/**
+	 * The sheet the browser project's pipeline serves for an emitted sheet's id (ADR-0063), as
+	 * the unframework plugin (and any canary) gives it.
+	 */
+	sheet(id: string): Promise<string>;
+	/**
+	 * The static module the browser project's pipeline serves for a module of composables' id
+	 * (`/abs/useToggle.uf.ts`, ADR-0069), as the unframework plugin compiles it.
+	 */
+	composable(id: string): Promise<string>;
+	/**
+	 * The shared helper module the browser project's pipeline serves for a helper's id
+	 * (`/abs/_unframework/astro/scopeAttributes.ts`, ADR-0121), as the unframework plugin emitted it.
+	 */
+	helper(id: string): Promise<string>;
 }
 
 /** The children of the render running now: renders run one at a time. */
@@ -95,8 +95,8 @@ const STYLESHEET_ID = /\.css(?:\?.*)?$/;
 
 /** The `ufAstroRender` browser command for a project. */
 export function createAstroRenderCommand(context: ToolchainContext): ToolchainCommand {
-  return (browser: unknown, request: AstroRenderRequest) =>
-    renderAstroComponent(context.root, request, browserChildModules(browser), context.plugins);
+	return (browser: unknown, request: AstroRenderRequest) =>
+		renderAstroComponent(context.root, request, browserChildModules(browser), context.plugins);
 }
 
 /**
@@ -109,54 +109,54 @@ export function createAstroRenderCommand(context: ToolchainContext): ToolchainCo
  * its reference, and the render fails with the guard's message.
  */
 function browserChildModules(browser: unknown): ChildModules | undefined {
-  const vite = (browser as { project?: { browser?: { vite?: ViteDevServer } } } | undefined)
-    ?.project?.browser?.vite;
-  const client: DevEnvironment | undefined = vite?.environments.client;
-  if (!client) {
-    return undefined;
-  }
-  return {
-    async resolve(specifier, importer) {
-      return (await client.pluginContainer.resolveId(specifier, importer))?.id;
-    },
-    async load(id) {
-      await client.moduleGraph.ensureEntryFromUrl(id);
-      const loaded = await client.pluginContainer.load(id);
-      const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (typeof code !== "string") {
-        return;
-      }
-      const transformed = (await client.pluginContainer.transform(code, id)).code;
-      if (transformed !== `export default ${JSON.stringify(astroComponentRef(id))};\n`) {
-        const thrown = /^throw new Error\((".*")\);$/m.exec(transformed)?.[1];
-        throw new Error(thrown ? (JSON.parse(thrown) as string) : transformed);
-      }
-    },
-    async sheet(id) {
-      const loaded = await client.pluginContainer.load(id);
-      const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (typeof code !== "string") {
-        throw new Error(`ufAstroRender: the browser project serves no sheet ${id}.`);
-      }
-      return code;
-    },
-    async composable(id) {
-      const loaded = await client.pluginContainer.load(id);
-      const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (typeof code !== "string") {
-        throw new Error(`ufAstroRender: the browser project serves no composables ${id}.`);
-      }
-      return code;
-    },
-    async helper(id) {
-      const loaded = await client.pluginContainer.load(id);
-      const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (typeof code !== "string") {
-        throw new Error(`ufAstroRender: the browser project serves no helper ${id}.`);
-      }
-      return code;
-    },
-  };
+	const vite = (browser as { project?: { browser?: { vite?: ViteDevServer } } } | undefined)
+		?.project?.browser?.vite;
+	const client: DevEnvironment | undefined = vite?.environments.client;
+	if (!client) {
+		return undefined;
+	}
+	return {
+		async resolve(specifier, importer) {
+			return (await client.pluginContainer.resolveId(specifier, importer))?.id;
+		},
+		async load(id) {
+			await client.moduleGraph.ensureEntryFromUrl(id);
+			const loaded = await client.pluginContainer.load(id);
+			const code = typeof loaded === "object" ? loaded?.code : loaded;
+			if (typeof code !== "string") {
+				return;
+			}
+			const transformed = (await client.pluginContainer.transform(code, id)).code;
+			if (transformed !== `export default ${JSON.stringify(astroComponentRef(id))};\n`) {
+				const thrown = /^throw new Error\((".*")\);$/m.exec(transformed)?.[1];
+				throw new Error(thrown ? (JSON.parse(thrown) as string) : transformed);
+			}
+		},
+		async sheet(id) {
+			const loaded = await client.pluginContainer.load(id);
+			const code = typeof loaded === "object" ? loaded?.code : loaded;
+			if (typeof code !== "string") {
+				throw new Error(`ufAstroRender: the browser project serves no sheet ${id}.`);
+			}
+			return code;
+		},
+		async composable(id) {
+			const loaded = await client.pluginContainer.load(id);
+			const code = typeof loaded === "object" ? loaded?.code : loaded;
+			if (typeof code !== "string") {
+				throw new Error(`ufAstroRender: the browser project serves no composables ${id}.`);
+			}
+			return code;
+		},
+		async helper(id) {
+			const loaded = await client.pluginContainer.load(id);
+			const code = typeof loaded === "object" ? loaded?.code : loaded;
+			if (typeof code !== "string") {
+				throw new Error(`ufAstroRender: the browser project serves no helper ${id}.`);
+			}
+			return code;
+		},
+	};
 }
 
 // Renders run one at a time: the console capture patches the process-wide console, and a
@@ -171,76 +171,76 @@ let queue: Promise<unknown> = Promise.resolve();
  * starts.
  */
 export function renderAstroComponent(
-  root: string,
-  request: AstroRenderRequest,
-  childModules?: ChildModules,
-  plugins?: () => Promise<Array<Plugin>>,
+	root: string,
+	request: AstroRenderRequest,
+	childModules?: ChildModules,
+	plugins?: () => Promise<Array<Plugin>>,
 ): Promise<AstroRenderResult> {
-  const run = async () => {
-    children = childModules;
-    try {
-      return await render(root, request, plugins);
-    } finally {
-      children = undefined;
-    }
-  };
-  const result = queue.then(run, run);
-  queue = result.then(
-    () => undefined,
-    () => undefined,
-  );
-  return result;
+	const run = async () => {
+		children = childModules;
+		try {
+			return await render(root, request, plugins);
+		} finally {
+			children = undefined;
+		}
+	};
+	const result = queue.then(run, run);
+	queue = result.then(
+		() => undefined,
+		() => undefined,
+	);
+	return result;
 }
 
 async function render(
-  root: string,
-  { id, props }: AstroRenderRequest,
-  plugins: (() => Promise<Array<Plugin>>) | undefined,
+	root: string,
+	{ id, props }: AstroRenderRequest,
+	plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<AstroRenderResult> {
-  if (!ASTRO_VIRTUAL_ID.test(id) || id.includes("?")) {
-    throw new TypeError(`ufAstroRender: ${JSON.stringify(id)} is not an Astro output id.`);
-  }
-  const source = compiledAstroSource(id);
-  if (source === undefined) {
-    throw new Error(
-      `ufAstroRender: ${id} was never compiled by a browser project; import the component in the spec and mount what the import yields.`,
-    );
-  }
-  const server = await renderServer(root, plugins);
-  // The component, a child or a module of composables it imports, may have been compiled again
-  // since it was served.
-  for (const [served, previous] of server.served) {
-    // A module of composables this render's project cannot serve is loaded again if imported.
-    const current = COMPOSABLE_ID.test(served)
-      ? await children?.composable(served).catch(() => undefined)
-      : HELPER_ID.test(served)
-        ? await children?.helper(served).catch(() => undefined)
-        : compiledAstroSource(served);
-    if (current !== previous) {
-      invalidate(server.ssr, served);
-    }
-  }
+	if (!ASTRO_VIRTUAL_ID.test(id) || id.includes("?")) {
+		throw new TypeError(`ufAstroRender: ${JSON.stringify(id)} is not an Astro output id.`);
+	}
+	const source = compiledAstroSource(id);
+	if (source === undefined) {
+		throw new Error(
+			`ufAstroRender: ${id} was never compiled by a browser project; import the component in the spec and mount what the import yields.`,
+		);
+	}
+	const server = await renderServer(root, plugins);
+	// The component, a child or a module of composables it imports, may have been compiled again
+	// since it was served.
+	for (const [served, previous] of server.served) {
+		// A module of composables this render's project cannot serve is loaded again if imported.
+		const current = COMPOSABLE_ID.test(served)
+			? await children?.composable(served).catch(() => undefined)
+			: HELPER_ID.test(served)
+				? await children?.helper(served).catch(() => undefined)
+				: compiledAstroSource(served);
+		if (current !== previous) {
+			invalidate(server.ssr, served);
+		}
+	}
 
-  const module: { default?: unknown } = await server.ssr.runner.import(`${id}?container`);
-  const component = module.default;
-  if (!isAstroComponentFactory(component)) {
-    throw new TypeError(`ufAstroRender: ${id} does not export an Astro component by default.`);
-  }
-  const { value: html, messages } = await captureConsole(() =>
-    server.container.renderComponent(component, { props }),
-  );
-  // The sheets the component and its children import in their frontmatter (ADR-0063), which
-  // `?container` leaves out (ADR-0020): each as a `<style>` before the markup, a child's
-  // before its parent's, as an Astro page links them. Read again each render, so a recompile
-  // or a canary is seen. An emitted sheet comes from the browser project; another, such as
-  // a styling engine's (ADR-0064), from the plugin of the render server's own that serves it.
-  const styles: Array<string> = [];
-  for (const sheet of importedSheets(server.ssr, `${id}?container`)) {
-    styles.push(
-      `<style>${await (SHEET_ID.test(sheet) ? children!.sheet(sheet) : stylesheet(server.ssr, sheet))}</style>`,
-    );
-  }
-  return { html: `${styles.join("")}${html}`, console: messages };
+	const module: { default?: unknown } = await server.ssr.runner.import(`${id}?container`);
+	const component = module.default;
+	if (!isAstroComponentFactory(component)) {
+		throw new TypeError(`ufAstroRender: ${id} does not export an Astro component by default.`);
+	}
+	const { value: html, messages } = await captureConsole(() =>
+		server.container.renderComponent(component, { props }),
+	);
+	// The sheets the component and its children import in their frontmatter (ADR-0063), which
+	// `?container` leaves out (ADR-0020): each as a `<style>` before the markup, a child's
+	// before its parent's, as an Astro page links them. Read again each render, so a recompile
+	// or a canary is seen. An emitted sheet comes from the browser project; another, such as
+	// a styling engine's (ADR-0064), from the plugin of the render server's own that serves it.
+	const styles: Array<string> = [];
+	for (const sheet of importedSheets(server.ssr, `${id}?container`)) {
+		styles.push(
+			`<style>${await (SHEET_ID.test(sheet) ? children!.sheet(sheet) : stylesheet(server.ssr, sheet))}</style>`,
+		);
+	}
+	return { html: `${styles.join("")}${html}`, console: messages };
 }
 
 /**
@@ -248,94 +248,94 @@ async function render(
  * each child's (depth first) before the importer's own.
  */
 function importedSheets(ssr: RunnableDevEnvironment, id: string): Array<string> {
-  const sheets = new Set<string>();
-  const seen = new Set<string>();
-  const visit = (node: EnvironmentModuleNode | undefined) => {
-    if (!node?.id || seen.has(node.id)) {
-      return;
-    }
-    seen.add(node.id);
-    for (const imported of node.importedModules) {
-      if (!imported.id) {
-        continue;
-      }
-      if (ASTRO_VIRTUAL_ID.test(imported.id)) {
-        visit(imported);
-      } else if (STYLESHEET_ID.test(imported.id)) {
-        sheets.add(splitQuery(imported.id)[0]);
-      }
-    }
-  };
-  visit(ssr.moduleGraph.getModuleById(id));
-  return [...sheets];
+	const sheets = new Set<string>();
+	const seen = new Set<string>();
+	const visit = (node: EnvironmentModuleNode | undefined) => {
+		if (!node?.id || seen.has(node.id)) {
+			return;
+		}
+		seen.add(node.id);
+		for (const imported of node.importedModules) {
+			if (!imported.id) {
+				continue;
+			}
+			if (ASTRO_VIRTUAL_ID.test(imported.id)) {
+				visit(imported);
+			} else if (STYLESHEET_ID.test(imported.id)) {
+				sheets.add(splitQuery(imported.id)[0]);
+			}
+		}
+	};
+	visit(ssr.moduleGraph.getModuleById(id));
+	return [...sheets];
 }
 
 /** A sheet a plugin of the render server serves, as that plugin loads it. */
 async function stylesheet(ssr: RunnableDevEnvironment, id: string): Promise<string> {
-  const loaded = await ssr.pluginContainer.load(id);
-  const code = typeof loaded === "object" ? loaded?.code : loaded;
-  if (typeof code !== "string") {
-    throw new Error(`ufAstroRender: no plugin serves the sheet ${id}.`);
-  }
-  return code;
+	const loaded = await ssr.pluginContainer.load(id);
+	const code = typeof loaded === "object" ? loaded?.code : loaded;
+	if (typeof code !== "string") {
+		throw new Error(`ufAstroRender: no plugin serves the sheet ${id}.`);
+	}
+	return code;
 }
 
 /** Drops a recompiled component from the server's module graph and the runner's cache. */
 function invalidate(ssr: RunnableDevEnvironment, id: string): void {
-  for (const node of ssr.moduleGraph.getModulesByFile(id) ?? []) {
-    ssr.moduleGraph.invalidateModule(node);
-  }
-  for (const node of ssr.runner.evaluatedModules.getModulesByFile(id) ?? []) {
-    ssr.runner.evaluatedModules.invalidateModule(node);
-  }
+	for (const node of ssr.moduleGraph.getModulesByFile(id) ?? []) {
+		ssr.moduleGraph.invalidateModule(node);
+	}
+	for (const node of ssr.runner.evaluatedModules.getModulesByFile(id) ?? []) {
+		ssr.runner.evaluatedModules.invalidateModule(node);
+	}
 }
 
 function renderServer(
-  root: string,
-  plugins: (() => Promise<Array<Plugin>>) | undefined,
+	root: string,
+	plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<RenderServer> {
-  let server = servers.get(root);
-  if (!server) {
-    server = startRenderServer(root, plugins);
-    servers.set(root, server);
-  }
-  return server;
+	let server = servers.get(root);
+	if (!server) {
+		server = startRenderServer(root, plugins);
+		servers.set(root, server);
+	}
+	return server;
 }
 
 async function startRenderServer(
-  root: string,
-  plugins: (() => Promise<Array<Plugin>>) | undefined,
+	root: string,
+	plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<RenderServer> {
-  const { createServer, isRunnableDevEnvironment } = await import("vite");
-  const served = new Map<string, string>();
-  const config = await astroViteConfig(root, {
-    plugins: [compiledSourceLoader(served), ...((await plugins?.()) ?? [])],
-  });
-  const server = await createServer({
-    ...config,
-    configFile: false,
-    // Its own cache, so it never races the test projects' optimizers over the same files.
-    cacheDir: join(root, "node_modules", ".vite", "uf-astro-render"),
-    // It never serves a browser, so no dependency scan (it would crawl every HTML file in the
-    // root, the corpus's expectations included); Astro's own client includes still apply.
-    optimizeDeps: { noDiscovery: true },
-    // No HTTP server, HMR or file watching: a recompile is noticed by comparing sources. Under
-    // Vitest, Astro also skips its dev request handling (`astro:server`), which nothing here uses.
-    server: { ...config.server, middlewareMode: true, hmr: false, ws: false, watch: null },
-  });
-  try {
-    const ssr = server.environments.ssr;
-    if (!ssr || !isRunnableDevEnvironment(ssr)) {
-      throw new Error("ufAstroRender: the render server's ssr environment cannot run modules.");
-    }
-    const astro: typeof AstroContainerModule = await ssr.runner.import("astro/container");
-    const container = await astro.experimental_AstroContainer.create();
-    return { server, ssr, container, served };
-  } catch (error) {
-    // A server that cannot render is never handed out, so it is closed here.
-    await server.close();
-    throw error;
-  }
+	const { createServer, isRunnableDevEnvironment } = await import("vite");
+	const served = new Map<string, string>();
+	const config = await astroViteConfig(root, {
+		plugins: [compiledSourceLoader(served), ...((await plugins?.()) ?? [])],
+	});
+	const server = await createServer({
+		...config,
+		configFile: false,
+		// Its own cache, so it never races the test projects' optimizers over the same files.
+		cacheDir: join(root, "node_modules", ".vite", "uf-astro-render"),
+		// It never serves a browser, so no dependency scan (it would crawl every HTML file in the
+		// root, the corpus's expectations included); Astro's own client includes still apply.
+		optimizeDeps: { noDiscovery: true },
+		// No HTTP server, HMR or file watching: a recompile is noticed by comparing sources. Under
+		// Vitest, Astro also skips its dev request handling (`astro:server`), which nothing here uses.
+		server: { ...config.server, middlewareMode: true, hmr: false, ws: false, watch: null },
+	});
+	try {
+		const ssr = server.environments.ssr;
+		if (!ssr || !isRunnableDevEnvironment(ssr)) {
+			throw new Error("ufAstroRender: the render server's ssr environment cannot run modules.");
+		}
+		const astro: typeof AstroContainerModule = await ssr.runner.import("astro/container");
+		const container = await astro.experimental_AstroContainer.create();
+		return { server, ssr, container, served };
+	} catch (error) {
+		// A server that cannot render is never handed out, so it is closed here.
+		await server.close();
+		throw error;
+	}
 }
 
 /**
@@ -345,93 +345,93 @@ async function startRenderServer(
  * compiles it unless it has already.
  */
 function compiledSourceLoader(served: Map<string, string>): Plugin {
-  return {
-    name: "unframework:astro-render-source",
-    enforce: "pre",
-    async resolveId(id, importer) {
-      if (ASTRO_VIRTUAL_ID.test(id)) {
-        return id;
-      }
-      const [parent] = splitQuery(importer ?? "");
-      if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) {
-        return null;
-      }
-      const child = await children.resolve(id, parent);
-      // A served module's sheet (ADR-0063): the render reads it from the browser project.
-      if (child !== undefined && SHEET_ID.test(child)) {
-        return splitQuery(child)[0];
-      }
-      // A module of composables (ADR-0069): its static module, as the browser project compiles it.
-      if (child !== undefined && COMPOSABLE_ID.test(child)) {
-        return splitQuery(child)[0];
-      }
-      // A shared helper module (ADR-0121): its text, as the browser project's compile emitted it.
-      if (child !== undefined && HELPER_ID.test(child)) {
-        return splitQuery(child)[0];
-      }
-      if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) {
-        return null;
-      }
-      const [path] = splitQuery(child);
-      if (compiledAstroSource(path) === undefined) {
-        await children.load(path);
-      }
-      return path;
-    },
-    load: {
-      filter: { id: [ASTRO_VIRTUAL_ID, SHEET_ID, COMPOSABLE_ID, HELPER_ID] },
-      async handler(id) {
-        // The render puts the sheet before the markup itself (`importedSheets`): the module is
-        // only an edge of the graph, whatever the sheet holds.
-        if (SHEET_ID.test(id)) {
-          return "";
-        }
-        // A plain TypeScript module, which the server's own transform takes from here.
-        if (COMPOSABLE_ID.test(id)) {
-          if (!children) {
-            throw new Error(`ufAstroRender: no browser project serves ${id}.`);
-          }
-          const [file] = splitQuery(id);
-          const code = await children.composable(file);
-          served.set(file, code);
-          return code;
-        }
-        // A shared helper module, a plain TypeScript module too (ADR-0121).
-        if (HELPER_ID.test(id)) {
-          if (!children) {
-            throw new Error(`ufAstroRender: no browser project serves ${id}.`);
-          }
-          const [file] = splitQuery(id);
-          const code = await children.helper(file);
-          served.set(file, code);
-          return code;
-        }
-        const [path, query] = splitQuery(id);
-        if (ASTRO_SUB_REQUEST.test(query)) {
-          return null;
-        }
-        const source = compiledAstroSource(path);
-        if (source === undefined) {
-          throw new Error(`ufAstroRender: no compiled source for ${path}.`);
-        }
-        served.set(path, source);
-        return source;
-      },
-    },
-  };
+	return {
+		name: "unframework:astro-render-source",
+		enforce: "pre",
+		async resolveId(id, importer) {
+			if (ASTRO_VIRTUAL_ID.test(id)) {
+				return id;
+			}
+			const [parent] = splitQuery(importer ?? "");
+			if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) {
+				return null;
+			}
+			const child = await children.resolve(id, parent);
+			// A served module's sheet (ADR-0063): the render reads it from the browser project.
+			if (child !== undefined && SHEET_ID.test(child)) {
+				return splitQuery(child)[0];
+			}
+			// A module of composables (ADR-0069): its static module, as the browser project compiles it.
+			if (child !== undefined && COMPOSABLE_ID.test(child)) {
+				return splitQuery(child)[0];
+			}
+			// A shared helper module (ADR-0121): its text, as the browser project's compile emitted it.
+			if (child !== undefined && HELPER_ID.test(child)) {
+				return splitQuery(child)[0];
+			}
+			if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) {
+				return null;
+			}
+			const [path] = splitQuery(child);
+			if (compiledAstroSource(path) === undefined) {
+				await children.load(path);
+			}
+			return path;
+		},
+		load: {
+			filter: { id: [ASTRO_VIRTUAL_ID, SHEET_ID, COMPOSABLE_ID, HELPER_ID] },
+			async handler(id) {
+				// The render puts the sheet before the markup itself (`importedSheets`): the module is
+				// only an edge of the graph, whatever the sheet holds.
+				if (SHEET_ID.test(id)) {
+					return "";
+				}
+				// A plain TypeScript module, which the server's own transform takes from here.
+				if (COMPOSABLE_ID.test(id)) {
+					if (!children) {
+						throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+					}
+					const [file] = splitQuery(id);
+					const code = await children.composable(file);
+					served.set(file, code);
+					return code;
+				}
+				// A shared helper module, a plain TypeScript module too (ADR-0121).
+				if (HELPER_ID.test(id)) {
+					if (!children) {
+						throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+					}
+					const [file] = splitQuery(id);
+					const code = await children.helper(file);
+					served.set(file, code);
+					return code;
+				}
+				const [path, query] = splitQuery(id);
+				if (ASTRO_SUB_REQUEST.test(query)) {
+					return null;
+				}
+				const source = compiledAstroSource(path);
+				if (source === undefined) {
+					throw new Error(`ufAstroRender: no compiled source for ${path}.`);
+				}
+				served.set(path, source);
+				return source;
+			},
+		},
+	};
 }
 
 /** Closes every render server; Vitest calls it when it closes. */
 export async function closeAstroRenderServers(): Promise<void> {
-  const pending = [...servers.values()];
-  servers.clear();
-  // A server that failed to start has already failed the render that started it.
-  const started = await Promise.allSettled(pending);
-  await Promise.all(
-    started.flatMap((outcome) =>
-      outcome.status === "fulfilled" ? [outcome.value.server.close()] : [],
-    ),
-  );
+	const pending = [...servers.values()];
+	servers.clear();
+	// A server that failed to start has already failed the render that started it.
+	const started = await Promise.allSettled(pending);
+	await Promise.all(
+		started.flatMap((outcome) =>
+			outcome.status === "fulfilled" ? [outcome.value.server.close()] : [],
+		),
+	);
 }
 
 const renders = new AsyncLocalStorage<Array<CapturedConsoleMessage>>();
@@ -442,27 +442,27 @@ const renders = new AsyncLocalStorage<Array<CapturedConsoleMessage>>();
  * the render's own async context; any other call reaches the real console.
  */
 async function captureConsole<T>(
-  run: () => Promise<T>,
+	run: () => Promise<T>,
 ): Promise<{ value: T; messages: Array<CapturedConsoleMessage> }> {
-  const messages: Array<CapturedConsoleMessage> = [];
-  const { warn, error } = console;
-  console.warn = capturing("warn", warn);
-  console.error = capturing("error", error);
-  try {
-    return { value: await renders.run(messages, run), messages };
-  } finally {
-    console.warn = warn;
-    console.error = error;
-  }
+	const messages: Array<CapturedConsoleMessage> = [];
+	const { warn, error } = console;
+	console.warn = capturing("warn", warn);
+	console.error = capturing("error", error);
+	try {
+		return { value: await renders.run(messages, run), messages };
+	} finally {
+		console.warn = warn;
+		console.error = error;
+	}
 }
 
 function capturing(level: CapturedConsoleMessage["level"], original: Console["warn"]) {
-  return (...args: Array<unknown>): void => {
-    const sink = renders.getStore();
-    if (sink) {
-      sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
-    } else {
-      original(...args);
-    }
-  };
+	return (...args: Array<unknown>): void => {
+		const sink = renders.getStore();
+		if (sink) {
+			sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
+		} else {
+			original(...args);
+		}
+	};
 }

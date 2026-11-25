@@ -13,77 +13,77 @@ import { DOM_EVENTS } from "@unframework.dev/ir";
  * `Capitalize<T>` does.
  */
 const QWIK_PASCAL_CASE_NAMES: ReadonlyArray<string> = [
-  "AnimationEnd",
-  "AnimationIteration",
-  "AnimationStart",
-  "AuxClick",
-  "BeforeToggle",
-  "CanPlay",
-  "CanPlayThrough",
-  "CompositionEnd",
-  "CompositionStart",
-  "CompositionUpdate",
-  "ContextMenu",
-  "DblClick",
-  "DragEnd",
-  "DragEnter",
-  "DragExit",
-  "DragLeave",
-  "DragOver",
-  "DragStart",
-  "DurationChange",
-  "FocusIn",
-  "FocusOut",
-  "FullscreenChange",
-  "FullscreenError",
-  "GotPointerCapture",
-  "KeyDown",
-  "KeyPress",
-  "KeyUp",
-  "LoadedData",
-  "LoadedMetadata",
-  "LoadEnd",
-  "LoadStart",
-  "LostPointerCapture",
-  "MouseDown",
-  "MouseEnter",
-  "MouseLeave",
-  "MouseMove",
-  "MouseOut",
-  "MouseOver",
-  "MouseUp",
-  "PointerCancel",
-  "PointerDown",
-  "PointerEnter",
-  "PointerLeave",
-  "PointerMove",
-  "PointerOut",
-  "PointerOver",
-  "PointerUp",
-  "RateChange",
-  "SecurityPolicyViolation",
-  "SelectionChange",
-  "SelectStart",
-  "TimeUpdate",
-  "TouchCancel",
-  "TouchEnd",
-  "TouchMove",
-  "TouchStart",
-  "TransitionCancel",
-  "TransitionEnd",
-  "TransitionRun",
-  "TransitionStart",
-  "VisibilityChange",
-  "VolumeChange",
+	"AnimationEnd",
+	"AnimationIteration",
+	"AnimationStart",
+	"AuxClick",
+	"BeforeToggle",
+	"CanPlay",
+	"CanPlayThrough",
+	"CompositionEnd",
+	"CompositionStart",
+	"CompositionUpdate",
+	"ContextMenu",
+	"DblClick",
+	"DragEnd",
+	"DragEnter",
+	"DragExit",
+	"DragLeave",
+	"DragOver",
+	"DragStart",
+	"DurationChange",
+	"FocusIn",
+	"FocusOut",
+	"FullscreenChange",
+	"FullscreenError",
+	"GotPointerCapture",
+	"KeyDown",
+	"KeyPress",
+	"KeyUp",
+	"LoadedData",
+	"LoadedMetadata",
+	"LoadEnd",
+	"LoadStart",
+	"LostPointerCapture",
+	"MouseDown",
+	"MouseEnter",
+	"MouseLeave",
+	"MouseMove",
+	"MouseOut",
+	"MouseOver",
+	"MouseUp",
+	"PointerCancel",
+	"PointerDown",
+	"PointerEnter",
+	"PointerLeave",
+	"PointerMove",
+	"PointerOut",
+	"PointerOver",
+	"PointerUp",
+	"RateChange",
+	"SecurityPolicyViolation",
+	"SelectionChange",
+	"SelectStart",
+	"TimeUpdate",
+	"TouchCancel",
+	"TouchEnd",
+	"TouchMove",
+	"TouchStart",
+	"TransitionCancel",
+	"TransitionEnd",
+	"TransitionRun",
+	"TransitionStart",
+	"VisibilityChange",
+	"VolumeChange",
 ];
 
 const PASCAL_CASE: ReadonlyMap<string, string> = new Map(
-  QWIK_PASCAL_CASE_NAMES.map((name) => [name.toLowerCase(), name]),
+	QWIK_PASCAL_CASE_NAMES.map((name) => [name.toLowerCase(), name]),
 );
 
 /** `click` → `Click`, `keydown` → `KeyDown`: an event's name as Qwik's JSX types spell it. */
 function pascalName(event: string): string {
-  return PASCAL_CASE.get(event) ?? `${event.charAt(0).toUpperCase()}${event.slice(1)}`;
+	return PASCAL_CASE.get(event) ?? `${event.charAt(0).toUpperCase()}${event.slice(1)}`;
 }
 
 /**
@@ -93,16 +93,16 @@ function pascalName(event: string): string {
  * against Qwik's JSX types and its runtime's lower-casing).
  */
 export const QWIK_EVENT_PROPS: ReadonlyMap<string, string> = new Map(
-  [...DOM_EVENTS.keys()].map((event) => [event, `on${pascalName(event)}$`]),
+	[...DOM_EVENTS.keys()].map((event) => [event, `on${pascalName(event)}$`]),
 );
 
 /** The listener prop of a DOM event (`QWIK_EVENT_PROPS`), in a scope: `window:onClick$`. */
 export function qwikListenerProp(event: string, scope: "element" | "window" = "element"): string {
-  const prop = QWIK_EVENT_PROPS.get(event);
-  if (prop === undefined) {
-    throw new Error(`"${event}" is not an event a listener may take.`);
-  }
-  return scope === "window" ? `window:${prop}` : prop;
+	const prop = QWIK_EVENT_PROPS.get(event);
+	if (prop === undefined) {
+		throw new Error(`"${event}" is not an event a listener may take.`);
+	}
+	return scope === "window" ? `window:${prop}` : prop;
 }
 
 /**
@@ -111,5 +111,5 @@ export function qwikListenerProp(event: string, scope: "element" | "window" = "e
  * passes (ADR-0012).
  */
 export function qwikEventProp(event: string): string {
-  return `on${event.charAt(0).toUpperCase()}${event.slice(1)}$`;
+	return `on${event.charAt(0).toUpperCase()}${event.slice(1)}$`;
 }

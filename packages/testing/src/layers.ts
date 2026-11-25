@@ -7,92 +7,92 @@ import { REFERENCE_NOT_RUN_SKIP } from "./visual-types.ts";
 
 /** The verification layers of plan §7.2. */
 export type LayerName =
-  | "L1"
-  | "L2"
-  | "L3"
-  | "L4"
-  | "L5"
-  | "L6"
-  | "L7"
-  | "L8"
-  | "L9"
-  | "L10"
-  | "L11"
-  | "L12"
-  | "L13"
-  | "L14"
-  | "L15";
+	| "L1"
+	| "L2"
+	| "L3"
+	| "L4"
+	| "L5"
+	| "L6"
+	| "L7"
+	| "L8"
+	| "L9"
+	| "L10"
+	| "L11"
+	| "L12"
+	| "L13"
+	| "L14"
+	| "L15";
 
 /** Every layer, in order. */
 export const LAYERS: ReadonlyArray<LayerName> = [
-  "L1",
-  "L2",
-  "L3",
-  "L4",
-  "L5",
-  "L6",
-  "L7",
-  "L8",
-  "L9",
-  "L10",
-  "L11",
-  "L12",
-  "L13",
-  "L14",
-  "L15",
+	"L1",
+	"L2",
+	"L3",
+	"L4",
+	"L5",
+	"L6",
+	"L7",
+	"L8",
+	"L9",
+	"L10",
+	"L11",
+	"L12",
+	"L13",
+	"L14",
+	"L15",
 ];
 
 /** What one test found at one layer. */
 export type LayerOutcome =
-  | { status: "pass" }
-  | { status: "fail"; message: string }
-  | { status: "skip"; reason: string }
-  | { status: "quarantined"; issue: string };
+	| { status: "pass" }
+	| { status: "fail"; message: string }
+	| { status: "skip"; reason: string }
+	| { status: "quarantined"; issue: string };
 
 /** The per-layer record of one harness test (plan §7.2). */
 export interface UfLayerMeta {
-  /** The case, relative to the cases directory: `"basics/hello"`. */
-  case: string;
-  target: string;
-  layers: Partial<Record<LayerName, LayerOutcome>>;
-  /**
-   * The parity scenarios the test checked (`expectParity` names), in the order it first checked
-   * them. A target that leaves out a scenario the reference checks would otherwise go unseen,
-   * as a cell merges every test of its case (see `summarise`).
-   */
-  scenarios?: Array<string>;
-  /**
-   * The test, by its full name without the target `describeTargets` adds (`state/counter >
-   * increments`): the same on every target, so the summary compares each target's scenarios of
-   * a test with the reference's. The parity reporter sets it from the test's name.
-   */
-  test?: string;
-  /**
-   * Why the test was skipped on its target: a capability it requires is unsupported there
-   * (`requires interactivity: …`), or the target has no output for its case (`no output: …`).
-   * Every layer it would have recorded is recorded as skipped with the same reason, and the
-   * summary excuses its scenarios on that target alone.
-   */
-  skipped?: string;
-  /**
-   * Why the test ran against a stand-in for its case's component, which its target cannot compile
-   * yet (ADR-0068): the case's L3 is quarantined there, and the target's browser build
-   * type-checks its output, so the component's own module would fail the spec's import. Every
-   * browser layer is recorded as failed with this cause, and the summary excuses the test's
-   * scenarios on that target alone.
-   */
-  standIn?: string;
+	/** The case, relative to the cases directory: `"basics/hello"`. */
+	case: string;
+	target: string;
+	layers: Partial<Record<LayerName, LayerOutcome>>;
+	/**
+	 * The parity scenarios the test checked (`expectParity` names), in the order it first checked
+	 * them. A target that leaves out a scenario the reference checks would otherwise go unseen,
+	 * as a cell merges every test of its case (see `summarise`).
+	 */
+	scenarios?: Array<string>;
+	/**
+	 * The test, by its full name without the target `describeTargets` adds (`state/counter >
+	 * increments`): the same on every target, so the summary compares each target's scenarios of
+	 * a test with the reference's. The parity reporter sets it from the test's name.
+	 */
+	test?: string;
+	/**
+	 * Why the test was skipped on its target: a capability it requires is unsupported there
+	 * (`requires interactivity: …`), or the target has no output for its case (`no output: …`).
+	 * Every layer it would have recorded is recorded as skipped with the same reason, and the
+	 * summary excuses its scenarios on that target alone.
+	 */
+	skipped?: string;
+	/**
+	 * Why the test ran against a stand-in for its case's component, which its target cannot compile
+	 * yet (ADR-0068): the case's L3 is quarantined there, and the target's browser build
+	 * type-checks its output, so the component's own module would fail the spec's import. Every
+	 * browser layer is recorded as failed with this cause, and the summary excuses the test's
+	 * scenarios on that target alone.
+	 */
+	standIn?: string;
 }
 
 /** The layers a browser test records, which a test skipped by capability records as skipped. */
 export const BROWSER_LAYERS: ReadonlyArray<LayerName> = [
-  "L7",
-  "L8",
-  "L9",
-  "L10",
-  "L11",
-  "L13",
-  "L14",
+	"L7",
+	"L8",
+	"L9",
+	"L10",
+	"L11",
+	"L13",
+	"L14",
 ];
 
 /** The skip of the layers that need output, on a target a case has compile errors for. */
@@ -111,12 +111,12 @@ export const NO_SPEC_SKIP = "no spec: a diagnostics case renders in no browser";
  * `mismatch`, `ids`, `DOM` and `client agreement`, which the hydrate mount records.
  */
 export const HYDRATION_SUB_CHECKS: Readonly<Partial<Record<LayerName, string>>> = {
-  L7: "DOM",
-  L8: "interactions",
-  L9: "trace",
-  L11: "axe",
-  L13: "console",
-  L14: "source map",
+	L7: "DOM",
+	L8: "interactions",
+	L9: "trace",
+	L11: "axe",
+	L13: "console",
+	L14: "source map",
 };
 
 /** The layer a hydrate project records every check as, or none (see `recordEveryLayerAs`). */
@@ -128,12 +128,12 @@ let recordedAs: LayerName | undefined;
  * `undefined` records each layer as itself again.
  */
 export function recordEveryLayerAs(layer: LayerName | undefined): void {
-  recordedAs = layer;
+	recordedAs = layer;
 }
 
 /** The layer every check is recorded as, when a hydrate project's setup set one. */
 export function recordedLayer(): LayerName | undefined {
-  return recordedAs;
+	return recordedAs;
 }
 
 /** L13's skip in the server render of a component that did not render: L6 failed instead. */
@@ -150,7 +150,7 @@ export const REQUIRES_SKIP: RegExp = /^requires ([a-z][a-z0-9-]*): ./s;
 
 /** The skip reason of a test that requires a capability its target does not support. */
 export function requiresSkip(capability: string, reason: string): string {
-  return `requires ${capability}: ${reason}`;
+	return `requires ${capability}: ${reason}`;
 }
 
 /**
@@ -164,7 +164,7 @@ export const NO_OUTPUT_TEST_SKIP: RegExp = /^no output: ./s;
  * an error for the target, the one it declares for a capability it lacks (ADR-0033).
  */
 export function noOutputSkip(errors: string): string {
-  return `no output: ${errors}`;
+	return `no output: ${errors}`;
 }
 
 /**
@@ -175,30 +175,30 @@ export function noOutputSkip(errors: string): string {
  * `settleOutcome`), not for each test.
  */
 export interface QuarantineEntry {
-  case: string;
-  target: string;
-  layer: LayerName;
-  reason: string;
-  /** The tracking issue, such as a URL. */
-  issue: string;
-  /**
-   * L10 only: the pixel mode whose comparisons fail, for a failure the other mode does not show
-   * (the committed Linux baselines against the live reference capture). A run in the other mode
-   * does not apply the entry, so it neither quarantines the cell nor goes stale there.
-   */
-  pixels?: PixelMode;
+	case: string;
+	target: string;
+	layer: LayerName;
+	reason: string;
+	/** The tracking issue, such as a URL. */
+	issue: string;
+	/**
+	 * L10 only: the pixel mode whose comparisons fail, for a failure the other mode does not show
+	 * (the committed Linux baselines against the live reference capture). A run in the other mode
+	 * does not apply the entry, so it neither quarantines the cell nor goes stale there.
+	 */
+	pixels?: PixelMode;
 }
 
 /** Which case and target a test verifies, and the quarantine that applies to it. */
 export interface LayerSubject {
-  case: string;
-  target: string;
-  quarantine?: ReadonlyArray<QuarantineEntry>;
+	case: string;
+	target: string;
+	quarantine?: ReadonlyArray<QuarantineEntry>;
 }
 
 /** A layer check returns this to skip the layer, with the reason the matrix shows. */
 export interface LayerSkip {
-  skip: string;
+	skip: string;
 }
 
 /** Verifies one layer: throws on failure, returns nothing on success or a skip. */
@@ -206,27 +206,27 @@ export type LayerCheck = () => void | LayerSkip | Promise<void | LayerSkip>;
 
 /** The task a layer is recorded on: a Vitest test (`TestContext.task`, `getCurrentTest()`). */
 export interface LayerTask {
-  meta: { uf?: UfLayerMeta };
+	meta: { uf?: UfLayerMeta };
 }
 
 declare module "vitest" {
-  interface TaskMeta {
-    /** The per-layer outcomes of a harness test. */
-    uf?: UfLayerMeta;
-    /**
-     * The capabilities the test requires (`it(name, { requires }, fn)`): the setup skips it on a
-     * target whose cell for one of them is unsupported.
-     */
-    ufRequires?: ReadonlyArray<string>;
-  }
+	interface TaskMeta {
+		/** The per-layer outcomes of a harness test. */
+		uf?: UfLayerMeta;
+		/**
+		 * The capabilities the test requires (`it(name, { requires }, fn)`): the setup skips it on a
+		 * target whose cell for one of them is unsupported.
+		 */
+		ufRequires?: ReadonlyArray<string>;
+	}
 }
 
 /** Precedence when several records meet in one cell: a failure is never hidden by a pass. */
 const PRECEDENCE: Record<LayerOutcome["status"], number> = {
-  fail: 3,
-  quarantined: 2,
-  pass: 1,
-  skip: 0,
+	fail: 3,
+	quarantined: 2,
+	pass: 1,
+	skip: 0,
 };
 
 /**
@@ -235,21 +235,21 @@ const PRECEDENCE: Record<LayerOutcome["status"], number> = {
  * sub-check's evidence is lost (the canaries require each of them).
  */
 export function mergeOutcomes(...outcomes: ReadonlyArray<LayerOutcome>): LayerOutcome {
-  const [first, ...rest] = outcomes;
-  if (!first) {
-    throw new Error("mergeOutcomes needs at least one outcome.");
-  }
-  const winner = rest.reduce(
-    (best, outcome) => (rank(outcome) > rank(best) ? outcome : best),
-    first,
-  );
-  if (winner.status !== "fail") {
-    return winner;
-  }
-  const messages = new Set(
-    outcomes.flatMap((outcome) => (outcome.status === "fail" ? [outcome.message] : [])),
-  );
-  return messages.size === 1 ? winner : { status: "fail", message: [...messages].join("\n") };
+	const [first, ...rest] = outcomes;
+	if (!first) {
+		throw new Error("mergeOutcomes needs at least one outcome.");
+	}
+	const winner = rest.reduce(
+		(best, outcome) => (rank(outcome) > rank(best) ? outcome : best),
+		first,
+	);
+	if (winner.status !== "fail") {
+		return winner;
+	}
+	const messages = new Set(
+		outcomes.flatMap((outcome) => (outcome.status === "fail" ? [outcome.message] : [])),
+	);
+	return messages.size === 1 ? winner : { status: "fail", message: [...messages].join("\n") };
 }
 
 /**
@@ -259,21 +259,21 @@ export function mergeOutcomes(...outcomes: ReadonlyArray<LayerOutcome>): LayerOu
  * the case never hides it.
  */
 function rank(outcome: LayerOutcome): number {
-  return outcome.status === "skip" && REFERENCE_NOT_RUN_SKIP.test(outcome.reason)
-    ? PRECEDENCE.pass + 0.5
-    : PRECEDENCE[outcome.status];
+	return outcome.status === "skip" && REFERENCE_NOT_RUN_SKIP.test(outcome.reason)
+		? PRECEDENCE.pass + 0.5
+		: PRECEDENCE[outcome.status];
 }
 
 /** The quarantine entry for a case, target and layer, if any. */
 export function quarantineFor(
-  quarantine: ReadonlyArray<QuarantineEntry> | undefined,
-  subject: { case: string; target: string },
-  layer: LayerName,
+	quarantine: ReadonlyArray<QuarantineEntry> | undefined,
+	subject: { case: string; target: string },
+	layer: LayerName,
 ): QuarantineEntry | undefined {
-  return quarantine?.find(
-    (entry) =>
-      entry.case === subject.case && entry.target === subject.target && entry.layer === layer,
-  );
+	return quarantine?.find(
+		(entry) =>
+			entry.case === subject.case && entry.target === subject.target && entry.layer === layer,
+	);
 }
 
 /**
@@ -282,24 +282,24 @@ export function quarantineFor(
  * is quarantined; one that passes, or is skipped, is a stale entry and fails.
  */
 export function settleOutcome(outcome: LayerOutcome, entry?: QuarantineEntry): LayerOutcome {
-  if (!entry) {
-    return outcome;
-  }
-  if (outcome.status === "fail") {
-    return { status: "quarantined", issue: entry.issue };
-  }
-  if (outcome.status === "quarantined") {
-    return outcome;
-  }
-  const what = outcome.status === "pass" ? "passes" : `is skipped (${outcome.reason})`;
-  const pixels =
-    entry.layer === "L10" && entry.pixels === undefined
-      ? ` If only one pixel mode fails it, name that mode in the entry (pixels: "baseline" or "live").`
-      : "";
-  return {
-    status: "fail",
-    message: `stale quarantine entry: remove it. ${entry.case} › ${entry.target} › ${entry.layer} ${what} (quarantined for ${entry.issue}: ${entry.reason}).${pixels}`,
-  };
+	if (!entry) {
+		return outcome;
+	}
+	if (outcome.status === "fail") {
+		return { status: "quarantined", issue: entry.issue };
+	}
+	if (outcome.status === "quarantined") {
+		return outcome;
+	}
+	const what = outcome.status === "pass" ? "passes" : `is skipped (${outcome.reason})`;
+	const pixels =
+		entry.layer === "L10" && entry.pixels === undefined
+			? ` If only one pixel mode fails it, name that mode in the entry (pixels: "baseline" or "live").`
+			: "";
+	return {
+		status: "fail",
+		message: `stale quarantine entry: remove it. ${entry.case} › ${entry.target} › ${entry.layer} ${what} (quarantined for ${entry.issue}: ${entry.reason}).${pixels}`,
+	};
 }
 
 /**
@@ -311,32 +311,32 @@ export function settleOutcome(outcome: LayerOutcome, entry?: QuarantineEntry): L
  * layer is recorded as L12 (`recordEveryLayerAs`).
  */
 export function recordLayer(
-  task: LayerTask,
-  subject: LayerSubject,
-  layer: LayerName,
-  outcome: LayerOutcome,
+	task: LayerTask,
+	subject: LayerSubject,
+	layer: LayerName,
+	outcome: LayerOutcome,
 ): LayerOutcome {
-  if (outcome.status === "skip" && !isSkipReason(outcome.reason)) {
-    throw new TypeError(
-      `${subject.case} › ${subject.target} › ${layer}: a skip needs a reason, not ${JSON.stringify(outcome.reason)}.`,
-    );
-  }
-  if (recordedAs !== undefined && layer !== recordedAs) {
-    if (outcome.status === "fail") {
-      outcome = {
-        status: "fail",
-        message: `${HYDRATION_SUB_CHECKS[layer] ?? layer}: ${outcome.message}`,
-      };
-    }
-    layer = recordedAs;
-  }
-  const entry = quarantineFor(subject.quarantine, subject, layer);
-  const settled: LayerOutcome =
-    entry && outcome.status === "fail" ? { status: "quarantined", issue: entry.issue } : outcome;
-  const meta = metaOf(task, subject);
-  const previous = meta.layers[layer];
-  meta.layers[layer] = previous ? mergeOutcomes(previous, settled) : settled;
-  return settled;
+	if (outcome.status === "skip" && !isSkipReason(outcome.reason)) {
+		throw new TypeError(
+			`${subject.case} › ${subject.target} › ${layer}: a skip needs a reason, not ${JSON.stringify(outcome.reason)}.`,
+		);
+	}
+	if (recordedAs !== undefined && layer !== recordedAs) {
+		if (outcome.status === "fail") {
+			outcome = {
+				status: "fail",
+				message: `${HYDRATION_SUB_CHECKS[layer] ?? layer}: ${outcome.message}`,
+			};
+		}
+		layer = recordedAs;
+	}
+	const entry = quarantineFor(subject.quarantine, subject, layer);
+	const settled: LayerOutcome =
+		entry && outcome.status === "fail" ? { status: "quarantined", issue: entry.issue } : outcome;
+	const meta = metaOf(task, subject);
+	const previous = meta.layers[layer];
+	meta.layers[layer] = previous ? mergeOutcomes(previous, settled) : settled;
+	return settled;
 }
 
 /**
@@ -346,10 +346,10 @@ export function recordLayer(
  * it to fail, so the entries go stale once the target compiles the case.
  */
 export function recordStandIn(task: LayerTask, subject: LayerSubject, cause: string): void {
-  for (const layer of BROWSER_LAYERS) {
-    recordLayer(task, subject, layer, { status: "fail", message: cause });
-  }
-  metaOf(task, subject).standIn = cause;
+	for (const layer of BROWSER_LAYERS) {
+		recordLayer(task, subject, layer, { status: "fail", message: cause });
+	}
+	metaOf(task, subject).standIn = cause;
 }
 
 /**
@@ -357,52 +357,52 @@ export function recordStandIn(task: LayerTask, subject: LayerSubject, cause: str
  * target's scenarios of a case with the reference's.
  */
 export function recordScenario(task: LayerTask, subject: LayerSubject, name: string): void {
-  const meta = metaOf(task, subject);
-  const scenarios = (meta.scenarios ??= []);
-  if (!scenarios.includes(name)) {
-    scenarios.push(name);
-  }
+	const meta = metaOf(task, subject);
+	const scenarios = (meta.scenarios ??= []);
+	if (!scenarios.includes(name)) {
+		scenarios.push(name);
+	}
 }
 
 /** The task's record, created for the subject on first use: a test records one case and target. */
 function metaOf(task: LayerTask, subject: LayerSubject): UfLayerMeta {
-  const meta = (task.meta.uf ??= { case: subject.case, target: subject.target, layers: {} });
-  if (meta.case !== subject.case || meta.target !== subject.target) {
-    throw new Error(
-      `A test records one case and target: it recorded ${meta.case} › ${meta.target}, then ${subject.case} › ${subject.target}.`,
-    );
-  }
-  return meta;
+	const meta = (task.meta.uf ??= { case: subject.case, target: subject.target, layers: {} });
+	if (meta.case !== subject.case || meta.target !== subject.target) {
+		throw new Error(
+			`A test records one case and target: it recorded ${meta.case} › ${meta.target}, then ${subject.case} › ${subject.target}.`,
+		);
+	}
+	return meta;
 }
 
 /** The messages of every failed layer a task recorded, in layer order. */
 export function layerFailures(task: LayerTask): Array<string> {
-  const layers = task.meta.uf?.layers ?? {};
-  return LAYERS.flatMap((layer) => {
-    const outcome = layers[layer];
-    return outcome?.status === "fail" ? [`${layer}: ${outcome.message}`] : [];
-  });
+	const layers = task.meta.uf?.layers ?? {};
+	return LAYERS.flatMap((layer) => {
+		const outcome = layers[layer];
+		return outcome?.status === "fail" ? [`${layer}: ${outcome.message}`] : [];
+	});
 }
 
 /** A skip reason the matrix can show: a non-blank string. */
 function isSkipReason(reason: unknown): reason is string {
-  return typeof reason === "string" && reason.trim() !== "";
+	return typeof reason === "string" && reason.trim() !== "";
 }
 
 /** A check's return value as an outcome: nothing passes, `{ skip: reason }` skips. */
 function outcomeOfResult(result: unknown): LayerOutcome {
-  if (result === undefined) {
-    return { status: "pass" };
-  }
-  if (typeof result === "object" && result !== null && "skip" in result) {
-    if (isSkipReason(result.skip)) {
-      return { status: "skip", reason: result.skip };
-    }
-  }
-  return {
-    status: "fail",
-    message: `The check returned ${JSON.stringify(result)}: return nothing to pass, or { skip: reason } with a reason to skip.`,
-  };
+	if (result === undefined) {
+		return { status: "pass" };
+	}
+	if (typeof result === "object" && result !== null && "skip" in result) {
+		if (isSkipReason(result.skip)) {
+			return { status: "skip", reason: result.skip };
+		}
+	}
+	return {
+		status: "fail",
+		message: `The check returned ${JSON.stringify(result)}: return nothing to pass, or { skip: reason } with a reason to skip.`,
+	};
 }
 
 /**
@@ -413,28 +413,28 @@ function outcomeOfResult(result: unknown): LayerOutcome {
  * assertions after it still run and are recorded as L8 (see `setup.ts`).
  */
 export async function recordLayerChecks(
-  task: LayerTask,
-  subject: LayerSubject,
-  checks: Partial<Record<LayerName, LayerCheck>>,
+	task: LayerTask,
+	subject: LayerSubject,
+	checks: Partial<Record<LayerName, LayerCheck>>,
 ): Promise<Array<string>> {
-  const failures: Array<string> = [];
-  for (const layer of LAYERS) {
-    const check = checks[layer];
-    if (!check) {
-      continue;
-    }
-    let outcome: LayerOutcome;
-    try {
-      outcome = outcomeOfResult(await check());
-    } catch (error) {
-      outcome = { status: "fail", message: formatError(error) };
-    }
-    const recorded = recordLayer(task, subject, layer, outcome);
-    if (recorded.status === "fail") {
-      failures.push(`${layer}: ${recorded.message}`);
-    }
-  }
-  return failures;
+	const failures: Array<string> = [];
+	for (const layer of LAYERS) {
+		const check = checks[layer];
+		if (!check) {
+			continue;
+		}
+		let outcome: LayerOutcome;
+		try {
+			outcome = outcomeOfResult(await check());
+		} catch (error) {
+			outcome = { status: "fail", message: formatError(error) };
+		}
+		const recorded = recordLayer(task, subject, layer, outcome);
+		if (recorded.status === "fail") {
+			failures.push(`${layer}: ${recorded.message}`);
+		}
+	}
+	return failures;
 }
 
 /**
@@ -443,25 +443,25 @@ export async function recordLayerChecks(
  * `recordLayerChecks`). The Node projects check this way: their tests have nothing to run after.
  */
 export async function checkLayers(
-  task: LayerTask,
-  subject: LayerSubject,
-  checks: Partial<Record<LayerName, LayerCheck>>,
+	task: LayerTask,
+	subject: LayerSubject,
+	checks: Partial<Record<LayerName, LayerCheck>>,
 ): Promise<void> {
-  const failures = await recordLayerChecks(task, subject, checks);
-  if (failures.length) {
-    throw new LayerFailure(subject, failures);
-  }
+	const failures = await recordLayerChecks(task, subject, checks);
+	if (failures.length) {
+		throw new LayerFailure(subject, failures);
+	}
 }
 
 /** The error a test fails with when one or more layers failed. */
 export class LayerFailure extends Error {
-  override name = "LayerFailure";
-  readonly failures: ReadonlyArray<string>;
+	override name = "LayerFailure";
+	readonly failures: ReadonlyArray<string>;
 
-  constructor(subject: { case: string; target: string }, failures: ReadonlyArray<string>) {
-    super(
-      `${subject.case} › ${subject.target}: ${failures.length} layer(s) failed\n\n${failures.join("\n\n")}`,
-    );
-    this.failures = failures;
-  }
+	constructor(subject: { case: string; target: string }, failures: ReadonlyArray<string>) {
+		super(
+			`${subject.case} › ${subject.target}: ${failures.length} layer(s) failed\n\n${failures.join("\n\n")}`,
+		);
+		this.failures = failures;
+	}
 }

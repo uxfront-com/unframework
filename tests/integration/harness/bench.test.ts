@@ -7,13 +7,13 @@ import { checkLayers, NO_OUTPUT_SKIP } from "@unframework.dev/testing/node";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 
 import {
-  budgetedCases,
-  budgetProblems,
-  CALIBRATION,
-  measureSize,
-  measureTimes,
-  readBudgets,
-  staleBudgets,
+	budgetedCases,
+	budgetProblems,
+	CALIBRATION,
+	measureSize,
+	measureTimes,
+	readBudgets,
+	staleBudgets,
 } from "../scripts/budgets.ts";
 import type { Budgets, OutputSize } from "../scripts/budgets.ts";
 import { canaryCase, canaryPlugins, findCanary } from "./canaries.ts";
@@ -27,12 +27,12 @@ const targets = selectTargets(process.env.UF_TARGETS);
 const canary = harness.canary ? findCanary(harness.canary) : undefined;
 const corpus = listCases(harness.casesDir);
 const cases = canary?.appliesTo
-  ? corpus.filter(
-      (info) =>
-        info.id === CALIBRATION ||
-        targets.some((target) => canary.appliesTo!(canaryCase(info), target)),
-    )
-  : corpus;
+	? corpus.filter(
+			(info) =>
+				info.id === CALIBRATION ||
+				targets.some((target) => canary.appliesTo!(canaryCase(info), target)),
+		)
+	: corpus;
 const timed = !canary || "compile time" in (canary.evidence.bench ?? {});
 
 let budgets: Budgets;
@@ -46,85 +46,85 @@ const asError = (error: unknown) => (error instanceof Error ? error : new Error(
 
 /** Measures a target's cells. A toolchain that cannot start fails only that target's. */
 async function measureTarget(target: string): Promise<void> {
-  const owed = cases.filter((info) => errorState(info, target) === false);
-  try {
-    const toolchain = await loadToolchain(target);
-    const files = await outputFiles(owed, target, harness.casesDir, harness.canary);
-    for (const info of owed) {
-      const size = measureSize(toolchain, target, files.get(info.id) ?? []);
-      sizes.set(cell(info.id, target), await size.catch(asError));
-    }
-  } catch (error) {
-    for (const info of owed) {
-      sizes.set(cell(info.id, target), asError(error));
-    }
-  }
+	const owed = cases.filter((info) => errorState(info, target) === false);
+	try {
+		const toolchain = await loadToolchain(target);
+		const files = await outputFiles(owed, target, harness.casesDir, harness.canary);
+		for (const info of owed) {
+			const size = measureSize(toolchain, target, files.get(info.id) ?? []);
+			sizes.set(cell(info.id, target), await size.catch(asError));
+		}
+	} catch (error) {
+		for (const info of owed) {
+			sizes.set(cell(info.id, target), asError(error));
+		}
+	}
 }
 
 beforeAll(async () => {
-  try {
-    budgets = readBudgets();
-    // First and alone: nothing else in this process competes with the timed iterations. A canary
-    // of the sizes alone skips them, and passes every time: they'd take most of its CI job's
-    // ten minutes to prove nothing about it.
-    times = timed
-      ? await measureTimes(budgetedCases(cases), harness.casesDir, () =>
-          canaryPlugins(harness.canary),
-        )
-      : new Map();
-    for (const target of targets) {
-      await measureTarget(target);
-    }
-  } catch (error) {
-    failure = asError(error);
-  }
+	try {
+		budgets = readBudgets();
+		// First and alone: nothing else in this process competes with the timed iterations. A canary
+		// of the sizes alone skips them, and passes every time: they'd take most of its CI job's
+		// ten minutes to prove nothing about it.
+		times = timed
+			? await measureTimes(budgetedCases(cases), harness.casesDir, () =>
+					canaryPlugins(harness.canary),
+				)
+			: new Map();
+		for (const target of targets) {
+			await measureTarget(target);
+		}
+	} catch (error) {
+		failure = asError(error);
+	}
 });
 
 describe("bench", () => {
-  for (const info of cases) {
-    for (const target of targets) {
-      it(cell(info.id, target), async ({ task }) => {
-        const errors = errorState(info, target);
-        if (errors instanceof Error) {
-          throw errors;
-        }
-        await checkLayers(
-          task,
-          { case: info.id, target, quarantine: harness.quarantine },
-          {
-            L15: () => {
-              if (errors) {
-                return { skip: NO_OUTPUT_SKIP };
-              }
-              if (failure) {
-                throw failure;
-              }
-              const size = sizes.get(cell(info.id, target));
-              if (size instanceof Error) {
-                throw size;
-              }
-              const problems = budgetProblems(
-                budgets.cases[info.id],
-                target,
-                times.get(info.id) ?? 0,
-                size!,
-              );
-              if (problems.length) {
-                throw new Error(problems.join("\n"));
-              }
-              return undefined;
-            },
-          },
-        );
-      });
-    }
-  }
+	for (const info of cases) {
+		for (const target of targets) {
+			it(cell(info.id, target), async ({ task }) => {
+				const errors = errorState(info, target);
+				if (errors instanceof Error) {
+					throw errors;
+				}
+				await checkLayers(
+					task,
+					{ case: info.id, target, quarantine: harness.quarantine },
+					{
+						L15: () => {
+							if (errors) {
+								return { skip: NO_OUTPUT_SKIP };
+							}
+							if (failure) {
+								throw failure;
+							}
+							const size = sizes.get(cell(info.id, target));
+							if (size instanceof Error) {
+								throw size;
+							}
+							const problems = budgetProblems(
+								budgets.cases[info.id],
+								target,
+								times.get(info.id) ?? 0,
+								size!,
+							);
+							if (problems.length) {
+								throw new Error(problems.join("\n"));
+							}
+							return undefined;
+						},
+					},
+				);
+			});
+		}
+	}
 
-  it("holds a budget for no case or target that has no cell", () => {
-    if (failure) {
-      throw failure;
-    }
-    const stale = staleBudgets(budgets, budgetedCases(corpus));
-    expect(stale, "Stale budgets: run `pnpm test:budgets:update`.").toEqual([]);
-  });
+	it("holds a budget for no case or target that has no cell", () => {
+		if (failure) {
+			throw failure;
+		}
+		const stale = staleBudgets(budgets, budgetedCases(corpus));
+		expect(stale, "Stale budgets: run `pnpm test:budgets:update`.").toEqual([]);
+	});
 });

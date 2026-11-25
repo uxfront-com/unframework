@@ -4,40 +4,40 @@
 // handlers reach a dialect as code in the target's spelling (`RewriteRules`, plan §5.4); the
 // dialect escapes them for where they sit.
 import {
-  elementNamespace,
-  isBlockElement,
-  isVoidElement,
-  WHITESPACE_PRESERVING_ELEMENTS,
+	elementNamespace,
+	isBlockElement,
+	isVoidElement,
+	WHITESPACE_PRESERVING_ELEMENTS,
 } from "@unframework.dev/ir";
 import type {
-  Attribute,
-  ComponentAttribute,
-  ComponentNode,
-  DirectiveAttribute,
-  DynamicNode,
-  ElementNode,
-  EventAttribute,
-  Expression,
-  ForNode,
-  FragmentNode,
-  Handler,
-  IfBranch,
-  ListenerAttribute,
-  ModelAttribute,
-  ModelBindingAttribute,
-  Namespace,
-  RefAttribute,
-  StaticAttribute,
-  BoundAttribute,
-  RenderNode,
-  SlotFill,
-  SlotOutletNode,
-  SlotReference,
-  StyleAttribute,
-  TeleportNode,
-  TransitionNode,
-  UfComponent,
-  UfModule,
+	Attribute,
+	ComponentAttribute,
+	ComponentNode,
+	DirectiveAttribute,
+	DynamicNode,
+	ElementNode,
+	EventAttribute,
+	Expression,
+	ForNode,
+	FragmentNode,
+	Handler,
+	IfBranch,
+	ListenerAttribute,
+	ModelAttribute,
+	ModelBindingAttribute,
+	Namespace,
+	RefAttribute,
+	StaticAttribute,
+	BoundAttribute,
+	RenderNode,
+	SlotFill,
+	SlotOutletNode,
+	SlotReference,
+	StyleAttribute,
+	TeleportNode,
+	TransitionNode,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { assertedValue } from "../directives.ts";
@@ -55,47 +55,47 @@ import type { CodeToken } from "./escape.ts";
  * fill of a child's slot, a slot outlet (its fallback), or a teleport (its one element).
  */
 export type Container =
-  | ElementNode
-  | FragmentNode
-  | IfBranch
-  | ForNode
-  | SlotFill
-  | SlotOutletNode
-  | TeleportNode
-  | TransitionNode;
+	| ElementNode
+	| FragmentNode
+	| IfBranch
+	| ForNode
+	| SlotFill
+	| SlotOutletNode
+	| TeleportNode
+	| TransitionNode;
 
 /** Where a text or an interpolation sits, for the compilers that treat edges differently. */
 export interface TextPosition {
-  /** The nearest element around it: none at the top level of a root fragment. */
-  element: ElementNode | undefined;
-  /** What holds it: an element, a branch, or the root fragment (whose edges a target pads). */
-  container: Container;
-  /** The kind of the sibling before it in its container, if any. */
-  previous?: RenderNode["kind"];
-  /** The kind of the sibling after it in its container, if any. */
-  next?: RenderNode["kind"];
-  /** Whether it is its container's first child. */
-  first: boolean;
-  /** Whether it is its container's last child. */
-  last: boolean;
+	/** The nearest element around it: none at the top level of a root fragment. */
+	element: ElementNode | undefined;
+	/** What holds it: an element, a branch, or the root fragment (whose edges a target pads). */
+	container: Container;
+	/** The kind of the sibling before it in its container, if any. */
+	previous?: RenderNode["kind"];
+	/** The kind of the sibling after it in its container, if any. */
+	next?: RenderNode["kind"];
+	/** Whether it is its container's first child. */
+	first: boolean;
+	/** Whether it is its container's last child. */
+	last: boolean;
 }
 
 /** Where an attribute is printed: its element, and the element's namespace. */
 export interface AttributeContext {
-  element: ElementNode;
-  namespace: Namespace;
-  /**
-   * Whether the target spreads an object of its own on the element (`scopeRootAttributes`), which
-   * changes how a language whose server renders a spread element through its runtime writes the
-   * element's other attributes (Svelte).
-   */
-  spreads?: boolean;
+	element: ElementNode;
+	namespace: Namespace;
+	/**
+	 * Whether the target spreads an object of its own on the element (`scopeRootAttributes`), which
+	 * changes how a language whose server renders a spread element through its runtime writes the
+	 * element's other attributes (Svelte).
+	 */
+	spreads?: boolean;
 }
 
 /** A printed attribute, by the name a dialect orders it by (`v-if`, `key`, `class`). */
 export interface PrintedAttribute {
-  name: string;
-  text: string;
+	name: string;
+	text: string;
 }
 
 /**
@@ -103,10 +103,10 @@ export interface PrintedAttribute {
  * `class` and a spread's `class` key merged (ADR-0038, ADR-0039).
  */
 export type ClassPart =
-  | { kind: "Static"; value: string }
-  | { kind: "Toggle"; name: string; condition: string }
-  /** `collection`: the value may be an array or an object at run time (ADR-0065). */
-  | { kind: "Dynamic"; value: string; collection?: true };
+	| { kind: "Static"; value: string }
+	| { kind: "Toggle"; name: string; condition: string }
+	/** `collection`: the value may be an array or an object at run time (ADR-0065). */
+	| { kind: "Dynamic"; value: string; collection?: true };
 
 /**
  * A declaration of an element's style, with its value as code when it is bound. A Bound part
@@ -114,71 +114,71 @@ export type ClassPart =
  * value bound to `style` or a spread's `style` key (ADR-0065), or a consumer's (ADR-0056).
  */
 export type StylePart =
-  | { kind: "Static"; property: string; value: string }
-  | { kind: "Bound"; property: string; value: string };
+	| { kind: "Static"; property: string; value: string }
+	| { kind: "Bound"; property: string; value: string };
 
 /**
  * What a component element passes through to the child's fallthrough element (ADR-0118): an
  * attribute it does not declare, static or bound, or a native listener.
  */
 export type PrintedFallthrough =
-  | { kind: "Static"; attribute: StaticAttribute }
-  | { kind: "Bound"; attribute: BoundAttribute; code: string }
-  | { kind: "Event"; event: PrintedEvent };
+	| { kind: "Static"; attribute: StaticAttribute }
+	| { kind: "Bound"; attribute: BoundAttribute; code: string }
+	| { kind: "Event"; event: PrintedEvent };
 
 /** A listener, with its handler as code. */
 export interface PrintedEvent {
-  /** The listener: its DOM event's name, its option and its handler. */
-  attribute: EventAttribute;
-  /**
-   * The handler as JavaScript, for the `client` site: a named handler's function as the rules
-   * spell it (`save`), or an inline handler as an arrow (`functionText`: `() => count++`).
-   * Rewritten only when read.
-   */
-  readonly handler: string;
-  /**
-   * The handler as the target writes it in its template, when it supplies one
-   * (`MarkupOptions.handler`): a template statement, such as Angular's `onSave($event)` calling a
-   * method it hoisted the handler to.
-   */
-  statement?: string;
+	/** The listener: its DOM event's name, its option and its handler. */
+	attribute: EventAttribute;
+	/**
+	 * The handler as JavaScript, for the `client` site: a named handler's function as the rules
+	 * spell it (`save`), or an inline handler as an arrow (`functionText`: `() => count++`).
+	 * Rewritten only when read.
+	 */
+	readonly handler: string;
+	/**
+	 * The handler as the target writes it in its template, when it supplies one
+	 * (`MarkupOptions.handler`): a template statement, such as Angular's `onSave($event)` calling a
+	 * method it hoisted the handler to.
+	 */
+	statement?: string;
 }
 
 /** A template ref, with its binding's name. */
 export interface PrintedRef {
-  attribute: RefAttribute;
-  /** The `templateRef` binding's name. */
-  name: string;
+	attribute: RefAttribute;
+	/** The `templateRef` binding's name. */
+	name: string;
 }
 
 /** A directive an element applies, as a dialect writes it (ADR-0099). */
 export interface PrintedDirective {
-  attribute: DirectiveAttribute;
-  /** The value's code. */
-  value: string;
+	attribute: DirectiveAttribute;
+	/** The value's code. */
+	value: string;
 }
 
 /** Where a component element's attributes and fills are printed (ADR-0053). */
 export interface ComponentContext {
-  component: ComponentNode;
-  /** The tag the component is written with. */
-  tag: string;
-  namespace: Namespace;
-  /** The `-s` attributes the content of its fills carries (ADR-0063). */
-  slotted: ReadonlyArray<string>;
+	component: ComponentNode;
+	/** The tag the component is written with. */
+	tag: string;
+	namespace: Namespace;
+	/** The `-s` attributes the content of its fills carries (ADR-0063). */
+	slotted: ReadonlyArray<string>;
 }
 
 /** A prop passed to a component, as code: `literal` is the string a static prop holds. */
 export interface PrintedProp {
-  name: string;
-  code: string;
-  literal?: string;
+	name: string;
+	code: string;
+	literal?: string;
 }
 
 /** A listener of a child's event, with its handler as code for the `client` site. */
 export interface PrintedListener {
-  attribute: ListenerAttribute;
-  readonly handler: string;
+	attribute: ListenerAttribute;
+	readonly handler: string;
 }
 
 /**
@@ -186,13 +186,13 @@ export interface PrintedListener {
  * forwards, with that slot's presence as the target tests it.
  */
 export interface PrintedFill {
-  fill: SlotFill;
-  /** A scoped fill's parameter: a name, or a destructuring pattern, as written. */
-  parameter?: string;
-  /** Whether the parent's own slot it forwards takes props. */
-  forwardsProps?: boolean;
-  /** The forwarded slot's presence, `slots.title`, as the rules spell it. */
-  presence?: string;
+	fill: SlotFill;
+	/** A scoped fill's parameter: a name, or a destructuring pattern, as written. */
+	parameter?: string;
+	/** Whether the parent's own slot it forwards takes props. */
+	forwardsProps?: boolean;
+	/** The forwarded slot's presence, `slots.title`, as the rules spell it. */
+	presence?: string;
 }
 
 /**
@@ -200,14 +200,14 @@ export interface PrintedFill {
  * control shows the value, and a change of it writes the value's binding.
  */
 export interface PrintedModel {
-  attribute: ModelAttribute;
-  value: string;
+	attribute: ModelAttribute;
+	value: string;
 }
 
 /** A component's `v-model:<name>` (ADR-0054), with its value as code for the `render` site. */
 export interface PrintedModelBinding {
-  attribute: ModelBindingAttribute;
-  value: string;
+	attribute: ModelBindingAttribute;
+	value: string;
 }
 
 /**
@@ -216,16 +216,16 @@ export interface PrintedModelBinding {
  * `(href ? "a" : "button") === "a"`. Absent where every tag takes every attribute.
  */
 export function onlyGuards(node: DynamicNode, is: string): ReadonlyMap<string, string> | undefined {
-  if (!node.only?.length) {
-    return undefined;
-  }
-  const tag = /^[\w$.]+$/.test(is) ? is : `(${is})`;
-  return new Map(
-    node.only.map((entry) => [
-      entry.name,
-      entry.tags.map((each) => `${tag} === ${JSON.stringify(each)}`).join(" || "),
-    ]),
-  );
+	if (!node.only?.length) {
+		return undefined;
+	}
+	const tag = /^[\w$.]+$/.test(is) ? is : `(${is})`;
+	return new Map(
+		node.only.map((entry) => [
+			entry.name,
+			entry.tags.map((each) => `${tag} === ${JSON.stringify(each)}`).join(" || "),
+		]),
+	);
 }
 
 /**
@@ -234,30 +234,30 @@ export function onlyGuards(node: DynamicNode, is: string): ReadonlyMap<string, s
  * tag (Angular's `@case`, Qwik's branches).
  */
 export function candidateAttributes(node: DynamicNode, tag: string): Array<Attribute> {
-  return tagAttributes(node).filter((attribute) => {
-    if (attribute.kind !== "Static" && attribute.kind !== "Bound") {
-      return true;
-    }
-    const only = node.only?.find((entry) => entry.name === attribute.name);
-    return !only || only.tags.includes(tag);
-  });
+	return tagAttributes(node).filter((attribute) => {
+		if (attribute.kind !== "Static" && attribute.kind !== "Bound") {
+			return true;
+		}
+		const only = node.only?.find((entry) => entry.name === attribute.name);
+		return !only || only.tags.includes(tag);
+	});
 }
 
 /** A `<component is>`'s attributes as an element's: a tag candidate's are (ADR-0054). */
 export function tagAttributes(node: DynamicNode): Array<Attribute> {
-  return node.attributes.filter(
-    (attribute): attribute is Attribute =>
-      attribute.kind !== "Prop" &&
-      attribute.kind !== "Listener" &&
-      attribute.kind !== "ModelBinding",
-  );
+	return node.attributes.filter(
+		(attribute): attribute is Attribute =>
+			attribute.kind !== "Prop" &&
+			attribute.kind !== "Listener" &&
+			attribute.kind !== "ModelBinding",
+	);
 }
 
 /** An element piece's `guards` field, left out where there are none. */
 export function guardsOf(guards: ReadonlyMap<string, string> | undefined): {
-  guards?: ReadonlyMap<string, string>;
+	guards?: ReadonlyMap<string, string>;
 } {
-  return guards ? { guards } : {};
+	return guards ? { guards } : {};
 }
 
 /**
@@ -265,8 +265,8 @@ export function guardsOf(guards: ReadonlyMap<string, string> | undefined): {
  * as a `component` or an `element` piece to print the candidates' attributes and content.
  */
 export interface PrintedDynamic {
-  node: DynamicNode;
-  is: string;
+	node: DynamicNode;
+	is: string;
 }
 
 /**
@@ -275,7 +275,7 @@ export interface PrintedDynamic {
  * the printer prints as a root's, outside every element around the teleport.
  */
 export interface PrintedTeleport {
-  node: TeleportNode;
+	node: TeleportNode;
 }
 
 /**
@@ -285,9 +285,9 @@ export interface PrintedTeleport {
  * when none does: `0` where the child is one element.
  */
 export interface PrintedTransition {
-  node: TransitionNode;
-  container: Container;
-  branch: string;
+	node: TransitionNode;
+	container: Container;
+	branch: string;
 }
 
 /**
@@ -296,32 +296,32 @@ export interface PrintedTransition {
  * and absent for an element with no conditional.
  */
 export interface PrintedTransitionElement {
-  node: TransitionNode;
-  element: ElementNode;
-  branch?: number;
+	node: TransitionNode;
+	element: ElementNode;
+	branch?: number;
 }
 
 /** A slot outlet, with its props as code, and key by key when they are an object literal. */
 export interface PrintedSlotOutlet {
-  node: SlotOutletNode;
-  props?: { code: string; entries?: Array<{ key: string; value: string }> };
+	node: SlotOutletNode;
+	props?: { code: string; entries?: Array<{ key: string; value: string }> };
 }
 
 /** A branch of a conditional, with its condition as code: absent on the final else. */
 export interface ConditionalBranch {
-  condition?: string;
-  /** The branch, whose children the dialect prints and whose position texts take. */
-  branch: IfBranch;
+	condition?: string;
+	/** The branch, whose children the dialect prints and whose position texts take. */
+	branch: IfBranch;
 }
 
 /** A list, with its parts as code and its variables by name. */
 export interface ListParts {
-  node: ForNode;
-  source: string;
-  item: string;
-  /** The index variable's name, when a printed expression reads it. */
-  index?: string;
-  key: string;
+	node: ForNode;
+	source: string;
+	item: string;
+	/** The index variable's name, when a printed expression reads it. */
+	index?: string;
+	key: string;
 }
 
 /**
@@ -337,45 +337,45 @@ export interface ListParts {
  *   #title>`), closing itself without content.
  */
 export type MarkupPiece =
-  | { kind: "nodes"; nodes: ReadonlyArray<RenderNode>; container: Container }
-  | {
-      kind: "element";
-      element: ElementNode;
-      directives: ReadonlyArray<PrintedAttribute>;
-      /**
-       * The attributes that render only where a test holds, by name, with the test as code: a
-       * `<component is>`'s attributes that only some tags take (ADR-0119, {@link onlyGuards}).
-       */
-      guards?: ReadonlyMap<string, string>;
-    }
-  | {
-      kind: "wrapper";
-      tag: string;
-      attributes: ReadonlyArray<PrintedAttribute>;
-      content: MarkupPiece;
-    }
-  | { kind: "block"; segments: ReadonlyArray<BlockSegment>; close: string }
-  | { kind: "code"; code: string }
-  | { kind: "component"; component: ComponentNode; directives: ReadonlyArray<PrintedAttribute> }
-  | {
-      kind: "tag";
-      tag: string;
-      attributes: ReadonlyArray<PrintedAttribute>;
-      /** Its content: none for a tag that closes itself. */
-      content?: ReadonlyArray<MarkupPiece>;
-    };
+	| { kind: "nodes"; nodes: ReadonlyArray<RenderNode>; container: Container }
+	| {
+			kind: "element";
+			element: ElementNode;
+			directives: ReadonlyArray<PrintedAttribute>;
+			/**
+			 * The attributes that render only where a test holds, by name, with the test as code: a
+			 * `<component is>`'s attributes that only some tags take (ADR-0119, {@link onlyGuards}).
+			 */
+			guards?: ReadonlyMap<string, string>;
+	  }
+	| {
+			kind: "wrapper";
+			tag: string;
+			attributes: ReadonlyArray<PrintedAttribute>;
+			content: MarkupPiece;
+	  }
+	| { kind: "block"; segments: ReadonlyArray<BlockSegment>; close: string }
+	| { kind: "code"; code: string }
+	| { kind: "component"; component: ComponentNode; directives: ReadonlyArray<PrintedAttribute> }
+	| {
+			kind: "tag";
+			tag: string;
+			attributes: ReadonlyArray<PrintedAttribute>;
+			/** Its content: none for a tag that closes itself. */
+			content?: ReadonlyArray<MarkupPiece>;
+	  };
 
 /** A segment of a block: what opens it, and what it holds. */
 export interface BlockSegment {
-  open: string;
-  content: MarkupPiece;
-  /** Code the segment writes before its content: the constants a branch declares. */
-  leading?: ReadonlyArray<string>;
-  /**
-   * Whether the content goes in parentheses when it takes lines of its own, as JSX in an
-   * expression does (Astro's `{c ? (` … `) : null}`).
-   */
-  parentheses?: boolean;
+	open: string;
+	content: MarkupPiece;
+	/** Code the segment writes before its content: the constants a branch declares. */
+	leading?: ReadonlyArray<string>;
+	/**
+	 * Whether the content goes in parentheses when it takes lines of its own, as JSX in an
+	 * expression does (Astro's `{c ? (` … `) : null}`).
+	 */
+	parentheses?: boolean;
 }
 
 /**
@@ -384,181 +384,181 @@ export interface BlockSegment {
  * render-parity tests check that with each framework's own compiler and server renderer.
  */
 export interface MarkupDialect {
-  name: string;
-  /**
-   * Writes a text node so that the template compiler produces exactly its value: entities,
-   * the language's own delimiters (`{{`, `{`, `@`), and any whitespace the compiler would
-   * otherwise collapse or drop.
-   */
-  escapeText(text: string, position: TextPosition): string;
-  /**
-   * Writes a static attribute of a `tag` element so that the element gets exactly this value:
-   * `name="…"` with the value escaped, or the language's binding when a static value cannot
-   * express it. `context`, which the printer always passes, is the element with the rest of
-   * its attributes, for a language that writes a value by what is beside it (Svelte's server
-   * escapes a static value twice on an element with a spread).
-   */
-  attribute(name: string, value: string, tag: string, context?: AttributeContext): string;
-  /** `<br />` or `<br>`. */
-  voidElement: "self-closing" | "html";
-  /**
-   * Whether a childless SVG element of a tag closes itself (`<circle />`, ADR-0040), as it does
-   * unless the language says otherwise: Svelte warns on `<title />`, whose name is HTML's too.
-   */
-  selfClosingSvg?(tag: string): boolean;
-  /**
-   * The name a `tag` element in `namespace` is written with, when the language reads its
-   * content by its name (Angular reads a `<title>` as text unless it is written `<svg:title>`).
-   */
-  elementName?(tag: string, namespace: Namespace): string;
-  /**
-   * Whether the template compiler drops whitespace-only text that holds a line break and sits
-   * between two elements or blocks (Vue's `condense`, Angular's whitespace removal, Astro's JSX
-   * rules), so the printer may break the line there. Otherwise it breaks inside a tag
-   * (`</li\n><li>`), or right after a block's closing.
-   */
-  stripsWhitespaceBetweenElements: boolean;
-  /**
-   * Whether it drops whitespace-only text at the start and end of an element's or a block's
-   * content, so the printer may break lines there. Otherwise content stays on its tag's line.
-   */
-  stripsEdgeWhitespace: boolean;
-  /**
-   * The region an element must be printed in, when the language would read one of its static
-   * attribute values as a binding and no escape can stop it (Angular's `{{`).
-   */
-  literalRegion?(element: ElementNode): LiteralRegion | undefined;
-  /** Writes an interpolation of code, rendered as text: nothing when it is nullish. */
-  interpolation(code: string, position: TextPosition): string;
-  /**
-   * Writes an attribute bound to code: left out when the value is nullish, and rendered by
-   * ADR-0037's rules otherwise. Spread keys are written as bound attributes too.
-   */
-  boundAttribute(name: string, code: string, context: AttributeContext): string;
-  /** Writes an element's class: the union of its parts' tokens, none when there are none. */
-  classAttribute(
-    parts: ReadonlyArray<ClassPart>,
-    context: AttributeContext,
-  ): Array<PrintedAttribute>;
-  /** Writes an element's style: its declarations whose value is present, in any order. */
-  styleAttribute(
-    parts: ReadonlyArray<StylePart>,
-    context: AttributeContext,
-  ): Array<PrintedAttribute>;
-  /** Writes a conditional: the first branch whose condition is truthy renders, or the else. */
-  conditional(branches: ReadonlyArray<ConditionalBranch>): Array<MarkupPiece>;
-  /**
-   * Writes a constant a branch declares before its content, for a language that declares one in
-   * markup (Svelte's `{@const name = value}`, ADR-0099).
-   */
-  branchConstant?(name: string, value: string): string;
-  /** Writes a list: the body for each item of the source, in order. */
-  list(list: ListParts): Array<MarkupPiece>;
-  /**
-   * Writes a listener (ADR-0047): the handler runs, with the DOM event, each time the element's
-   * event of that name fires, in the phase and with the option it asks for. A language without a
-   * spelling for an option, or for the handler, throws: its target writes the listener itself
-   * (`MarkupOptions.attribute` or `handler`), or declares the capability unsupported.
-   */
-  eventAttribute(event: PrintedEvent, context: AttributeContext): Array<PrintedAttribute>;
-  /** Writes a template ref (ADR-0049): the element is the ref's value while it is rendered. */
-  refAttribute(ref: PrintedRef, context: AttributeContext): Array<PrintedAttribute>;
-  /**
-   * Writes a directive (ADR-0099): its hooks run in the browser with the value, once the element
-   * is in the DOM, after a render that changes the value, and once it leaves (Vue's
-   * `v-focus-trap`, Svelte's `{@attach}`, Angular's `[vFocusTrap]`).
-   */
-  directiveAttribute?(
-    directive: PrintedDirective,
-    context: AttributeContext,
-  ): Array<PrintedAttribute>;
-  /**
-   * Writes `innerHTML={markup}` (ADR-0097) as an attribute: the element's content is the markup
-   * the code's string holds, parsed, never escaped (Vue's `v-html`, Angular's `[innerHTML]`,
-   * Astro's `set:html`). A language that writes it as content implements `rawHtmlContent`.
-   */
-  rawHtmlAttribute?(code: string, context: AttributeContext): Array<PrintedAttribute>;
-  /** Writes `innerHTML={markup}` as the element's content instead (Svelte's `{@html markup}`). */
-  rawHtmlContent?(code: string): string;
-  /**
-   * Whether the language runs no code in the browser (Astro): it writes no listener and no
-   * template ref, so a list's index that only a handler reads is left out too.
-   */
-  inert?: boolean;
-  /** Orders an element's printed attributes, when the language's lint rules want an order. */
-  orderAttributes?(attributes: ReadonlyArray<PrintedAttribute>): Array<PrintedAttribute>;
-  /**
-   * The tag a component element is written with (ADR-0053): its local name when absent
-   * (`<Field>`), or the language's own (Angular's `<uf-field>`).
-   */
-  componentTag?(name: string): string;
-  /** Writes a prop passed to a component (ADR-0053). */
-  propAttribute?(prop: PrintedProp, context: ComponentContext): Array<PrintedAttribute>;
-  /**
-   * Writes a listener of a child's event (ADR-0053): the handler runs with the event's payload
-   * each time the child emits it.
-   */
-  componentEvent?(listener: PrintedListener, context: ComponentContext): Array<PrintedAttribute>;
-  /**
-   * Writes what a component element passes through to the child's fallthrough element
-   * (ADR-0118), all at once, in source order. Without it, each is written as the element hooks
-   * write it on the component's tag (`attribute`, `boundAttribute`, `eventAttribute`).
-   */
-  fallthroughAttributes?(
-    attributes: ReadonlyArray<PrintedFallthrough>,
-    context: ComponentContext & { attributes: AttributeContext },
-  ): Array<PrintedAttribute>;
-  /**
-   * Writes `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it
-   * does not declare. No default: each target names and spreads its rest its own way.
-   */
-  restAttribute?(context: AttributeContext): Array<PrintedAttribute>;
-  /**
-   * Writes a component element's content from its fills (ADR-0054): the default slot's
-   * children, the named slots' templates, and the forwarded slots. None closes the tag.
-   */
-  fills?(fills: ReadonlyArray<PrintedFill>, context: ComponentContext): Array<MarkupPiece>;
-  /** Writes a slot outlet (ADR-0054): what the parent filled the slot with, or the fallback. */
-  slotOutlet?(outlet: PrintedSlotOutlet): Array<MarkupPiece>;
-  /**
-   * Writes a form control's `v-model` (ADR-0054): the control shows the value, and each change
-   * the control's kind and modifiers say writes it.
-   */
-  modelAttribute?(model: PrintedModel, context: AttributeContext): Array<PrintedAttribute>;
-  /**
-   * Writes a component's `v-model:<name>` (ADR-0054): the child shows the value, and its writes
-   * of the model write it.
-   */
-  modelBinding?(binding: PrintedModelBinding, context: ComponentContext): Array<PrintedAttribute>;
-  /**
-   * Writes `<component is>` (ADR-0054): the candidate `is` names renders, with the node's
-   * attributes, and its children or fills. The printer prints an `element` piece's tag and a
-   * `component` piece's name as the dialect gives them, with the node's attributes.
-   */
-  dynamic?(dynamic: PrintedDynamic): Array<MarkupPiece>;
-  /** Writes `<Teleport to>` (ADR-0098): see {@link PrintedTeleport}. */
-  teleport?(teleport: PrintedTeleport): Array<MarkupPiece>;
-  /**
-   * A child component in the tree (ADR-0101): the pieces it prints as, around a `component`
-   * piece of it, such as Vue's `<Suspense>` around an async child. Absent: the component alone.
-   */
-  component?(component: ComponentNode): Array<MarkupPiece>;
-  /**
-   * Writes `<Transition>` around its child (ADR-0100): see {@link PrintedTransition}. By default
-   * the child prints in its place, with no wrapper, and {@link transitionAttributes} marks it.
-   */
-  transition?(transition: PrintedTransition): Array<MarkupPiece>;
-  /**
-   * The attributes that run a transition's classes on its element, or on each branch's element
-   * of its conditional (ADR-0100), written before the element's own: Svelte's `in:` and `out:`,
-   * Angular's directive and `(animate.leave)`. See {@link PrintedTransitionElement}.
-   */
-  transitionAttributes?(element: PrintedTransitionElement): Array<PrintedAttribute>;
-  /**
-   * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
-   * them against the child's props (Svelte): `name=""` each, as on an element, without it.
-   */
-  componentScopeAttributes?(names: ReadonlyArray<string>): Array<PrintedAttribute>;
+	name: string;
+	/**
+	 * Writes a text node so that the template compiler produces exactly its value: entities,
+	 * the language's own delimiters (`{{`, `{`, `@`), and any whitespace the compiler would
+	 * otherwise collapse or drop.
+	 */
+	escapeText(text: string, position: TextPosition): string;
+	/**
+	 * Writes a static attribute of a `tag` element so that the element gets exactly this value:
+	 * `name="…"` with the value escaped, or the language's binding when a static value cannot
+	 * express it. `context`, which the printer always passes, is the element with the rest of
+	 * its attributes, for a language that writes a value by what is beside it (Svelte's server
+	 * escapes a static value twice on an element with a spread).
+	 */
+	attribute(name: string, value: string, tag: string, context?: AttributeContext): string;
+	/** `<br />` or `<br>`. */
+	voidElement: "self-closing" | "html";
+	/**
+	 * Whether a childless SVG element of a tag closes itself (`<circle />`, ADR-0040), as it does
+	 * unless the language says otherwise: Svelte warns on `<title />`, whose name is HTML's too.
+	 */
+	selfClosingSvg?(tag: string): boolean;
+	/**
+	 * The name a `tag` element in `namespace` is written with, when the language reads its
+	 * content by its name (Angular reads a `<title>` as text unless it is written `<svg:title>`).
+	 */
+	elementName?(tag: string, namespace: Namespace): string;
+	/**
+	 * Whether the template compiler drops whitespace-only text that holds a line break and sits
+	 * between two elements or blocks (Vue's `condense`, Angular's whitespace removal, Astro's JSX
+	 * rules), so the printer may break the line there. Otherwise it breaks inside a tag
+	 * (`</li\n><li>`), or right after a block's closing.
+	 */
+	stripsWhitespaceBetweenElements: boolean;
+	/**
+	 * Whether it drops whitespace-only text at the start and end of an element's or a block's
+	 * content, so the printer may break lines there. Otherwise content stays on its tag's line.
+	 */
+	stripsEdgeWhitespace: boolean;
+	/**
+	 * The region an element must be printed in, when the language would read one of its static
+	 * attribute values as a binding and no escape can stop it (Angular's `{{`).
+	 */
+	literalRegion?(element: ElementNode): LiteralRegion | undefined;
+	/** Writes an interpolation of code, rendered as text: nothing when it is nullish. */
+	interpolation(code: string, position: TextPosition): string;
+	/**
+	 * Writes an attribute bound to code: left out when the value is nullish, and rendered by
+	 * ADR-0037's rules otherwise. Spread keys are written as bound attributes too.
+	 */
+	boundAttribute(name: string, code: string, context: AttributeContext): string;
+	/** Writes an element's class: the union of its parts' tokens, none when there are none. */
+	classAttribute(
+		parts: ReadonlyArray<ClassPart>,
+		context: AttributeContext,
+	): Array<PrintedAttribute>;
+	/** Writes an element's style: its declarations whose value is present, in any order. */
+	styleAttribute(
+		parts: ReadonlyArray<StylePart>,
+		context: AttributeContext,
+	): Array<PrintedAttribute>;
+	/** Writes a conditional: the first branch whose condition is truthy renders, or the else. */
+	conditional(branches: ReadonlyArray<ConditionalBranch>): Array<MarkupPiece>;
+	/**
+	 * Writes a constant a branch declares before its content, for a language that declares one in
+	 * markup (Svelte's `{@const name = value}`, ADR-0099).
+	 */
+	branchConstant?(name: string, value: string): string;
+	/** Writes a list: the body for each item of the source, in order. */
+	list(list: ListParts): Array<MarkupPiece>;
+	/**
+	 * Writes a listener (ADR-0047): the handler runs, with the DOM event, each time the element's
+	 * event of that name fires, in the phase and with the option it asks for. A language without a
+	 * spelling for an option, or for the handler, throws: its target writes the listener itself
+	 * (`MarkupOptions.attribute` or `handler`), or declares the capability unsupported.
+	 */
+	eventAttribute(event: PrintedEvent, context: AttributeContext): Array<PrintedAttribute>;
+	/** Writes a template ref (ADR-0049): the element is the ref's value while it is rendered. */
+	refAttribute(ref: PrintedRef, context: AttributeContext): Array<PrintedAttribute>;
+	/**
+	 * Writes a directive (ADR-0099): its hooks run in the browser with the value, once the element
+	 * is in the DOM, after a render that changes the value, and once it leaves (Vue's
+	 * `v-focus-trap`, Svelte's `{@attach}`, Angular's `[vFocusTrap]`).
+	 */
+	directiveAttribute?(
+		directive: PrintedDirective,
+		context: AttributeContext,
+	): Array<PrintedAttribute>;
+	/**
+	 * Writes `innerHTML={markup}` (ADR-0097) as an attribute: the element's content is the markup
+	 * the code's string holds, parsed, never escaped (Vue's `v-html`, Angular's `[innerHTML]`,
+	 * Astro's `set:html`). A language that writes it as content implements `rawHtmlContent`.
+	 */
+	rawHtmlAttribute?(code: string, context: AttributeContext): Array<PrintedAttribute>;
+	/** Writes `innerHTML={markup}` as the element's content instead (Svelte's `{@html markup}`). */
+	rawHtmlContent?(code: string): string;
+	/**
+	 * Whether the language runs no code in the browser (Astro): it writes no listener and no
+	 * template ref, so a list's index that only a handler reads is left out too.
+	 */
+	inert?: boolean;
+	/** Orders an element's printed attributes, when the language's lint rules want an order. */
+	orderAttributes?(attributes: ReadonlyArray<PrintedAttribute>): Array<PrintedAttribute>;
+	/**
+	 * The tag a component element is written with (ADR-0053): its local name when absent
+	 * (`<Field>`), or the language's own (Angular's `<uf-field>`).
+	 */
+	componentTag?(name: string): string;
+	/** Writes a prop passed to a component (ADR-0053). */
+	propAttribute?(prop: PrintedProp, context: ComponentContext): Array<PrintedAttribute>;
+	/**
+	 * Writes a listener of a child's event (ADR-0053): the handler runs with the event's payload
+	 * each time the child emits it.
+	 */
+	componentEvent?(listener: PrintedListener, context: ComponentContext): Array<PrintedAttribute>;
+	/**
+	 * Writes what a component element passes through to the child's fallthrough element
+	 * (ADR-0118), all at once, in source order. Without it, each is written as the element hooks
+	 * write it on the component's tag (`attribute`, `boundAttribute`, `eventAttribute`).
+	 */
+	fallthroughAttributes?(
+		attributes: ReadonlyArray<PrintedFallthrough>,
+		context: ComponentContext & { attributes: AttributeContext },
+	): Array<PrintedAttribute>;
+	/**
+	 * Writes `{...rest}` on an element (ADR-0118): what the component's consumer passes it that it
+	 * does not declare. No default: each target names and spreads its rest its own way.
+	 */
+	restAttribute?(context: AttributeContext): Array<PrintedAttribute>;
+	/**
+	 * Writes a component element's content from its fills (ADR-0054): the default slot's
+	 * children, the named slots' templates, and the forwarded slots. None closes the tag.
+	 */
+	fills?(fills: ReadonlyArray<PrintedFill>, context: ComponentContext): Array<MarkupPiece>;
+	/** Writes a slot outlet (ADR-0054): what the parent filled the slot with, or the fallback. */
+	slotOutlet?(outlet: PrintedSlotOutlet): Array<MarkupPiece>;
+	/**
+	 * Writes a form control's `v-model` (ADR-0054): the control shows the value, and each change
+	 * the control's kind and modifiers say writes it.
+	 */
+	modelAttribute?(model: PrintedModel, context: AttributeContext): Array<PrintedAttribute>;
+	/**
+	 * Writes a component's `v-model:<name>` (ADR-0054): the child shows the value, and its writes
+	 * of the model write it.
+	 */
+	modelBinding?(binding: PrintedModelBinding, context: ComponentContext): Array<PrintedAttribute>;
+	/**
+	 * Writes `<component is>` (ADR-0054): the candidate `is` names renders, with the node's
+	 * attributes, and its children or fills. The printer prints an `element` piece's tag and a
+	 * `component` piece's name as the dialect gives them, with the node's attributes.
+	 */
+	dynamic?(dynamic: PrintedDynamic): Array<MarkupPiece>;
+	/** Writes `<Teleport to>` (ADR-0098): see {@link PrintedTeleport}. */
+	teleport?(teleport: PrintedTeleport): Array<MarkupPiece>;
+	/**
+	 * A child component in the tree (ADR-0101): the pieces it prints as, around a `component`
+	 * piece of it, such as Vue's `<Suspense>` around an async child. Absent: the component alone.
+	 */
+	component?(component: ComponentNode): Array<MarkupPiece>;
+	/**
+	 * Writes `<Transition>` around its child (ADR-0100): see {@link PrintedTransition}. By default
+	 * the child prints in its place, with no wrapper, and {@link transitionAttributes} marks it.
+	 */
+	transition?(transition: PrintedTransition): Array<MarkupPiece>;
+	/**
+	 * The attributes that run a transition's classes on its element, or on each branch's element
+	 * of its conditional (ADR-0100), written before the element's own: Svelte's `in:` and `out:`,
+	 * Angular's directive and `(animate.leave)`. See {@link PrintedTransitionElement}.
+	 */
+	transitionAttributes?(element: PrintedTransitionElement): Array<PrintedAttribute>;
+	/**
+	 * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
+	 * them against the child's props (Svelte): `name=""` each, as on an element, without it.
+	 */
+	componentScopeAttributes?(names: ReadonlyArray<string>): Array<PrintedAttribute>;
 }
 
 /**
@@ -567,92 +567,92 @@ export interface MarkupDialect {
  * on the wrapper's line, breaking lines only inside tags.
  */
 export interface LiteralRegion {
-  /** The wrapper's opening tag. */
-  open: string;
-  /** The wrapper's closing tag. */
-  close: string;
-  /** How the element and its subtree are written inside the wrapper. */
-  dialect: MarkupDialect;
+	/** The wrapper's opening tag. */
+	open: string;
+	/** The wrapper's closing tag. */
+	close: string;
+	/** How the element and its subtree are written inside the wrapper. */
+	dialect: MarkupDialect;
 }
 
 /** Options for {@link printMarkup}. */
 export interface MarkupOptions {
-  /** One level of indentation. Defaults to two spaces. */
-  indent?: string;
-  /** The level the root starts at. */
-  level?: number;
-  /** The line length above which a tag with attributes puts one per line. Defaults to 100. */
-  printWidth?: number;
-  /**
-   * Prints an attribute the target writes its own way, or returns `undefined`; `""` prints
-   * nothing (an attribute another one of the element is written with, as Angular writes the
-   * listeners of one event in one).
-   */
-  attribute?(attribute: Attribute, element: ElementNode): string | undefined;
-  /**
-   * The template statement a listener runs, when the target writes one its dialect needs
-   * (Angular's `onSave($event)`, for a handler it hoisted to a method), or `undefined` to leave
-   * the dialect the handler's code (`PrintedEvent.statement`).
-   */
-  handler?(attribute: EventAttribute, element: ElementNode): string | undefined;
-  /**
-   * The component the markup belongs to: its bindings resolve the references `rewrite`
-   * spells.
-   */
-  component?: UfComponent;
-  /**
-   * Whether the language reads a directive's value in a closure, where TypeScript no longer
-   * narrows what a conditional around the element narrows: the value's narrowed paths are then
-   * asserted present (ADR-0099).
-   */
-  closureDirectiveValues?: boolean;
-  /**
-   * The directives whose value a closure reads and a branch around the element narrows, by the
-   * branch that declares a constant of each value (Svelte's `{@const}`) under the name given:
-   * TypeScript keeps no narrowing of a reassigned variable in a closure, nor one a `!` can't
-   * write (`typeof`), while the constant takes the narrowed type (ADR-0099).
-   */
-  narrowedDirectiveValues?: ReadonlyMap<
-    Container,
-    ReadonlyArray<{ attribute: DirectiveAttribute; name: string }>
-  >;
-  /**
-   * The component's module, whose imports give a child's scoped styles: without it, the content
-   * filled into a styled child carries no `-s` attribute (ADR-0063). The component's own
-   * `data-uf-<scopeId>` needs only `component`.
-   */
-  module?: UfModule;
-  /**
-   * The tag a component element is written with, where the target declares the component under
-   * another name than its own (Vue's alias for a child named like one of its built-ins), or
-   * `undefined` to leave it to the dialect (`MarkupDialect.componentTag`).
-   */
-  componentTag?(name: string): string | undefined;
-  /**
-   * How the target spells references (Angular's `label()`), for each site: `render` for the
-   * template's expressions, `key` for a list's key, `client` for a handler. Code is printed as
-   * written without it. Needs `component`.
-   */
-  rewrite?: RewriteRules;
-  /**
-   * What an element, a component's tag or a `<component is>` carries after its scope attributes,
-   * as code: the targets whose child cannot know the scope attributes its styled parents pass
-   * spread them on the component's roots (`scopeRoots`, the child-root rule, ADR-0063). Asked
-   * for each node at the template's top level, where the roots are: the element, or the tag in an
-   * element's shape, with the node's span.
-   */
-  scopeRootAttributes?(element: ElementNode): Array<string>;
-  /**
-   * The components a component element stands for, where the target writes a `<component is>`
-   * as one (Svelte's `$derived`): its fills take each candidate's `-s`, as they do printed
-   * through the dialect's `dynamic` (ADR-0063).
-   */
-  candidates?(node: ComponentNode): ReadonlyArray<string> | undefined;
-  /**
-   * The `-s` attributes the root's nodes carry: those of the child whose scoped fill the markup
-   * is, where the target prints a fill apart (Astro's render prop, ADR-0063).
-   */
-  slotted?: ReadonlyArray<string>;
+	/** One level of indentation. Defaults to two spaces. */
+	indent?: string;
+	/** The level the root starts at. */
+	level?: number;
+	/** The line length above which a tag with attributes puts one per line. Defaults to 100. */
+	printWidth?: number;
+	/**
+	 * Prints an attribute the target writes its own way, or returns `undefined`; `""` prints
+	 * nothing (an attribute another one of the element is written with, as Angular writes the
+	 * listeners of one event in one).
+	 */
+	attribute?(attribute: Attribute, element: ElementNode): string | undefined;
+	/**
+	 * The template statement a listener runs, when the target writes one its dialect needs
+	 * (Angular's `onSave($event)`, for a handler it hoisted to a method), or `undefined` to leave
+	 * the dialect the handler's code (`PrintedEvent.statement`).
+	 */
+	handler?(attribute: EventAttribute, element: ElementNode): string | undefined;
+	/**
+	 * The component the markup belongs to: its bindings resolve the references `rewrite`
+	 * spells.
+	 */
+	component?: UfComponent;
+	/**
+	 * Whether the language reads a directive's value in a closure, where TypeScript no longer
+	 * narrows what a conditional around the element narrows: the value's narrowed paths are then
+	 * asserted present (ADR-0099).
+	 */
+	closureDirectiveValues?: boolean;
+	/**
+	 * The directives whose value a closure reads and a branch around the element narrows, by the
+	 * branch that declares a constant of each value (Svelte's `{@const}`) under the name given:
+	 * TypeScript keeps no narrowing of a reassigned variable in a closure, nor one a `!` can't
+	 * write (`typeof`), while the constant takes the narrowed type (ADR-0099).
+	 */
+	narrowedDirectiveValues?: ReadonlyMap<
+		Container,
+		ReadonlyArray<{ attribute: DirectiveAttribute; name: string }>
+	>;
+	/**
+	 * The component's module, whose imports give a child's scoped styles: without it, the content
+	 * filled into a styled child carries no `-s` attribute (ADR-0063). The component's own
+	 * `data-uf-<scopeId>` needs only `component`.
+	 */
+	module?: UfModule;
+	/**
+	 * The tag a component element is written with, where the target declares the component under
+	 * another name than its own (Vue's alias for a child named like one of its built-ins), or
+	 * `undefined` to leave it to the dialect (`MarkupDialect.componentTag`).
+	 */
+	componentTag?(name: string): string | undefined;
+	/**
+	 * How the target spells references (Angular's `label()`), for each site: `render` for the
+	 * template's expressions, `key` for a list's key, `client` for a handler. Code is printed as
+	 * written without it. Needs `component`.
+	 */
+	rewrite?: RewriteRules;
+	/**
+	 * What an element, a component's tag or a `<component is>` carries after its scope attributes,
+	 * as code: the targets whose child cannot know the scope attributes its styled parents pass
+	 * spread them on the component's roots (`scopeRoots`, the child-root rule, ADR-0063). Asked
+	 * for each node at the template's top level, where the roots are: the element, or the tag in an
+	 * element's shape, with the node's span.
+	 */
+	scopeRootAttributes?(element: ElementNode): Array<string>;
+	/**
+	 * The components a component element stands for, where the target writes a `<component is>`
+	 * as one (Svelte's `$derived`): its fills take each candidate's `-s`, as they do printed
+	 * through the dialect's `dynamic` (ADR-0063).
+	 */
+	candidates?(node: ComponentNode): ReadonlyArray<string> | undefined;
+	/**
+	 * The `-s` attributes the root's nodes carry: those of the child whose scoped fill the markup
+	 * is, where the target prints a fill apart (Astro's render prop, ADR-0063).
+	 */
+	slotted?: ReadonlyArray<string>;
 }
 
 /**
@@ -663,62 +663,62 @@ export interface MarkupOptions {
  * way, goes. Conditions test truthiness, so the conjunction renders the same branch.
  */
 export function withoutEmptyBranches(
-  branches: ReadonlyArray<ConditionalBranch>,
+	branches: ReadonlyArray<ConditionalBranch>,
 ): Array<ConditionalBranch> {
-  const kept: Array<ConditionalBranch> = [];
-  const negated: Array<string> = [];
-  for (const each of branches) {
-    if (each.branch.children.length === 0) {
-      // Only a branch with a condition can be empty (the IR's invariants).
-      if (each.condition !== undefined) {
-        negated.push(negate(each.condition));
-      }
-      continue;
-    }
-    if (negated.length === 0) {
-      kept.push(each);
-    } else {
-      const parts = each.condition === undefined ? negated : [...negated, each.condition];
-      kept.push({ condition: conjoin(parts), branch: each.branch });
-    }
-  }
-  return kept;
+	const kept: Array<ConditionalBranch> = [];
+	const negated: Array<string> = [];
+	for (const each of branches) {
+		if (each.branch.children.length === 0) {
+			// Only a branch with a condition can be empty (the IR's invariants).
+			if (each.condition !== undefined) {
+				negated.push(negate(each.condition));
+			}
+			continue;
+		}
+		if (negated.length === 0) {
+			kept.push(each);
+		} else {
+			const parts = each.condition === undefined ? negated : [...negated, each.condition];
+			kept.push({ condition: conjoin(parts), branch: each.branch });
+		}
+	}
+	return kept;
 }
 
 /** `!c`, with parentheses around code that a prefix operator would split. */
 export function negate(code: string): string {
-  const expression = parseExpression(code);
-  return expression.type === "UnaryExpression" || !parenthesesNeeded(expression, code, "operand")
-    ? `!${code}`
-    : `!(${code})`;
+	const expression = parseExpression(code);
+	return expression.type === "UnaryExpression" || !parenthesesNeeded(expression, code, "operand")
+		? `!${code}`
+		: `!(${code})`;
 }
 
 /** Expressions that need parentheses as an operand of `&&`: lower precedence, or `??`. */
 const LOOSER_THAN_AND: ReadonlySet<string> = new Set([
-  "ConditionalExpression",
-  "ArrowFunctionExpression",
-  "AssignmentExpression",
-  "SequenceExpression",
-  "YieldExpression",
+	"ConditionalExpression",
+	"ArrowFunctionExpression",
+	"AssignmentExpression",
+	"SequenceExpression",
+	"YieldExpression",
 ]);
 
 /** `a && b && …`, with parentheses around the operands that need them. */
 export function conjoin(parts: ReadonlyArray<string>): string {
-  return parts
-    .map((part) => {
-      const expression = parseExpression(part);
-      const looser =
-        LOOSER_THAN_AND.has(expression.type) ||
-        (expression.type === "LogicalExpression" && expression.operator !== "&&");
-      return looser ? wrapUnlessParenthesised(expression, part) : part;
-    })
-    .join(" && ");
+	return parts
+		.map((part) => {
+			const expression = parseExpression(part);
+			const looser =
+				LOOSER_THAN_AND.has(expression.type) ||
+				(expression.type === "LogicalExpression" && expression.operator !== "&&");
+			return looser ? wrapUnlessParenthesised(expression, part) : part;
+		})
+		.join(" && ");
 }
 
 /** `(code)`, unless the author's own parentheses already hold all of it. */
 function wrapUnlessParenthesised(expression: { start: number; end: number }, code: string) {
-  const wrapped = code.startsWith("(") && code.endsWith(")") && expression.start > 0;
-  return wrapped && expression.end < code.length ? code : `(${code})`;
+	const wrapped = code.startsWith("(") && code.endsWith(")") && expression.start > 0;
+	return wrapped && expression.end < code.length ? code : `(${code})`;
 }
 
 /**
@@ -726,12 +726,12 @@ function wrapUnlessParenthesised(expression: { start: number; end: number }, cod
  * tightly enough there.
  */
 export function operand(code: string): string {
-  return needsParentheses(code, "operand") ? `(${code})` : code;
+	return needsParentheses(code, "operand") ? `(${code})` : code;
 }
 
 /** Code as the test of a conditional (`(a ? b : c) ? x : y`). */
 export function test(code: string): string {
-  return needsParentheses(code, "test") ? `(${code})` : code;
+	return needsParentheses(code, "test") ? `(${code})` : code;
 }
 
 /**
@@ -739,11 +739,11 @@ export function test(code: string): string {
  * `?.` when it may be nullish there, as the spread's `nullish` says.
  */
 export function member(object: string, key: string, optional: boolean): string {
-  const target = operand(object);
-  if (isIdentifierName(key)) {
-    return `${target}${optional ? "?." : "."}${key}`;
-  }
-  return `${target}${optional ? "?." : ""}[${JSON.stringify(key)}]`;
+	const target = operand(object);
+	if (isIdentifierName(key)) {
+		return `${target}${optional ? "?." : "."}${key}`;
+	}
+	return `${target}${optional ? "?." : ""}[${JSON.stringify(key)}]`;
 }
 
 /**
@@ -752,39 +752,39 @@ export function member(object: string, key: string, optional: boolean): string {
  * whitespace as it does outside a `<pre>`, in a form every compiler keeps either way.
  */
 export function keepsWhitespace(position: TextPosition): boolean {
-  return position.element !== undefined && WHITESPACE_PRESERVING_ELEMENTS.has(position.element.tag);
+	return position.element !== undefined && WHITESPACE_PRESERVING_ELEMENTS.has(position.element.tag);
 }
 
 /** Whether a container is the root fragment, whose edges a target pads with its own lines. */
 export function isRoot(container: Container): container is FragmentNode {
-  return "kind" in container && container.kind === "Fragment";
+	return "kind" in container && container.kind === "Fragment";
 }
 
 /** The static parts of a class, as one `class` value (`a b`). */
 export function staticClassValue(parts: ReadonlyArray<ClassPart>): string {
-  return parts.flatMap((part) => (part.kind === "Static" ? [part.value] : [])).join(" ");
+	return parts.flatMap((part) => (part.kind === "Static" ? [part.value] : [])).join(" ");
 }
 
 /** The static declarations of a style, as one `style` value (`color: red; margin: 0`). */
 export function staticStyleValue(parts: ReadonlyArray<StylePart>): string {
-  return parts
-    .flatMap((part) => (part.kind === "Static" ? [`${part.property}: ${part.value}`] : []))
-    .join("; ");
+	return parts
+		.flatMap((part) => (part.kind === "Static" ? [`${part.property}: ${part.value}`] : []))
+		.join("; ");
 }
 
 /** An object literal of class toggles (`{ active: on, "is-big": big }`), shorthand where it can. */
 export function toggleObject(parts: ReadonlyArray<ClassPart>): string {
-  const entries = parts.flatMap((part) => {
-    if (part.kind !== "Toggle") {
-      return [];
-    }
-    const { name, condition } = part;
-    if (name === condition && isIdentifierName(name)) {
-      return [name];
-    }
-    return [`${isIdentifierName(name) ? name : JSON.stringify(name)}: ${condition}`];
-  });
-  return `{ ${entries.join(", ")} }`;
+	const entries = parts.flatMap((part) => {
+		if (part.kind !== "Toggle") {
+			return [];
+		}
+		const { name, condition } = part;
+		if (name === condition && isIdentifierName(name)) {
+			return [name];
+		}
+		return [`${isIdentifierName(name) ? name : JSON.stringify(name)}: ${condition}`];
+	});
+	return `{ ${entries.join(", ")} }`;
 }
 
 /**
@@ -793,28 +793,28 @@ export function toggleObject(parts: ReadonlyArray<ClassPart>): string {
  * false, dynamic values, and consecutive toggles in one object.
  */
 export function classArrayItems(parts: ReadonlyArray<ClassPart>, statics: boolean): Array<string> {
-  const items: Array<string> = [];
-  let run: Array<ClassPart> = [];
-  const flush = () => {
-    if (run.length) {
-      items.push(toggleObject(run));
-    }
-    run = [];
-  };
-  for (const part of parts) {
-    if (part.kind === "Toggle") {
-      run.push(part);
-      continue;
-    }
-    flush();
-    if (part.kind === "Dynamic") {
-      items.push(part.value);
-    } else if (statics) {
-      items.push(JSON.stringify(part.value));
-    }
-  }
-  flush();
-  return items;
+	const items: Array<string> = [];
+	let run: Array<ClassPart> = [];
+	const flush = () => {
+		if (run.length) {
+			items.push(toggleObject(run));
+		}
+		run = [];
+	};
+	for (const part of parts) {
+		if (part.kind === "Toggle") {
+			run.push(part);
+			continue;
+		}
+		flush();
+		if (part.kind === "Dynamic") {
+			items.push(part.value);
+		} else if (statics) {
+			items.push(JSON.stringify(part.value));
+		}
+	}
+	flush();
+	return items;
 }
 
 /** A laid-out node: what the printer arranges on lines. */
@@ -822,8 +822,8 @@ type Item = InlineItem | ElementItem | BlockItem;
 
 /** Text, an interpolation or code: it hugs its neighbours, and no line ever breaks beside it. */
 interface InlineItem {
-  kind: "inline";
-  text: string;
+	kind: "inline";
+	text: string;
 }
 
 /**
@@ -831,56 +831,56 @@ interface InlineItem {
  * content (`rebase`): a static value's is.
  */
 interface AttributeText {
-  text: string;
-  code: boolean;
+	text: string;
+	code: boolean;
 }
 
 /** An element, a wrapper a dialect adds, or a fragment (`<>`, with an empty tag). */
 interface ElementItem {
-  kind: "element";
-  tag: string;
-  attributes: Array<AttributeText>;
-  /** `>`, or ` />` for a self-closing element. */
-  end: string;
-  children: Array<Item>;
-  /** `</tag>`, or nothing for a void or self-closing element. */
-  close: string;
-  /** Whether its content stays on its line: whitespace-preserving, or in a literal region. */
-  inlineOnly: boolean;
-  /** Whether it starts a line even where its compiler keeps whitespace (Svelte). */
-  blockLevel: boolean;
-  /** The literal region the element is written in (Angular's `ngNonBindable`). */
-  region?: LiteralRegion;
+	kind: "element";
+	tag: string;
+	attributes: Array<AttributeText>;
+	/** `>`, or ` />` for a self-closing element. */
+	end: string;
+	children: Array<Item>;
+	/** `</tag>`, or nothing for a void or self-closing element. */
+	close: string;
+	/** Whether its content stays on its line: whitespace-preserving, or in a literal region. */
+	inlineOnly: boolean;
+	/** Whether it starts a line even where its compiler keeps whitespace (Svelte). */
+	blockLevel: boolean;
+	/** The literal region the element is written in (Angular's `ngNonBindable`). */
+	region?: LiteralRegion;
 }
 
 /** A block of segments: each opens, holds content, and the last is followed by `close`. */
 interface BlockItem {
-  kind: "block";
-  segments: Array<{ open: string; children: Array<Item>; parentheses: boolean }>;
-  close: string;
+	kind: "block";
+	segments: Array<{ open: string; children: Array<Item>; parentheses: boolean }>;
+	close: string;
 }
 
 /** What surrounds the nodes being turned into items. */
 interface Scope {
-  dialect: MarkupDialect;
-  element: ElementNode | undefined;
-  namespace: Namespace;
-  preformatted: boolean;
-  /** The `-s` attributes of the children whose slot the nodes fill (ADR-0063). */
-  slotted: ReadonlyArray<string>;
-  /** The components a `<component is>` whose pieces are printed may render. */
-  candidates: ReadonlyArray<string> | undefined;
-  /**
-   * The transition whose child the nodes are (ADR-0100): its element, or each branch's element of
-   * its conditional, takes the dialect's {@link MarkupDialect.transitionAttributes}, with the
-   * index of its branch.
-   */
-  transition?: { node: TransitionNode; branches: ReadonlyMap<ElementNode, number> };
-  /**
-   * Whether the nodes are the template's own top level, outside every element and fill, where
-   * a component's roots are (`scopeRoots`).
-   */
-  top: boolean;
+	dialect: MarkupDialect;
+	element: ElementNode | undefined;
+	namespace: Namespace;
+	preformatted: boolean;
+	/** The `-s` attributes of the children whose slot the nodes fill (ADR-0063). */
+	slotted: ReadonlyArray<string>;
+	/** The components a `<component is>` whose pieces are printed may render. */
+	candidates: ReadonlyArray<string> | undefined;
+	/**
+	 * The transition whose child the nodes are (ADR-0100): its element, or each branch's element of
+	 * its conditional, takes the dialect's {@link MarkupDialect.transitionAttributes}, with the
+	 * index of its branch.
+	 */
+	transition?: { node: TransitionNode; branches: ReadonlyMap<ElementNode, number> };
+	/**
+	 * Whether the nodes are the template's own top level, outside every element and fill, where
+	 * a component's roots are (`scopeRoots`).
+	 */
+	top: boolean;
 }
 
 /**
@@ -899,950 +899,950 @@ interface Scope {
  * dialect protects text at the root's edges).
  */
 export function printMarkup(
-  root: ElementNode | FragmentNode,
-  dialect: MarkupDialect,
-  options: MarkupOptions = {},
+	root: ElementNode | FragmentNode,
+	dialect: MarkupDialect,
+	options: MarkupOptions = {},
 ): string {
-  const { rewrite, component } = options;
-  if (rewrite && !component) {
-    throw new Error("printMarkup: `rewrite` needs the `component`.");
-  }
-  const code = (expression: Expression, site: RewriteSite = "render"): string =>
-    rewrite && component
-      ? rewriteExpression(expression, component, rewrite, site)
-      : expression.code;
-  const indent = options.indent ?? "  ";
-  const printWidth = options.printWidth ?? 100;
-  // Each narrowed directive value's constant, by its attribute (ADR-0099).
-  const narrowedNames = new Map(
-    [...(options.narrowedDirectiveValues?.values() ?? [])].flatMap((entries) =>
-      entries.map(({ attribute, name }) => [attribute, name] as const),
-    ),
-  );
-  const scope: Scope = {
-    dialect,
-    element: undefined,
-    namespace: "html",
-    preformatted: false,
-    slotted: options.slotted ?? [],
-    candidates: undefined,
-    top: true,
-  };
-  const roots =
-    root.kind === "Fragment" ? itemsOf(root.children, root, scope) : [elementItem(root, [], scope)];
-  const level = indent.repeat(options.level ?? 0);
-  const rootRuns = layout(roots, level, false);
-  return rootRuns ? joinRuns(rootRuns, roots, level).join("\n") : "";
+	const { rewrite, component } = options;
+	if (rewrite && !component) {
+		throw new Error("printMarkup: `rewrite` needs the `component`.");
+	}
+	const code = (expression: Expression, site: RewriteSite = "render"): string =>
+		rewrite && component
+			? rewriteExpression(expression, component, rewrite, site)
+			: expression.code;
+	const indent = options.indent ?? "  ";
+	const printWidth = options.printWidth ?? 100;
+	// Each narrowed directive value's constant, by its attribute (ADR-0099).
+	const narrowedNames = new Map(
+		[...(options.narrowedDirectiveValues?.values() ?? [])].flatMap((entries) =>
+			entries.map(({ attribute, name }) => [attribute, name] as const),
+		),
+	);
+	const scope: Scope = {
+		dialect,
+		element: undefined,
+		namespace: "html",
+		preformatted: false,
+		slotted: options.slotted ?? [],
+		candidates: undefined,
+		top: true,
+	};
+	const roots =
+		root.kind === "Fragment" ? itemsOf(root.children, root, scope) : [elementItem(root, [], scope)];
+	const level = indent.repeat(options.level ?? 0);
+	const rootRuns = layout(roots, level, false);
+	return rootRuns ? joinRuns(rootRuns, roots, level).join("\n") : "";
 
-  /** A class's dynamic part, marked where it may hold an array or an object (ADR-0065). */
-  function dynamicPart(value: Expression, collection: boolean | undefined): ClassPart {
-    return { kind: "Dynamic", value: code(value), ...(collection ? { collection: true } : {}) };
-  }
+	/** A class's dynamic part, marked where it may hold an array or an object (ADR-0065). */
+	function dynamicPart(value: Expression, collection: boolean | undefined): ClassPart {
+		return { kind: "Dynamic", value: code(value), ...(collection ? { collection: true } : {}) };
+	}
 
-  /**
-   * A style's parts: its declarations, or the one value it is bound to, as a part without a
-   * property (ADR-0065).
-   */
-  function styleParts(attribute: StyleAttribute): Array<StylePart> {
-    if (attribute.value) {
-      return [{ kind: "Bound", property: "", value: code(attribute.value) }];
-    }
-    return attribute.declarations.map((declaration): StylePart =>
-      declaration.kind === "Static"
-        ? { kind: "Static", property: declaration.property, value: declaration.value }
-        : { kind: "Bound", property: declaration.property, value: code(declaration.value) },
-    );
-  }
+	/**
+	 * A style's parts: its declarations, or the one value it is bound to, as a part without a
+	 * property (ADR-0065).
+	 */
+	function styleParts(attribute: StyleAttribute): Array<StylePart> {
+		if (attribute.value) {
+			return [{ kind: "Bound", property: "", value: code(attribute.value) }];
+		}
+		return attribute.declarations.map((declaration): StylePart =>
+			declaration.kind === "Static"
+				? { kind: "Static", property: declaration.property, value: declaration.value }
+				: { kind: "Bound", property: declaration.property, value: code(declaration.value) },
+		);
+	}
 
-  /** A binding's name: from the component, or from its id (`name@offset`) without one. */
-  function bindingName(id: string): string {
-    return component ? bindingOf(component, id).name : id.slice(0, id.lastIndexOf("@"));
-  }
+	/** A binding's name: from the component, or from its id (`name@offset`) without one. */
+	function bindingName(id: string): string {
+		return component ? bindingOf(component, id).name : id.slice(0, id.lastIndexOf("@"));
+	}
 
-  /** A handler's code for the `client` site, as written without a component to rewrite it. */
-  function handlerCode(handler: Handler): string {
-    if (component) {
-      return handlerText(handler, component, rewrite, "client");
-    }
-    return handler.kind === "Function"
-      ? bindingName(handler.binding)
-      : functionSource(handler.function, handler.function.body.code);
-  }
+	/** A handler's code for the `client` site, as written without a component to rewrite it. */
+	function handlerCode(handler: Handler): string {
+		if (component) {
+			return handlerText(handler, component, rewrite, "client");
+		}
+		return handler.kind === "Function"
+			? bindingName(handler.binding)
+			: functionSource(handler.function, handler.function.body.code);
+	}
 
-  /** The items of a container's children, each laid out as its kind and the dialect say. */
-  function itemsOf(nodes: ReadonlyArray<RenderNode>, container: Container, at: Scope): Array<Item> {
-    return nodes.flatMap((node, index): Array<Item> => {
-      switch (node.kind) {
-        case "Text":
-          return [inline(at.dialect.escapeText(node.value, position(nodes, index, container, at)))];
-        case "Interpolation":
-          return [
-            inline(
-              at.dialect.interpolation(code(node.value), position(nodes, index, container, at)),
-            ),
-          ];
-        case "Element":
-          return [elementItem(node, [], at)];
-        case "If":
-          return node.branches.length === 0
-            ? []
-            : piecesItems(
-                withBranchConstants(
-                  at.dialect.conditional(
-                    node.branches.map((branch) =>
-                      branch.condition === undefined
-                        ? { branch }
-                        : { condition: code(branch.condition), branch },
-                    ),
-                  ),
-                  at,
-                ),
-                at,
-              );
-        case "For":
-          return piecesItems(at.dialect.list(listParts(node)), at);
-        case "Component":
-          return at.dialect.component
-            ? piecesItems(at.dialect.component(node), at)
-            : [componentItem(node, [], at)];
-        case "SlotOutlet":
-          return piecesItems(hook(at.dialect, "slotOutlet")(slotOutletParts(node)), at);
-        case "Dynamic":
-          return piecesItems(hook(at.dialect, "dynamic")({ node, is: code(node.is) }), {
-            ...at,
-            candidates: node.candidates.flatMap((each) =>
-              each.kind === "Component" ? [each.component] : [],
-            ),
-          });
-        case "Teleport":
-          // The content's parent is `to`'s element: no element, `<pre>` or root is around it.
-          return piecesItems(hook(at.dialect, "teleport")({ node }), {
-            ...at,
-            element: undefined,
-            namespace: "html",
-            preformatted: false,
-            top: false,
-          });
-        case "Transition": {
-          // The child renders in the transition's place, inside the same element.
-          const [child] = node.children;
-          const branches = new Map<ElementNode, number>();
-          if (child?.kind === "If") {
-            for (const [index, branch] of child.branches.entries()) {
-              for (const each of branch.children) {
-                if (each.kind === "Element") {
-                  branches.set(each, index);
-                }
-              }
-            }
-          }
-          const inner: Scope = { ...at, transition: { node, branches } };
-          return at.dialect.transition
-            ? piecesItems(at.dialect.transition({ node, container, branch: branchOf(node) }), inner)
-            : itemsOf(node.children, container, inner);
-        }
-        default:
-          return unreachable(node);
-      }
-    });
-  }
+	/** The items of a container's children, each laid out as its kind and the dialect say. */
+	function itemsOf(nodes: ReadonlyArray<RenderNode>, container: Container, at: Scope): Array<Item> {
+		return nodes.flatMap((node, index): Array<Item> => {
+			switch (node.kind) {
+				case "Text":
+					return [inline(at.dialect.escapeText(node.value, position(nodes, index, container, at)))];
+				case "Interpolation":
+					return [
+						inline(
+							at.dialect.interpolation(code(node.value), position(nodes, index, container, at)),
+						),
+					];
+				case "Element":
+					return [elementItem(node, [], at)];
+				case "If":
+					return node.branches.length === 0
+						? []
+						: piecesItems(
+								withBranchConstants(
+									at.dialect.conditional(
+										node.branches.map((branch) =>
+											branch.condition === undefined
+												? { branch }
+												: { condition: code(branch.condition), branch },
+										),
+									),
+									at,
+								),
+								at,
+							);
+				case "For":
+					return piecesItems(at.dialect.list(listParts(node)), at);
+				case "Component":
+					return at.dialect.component
+						? piecesItems(at.dialect.component(node), at)
+						: [componentItem(node, [], at)];
+				case "SlotOutlet":
+					return piecesItems(hook(at.dialect, "slotOutlet")(slotOutletParts(node)), at);
+				case "Dynamic":
+					return piecesItems(hook(at.dialect, "dynamic")({ node, is: code(node.is) }), {
+						...at,
+						candidates: node.candidates.flatMap((each) =>
+							each.kind === "Component" ? [each.component] : [],
+						),
+					});
+				case "Teleport":
+					// The content's parent is `to`'s element: no element, `<pre>` or root is around it.
+					return piecesItems(hook(at.dialect, "teleport")({ node }), {
+						...at,
+						element: undefined,
+						namespace: "html",
+						preformatted: false,
+						top: false,
+					});
+				case "Transition": {
+					// The child renders in the transition's place, inside the same element.
+					const [child] = node.children;
+					const branches = new Map<ElementNode, number>();
+					if (child?.kind === "If") {
+						for (const [index, branch] of child.branches.entries()) {
+							for (const each of branch.children) {
+								if (each.kind === "Element") {
+									branches.set(each, index);
+								}
+							}
+						}
+					}
+					const inner: Scope = { ...at, transition: { node, branches } };
+					return at.dialect.transition
+						? piecesItems(at.dialect.transition({ node, container, branch: branchOf(node) }), inner)
+						: itemsOf(node.children, container, inner);
+				}
+				default:
+					return unreachable(node);
+			}
+		});
+	}
 
-  function position(
-    nodes: ReadonlyArray<RenderNode>,
-    index: number,
-    container: Container,
-    at: Scope,
-  ): TextPosition {
-    return {
-      element: at.element,
-      container,
-      ...(index > 0 ? { previous: nodes[index - 1]!.kind } : {}),
-      ...(index < nodes.length - 1 ? { next: nodes[index + 1]!.kind } : {}),
-      first: index === 0,
-      last: index === nodes.length - 1,
-    };
-  }
+	function position(
+		nodes: ReadonlyArray<RenderNode>,
+		index: number,
+		container: Container,
+		at: Scope,
+	): TextPosition {
+		return {
+			element: at.element,
+			container,
+			...(index > 0 ? { previous: nodes[index - 1]!.kind } : {}),
+			...(index < nodes.length - 1 ? { next: nodes[index + 1]!.kind } : {}),
+			first: index === 0,
+			last: index === nodes.length - 1,
+		};
+	}
 
-  /**
-   * The code of the index of the branch of a transition's conditional that shows an element, or
-   * `-1` (ADR-0100): a ternary chain of the branches' conditions, each in parentheses, which every
-   * dialect's expressions read alike. `0` where the child is one element.
-   */
-  function branchOf(node: TransitionNode): string {
-    const [child] = node.children;
-    if (child?.kind !== "If") {
-      return "0";
-    }
-    const value = (index: number) => (child.branches[index]!.children.length ? `${index}` : "-1");
-    const last = child.branches.length - 1;
-    let chain = child.branches[last]!.condition === undefined ? value(last) : "-1";
-    for (let index = child.branches.length - 1; index >= 0; index -= 1) {
-      const { condition } = child.branches[index]!;
-      if (condition !== undefined) {
-        chain = `(${code(condition)}) ? ${value(index)} : ${chain}`;
-      }
-    }
-    return chain;
-  }
+	/**
+	 * The code of the index of the branch of a transition's conditional that shows an element, or
+	 * `-1` (ADR-0100): a ternary chain of the branches' conditions, each in parentheses, which every
+	 * dialect's expressions read alike. `0` where the child is one element.
+	 */
+	function branchOf(node: TransitionNode): string {
+		const [child] = node.children;
+		if (child?.kind !== "If") {
+			return "0";
+		}
+		const value = (index: number) => (child.branches[index]!.children.length ? `${index}` : "-1");
+		const last = child.branches.length - 1;
+		let chain = child.branches[last]!.condition === undefined ? value(last) : "-1";
+		for (let index = child.branches.length - 1; index >= 0; index -= 1) {
+			const { condition } = child.branches[index]!;
+			if (condition !== undefined) {
+				chain = `(${code(condition)}) ? ${value(index)} : ${chain}`;
+			}
+		}
+		return chain;
+	}
 
-  function listParts(node: ForNode): ListParts {
-    // An index no printed expression or handler reads is left out, so linters see no unused
-    // variable; one only a handler reads is kept where the language runs handlers.
-    const read = referencedBindings(node, { includeClient: dialect.inert !== true });
-    const index =
-      node.index !== undefined && read.has(node.index) ? bindingName(node.index) : undefined;
-    return {
-      node,
-      source: code(node.source),
-      item: bindingName(node.item),
-      ...(index === undefined ? {} : { index }),
-      key: code(node.key, "key"),
-    };
-  }
+	function listParts(node: ForNode): ListParts {
+		// An index no printed expression or handler reads is left out, so linters see no unused
+		// variable; one only a handler reads is kept where the language runs handlers.
+		const read = referencedBindings(node, { includeClient: dialect.inert !== true });
+		const index =
+			node.index !== undefined && read.has(node.index) ? bindingName(node.index) : undefined;
+		return {
+			node,
+			source: code(node.source),
+			item: bindingName(node.item),
+			...(index === undefined ? {} : { index }),
+			key: code(node.key, "key"),
+		};
+	}
 
-  /** A conditional's blocks, each branch's segment with the constants the branch declares. */
-  function withBranchConstants(pieces: ReadonlyArray<MarkupPiece>, at: Scope): Array<MarkupPiece> {
-    const constants = options.narrowedDirectiveValues;
-    if (!constants?.size || !at.dialect.branchConstant) {
-      return [...pieces];
-    }
-    const declare = hook(at.dialect, "branchConstant");
-    return pieces.map((piece) => {
-      if (piece.kind !== "block") {
-        return piece;
-      }
-      return {
-        ...piece,
-        segments: piece.segments.map((segment) => {
-          const { content } = segment;
-          const declared = content.kind === "nodes" ? constants.get(content.container) : undefined;
-          if (!declared?.length) {
-            return segment;
-          }
-          return {
-            ...segment,
-            leading: declared.map(({ attribute, name }) => declare(name, code(attribute.value))),
-          };
-        }),
-      };
-    });
-  }
+	/** A conditional's blocks, each branch's segment with the constants the branch declares. */
+	function withBranchConstants(pieces: ReadonlyArray<MarkupPiece>, at: Scope): Array<MarkupPiece> {
+		const constants = options.narrowedDirectiveValues;
+		if (!constants?.size || !at.dialect.branchConstant) {
+			return [...pieces];
+		}
+		const declare = hook(at.dialect, "branchConstant");
+		return pieces.map((piece) => {
+			if (piece.kind !== "block") {
+				return piece;
+			}
+			return {
+				...piece,
+				segments: piece.segments.map((segment) => {
+					const { content } = segment;
+					const declared = content.kind === "nodes" ? constants.get(content.container) : undefined;
+					if (!declared?.length) {
+						return segment;
+					}
+					return {
+						...segment,
+						leading: declared.map(({ attribute, name }) => declare(name, code(attribute.value))),
+					};
+				}),
+			};
+		});
+	}
 
-  function piecesItems(pieces: ReadonlyArray<MarkupPiece>, at: Scope): Array<Item> {
-    return pieces.flatMap((piece) => pieceItems(piece, at));
-  }
+	function piecesItems(pieces: ReadonlyArray<MarkupPiece>, at: Scope): Array<Item> {
+		return pieces.flatMap((piece) => pieceItems(piece, at));
+	}
 
-  function pieceItems(piece: MarkupPiece, at: Scope): Array<Item> {
-    switch (piece.kind) {
-      case "nodes":
-        return itemsOf(piece.nodes, piece.container, at);
-      case "element":
-        return [elementItem(piece.element, piece.directives, at, piece.guards)];
-      case "wrapper": {
-        const attributes = piece.attributes.map(({ text }) => ({ text, code: false }));
-        return [
-          {
-            kind: "element",
-            tag: piece.tag,
-            attributes,
-            end: ">",
-            children: pieceItems(piece.content, at),
-            close: `</${piece.tag}>`,
-            inlineOnly: at.preformatted,
-            blockLevel: true,
-          },
-        ];
-      }
-      case "block":
-        return [
-          {
-            kind: "block",
-            segments: piece.segments.map((segment) => ({
-              open: segment.open,
-              children: [
-                ...(segment.leading ?? []).map((text) => inline(text)),
-                ...pieceItems(segment.content, at),
-              ],
-              parentheses: segment.parentheses ?? false,
-            })),
-            close: piece.close,
-          },
-        ];
-      case "code":
-        return [inline(piece.code)];
-      case "component":
-        return [componentItem(piece.component, piece.directives, at)];
-      case "tag": {
-        const children = (piece.content ?? []).flatMap((each) => pieceItems(each, at));
-        const closes = piece.content === undefined;
-        return [
-          {
-            kind: "element",
-            tag: piece.tag,
-            attributes: piece.attributes.map(({ text }) => ({ text, code: true })),
-            end: closes ? " />" : ">",
-            children,
-            close: closes ? "" : `</${piece.tag}>`,
-            inlineOnly: at.preformatted,
-            blockLevel: false,
-          },
-        ];
-      }
-      default:
-        return unreachable(piece);
-    }
-  }
+	function pieceItems(piece: MarkupPiece, at: Scope): Array<Item> {
+		switch (piece.kind) {
+			case "nodes":
+				return itemsOf(piece.nodes, piece.container, at);
+			case "element":
+				return [elementItem(piece.element, piece.directives, at, piece.guards)];
+			case "wrapper": {
+				const attributes = piece.attributes.map(({ text }) => ({ text, code: false }));
+				return [
+					{
+						kind: "element",
+						tag: piece.tag,
+						attributes,
+						end: ">",
+						children: pieceItems(piece.content, at),
+						close: `</${piece.tag}>`,
+						inlineOnly: at.preformatted,
+						blockLevel: true,
+					},
+				];
+			}
+			case "block":
+				return [
+					{
+						kind: "block",
+						segments: piece.segments.map((segment) => ({
+							open: segment.open,
+							children: [
+								...(segment.leading ?? []).map((text) => inline(text)),
+								...pieceItems(segment.content, at),
+							],
+							parentheses: segment.parentheses ?? false,
+						})),
+						close: piece.close,
+					},
+				];
+			case "code":
+				return [inline(piece.code)];
+			case "component":
+				return [componentItem(piece.component, piece.directives, at)];
+			case "tag": {
+				const children = (piece.content ?? []).flatMap((each) => pieceItems(each, at));
+				const closes = piece.content === undefined;
+				return [
+					{
+						kind: "element",
+						tag: piece.tag,
+						attributes: piece.attributes.map(({ text }) => ({ text, code: true })),
+						end: closes ? " />" : ">",
+						children,
+						close: closes ? "" : `</${piece.tag}>`,
+						inlineOnly: at.preformatted,
+						blockLevel: false,
+					},
+				];
+			}
+			default:
+				return unreachable(piece);
+		}
+	}
 
-  /**
-   * A component element (ADR-0053), with directives before its own attributes: its props,
-   * listeners, fallthrough `class` and `style` and ref through the dialect's hooks, then its
-   * scope attributes (ADR-0063), then its fills as its content. It closes itself without
-   * content. Inside a `<component is>`, it stands for each of the candidates.
-   */
-  function componentItem(
-    node: ComponentNode,
-    directives: ReadonlyArray<PrintedAttribute>,
-    at: Scope,
-  ): ElementItem {
-    const tag =
-      options.componentTag?.(node.component) ??
-      at.dialect.componentTag?.(node.component) ??
-      node.component;
-    // A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s`
-    // of this child alone: a child further out stamps only the content filled into it.
-    const slotted = slottedAttributes(
-      options.module,
-      at.candidates ?? options.candidates?.(node) ?? [node.component],
-    );
-    const context: ComponentContext = { component: node, tag, namespace: at.namespace, slotted };
-    const content = hook(at.dialect, "fills")(node.fills.map(fillParts), context);
-    const fills: Scope = { ...at, slotted, candidates: undefined, top: false };
-    const children = content.flatMap((piece) => pieceItems(piece, fills));
-    const empty = content.length === 0;
-    return {
-      kind: "element",
-      tag,
-      attributes: componentAttributesOf(node, directives, at, context),
-      end: empty ? " />" : ">",
-      children,
-      close: empty ? "" : `</${tag}>`,
-      inlineOnly: at.preformatted,
-      blockLevel: false,
-    };
-  }
+	/**
+	 * A component element (ADR-0053), with directives before its own attributes: its props,
+	 * listeners, fallthrough `class` and `style` and ref through the dialect's hooks, then its
+	 * scope attributes (ADR-0063), then its fills as its content. It closes itself without
+	 * content. Inside a `<component is>`, it stands for each of the candidates.
+	 */
+	function componentItem(
+		node: ComponentNode,
+		directives: ReadonlyArray<PrintedAttribute>,
+		at: Scope,
+	): ElementItem {
+		const tag =
+			options.componentTag?.(node.component) ??
+			at.dialect.componentTag?.(node.component) ??
+			node.component;
+		// A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s`
+		// of this child alone: a child further out stamps only the content filled into it.
+		const slotted = slottedAttributes(
+			options.module,
+			at.candidates ?? options.candidates?.(node) ?? [node.component],
+		);
+		const context: ComponentContext = { component: node, tag, namespace: at.namespace, slotted };
+		const content = hook(at.dialect, "fills")(node.fills.map(fillParts), context);
+		const fills: Scope = { ...at, slotted, candidates: undefined, top: false };
+		const children = content.flatMap((piece) => pieceItems(piece, fills));
+		const empty = content.length === 0;
+		return {
+			kind: "element",
+			tag,
+			attributes: componentAttributesOf(node, directives, at, context),
+			end: empty ? " />" : ">",
+			children,
+			close: empty ? "" : `</${tag}>`,
+			inlineOnly: at.preformatted,
+			blockLevel: false,
+		};
+	}
 
-  /** A component's attributes as its dialect writes them, `class` parts merged as an element's. */
-  function componentAttributesOf(
-    node: ComponentNode,
-    directives: ReadonlyArray<PrintedAttribute>,
-    at: Scope,
-    context: ComponentContext,
-  ): Array<AttributeText> {
-    const of = at.dialect;
-    // The element-shaped context the class, style and ref hooks take: the component's tag.
-    const element: ElementNode = {
-      kind: "Element",
-      tag: context.tag,
-      attributes: [],
-      children: [],
-      span: node.span,
-    };
-    const spread = rootAttributes(element, at);
-    const attributeContext: AttributeContext = {
-      element,
-      namespace: context.namespace,
-      ...(spread.length ? { spreads: true } : {}),
-    };
-    const printed: Array<PrintedAttribute> = [...directives];
-    const passed: Array<PrintedFallthrough> = [];
-    for (const attribute of node.attributes as ReadonlyArray<ComponentAttribute>) {
-      switch (attribute.kind) {
-        case "Prop": {
-          const value = code(attribute.value);
-          const literal = stringLiteralValue(attribute.value.code);
-          printed.push(
-            ...hook(of, "propAttribute")(
-              { name: attribute.name, code: value, ...(literal === undefined ? {} : { literal }) },
-              context,
-            ),
-          );
-          break;
-        }
-        case "Listener":
-          printed.push(
-            ...hook(of, "componentEvent")(
-              {
-                attribute,
-                get handler() {
-                  return handlerCode(attribute.handler);
-                },
-              },
-              context,
-            ),
-          );
-          break;
-        case "Class":
-          printed.push(
-            ...of.classAttribute(
-              attribute.items.map((item): ClassPart =>
-                item.kind === "Static"
-                  ? { kind: "Static", value: item.value }
-                  : item.kind === "Toggle"
-                    ? { kind: "Toggle", name: item.name, condition: code(item.condition) }
-                    : dynamicPart(item.value, item.collection),
-              ),
-              attributeContext,
-            ),
-          );
-          break;
-        case "Style":
-          printed.push(...of.styleAttribute(styleParts(attribute), attributeContext));
-          break;
-        case "Ref":
-          printed.push(
-            ...of.refAttribute(
-              { attribute, name: bindingName(attribute.binding) },
-              attributeContext,
-            ),
-          );
-          break;
-        case "ModelBinding":
-          printed.push(
-            ...hook(of, "modelBinding")({ attribute, value: code(attribute.value) }, context),
-          );
-          break;
-        // What falls through (ADR-0118): all at once below where the dialect takes them so, and
-        // otherwise each as the element hooks write it on the component's tag.
-        case "Static":
-          if (of.fallthroughAttributes) {
-            passed.push({ kind: "Static", attribute });
-          } else {
-            printed.push({
-              name: attribute.name,
-              text:
-                attribute.value === true
-                  ? attribute.name
-                  : of.attribute(attribute.name, attribute.value, context.tag, attributeContext),
-            });
-          }
-          break;
-        case "Bound": {
-          const value = code(attribute.value);
-          if (of.fallthroughAttributes) {
-            passed.push({ kind: "Bound", attribute, code: value });
-          } else {
-            printed.push({
-              name: attribute.name,
-              text: of.boundAttribute(attribute.name, value, attributeContext),
-            });
-          }
-          break;
-        }
-        case "Event": {
-          const statement = options.handler?.(attribute, element);
-          const event: PrintedEvent = {
-            attribute,
-            get handler() {
-              return handlerCode(attribute.handler);
-            },
-            ...(statement === undefined ? {} : { statement }),
-          };
-          if (of.fallthroughAttributes) {
-            passed.push({ kind: "Event", event });
-          } else {
-            printed.push(...of.eventAttribute(event, attributeContext));
-          }
-          break;
-        }
-        default:
-          unreachable(attribute);
-      }
-    }
-    if (passed.length) {
-      printed.push(
-        ...of.fallthroughAttributes!(passed, { ...context, attributes: attributeContext }),
-      );
-    }
-    // The scope attributes are values, unless the dialect writes them as code.
-    const names = scopeNames(at);
-    const written = names.length ? of.componentScopeAttributes?.(names) : undefined;
-    const values = written ? [] : scopeAttributes(at, attributeContext);
-    printed.push(...values, ...(written ?? []), ...spread.map((text) => ({ name: "", text })));
-    return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
-      text: each.text,
-      code: !values.includes(each),
-    }));
-  }
+	/** A component's attributes as its dialect writes them, `class` parts merged as an element's. */
+	function componentAttributesOf(
+		node: ComponentNode,
+		directives: ReadonlyArray<PrintedAttribute>,
+		at: Scope,
+		context: ComponentContext,
+	): Array<AttributeText> {
+		const of = at.dialect;
+		// The element-shaped context the class, style and ref hooks take: the component's tag.
+		const element: ElementNode = {
+			kind: "Element",
+			tag: context.tag,
+			attributes: [],
+			children: [],
+			span: node.span,
+		};
+		const spread = rootAttributes(element, at);
+		const attributeContext: AttributeContext = {
+			element,
+			namespace: context.namespace,
+			...(spread.length ? { spreads: true } : {}),
+		};
+		const printed: Array<PrintedAttribute> = [...directives];
+		const passed: Array<PrintedFallthrough> = [];
+		for (const attribute of node.attributes as ReadonlyArray<ComponentAttribute>) {
+			switch (attribute.kind) {
+				case "Prop": {
+					const value = code(attribute.value);
+					const literal = stringLiteralValue(attribute.value.code);
+					printed.push(
+						...hook(of, "propAttribute")(
+							{ name: attribute.name, code: value, ...(literal === undefined ? {} : { literal }) },
+							context,
+						),
+					);
+					break;
+				}
+				case "Listener":
+					printed.push(
+						...hook(of, "componentEvent")(
+							{
+								attribute,
+								get handler() {
+									return handlerCode(attribute.handler);
+								},
+							},
+							context,
+						),
+					);
+					break;
+				case "Class":
+					printed.push(
+						...of.classAttribute(
+							attribute.items.map((item): ClassPart =>
+								item.kind === "Static"
+									? { kind: "Static", value: item.value }
+									: item.kind === "Toggle"
+										? { kind: "Toggle", name: item.name, condition: code(item.condition) }
+										: dynamicPart(item.value, item.collection),
+							),
+							attributeContext,
+						),
+					);
+					break;
+				case "Style":
+					printed.push(...of.styleAttribute(styleParts(attribute), attributeContext));
+					break;
+				case "Ref":
+					printed.push(
+						...of.refAttribute(
+							{ attribute, name: bindingName(attribute.binding) },
+							attributeContext,
+						),
+					);
+					break;
+				case "ModelBinding":
+					printed.push(
+						...hook(of, "modelBinding")({ attribute, value: code(attribute.value) }, context),
+					);
+					break;
+				// What falls through (ADR-0118): all at once below where the dialect takes them so, and
+				// otherwise each as the element hooks write it on the component's tag.
+				case "Static":
+					if (of.fallthroughAttributes) {
+						passed.push({ kind: "Static", attribute });
+					} else {
+						printed.push({
+							name: attribute.name,
+							text:
+								attribute.value === true
+									? attribute.name
+									: of.attribute(attribute.name, attribute.value, context.tag, attributeContext),
+						});
+					}
+					break;
+				case "Bound": {
+					const value = code(attribute.value);
+					if (of.fallthroughAttributes) {
+						passed.push({ kind: "Bound", attribute, code: value });
+					} else {
+						printed.push({
+							name: attribute.name,
+							text: of.boundAttribute(attribute.name, value, attributeContext),
+						});
+					}
+					break;
+				}
+				case "Event": {
+					const statement = options.handler?.(attribute, element);
+					const event: PrintedEvent = {
+						attribute,
+						get handler() {
+							return handlerCode(attribute.handler);
+						},
+						...(statement === undefined ? {} : { statement }),
+					};
+					if (of.fallthroughAttributes) {
+						passed.push({ kind: "Event", event });
+					} else {
+						printed.push(...of.eventAttribute(event, attributeContext));
+					}
+					break;
+				}
+				default:
+					unreachable(attribute);
+			}
+		}
+		if (passed.length) {
+			printed.push(
+				...of.fallthroughAttributes!(passed, { ...context, attributes: attributeContext }),
+			);
+		}
+		// The scope attributes are values, unless the dialect writes them as code.
+		const names = scopeNames(at);
+		const written = names.length ? of.componentScopeAttributes?.(names) : undefined;
+		const values = written ? [] : scopeAttributes(at, attributeContext);
+		printed.push(...values, ...(written ?? []), ...spread.map((text) => ({ name: "", text })));
+		return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
+			text: each.text,
+			code: !values.includes(each),
+		}));
+	}
 
-  /**
-   * The scope attributes an element or a component's tag carries after its own (ADR-0063): the
-   * styled component's `data-uf-<scopeId>`, which a child's root takes too (the child-root
-   * rule), and the `-s` of each child whose slot it fills. Each is `name=""`, as the JSX
-   * builder writes it.
-   */
-  function scopeAttributes(at: Scope, context: AttributeContext): Array<PrintedAttribute> {
-    return scopeNames(at).map((name) => ({
-      name,
-      text: at.dialect.attribute(name, "", context.element.tag, context),
-    }));
-  }
+	/**
+	 * The scope attributes an element or a component's tag carries after its own (ADR-0063): the
+	 * styled component's `data-uf-<scopeId>`, which a child's root takes too (the child-root
+	 * rule), and the `-s` of each child whose slot it fills. Each is `name=""`, as the JSX
+	 * builder writes it.
+	 */
+	function scopeAttributes(at: Scope, context: AttributeContext): Array<PrintedAttribute> {
+		return scopeNames(at).map((name) => ({
+			name,
+			text: at.dialect.attribute(name, "", context.element.tag, context),
+		}));
+	}
 
-  /** What the target spreads on a node at the top level (`MarkupOptions.scopeRootAttributes`). */
-  function rootAttributes(element: ElementNode, at: Scope): Array<string> {
-    return at.top ? (options.scopeRootAttributes?.(element) ?? []) : [];
-  }
+	/** What the target spreads on a node at the top level (`MarkupOptions.scopeRootAttributes`). */
+	function rootAttributes(element: ElementNode, at: Scope): Array<string> {
+		return at.top ? (options.scopeRootAttributes?.(element) ?? []) : [];
+	}
 
-  /** The names of the scope attributes a node carries (see {@link scopeAttributes}). */
-  function scopeNames(at: Scope): Array<string> {
-    const scopeId = component?.scopeId;
-    return [...(scopeId ? [scopeAttribute(scopeId)] : []), ...at.slotted];
-  }
+	/** The names of the scope attributes a node carries (see {@link scopeAttributes}). */
+	function scopeNames(at: Scope): Array<string> {
+		const scopeId = component?.scopeId;
+		return [...(scopeId ? [scopeAttribute(scopeId)] : []), ...at.slotted];
+	}
 
-  /** A fill, with its parameter as written and a forwarded slot's presence. */
-  function fillParts(fill: SlotFill): PrintedFill {
-    const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code;
-    if (fill.forward === undefined) {
-      return { fill, ...(parameter ? { parameter } : {}) };
-    }
-    const declared = component?.slots?.slots.find((each) => each.name === fill.forward);
-    return {
-      fill,
-      forwardsProps: declared?.props !== undefined,
-      presence: slotPresence(fill.forward),
-    };
-  }
+	/** A fill, with its parameter as written and a forwarded slot's presence. */
+	function fillParts(fill: SlotFill): PrintedFill {
+		const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code;
+		if (fill.forward === undefined) {
+			return { fill, ...(parameter ? { parameter } : {}) };
+		}
+		const declared = component?.slots?.slots.find((each) => each.name === fill.forward);
+		return {
+			fill,
+			forwardsProps: declared?.props !== undefined,
+			presence: slotPresence(fill.forward),
+		};
+	}
 
-  /** A slot's presence as the rules spell it: `slots.title` as written by default. */
-  function slotPresence(slot: string): string {
-    const slots = component?.slots;
-    const written = `${slots ? bindingName(slots.binding) : "slots"}.${slot}`;
-    const reference: SlotReference = {
-      kind: "Slot",
-      slot,
-      span: slots?.span ?? { start: 0, end: 0 },
-    };
-    return rewrite?.slot?.(reference, "render") ?? written;
-  }
+	/** A slot's presence as the rules spell it: `slots.title` as written by default. */
+	function slotPresence(slot: string): string {
+		const slots = component?.slots;
+		const written = `${slots ? bindingName(slots.binding) : "slots"}.${slot}`;
+		const reference: SlotReference = {
+			kind: "Slot",
+			slot,
+			span: slots?.span ?? { start: 0, end: 0 },
+		};
+		return rewrite?.slot?.(reference, "render") ?? written;
+	}
 
-  /** A slot outlet, with its props as code, key by key when they are an object literal. */
-  function slotOutletParts(node: SlotOutletNode): PrintedSlotOutlet {
-    if (!node.props) {
-      return { node };
-    }
-    const entries = objectEntries(node.props)?.map(({ key, value }) => ({
-      key,
-      value: code(value),
-    }));
-    return { node, props: { code: code(node.props), ...(entries ? { entries } : {}) } };
-  }
+	/** A slot outlet, with its props as code, key by key when they are an object literal. */
+	function slotOutletParts(node: SlotOutletNode): PrintedSlotOutlet {
+		if (!node.props) {
+			return { node };
+		}
+		const entries = objectEntries(node.props)?.map(({ key, value }) => ({
+			key,
+			value: code(value),
+		}));
+		return { node, props: { code: code(node.props), ...(entries ? { entries } : {}) } };
+	}
 
-  function elementItem(
-    element: ElementNode,
-    directives: ReadonlyArray<PrintedAttribute>,
-    at: Scope,
-    guards?: ReadonlyMap<string, string>,
-  ): ElementItem {
-    const namespace = elementNamespace(element.tag, at.namespace);
-    const region = at.dialect.literalRegion?.(element);
-    const inner: Scope = {
-      dialect: region?.dialect ?? at.dialect,
-      element,
-      namespace,
-      preformatted: at.preformatted || WHITESPACE_PRESERVING_ELEMENTS.has(element.tag),
-      slotted: at.slotted,
-      candidates: undefined,
-      top: false,
-    };
-    const raw = element.attributes.find((attribute) => attribute.kind === "RawHtml");
-    // The markup is the element's content, which has no children beside it (ADR-0097).
-    const children =
-      raw && inner.dialect.rawHtmlContent
-        ? [inline(inner.dialect.rawHtmlContent(code(raw.value)))]
-        : itemsOf(element.children, element, inner);
-    const isVoid = namespace === "html" && isVoidElement(element.tag);
-    // A childless SVG element closes itself (ADR-0040): the HTML parser honours `/>` in foreign
-    // content, and every template compiler reads it, though one may warn (`selfClosingSvg`).
-    const selfClosing =
-      (isVoid && inner.dialect.voidElement === "self-closing") ||
-      (namespace === "svg" &&
-        children.length === 0 &&
-        (inner.dialect.selfClosingSvg?.(element.tag) ?? true));
-    const name = inner.dialect.elementName?.(element.tag, namespace) ?? element.tag;
-    const branch = at.transition?.branches.get(element);
-    const marked =
-      at.transition && at.dialect.transitionAttributes
-        ? [
-            ...at.dialect.transitionAttributes({
-              node: at.transition.node,
-              element,
-              ...(branch === undefined ? {} : { branch }),
-            }),
-            ...directives,
-          ]
-        : directives;
-    return {
-      kind: "element",
-      tag: name,
-      attributes: attributesOf(element, marked, inner, rootAttributes(element, at), guards),
-      end: selfClosing ? " />" : ">",
-      children,
-      close: isVoid || selfClosing ? "" : `</${name}>`,
-      // Astro keeps the whitespace in a `<title>`, whose content is text in every namespace.
-      inlineOnly: inner.preformatted || region !== undefined || element.tag === "title",
-      blockLevel: isBlockElement(element.tag),
-      ...(region ? { region } : {}),
-    };
-  }
+	function elementItem(
+		element: ElementNode,
+		directives: ReadonlyArray<PrintedAttribute>,
+		at: Scope,
+		guards?: ReadonlyMap<string, string>,
+	): ElementItem {
+		const namespace = elementNamespace(element.tag, at.namespace);
+		const region = at.dialect.literalRegion?.(element);
+		const inner: Scope = {
+			dialect: region?.dialect ?? at.dialect,
+			element,
+			namespace,
+			preformatted: at.preformatted || WHITESPACE_PRESERVING_ELEMENTS.has(element.tag),
+			slotted: at.slotted,
+			candidates: undefined,
+			top: false,
+		};
+		const raw = element.attributes.find((attribute) => attribute.kind === "RawHtml");
+		// The markup is the element's content, which has no children beside it (ADR-0097).
+		const children =
+			raw && inner.dialect.rawHtmlContent
+				? [inline(inner.dialect.rawHtmlContent(code(raw.value)))]
+				: itemsOf(element.children, element, inner);
+		const isVoid = namespace === "html" && isVoidElement(element.tag);
+		// A childless SVG element closes itself (ADR-0040): the HTML parser honours `/>` in foreign
+		// content, and every template compiler reads it, though one may warn (`selfClosingSvg`).
+		const selfClosing =
+			(isVoid && inner.dialect.voidElement === "self-closing") ||
+			(namespace === "svg" &&
+				children.length === 0 &&
+				(inner.dialect.selfClosingSvg?.(element.tag) ?? true));
+		const name = inner.dialect.elementName?.(element.tag, namespace) ?? element.tag;
+		const branch = at.transition?.branches.get(element);
+		const marked =
+			at.transition && at.dialect.transitionAttributes
+				? [
+						...at.dialect.transitionAttributes({
+							node: at.transition.node,
+							element,
+							...(branch === undefined ? {} : { branch }),
+						}),
+						...directives,
+					]
+				: directives;
+		return {
+			kind: "element",
+			tag: name,
+			attributes: attributesOf(element, marked, inner, rootAttributes(element, at), guards),
+			end: selfClosing ? " />" : ">",
+			children,
+			close: isVoid || selfClosing ? "" : `</${name}>`,
+			// Astro keeps the whitespace in a `<title>`, whose content is text in every namespace.
+			inlineOnly: inner.preformatted || region !== undefined || element.tag === "title",
+			blockLevel: isBlockElement(element.tag),
+			...(region ? { region } : {}),
+		};
+	}
 
-  /**
-   * An element's attributes as its dialect writes them: spreads read key by key, and every
-   * source of its class (a static `class`, a `class={…}`, a spread's `class` key) merged into
-   * one part list at the first one's place (ADR-0039), then its scope attributes (ADR-0063).
-   */
-  function attributesOf(
-    element: ElementNode,
-    directives: ReadonlyArray<PrintedAttribute>,
-    at: Scope,
-    spread: ReadonlyArray<string>,
-    guards?: ReadonlyMap<string, string>,
-  ): Array<AttributeText> {
-    const of = at.dialect;
-    const context: AttributeContext = {
-      element,
-      namespace: at.namespace,
-      ...(spread.length ? { spreads: true } : {}),
-    };
-    const printed: Array<PrintedAttribute> = [...directives];
-    // The attributes whose text is a static value, never code.
-    const values = new Set<PrintedAttribute>();
-    const custom = new Map<Attribute, string>();
-    for (const attribute of element.attributes) {
-      const text = options.attribute?.(attribute, element);
-      if (text !== undefined) {
-        custom.set(attribute, text);
-      }
-    }
-    const spreadClass = element.attributes.some(
-      (attribute) =>
-        attribute.kind === "Spread" &&
-        !custom.has(attribute) &&
-        attribute.keys.some((key) => key.name === "class"),
-    );
-    const classParts: Array<ClassPart> = [];
-    let classAt: number | undefined;
-    const claimClass = () => {
-      classAt ??= printed.length;
-    };
-    for (const attribute of element.attributes) {
-      const text = custom.get(attribute);
-      if (text !== undefined) {
-        if (text !== "") {
-          printed.push({ name: attributeName(attribute), text });
-        }
-        continue;
-      }
-      // An attribute only some tags take: bound to its value where the test holds (ADR-0119).
-      const guard =
-        attribute.kind === "Static" || attribute.kind === "Bound"
-          ? guards?.get(attribute.name)
-          : undefined;
-      if (guard !== undefined && (attribute.kind === "Static" || attribute.kind === "Bound")) {
-        const value =
-          attribute.kind === "Bound"
-            ? code(attribute.value)
-            : attribute.value === true
-              ? "true"
-              : JSON.stringify(attribute.value);
-        printed.push({
-          name: attribute.name,
-          text: of.boundAttribute(attribute.name, `${guard} ? ${value} : undefined`, context),
-        });
-        continue;
-      }
-      switch (attribute.kind) {
-        case "Static":
-          if (attribute.name === "class" && spreadClass && attribute.value !== true) {
-            claimClass();
-            classParts.push({ kind: "Static", value: attribute.value });
-          } else {
-            const value: PrintedAttribute = {
-              name: attribute.name,
-              text:
-                attribute.value === true
-                  ? attribute.name
-                  : of.attribute(attribute.name, attribute.value, element.tag, context),
-            };
-            values.add(value);
-            printed.push(value);
-          }
-          break;
-        case "Bound":
-          printed.push({
-            name: attribute.name,
-            text: of.boundAttribute(attribute.name, code(attribute.value), context),
-          });
-          break;
-        case "Class":
-          claimClass();
-          for (const item of attribute.items) {
-            classParts.push(
-              item.kind === "Static"
-                ? { kind: "Static", value: item.value }
-                : item.kind === "Toggle"
-                  ? { kind: "Toggle", name: item.name, condition: code(item.condition) }
-                  : dynamicPart(item.value, item.collection),
-            );
-          }
-          break;
-        case "Style":
-          printed.push(...of.styleAttribute(styleParts(attribute), context));
-          break;
-        case "Spread": {
-          const object = code(attribute.value);
-          for (const key of attribute.keys) {
-            const value = member(object, key.name, attribute.nullish);
-            if (key.name === "class") {
-              claimClass();
-              classParts.push({ kind: "Dynamic", value });
-            } else if (key.name === "style") {
-              // The element's one style (ADR-0065): no `style` of its own sits beside it.
-              printed.push(...of.styleAttribute([{ kind: "Bound", property: "", value }], context));
-            } else {
-              printed.push({ name: key.name, text: of.boundAttribute(key.name, value, context) });
-            }
-          }
-          break;
-        }
-        case "Event": {
-          const statement = options.handler?.(attribute, element);
-          const event: PrintedEvent = {
-            attribute,
-            get handler() {
-              return handlerCode(attribute.handler);
-            },
-            ...(statement === undefined ? {} : { statement }),
-          };
-          printed.push(...of.eventAttribute(event, context));
-          break;
-        }
-        case "Ref":
-          printed.push(
-            ...of.refAttribute({ attribute, name: bindingName(attribute.binding) }, context),
-          );
-          break;
-        case "Model":
-          printed.push(
-            ...hook(of, "modelAttribute")({ attribute, value: code(attribute.value) }, context),
-          );
-          break;
-        case "RawHtml":
-          // A language that writes the markup as content wrote it with the children.
-          if (!of.rawHtmlContent) {
-            printed.push(...hook(of, "rawHtmlAttribute")(code(attribute.value), context));
-          }
-          break;
-        case "Directive": {
-          // A language that reads the value in a closure (Svelte's attachment's getter) asserts
-          // what the element's branches narrow, as TypeScript narrows it no more there.
-          const constant = narrowedNames.get(attribute);
-          const value = options.closureDirectiveValues
-            ? assertedValue(attribute.value)
-            : attribute.value;
-          printed.push(
-            ...hook(of, "directiveAttribute")(
-              { attribute, value: constant ?? code(value) },
-              context,
-            ),
-          );
-          break;
-        }
-        case "Rest":
-          printed.push(...hook(of, "restAttribute")(context));
-          break;
-        default:
-          unreachable(attribute);
-      }
-    }
-    if (classAt !== undefined) {
-      printed.splice(classAt, 0, ...of.classAttribute(classParts, context));
-    }
-    for (const scoped of scopeAttributes(at, context)) {
-      values.add(scoped);
-      printed.push(scoped);
-    }
-    printed.push(...spread.map((text) => ({ name: "", text })));
-    return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
-      text: each.text,
-      code: !values.has(each),
-    }));
-  }
+	/**
+	 * An element's attributes as its dialect writes them: spreads read key by key, and every
+	 * source of its class (a static `class`, a `class={…}`, a spread's `class` key) merged into
+	 * one part list at the first one's place (ADR-0039), then its scope attributes (ADR-0063).
+	 */
+	function attributesOf(
+		element: ElementNode,
+		directives: ReadonlyArray<PrintedAttribute>,
+		at: Scope,
+		spread: ReadonlyArray<string>,
+		guards?: ReadonlyMap<string, string>,
+	): Array<AttributeText> {
+		const of = at.dialect;
+		const context: AttributeContext = {
+			element,
+			namespace: at.namespace,
+			...(spread.length ? { spreads: true } : {}),
+		};
+		const printed: Array<PrintedAttribute> = [...directives];
+		// The attributes whose text is a static value, never code.
+		const values = new Set<PrintedAttribute>();
+		const custom = new Map<Attribute, string>();
+		for (const attribute of element.attributes) {
+			const text = options.attribute?.(attribute, element);
+			if (text !== undefined) {
+				custom.set(attribute, text);
+			}
+		}
+		const spreadClass = element.attributes.some(
+			(attribute) =>
+				attribute.kind === "Spread" &&
+				!custom.has(attribute) &&
+				attribute.keys.some((key) => key.name === "class"),
+		);
+		const classParts: Array<ClassPart> = [];
+		let classAt: number | undefined;
+		const claimClass = () => {
+			classAt ??= printed.length;
+		};
+		for (const attribute of element.attributes) {
+			const text = custom.get(attribute);
+			if (text !== undefined) {
+				if (text !== "") {
+					printed.push({ name: attributeName(attribute), text });
+				}
+				continue;
+			}
+			// An attribute only some tags take: bound to its value where the test holds (ADR-0119).
+			const guard =
+				attribute.kind === "Static" || attribute.kind === "Bound"
+					? guards?.get(attribute.name)
+					: undefined;
+			if (guard !== undefined && (attribute.kind === "Static" || attribute.kind === "Bound")) {
+				const value =
+					attribute.kind === "Bound"
+						? code(attribute.value)
+						: attribute.value === true
+							? "true"
+							: JSON.stringify(attribute.value);
+				printed.push({
+					name: attribute.name,
+					text: of.boundAttribute(attribute.name, `${guard} ? ${value} : undefined`, context),
+				});
+				continue;
+			}
+			switch (attribute.kind) {
+				case "Static":
+					if (attribute.name === "class" && spreadClass && attribute.value !== true) {
+						claimClass();
+						classParts.push({ kind: "Static", value: attribute.value });
+					} else {
+						const value: PrintedAttribute = {
+							name: attribute.name,
+							text:
+								attribute.value === true
+									? attribute.name
+									: of.attribute(attribute.name, attribute.value, element.tag, context),
+						};
+						values.add(value);
+						printed.push(value);
+					}
+					break;
+				case "Bound":
+					printed.push({
+						name: attribute.name,
+						text: of.boundAttribute(attribute.name, code(attribute.value), context),
+					});
+					break;
+				case "Class":
+					claimClass();
+					for (const item of attribute.items) {
+						classParts.push(
+							item.kind === "Static"
+								? { kind: "Static", value: item.value }
+								: item.kind === "Toggle"
+									? { kind: "Toggle", name: item.name, condition: code(item.condition) }
+									: dynamicPart(item.value, item.collection),
+						);
+					}
+					break;
+				case "Style":
+					printed.push(...of.styleAttribute(styleParts(attribute), context));
+					break;
+				case "Spread": {
+					const object = code(attribute.value);
+					for (const key of attribute.keys) {
+						const value = member(object, key.name, attribute.nullish);
+						if (key.name === "class") {
+							claimClass();
+							classParts.push({ kind: "Dynamic", value });
+						} else if (key.name === "style") {
+							// The element's one style (ADR-0065): no `style` of its own sits beside it.
+							printed.push(...of.styleAttribute([{ kind: "Bound", property: "", value }], context));
+						} else {
+							printed.push({ name: key.name, text: of.boundAttribute(key.name, value, context) });
+						}
+					}
+					break;
+				}
+				case "Event": {
+					const statement = options.handler?.(attribute, element);
+					const event: PrintedEvent = {
+						attribute,
+						get handler() {
+							return handlerCode(attribute.handler);
+						},
+						...(statement === undefined ? {} : { statement }),
+					};
+					printed.push(...of.eventAttribute(event, context));
+					break;
+				}
+				case "Ref":
+					printed.push(
+						...of.refAttribute({ attribute, name: bindingName(attribute.binding) }, context),
+					);
+					break;
+				case "Model":
+					printed.push(
+						...hook(of, "modelAttribute")({ attribute, value: code(attribute.value) }, context),
+					);
+					break;
+				case "RawHtml":
+					// A language that writes the markup as content wrote it with the children.
+					if (!of.rawHtmlContent) {
+						printed.push(...hook(of, "rawHtmlAttribute")(code(attribute.value), context));
+					}
+					break;
+				case "Directive": {
+					// A language that reads the value in a closure (Svelte's attachment's getter) asserts
+					// what the element's branches narrow, as TypeScript narrows it no more there.
+					const constant = narrowedNames.get(attribute);
+					const value = options.closureDirectiveValues
+						? assertedValue(attribute.value)
+						: attribute.value;
+					printed.push(
+						...hook(of, "directiveAttribute")(
+							{ attribute, value: constant ?? code(value) },
+							context,
+						),
+					);
+					break;
+				}
+				case "Rest":
+					printed.push(...hook(of, "restAttribute")(context));
+					break;
+				default:
+					unreachable(attribute);
+			}
+		}
+		if (classAt !== undefined) {
+			printed.splice(classAt, 0, ...of.classAttribute(classParts, context));
+		}
+		for (const scoped of scopeAttributes(at, context)) {
+			values.add(scoped);
+			printed.push(scoped);
+		}
+		printed.push(...spread.map((text) => ({ name: "", text })));
+		return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
+			text: each.text,
+			code: !values.has(each),
+		}));
+	}
 
-  /**
-   * Splits items into runs of indices that may each start a line at `pad`, or returns
-   * `undefined` when they must stay on the line they start on. `edges` says whether the items
-   * are content between an opening and a closing, whose edges must allow a break.
-   */
-  function layout(
-    items: ReadonlyArray<Item>,
-    pad: string,
-    edges: boolean,
-  ): Array<Array<number>> | undefined {
-    if (!items.length) {
-      return undefined;
-    }
-    if (
-      edges &&
-      (!dialect.stripsEdgeWhitespace || isInline(items[0]!) || isInline(items.at(-1)!))
-    ) {
-      return undefined;
-    }
-    const runs: Array<Array<number>> = [[0]];
-    // The width of the current run's line, for a dialect that keeps whitespace between
-    // siblings: there a run of inline siblings breaks only when it is too long, and inside a
-    // tag (`glue`), which puts the next run's first `>` before it.
-    let width = pad.length + inlineText(items[0]!).length;
-    for (let index = 1; index < items.length; index++) {
-      const before = items[index - 1]!;
-      const after = items[index]!;
-      const next = inlineText(after).length;
-      const breakable =
-        !isInline(before) &&
-        !isInline(after) &&
-        (dialect.stripsWhitespaceBetweenElements ||
-          isBlockLevel(before) ||
-          isBlockLevel(after) ||
-          width + next > printWidth);
-      if (breakable) {
-        runs.push([index]);
-        width = pad.length + 1 + next;
-      } else {
-        runs.at(-1)!.push(index);
-        width += next;
-      }
-    }
-    return runs;
-  }
+	/**
+	 * Splits items into runs of indices that may each start a line at `pad`, or returns
+	 * `undefined` when they must stay on the line they start on. `edges` says whether the items
+	 * are content between an opening and a closing, whose edges must allow a break.
+	 */
+	function layout(
+		items: ReadonlyArray<Item>,
+		pad: string,
+		edges: boolean,
+	): Array<Array<number>> | undefined {
+		if (!items.length) {
+			return undefined;
+		}
+		if (
+			edges &&
+			(!dialect.stripsEdgeWhitespace || isInline(items[0]!) || isInline(items.at(-1)!))
+		) {
+			return undefined;
+		}
+		const runs: Array<Array<number>> = [[0]];
+		// The width of the current run's line, for a dialect that keeps whitespace between
+		// siblings: there a run of inline siblings breaks only when it is too long, and inside a
+		// tag (`glue`), which puts the next run's first `>` before it.
+		let width = pad.length + inlineText(items[0]!).length;
+		for (let index = 1; index < items.length; index++) {
+			const before = items[index - 1]!;
+			const after = items[index]!;
+			const next = inlineText(after).length;
+			const breakable =
+				!isInline(before) &&
+				!isInline(after) &&
+				(dialect.stripsWhitespaceBetweenElements ||
+					isBlockLevel(before) ||
+					isBlockLevel(after) ||
+					width + next > printWidth);
+			if (breakable) {
+				runs.push([index]);
+				width = pad.length + 1 + next;
+			} else {
+				runs.at(-1)!.push(index);
+				width += next;
+			}
+		}
+		return runs;
+	}
 
-  /** Each run on its lines at `pad`, joined where the compiler drops the line breaks, or glued. */
-  function joinRuns(
-    runs: ReadonlyArray<Array<number>>,
-    items: ReadonlyArray<Item>,
-    pad: string,
-  ): Array<string> {
-    const body = runs.map((run) => {
-      const only = items[run[0]!]!;
-      if (run.length === 1 && !isInline(only)) {
-        return printItem(only, pad);
-      }
-      const line = [pad];
-      for (const index of run) {
-        writeItem(line, items[index]!);
-      }
-      return line;
-    });
-    return dialect.stripsWhitespaceBetweenElements ? body.flat() : body.reduce(glue);
-  }
+	/** Each run on its lines at `pad`, joined where the compiler drops the line breaks, or glued. */
+	function joinRuns(
+		runs: ReadonlyArray<Array<number>>,
+		items: ReadonlyArray<Item>,
+		pad: string,
+	): Array<string> {
+		const body = runs.map((run) => {
+			const only = items[run[0]!]!;
+			if (run.length === 1 && !isInline(only)) {
+				return printItem(only, pad);
+			}
+			const line = [pad];
+			for (const index of run) {
+				writeItem(line, items[index]!);
+			}
+			return line;
+		});
+		return dialect.stripsWhitespaceBetweenElements ? body.flat() : body.reduce(glue);
+	}
 
-  /** An item that starts a line at `pad`, with its content on its line or on lines of its own. */
-  function printItem(item: Item, pad: string): Array<string> {
-    const lines = [pad];
-    switch (item.kind) {
-      case "inline":
-        writeItem(lines, item);
-        return lines;
-      case "element": {
-        const runs =
-          item.inlineOnly || item.region ? undefined : layout(item.children, pad + indent, true);
-        if (!runs) {
-          writeItem(lines, item);
-          return lines;
-        }
-        writeOpenTag(lines, item, 0);
-        return [...lines, ...joinRuns(runs, item.children, pad + indent), `${pad}${item.close}`];
-      }
-      case "block": {
-        const runs = item.segments.map((segment) => layout(segment.children, pad + indent, true));
-        if (runs.some((run) => run === undefined)) {
-          writeItem(lines, item);
-          return lines;
-        }
-        const out: Array<string> = [];
-        let after = "";
-        item.segments.forEach((segment, index) => {
-          out.push(
-            `${pad}${after}${segment.open}${segment.parentheses ? "(" : ""}`,
-            ...joinRuns(runs[index]!, segment.children, pad + indent),
-          );
-          after = segment.parentheses ? ")" : "";
-        });
-        out.push(`${pad}${after}${item.close}`);
-        return out;
-      }
-      default:
-        return unreachable(item);
-    }
-  }
+	/** An item that starts a line at `pad`, with its content on its line or on lines of its own. */
+	function printItem(item: Item, pad: string): Array<string> {
+		const lines = [pad];
+		switch (item.kind) {
+			case "inline":
+				writeItem(lines, item);
+				return lines;
+			case "element": {
+				const runs =
+					item.inlineOnly || item.region ? undefined : layout(item.children, pad + indent, true);
+				if (!runs) {
+					writeItem(lines, item);
+					return lines;
+				}
+				writeOpenTag(lines, item, 0);
+				return [...lines, ...joinRuns(runs, item.children, pad + indent), `${pad}${item.close}`];
+			}
+			case "block": {
+				const runs = item.segments.map((segment) => layout(segment.children, pad + indent, true));
+				if (runs.some((run) => run === undefined)) {
+					writeItem(lines, item);
+					return lines;
+				}
+				const out: Array<string> = [];
+				let after = "";
+				item.segments.forEach((segment, index) => {
+					out.push(
+						`${pad}${after}${segment.open}${segment.parentheses ? "(" : ""}`,
+						...joinRuns(runs[index]!, segment.children, pad + indent),
+					);
+					after = segment.parentheses ? ")" : "";
+				});
+				out.push(`${pad}${after}${item.close}`);
+				return out;
+			}
+			default:
+				return unreachable(item);
+		}
+	}
 
-  /** Writes an item on one line from the end of the last line, breaking only inside tags. */
-  function writeItem(lines: Array<string>, item: Item): void {
-    switch (item.kind) {
-      case "inline":
-        lines[lines.length - 1] += item.text;
-        return;
-      case "element": {
-        if (item.region) {
-          lines[lines.length - 1] += item.region.open;
-        }
-        const content = item.children.map(inlineText).join("");
-        writeOpenTag(lines, item, content.length + item.close.length);
-        for (const child of item.children) {
-          writeItem(lines, child);
-        }
-        lines[lines.length - 1] += item.close;
-        if (item.region) {
-          lines[lines.length - 1] += item.region.close;
-        }
-        return;
-      }
-      case "block":
-        for (const segment of item.segments) {
-          lines[lines.length - 1] += segment.open;
-          for (const child of segment.children) {
-            writeItem(lines, child);
-          }
-        }
-        lines[lines.length - 1] += item.close;
-        return;
-      default:
-        unreachable(item);
-    }
-  }
+	/** Writes an item on one line from the end of the last line, breaking only inside tags. */
+	function writeItem(lines: Array<string>, item: Item): void {
+		switch (item.kind) {
+			case "inline":
+				lines[lines.length - 1] += item.text;
+				return;
+			case "element": {
+				if (item.region) {
+					lines[lines.length - 1] += item.region.open;
+				}
+				const content = item.children.map(inlineText).join("");
+				writeOpenTag(lines, item, content.length + item.close.length);
+				for (const child of item.children) {
+					writeItem(lines, child);
+				}
+				lines[lines.length - 1] += item.close;
+				if (item.region) {
+					lines[lines.length - 1] += item.region.close;
+				}
+				return;
+			}
+			case "block":
+				for (const segment of item.segments) {
+					lines[lines.length - 1] += segment.open;
+					for (const child of segment.children) {
+						writeItem(lines, child);
+					}
+				}
+				lines[lines.length - 1] += item.close;
+				return;
+			default:
+				unreachable(item);
+		}
+	}
 
-  /**
-   * Writes an opening tag from the end of the last line. Whitespace inside a tag is never
-   * content, so a tag with attributes that would take its line past `printWidth`, with what
-   * follows it on the line (`after` characters), or with an attribute whose code spans lines,
-   * puts one attribute per line, indented from that line. Code that spans lines is moved to its
-   * attribute's column (`rebase`).
-   */
-  function writeOpenTag(lines: Array<string>, item: ElementItem, after: number): void {
-    const items = item.attributes;
-    const tag = `<${item.tag}${items.map(({ text }) => ` ${text}`).join("")}${item.end}`;
-    const line = lines.at(-1)!;
-    const column = line.length - line.lastIndexOf("\n") - 1;
-    const multiline = items.some(({ text, code }) => code && text.includes("\n"));
-    if (!items.length || (!multiline && column + tag.length + after <= printWidth)) {
-      lines[lines.length - 1] += tag;
-      return;
-    }
-    const base = /^[\t ]*/.exec(line)![0];
-    const pad = `${base}${indent}`;
-    lines[lines.length - 1] += `<${item.tag}`;
-    lines.push(
-      ...items.map(({ text, code }) => `${pad}${code ? rebase(text, pad, indent) : text}`),
-      `${base}${item.end.trim()}`,
-    );
-  }
+	/**
+	 * Writes an opening tag from the end of the last line. Whitespace inside a tag is never
+	 * content, so a tag with attributes that would take its line past `printWidth`, with what
+	 * follows it on the line (`after` characters), or with an attribute whose code spans lines,
+	 * puts one attribute per line, indented from that line. Code that spans lines is moved to its
+	 * attribute's column (`rebase`).
+	 */
+	function writeOpenTag(lines: Array<string>, item: ElementItem, after: number): void {
+		const items = item.attributes;
+		const tag = `<${item.tag}${items.map(({ text }) => ` ${text}`).join("")}${item.end}`;
+		const line = lines.at(-1)!;
+		const column = line.length - line.lastIndexOf("\n") - 1;
+		const multiline = items.some(({ text, code }) => code && text.includes("\n"));
+		if (!items.length || (!multiline && column + tag.length + after <= printWidth)) {
+			lines[lines.length - 1] += tag;
+			return;
+		}
+		const base = /^[\t ]*/.exec(line)![0];
+		const pad = `${base}${indent}`;
+		lines[lines.length - 1] += `<${item.tag}`;
+		lines.push(
+			...items.map(({ text, code }) => `${pad}${code ? rebase(text, pad, indent) : text}`),
+			`${base}${item.end.trim()}`,
+		);
+	}
 }
 
 /**
@@ -1857,31 +1857,31 @@ export function printMarkup(
  * found or parsed keeps its lines as they are.
  */
 function rebase(text: string, pad: string, indent: string): string {
-  if (!text.includes("\n")) {
-    return text;
-  }
-  const lines = attributeLines(text);
-  if (!lines) {
-    return text;
-  }
-  const texts = text.split("\n");
-  const moved = lines.filter((line) => line.index > 0 && !line.fixed && !line.blank);
-  if (!moved.length) {
-    return text;
-  }
-  const width = (index: number) => /^[\t ]*/.exec(texts[index]!)![0].length;
-  const common = Math.min(...moved.map(({ index }) => width(index)));
-  const opened = lines[1]?.depth ?? 0;
-  const closing = moved.find(({ closes, depth }) => closes > 0 && depth - closes < opened);
-  const at = closing && width(closing.index) === common ? pad : `${pad}${indent}`;
-  return texts
-    .map((line, index) => {
-      if (index === 0 || lines[index]!.fixed) {
-        return line;
-      }
-      return lines[index]!.blank ? "" : `${at}${line.slice(common)}`;
-    })
-    .join("\n");
+	if (!text.includes("\n")) {
+		return text;
+	}
+	const lines = attributeLines(text);
+	if (!lines) {
+		return text;
+	}
+	const texts = text.split("\n");
+	const moved = lines.filter((line) => line.index > 0 && !line.fixed && !line.blank);
+	if (!moved.length) {
+		return text;
+	}
+	const width = (index: number) => /^[\t ]*/.exec(texts[index]!)![0].length;
+	const common = Math.min(...moved.map(({ index }) => width(index)));
+	const opened = lines[1]?.depth ?? 0;
+	const closing = moved.find(({ closes, depth }) => closes > 0 && depth - closes < opened);
+	const at = closing && width(closing.index) === common ? pad : `${pad}${indent}`;
+	return texts
+		.map((line, index) => {
+			if (index === 0 || lines[index]!.fixed) {
+				return line;
+			}
+			return lines[index]!.blank ? "" : `${at}${line.slice(common)}`;
+		})
+		.join("\n");
 }
 
 /** Where an attribute's code starts: after `name={`, `name="`, `{@attach `, `{...` or `{`. */
@@ -1889,14 +1889,14 @@ const ATTRIBUTE_CODE = /^[^"{]*?(?:\{@attach\s+|\{\.\.\.|\{|")/;
 
 /** A line of an attribute's code, as {@link rebase} reads it. */
 interface CodeLine {
-  index: number;
-  /** Whether it starts inside a string or template literal. */
-  fixed: boolean;
-  blank: boolean;
-  /** The brackets open at its start. */
-  depth: number;
-  /** The closing brackets it starts with. */
-  closes: number;
+	index: number;
+	/** Whether it starts inside a string or template literal. */
+	fixed: boolean;
+	blank: boolean;
+	/** The brackets open at its start. */
+	depth: number;
+	/** The closing brackets it starts with. */
+	closes: number;
 }
 
 /**
@@ -1905,112 +1905,112 @@ interface CodeLine {
  * in a literal or a comment is no code.
  */
 function attributeLines(text: string): Array<CodeLine> | undefined {
-  const opening = ATTRIBUTE_CODE.exec(text)?.[0];
-  const quoted = opening?.endsWith('"');
-  if (opening === undefined || !text.endsWith(quoted ? '"' : "}")) {
-    return undefined;
-  }
-  // References never span lines, so decoding them keeps every line where it is.
-  const code = text.slice(opening.length, -1);
-  const source = quoted ? decodeReferences(code) : code;
-  let tokens: Array<CodeToken>;
-  try {
-    tokens = codeTokens(source, "expression");
-  } catch {
-    try {
-      tokens = codeTokens(source, "statements");
-    } catch {
-      return undefined;
-    }
-  }
-  const literalAt = (offset: number) =>
-    tokens.some(
-      (token) =>
-        (token.kind === "string" || token.kind === "template") &&
-        token.start < offset &&
-        offset <= token.end,
-    );
-  const inToken = (offset: number) =>
-    tokens.some((token) => token.start <= offset && offset < token.end);
-  const lines: Array<CodeLine> = [];
-  let depth = 0;
-  let offset = 0;
-  source.split("\n").forEach((line, index) => {
-    const indentation = /^[\t ]*/.exec(line)![0].length;
-    const closes = /^[)\]}]*/.exec(line.slice(indentation))![0].length;
-    lines.push({
-      index,
-      fixed: index > 0 && literalAt(offset),
-      blank: line.trim() === "",
-      depth,
-      closes: inToken(offset + indentation) ? 0 : closes,
-    });
-    for (let at = 0; at < line.length; at++) {
-      if (inToken(offset + at)) {
-        continue;
-      }
-      const character = line[at]!;
-      if (character === "(" || character === "[" || character === "{") {
-        depth++;
-      } else if (character === ")" || character === "]" || character === "}") {
-        depth--;
-      }
-    }
-    offset += line.length + 1;
-  });
-  return lines;
+	const opening = ATTRIBUTE_CODE.exec(text)?.[0];
+	const quoted = opening?.endsWith('"');
+	if (opening === undefined || !text.endsWith(quoted ? '"' : "}")) {
+		return undefined;
+	}
+	// References never span lines, so decoding them keeps every line where it is.
+	const code = text.slice(opening.length, -1);
+	const source = quoted ? decodeReferences(code) : code;
+	let tokens: Array<CodeToken>;
+	try {
+		tokens = codeTokens(source, "expression");
+	} catch {
+		try {
+			tokens = codeTokens(source, "statements");
+		} catch {
+			return undefined;
+		}
+	}
+	const literalAt = (offset: number) =>
+		tokens.some(
+			(token) =>
+				(token.kind === "string" || token.kind === "template") &&
+				token.start < offset &&
+				offset <= token.end,
+		);
+	const inToken = (offset: number) =>
+		tokens.some((token) => token.start <= offset && offset < token.end);
+	const lines: Array<CodeLine> = [];
+	let depth = 0;
+	let offset = 0;
+	source.split("\n").forEach((line, index) => {
+		const indentation = /^[\t ]*/.exec(line)![0].length;
+		const closes = /^[)\]}]*/.exec(line.slice(indentation))![0].length;
+		lines.push({
+			index,
+			fixed: index > 0 && literalAt(offset),
+			blank: line.trim() === "",
+			depth,
+			closes: inToken(offset + indentation) ? 0 : closes,
+		});
+		for (let at = 0; at < line.length; at++) {
+			if (inToken(offset + at)) {
+				continue;
+			}
+			const character = line[at]!;
+			if (character === "(" || character === "[" || character === "{") {
+				depth++;
+			} else if (character === ")" || character === "]" || character === "}") {
+				depth--;
+			}
+		}
+		offset += line.length + 1;
+	});
+	return lines;
 }
 
 /** HTML's character references in a quoted attribute's code, decoded. */
 function decodeReferences(code: string): string {
-  const named: Record<string, string> = {
-    amp: "&",
-    apos: "'",
-    gt: ">",
-    lt: "<",
-    nbsp: "\u00a0",
-    quot: '"',
-  };
-  return code.replaceAll(
-    /&(?:#x([0-9a-f]+)|#(\d+)|([a-z]+));/gi,
-    (reference, hex, decimal, name) =>
-      hex !== undefined
-        ? String.fromCodePoint(Number.parseInt(hex as string, 16))
-        : decimal !== undefined
-          ? String.fromCodePoint(Number(decimal))
-          : (named[(name as string).toLowerCase()] ?? reference),
-  );
+	const named: Record<string, string> = {
+		amp: "&",
+		apos: "'",
+		gt: ">",
+		lt: "<",
+		nbsp: "\u00a0",
+		quot: '"',
+	};
+	return code.replaceAll(
+		/&(?:#x([0-9a-f]+)|#(\d+)|([a-z]+));/gi,
+		(reference, hex, decimal, name) =>
+			hex !== undefined
+				? String.fromCodePoint(Number.parseInt(hex as string, 16))
+				: decimal !== undefined
+					? String.fromCodePoint(Number(decimal))
+					: (named[(name as string).toLowerCase()] ?? reference),
+	);
 }
 
 /** A dialect's optional hook, which a dialect that meets its construct must have. */
 function hook<
-  K extends
-    | "propAttribute"
-    | "componentEvent"
-    | "fills"
-    | "slotOutlet"
-    | "modelAttribute"
-    | "modelBinding"
-    | "dynamic"
-    | "teleport"
-    | "rawHtmlAttribute"
-    | "directiveAttribute"
-    | "branchConstant"
-    | "restAttribute",
+	K extends
+		| "propAttribute"
+		| "componentEvent"
+		| "fills"
+		| "slotOutlet"
+		| "modelAttribute"
+		| "modelBinding"
+		| "dynamic"
+		| "teleport"
+		| "rawHtmlAttribute"
+		| "directiveAttribute"
+		| "branchConstant"
+		| "restAttribute",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
-  const found = dialect[name];
-  if (!found) {
-    throw new Error(`The ${dialect.name} dialect does not print composition yet (${name}).`);
-  }
-  return found.bind(dialect) as NonNullable<MarkupDialect[K]>;
+	const found = dialect[name];
+	if (!found) {
+		throw new Error(`The ${dialect.name} dialect does not print composition yet (${name}).`);
+	}
+	return found.bind(dialect) as NonNullable<MarkupDialect[K]>;
 }
 
 /** The string a string literal's code holds, or `undefined` for any other code. */
 function stringLiteralValue(code: string): string | undefined {
-  const expression = parseExpression(code);
-  return expression.type === "Literal" && typeof expression.value === "string"
-    ? expression.value
-    : undefined;
+	const expression = parseExpression(code);
+	return expression.type === "Literal" && typeof expression.value === "string"
+		? expression.value
+		: undefined;
 }
 
 /**
@@ -2019,68 +2019,68 @@ function stringLiteralValue(code: string): string | undefined {
  * computed or a method member. A shorthand value is its name, read as the expression it is.
  */
 export function objectEntries(
-  expression: Expression,
+	expression: Expression,
 ): Array<{ key: string; value: Expression }> | undefined {
-  const parsed = parseExpression(expression.code);
-  if (parsed.type !== "ObjectExpression") {
-    return undefined;
-  }
-  const entries: Array<{ key: string; value: Expression }> = [];
-  for (const property of parsed.properties) {
-    if (property.type !== "Property" || property.computed || property.kind !== "init") {
-      return undefined;
-    }
-    if (property.method) {
-      return undefined;
-    }
-    const key =
-      property.key.type === "Identifier"
-        ? property.key.name
-        : property.key.type === "Literal" && typeof property.key.value === "string"
-          ? property.key.value
-          : undefined;
-    if (key === undefined) {
-      return undefined;
-    }
-    const start = expression.span.start + property.value.start;
-    const end = expression.span.start + property.value.end;
-    entries.push({
-      key,
-      value: {
-        code: expression.code.slice(property.value.start, property.value.end),
-        span: { start, end },
-        refs: expression.refs
-          .filter((ref) => ref.span.start >= start && ref.span.end <= end)
-          .map((ref) => {
-            if (ref.kind !== "Binding" || !ref.shorthand) {
-              return ref;
-            }
-            const { shorthand: _shorthand, ...rest } = ref;
-            return rest;
-          }),
-      },
-    });
-  }
-  return entries;
+	const parsed = parseExpression(expression.code);
+	if (parsed.type !== "ObjectExpression") {
+		return undefined;
+	}
+	const entries: Array<{ key: string; value: Expression }> = [];
+	for (const property of parsed.properties) {
+		if (property.type !== "Property" || property.computed || property.kind !== "init") {
+			return undefined;
+		}
+		if (property.method) {
+			return undefined;
+		}
+		const key =
+			property.key.type === "Identifier"
+				? property.key.name
+				: property.key.type === "Literal" && typeof property.key.value === "string"
+					? property.key.value
+					: undefined;
+		if (key === undefined) {
+			return undefined;
+		}
+		const start = expression.span.start + property.value.start;
+		const end = expression.span.start + property.value.end;
+		entries.push({
+			key,
+			value: {
+				code: expression.code.slice(property.value.start, property.value.end),
+				span: { start, end },
+				refs: expression.refs
+					.filter((ref) => ref.span.start >= start && ref.span.end <= end)
+					.map((ref) => {
+						if (ref.kind !== "Binding" || !ref.shorthand) {
+							return ref;
+						}
+						const { shorthand: _shorthand, ...rest } = ref;
+						return rest;
+					}),
+			},
+		});
+	}
+	return entries;
 }
 
 /** An item's one-line form. */
 function inlineText(item: Item): string {
-  switch (item.kind) {
-    case "inline":
-      return item.text;
-    case "element": {
-      const open = `<${item.tag}${item.attributes.map(({ text }) => ` ${text}`).join("")}${item.end}`;
-      const text = `${open}${item.children.map(inlineText).join("")}${item.close}`;
-      return item.region ? `${item.region.open}${text}${item.region.close}` : text;
-    }
-    case "block":
-      return `${item.segments
-        .map((segment) => `${segment.open}${segment.children.map(inlineText).join("")}`)
-        .join("")}${item.close}`;
-    default:
-      return unreachable(item);
-  }
+	switch (item.kind) {
+		case "inline":
+			return item.text;
+		case "element": {
+			const open = `<${item.tag}${item.attributes.map(({ text }) => ` ${text}`).join("")}${item.end}`;
+			const text = `${open}${item.children.map(inlineText).join("")}${item.close}`;
+			return item.region ? `${item.region.open}${text}${item.region.close}` : text;
+		}
+		case "block":
+			return `${item.segments
+				.map((segment) => `${segment.open}${segment.children.map(inlineText).join("")}`)
+				.join("")}${item.close}`;
+		default:
+			return unreachable(item);
+	}
 }
 
 const inline = (text: string): InlineItem => ({ kind: "inline", text });
@@ -2089,37 +2089,37 @@ const isInline = (item: Item) => item.kind === "inline";
 
 /** Elements of block level, wrappers and blocks start lines even where whitespace is kept. */
 const isBlockLevel = (item: Item) =>
-  item.kind === "block" || (item.kind === "element" && item.blockLevel);
+	item.kind === "block" || (item.kind === "element" && item.blockLevel);
 
 /** The name an attribute is printed and ordered by. */
 function attributeName(attribute: Attribute): string {
-  switch (attribute.kind) {
-    case "Static":
-    case "Bound":
-      return attribute.name;
-    case "Class":
-      return "class";
-    case "Style":
-      return "style";
-    case "Spread":
-    case "Rest":
-      return "";
-    // A listener orders as Vue's `@event`, which `vue/attributes-order` puts last.
-    case "Event":
-      return `@${attribute.event}`;
-    case "Ref":
-      return "ref";
-    case "Model":
-      return "v-model";
-    // Orders as Vue's `v-html`, which `vue/attributes-order` puts last, as content.
-    case "RawHtml":
-      return "v-html";
-    // Orders as Vue's custom directive, `v-focus-trap`, among the other directives.
-    case "Directive":
-      return `v-${directiveAttributeName(attribute.name)}`;
-    default:
-      return unreachable(attribute);
-  }
+	switch (attribute.kind) {
+		case "Static":
+		case "Bound":
+			return attribute.name;
+		case "Class":
+			return "class";
+		case "Style":
+			return "style";
+		case "Spread":
+		case "Rest":
+			return "";
+		// A listener orders as Vue's `@event`, which `vue/attributes-order` puts last.
+		case "Event":
+			return `@${attribute.event}`;
+		case "Ref":
+			return "ref";
+		case "Model":
+			return "v-model";
+		// Orders as Vue's `v-html`, which `vue/attributes-order` puts last, as content.
+		case "RawHtml":
+			return "v-html";
+		// Orders as Vue's custom directive, `v-focus-trap`, among the other directives.
+		case "Directive":
+			return `v-${directiveAttributeName(attribute.name)}`;
+		default:
+			return unreachable(attribute);
+	}
 }
 
 /**
@@ -2129,20 +2129,20 @@ function attributeName(attribute: Attribute): string {
  * does a block's closing (`{/if}`), which has no inside to break in.
  */
 function glue(lines: Array<string>, next: Array<string>): Array<string> {
-  const last = lines.at(-1)!;
-  const [first, ...more] = next;
-  const start = first!.trimStart();
-  if (!last.endsWith(">")) {
-    return [...lines.slice(0, -1), `${last}${start}`, ...more];
-  }
-  const closer = last.endsWith("/>") ? "/>" : ">";
-  const before = last.slice(0, -closer.length);
-  const rest = before.trimEnd();
-  if (rest === "") {
-    return [...lines.slice(0, -1), `${before}${closer}${start}`, ...more];
-  }
-  const pad = first!.slice(0, first!.length - start.length);
-  return [...lines.slice(0, -1), rest, `${pad}${closer}${start}`, ...more];
+	const last = lines.at(-1)!;
+	const [first, ...more] = next;
+	const start = first!.trimStart();
+	if (!last.endsWith(">")) {
+		return [...lines.slice(0, -1), `${last}${start}`, ...more];
+	}
+	const closer = last.endsWith("/>") ? "/>" : ">";
+	const before = last.slice(0, -closer.length);
+	const rest = before.trimEnd();
+	if (rest === "") {
+		return [...lines.slice(0, -1), `${before}${closer}${start}`, ...more];
+	}
+	const pad = first!.slice(0, first!.length - start.length);
+	return [...lines.slice(0, -1), rest, `${pad}${closer}${start}`, ...more];
 }
 
 /**
@@ -2150,12 +2150,12 @@ function glue(lines: Array<string>, next: Array<string>): Array<string> {
  * `vFocusTrap`, a digit kept with the letters before it (`vStep2` is `step2`).
  */
 export function directiveAttributeName(name: string): string {
-  return name
-    .slice(1)
-    .replaceAll(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
+	return name
+		.slice(1)
+		.replaceAll(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
 }
 
 /** The `never` default of an exhaustive switch. */
 export function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

@@ -14,25 +14,25 @@ export const ASTRO_VIRTUAL_ID: RegExp = /\.uf\.tsx\.(?:[^/?.]+\.)?astro(?:\?.*)?
 
 /** What `import X from "./X.uf.tsx"` yields in a browser project: a serialisable reference. */
 export interface AstroComponentRef {
-  __ufTarget: "astro";
-  /** The virtual id, without a query: `/abs/X.uf.tsx.astro`. */
-  id: string;
-  /** The component's name, from the file name. */
-  name: string;
+	__ufTarget: "astro";
+	/** The virtual id, without a query: `/abs/X.uf.tsx.astro`. */
+	id: string;
+	/** The component's name, from the file name. */
+	name: string;
 }
 
 /** The payload of the `ufAstroRender` browser command. */
 export interface AstroRenderRequest {
-  id: string;
-  props: Record<string, unknown>;
+	id: string;
+	props: Record<string, unknown>;
 }
 
 /** What `ufAstroRender` returns: the server HTML and what the render logged. */
 export interface AstroRenderResult {
-  /** The component's HTML, preceded by its own `<style>` elements. */
-  html: string;
-  /** `console.warn` and `console.error` calls made while rendering (layer L13). */
-  console: Array<CapturedConsoleMessage>;
+	/** The component's HTML, preceded by its own `<style>` elements. */
+	html: string;
+	/** `console.warn` and `console.error` calls made while rendering (layer L13). */
+	console: Array<CapturedConsoleMessage>;
 }
 
 /** A compiled Astro component, as the Container API renders it. */
@@ -40,36 +40,36 @@ export type AstroComponentFactory = Parameters<AstroContainer["renderToString"]>
 
 /** Whether a module's default export is a compiled Astro component. */
 export function isAstroComponentFactory(value: unknown): value is AstroComponentFactory {
-  return (
-    typeof value === "function" &&
-    "isAstroComponentFactory" in value &&
-    value.isAstroComponentFactory === true
-  );
+	return (
+		typeof value === "function" &&
+		"isAstroComponentFactory" in value &&
+		value.isAstroComponentFactory === true
+	);
 }
 
 /** Splits `/abs/X.uf.tsx.astro?container` into the path and the query (with its `?`). */
 export function splitQuery(id: string): [path: string, query: string] {
-  const index = id.indexOf("?");
-  return index === -1 ? [id, ""] : [id.slice(0, index), id.slice(index)];
+	const index = id.indexOf("?");
+	return index === -1 ? [id, ""] : [id.slice(0, index), id.slice(index)];
 }
 
 /** Builds the reference a browser project's module exports for a virtual id. */
 export function astroComponentRef(id: string): AstroComponentRef {
-  const [path] = splitQuery(id);
-  const file = path.slice(path.lastIndexOf("/") + 1);
-  return { __ufTarget: "astro", id: path, name: file.slice(0, -".uf.tsx.astro".length) };
+	const [path] = splitQuery(id);
+	const file = path.slice(path.lastIndexOf("/") + 1);
+	return { __ufTarget: "astro", id: path, name: file.slice(0, -".uf.tsx.astro".length) };
 }
 
 /** Whether a value is what a browser project's `.uf.tsx` import yields. */
 export function isAstroComponentRef(value: unknown): value is AstroComponentRef {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const ref = value as Partial<AstroComponentRef>;
-  return (
-    ref.__ufTarget === "astro" &&
-    typeof ref.id === "string" &&
-    ASTRO_VIRTUAL_ID.test(ref.id) &&
-    typeof ref.name === "string"
-  );
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
+	const ref = value as Partial<AstroComponentRef>;
+	return (
+		ref.__ufTarget === "astro" &&
+		typeof ref.id === "string" &&
+		ASTRO_VIRTUAL_ID.test(ref.id) &&
+		typeof ref.name === "string"
+	);
 }

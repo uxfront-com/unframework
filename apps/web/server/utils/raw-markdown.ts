@@ -3,11 +3,11 @@ import { join } from "node:path";
 
 // The fields read below. Nitro's types don't see the collections Docus defines.
 export interface DocsPage {
-  path: string;
-  stem: string;
-  extension: string;
-  title: string;
-  description: string;
+	path: string;
+	stem: string;
+	extension: string;
+	title: string;
+	description: string;
 }
 
 /**
@@ -20,10 +20,10 @@ export interface DocsPage {
  * prerendered, both from apps/web.
  */
 export async function rawMarkdown(page: DocsPage) {
-  const source = await readFile(
-    join(process.cwd(), "content", `${page.stem}.${page.extension}`),
-    "utf8",
-  );
-  const body = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "").trim();
-  return `# ${page.title}\n\n> ${page.description}\n\n${body}\n`;
+	const source = await readFile(
+		join(process.cwd(), "content", `${page.stem}.${page.extension}`),
+		"utf8",
+	);
+	const body = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "").trim();
+	return `# ${page.title}\n\n> ${page.description}\n\n${body}\n`;
 }

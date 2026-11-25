@@ -8,7 +8,7 @@ import type { CaseInfo } from "./cases.ts";
 
 /** Whether a case's server render throws on purpose (`ssrThrows`, ADR-0078). */
 export const throwsOnPurpose = (info: Pick<CaseInfo, "config">): boolean =>
-  info.config.ssrThrows !== undefined;
+	info.config.ssrThrows !== undefined;
 
 /**
  * Whether a shard registers the `ssr [<target>] throws` suite. `shard` is the shard's cases,
@@ -16,11 +16,11 @@ export const throwsOnPurpose = (info: Pick<CaseInfo, "config">): boolean =>
  * case has output on the target: a case with compile errors has none, and registers no test.
  */
 export function registersThrows<T extends Pick<CaseInfo, "config">>(
-  shard: ReadonlyArray<T>,
-  corpus: ReadonlyArray<T>,
-  hasOutput: (info: T) => boolean,
+	shard: ReadonlyArray<T>,
+	corpus: ReadonlyArray<T>,
+	hasOutput: (info: T) => boolean,
 ): boolean {
-  return (
-    shard.some((info) => throwsOnPurpose(info) && hasOutput(info)) || !corpus.some(throwsOnPurpose)
-  );
+	return (
+		shard.some((info) => throwsOnPurpose(info) && hasOutput(info)) || !corpus.some(throwsOnPurpose)
+	);
 }

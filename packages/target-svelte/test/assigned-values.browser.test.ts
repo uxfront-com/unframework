@@ -12,57 +12,57 @@ import Steps from "./fixtures/Steps.svelte";
 
 /** Each element's `value` attribute, `null` when it has none. */
 function read(container: HTMLElement) {
-  const value = (selector: string) => container.querySelector(selector)!.getAttribute("value");
-  return {
-    items: [...container.querySelectorAll("li")].map((li) => li.getAttribute("value")),
-    meter: value("meter"),
-    progress: value("progress"),
-    data: value("data"),
-    button: value("button"),
-    checkbox: value("input"),
-  };
+	const value = (selector: string) => container.querySelector(selector)!.getAttribute("value");
+	return {
+		items: [...container.querySelectorAll("li")].map((li) => li.getAttribute("value")),
+		meter: value("meter"),
+		progress: value("progress"),
+		data: value("data"),
+		button: value("button"),
+		checkbox: value("input"),
+	};
 }
 
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
 beforeEach(() => {
-  container = document.createElement("div");
-  document.body.append(container);
+	container = document.createElement("div");
+	document.body.append(container);
 });
 
 afterEach(async () => {
-  await mounted?.unmount();
-  mounted = undefined;
-  container.remove();
+	await mounted?.unmount();
+	mounted = undefined;
+	container.remove();
 });
 
 it("writes each bound value, the element's own default included, on mount and after", async () => {
-  mounted = await mount(Steps, container, {
-    props: { steps: ["a", "b", "c"], score: 0, label: "", mode: "on" },
-  });
-  const defaults = {
-    items: ["2", "1", "0"],
-    meter: "0",
-    progress: "0",
-    data: "",
-    button: "",
-    checkbox: "on",
-  };
-  expect(read(container)).toEqual(defaults);
+	mounted = await mount(Steps, container, {
+		props: { steps: ["a", "b", "c"], score: 0, label: "", mode: "on" },
+	});
+	const defaults = {
+		items: ["2", "1", "0"],
+		meter: "0",
+		progress: "0",
+		data: "",
+		button: "",
+		checkbox: "on",
+	};
+	expect(read(container)).toEqual(defaults);
 
-  await mounted.rerender({ steps: ["a", "b"], score: 3, label: "x", mode: "m" });
-  expect(read(container)).toEqual({
-    items: ["1", "0"],
-    meter: "3",
-    progress: "3",
-    data: "x",
-    button: "x",
-    checkbox: "m",
-  });
+	await mounted.rerender({ steps: ["a", "b"], score: 3, label: "x", mode: "m" });
+	expect(read(container)).toEqual({
+		items: ["1", "0"],
+		meter: "3",
+		progress: "3",
+		data: "x",
+		button: "x",
+		checkbox: "m",
+	});
 
-  await mounted.rerender({ steps: ["a", "b", "c"], score: 0, label: "", mode: "on" });
-  expect(read(container)).toEqual(defaults);
+	await mounted.rerender({ steps: ["a", "b", "c"], score: 0, label: "", mode: "on" });
+	expect(read(container)).toEqual(defaults);
 });
 
 // Pinned, not passed, as a canary of Svelte's own behaviour: Svelte 5.57 clears a `value` that
@@ -73,9 +73,9 @@ it("writes each bound value, the element's own default included, on mount and af
 // mounts the fixture with props its type does not allow. When this fails, Svelte removes it:
 // expect `null` here, and that rule can go for Svelte.
 it("writes 0 for a value that becomes absent, as Svelte clears an input's", async () => {
-  mounted = await mount(Steps, container, {
-    props: { steps: ["a"], score: 3, label: "x", mode: "m" },
-  });
-  await mounted.rerender({ steps: ["a"], label: "x", mode: "m" });
-  expect(read(container)).toMatchObject({ meter: "0", progress: "0" });
+	mounted = await mount(Steps, container, {
+		props: { steps: ["a"], score: 3, label: "x", mode: "m" },
+	});
+	await mounted.rerender({ steps: ["a"], label: "x", mode: "m" });
+	expect(read(container)).toMatchObject({ meter: "0", progress: "0" });
 });

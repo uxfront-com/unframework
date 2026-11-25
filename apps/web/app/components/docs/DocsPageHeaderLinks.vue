@@ -17,10 +17,10 @@ const { t } = useDocusI18n();
 const copied = ref(false);
 let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 async function copy(text: string) {
-  await navigator.clipboard.writeText(text);
-  copied.value = true;
-  clearTimeout(copiedTimer);
-  copiedTimer = setTimeout(() => (copied.value = false), 1500);
+	await navigator.clipboard.writeText(text);
+	copied.value = true;
+	clearTimeout(copiedTimer);
+	copiedTimer = setTimeout(() => (copied.value = false), 1500);
 }
 
 // withTrailingSlash() and joinURL() from ufo.
@@ -30,92 +30,92 @@ const mcpPath = `${base}${mcpRoute.replace(/^\/+/, "")}`;
 const markdownLink = computed(() => `${window?.location?.origin}${base}raw${route.path}.md`);
 const mcpServerUrl = computed(() => `${window?.location?.origin}${mcpPath}`);
 const mcpDeeplink = computed(
-  () => `${window?.location?.origin}${mcpPath.replace(/\/+$/, "")}/deeplink`,
+	() => `${window?.location?.origin}${mcpPath.replace(/\/+$/, "")}/deeplink`,
 );
 const items = computed(() => [
-  [
-    {
-      label: t("docs.copy.link"),
-      icon: "i-lucide-link",
-      onSelect() {
-        copy(markdownLink.value);
-      },
-    },
-    {
-      label: t("docs.copy.view"),
-      icon: "i-simple-icons:markdown",
-      target: "_blank",
-      to: markdownLink.value,
-    },
-    {
-      label: t("docs.copy.gpt"),
-      icon: "i-simple-icons:openai",
-      target: "_blank",
-      to: `https://chatgpt.com/?hints=search&q=${encodeURIComponent(`Read ${markdownLink.value} so I can ask questions about it.`)}`,
-    },
-    {
-      label: t("docs.copy.claude"),
-      icon: "i-simple-icons:anthropic",
-      target: "_blank",
-      to: `https://claude.ai/new?q=${encodeURIComponent(`Read ${markdownLink.value} so I can ask questions about it.`)}`,
-    },
-  ],
-  [
-    {
-      label: "Copy MCP Server URL",
-      icon: "i-lucide-link",
-      onSelect() {
-        copy(mcpServerUrl.value);
-        toast.add({
-          title: "Copied to clipboard",
-          icon: "i-lucide-check-circle",
-        });
-      },
-    },
-    {
-      label: "Add MCP Server",
-      icon: "i-simple-icons:cursor",
-      target: "_blank",
-      to: mcpDeeplink.value,
-    },
-  ],
+	[
+		{
+			label: t("docs.copy.link"),
+			icon: "i-lucide-link",
+			onSelect() {
+				copy(markdownLink.value);
+			},
+		},
+		{
+			label: t("docs.copy.view"),
+			icon: "i-simple-icons:markdown",
+			target: "_blank",
+			to: markdownLink.value,
+		},
+		{
+			label: t("docs.copy.gpt"),
+			icon: "i-simple-icons:openai",
+			target: "_blank",
+			to: `https://chatgpt.com/?hints=search&q=${encodeURIComponent(`Read ${markdownLink.value} so I can ask questions about it.`)}`,
+		},
+		{
+			label: t("docs.copy.claude"),
+			icon: "i-simple-icons:anthropic",
+			target: "_blank",
+			to: `https://claude.ai/new?q=${encodeURIComponent(`Read ${markdownLink.value} so I can ask questions about it.`)}`,
+		},
+	],
+	[
+		{
+			label: "Copy MCP Server URL",
+			icon: "i-lucide-link",
+			onSelect() {
+				copy(mcpServerUrl.value);
+				toast.add({
+					title: "Copied to clipboard",
+					icon: "i-lucide-check-circle",
+				});
+			},
+		},
+		{
+			label: "Add MCP Server",
+			icon: "i-simple-icons:cursor",
+			target: "_blank",
+			to: mcpDeeplink.value,
+		},
+	],
 ]);
 
 async function copyPage() {
-  const page = await $fetch<string>(`/raw${route.path}.md`);
-  copy(page);
+	const page = await $fetch<string>(`/raw${route.path}.md`);
+	copy(page);
 }
 </script>
 
 <template>
-  <UFieldGroup size="sm">
-    <UButton
-      :label="t('docs.copy.page')"
-      :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
-      color="neutral"
-      variant="soft"
-      :ui="{
-        leadingIcon: 'text-neutral size-3.5',
-      }"
-      @click="copyPage"
-    />
+	<UFieldGroup size="sm">
+		<UButton
+			:label="t('docs.copy.page')"
+			:icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
+			color="neutral"
+			variant="soft"
+			:ui="{
+				leadingIcon: 'text-neutral size-3.5',
+			}"
+			@click="copyPage"
+		/>
 
-    <UDropdownMenu
-      size="sm"
-      :items="items"
-      :content="{
-        align: 'end',
-        side: 'bottom',
-        sideOffset: 8,
-      }"
-    >
-      <UButton
-        icon="i-lucide-chevron-down"
-        color="neutral"
-        variant="soft"
-        class="border-l border-muted"
-        aria-label="More page actions"
-      />
-    </UDropdownMenu>
-  </UFieldGroup>
+		<UDropdownMenu
+			size="sm"
+			:items="items"
+			:content="{
+				align: 'end',
+				side: 'bottom',
+				sideOffset: 8,
+			}"
+		>
+			<UButton
+				icon="i-lucide-chevron-down"
+				color="neutral"
+				variant="soft"
+				class="border-l border-muted"
+				aria-label="More page actions"
+			/>
+		</UDropdownMenu>
+	</UFieldGroup>
 </template>

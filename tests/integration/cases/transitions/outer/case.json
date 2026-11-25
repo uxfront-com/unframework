@@ -1,8 +1,8 @@
 {
-  "description": "A `<Transition>` inside a condition of its own: when the outer condition turns false, or the component unmounts, its child goes at once, with no leave, as on Vue. Only a change of the transition's own child runs a leave.",
-  "ssr": {
-    "default": {
-      "props": {}
-    }
-  }
+	"description": "A `<Transition>` inside a condition of its own: when the outer condition turns false, or the component unmounts, its child goes at once, with no leave, as on Vue. Only a change of the transition's own child runs a leave.",
+	"ssr": {
+		"default": {
+			"props": {}
+		}
+	}
 }

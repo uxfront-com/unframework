@@ -12,42 +12,42 @@ export const REFERENCE: TargetName = "vue";
  * (`UF_TARGETS=vue,react`). An unknown name throws, so a typo never verifies nothing.
  */
 export function selectTargets(value: string | undefined): Array<TargetName> {
-  if (!value?.trim()) {
-    return [...TARGET_NAMES];
-  }
-  const requested = value
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean);
-  const unknown = requested.filter((name) => !TARGET_NAMES.includes(name as TargetName));
-  if (unknown.length) {
-    throw new Error(
-      `UF_TARGETS names unknown target(s): ${unknown.join(", ")}. The targets are ${TARGET_NAMES.join(", ")}.`,
-    );
-  }
-  return TARGET_NAMES.filter((name) => requested.includes(name));
+	if (!value?.trim()) {
+		return [...TARGET_NAMES];
+	}
+	const requested = value
+		.split(",")
+		.map((name) => name.trim())
+		.filter(Boolean);
+	const unknown = requested.filter((name) => !TARGET_NAMES.includes(name as TargetName));
+	if (unknown.length) {
+		throw new Error(
+			`UF_TARGETS names unknown target(s): ${unknown.join(", ")}. The targets are ${TARGET_NAMES.join(", ")}.`,
+		);
+	}
+	return TARGET_NAMES.filter((name) => requested.includes(name));
 }
 
 /** Loads a target's toolchain (`@unframework.dev/target-<t>/toolchain`). */
 export async function loadToolchain(target: string): Promise<Toolchain> {
-  let module: { toolchain?: Toolchain; default?: Toolchain };
-  try {
-    module = (await import(
-      /* @vite-ignore */ `@unframework.dev/target-${target}/toolchain`
-    )) as typeof module;
-  } catch (error) {
-    throw new Error(
-      `The ${target} toolchain (@unframework.dev/target-${target}/toolchain) could not be loaded.`,
-      {
-        cause: error,
-      },
-    );
-  }
-  const toolchain = module.toolchain ?? module.default;
-  if (!toolchain || toolchain.name !== target) {
-    throw new Error(
-      `@unframework.dev/target-${target}/toolchain must export \`toolchain\` with name "${target}".`,
-    );
-  }
-  return toolchain;
+	let module: { toolchain?: Toolchain; default?: Toolchain };
+	try {
+		module = (await import(
+			/* @vite-ignore */ `@unframework.dev/target-${target}/toolchain`
+		)) as typeof module;
+	} catch (error) {
+		throw new Error(
+			`The ${target} toolchain (@unframework.dev/target-${target}/toolchain) could not be loaded.`,
+			{
+				cause: error,
+			},
+		);
+	}
+	const toolchain = module.toolchain ?? module.default;
+	if (!toolchain || toolchain.name !== target) {
+		throw new Error(
+			`@unframework.dev/target-${target}/toolchain must export \`toolchain\` with name "${target}".`,
+		);
+	}
+	return toolchain;
 }

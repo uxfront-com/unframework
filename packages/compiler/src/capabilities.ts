@@ -14,37 +14,37 @@ import type { UfModule } from "@unframework.dev/ir";
  * one report says the listener is inert, where three would say it at the same span.
  */
 export function checkCapabilities(module: UfModule, target: Target): Array<Diagnostic> {
-  const diagnostics: Array<Diagnostic> = [];
-  const required = requiredCapabilities(module);
-  const cellOf = (capability: CapabilityName) =>
-    (target.capabilities as Partial<Target["capabilities"]> | undefined)?.[capability];
-  const supports = (capability: CapabilityName) => {
-    const support = cellOf(capability)?.support;
-    return support === "native" || support === "emulated";
-  };
-  for (const [capability, span] of required) {
-    if (supports(capability)) {
-      continue;
-    }
-    const prerequisite = CAPABILITY_PREREQUISITES[capability];
-    if (prerequisite && required.has(prerequisite) && !supports(prerequisite)) {
-      continue;
-    }
-    const cell = cellOf(capability);
-    const at = { file: module.file, span, target: target.name };
-    diagnostics.push(
-      cell?.support === "unsupported"
-        ? createDiagnostic(cell.code, {
-            ...at,
-            severity: cell.severity,
-            message: `The ${target.name} target does not support ${capability}: ${cell.reason}`,
-          })
-        : createDiagnostic("UF4001", {
-            ...at,
-            severity: "error",
-            message: `The ${target.name} target does not declare whether it supports ${capability}, so the compiler treats it as unsupported.`,
-          }),
-    );
-  }
-  return diagnostics;
+	const diagnostics: Array<Diagnostic> = [];
+	const required = requiredCapabilities(module);
+	const cellOf = (capability: CapabilityName) =>
+		(target.capabilities as Partial<Target["capabilities"]> | undefined)?.[capability];
+	const supports = (capability: CapabilityName) => {
+		const support = cellOf(capability)?.support;
+		return support === "native" || support === "emulated";
+	};
+	for (const [capability, span] of required) {
+		if (supports(capability)) {
+			continue;
+		}
+		const prerequisite = CAPABILITY_PREREQUISITES[capability];
+		if (prerequisite && required.has(prerequisite) && !supports(prerequisite)) {
+			continue;
+		}
+		const cell = cellOf(capability);
+		const at = { file: module.file, span, target: target.name };
+		diagnostics.push(
+			cell?.support === "unsupported"
+				? createDiagnostic(cell.code, {
+						...at,
+						severity: cell.severity,
+						message: `The ${target.name} target does not support ${capability}: ${cell.reason}`,
+					})
+				: createDiagnostic("UF4001", {
+						...at,
+						severity: "error",
+						message: `The ${target.name} target does not declare whether it supports ${capability}, so the compiler treats it as unsupported.`,
+					}),
+		);
+	}
+	return diagnostics;
 }

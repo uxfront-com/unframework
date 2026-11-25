@@ -3,6 +3,6 @@ import Badge from "../../../../../integration/cases/types/imported-interface/__o
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Badge.prop:tone -->
-  <Badge label="New" tone="warning" />
+	<!-- @uf-expect TS2322 Badge.prop:tone -->
+	<Badge label="New" tone="warning" />
 </template>

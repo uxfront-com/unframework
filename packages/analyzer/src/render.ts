@@ -1,11 +1,11 @@
 import type {
-  Binding,
-  BindingId,
-  BindingKind,
-  ComponentApi,
-  ComposableApi,
-  ComposableMemberApi,
-  Slots,
+	Binding,
+	BindingId,
+	BindingKind,
+	ComponentApi,
+	ComposableApi,
+	ComposableMemberApi,
+	Slots,
 } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
@@ -27,30 +27,30 @@ export type ComponentFunction = AST.Function | AST.ArrowFunctionExpression;
 
 /** A prop as expressions read it. */
 export interface PropBinding {
-  name: string;
-  /** The binding expressions read it through: absent when the destructured form leaves it out. */
-  id: BindingId | undefined;
-  /** Its kinds: the member's type, with `undefined` when optional without a default. */
-  kinds: Kinds;
-  /** Set on a composable's parameter (ADR-0069), a plain local on every target: no read narrows. */
-  argument?: true;
-  /** Set on a composable's callback argument, which only client code reads (ADR-0069). */
-  callback?: true;
+	name: string;
+	/** The binding expressions read it through: absent when the destructured form leaves it out. */
+	id: BindingId | undefined;
+	/** Its kinds: the member's type, with `undefined` when optional without a default. */
+	kinds: Kinds;
+	/** Set on a composable's parameter (ADR-0069), a plain local on every target: no read narrows. */
+	argument?: true;
+	/** Set on a composable's callback argument, which only client code reads (ADR-0069). */
+	callback?: true;
 }
 
 /** A component a template may render (ADR-0053): its local name, and its API. */
 export interface ComponentInfo {
-  readonly name: string;
-  readonly api: ComponentApi;
+	readonly name: string;
+	readonly api: ComponentApi;
 }
 
 /** A list's item or index, or a name a scoped fill's parameter binds (ADR-0054). */
 export interface LoopVariable {
-  name: string;
-  id: BindingId;
-  kinds: Kinds;
-  /** The parameter that declares it. */
-  declaration: object;
+	name: string;
+	id: BindingId;
+	kinds: Kinds;
+	/** The parameter that declares it. */
+	declaration: object;
 }
 
 /** A function the setup declares: `function save() {…}`, or an arrow a `const` holds. */
@@ -58,41 +58,41 @@ export type SetupFunction = AST.Function | AST.ArrowFunctionExpression;
 
 /** A binding the component's setup declares (ADR-0045), as code reads it. */
 export interface SetupBinding {
-  readonly name: string;
-  readonly id: BindingId;
-  readonly kind: Exclude<BindingKind, "prop" | "loopVar">;
-  /**
-   * What reading it gives (ADR-0046): a ref's value for `state`, `derived` and `templateRef`
-   * (read as `x.value`), a constant's value, a function's result where it is called. The setup
-   * fills it in source order, as it walks each item.
-   */
-  kinds: Kinds;
-  /** The identifier that declares it. */
-  readonly declaration: AST.BindingIdentifier;
-  /** A local function's code. */
-  readonly function?: SetupFunction;
-  /**
-   * Set on a `context` binding whose key holds a ref (`InjectionKey<Ref<number>>`): code reads
-   * its value as `x.value`, as a `state` binding's (ADR-0054).
-   */
-  ref?: true;
-  /**
-   * Set where its type is written: a `const`'s or a `let`'s annotation, or `ref`'s type argument.
-   * A spread of its value renders the keys that type declares (ADR-0039, ADR-0067), which it
-   * knows only when the type resolves in full (`complete`).
-   */
-  typed?: { complete: boolean };
-  /**
-   * What makes a local function's result depend on time, chance or the machine itself, outside
-   * the globals its summary lists (`Math.random`, a locale method): UF3019 where a template, a
-   * getter or an initial value calls it. Set as its body is walked.
-   */
-  nondeterministic?: string;
-  /**
-   * What a `used*` binding destructures from a composable's result (ADR-0069): its kind, and a
-   * function's flags, which say where it may be called.
-   */
-  member?: ComposableMemberApi;
+	readonly name: string;
+	readonly id: BindingId;
+	readonly kind: Exclude<BindingKind, "prop" | "loopVar">;
+	/**
+	 * What reading it gives (ADR-0046): a ref's value for `state`, `derived` and `templateRef`
+	 * (read as `x.value`), a constant's value, a function's result where it is called. The setup
+	 * fills it in source order, as it walks each item.
+	 */
+	kinds: Kinds;
+	/** The identifier that declares it. */
+	readonly declaration: AST.BindingIdentifier;
+	/** A local function's code. */
+	readonly function?: SetupFunction;
+	/**
+	 * Set on a `context` binding whose key holds a ref (`InjectionKey<Ref<number>>`): code reads
+	 * its value as `x.value`, as a `state` binding's (ADR-0054).
+	 */
+	ref?: true;
+	/**
+	 * Set where its type is written: a `const`'s or a `let`'s annotation, or `ref`'s type argument.
+	 * A spread of its value renders the keys that type declares (ADR-0039, ADR-0067), which it
+	 * knows only when the type resolves in full (`complete`).
+	 */
+	typed?: { complete: boolean };
+	/**
+	 * What makes a local function's result depend on time, chance or the machine itself, outside
+	 * the globals its summary lists (`Math.random`, a locale method): UF3019 where a template, a
+	 * getter or an initial value calls it. Set as its body is walked.
+	 */
+	nondeterministic?: string;
+	/**
+	 * What a `used*` binding destructures from a composable's result (ADR-0069): its kind, and a
+	 * function's flags, which say where it may be called.
+	 */
+	member?: ComposableMemberApi;
 }
 
 /**
@@ -100,160 +100,160 @@ export interface SetupBinding {
  * first (`./rules.ts`, ADR-0045): judged once the setup and the render tree are lowered.
  */
 export interface CodeFacts {
-  /**
-   * The calls of local functions inside an arrow function that runs at once (an array method's
-   * callback, a comparator), and the local functions passed as values to a call that may run
-   * them at once: Qwik's output calls a local function that touches state as a QRL, which such
-   * a callback or call cannot await (UF2024).
-   */
-  readonly nestedCalls: Array<{
-    binding: BindingId;
-    span: { start: number; end: number };
-    /** For a function passed as a value, the call it is passed to, and whether an array's. */
-    passedTo?: string | undefined;
-    arrayMethod?: boolean;
-  }>;
-  /** The kinds each watcher's getter returns, by its IR (UF2015 judges the object ones). */
-  readonly getterKinds: Map<object, Kinds>;
-  /** The calls of `nextTick` in client code given a callback (UF2025), with their fix. */
-  readonly tickCallbacks: Array<AST.CallExpression>;
-  /**
-   * The functions client code passes to a call that runs them later (the timers,
-   * `queueMicrotask`, `requestAnimationFrame`, `requestIdleCallback`, a promise's `then`,
-   * `addEventListener`, an observer's constructor, `onCleanup`) or never (`removeEventListener`,
-   * the functions that clear a timer), by the start
-   * of the argument: an arrow function, or a local function's name. Any other call may run what
-   * it is given at once (UF2026, UF2027).
-   */
-  readonly passed: Map<number, "later" | "never">;
+	/**
+	 * The calls of local functions inside an arrow function that runs at once (an array method's
+	 * callback, a comparator), and the local functions passed as values to a call that may run
+	 * them at once: Qwik's output calls a local function that touches state as a QRL, which such
+	 * a callback or call cannot await (UF2024).
+	 */
+	readonly nestedCalls: Array<{
+		binding: BindingId;
+		span: { start: number; end: number };
+		/** For a function passed as a value, the call it is passed to, and whether an array's. */
+		passedTo?: string | undefined;
+		arrayMethod?: boolean;
+	}>;
+	/** The kinds each watcher's getter returns, by its IR (UF2015 judges the object ones). */
+	readonly getterKinds: Map<object, Kinds>;
+	/** The calls of `nextTick` in client code given a callback (UF2025), with their fix. */
+	readonly tickCallbacks: Array<AST.CallExpression>;
+	/**
+	 * The functions client code passes to a call that runs them later (the timers,
+	 * `queueMicrotask`, `requestAnimationFrame`, `requestIdleCallback`, a promise's `then`,
+	 * `addEventListener`, an observer's constructor, `onCleanup`) or never (`removeEventListener`,
+	 * the functions that clear a timer), by the start
+	 * of the argument: an arrow function, or a local function's name. Any other call may run what
+	 * it is given at once (UF2026, UF2027).
+	 */
+	readonly passed: Map<number, "later" | "never">;
 }
 
 /** The DOM interface a function's event parameter takes, and which parameter it is. */
 export interface EventParameter {
-  /** The parameter's position. */
-  readonly index: number;
-  /** Its interface: `KeyboardEvent`, or `Event` for one any event fits (ADR-0047). */
-  readonly interface: string;
-  /** The DOM events it receives, by their names (`click`): what its members must be portable for. */
-  readonly events: ReadonlyArray<string>;
+	/** The parameter's position. */
+	readonly index: number;
+	/** Its interface: `KeyboardEvent`, or `Event` for one any event fits (ADR-0047). */
+	readonly interface: string;
+	/** The DOM events it receives, by their names (`click`): what its members must be portable for. */
+	readonly events: ReadonlyArray<string>;
 }
 
 /** An event's payload, as the walks check an emit of it (UF2017, UF3031). */
 export interface EventPayload {
-  readonly required: number;
-  readonly total: number;
-  /** For each member, whether it admits `null` or `undefined`. */
-  readonly nullable: ReadonlyArray<boolean>;
+	readonly required: number;
+	readonly total: number;
+	/** For each member, whether it admits `null` or `undefined`. */
+	readonly nullable: ReadonlyArray<boolean>;
 }
 
 /** What the setup declares, as every walk of the component's code reads it (ADR-0045). */
 export interface SetupScope {
-  /** Set where the setup is a composable's body (ADR-0069): `isDev` is UF2040 there (ADR-0117). */
-  readonly composable?: true;
-  /** The setup's bindings, by the identifier that declares each. */
-  readonly bindings: ReadonlyMap<object, SetupBinding>;
-  /**
-   * The module's value imports of the authoring API, by the identifier that declares each: the
-   * API, or `undefined` for one its import does not give (reported there).
-   */
-  readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;
-  /**
-   * The events `defineEmits` declares, with how many payload members each takes, and whether
-   * each member admits `null` or `undefined` (an optional one, or a type that holds either).
-   */
-  readonly events: ReadonlyMap<string, EventPayload> | undefined;
-  /** The parameter of each setup function that receives an event, by the function. */
-  readonly eventParameters: ReadonlyMap<SetupFunction, EventParameter>;
-  /**
-   * The composables the module imports, by the identifier that declares each (ADR-0069):
-   * `undefined` for one its import reported.
-   */
-  readonly composables: ReadonlyMap<object, ComposableApi | undefined>;
+	/** Set where the setup is a composable's body (ADR-0069): `isDev` is UF2040 there (ADR-0117). */
+	readonly composable?: true;
+	/** The setup's bindings, by the identifier that declares each. */
+	readonly bindings: ReadonlyMap<object, SetupBinding>;
+	/**
+	 * The module's value imports of the authoring API, by the identifier that declares each: the
+	 * API, or `undefined` for one its import does not give (reported there).
+	 */
+	readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;
+	/**
+	 * The events `defineEmits` declares, with how many payload members each takes, and whether
+	 * each member admits `null` or `undefined` (an optional one, or a type that holds either).
+	 */
+	readonly events: ReadonlyMap<string, EventPayload> | undefined;
+	/** The parameter of each setup function that receives an event, by the function. */
+	readonly eventParameters: ReadonlyMap<SetupFunction, EventParameter>;
+	/**
+	 * The composables the module imports, by the identifier that declares each (ADR-0069):
+	 * `undefined` for one its import reported.
+	 */
+	readonly composables: ReadonlyMap<object, ComposableApi | undefined>;
 }
 
 /** What lowering a component's returned JSX needs to know about the component and module. */
 export interface RenderContext {
-  readonly source: string;
-  readonly reporter: Reporter;
-  readonly scopes: Scopes;
-  readonly types: TypeTable;
-  /** The shapes of the types the module writes where an API is declared (ADR-0067). */
-  readonly shapes: Shapes;
-  /** The component's function: its parameters are the props. */
-  readonly component: ComponentFunction;
-  /** The props, by name: every member of the props type. */
-  readonly props: ReadonlyMap<string, PropBinding>;
-  /** The destructured props, by the identifier that declares each. */
-  readonly propsByDeclaration: ReadonlyMap<object, PropBinding>;
-  /** The object form's parameter: what declares it, and its name. */
-  readonly propsObject: { declaration: object; name: string } | undefined;
-  /**
-   * The rest of a destructured props pattern (ADR-0118): what declares it, its name, and where
-   * it is spread once lowered (`spread`), since it is spread whole on one element only.
-   */
-  readonly restProps?: {
-    declaration: object;
-    name: string;
-    /** Whether the component sets `inheritAttrs: false`, which the rest needs (UF2001). */
-    accepted: boolean;
-    spread?: { start: number; end: number };
-  };
-  /** The loop variables of the lists lowered so far, by the parameter that declares each. */
-  readonly loopVariables: Map<object, LoopVariable>;
-  /** The loop variables of the lists around the node being lowered, outermost first. */
-  readonly enclosing: Array<LoopVariable>;
-  /**
-   * Set while a slot's fill is lowered (ADR-0054): a function the child may call many times, so
-   * what renders once cannot be in it, as in a list.
-   */
-  readonly fill?: true;
-  /** What the setup declares. */
-  readonly setup: SetupScope;
-  /** The `ref` attribute that attaches each template ref, by the identifier that declares it. */
-  readonly attached: Map<object, { start: number; end: number }>;
-  /** The bindings the component declares: the props', the setup's, then each list's. */
-  readonly bindings: Array<Binding>;
-  /** The module's comments: lint directives must not reach an output. */
-  readonly comments: ReadonlyArray<AST.Comment>;
-  /** What the walks note for the rules judged once everything is lowered. */
-  readonly facts: CodeFacts;
-  /**
-   * The components a template may render, by the identifier that declares each: an import's
-   * local name, or a component function of the module, this one included (ADR-0053).
-   */
-  readonly components: ReadonlyMap<object, ComponentInfo | undefined>;
-  /** The slots the component declares with `defineSlots` (ADR-0054). */
-  readonly slots: Slots | undefined;
-  /**
-   * Set while a conditional's condition is checked: the one place a slot's presence,
-   * `slots.title`, is read (ADR-0054).
-   */
-  readonly presence?: true;
-  /** The module's pass-through imports: the names they bind, which a `class` calls (ADR-0064). */
-  readonly passThrough: PassThrough;
-  /** Set while a `class` part is checked: the one place a pass-through name is called. */
-  readonly classPart?: true;
-  /**
-   * Set while a directive's value is checked (ADR-0099): React and Qwik read it outside the
-   * branches around its element, so a conditional child's narrowing it relies on is recorded, as a
-   * handler's is, with the `template` scope.
-   */
-  readonly directiveValue?: true;
-  /** The values the module's imports of shared modules and its constants give (ADR-0070). */
-  readonly shared: SharedValues;
-  /** The directives an element may apply, by local name (ADR-0099). */
-  readonly directives: ReadonlyMap<string, DirectiveInfo>;
-  /** The type oracle's checks of the directives' values, when it made any (ADR-0109). */
-  readonly directiveValues?: DirectiveValues;
+	readonly source: string;
+	readonly reporter: Reporter;
+	readonly scopes: Scopes;
+	readonly types: TypeTable;
+	/** The shapes of the types the module writes where an API is declared (ADR-0067). */
+	readonly shapes: Shapes;
+	/** The component's function: its parameters are the props. */
+	readonly component: ComponentFunction;
+	/** The props, by name: every member of the props type. */
+	readonly props: ReadonlyMap<string, PropBinding>;
+	/** The destructured props, by the identifier that declares each. */
+	readonly propsByDeclaration: ReadonlyMap<object, PropBinding>;
+	/** The object form's parameter: what declares it, and its name. */
+	readonly propsObject: { declaration: object; name: string } | undefined;
+	/**
+	 * The rest of a destructured props pattern (ADR-0118): what declares it, its name, and where
+	 * it is spread once lowered (`spread`), since it is spread whole on one element only.
+	 */
+	readonly restProps?: {
+		declaration: object;
+		name: string;
+		/** Whether the component sets `inheritAttrs: false`, which the rest needs (UF2001). */
+		accepted: boolean;
+		spread?: { start: number; end: number };
+	};
+	/** The loop variables of the lists lowered so far, by the parameter that declares each. */
+	readonly loopVariables: Map<object, LoopVariable>;
+	/** The loop variables of the lists around the node being lowered, outermost first. */
+	readonly enclosing: Array<LoopVariable>;
+	/**
+	 * Set while a slot's fill is lowered (ADR-0054): a function the child may call many times, so
+	 * what renders once cannot be in it, as in a list.
+	 */
+	readonly fill?: true;
+	/** What the setup declares. */
+	readonly setup: SetupScope;
+	/** The `ref` attribute that attaches each template ref, by the identifier that declares it. */
+	readonly attached: Map<object, { start: number; end: number }>;
+	/** The bindings the component declares: the props', the setup's, then each list's. */
+	readonly bindings: Array<Binding>;
+	/** The module's comments: lint directives must not reach an output. */
+	readonly comments: ReadonlyArray<AST.Comment>;
+	/** What the walks note for the rules judged once everything is lowered. */
+	readonly facts: CodeFacts;
+	/**
+	 * The components a template may render, by the identifier that declares each: an import's
+	 * local name, or a component function of the module, this one included (ADR-0053).
+	 */
+	readonly components: ReadonlyMap<object, ComponentInfo | undefined>;
+	/** The slots the component declares with `defineSlots` (ADR-0054). */
+	readonly slots: Slots | undefined;
+	/**
+	 * Set while a conditional's condition is checked: the one place a slot's presence,
+	 * `slots.title`, is read (ADR-0054).
+	 */
+	readonly presence?: true;
+	/** The module's pass-through imports: the names they bind, which a `class` calls (ADR-0064). */
+	readonly passThrough: PassThrough;
+	/** Set while a `class` part is checked: the one place a pass-through name is called. */
+	readonly classPart?: true;
+	/**
+	 * Set while a directive's value is checked (ADR-0099): React and Qwik read it outside the
+	 * branches around its element, so a conditional child's narrowing it relies on is recorded, as a
+	 * handler's is, with the `template` scope.
+	 */
+	readonly directiveValue?: true;
+	/** The values the module's imports of shared modules and its constants give (ADR-0070). */
+	readonly shared: SharedValues;
+	/** The directives an element may apply, by local name (ADR-0099). */
+	readonly directives: ReadonlyMap<string, DirectiveInfo>;
+	/** The type oracle's checks of the directives' values, when it made any (ADR-0109). */
+	readonly directiveValues?: DirectiveValues;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */
 export function setupBindingOf(
-  identifier: AST.IdentifierReference,
-  render: RenderContext,
+	identifier: AST.IdentifierReference,
+	render: RenderContext,
 ): SetupBinding | undefined {
-  const resolution = render.scopes.resolve(identifier);
-  return resolution.kind === "variable" && resolution.scope === render.component
-    ? render.setup.bindings.get(resolution.declaration)
-    : undefined;
+	const resolution = render.scopes.resolve(identifier);
+	return resolution.kind === "variable" && resolution.scope === render.component
+		? render.setup.bindings.get(resolution.declaration)
+		: undefined;
 }

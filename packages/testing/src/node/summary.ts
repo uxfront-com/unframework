@@ -11,25 +11,25 @@ import { join } from "node:path";
 
 import type { BrowserEngine } from "../harness.ts";
 import {
-  BROWSER_LAYERS,
-  LAYERS,
-  NO_INTERACTION_SKIP,
-  NO_OUTPUT_SKIP,
-  NO_OUTPUT_TEST_SKIP,
-  NO_SPEC_SKIP,
-  NOT_IN_THIS_RUN_SKIP,
-  NOT_RENDERED_SKIP,
-  REQUIRES_SKIP,
+	BROWSER_LAYERS,
+	LAYERS,
+	NO_INTERACTION_SKIP,
+	NO_OUTPUT_SKIP,
+	NO_OUTPUT_TEST_SKIP,
+	NO_SPEC_SKIP,
+	NOT_IN_THIS_RUN_SKIP,
+	NOT_RENDERED_SKIP,
+	REQUIRES_SKIP,
 } from "../layers.ts";
 import type { LayerName } from "../layers.ts";
 import { FONT_AUDIT_SKIP, LIVE_REFERENCE_SKIP, REFERENCE_NOT_RUN_SKIP } from "../visual-types.ts";
 import {
-  cellHeadline,
-  mergeMatrices,
-  narrowing,
-  outcomeOfCell,
-  settleQuarantine,
-  stringifyMatrix,
+	cellHeadline,
+	mergeMatrices,
+	narrowing,
+	outcomeOfCell,
+	settleQuarantine,
+	stringifyMatrix,
 } from "./matrix.ts";
 import type { MatrixCells, MergedMatrix, PartialMatrix, RunInfo } from "./matrix.ts";
 import { isCI } from "./mode.ts";
@@ -37,26 +37,26 @@ import { readPartialMatrices } from "./reporter.ts";
 
 /** What a complete run covers. */
 export interface SummaryExpectations {
-  /** Every project the config defines (for the selected targets). */
-  projects: ReadonlyArray<string>;
-  /** Every case id in the corpus. */
-  cases: ReadonlyArray<string>;
-  targets: ReadonlyArray<string>;
-  /** The layers live in this milestone: each needs a cell for every case and target. */
-  liveLayers: ReadonlyArray<LayerName>;
-  /** The skip reason recorded for the layers that are not live yet. */
-  notLiveReason: string;
-  /**
-   * A live layer only one project records, which the default run leaves out (L15, `bench`): a
-   * run without that project in full fills its cells as skipped, never missing. CI's parity job
-   * (`requireComplete`) requires them all the same.
-   */
-  recordedOnlyBy?: Partial<Record<LayerName, string>>;
-  /**
-   * Every capability name: a skip by capability on a live layer (`requires <name>: …`) must
-   * name one. Without it, any kebab-case name passes.
-   */
-  capabilities?: ReadonlyArray<string>;
+	/** Every project the config defines (for the selected targets). */
+	projects: ReadonlyArray<string>;
+	/** Every case id in the corpus. */
+	cases: ReadonlyArray<string>;
+	targets: ReadonlyArray<string>;
+	/** The layers live in this milestone: each needs a cell for every case and target. */
+	liveLayers: ReadonlyArray<LayerName>;
+	/** The skip reason recorded for the layers that are not live yet. */
+	notLiveReason: string;
+	/**
+	 * A live layer only one project records, which the default run leaves out (L15, `bench`): a
+	 * run without that project in full fills its cells as skipped, never missing. CI's parity job
+	 * (`requireComplete`) requires them all the same.
+	 */
+	recordedOnlyBy?: Partial<Record<LayerName, string>>;
+	/**
+	 * Every capability name: a skip by capability on a live layer (`requires <name>: …`) must
+	 * name one. Without it, any kebab-case name passes.
+	 */
+	capabilities?: ReadonlyArray<string>;
 }
 
 /**
@@ -64,110 +64,110 @@ export interface SummaryExpectations {
  * mechanical cause. Anything else on a live layer would hide a check that never ran.
  */
 const MECHANICAL_SKIPS: ReadonlyArray<string> = [
-  NO_OUTPUT_SKIP,
-  NO_SPEC_SKIP,
-  LIVE_REFERENCE_SKIP,
-  NOT_RENDERED_SKIP,
-  NO_INTERACTION_SKIP,
+	NO_OUTPUT_SKIP,
+	NO_SPEC_SKIP,
+	LIVE_REFERENCE_SKIP,
+	NOT_RENDERED_SKIP,
+	NO_INTERACTION_SKIP,
 ];
 
 /** Why a live layer's skip is not one the summary accepts, or nothing when it is. */
 export function unacceptedSkip(
-  reason: string,
-  capabilities?: ReadonlyArray<string>,
+	reason: string,
+	capabilities?: ReadonlyArray<string>,
 ): string | undefined {
-  // A browser test of a case its target has no output for: the errors that case expects.
-  if (MECHANICAL_SKIPS.includes(reason) || NO_OUTPUT_TEST_SKIP.test(reason)) {
-    return undefined;
-  }
-  const capability = REQUIRES_SKIP.exec(reason)?.[1];
-  if (capability === undefined) {
-    return `skipped (${reason}), which names no capability its target lacks and none of the mechanical causes (${[...MECHANICAL_SKIPS, "no output: <the expected errors>"].join("; ")}): a live layer skips only for a reason the matrix can show.`;
-  }
-  if (capabilities && !capabilities.includes(capability)) {
-    return `skipped for "${capability}", which is not a capability.`;
-  }
-  return undefined;
+	// A browser test of a case its target has no output for: the errors that case expects.
+	if (MECHANICAL_SKIPS.includes(reason) || NO_OUTPUT_TEST_SKIP.test(reason)) {
+		return undefined;
+	}
+	const capability = REQUIRES_SKIP.exec(reason)?.[1];
+	if (capability === undefined) {
+		return `skipped (${reason}), which names no capability its target lacks and none of the mechanical causes (${[...MECHANICAL_SKIPS, "no output: <the expected errors>"].join("; ")}): a live layer skips only for a reason the matrix can show.`;
+	}
+	if (capabilities && !capabilities.includes(capability)) {
+		return `skipped for "${capability}", which is not a capability.`;
+	}
+	return undefined;
 }
 
 /** How to judge the merged matrix. */
 export interface SummaryJudgement {
-  /**
-   * Every expected project must have run all its tests: a missing one, one that only a filtered
-   * run covered, and each missing cell, is a problem rather than a partial run. For CI, whose
-   * parity job merges one partial matrix per job: a job that never reported is a hole, not a
-   * subset someone chose. `writeSummary` defaults it to whether `CI` is set.
-   */
-  requireComplete?: boolean | undefined;
-  /** The engine the browser projects ran in; Chromium by default. The Markdown names another. */
-  browser?: BrowserEngine | undefined;
+	/**
+	 * Every expected project must have run all its tests: a missing one, one that only a filtered
+	 * run covered, and each missing cell, is a problem rather than a partial run. For CI, whose
+	 * parity job merges one partial matrix per job: a job that never reported is a hole, not a
+	 * subset someone chose. `writeSummary` defaults it to whether `CI` is set.
+	 */
+	requireComplete?: boolean | undefined;
+	/** The engine the browser projects ran in; Chromium by default. The Markdown names another. */
+	browser?: BrowserEngine | undefined;
 }
 
 /** Options for {@link writeSummary}. */
 export interface SummaryOptions extends SummaryJudgement {
-  reportsDir: string;
-  expected: SummaryExpectations;
-  /** `$GITHUB_STEP_SUMMARY`: the Markdown is appended there too. */
-  stepSummary?: string | undefined;
-  /**
-   * Only the partial matrices of runs that ended at or after this time: a local `pnpm test`
-   * summarises its own run, not an earlier one's leftovers. None is an error: the run wrote no
-   * matrix.
-   */
-  since?: Date | undefined;
+	reportsDir: string;
+	expected: SummaryExpectations;
+	/** `$GITHUB_STEP_SUMMARY`: the Markdown is appended there too. */
+	stepSummary?: string | undefined;
+	/**
+	 * Only the partial matrices of runs that ended at or after this time: a local `pnpm test`
+	 * summarises its own run, not an earlier one's leftovers. None is an error: the run wrote no
+	 * matrix.
+	 */
+	since?: Date | undefined;
 }
 
 /** What {@link writeSummary} produced. */
 export interface SummaryResult {
-  matrix: MergedMatrix;
-  markdown: string;
-  /** Everything that makes the run not green; empty when it is. */
-  problems: Array<string>;
-  /**
-   * Whether every expected project ran all its tests (in a run without a file, test-name or
-   * other filter, or in every shard of one), so completeness and stale quarantine entries were
-   * checked.
-   */
-  complete: boolean;
+	matrix: MergedMatrix;
+	markdown: string;
+	/** Everything that makes the run not green; empty when it is. */
+	problems: Array<string>;
+	/**
+	 * Whether every expected project ran all its tests (in a run without a file, test-name or
+	 * other filter, or in every shard of one), so completeness and stale quarantine entries were
+	 * checked.
+	 */
+	complete: boolean;
 }
 
 /** Which expected projects the merged runs do not cover in full. */
 export interface Coverage {
-  /** No run has records of them. */
-  missingProjects: ReadonlyArray<string>;
-  /** Only filtered runs ran them: project → why each such run was filtered. */
-  partialProjects: ReadonlyMap<string, ReadonlyArray<string>>;
-  /**
-   * Every shard ran them, and none collected a test of them. An unfiltered run fails on such a
-   * project itself; one shard cannot tell, as it may hold none of the project's files.
-   */
-  emptyProjects: ReadonlyArray<string>;
+	/** No run has records of them. */
+	missingProjects: ReadonlyArray<string>;
+	/** Only filtered runs ran them: project → why each such run was filtered. */
+	partialProjects: ReadonlyMap<string, ReadonlyArray<string>>;
+	/**
+	 * Every shard ran them, and none collected a test of them. An unfiltered run fails on such a
+	 * project itself; one shard cannot tell, as it may hold none of the project's files.
+	 */
+	emptyProjects: ReadonlyArray<string>;
 }
 
 /** Merges the partial matrices in `reportsDir`, writes the merged matrix and its Markdown. */
 export function writeSummary(options: SummaryOptions): SummaryResult {
-  const since = options.since;
-  const partials = [...readPartialMatrices(options.reportsDir).values()].filter(
-    (partial) => since === undefined || Date.parse(partial.finishedAt) >= since.getTime(),
-  );
-  if (!partials.length) {
-    throw new Error(
-      since === undefined
-        ? `[uf:summary] No parity-matrix.*.json in ${options.reportsDir}: run the integration tests first.`
-        : `[uf:summary] No run wrote a parity matrix to ${options.reportsDir} since ${since.toISOString()}: the run did not get as far as reporting.`,
-    );
-  }
-  const result = summarise(partials, options.expected, {
-    requireComplete: options.requireComplete ?? isCI(process.env),
-    browser: options.browser,
-  });
-  const name = summaryName(options.browser ?? "chromium");
-  writeFileSync(join(options.reportsDir, `${name}.json`), stringifyMatrix(result.matrix));
-  writeFileSync(join(options.reportsDir, `${name}.md`), result.markdown);
-  if (options.stepSummary) {
-    appendFileSync(options.stepSummary, `${result.markdown}\n`);
-  }
-  return result;
+	const since = options.since;
+	const partials = [...readPartialMatrices(options.reportsDir).values()].filter(
+		(partial) => since === undefined || Date.parse(partial.finishedAt) >= since.getTime(),
+	);
+	if (!partials.length) {
+		throw new Error(
+			since === undefined
+				? `[uf:summary] No parity-matrix.*.json in ${options.reportsDir}: run the integration tests first.`
+				: `[uf:summary] No run wrote a parity matrix to ${options.reportsDir} since ${since.toISOString()}: the run did not get as far as reporting.`,
+		);
+	}
+	const result = summarise(partials, options.expected, {
+		requireComplete: options.requireComplete ?? isCI(process.env),
+		browser: options.browser,
+	});
+	const name = summaryName(options.browser ?? "chromium");
+	writeFileSync(join(options.reportsDir, `${name}.json`), stringifyMatrix(result.matrix));
+	writeFileSync(join(options.reportsDir, `${name}.md`), result.markdown);
+	if (options.stepSummary) {
+		appendFileSync(options.stepSummary, `${result.markdown}\n`);
+	}
+	return result;
 }
 
 /**
@@ -176,163 +176,163 @@ export function writeSummary(options: SummaryOptions): SummaryResult {
  * reads back as a partial matrix.
  */
 export function summaryName(browser: BrowserEngine): string {
-  return browser === "chromium" ? "parity-matrix" : `parity-matrix.${browser}`;
+	return browser === "chromium" ? "parity-matrix" : `parity-matrix.${browser}`;
 }
 
 /** Merges matrices, fills the layers that are not live, and lists the problems. Pure. */
 export function summarise(
-  partials: ReadonlyArray<PartialMatrix>,
-  expected: SummaryExpectations,
-  judgement: SummaryJudgement = {},
+	partials: ReadonlyArray<PartialMatrix>,
+	expected: SummaryExpectations,
+	judgement: SummaryJudgement = {},
 ): SummaryResult {
-  const { matrix: merged, quarantine, reference, references } = mergeMatrices(partials);
-  const coverage = coverageOf(merged, expected.projects);
-  const { missingProjects, partialProjects } = coverage;
-  const complete = missingProjects.length === 0 && partialProjects.size === 0;
-  const checkMissing = complete || Boolean(judgement.requireComplete);
-  const problems: Array<string> = [];
-  const live = new Set(expected.liveLayers);
-  const knownCases = new Set(expected.cases);
+	const { matrix: merged, quarantine, reference, references } = mergeMatrices(partials);
+	const coverage = coverageOf(merged, expected.projects);
+	const { missingProjects, partialProjects } = coverage;
+	const complete = missingProjects.length === 0 && partialProjects.size === 0;
+	const checkMissing = complete || Boolean(judgement.requireComplete);
+	const problems: Array<string> = [];
+	const live = new Set(expected.liveLayers);
+	const knownCases = new Set(expected.cases);
 
-  for (const project of coverage.emptyProjects) {
-    problems.push(
-      `${project}: collected zero tests in every shard. A project that runs nothing verifies nothing.`,
-    );
-  }
-  if (judgement.requireComplete) {
-    for (const project of missingProjects) {
-      problems.push(`${project}: did not run (no parity matrix has its records).`);
-    }
-    for (const [project, filters] of partialProjects) {
-      problems.push(
-        `${project}: only filtered runs ran it (${filters.join("; ")}), so not every cell is checked.`,
-      );
-    }
-  }
-  // Read before the quarantine settles them: a quarantined cell that is blocked reads as stale.
-  const drops = referenceDrops(merged.cases);
-  const blockedCases = new Set([...drops.values()].flatMap((drop) => [...drop.cases]));
-  // A browser layer of a case's reference that never finished the case's spec file: part of
-  // its drop's one problem.
-  const dropped = (caseId: string, target: string, layer: LayerName) =>
-    blockedCases.has(caseId) &&
-    target === (references[caseId] ?? reference) &&
-    BROWSER_LAYERS.includes(layer);
-  // The failures are judged by the newest run's quarantine; staleness only when every record of
-  // every cell is here (the failed cells it makes are listed below, with the others).
-  settleQuarantine(merged.cases, quarantine, { stale: complete });
+	for (const project of coverage.emptyProjects) {
+		problems.push(
+			`${project}: collected zero tests in every shard. A project that runs nothing verifies nothing.`,
+		);
+	}
+	if (judgement.requireComplete) {
+		for (const project of missingProjects) {
+			problems.push(`${project}: did not run (no parity matrix has its records).`);
+		}
+		for (const [project, filters] of partialProjects) {
+			problems.push(
+				`${project}: only filtered runs ran it (${filters.join("; ")}), so not every cell is checked.`,
+			);
+		}
+	}
+	// Read before the quarantine settles them: a quarantined cell that is blocked reads as stale.
+	const drops = referenceDrops(merged.cases);
+	const blockedCases = new Set([...drops.values()].flatMap((drop) => [...drop.cases]));
+	// A browser layer of a case's reference that never finished the case's spec file: part of
+	// its drop's one problem.
+	const dropped = (caseId: string, target: string, layer: LayerName) =>
+		blockedCases.has(caseId) &&
+		target === (references[caseId] ?? reference) &&
+		BROWSER_LAYERS.includes(layer);
+	// The failures are judged by the newest run's quarantine; staleness only when every record of
+	// every cell is here (the failed cells it makes are listed below, with the others).
+	settleQuarantine(merged.cases, quarantine, { stale: complete });
 
-  for (const caseId of Object.keys(merged.cases)) {
-    if (!knownCases.has(caseId)) {
-      problems.push(`${caseId}: recorded, but not a case in the corpus.`);
-    }
-  }
-  for (const caseId of [...expected.cases].sort()) {
-    const targets = (merged.cases[caseId] ??= {});
-    for (const target of expected.targets) {
-      const cells = (targets[target] ??= {});
-      for (const layer of LAYERS) {
-        const cell = cells[layer];
-        if (cell === undefined) {
-          const recordedBy = expected.recordedOnlyBy?.[layer];
-          if (!live.has(layer)) {
-            cells[layer] = `skip(${expected.notLiveReason})`;
-          } else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy)) {
-            cells[layer] = `skip(${NOT_IN_THIS_RUN_SKIP})`;
-          } else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer)) {
-            problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
-          }
-          continue;
-        }
-        if (layer === "L10" && drops.blocks(caseId, target)) {
-          continue;
-        }
-        // A skip on a live layer names a capability the target lacks or a mechanical cause
-        // (plan §7.7); a quarantined cell is not a skip. They are listed under each table.
-        const outcome = outcomeOfCell(cell);
-        if (outcome.status === "fail") {
-          problems.push(`${caseId} › ${target} › ${layer}: ${cellHeadline(cell)}`);
-        }
-        if (outcome.status === "skip" && live.has(layer)) {
-          const why = unacceptedSkip(outcome.reason, expected.capabilities);
-          if (why) {
-            problems.push(`${caseId} › ${target} › ${layer}: ${why}`);
-          }
-        }
-      }
-      targets[target] = Object.fromEntries(
-        LAYERS.filter((layer) => cells[layer] !== undefined).map((layer) => [layer, cells[layer]!]),
-      );
-    }
-    if (checkMissing && reference !== null && !blockedCases.has(caseId)) {
-      // A case that names its own reference (ADR-0057) is judged against that target's scenarios.
-      const judge = references[caseId] ?? reference;
-      problems.push(...scenarioProblems(merged, caseId, judge, expected.targets));
-    }
-  }
-  problems.unshift(...dropProblems(drops, partials));
-  const matrix: MergedMatrix = {
-    ...merged,
-    cases: Object.fromEntries(Object.entries(merged.cases).sort(([a], [b]) => a.localeCompare(b))),
-  };
-  return {
-    matrix,
-    markdown: renderMarkdown(matrix, expected, {
-      ...coverage,
-      problems,
-      requireComplete: Boolean(judgement.requireComplete),
-      quarantined: quarantine.length,
-      browser: judgement.browser,
-    }),
-    problems,
-    complete,
-  };
+	for (const caseId of Object.keys(merged.cases)) {
+		if (!knownCases.has(caseId)) {
+			problems.push(`${caseId}: recorded, but not a case in the corpus.`);
+		}
+	}
+	for (const caseId of [...expected.cases].sort()) {
+		const targets = (merged.cases[caseId] ??= {});
+		for (const target of expected.targets) {
+			const cells = (targets[target] ??= {});
+			for (const layer of LAYERS) {
+				const cell = cells[layer];
+				if (cell === undefined) {
+					const recordedBy = expected.recordedOnlyBy?.[layer];
+					if (!live.has(layer)) {
+						cells[layer] = `skip(${expected.notLiveReason})`;
+					} else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy)) {
+						cells[layer] = `skip(${NOT_IN_THIS_RUN_SKIP})`;
+					} else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer)) {
+						problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
+					}
+					continue;
+				}
+				if (layer === "L10" && drops.blocks(caseId, target)) {
+					continue;
+				}
+				// A skip on a live layer names a capability the target lacks or a mechanical cause
+				// (plan §7.7); a quarantined cell is not a skip. They are listed under each table.
+				const outcome = outcomeOfCell(cell);
+				if (outcome.status === "fail") {
+					problems.push(`${caseId} › ${target} › ${layer}: ${cellHeadline(cell)}`);
+				}
+				if (outcome.status === "skip" && live.has(layer)) {
+					const why = unacceptedSkip(outcome.reason, expected.capabilities);
+					if (why) {
+						problems.push(`${caseId} › ${target} › ${layer}: ${why}`);
+					}
+				}
+			}
+			targets[target] = Object.fromEntries(
+				LAYERS.filter((layer) => cells[layer] !== undefined).map((layer) => [layer, cells[layer]!]),
+			);
+		}
+		if (checkMissing && reference !== null && !blockedCases.has(caseId)) {
+			// A case that names its own reference (ADR-0057) is judged against that target's scenarios.
+			const judge = references[caseId] ?? reference;
+			problems.push(...scenarioProblems(merged, caseId, judge, expected.targets));
+		}
+	}
+	problems.unshift(...dropProblems(drops, partials));
+	const matrix: MergedMatrix = {
+		...merged,
+		cases: Object.fromEntries(Object.entries(merged.cases).sort(([a], [b]) => a.localeCompare(b))),
+	};
+	return {
+		matrix,
+		markdown: renderMarkdown(matrix, expected, {
+			...coverage,
+			problems,
+			requireComplete: Boolean(judgement.requireComplete),
+			quarantined: quarantine.length,
+			browser: judgement.browser,
+		}),
+		problems,
+		complete,
+	};
 }
 
 /** A reference's browser project that stopped before it finished some cases (ADR-0091). */
 interface ReferenceDrop {
-  /** The cases whose spec file it did not finish, which some follower compares with at L10. */
-  cases: Set<string>;
-  /** The follower cells it left without a comparison: `case`, then `target`. */
-  cells: Set<string>;
+	/** The cases whose spec file it did not finish, which some follower compares with at L10. */
+	cases: Set<string>;
+	/** The follower cells it left without a comparison: `case`, then `target`. */
+	cells: Set<string>;
 }
 
 /** Each reference project's drop, by project, and whether it blocked a follower's L10 cell. */
 type ReferenceDrops = Map<string, ReferenceDrop> & {
-  blocks(caseId: string, target: string): boolean;
+	blocks(caseId: string, target: string): boolean;
 };
 
 const cellKey = (caseId: string, target: string) => `${caseId}\u0000${target}`;
 
 /** The project a blocked L10 cell names, or none for any other cell. */
 function blockedBy(cell: string | undefined): string | undefined {
-  if (cell === undefined || !cell.startsWith("skip(")) {
-    return undefined;
-  }
-  const outcome = outcomeOfCell(cell);
-  return outcome.status === "skip" ? REFERENCE_NOT_RUN_SKIP.exec(outcome.reason)?.[1] : undefined;
+	if (cell === undefined || !cell.startsWith("skip(")) {
+		return undefined;
+	}
+	const outcome = outcomeOfCell(cell);
+	return outcome.status === "skip" ? REFERENCE_NOT_RUN_SKIP.exec(outcome.reason)?.[1] : undefined;
 }
 
 /** Every L10 cell a reference's drop left without a comparison, grouped by that project. */
 function referenceDrops(cells: MatrixCells): ReferenceDrops {
-  const drops = new Map<string, ReferenceDrop>();
-  const blocked = new Set<string>();
-  for (const [caseId, targets] of Object.entries(cells)) {
-    for (const [target, layers] of Object.entries(targets)) {
-      const project = blockedBy(layers.L10);
-      if (project === undefined) {
-        continue;
-      }
-      const drop = drops.get(project) ?? { cases: new Set<string>(), cells: new Set<string>() };
-      drop.cases.add(caseId);
-      drop.cells.add(cellKey(caseId, target));
-      drops.set(project, drop);
-      blocked.add(cellKey(caseId, target));
-    }
-  }
-  return Object.assign(drops, {
-    blocks: (caseId: string, target: string) => blocked.has(cellKey(caseId, target)),
-  });
+	const drops = new Map<string, ReferenceDrop>();
+	const blocked = new Set<string>();
+	for (const [caseId, targets] of Object.entries(cells)) {
+		for (const [target, layers] of Object.entries(targets)) {
+			const project = blockedBy(layers.L10);
+			if (project === undefined) {
+				continue;
+			}
+			const drop = drops.get(project) ?? { cases: new Set<string>(), cells: new Set<string>() };
+			drop.cases.add(caseId);
+			drop.cells.add(cellKey(caseId, target));
+			drops.set(project, drop);
+			blocked.add(cellKey(caseId, target));
+		}
+	}
+	return Object.assign(drops, {
+		blocks: (caseId: string, target: string) => blocked.has(cellKey(caseId, target)),
+	});
 }
 
 /** How many of a list to name in a problem before counting the rest. */
@@ -344,40 +344,40 @@ const NAMED = 3;
  * test. A drop is never green, whatever else ran, and with no error the problem says so.
  */
 function dropProblems(
-  drops: ReferenceDrops,
-  partials: ReadonlyArray<PartialMatrix>,
+	drops: ReferenceDrops,
+	partials: ReadonlyArray<PartialMatrix>,
 ): Array<string> {
-  return [...drops]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([project, drop]) => {
-      const errors = [
-        ...new Set(
-          partials
-            .filter((partial) =>
-              Object.values(partial.byProject).some((cells) =>
-                Object.values(cells).some((targets) =>
-                  Object.values(targets).some((layers) => blockedBy(layers.L10) === project),
-                ),
-              ),
-            )
-            .flatMap((partial) => partial.errors ?? []),
-        ),
-      ];
-      const cases = [...drop.cases].sort();
-      return `${project} did not finish ${cases.length} of its spec files in this run (${named(cases)}); ${drop.cells.size} follower cell(s) could not be compared at L10. Vitest reported: ${errors.length ? named(errors) : "no error"}.`;
-    });
+	return [...drops]
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([project, drop]) => {
+			const errors = [
+				...new Set(
+					partials
+						.filter((partial) =>
+							Object.values(partial.byProject).some((cells) =>
+								Object.values(cells).some((targets) =>
+									Object.values(targets).some((layers) => blockedBy(layers.L10) === project),
+								),
+							),
+						)
+						.flatMap((partial) => partial.errors ?? []),
+				),
+			];
+			const cases = [...drop.cases].sort();
+			return `${project} did not finish ${cases.length} of its spec files in this run (${named(cases)}); ${drop.cells.size} follower cell(s) could not be compared at L10. Vitest reported: ${errors.length ? named(errors) : "no error"}.`;
+		});
 }
 
 /** The first few items of a list, and how many more there are. */
 function named(items: ReadonlyArray<string>): string {
-  const more = items.length - NAMED;
-  return `${items.slice(0, NAMED).join(", ")}${more > 0 ? `, and ${more} more` : ""}`;
+	const more = items.length - NAMED;
+	return `${items.slice(0, NAMED).join(", ")}${more > 0 ? `, and ${more} more` : ""}`;
 }
 
 /** Whether the merged runs cover every test of a project. */
 function ranInFull(merged: MergedMatrix, project: string): boolean {
-  const { missingProjects, partialProjects } = coverageOf(merged, [project]);
-  return !missingProjects.length && !partialProjects.size;
+	const { missingProjects, partialProjects } = coverageOf(merged, [project]);
+	return !missingProjects.length && !partialProjects.size;
 }
 
 /**
@@ -390,51 +390,51 @@ function ranInFull(merged: MergedMatrix, project: string): boolean {
  * run checks only some scenarios.
  */
 function scenarioProblems(
-  matrix: MergedMatrix,
-  caseId: string,
-  reference: string,
-  targets: ReadonlyArray<string>,
+	matrix: MergedMatrix,
+	caseId: string,
+	reference: string,
+	targets: ReadonlyArray<string>,
 ): Array<string> {
-  if (!targets.includes(reference)) {
-    return [];
-  }
-  const expected = matrix.tests[caseId]?.[reference] ?? {};
-  const problems: Array<string> = [];
-  for (const target of targets) {
-    if (target === reference) {
-      continue;
-    }
-    const actual = matrix.tests[caseId]?.[target] ?? {};
-    const differences: Array<string> = [];
-    for (const name of [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort()) {
-      const theirs = expected[name];
-      const ours = actual[name];
-      if (ours?.skipped !== undefined || ours?.standIn !== undefined) {
-        continue;
-      }
-      const wanted = theirs?.skipped === undefined ? (theirs?.scenarios ?? []) : [];
-      const checked = ours?.scenarios ?? [];
-      const missing = wanted.filter((scenario) => !checked.includes(scenario));
-      const extra = checked.filter((scenario) => !wanted.includes(scenario));
-      if (missing.length) {
-        differences.push(`"${name}" never checks ${missing.join(", ")}`);
-      }
-      if (extra.length) {
-        const why =
-          theirs?.skipped === undefined ? "" : ` (it skipped the test: ${theirs.skipped})`;
-        differences.push(
-          `"${name}" checks ${extra.join(", ")}, which ${reference} never checks${why}`,
-        );
-      }
-    }
-    if (!differences.length) {
-      continue;
-    }
-    problems.push(
-      `${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability, has no output for the case, or cannot compile it yet.`,
-    );
-  }
-  return problems;
+	if (!targets.includes(reference)) {
+		return [];
+	}
+	const expected = matrix.tests[caseId]?.[reference] ?? {};
+	const problems: Array<string> = [];
+	for (const target of targets) {
+		if (target === reference) {
+			continue;
+		}
+		const actual = matrix.tests[caseId]?.[target] ?? {};
+		const differences: Array<string> = [];
+		for (const name of [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort()) {
+			const theirs = expected[name];
+			const ours = actual[name];
+			if (ours?.skipped !== undefined || ours?.standIn !== undefined) {
+				continue;
+			}
+			const wanted = theirs?.skipped === undefined ? (theirs?.scenarios ?? []) : [];
+			const checked = ours?.scenarios ?? [];
+			const missing = wanted.filter((scenario) => !checked.includes(scenario));
+			const extra = checked.filter((scenario) => !wanted.includes(scenario));
+			if (missing.length) {
+				differences.push(`"${name}" never checks ${missing.join(", ")}`);
+			}
+			if (extra.length) {
+				const why =
+					theirs?.skipped === undefined ? "" : ` (it skipped the test: ${theirs.skipped})`;
+				differences.push(
+					`"${name}" checks ${extra.join(", ")}, which ${reference} never checks${why}`,
+				);
+			}
+		}
+		if (!differences.length) {
+			continue;
+		}
+		problems.push(
+			`${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability, has no output for the case, or cannot compile it yet.`,
+		);
+	}
+	return problems;
 }
 
 /**
@@ -444,53 +444,53 @@ function scenarioProblems(
  * shards 1 to n of one selection, with no other filter, ran every test of its projects.
  */
 export function coverageOf(merged: MergedMatrix, projects: ReadonlyArray<string>): Coverage {
-  const ran = new Set(merged.projects);
-  const unfiltered = new Set(
-    merged.runs.filter((run) => narrowing(run) === null).flatMap((run) => run.projects),
-  );
-  const sets = shardSets(merged.runs);
-  const partialProjects = new Map<string, Array<string>>();
-  const emptyProjects: Array<string> = [];
-  for (const project of projects) {
-    if (!ran.has(project) || unfiltered.has(project)) {
-      continue;
-    }
-    const ofProject = sets.filter((set) => set.projects.includes(project));
-    const complete = ofProject.filter((set) => !set.missing.length);
-    if (complete.length) {
-      if (complete.every((set) => set.runs.every((run) => run.empty.includes(project)))) {
-        emptyProjects.push(project);
-      }
-      continue;
-    }
-    const reasons = [
-      // The runs a filter narrowed, sharded or not, each with why.
-      ...merged.runs.flatMap((run) => {
-        const why = narrowing(run);
-        return run.filtered !== null && why !== null && run.projects.includes(project) ? [why] : [];
-      }),
-      ...ofProject.map(
-        (set) => `${shardList(set.ran, set.count)} without ${shardList(set.missing, set.count)}`,
-      ),
-    ];
-    partialProjects.set(project, [...new Set(reasons)]);
-  }
-  return {
-    missingProjects: projects.filter((project) => !ran.has(project)),
-    partialProjects,
-    emptyProjects,
-  };
+	const ran = new Set(merged.projects);
+	const unfiltered = new Set(
+		merged.runs.filter((run) => narrowing(run) === null).flatMap((run) => run.projects),
+	);
+	const sets = shardSets(merged.runs);
+	const partialProjects = new Map<string, Array<string>>();
+	const emptyProjects: Array<string> = [];
+	for (const project of projects) {
+		if (!ran.has(project) || unfiltered.has(project)) {
+			continue;
+		}
+		const ofProject = sets.filter((set) => set.projects.includes(project));
+		const complete = ofProject.filter((set) => !set.missing.length);
+		if (complete.length) {
+			if (complete.every((set) => set.runs.every((run) => run.empty.includes(project)))) {
+				emptyProjects.push(project);
+			}
+			continue;
+		}
+		const reasons = [
+			// The runs a filter narrowed, sharded or not, each with why.
+			...merged.runs.flatMap((run) => {
+				const why = narrowing(run);
+				return run.filtered !== null && why !== null && run.projects.includes(project) ? [why] : [];
+			}),
+			...ofProject.map(
+				(set) => `${shardList(set.ran, set.count)} without ${shardList(set.missing, set.count)}`,
+			),
+		];
+		partialProjects.set(project, [...new Set(reasons)]);
+	}
+	return {
+		missingProjects: projects.filter((project) => !ran.has(project)),
+		partialProjects,
+		emptyProjects,
+	};
 }
 
 /** The shards of one selection of projects into one number of parts. */
 interface ShardSet {
-  projects: ReadonlyArray<string>;
-  count: number;
-  runs: ReadonlyArray<RunInfo>;
-  /** The indices of the shards that ran, ascending. */
-  ran: ReadonlyArray<number>;
-  /** The indices of the shards that did not. */
-  missing: ReadonlyArray<number>;
+	projects: ReadonlyArray<string>;
+	count: number;
+	runs: ReadonlyArray<RunInfo>;
+	/** The indices of the shards that ran, ascending. */
+	ran: ReadonlyArray<number>;
+	/** The indices of the shards that did not. */
+	missing: ReadonlyArray<number>;
 }
 
 /**
@@ -499,212 +499,212 @@ interface ShardSet {
  * parts of one selection and one count make up a whole; any other shard says nothing about them.
  */
 function shardSets(runs: ReadonlyArray<RunInfo>): Array<ShardSet> {
-  const groups = new Map<
-    string,
-    { projects: Array<string>; count: number; runs: Array<RunInfo>; indices: Set<number> }
-  >();
-  for (const run of runs) {
-    if (run.shard === null || run.filtered !== null) {
-      continue;
-    }
-    const key = JSON.stringify([run.shard.count, run.projects.toSorted()]);
-    const group = groups.get(key) ?? {
-      projects: run.projects,
-      count: run.shard.count,
-      runs: [],
-      indices: new Set<number>(),
-    };
-    group.runs.push(run);
-    group.indices.add(run.shard.index);
-    groups.set(key, group);
-  }
-  return [...groups.values()].map(({ indices, ...group }) => {
-    const all = Array.from({ length: group.count }, (_, index) => index + 1);
-    return {
-      ...group,
-      ran: all.filter((index) => indices.has(index)),
-      missing: all.filter((index) => !indices.has(index)),
-    };
-  });
+	const groups = new Map<
+		string,
+		{ projects: Array<string>; count: number; runs: Array<RunInfo>; indices: Set<number> }
+	>();
+	for (const run of runs) {
+		if (run.shard === null || run.filtered !== null) {
+			continue;
+		}
+		const key = JSON.stringify([run.shard.count, run.projects.toSorted()]);
+		const group = groups.get(key) ?? {
+			projects: run.projects,
+			count: run.shard.count,
+			runs: [],
+			indices: new Set<number>(),
+		};
+		group.runs.push(run);
+		group.indices.add(run.shard.index);
+		groups.set(key, group);
+	}
+	return [...groups.values()].map(({ indices, ...group }) => {
+		const all = Array.from({ length: group.count }, (_, index) => index + 1);
+		return {
+			...group,
+			ran: all.filter((index) => indices.has(index)),
+			missing: all.filter((index) => !indices.has(index)),
+		};
+	});
 }
 
 /** Shards by index, such as `shard 1/3, shard 3/3`. */
 function shardList(indices: ReadonlyArray<number>, count: number): string {
-  return indices.map((index) => `shard ${index}/${count}`).join(", ");
+	return indices.map((index) => `shard ${index}/${count}`).join(", ");
 }
 
 /** The matrix for people: where it came from, one table per case, then the problems. */
 export function renderMarkdown(
-  matrix: MergedMatrix,
-  expected: SummaryExpectations,
-  status: Coverage & {
-    problems: ReadonlyArray<string>;
-    requireComplete: boolean;
-    /** How many quarantine entries the newest run applied, which judged every record. */
-    quarantined: number;
-    /** The engine the browser projects ran in, when it is not Chromium. */
-    browser?: BrowserEngine | undefined;
-  },
+	matrix: MergedMatrix,
+	expected: SummaryExpectations,
+	status: Coverage & {
+		problems: ReadonlyArray<string>;
+		requireComplete: boolean;
+		/** How many quarantine entries the newest run applied, which judged every record. */
+		quarantined: number;
+		/** The engine the browser projects ran in, when it is not Chromium. */
+		browser?: BrowserEngine | undefined;
+	},
 ): string {
-  const browser = status.browser ?? "chromium";
-  const layers = LAYERS.filter((layer) => expected.liveLayers.includes(layer));
-  const { missingProjects, partialProjects, problems } = status;
-  // The projects a filter narrowed, grouped by the filter: usually one run narrowed them all.
-  const narrowed = new Map<string, Array<string>>();
-  for (const [project, filters] of partialProjects) {
-    const filter = filters.join("; ");
-    narrowed.set(filter, [...(narrowed.get(filter) ?? []), project]);
-  }
-  const gaps = [
-    ...(missingProjects.length
-      ? [`${missingProjects.length} project(s) did not run (${missingProjects.join(", ")})`]
-      : []),
-    ...[...narrowed].map(([filter, projects]) =>
-      projects.length === expected.projects.length
-        ? `every project ran only in part (${filter})`
-        : `${projects.length} project(s) ran only in part (${filter}: ${projects.join(", ")})`,
-    ),
-  ];
-  const notLive = LAYERS.filter((layer) => !layers.includes(layer));
-  const lines = [
-    browser === "chromium"
-      ? "## Unframework parity matrix"
-      : `## Unframework parity matrix in ${browser}`,
-    "",
-    ...(browser === "chromium"
-      ? []
-      : [
-          `The browser projects ran in ${browser}: L10 compared each target with the reference's capture in this run, and the font audit was skipped (${FONT_AUDIT_SKIP}).`,
-          "",
-        ]),
-    `${Object.keys(matrix.cases).length} case(s) × ${expected.targets.length} target(s) × ${layers.length} live layer(s), from ${matrix.projects.length} project(s).`,
-    gaps.length
-      ? status.requireComplete
-        ? `Incomplete: ${gaps.join(", and ")}, and every project must run all its tests.`
-        : `Partial run: ${gaps.join(", and ")}, so missing cells and stale quarantine entries are not checked.`
-      : matrix.runs.length > 1
-        ? `Every project has records, from ${matrix.runs.length} runs: every cell is checked, each layer against the newest run that recorded it.`
-        : "Every project ran: every cell is checked.",
-    // Once every layer is live (M8, ADR-0095), no line names none.
-    ...(notLive.length
-      ? [
-          `Layers that are not live (${notLive.join(", ")}) are recorded as skip(${expected.notLiveReason}).`,
-        ]
-      : []),
-    ...Object.entries(expected.recordedOnlyBy ?? {})
-      .filter(([, project]) => !status.requireComplete && !ranInFull(matrix, project))
-      .map(
-        ([layer, project]) =>
-          `Only \`${project}\` records ${layer}, and it did not run in full, so those cells are skip(${NOT_IN_THIS_RUN_SKIP}).`,
-      ),
-    "",
-    `Merged from ${matrix.runs.length} run(s), oldest first; a newer run's records replace the older ones it re-judged:`,
-    "",
-    ...matrix.runs.map((run) => `- ${describeRun(run)}`),
-    "",
-  ];
-  if (matrix.runs.some((run) => run.mode?.update)) {
-    lines.push(
-      "An update run wrote the shared artefacts: the reference target's cells from it pass because it wrote them, not because it compared them.",
-      "",
-    );
-  }
-  if (status.quarantined) {
-    const one = status.quarantined === 1;
-    const entries = one ? "The quarantine entry" : `The ${status.quarantined} quarantine entries`;
-    const unchecked = `, but ${one ? "is" : "are"} not checked for staleness: not every project ran all its tests`;
-    lines.push(
-      `${entries} of the newest run ${one ? "judges" : "judge"} every record${gaps.length ? unchecked : ""}.`,
-      "",
-    );
-  }
-  for (const [caseId, targets] of Object.entries(matrix.cases)) {
-    lines.push(
-      `### ${caseId}`,
-      "",
-      `| Target | ${layers.join(" | ")} |`,
-      `| --- | ${layers.map(() => "---").join(" | ")} |`,
-    );
-    // Why cells are skipped or quarantined, once per reason, under the table.
-    const notes = new Map<string, { layers: Set<string>; targets: Set<string> }>();
-    for (const target of expected.targets) {
-      const cells = targets[target] ?? {};
-      lines.push(`| ${target} | ${layers.map((layer) => short(cells[layer])).join(" | ")} |`);
-      for (const layer of layers) {
-        const cell = cells[layer];
-        const outcome = cell === undefined ? undefined : outcomeOfCell(cell);
-        if (outcome?.status !== "skip" && outcome?.status !== "quarantined") {
-          continue;
-        }
-        const note =
-          outcome.status === "skip"
-            ? `skipped: ${outcome.reason}`
-            : `quarantined: ${outcome.issue}`;
-        const entry = notes.get(note) ?? { layers: new Set<string>(), targets: new Set<string>() };
-        entry.layers.add(layer);
-        entry.targets.add(target);
-        notes.set(note, entry);
-      }
-    }
-    lines.push("");
-    for (const [note, where] of notes) {
-      const on =
-        where.targets.size === expected.targets.length
-          ? "every target"
-          : [...where.targets].join(", ");
-      lines.push(`- ${escapeCell(note)}: ${[...where.layers].join(", ")} on ${on}.`);
-    }
-    // The tests skipped by capability or for want of output, or run against a stand-in for a
-    // component the target cannot compile yet (ADR-0068), which a cell that another test of the
-    // case passes hides.
-    const skipped = expected.targets.flatMap((target) =>
-      Object.entries(matrix.tests[caseId]?.[target] ?? {}).flatMap(([name, test]) =>
-        test.skipped !== undefined
-          ? [
-              `- skipped on ${target} ${NO_OUTPUT_TEST_SKIP.test(test.skipped) ? "for want of output" : "by capability"}: "${escapeCell(name)}" (${escapeCell(test.skipped)}).`,
-            ]
-          : test.standIn !== undefined
-            ? [
-                `- run against a stand-in on ${target}: "${escapeCell(name)}" (${escapeCell(test.standIn)}).`,
-              ]
-            : [],
-      ),
-    );
-    lines.push(...skipped);
-    if (notes.size || skipped.length) {
-      lines.push("");
-    }
-  }
-  lines.push(problems.length ? `### Problems (${problems.length})` : "### No problems", "");
-  for (const problem of problems) {
-    lines.push(`- ${escapeCell(problem)}`);
-  }
-  return `${lines.join("\n").trimEnd()}\n`;
+	const browser = status.browser ?? "chromium";
+	const layers = LAYERS.filter((layer) => expected.liveLayers.includes(layer));
+	const { missingProjects, partialProjects, problems } = status;
+	// The projects a filter narrowed, grouped by the filter: usually one run narrowed them all.
+	const narrowed = new Map<string, Array<string>>();
+	for (const [project, filters] of partialProjects) {
+		const filter = filters.join("; ");
+		narrowed.set(filter, [...(narrowed.get(filter) ?? []), project]);
+	}
+	const gaps = [
+		...(missingProjects.length
+			? [`${missingProjects.length} project(s) did not run (${missingProjects.join(", ")})`]
+			: []),
+		...[...narrowed].map(([filter, projects]) =>
+			projects.length === expected.projects.length
+				? `every project ran only in part (${filter})`
+				: `${projects.length} project(s) ran only in part (${filter}: ${projects.join(", ")})`,
+		),
+	];
+	const notLive = LAYERS.filter((layer) => !layers.includes(layer));
+	const lines = [
+		browser === "chromium"
+			? "## Unframework parity matrix"
+			: `## Unframework parity matrix in ${browser}`,
+		"",
+		...(browser === "chromium"
+			? []
+			: [
+					`The browser projects ran in ${browser}: L10 compared each target with the reference's capture in this run, and the font audit was skipped (${FONT_AUDIT_SKIP}).`,
+					"",
+				]),
+		`${Object.keys(matrix.cases).length} case(s) × ${expected.targets.length} target(s) × ${layers.length} live layer(s), from ${matrix.projects.length} project(s).`,
+		gaps.length
+			? status.requireComplete
+				? `Incomplete: ${gaps.join(", and ")}, and every project must run all its tests.`
+				: `Partial run: ${gaps.join(", and ")}, so missing cells and stale quarantine entries are not checked.`
+			: matrix.runs.length > 1
+				? `Every project has records, from ${matrix.runs.length} runs: every cell is checked, each layer against the newest run that recorded it.`
+				: "Every project ran: every cell is checked.",
+		// Once every layer is live (M8, ADR-0095), no line names none.
+		...(notLive.length
+			? [
+					`Layers that are not live (${notLive.join(", ")}) are recorded as skip(${expected.notLiveReason}).`,
+				]
+			: []),
+		...Object.entries(expected.recordedOnlyBy ?? {})
+			.filter(([, project]) => !status.requireComplete && !ranInFull(matrix, project))
+			.map(
+				([layer, project]) =>
+					`Only \`${project}\` records ${layer}, and it did not run in full, so those cells are skip(${NOT_IN_THIS_RUN_SKIP}).`,
+			),
+		"",
+		`Merged from ${matrix.runs.length} run(s), oldest first; a newer run's records replace the older ones it re-judged:`,
+		"",
+		...matrix.runs.map((run) => `- ${describeRun(run)}`),
+		"",
+	];
+	if (matrix.runs.some((run) => run.mode?.update)) {
+		lines.push(
+			"An update run wrote the shared artefacts: the reference target's cells from it pass because it wrote them, not because it compared them.",
+			"",
+		);
+	}
+	if (status.quarantined) {
+		const one = status.quarantined === 1;
+		const entries = one ? "The quarantine entry" : `The ${status.quarantined} quarantine entries`;
+		const unchecked = `, but ${one ? "is" : "are"} not checked for staleness: not every project ran all its tests`;
+		lines.push(
+			`${entries} of the newest run ${one ? "judges" : "judge"} every record${gaps.length ? unchecked : ""}.`,
+			"",
+		);
+	}
+	for (const [caseId, targets] of Object.entries(matrix.cases)) {
+		lines.push(
+			`### ${caseId}`,
+			"",
+			`| Target | ${layers.join(" | ")} |`,
+			`| --- | ${layers.map(() => "---").join(" | ")} |`,
+		);
+		// Why cells are skipped or quarantined, once per reason, under the table.
+		const notes = new Map<string, { layers: Set<string>; targets: Set<string> }>();
+		for (const target of expected.targets) {
+			const cells = targets[target] ?? {};
+			lines.push(`| ${target} | ${layers.map((layer) => short(cells[layer])).join(" | ")} |`);
+			for (const layer of layers) {
+				const cell = cells[layer];
+				const outcome = cell === undefined ? undefined : outcomeOfCell(cell);
+				if (outcome?.status !== "skip" && outcome?.status !== "quarantined") {
+					continue;
+				}
+				const note =
+					outcome.status === "skip"
+						? `skipped: ${outcome.reason}`
+						: `quarantined: ${outcome.issue}`;
+				const entry = notes.get(note) ?? { layers: new Set<string>(), targets: new Set<string>() };
+				entry.layers.add(layer);
+				entry.targets.add(target);
+				notes.set(note, entry);
+			}
+		}
+		lines.push("");
+		for (const [note, where] of notes) {
+			const on =
+				where.targets.size === expected.targets.length
+					? "every target"
+					: [...where.targets].join(", ");
+			lines.push(`- ${escapeCell(note)}: ${[...where.layers].join(", ")} on ${on}.`);
+		}
+		// The tests skipped by capability or for want of output, or run against a stand-in for a
+		// component the target cannot compile yet (ADR-0068), which a cell that another test of the
+		// case passes hides.
+		const skipped = expected.targets.flatMap((target) =>
+			Object.entries(matrix.tests[caseId]?.[target] ?? {}).flatMap(([name, test]) =>
+				test.skipped !== undefined
+					? [
+							`- skipped on ${target} ${NO_OUTPUT_TEST_SKIP.test(test.skipped) ? "for want of output" : "by capability"}: "${escapeCell(name)}" (${escapeCell(test.skipped)}).`,
+						]
+					: test.standIn !== undefined
+						? [
+								`- run against a stand-in on ${target}: "${escapeCell(name)}" (${escapeCell(test.standIn)}).`,
+							]
+						: [],
+			),
+		);
+		lines.push(...skipped);
+		if (notes.size || skipped.length) {
+			lines.push("");
+		}
+	}
+	lines.push(problems.length ? `### Problems (${problems.length})` : "### No problems", "");
+	for (const problem of problems) {
+		lines.push(`- ${escapeCell(problem)}`);
+	}
+	return `${lines.join("\n").trimEnd()}\n`;
 }
 
 /** A run, for the provenance list: its name, mode, filter and when it ended. */
 function describeRun(run: RunInfo): string {
-  const how = run.mode
-    ? [
-        run.mode.update ? "update" : "check",
-        `${run.mode.pixels} pixels`,
-        ...(run.mode.canary ? [`canary ${run.mode.canary}`] : []),
-      ].join(", ")
-    : "outside the harness";
-  const narrowed = narrowing(run);
-  const only = narrowed === null ? "" : `; only ${narrowed}`;
-  return `\`${run.run}\` (${how}${only}), ended ${run.finishedAt}: ${run.projects.join(", ")}`;
+	const how = run.mode
+		? [
+				run.mode.update ? "update" : "check",
+				`${run.mode.pixels} pixels`,
+				...(run.mode.canary ? [`canary ${run.mode.canary}`] : []),
+			].join(", ")
+		: "outside the harness";
+	const narrowed = narrowing(run);
+	const only = narrowed === null ? "" : `; only ${narrowed}`;
+	return `\`${run.run}\` (${how}${only}), ended ${run.finishedAt}: ${run.projects.join(", ")}`;
 }
 
 /** A cell in a table: the status only; reasons are listed under the table. */
 function short(cell: string | undefined): string {
-  if (cell === undefined) {
-    return "**missing**";
-  }
-  const { status } = outcomeOfCell(cell);
-  return status === "fail" ? "**FAIL**" : status;
+	if (cell === undefined) {
+		return "**missing**";
+	}
+	const { status } = outcomeOfCell(cell);
+	return status === "fail" ? "**FAIL**" : status;
 }
 
 function escapeCell(text: string): string {
-  return text.replaceAll("|", String.raw`\|`);
+	return text.replaceAll("|", String.raw`\|`);
 }

@@ -1,4 +1,4 @@
 {
-  "description": "A component whose root is a <component is> over tags takes a consumer's attributes, listeners and ref, through a component root too, on whichever tag renders.",
-  "main": "Page.uf.tsx"
+	"description": "A component whose root is a <component is> over tags takes a consumer's attributes, listeners and ref, through a component root too, on whichever tag renders.",
+	"main": "Page.uf.tsx"
 }

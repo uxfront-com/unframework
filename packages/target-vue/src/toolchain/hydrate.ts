@@ -17,64 +17,64 @@ const SUMMARY = /^Hydration completed but contains mismatches/;
  * adapter takes too.
  */
 export const hydrate: HydrateAdapter = async (component, container, html, { props, on }) => {
-  const current: Record<string, unknown> = shallowReactive({ ...props });
-  const listeners = listenerProps(on);
-  const mismatches: Array<string> = [];
-  const app = createSSRApp({
-    render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
-  });
-  app.config.warnHandler = (message, _instance, trace) => {
-    if (MISMATCH.test(message)) {
-      mismatches.push(message);
-    } else {
-      console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
-    }
-  };
-  container.innerHTML = html;
-  const { error } = console;
-  console.error = (...args: Array<unknown>) => {
-    if (typeof args[0] === "string" && SUMMARY.test(args[0])) {
-      mismatches.push(args[0]);
-    } else {
-      error(...args);
-    }
-  };
-  try {
-    app.mount(container);
-  } finally {
-    console.error = error;
-  }
-  await nextTick();
-  return {
-    async settle() {
-      await nextTick();
-    },
-    async rerender(next) {
-      for (const key of Object.keys(current)) {
-        if (!Object.hasOwn(next, key)) {
-          Reflect.deleteProperty(current, key);
-        }
-      }
-      Object.assign(current, next);
-      await nextTick();
-    },
-    async unmount() {
-      app.unmount();
-    },
-    takeMismatches: () => mismatches.splice(0),
-  };
+	const current: Record<string, unknown> = shallowReactive({ ...props });
+	const listeners = listenerProps(on);
+	const mismatches: Array<string> = [];
+	const app = createSSRApp({
+		render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
+	});
+	app.config.warnHandler = (message, _instance, trace) => {
+		if (MISMATCH.test(message)) {
+			mismatches.push(message);
+		} else {
+			console.warn(`[Vue warn]: ${message}${trace ? `\n${trace}` : ""}`);
+		}
+	};
+	container.innerHTML = html;
+	const { error } = console;
+	console.error = (...args: Array<unknown>) => {
+		if (typeof args[0] === "string" && SUMMARY.test(args[0])) {
+			mismatches.push(args[0]);
+		} else {
+			error(...args);
+		}
+	};
+	try {
+		app.mount(container);
+	} finally {
+		console.error = error;
+	}
+	await nextTick();
+	return {
+		async settle() {
+			await nextTick();
+		},
+		async rerender(next) {
+			for (const key of Object.keys(current)) {
+				if (!Object.hasOwn(next, key)) {
+					Reflect.deleteProperty(current, key);
+				}
+			}
+			Object.assign(current, next);
+			await nextTick();
+		},
+		async unmount() {
+			app.unmount();
+		},
+		takeMismatches: () => mismatches.splice(0),
+	};
 };
 
 /** Vue's listener props for the test's listeners: `onChange` for `change` (`toHandlerKey`). */
 function listenerProps(
-  on: Readonly<Record<string, MountListener>> = {},
+	on: Readonly<Record<string, MountListener>> = {},
 ): Record<string, MountListener> {
-  return Object.fromEntries(
-    Object.entries(on).map(([name, listener]) => [
-      `on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
-      listener,
-    ]),
-  );
+	return Object.fromEntries(
+		Object.entries(on).map(([name, listener]) => [
+			`on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
+			listener,
+		]),
+	);
 }
 
 /**
@@ -83,9 +83,9 @@ function listenerProps(
  * other case mounts through `<Suspense>`'s hidden container.
  */
 function rootOf(component: Component, props: () => Record<string, unknown>) {
-  const { setup } = component as { setup?: unknown };
-  if (Object.prototype.toString.call(setup) !== "[object AsyncFunction]") {
-    return h(component, props());
-  }
-  return h(Suspense, null, { default: () => h(component, props()) });
+	const { setup } = component as { setup?: unknown };
+	if (Object.prototype.toString.call(setup) !== "[object AsyncFunction]") {
+		return h(component, props());
+	}
+	return h(Suspense, null, { default: () => h(component, props()) });
 }

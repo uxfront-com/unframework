@@ -7,5 +7,5 @@ const tone: Tone = "loud";
 </script>
 
 <template>
-  <Palette :tone="tone" />
+	<Palette :tone="tone" />
 </template>

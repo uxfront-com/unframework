@@ -12,50 +12,50 @@ import { emitSource, removeScratch, renderSfc } from "./helpers.ts";
 afterAll(removeScratch);
 
 describe.each([{ inline: true }, { inline: false }])(
-  "vue setup on the server (inline: $inline)",
-  (mode) => {
-    /** Renders a component with listeners for its events, and what they heard. */
-    async function render(contents: string, names: ReadonlyArray<string>, props = {}) {
-      const heard: Array<Array<unknown>> = [];
-      const listeners = Object.fromEntries(
-        names.map((name) => [
-          `on${name[0]!.toUpperCase()}${name.slice(1)}`,
-          (...args: Array<unknown>) => void heard.push([name, ...args]),
-        ]),
-      );
-      const html = await renderSfc(contents, { ...props, ...listeners }, mode);
-      return { html, heard };
-    }
+	"vue setup on the server (inline: $inline)",
+	(mode) => {
+		/** Renders a component with listeners for its events, and what they heard. */
+		async function render(contents: string, names: ReadonlyArray<string>, props = {}) {
+			const heard: Array<Array<unknown>> = [];
+			const listeners = Object.fromEntries(
+				names.map((name) => [
+					`on${name[0]!.toUpperCase()}${name.slice(1)}`,
+					(...args: Array<unknown>) => void heard.push([name, ...args]),
+				]),
+			);
+			const html = await renderSfc(contents, { ...props, ...listeners }, mode);
+			return { html, heard };
+		}
 
-    it("runs an immediate watcher's first callback, and no other watcher or effect", async () => {
-      const { html, heard } = await render(await emitBehaviour("Watchers"), [
-        "counted",
-        "cleanup",
-        "pair",
-        "parity",
-        "items",
-        "effect",
-      ]);
-      expect(heard).toEqual([["parity", true]]);
-      expect(html).toContain("<ul><!--[--><!--]--></ul>");
-    });
+		it("runs an immediate watcher's first callback, and no other watcher or effect", async () => {
+			const { html, heard } = await render(await emitBehaviour("Watchers"), [
+				"counted",
+				"cleanup",
+				"pair",
+				"parity",
+				"items",
+				"effect",
+			]);
+			expect(heard).toEqual([["parity", true]]);
+			expect(html).toContain("<ul><!--[--><!--]--></ul>");
+		});
 
-    it("runs no lifecycle hook, so no timer starts", async () => {
-      const { html, heard } = await render(
-        await emitBehaviour("Lifecycle"),
-        ["mounted", "ticked", "unmounted"],
-        { interval: 1 },
-      );
-      expect(html).toBe("<div>Ticking</div>");
-      // A timer started on the server would tick here.
-      await new Promise((resolve) => {
-        setTimeout(resolve, 20);
-      });
-      expect(heard).toEqual([]);
-    });
+		it("runs no lifecycle hook, so no timer starts", async () => {
+			const { html, heard } = await render(
+				await emitBehaviour("Lifecycle"),
+				["mounted", "ticked", "unmounted"],
+				{ interval: 1 },
+			);
+			expect(html).toBe("<div>Ticking</div>");
+			// A timer started on the server would tick here.
+			await new Promise((resolve) => {
+				setTimeout(resolve, 20);
+			});
+			expect(heard).toEqual([]);
+		});
 
-    it("renders the state that setup gives, whatever the effects and hooks would write", async () => {
-      const source = `
+		it("renders the state that setup gives, whatever the effects and hooks would write", async () => {
+			const source = `
 import { onMounted, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function Status() {
@@ -81,8 +81,8 @@ export default function Status() {
     </p>
   );
 }`;
-      const { html } = await render(await emitSource(source), []);
-      expect(html).toBe('<p role="status" data-runs="0">Checking</p>');
-    });
-  },
+			const { html } = await render(await emitSource(source), []);
+			expect(html).toBe('<p role="status" data-runs="0">Checking</p>');
+		});
+	},
 );

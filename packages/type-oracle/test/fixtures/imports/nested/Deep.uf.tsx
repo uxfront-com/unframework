@@ -3,5 +3,5 @@
 import type { Labelled } from "../types.ts";
 
 export function Deep(props: Labelled) {
-  return props;
+	return props;
 }

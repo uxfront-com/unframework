@@ -47,10 +47,10 @@ export default class Counter {
 
 /** The events as the IR declares them, which the adapter reads the payloads' shapes from. */
 const EVENTS: Array<MountEvent> = [
-  { name: "change", optional: [false] },
-  { name: "closed", optional: [] },
-  { name: "moved", optional: [false, false] },
-  { name: "ping", optional: [true] },
+	{ name: "change", optional: [false] },
+	{ name: "closed", optional: [] },
+	{ name: "moved", optional: [false, false] },
+	{ name: "ping", optional: [true] },
 ];
 
 let Counter: unknown;
@@ -58,31 +58,31 @@ const globals = ["document", "window"] as const;
 const saved = new Map<string, PropertyDescriptor | undefined>();
 
 beforeAll(async () => {
-  DominoAdapter.makeCurrent();
-  const document = new DominoAdapter().createHtmlDocument();
-  for (const name of globals) {
-    saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
-  }
-  Object.assign(globalThis, { document, window: document.defaultView });
+	DominoAdapter.makeCurrent();
+	const document = new DominoAdapter().createHtmlDocument();
+	for (const name of globals) {
+		saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+	}
+	Object.assign(globalThis, { document, window: document.defaultView });
 
-  const directory = scratchDir();
-  const { transform } = await ngtscPlugin();
-  const { code } = await transform(join(directory, "Counter.uf.tsx.ts"), COUNTER);
-  const file = join(directory, "counter.js");
-  writeFileSync(file, code);
-  Counter = ((await import(pathToFileURL(file).href)) as { default: unknown }).default;
+	const directory = scratchDir();
+	const { transform } = await ngtscPlugin();
+	const { code } = await transform(join(directory, "Counter.uf.tsx.ts"), COUNTER);
+	const file = join(directory, "counter.js");
+	writeFileSync(file, code);
+	Counter = ((await import(pathToFileURL(file).href)) as { default: unknown }).default;
 });
 
 afterAll(() => {
-  for (const name of globals) {
-    const descriptor = saved.get(name);
-    if (descriptor) {
-      Object.defineProperty(globalThis, name, descriptor);
-    } else {
-      Reflect.deleteProperty(globalThis, name);
-    }
-  }
-  removeScratch();
+	for (const name of globals) {
+		const descriptor = saved.get(name);
+		if (descriptor) {
+			Object.defineProperty(globalThis, name, descriptor);
+		} else {
+			Reflect.deleteProperty(globalThis, name);
+		}
+	}
+	removeScratch();
 });
 
 const logged: Array<Array<unknown>> = [];
@@ -90,61 +90,61 @@ let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
 beforeEach(() => {
-  logged.length = 0;
-  vi.spyOn(console, "warn").mockImplementation((...args) => void logged.push(args));
-  vi.spyOn(console, "error").mockImplementation((...args) => void logged.push(args));
-  container = document.createElement("div");
-  document.body.appendChild(container);
+	logged.length = 0;
+	vi.spyOn(console, "warn").mockImplementation((...args) => void logged.push(args));
+	vi.spyOn(console, "error").mockImplementation((...args) => void logged.push(args));
+	container = document.createElement("div");
+	document.body.appendChild(container);
 });
 
 afterEach(async () => {
-  await mounted?.unmount();
-  mounted = undefined;
-  container.remove();
-  vi.restoreAllMocks();
+	await mounted?.unmount();
+	mounted = undefined;
+	container.remove();
+	vi.restoreAllMocks();
 });
 
 /** Clicks the button as the page would. */
 function click(): void {
-  const event = document.createEvent("Event");
-  event.initEvent("click", true, true);
-  container.querySelector("button")!.dispatchEvent(event);
+	const event = document.createEvent("Event");
+	event.initEvent("click", true, true);
+	container.querySelector("button")!.dispatchEvent(event);
 }
 
 it("binds each listener to its event's output and gives the payload back by its shape", async () => {
-  const calls: Array<Array<unknown>> = [];
-  const on = Object.fromEntries(
-    EVENTS.map(({ name }) => [name, (...args: Array<unknown>) => void calls.push([name, ...args])]),
-  );
-  mounted = await mount(Counter, container, { on, events: EVENTS });
-  click();
-  await mounted.settle();
-  // A rerender sets an input: the bindings stay.
-  await mounted.rerender({ step: 5 });
-  click();
-  await mounted.settle();
-  expect(container.querySelector("p")?.textContent).toBe("6");
-  expect(calls).toEqual([
-    ["change", 1],
-    ["closed"],
-    ["moved", 1, -1],
-    ["ping"],
-    ["change", 6],
-    ["closed"],
-    ["moved", 6, -1],
-    ["ping"],
-  ]);
-  expect(logged).toEqual([]);
+	const calls: Array<Array<unknown>> = [];
+	const on = Object.fromEntries(
+		EVENTS.map(({ name }) => [name, (...args: Array<unknown>) => void calls.push([name, ...args])]),
+	);
+	mounted = await mount(Counter, container, { on, events: EVENTS });
+	click();
+	await mounted.settle();
+	// A rerender sets an input: the bindings stay.
+	await mounted.rerender({ step: 5 });
+	click();
+	await mounted.settle();
+	expect(container.querySelector("p")?.textContent).toBe("6");
+	expect(calls).toEqual([
+		["change", 1],
+		["closed"],
+		["moved", 1, -1],
+		["ping"],
+		["change", 6],
+		["closed"],
+		["moved", 6, -1],
+		["ping"],
+	]);
+	expect(logged).toEqual([]);
 });
 
 it("refuses a listener whose event's shape it was not told, and Angular one it has no output for", async () => {
-  await expect(mount(Counter, container, { on: { change: () => undefined } })).rejects.toThrow(
-    /the test listens to "change", which the component declares no payload for/,
-  );
-  await expect(
-    mount(Counter, container, {
-      on: { opened: () => undefined },
-      events: [{ name: "opened", optional: [] }],
-    }),
-  ).rejects.toThrow(/NG0316/);
+	await expect(mount(Counter, container, { on: { change: () => undefined } })).rejects.toThrow(
+		/the test listens to "change", which the component declares no payload for/,
+	);
+	await expect(
+		mount(Counter, container, {
+			on: { opened: () => undefined },
+			events: [{ name: "opened", optional: [] }],
+		}),
+	).rejects.toThrow(/NG0316/);
 });

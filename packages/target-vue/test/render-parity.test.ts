@@ -20,9 +20,9 @@ afterAll(removeScratch);
 
 /** How the component is emitted and compiled. */
 interface Setup {
-  format: boolean;
-  /** Whether the template is inlined into `setup`, as plugin-vue does in a production build. */
-  inline: boolean;
+	format: boolean;
+	/** Whether the template is inlined into `setup`, as plugin-vue does in a production build. */
+	inline: boolean;
 }
 
 let compiled = 0;
@@ -32,82 +32,82 @@ let compiled = 0;
  * the compiler and Vue logged meanwhile.
  */
 async function render(
-  suite: ParitySuite,
-  { format, inline }: Setup,
+	suite: ParitySuite,
+	{ format, inline }: Setup,
 ): Promise<{ html: string; logged: Array<string> }> {
-  const [file] = await emitParity(target, suite, { format });
-  const id = `render-parity-${compiled++}`;
-  const { descriptor, errors } = parse(file!.contents, { filename: file!.path });
-  expect(errors).toEqual([]);
-  const logged: Array<string> = [];
-  const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
-  const onWarn = (warning: { message: string }) => void logged.push(warning.message);
-  const spies = [
-    vi.spyOn(console, "error").mockImplementation(capture),
-    vi.spyOn(console, "warn").mockImplementation(capture),
-  ];
-  try {
-    const script = descriptor.scriptSetup
-      ? compileScript(descriptor, {
-          id,
-          inlineTemplate: inline,
-          templateOptions: {
-            ssr: true,
-            ssrCssVars: [],
-            transformAssetUrls: false,
-            compilerOptions: { onWarn },
-          },
-        })
-      : undefined;
-    let code: string;
-    if (script && inline) {
-      code = script.content;
-    } else {
-      const template = compileTemplate({
-        source: descriptor.template!.content,
-        // plugin-vue reuses the descriptor's AST, so whitespace is condensed exactly once, there.
-        ast: descriptor.template!.ast,
-        filename: file!.path,
-        id,
-        ssr: true,
-        ssrCssVars: [],
-        transformAssetUrls: false,
-        compilerOptions: {
-          onWarn,
-          ...(script
-            ? { bindingMetadata: script.bindings, expressionPlugins: ["typescript"] }
-            : {}),
-        },
-      });
-      expect(template.errors).toEqual([]);
-      const component = script
-        ? script.content.replace("export default ", "const component = ")
-        : "const component = {};";
-      code = `${component}\n${template.code}\ncomponent.ssrRender = ssrRender;\nexport default component;\n`;
-    }
-    // A `.ts` scratch file: Vite strips the script block's types, as plugin-vue has it do.
-    const { default: component } = await importScratch<{ default: unknown }>(`${id}.ts`, code);
-    return { html: await renderToString(component, { props: parityProps(suite) }), logged };
-  } finally {
-    for (const spy of spies) {
-      spy.mockRestore();
-    }
-  }
+	const [file] = await emitParity(target, suite, { format });
+	const id = `render-parity-${compiled++}`;
+	const { descriptor, errors } = parse(file!.contents, { filename: file!.path });
+	expect(errors).toEqual([]);
+	const logged: Array<string> = [];
+	const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
+	const onWarn = (warning: { message: string }) => void logged.push(warning.message);
+	const spies = [
+		vi.spyOn(console, "error").mockImplementation(capture),
+		vi.spyOn(console, "warn").mockImplementation(capture),
+	];
+	try {
+		const script = descriptor.scriptSetup
+			? compileScript(descriptor, {
+					id,
+					inlineTemplate: inline,
+					templateOptions: {
+						ssr: true,
+						ssrCssVars: [],
+						transformAssetUrls: false,
+						compilerOptions: { onWarn },
+					},
+				})
+			: undefined;
+		let code: string;
+		if (script && inline) {
+			code = script.content;
+		} else {
+			const template = compileTemplate({
+				source: descriptor.template!.content,
+				// plugin-vue reuses the descriptor's AST, so whitespace is condensed exactly once, there.
+				ast: descriptor.template!.ast,
+				filename: file!.path,
+				id,
+				ssr: true,
+				ssrCssVars: [],
+				transformAssetUrls: false,
+				compilerOptions: {
+					onWarn,
+					...(script
+						? { bindingMetadata: script.bindings, expressionPlugins: ["typescript"] }
+						: {}),
+				},
+			});
+			expect(template.errors).toEqual([]);
+			const component = script
+				? script.content.replace("export default ", "const component = ")
+				: "const component = {};";
+			code = `${component}\n${template.code}\ncomponent.ssrRender = ssrRender;\nexport default component;\n`;
+		}
+		// A `.ts` scratch file: Vite strips the script block's types, as plugin-vue has it do.
+		const { default: component } = await importScratch<{ default: unknown }>(`${id}.ts`, code);
+		return { html: await renderToString(component, { props: parityProps(suite) }), logged };
+	} finally {
+		for (const spy of spies) {
+			spy.mockRestore();
+		}
+	}
 }
 
 describe.each<Setup>([
-  { format: true, inline: true },
-  { format: true, inline: false },
-  { format: false, inline: false },
+	{ format: true, inline: true },
+	{ format: true, inline: false },
+	{ format: false, inline: false },
 ])("vue output (formatted: $format, template inlined: $inline), rendered by Vue", (setup) => {
-  it.each(paritySuites())(
-    "renders $title exactly as the reference describes them",
-    async (suite) => {
-      const { html, logged } = await render(suite, setup);
-      expect(logged).toEqual([]);
-      for (const { name, expected, actual } of compareCases(parseHtml(html), suite)) {
-        expect.soft(actual, name).toEqual(expected);
-      }
-    },
-  );
+	it.each(paritySuites())(
+		"renders $title exactly as the reference describes them",
+		async (suite) => {
+			const { html, logged } = await render(suite, setup);
+			expect(logged).toEqual([]);
+			for (const { name, expected, actual } of compareCases(parseHtml(html), suite)) {
+				expect.soft(actual, name).toEqual(expected);
+			}
+		},
+	);
 });

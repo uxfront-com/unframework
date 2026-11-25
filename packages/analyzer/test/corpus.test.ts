@@ -17,16 +17,16 @@ import type { TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
 import { describe, expect, it } from "vitest";
 
 import {
-  analyze,
-  componentImports,
-  frameworkOf,
-  isAuthoringModule,
-  isSharedModuleSpecifier,
-  moduleSpecifiers,
-  unfollowedImports,
-  shapeQueries,
-  sharedModuleImports,
-  stylesheetImports,
+	analyze,
+	componentImports,
+	frameworkOf,
+	isAuthoringModule,
+	isSharedModuleSpecifier,
+	moduleSpecifiers,
+	unfollowedImports,
+	shapeQueries,
+	sharedModuleImports,
+	stylesheetImports,
 } from "../src/index.ts";
 import type { SharedModule, Shapes, StylesheetSource } from "../src/index.ts";
 
@@ -38,33 +38,33 @@ const FIXTURES = new URL("./fixtures/cases/", import.meta.url).pathname;
  * modules of composables, which a diagnostics case may report in (ADR-0069).
  */
 function sources(root: string, directory = root): Array<string> {
-  const found: Array<string> = [];
-  for (const name of readdirSync(directory)) {
-    if (name.startsWith("__") || name.startsWith(".")) {
-      continue;
-    }
-    const path = join(directory, name);
-    if (statSync(path).isDirectory()) {
-      found.push(...sources(root, path));
-    } else if (name.endsWith(".uf.tsx") || name.endsWith(".uf.ts")) {
-      found.push(relative(root, path));
-    }
-  }
-  return found.toSorted();
+	const found: Array<string> = [];
+	for (const name of readdirSync(directory)) {
+		if (name.startsWith("__") || name.startsWith(".")) {
+			continue;
+		}
+		const path = join(directory, name);
+		if (statSync(path).isDirectory()) {
+			found.push(...sources(root, path));
+		} else if (name.endsWith(".uf.tsx") || name.endsWith(".uf.ts")) {
+			found.push(relative(root, path));
+		}
+	}
+	return found.toSorted();
 }
 
 /** The diagnostics cases whose name is not their code's catalogue name, with that code. */
 const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
-  "arrow-component": "UF1102",
-  "framework-import-rejected": "UF1201",
-  "non-canonical-event": "UF3004",
-  "nullable-bound-value": "UF1002",
-  // `innerHTML` on a component is a prop it does not declare (ADR-0097).
-  "raw-html-component": "UF3035",
-  // `innerHTML` on `<component is>`, which Vue writes as a component (ADR-0097).
-  "raw-html-dynamic": "UF1002",
-  // The props' rest without `inheritAttrs: false` (ADR-0118).
-  "rest-props": "UF2001",
+	"arrow-component": "UF1102",
+	"framework-import-rejected": "UF1201",
+	"non-canonical-event": "UF3004",
+	"nullable-bound-value": "UF1002",
+	// `innerHTML` on a component is a prop it does not declare (ADR-0097).
+	"raw-html-component": "UF3035",
+	// `innerHTML` on `<component is>`, which Vue writes as a component (ADR-0097).
+	"raw-html-dynamic": "UF1002",
+	// The props' rest without `inheritAttrs: false` (ADR-0118).
+	"rest-props": "UF2001",
 };
 
 /**
@@ -73,10 +73,10 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
  * graph's (ADR-0071).
  */
 const AFTER_ANALYSIS: ReadonlySet<string> = new Set([
-  "unscopable-selector",
-  "generic-slot-props",
-  "import-cycle",
-  "composable-effect-order",
+	"unscopable-selector",
+	"generic-slot-props",
+	"import-cycle",
+	"composable-effect-order",
 ]);
 
 /**
@@ -88,12 +88,12 @@ const CHECKER_ONLY: ReadonlySet<string> = new Set(["directive-value-type"]);
 
 /** The warnings the corpus's feature cases hold on purpose. */
 const WARNINGS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  "jsx/escaping/TemplateTip.uf.tsx": ["UF3011"],
-  // Raw HTML warns at every use (ADR-0097).
-  "jsx/raw-html/Article.uf.tsx": ["UF3051", "UF3051"],
-  "jsx/raw-html-list/Changelog.uf.tsx": ["UF3051"],
-  "jsx/raw-html-update/Glossary.uf.tsx": ["UF3051"],
-  "semantics/setup-once/WelcomeBanner.uf.tsx": ["UF2007"],
+	"jsx/escaping/TemplateTip.uf.tsx": ["UF3011"],
+	// Raw HTML warns at every use (ADR-0097).
+	"jsx/raw-html/Article.uf.tsx": ["UF3051", "UF3051"],
+	"jsx/raw-html-list/Changelog.uf.tsx": ["UF3051"],
+	"jsx/raw-html-update/Glossary.uf.tsx": ["UF3051"],
+	"semantics/setup-once/WelcomeBanner.uf.tsx": ["UF2007"],
 };
 
 const codesByName = new Map([...catalogue.values()].map((entry) => [entry.name, entry.code]));
@@ -104,43 +104,43 @@ const codesByName = new Map([...catalogue.values()].map((entry) => [entry.name, 
  * packages they import, so each case stays self-contained.
  */
 function caseOracle(cases: string, directory: string): TypeOracle {
-  const root = cases.replace(/\/+$/, "");
-  const dir = join(cases, directory);
-  return createSyntacticOracle({
-    root,
-    readFile: async (path) => {
-      const file = join(path);
-      if (relative(dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
-        return undefined;
-      }
-      return readFile(file, "utf8").catch(() => undefined);
-    },
-  });
+	const root = cases.replace(/\/+$/, "");
+	const dir = join(cases, directory);
+	return createSyntacticOracle({
+		root,
+		readFile: async (path) => {
+			const file = join(path);
+			if (relative(dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
+				return undefined;
+			}
+			return readFile(file, "utf8").catch(() => undefined);
+		},
+	});
 }
 
 /** The shapes of the types a module names, as `compile()` asks its oracle for them. */
 async function shapesOf(parsed: ParsedModule, oracle: TypeOracle): Promise<Shapes> {
-  const shapes = new Map<string, TypeShape>();
-  for (const query of shapeQueries(parsed)) {
-    shapes.set(`${query.span.start}:${query.span.end}`, await oracle.resolveShape(query));
-  }
-  return (span) => shapes.get(`${span.start}:${span.end}`);
+	const shapes = new Map<string, TypeShape>();
+	for (const query of shapeQueries(parsed)) {
+		shapes.set(`${query.span.start}:${query.span.end}`, await oracle.resolveShape(query));
+	}
+	return (span) => shapes.get(`${span.start}:${span.end}`);
 }
 
 /** A file of a case under `root`, or `undefined` where there is none. */
 function caseFile(root: string, file: string): string | undefined {
-  try {
-    return readFileSync(join(root, file), "utf8");
-  } catch {
-    return undefined;
-  }
+	try {
+		return readFileSync(join(root, file), "utf8");
+	} catch {
+		return undefined;
+	}
 }
 
 /** A shared module's file, as the resolver names it: with `.ts` where its specifier has none. */
 function fileOf(from: string, written: string): string | undefined {
-  return isSharedModuleSpecifier(written)
-    ? join(from, written.endsWith(".ts") ? written : `${written}.ts`)
-    : undefined;
+	return isSharedModuleSpecifier(written)
+		? join(from, written.endsWith(".ts") ? written : `${written}.ts`)
+		: undefined;
 }
 
 /**
@@ -149,38 +149,38 @@ function fileOf(from: string, written: string): string | undefined {
  * it reaches, each named relative to the importer's directory.
  */
 function sharedModule(
-  root: string,
-  directory: string,
-  specifier: string,
+	root: string,
+	directory: string,
+	specifier: string,
 ): SharedModule | undefined {
-  const first = fileOf(directory, specifier);
-  if (first === undefined || caseFile(root, first) === undefined) {
-    return undefined;
-  }
-  const local = (file: string) => relative(directory, file).split(sep).join("/");
-  const module: SharedModule = { file: local(first) };
-  const files = [first];
-  for (let index = 0; index < files.length; index++) {
-    const file = files[index]!;
-    const parsed = parseModule(file, caseFile(root, file)!);
-    const [unfollowed] = unfollowedImports(parsed);
-    if (unfollowed !== undefined) {
-      module.unresolved ??= { specifier: unfollowed, file: local(file) };
-    }
-    for (const imported of moduleSpecifiers(parsed)) {
-      if (frameworkOf(imported) || isAuthoringModule(imported)) {
-        module.framework ??= { specifier: imported, file: local(file) };
-      } else if (imported.startsWith("./") || imported.startsWith("../")) {
-        const next = fileOf(dirname(file), imported);
-        if (next === undefined || caseFile(root, next) === undefined) {
-          module.unresolved ??= { specifier: imported, file: local(file) };
-        } else if (!files.includes(next)) {
-          files.push(next);
-        }
-      }
-    }
-  }
-  return module;
+	const first = fileOf(directory, specifier);
+	if (first === undefined || caseFile(root, first) === undefined) {
+		return undefined;
+	}
+	const local = (file: string) => relative(directory, file).split(sep).join("/");
+	const module: SharedModule = { file: local(first) };
+	const files = [first];
+	for (let index = 0; index < files.length; index++) {
+		const file = files[index]!;
+		const parsed = parseModule(file, caseFile(root, file)!);
+		const [unfollowed] = unfollowedImports(parsed);
+		if (unfollowed !== undefined) {
+			module.unresolved ??= { specifier: unfollowed, file: local(file) };
+		}
+		for (const imported of moduleSpecifiers(parsed)) {
+			if (frameworkOf(imported) || isAuthoringModule(imported)) {
+				module.framework ??= { specifier: imported, file: local(file) };
+			} else if (imported.startsWith("./") || imported.startsWith("../")) {
+				const next = fileOf(dirname(file), imported);
+				if (next === undefined || caseFile(root, next) === undefined) {
+					module.unresolved ??= { specifier: imported, file: local(file) };
+				} else if (!files.includes(next)) {
+					files.push(next);
+				}
+			}
+		}
+	}
+	return module;
 }
 
 /**
@@ -192,96 +192,96 @@ function sharedModule(
  * `.uf.ts` source is analysed as a module of composables.
  */
 async function analyzeCase(file: string, root = CASES) {
-  const parsed = parseModule(file, readFileSync(join(root, file), "utf8"));
-  const directory = file.slice(0, file.lastIndexOf("/"));
-  const oracle = caseOracle(root, directory);
-  // Each child is read with its own children, as the resolver reads it, so a root component's
-  // fallthrough and ref tags reach the parent (ADR-0118). `reading` stops a cycle.
-  const reading = new Set<string>();
-  const importsOf = async (of: ParsedModule) => {
-    const imports = new Map<string, ModuleApi | undefined>();
-    for (const specifier of componentImports(of)) {
-      const child = join(directory, specifier);
-      let source: string;
-      try {
-        if (reading.has(child)) {
-          throw new Error("cycle");
-        }
-        source = readFileSync(join(root, child), "utf8");
-      } catch {
-        imports.set(specifier, undefined);
-        continue;
-      }
-      reading.add(child);
-      const childParsed = parseModule(child, source);
-      const api = analyze(childParsed, {
-        shapes: await shapesOf(childParsed, oracle),
-        imports: await importsOf(childParsed),
-      }).api;
-      reading.delete(child);
-      imports.set(specifier, api && { ...api, file: specifier.slice(2) });
-    }
-    return imports;
-  };
-  const imports = await importsOf(parsed);
-  const stylesheets = new Map<string, StylesheetSource | undefined>();
-  for (const specifier of stylesheetImports(parsed)) {
-    const sheet = join(directory, specifier);
-    try {
-      const source = readFileSync(join(root, sheet), "utf8");
-      stylesheets.set(specifier, { file: sheet, source, slotted: false });
-    } catch {
-      stylesheets.set(specifier, undefined);
-    }
-  }
-  const modules = new Map(
-    sharedModuleImports(parsed).map((specifier) => [
-      specifier,
-      sharedModule(root, directory, specifier),
-    ]),
-  );
-  const shapes = await shapesOf(parsed, oracle);
-  await oracle.dispose();
-  return analyze(parsed, { imports, modules, stylesheets, shapes });
+	const parsed = parseModule(file, readFileSync(join(root, file), "utf8"));
+	const directory = file.slice(0, file.lastIndexOf("/"));
+	const oracle = caseOracle(root, directory);
+	// Each child is read with its own children, as the resolver reads it, so a root component's
+	// fallthrough and ref tags reach the parent (ADR-0118). `reading` stops a cycle.
+	const reading = new Set<string>();
+	const importsOf = async (of: ParsedModule) => {
+		const imports = new Map<string, ModuleApi | undefined>();
+		for (const specifier of componentImports(of)) {
+			const child = join(directory, specifier);
+			let source: string;
+			try {
+				if (reading.has(child)) {
+					throw new Error("cycle");
+				}
+				source = readFileSync(join(root, child), "utf8");
+			} catch {
+				imports.set(specifier, undefined);
+				continue;
+			}
+			reading.add(child);
+			const childParsed = parseModule(child, source);
+			const api = analyze(childParsed, {
+				shapes: await shapesOf(childParsed, oracle),
+				imports: await importsOf(childParsed),
+			}).api;
+			reading.delete(child);
+			imports.set(specifier, api && { ...api, file: specifier.slice(2) });
+		}
+		return imports;
+	};
+	const imports = await importsOf(parsed);
+	const stylesheets = new Map<string, StylesheetSource | undefined>();
+	for (const specifier of stylesheetImports(parsed)) {
+		const sheet = join(directory, specifier);
+		try {
+			const source = readFileSync(join(root, sheet), "utf8");
+			stylesheets.set(specifier, { file: sheet, source, slotted: false });
+		} catch {
+			stylesheets.set(specifier, undefined);
+		}
+	}
+	const modules = new Map(
+		sharedModuleImports(parsed).map((specifier) => [
+			specifier,
+			sharedModule(root, directory, specifier),
+		]),
+	);
+	const shapes = await shapesOf(parsed, oracle);
+	await oracle.dispose();
+	return analyze(parsed, { imports, modules, stylesheets, shapes });
 }
 
 describe.each([
-  ["the corpus", CASES],
-  ["the fixture cases", FIXTURES],
+	["the corpus", CASES],
+	["the fixture cases", FIXTURES],
 ])("%s", (_, root) => {
-  const all = sources(root);
+	const all = sources(root);
 
-  // A case of several sources triggers its code in one of them, as the harness joins them
-  // (ADR-0057): a child the source imports may be valid.
-  const diagnosticsCases = [
-    ...new Set(
-      all
-        .filter((file) => file.startsWith("diagnostics/"))
-        .map((file) => file.slice(0, file.lastIndexOf("/"))),
-    ),
-  ];
-  it.each(diagnosticsCases)("%s triggers exactly its code", async (id) => {
-    const name = id.split("/")[1]!;
-    const code = NAMED_OTHERWISE[name] ?? codesByName.get(name);
-    expect(code, `no code is named ${name}`).toBeDefined();
-    const files = all.filter((file) => file.startsWith(`${id}/`));
-    const diagnostics = (await Promise.all(files.map((file) => analyzeCase(file, root)))).flatMap(
-      (result) => result.diagnostics,
-    );
-    if (AFTER_ANALYSIS.has(name) || CHECKER_ONLY.has(name)) {
-      expect(diagnostics).toEqual([]);
-      return;
-    }
-    expect(diagnostics.length).toBeGreaterThan(0);
-    expect(new Set(diagnostics.map((diagnostic) => diagnostic.code))).toEqual(new Set([code]));
-  });
+	// A case of several sources triggers its code in one of them, as the harness joins them
+	// (ADR-0057): a child the source imports may be valid.
+	const diagnosticsCases = [
+		...new Set(
+			all
+				.filter((file) => file.startsWith("diagnostics/"))
+				.map((file) => file.slice(0, file.lastIndexOf("/"))),
+		),
+	];
+	it.each(diagnosticsCases)("%s triggers exactly its code", async (id) => {
+		const name = id.split("/")[1]!;
+		const code = NAMED_OTHERWISE[name] ?? codesByName.get(name);
+		expect(code, `no code is named ${name}`).toBeDefined();
+		const files = all.filter((file) => file.startsWith(`${id}/`));
+		const diagnostics = (await Promise.all(files.map((file) => analyzeCase(file, root)))).flatMap(
+			(result) => result.diagnostics,
+		);
+		if (AFTER_ANALYSIS.has(name) || CHECKER_ONLY.has(name)) {
+			expect(diagnostics).toEqual([]);
+			return;
+		}
+		expect(diagnostics.length).toBeGreaterThan(0);
+		expect(new Set(diagnostics.map((diagnostic) => diagnostic.code))).toEqual(new Set([code]));
+	});
 
-  it.each(all.filter((file) => !file.startsWith("diagnostics/")))(
-    "%s compiles with no error, and only its own warnings",
-    async (file) => {
-      const { module, diagnostics } = await analyzeCase(file, root);
-      expect(module).toBeDefined();
-      expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(WARNINGS[file] ?? []);
-    },
-  );
+	it.each(all.filter((file) => !file.startsWith("diagnostics/")))(
+		"%s compiles with no error, and only its own warnings",
+		async (file) => {
+			const { module, diagnostics } = await analyzeCase(file, root);
+			expect(module).toBeDefined();
+			expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(WARNINGS[file] ?? []);
+		},
+	);
 });
