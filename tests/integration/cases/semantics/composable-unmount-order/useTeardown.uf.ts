@@ -3,9 +3,9 @@
 import { computed, onUnmounted } from "@uxfront/unframework";
 
 export function useTeardown(name: () => string, report: (entry: string) => void) {
-  const title = computed(() => `Panel ${name()}`);
+	const title = computed(() => `Panel ${name()}`);
 
-  onUnmounted(() => report(`${name()} closed`));
+	onUnmounted(() => report(`${name()} closed`));
 
-  return { title };
+	return { title };
 }

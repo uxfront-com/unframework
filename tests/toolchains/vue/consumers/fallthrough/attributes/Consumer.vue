@@ -7,18 +7,18 @@ const pressed = ref(false);
 const save = useTemplateRef("save");
 
 function focus() {
-  save.value?.$el.focus();
+	save.value?.$el.focus();
 }
 </script>
 
 <template>
-  <SaveButton
-    id="save"
-    ref="save"
-    title="Save"
-    aria-describedby="hint"
-    :aria-pressed="pressed"
-    @click="(event) => (pressed = !event.defaultPrevented)"
-  />
-  <button type="button" @click="focus">Focus</button>
+	<SaveButton
+		id="save"
+		ref="save"
+		title="Save"
+		aria-describedby="hint"
+		:aria-pressed="pressed"
+		@click="(event) => (pressed = !event.defaultPrevented)"
+	/>
+	<button type="button" @click="focus">Focus</button>
 </template>

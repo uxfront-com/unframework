@@ -13,12 +13,12 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import {
-  BROWSER_GLOBALS,
-  CLIENT_GLOBALS,
-  LIB_DOM_GLOBALS,
-  PURE_GLOBALS,
-  SCHEDULING_GLOBALS,
-  WINDOW_MEMBER_GLOBALS,
+	BROWSER_GLOBALS,
+	CLIENT_GLOBALS,
+	LIB_DOM_GLOBALS,
+	PURE_GLOBALS,
+	SCHEDULING_GLOBALS,
+	WINDOW_MEMBER_GLOBALS,
 } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -29,72 +29,72 @@ afterAll(() => rmSync(folder, { recursive: true, force: true }));
 
 /** The names the `lib.dom.d.ts` a `typescript` package reads declares as values. */
 function libDomGlobals(typescript: string): Set<string> {
-  writeFileSync(join(folder, "probe.ts"), "export {};\n");
-  writeFileSync(
-    join(folder, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { lib: ["esnext", "dom"], types: [], noEmit: true, skipLibCheck: true },
-      files: ["probe.ts"],
-    }),
-  );
-  const manifest = JSON.parse(readFileSync(typescript, "utf8")) as {
-    bin: Record<string, string>;
-  };
-  const bin = Object.values(manifest.bin)[0]!;
-  const result = spawnSync(
-    process.execPath,
-    [join(dirname(typescript), bin), "-p", join(folder, "tsconfig.json"), "--listFilesOnly"],
-    { cwd: folder, encoding: "utf8" },
-  );
-  if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);
-  const lib = result.stdout
-    .split("\n")
-    .map((line) => line.trim())
-    .find((line) => /[\\/]lib\.dom\.d\.ts$/.test(line));
-  if (!lib) throw new Error(`tsc listed no lib.dom.d.ts:\n${result.stdout}${result.stderr}`);
-  const names = new Set<string>();
-  const declared = /^declare (?:var|function|const|let|namespace) ([A-Za-z_$][\w$]*)/gm;
-  for (const match of readFileSync(lib, "utf8").matchAll(declared)) names.add(match[1]!);
-  return names;
+	writeFileSync(join(folder, "probe.ts"), "export {};\n");
+	writeFileSync(
+		join(folder, "tsconfig.json"),
+		JSON.stringify({
+			compilerOptions: { lib: ["esnext", "dom"], types: [], noEmit: true, skipLibCheck: true },
+			files: ["probe.ts"],
+		}),
+	);
+	const manifest = JSON.parse(readFileSync(typescript, "utf8")) as {
+		bin: Record<string, string>;
+	};
+	const bin = Object.values(manifest.bin)[0]!;
+	const result = spawnSync(
+		process.execPath,
+		[join(dirname(typescript), bin), "-p", join(folder, "tsconfig.json"), "--listFilesOnly"],
+		{ cwd: folder, encoding: "utf8" },
+	);
+	if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);
+	const lib = result.stdout
+		.split("\n")
+		.map((line) => line.trim())
+		.find((line) => /[\\/]lib\.dom\.d\.ts$/.test(line));
+	if (!lib) throw new Error(`tsc listed no lib.dom.d.ts:\n${result.stdout}${result.stderr}`);
+	const names = new Set<string>();
+	const declared = /^declare (?:var|function|const|let|namespace) ([A-Za-z_$][\w$]*)/gm;
+	for (const match of readFileSync(lib, "utf8").matchAll(declared)) names.add(match[1]!);
+	return names;
 }
 
 /** The `typescript` package a workspace package resolves, by its manifest. */
 function typescriptOf(workspace: string): string {
-  return createRequire(new URL(`${workspace}/package.json`, ROOT)).resolve(
-    "typescript/package.json",
-  );
+	return createRequire(new URL(`${workspace}/package.json`, ROOT)).resolve(
+		"typescript/package.json",
+	);
 }
 
 describe("the browser's globals", () => {
-  // Every target prints a global as written, so the set holds the names both libs declare.
-  // TypeScript 7.1's lib.dom declares newer APIs that TypeScript 6's does not, and a Vue, Svelte,
-  // Astro or Angular output that read one would fail its check.
-  it(
-    "are every name lib.dom declares in both TypeScript 7 and TypeScript 6",
-    { timeout: 60_000 },
-    () => {
-      const seven = libDomGlobals(typescriptOf("packages/analyzer"));
-      const six = libDomGlobals(typescriptOf("tests/toolchains/vue"));
-      expect(six.size).toBeGreaterThan(900);
-      expect([...six].filter((name) => !seven.has(name))).toEqual([]);
-      expect([...LIB_DOM_GLOBALS].filter((name) => !six.has(name))).toEqual([]);
-      expect([...six].filter((name) => !LIB_DOM_GLOBALS.has(name))).toEqual([]);
-    },
-  );
+	// Every target prints a global as written, so the set holds the names both libs declare.
+	// TypeScript 7.1's lib.dom declares newer APIs that TypeScript 6's does not, and a Vue, Svelte,
+	// Astro or Angular output that read one would fail its check.
+	it(
+		"are every name lib.dom declares in both TypeScript 7 and TypeScript 6",
+		{ timeout: 60_000 },
+		() => {
+			const seven = libDomGlobals(typescriptOf("packages/analyzer"));
+			const six = libDomGlobals(typescriptOf("tests/toolchains/vue"));
+			expect(six.size).toBeGreaterThan(900);
+			expect([...six].filter((name) => !seven.has(name))).toEqual([]);
+			expect([...LIB_DOM_GLOBALS].filter((name) => !six.has(name))).toEqual([]);
+			expect([...six].filter((name) => !LIB_DOM_GLOBALS.has(name))).toEqual([]);
+		},
+	);
 
-  it("split lib.dom between what client code reads by name and through `window`", () => {
-    const runtime = ["console", "performance", "crypto", "structuredClone"];
-    for (const name of LIB_DOM_GLOBALS) {
-      const kept =
-        BROWSER_GLOBALS.has(name) ||
-        SCHEDULING_GLOBALS.has(name) ||
-        PURE_GLOBALS.has(name) ||
-        runtime.includes(name);
-      expect(kept !== WINDOW_MEMBER_GLOBALS.has(name), name).toBe(true);
-      expect(CLIENT_GLOBALS.has(name), name).toBe(kept);
-    }
-    for (const name of [...BROWSER_GLOBALS, ...SCHEDULING_GLOBALS]) {
-      expect(LIB_DOM_GLOBALS.has(name), name).toBe(true);
-    }
-  });
+	it("split lib.dom between what client code reads by name and through `window`", () => {
+		const runtime = ["console", "performance", "crypto", "structuredClone"];
+		for (const name of LIB_DOM_GLOBALS) {
+			const kept =
+				BROWSER_GLOBALS.has(name) ||
+				SCHEDULING_GLOBALS.has(name) ||
+				PURE_GLOBALS.has(name) ||
+				runtime.includes(name);
+			expect(kept !== WINDOW_MEMBER_GLOBALS.has(name), name).toBe(true);
+			expect(CLIENT_GLOBALS.has(name), name).toBe(kept);
+		}
+		for (const name of [...BROWSER_GLOBALS, ...SCHEDULING_GLOBALS]) {
+			expect(LIB_DOM_GLOBALS.has(name), name).toBe(true);
+		}
+	});
 });

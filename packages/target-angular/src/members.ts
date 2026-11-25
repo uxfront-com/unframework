@@ -9,13 +9,13 @@
 // order, and a function field declared after it would not be there yet, where the source's
 // function, hoisted, is.
 import {
-  functionBodyText,
-  functionText,
-  js,
-  kebabCase,
-  parameterText,
-  pascalCase,
-  rewriteCode,
+	functionBodyText,
+	functionText,
+	js,
+	kebabCase,
+	parameterText,
+	pascalCase,
+	rewriteCode,
 } from "@unframework.dev/codegen";
 import type { Placeholders, RewriteRules } from "@unframework.dev/codegen";
 import type { Code, Prop, TypeDeclaration, UfComponent, UseItem } from "@unframework.dev/ir";
@@ -41,850 +41,850 @@ const SERVICES = ["injector", "platformId", "appRef", "pendingTasks", "destroyRe
 
 /** Each service's token, by the member that holds it. */
 const TOKENS: Readonly<Record<(typeof SERVICES)[number], string>> = {
-  injector: "Injector",
-  platformId: "PLATFORM_ID",
-  appRef: "ApplicationRef",
-  pendingTasks: "PendingTasks",
-  destroyRef: "DestroyRef",
+	injector: "Injector",
+	platformId: "PLATFORM_ID",
+	appRef: "ApplicationRef",
+	pendingTasks: "PendingTasks",
+	destroyRef: "DestroyRef",
 };
 
 /** What the class's members need from the rest of the emitter. */
 export interface MemberContext {
-  plan: Plan;
-  placeholders: Placeholders;
-  /** The types the props reach, for an input with a default whose type admits `undefined`. */
-  declarations: readonly TypeDeclaration[];
-  rules: RewriteRules;
-  /** The members the template reads, which it sees only when they are `protected`. */
-  templateMembers: ReadonlySet<string>;
-  /** The globals the template reads: each is a member of its own name. */
-  globals: readonly string[];
-  /** The module values the template reads, by name: each is a member, `moduleMember`'s. */
-  moduleMembers: ReadonlyMap<string, string>;
-  /** The methods listeners' handlers moved to. */
-  handlers: readonly HandlerMethod[];
-  /** The members that remember the elements a once listener ran on (./listeners.ts). */
-  guards: readonly string[];
-  /** The guard method a group's once listener runs under, when one does (./listeners.ts). */
-  once?: string;
-  /** The `nextTick` helper's name, when code calls `nextTick()`. */
-  nextTick?: string;
-  /** The injection token of the application's id counter, when the component declares an id. */
-  nextId?: string;
-  /** The component's own slot directives, whose templates it queries (./composition.ts). */
-  slots: readonly SlotDirective[];
-  /**
-   * What the component takes from its consumer (ADR-0056, ADR-0118): the `class` and `style`
-   * inputs it merges into its root, and, where it `passes` them on, the records of attributes and
-   * listeners, the latter typed by `listeners`.
-   */
-  fallthrough?: { passes: boolean; listeners: string };
-  /**
-   * The element a ref on the component holds, where it exposes nothing (ADR-0118): a query of its
-   * root element, typed by its DOM interface, or of its root component, whose own it reads.
-   */
-  rootElement?: { type?: string; component?: { className: string; query: string } };
-  /** The local name of each injection key the setup names. */
-  keyNames: ReadonlyMap<string, string>;
-  /** The `refObject` helper's name, when a key of a ref is provided or injected with a fallback. */
-  refObject?: string;
-  /** The members code outside the class reads (a provider's factory), which are public. */
-  external: ReadonlySet<string>;
-  /** The member that tells the server's render apart, for a select's options (./models.ts). */
-  server?: string;
-  /** The native controls' helpers the template calls (./models.ts). */
-  helpers: readonly ModelHelper[];
+	plan: Plan;
+	placeholders: Placeholders;
+	/** The types the props reach, for an input with a default whose type admits `undefined`. */
+	declarations: readonly TypeDeclaration[];
+	rules: RewriteRules;
+	/** The members the template reads, which it sees only when they are `protected`. */
+	templateMembers: ReadonlySet<string>;
+	/** The globals the template reads: each is a member of its own name. */
+	globals: readonly string[];
+	/** The module values the template reads, by name: each is a member, `moduleMember`'s. */
+	moduleMembers: ReadonlyMap<string, string>;
+	/** The methods listeners' handlers moved to. */
+	handlers: readonly HandlerMethod[];
+	/** The members that remember the elements a once listener ran on (./listeners.ts). */
+	guards: readonly string[];
+	/** The guard method a group's once listener runs under, when one does (./listeners.ts). */
+	once?: string;
+	/** The `nextTick` helper's name, when code calls `nextTick()`. */
+	nextTick?: string;
+	/** The injection token of the application's id counter, when the component declares an id. */
+	nextId?: string;
+	/** The component's own slot directives, whose templates it queries (./composition.ts). */
+	slots: readonly SlotDirective[];
+	/**
+	 * What the component takes from its consumer (ADR-0056, ADR-0118): the `class` and `style`
+	 * inputs it merges into its root, and, where it `passes` them on, the records of attributes and
+	 * listeners, the latter typed by `listeners`.
+	 */
+	fallthrough?: { passes: boolean; listeners: string };
+	/**
+	 * The element a ref on the component holds, where it exposes nothing (ADR-0118): a query of its
+	 * root element, typed by its DOM interface, or of its root component, whose own it reads.
+	 */
+	rootElement?: { type?: string; component?: { className: string; query: string } };
+	/** The local name of each injection key the setup names. */
+	keyNames: ReadonlyMap<string, string>;
+	/** The `refObject` helper's name, when a key of a ref is provided or injected with a fallback. */
+	refObject?: string;
+	/** The members code outside the class reads (a provider's factory), which are public. */
+	external: ReadonlySet<string>;
+	/** The member that tells the server's render apart, for a select's options (./models.ts). */
+	server?: string;
+	/** The native controls' helpers the template calls (./models.ts). */
+	helpers: readonly ModelHelper[];
 }
 
 /** The class's members, and the interfaces it implements (`OnInit`). */
 export function classMembers(context: MemberContext): {
-  members: Member[];
-  implements: string[];
+	members: Member[];
+	implements: string[];
 } {
-  const { plan, placeholders } = context;
-  const { component, imports } = plan;
-  const core = (name: string) => imports.add("@angular/core", name);
-  // An exposed function is the component's API (ADR-0054), and a member a provider's factory
-  // reads is read from outside the class: both are public, the rest protected or private.
-  const exposed = new Set(
-    (component.exposes?.functions ?? []).map((id) => bindingById(plan, id).name),
-  );
-  const visibility = (name: string) =>
-    exposed.has(name) || context.external.has(name)
-      ? undefined
-      : context.templateMembers.has(name)
-        ? ("protected" as const)
-        : ("private" as const);
-  const members: Member[] = component.props.map((prop) =>
-    inputMember(prop, component, core("input"), placeholders, context.declarations),
-  );
-  if (context.fallthrough !== undefined) {
-    // The consumer's `class` and `style`, which the root merges (ADR-0056): inputs, so a static
-    // `class` and a bound one both reach them, and the host keeps neither.
-    members.push(
-      js.propertyDefinition(
-        "class",
-        js.callExpression(js.identifier(core("input")), [], [placeholders.type("string")]),
-        { readonly: true },
-      ),
-      js.propertyDefinition(
-        "style",
-        js.callExpression(
-          js.identifier(core("input")),
-          [],
-          [placeholders.type("Record<string, string | null | undefined>")],
-        ),
-        { readonly: true },
-      ),
-    );
-    if (context.fallthrough.passes) {
-      // What else the consumer passes (ADR-0118): its attributes by name, and its native
-      // listeners by event, which the element that takes them gets through the directive.
-      members.push(
-        js.propertyDefinition(
-          ATTRIBUTES_INPUT,
-          js.callExpression(
-            js.identifier(core("input")),
-            [],
-            [placeholders.type("Record<string, unknown>")],
-          ),
-          { readonly: true },
-        ),
-        js.propertyDefinition(
-          LISTENERS_INPUT,
-          js.callExpression(
-            js.identifier(core("input")),
-            [],
-            [placeholders.type(context.fallthrough.listeners)],
-          ),
-          { readonly: true },
-        ),
-      );
-    }
-  }
-  // A model is a signal input the component writes (`model()`), declared with the inputs. Its
-  // binding names the member; the model's own name is the public one (`value` and
-  // `valueChange`), an alias where the two differ.
-  for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
-    const { name } = bindingById(plan, item.binding);
-    const callee = js.identifier(core("model"));
-    const alias =
-      name === item.name ? [] : [js.objectExpression([["alias", js.stringLiteral(item.name)]])];
-    // An alias needs an initial value before it: with no default, `undefined`, which the type
-    // takes as `model<T>()` gives it (`T | undefined`, or `unknown` with no type argument).
-    const unset = !item.default && !item.required && alias.length > 0;
-    const written = item.type?.code;
-    const type =
-      written === undefined
-        ? unset
-          ? [placeholders.type("unknown")]
-          : []
-        : [placeholders.type(unset ? `(${written}) | undefined` : written)];
-    const initial = item.default
-      ? [placeholders.expression(item.default.code)]
-      : unset
-        ? [js.identifier("undefined")]
-        : [];
-    members.push(
-      js.propertyDefinition(
-        name,
-        item.required
-          ? js.callExpression(js.memberExpression(callee, "required"), alias, type)
-          : js.callExpression(callee, [...initial, ...alias], type),
-        { readonly: true },
-      ),
-    );
-  }
-  const calls = new Map(plan.calls.map((call) => [call.item, call]));
-  for (const event of component.emits?.events ?? []) {
-    members.push(
-      js.propertyDefinition(
-        outputName(event.name),
-        js.callExpression(
-          js.identifier(core("output")),
-          [],
-          [placeholders.type(outputType(event))],
-        ),
-        { readonly: true },
-      ),
-    );
-  }
-  // Each named or scoped slot's template, which the consumer's `<ng-template>` gives (ADR-0056).
-  for (const { slot, className } of context.slots) {
-    const name = slotQuery(slot.name);
-    members.push(
-      js.propertyDefinition(
-        name,
-        placeholders.expression(
-          `${core("contentChild")}(${className}, { read: ${core("TemplateRef")} })`,
-        ),
-        { accessibility: visibility(name), readonly: true },
-      ),
-    );
-  }
-  // View queries next to the inputs and outputs, as Angular's guide groups them.
-  for (const item of component.setup) {
-    if (item.kind !== "TemplateRef") continue;
-    const name = bindingById(plan, item.binding).name;
-    if (formOf(plan, bindingById(plan, item.binding)) === "instance") {
-      // A ref on a component holds its instance, typed as the source types what it exposes.
-      members.push(
-        js.propertyDefinition(
-          name,
-          js.callExpression(
-            js.identifier(core("viewChild")),
-            [js.stringLiteral(name)],
-            [placeholders.type(item.type?.code ?? "unknown")],
-          ),
-          { accessibility: visibility(name), readonly: true },
-        ),
-      );
-      continue;
-    }
-    const element = `${core("ElementRef")}<${item.type?.code ?? "unknown"}>`;
-    const child = plan.elementRefs.get(item.binding);
-    if (child !== undefined) {
-      // A ref on a child that exposes nothing holds its root element (ADR-0118), which the
-      // child's `ufElement` holds: read from the child, typed as the source types the element,
-      // which the child's own type must match.
-      const instance = plan.members.claim(`${name}Component`);
-      members.push(
-        js.propertyDefinition(
-          instance,
-          placeholders.expression(
-            `${core("viewChild")}(${JSON.stringify(name)}, { read: ${child} })`,
-          ),
-          { accessibility: "private", readonly: true },
-        ),
-        js.propertyDefinition(
-          name,
-          placeholders.expression(
-            `${core("computed")}<${element} | undefined>(() => this.${instance}()?.${ELEMENT_MEMBER}())`,
-          ),
-          { accessibility: "private", readonly: true },
-        ),
-      );
-      continue;
-    }
-    members.push(
-      js.propertyDefinition(
-        name,
-        js.callExpression(
-          js.identifier(core("viewChild")),
-          [js.stringLiteral(name)],
-          [placeholders.type(element)],
-        ),
-        { accessibility: "private", readonly: true },
-      ),
-    );
-  }
-  // The element a ref on this component holds, where it exposes nothing (ADR-0118): its root
-  // element, which the root's template ref names, or its root component's own.
-  const { rootElement } = context;
-  if (rootElement?.component) {
-    const { className, query } = rootElement.component;
-    members.push(
-      js.propertyDefinition(
-        query,
-        placeholders.expression(
-          `${core("viewChild")}(${JSON.stringify(ELEMENT_REF)}, { read: ${className} })`,
-        ),
-        { accessibility: "private", readonly: true },
-      ),
-      js.propertyDefinition(
-        ELEMENT_MEMBER,
-        placeholders.expression(`${core("computed")}(() => this.${query}()?.${ELEMENT_MEMBER}())`),
-        { readonly: true },
-      ),
-    );
-  } else if (rootElement?.type !== undefined) {
-    members.push(
-      js.propertyDefinition(
-        ELEMENT_MEMBER,
-        js.callExpression(
-          js.identifier(core("viewChild")),
-          [js.stringLiteral(ELEMENT_REF)],
-          [placeholders.type(`${core("ElementRef")}<${rootElement.type}>`)],
-        ),
-        { readonly: true },
-      ),
-    );
-  }
+	const { plan, placeholders } = context;
+	const { component, imports } = plan;
+	const core = (name: string) => imports.add("@angular/core", name);
+	// An exposed function is the component's API (ADR-0054), and a member a provider's factory
+	// reads is read from outside the class: both are public, the rest protected or private.
+	const exposed = new Set(
+		(component.exposes?.functions ?? []).map((id) => bindingById(plan, id).name),
+	);
+	const visibility = (name: string) =>
+		exposed.has(name) || context.external.has(name)
+			? undefined
+			: context.templateMembers.has(name)
+				? ("protected" as const)
+				: ("private" as const);
+	const members: Member[] = component.props.map((prop) =>
+		inputMember(prop, component, core("input"), placeholders, context.declarations),
+	);
+	if (context.fallthrough !== undefined) {
+		// The consumer's `class` and `style`, which the root merges (ADR-0056): inputs, so a static
+		// `class` and a bound one both reach them, and the host keeps neither.
+		members.push(
+			js.propertyDefinition(
+				"class",
+				js.callExpression(js.identifier(core("input")), [], [placeholders.type("string")]),
+				{ readonly: true },
+			),
+			js.propertyDefinition(
+				"style",
+				js.callExpression(
+					js.identifier(core("input")),
+					[],
+					[placeholders.type("Record<string, string | null | undefined>")],
+				),
+				{ readonly: true },
+			),
+		);
+		if (context.fallthrough.passes) {
+			// What else the consumer passes (ADR-0118): its attributes by name, and its native
+			// listeners by event, which the element that takes them gets through the directive.
+			members.push(
+				js.propertyDefinition(
+					ATTRIBUTES_INPUT,
+					js.callExpression(
+						js.identifier(core("input")),
+						[],
+						[placeholders.type("Record<string, unknown>")],
+					),
+					{ readonly: true },
+				),
+				js.propertyDefinition(
+					LISTENERS_INPUT,
+					js.callExpression(
+						js.identifier(core("input")),
+						[],
+						[placeholders.type(context.fallthrough.listeners)],
+					),
+					{ readonly: true },
+				),
+			);
+		}
+	}
+	// A model is a signal input the component writes (`model()`), declared with the inputs. Its
+	// binding names the member; the model's own name is the public one (`value` and
+	// `valueChange`), an alias where the two differ.
+	for (const item of component.setup) {
+		if (item.kind !== "Model") continue;
+		const { name } = bindingById(plan, item.binding);
+		const callee = js.identifier(core("model"));
+		const alias =
+			name === item.name ? [] : [js.objectExpression([["alias", js.stringLiteral(item.name)]])];
+		// An alias needs an initial value before it: with no default, `undefined`, which the type
+		// takes as `model<T>()` gives it (`T | undefined`, or `unknown` with no type argument).
+		const unset = !item.default && !item.required && alias.length > 0;
+		const written = item.type?.code;
+		const type =
+			written === undefined
+				? unset
+					? [placeholders.type("unknown")]
+					: []
+				: [placeholders.type(unset ? `(${written}) | undefined` : written)];
+		const initial = item.default
+			? [placeholders.expression(item.default.code)]
+			: unset
+				? [js.identifier("undefined")]
+				: [];
+		members.push(
+			js.propertyDefinition(
+				name,
+				item.required
+					? js.callExpression(js.memberExpression(callee, "required"), alias, type)
+					: js.callExpression(callee, [...initial, ...alias], type),
+				{ readonly: true },
+			),
+		);
+	}
+	const calls = new Map(plan.calls.map((call) => [call.item, call]));
+	for (const event of component.emits?.events ?? []) {
+		members.push(
+			js.propertyDefinition(
+				outputName(event.name),
+				js.callExpression(
+					js.identifier(core("output")),
+					[],
+					[placeholders.type(outputType(event))],
+				),
+				{ readonly: true },
+			),
+		);
+	}
+	// Each named or scoped slot's template, which the consumer's `<ng-template>` gives (ADR-0056).
+	for (const { slot, className } of context.slots) {
+		const name = slotQuery(slot.name);
+		members.push(
+			js.propertyDefinition(
+				name,
+				placeholders.expression(
+					`${core("contentChild")}(${className}, { read: ${core("TemplateRef")} })`,
+				),
+				{ accessibility: visibility(name), readonly: true },
+			),
+		);
+	}
+	// View queries next to the inputs and outputs, as Angular's guide groups them.
+	for (const item of component.setup) {
+		if (item.kind !== "TemplateRef") continue;
+		const name = bindingById(plan, item.binding).name;
+		if (formOf(plan, bindingById(plan, item.binding)) === "instance") {
+			// A ref on a component holds its instance, typed as the source types what it exposes.
+			members.push(
+				js.propertyDefinition(
+					name,
+					js.callExpression(
+						js.identifier(core("viewChild")),
+						[js.stringLiteral(name)],
+						[placeholders.type(item.type?.code ?? "unknown")],
+					),
+					{ accessibility: visibility(name), readonly: true },
+				),
+			);
+			continue;
+		}
+		const element = `${core("ElementRef")}<${item.type?.code ?? "unknown"}>`;
+		const child = plan.elementRefs.get(item.binding);
+		if (child !== undefined) {
+			// A ref on a child that exposes nothing holds its root element (ADR-0118), which the
+			// child's `ufElement` holds: read from the child, typed as the source types the element,
+			// which the child's own type must match.
+			const instance = plan.members.claim(`${name}Component`);
+			members.push(
+				js.propertyDefinition(
+					instance,
+					placeholders.expression(
+						`${core("viewChild")}(${JSON.stringify(name)}, { read: ${child} })`,
+					),
+					{ accessibility: "private", readonly: true },
+				),
+				js.propertyDefinition(
+					name,
+					placeholders.expression(
+						`${core("computed")}<${element} | undefined>(() => this.${instance}()?.${ELEMENT_MEMBER}())`,
+					),
+					{ accessibility: "private", readonly: true },
+				),
+			);
+			continue;
+		}
+		members.push(
+			js.propertyDefinition(
+				name,
+				js.callExpression(
+					js.identifier(core("viewChild")),
+					[js.stringLiteral(name)],
+					[placeholders.type(element)],
+				),
+				{ accessibility: "private", readonly: true },
+			),
+		);
+	}
+	// The element a ref on this component holds, where it exposes nothing (ADR-0118): its root
+	// element, which the root's template ref names, or its root component's own.
+	const { rootElement } = context;
+	if (rootElement?.component) {
+		const { className, query } = rootElement.component;
+		members.push(
+			js.propertyDefinition(
+				query,
+				placeholders.expression(
+					`${core("viewChild")}(${JSON.stringify(ELEMENT_REF)}, { read: ${className} })`,
+				),
+				{ accessibility: "private", readonly: true },
+			),
+			js.propertyDefinition(
+				ELEMENT_MEMBER,
+				placeholders.expression(`${core("computed")}(() => this.${query}()?.${ELEMENT_MEMBER}())`),
+				{ readonly: true },
+			),
+		);
+	} else if (rootElement?.type !== undefined) {
+		members.push(
+			js.propertyDefinition(
+				ELEMENT_MEMBER,
+				js.callExpression(
+					js.identifier(core("viewChild")),
+					[js.stringLiteral(ELEMENT_REF)],
+					[placeholders.type(`${core("ElementRef")}<${rootElement.type}>`)],
+				),
+				{ readonly: true },
+			),
+		);
+	}
 
-  // Injected services, claimed on first use (code is built before the members are listed).
-  const injected = new Map<string, { member: string; token: string }>();
-  const service = (name: (typeof SERVICES)[number]) => {
-    let entry = injected.get(name);
-    if (!entry) {
-      entry = { member: plan.members.claim(name), token: TOKENS[name] };
-      injected.set(name, entry);
-    }
-    return entry.member;
-  };
-  const names: EffectNames = {
-    core,
-    common: (name) => imports.add("@angular/common", name),
-    type: (name) => imports.add("@angular/core", name, { type: true }),
-    member: service,
-  };
+	// Injected services, claimed on first use (code is built before the members are listed).
+	const injected = new Map<string, { member: string; token: string }>();
+	const service = (name: (typeof SERVICES)[number]) => {
+		let entry = injected.get(name);
+		if (!entry) {
+			entry = { member: plan.members.claim(name), token: TOKENS[name] };
+			injected.set(name, entry);
+		}
+		return entry.member;
+	};
+	const names: EffectNames = {
+		core,
+		common: (name) => imports.add("@angular/common", name),
+		type: (name) => imports.add("@angular/core", name, { type: true }),
+		member: service,
+	};
 
-  const fields: Member[] = [];
-  const arrows: Member[] = [];
-  // Each a block of statements: a hook or a watcher, or the reads of the seeded values.
-  const constructorCode: string[] = [];
-  const initCode: string[] = [];
-  const destroyCode: string[] = [];
-  const unmounted: string[] = [];
-  const refs: Member[] = [];
-  /** Adds an effect's code: its statements, its member, what `ngOnDestroy` runs. */
-  const effect = (into: string[], code: EffectCode, hook = false) => {
-    if (code.code !== undefined) into.push(code.code);
-    if (code.ref) {
-      const member = js.propertyDefinition(code.ref.name, null, {
-        accessibility: "private",
-        readonly: !code.ref.optional,
-        typeAnnotation: placeholders.type(code.ref.type),
-      });
-      refs.push(code.ref.optional ? { ...member, optional: true } : member);
-    }
-    if (code.destroy !== undefined) (hook ? unmounted : destroyCode).push(code.destroy);
-  };
-  let pins: string[] | undefined;
-  /**
-   * Reads a seeded value in `ngOnInit` (`this.amount();`), or assigns a seeded `let`, so that it
-   * keeps the inputs' first values.
-   */
-  const pin = (statement: string) => {
-    if (pins === undefined) {
-      pins = ["// Read once the inputs are set: these keep the values they start with."];
-      initCode.push("");
-    }
-    pins.push(statement);
-    initCode[initCode.length - 1] = pins.join("\n");
-  };
-  const methods: Member[] = [];
-  // The awaits, in source order, which `ngOnInit` runs before the rest of the setup (ADR-0101).
-  const awaits: string[] = [];
-  const expression = (code: string) => placeholders.expression(code);
-  const typed = (type: string | undefined) => (type ? [placeholders.type(type)] : []);
+	const fields: Member[] = [];
+	const arrows: Member[] = [];
+	// Each a block of statements: a hook or a watcher, or the reads of the seeded values.
+	const constructorCode: string[] = [];
+	const initCode: string[] = [];
+	const destroyCode: string[] = [];
+	const unmounted: string[] = [];
+	const refs: Member[] = [];
+	/** Adds an effect's code: its statements, its member, what `ngOnDestroy` runs. */
+	const effect = (into: string[], code: EffectCode, hook = false) => {
+		if (code.code !== undefined) into.push(code.code);
+		if (code.ref) {
+			const member = js.propertyDefinition(code.ref.name, null, {
+				accessibility: "private",
+				readonly: !code.ref.optional,
+				typeAnnotation: placeholders.type(code.ref.type),
+			});
+			refs.push(code.ref.optional ? { ...member, optional: true } : member);
+		}
+		if (code.destroy !== undefined) (hook ? unmounted : destroyCode).push(code.destroy);
+	};
+	let pins: string[] | undefined;
+	/**
+	 * Reads a seeded value in `ngOnInit` (`this.amount();`), or assigns a seeded `let`, so that it
+	 * keeps the inputs' first values.
+	 */
+	const pin = (statement: string) => {
+		if (pins === undefined) {
+			pins = ["// Read once the inputs are set: these keep the values they start with."];
+			initCode.push("");
+		}
+		pins.push(statement);
+		initCode[initCode.length - 1] = pins.join("\n");
+	};
+	const methods: Member[] = [];
+	// The awaits, in source order, which `ngOnInit` runs before the rest of the setup (ADR-0101).
+	const awaits: string[] = [];
+	const expression = (code: string) => placeholders.expression(code);
+	const typed = (type: string | undefined) => (type ? [placeholders.type(type)] : []);
 
-  for (const item of component.setup) {
-    switch (item.kind) {
-      // A field `ngOnInit` assigns once the inputs are set and its promise resolves (ADR-0101),
-      // typed by its annotation or by what the promise resolves to, through a method that makes
-      // the promise, which nothing else could name.
-      case "Await": {
-        const { name } = bindingById(plan, item.binding);
-        if (awaits.length === 0 && plan.resolved !== undefined) {
-          fields.push(
-            js.propertyDefinition(
-              plan.resolved,
-              js.callExpression(js.identifier(core("signal")), [js.booleanLiteral(false)]),
-              { accessibility: "protected", readonly: true },
-            ),
-          );
-        }
-        let type = item.type?.code;
-        if (type === undefined) {
-          const initial = plan.members.claim(`initial${pascalCase(name)}`);
-          type = `Awaited<ReturnType<typeof this.${initial}>>`;
-          methods.push(
-            js.methodDefinition(
-              initial,
-              [],
-              statements(placeholders, `return ${pure(context, item.value)};`),
-              { accessibility: "private" },
-            ),
-          );
-          awaits.push(`this.${name} = await this.${initial}();`);
-        } else {
-          awaits.push(`this.${name} = await ${pure(context, item.value)};`);
-        }
-        // Definitely assigned: the template and the rest of the setup read it only after.
-        const field = js.propertyDefinition(name, null, {
-          accessibility: visibility(name),
-          typeAnnotation: placeholders.type(type),
-        });
-        fields.push({ ...field, definite: true });
-        break;
-      }
-      case "State": {
-        const { name } = bindingById(plan, item.binding);
-        const form = formOf(plan, bindingById(plan, item.binding));
-        const type = item.type
-          ? item.initial
-            ? item.type.code
-            : `${parenthesised(item.type.code)} | undefined`
-          : undefined;
-        const initial = item.initial ? pure(context, item.initial) : "undefined";
-        let value: ReturnType<typeof js.callExpression>;
-        switch (form) {
-          case "linked":
-            value = js.callExpression(
-              js.identifier(core("linkedSignal")),
-              [expression(arrow(`${core("untracked")}(${arrow(initial)})`))],
-              typed(type),
-            );
-            pin(`this.${name}();`);
-            break;
-          case "signal":
-            value = js.callExpression(
-              js.identifier(core("signal")),
-              [expression(initial)],
-              typed(type),
-            );
-            break;
-          default:
-            throw new Error(`A state is declared as ${form}.`);
-        }
-        fields.push(
-          js.propertyDefinition(name, value, { accessibility: visibility(name), readonly: true }),
-        );
-        break;
-      }
-      case "Derived": {
-        const { name } = bindingById(plan, item.binding);
-        const getter = functionText(item.getter, component, context.rules, "pure");
-        fields.push(
-          js.propertyDefinition(
-            name,
-            js.callExpression(
-              js.identifier(core("computed")),
-              [expression(getter)],
-              typed(item.type?.code),
-            ),
-            { accessibility: visibility(name), readonly: true },
-          ),
-        );
-        break;
-      }
-      case "TemplateRef":
-        break;
-      case "Id": {
-        const { name } = bindingById(plan, item.binding);
-        if (context.nextId === undefined) throw new Error("An id is declared without a counter.");
-        // Angular has no id API: a counter, as Angular Material writes its ids, one per
-        // application (ADR-0095). The component's name keeps two components' ids apart.
-        const id = `\`uf-id-${kebabCase(component.name)}-\${${core("inject")}(${context.nextId}).next++}\``;
-        fields.push(
-          js.propertyDefinition(name, expression(id), {
-            accessibility: visibility(name),
-            readonly: true,
-          }),
-        );
-        break;
-      }
-      case "Const": {
-        const binding = bindingById(plan, item.binding);
-        const value = pure(context, item.value);
-        const form = formOf(plan, binding);
-        switch (form) {
-          case "once":
-            fields.push(
-              js.propertyDefinition(
-                binding.name,
-                js.callExpression(
-                  js.identifier(core("computed")),
-                  [expression(arrow(`${core("untracked")}(${arrow(value)})`))],
-                  typed(item.type?.code),
-                ),
-                { accessibility: visibility(binding.name), readonly: true },
-              ),
-            );
-            pin(`this.${binding.name}();`);
-            break;
-          case "value":
-            fields.push(
-              js.propertyDefinition(binding.name, expression(value), {
-                accessibility: visibility(binding.name),
-                readonly: true,
-                ...(item.type ? { typeAnnotation: placeholders.type(item.type.code) } : {}),
-              }),
-            );
-            break;
-          default:
-            throw new Error(`A constant is declared as ${form}.`);
-        }
-        break;
-      }
-      case "Variable": {
-        const { name } = bindingById(plan, item.binding);
-        if (plan.seeded.has(item.binding) && item.initial) {
-          // Its initial value reads an input: assigned once the inputs are set, in source order
-          // with the seeded values, and declared with its type, which nothing infers then.
-          let type = item.type?.code ?? valueType(item.initial, plan, context.declarations);
-          if (type === undefined) {
-            const initial = plan.members.claim(`initial${pascalCase(name)}`);
-            type = `ReturnType<typeof this.${initial}>`;
-            methods.push(
-              js.methodDefinition(
-                initial,
-                [],
-                statements(placeholders, `return ${pure(context, item.initial)};`),
-                { accessibility: "private" },
-              ),
-            );
-            pin(`this.${name} = this.${initial}();`);
-          } else {
-            pin(`this.${name} = ${pure(context, item.initial)};`);
-          }
-          // Definitely assigned: `ngOnInit` assigns it before any code reads it.
-          const field = js.propertyDefinition(name, null, {
-            accessibility: "private",
-            typeAnnotation: placeholders.type(type),
-          });
-          fields.push({ ...field, definite: true });
-          break;
-        }
-        // Without an initial value its type admits `undefined` (UF2021), as the field's does.
-        fields.push(
-          js.propertyDefinition(
-            name,
-            item.initial ? expression(pure(context, item.initial)) : null,
-            {
-              accessibility: "private",
-              ...(item.type ? { typeAnnotation: placeholders.type(item.type.code) } : {}),
-            },
-          ),
-        );
-        break;
-      }
-      case "Function": {
-        const binding = bindingById(plan, item.binding);
-        const fn = item.function;
-        if (formOf(plan, binding) === "arrow") {
-          arrows.push(
-            js.propertyDefinition(
-              binding.name,
-              expression(
-                tidied(functionText(fn, component, context.rules, "client"), "expression"),
-              ),
-              { accessibility: visibility(binding.name), readonly: true },
-            ),
-          );
-          break;
-        }
-        methods.push(
-          js.methodDefinition(
-            binding.name,
-            fn.parameters.map((parameter) => placeholders.parameter(parameterText(parameter))),
-            statements(
-              placeholders,
-              tidied(functionBodyText(fn, component, context.rules, "client"), "statements"),
-            ),
-            {
-              accessibility: visibility(binding.name),
-              ...(fn.async ? { async: true } : {}),
-              ...(fn.returnType ? { returnType: placeholders.type(fn.returnType.code) } : {}),
-            },
-          ),
-        );
-        break;
-      }
-      case "Watch":
-        effect(initCode, watcherCode(item, plan, context.rules, names));
-        pins = undefined;
-        break;
-      // After a composable's call with effects in `ngOnInit`, in `ngOnInit` after it (ADR-0069).
-      case "WatchEffect":
-        if (plan.late.has(item)) {
-          effect(initCode, watchEffectCode(item, plan, context.rules, names, true));
-          pins = undefined;
-        } else effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
-        break;
-      case "Lifecycle":
-        if (plan.late.has(item)) {
-          effect(initCode, lifecycleCode(item, plan, context.rules, names, true), true);
-          pins = undefined;
-        } else effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
-        break;
-      case "Inject": {
-        // Its parent's value (`skipSelf`, since a component that provides the key it injects
-        // reads its parent's, ADR-0054), or the fallback, or `undefined` as Vue gives.
-        const { name } = bindingById(plan, item.binding);
-        const key = context.keyNames.get(item.key) ?? item.key;
-        const fallback = item.fallback ? pure(context, item.fallback) : "undefined";
-        const value =
-          item.fallback && keyOf(plan, item.key).ref
-            ? `${context.refObject}(${fallback})`
-            : fallback;
-        // Read once the inputs are set: a consumer projected into its provider is created
-        // before the provider's inputs are set, which a provided value may read (NG0950).
-        const read = `this.${names.member("injector")}.get(${key}, null, { optional: true, skipSelf: true }) ?? ${value}`;
-        fields.push(
-          js.propertyDefinition(
-            name,
-            js.callExpression(js.identifier(core("computed")), [
-              expression(arrow(`${core("untracked")}(${arrow(read)})`)),
-            ]),
-            { accessibility: visibility(name), readonly: true },
-          ),
-        );
-        pin(`this.${name}();`);
-        break;
-      }
-      // A model is declared with the inputs, and a provided value in the metadata.
-      case "Model":
-      case "Provide":
-        break;
-      // A composable's call, run in an injection context (ADR-0069): a field initialiser, or
-      // where its order among the class's code holds (`CallPlacement`), its result then typed
-      // by the composable's return type.
-      case "Use": {
-        const { holder, placement, injector } = calls.get(item)!;
-        // A call the constructor or `ngOnInit` makes is a private method's, whose return type
-        // types the holder: the composable's own return type would leave a type parameter
-        // `unknown`, where the call infers it (`useControllableState`).
-        let invocation = callCode(context, item);
-        let type: string | undefined;
-        if (placement !== "field") {
-          const factory = plan.members.claim(`create${pascalCase(holder)}`);
-          methods.push(
-            js.methodDefinition(factory, [], statements(placeholders, `return ${invocation};`), {
-              accessibility: "private",
-            }),
-          );
-          invocation = `this.${factory}()`;
-          type = `ReturnType<typeof this.${factory}>`;
-        }
-        const run = (into: string) =>
-          `${core("runInInjectionContext")}(this.${into}, () => ${invocation})`;
-        // A composable with effects runs in an injector of its own, which `ngOnDestroy`
-        // destroys here among the `onUnmounted` hooks, running the teardown it registered.
-        if (injector !== undefined) {
-          fields.push(
-            js.propertyDefinition(
-              injector,
-              expression(
-                `${core("Injector")}.create({ providers: [], parent: this.${names.member("injector")} })`,
-              ),
-              { accessibility: "private", readonly: true },
-            ),
-          );
-          effect(initCode, { destroy: `this.${injector}.destroy();` }, true);
-        }
-        const call = injector === undefined ? invocation : run(injector);
-        switch (placement) {
-          case "field":
-            fields.push(
-              js.propertyDefinition(holder, expression(call), {
-                accessibility: visibility(holder),
-                readonly: true,
-              }),
-            );
-            break;
-          case "constructor":
-            fields.push(
-              js.propertyDefinition(holder, null, {
-                accessibility: visibility(holder),
-                readonly: true,
-                typeAnnotation: placeholders.type(type!),
-              }),
-            );
-            constructorCode.push(`this.${holder} = ${call};`);
-            break;
-          case "init": {
-            // Definitely assigned: `ngOnInit` assigns it before the template reads it.
-            const field = js.propertyDefinition(holder, null, {
-              accessibility: visibility(holder),
-              typeAnnotation: placeholders.type(type!),
-            });
-            fields.push({ ...field, definite: true });
-            initCode.push(
-              `this.${holder} = ${injector === undefined ? run(names.member("injector")) : call};`,
-            );
-            pins = undefined;
-            break;
-          }
-          default:
-            unreachable(placement);
-        }
-        break;
-      }
-      // In `ngOnInit`, once the inputs are set, in source order among what runs there
-      // (ADR-0117).
-      case "DevCheck":
-        initCode.push(pure(context, item.code));
-        pins = undefined;
-        break;
-      default:
-        unreachable(item);
-    }
-  }
+	for (const item of component.setup) {
+		switch (item.kind) {
+			// A field `ngOnInit` assigns once the inputs are set and its promise resolves (ADR-0101),
+			// typed by its annotation or by what the promise resolves to, through a method that makes
+			// the promise, which nothing else could name.
+			case "Await": {
+				const { name } = bindingById(plan, item.binding);
+				if (awaits.length === 0 && plan.resolved !== undefined) {
+					fields.push(
+						js.propertyDefinition(
+							plan.resolved,
+							js.callExpression(js.identifier(core("signal")), [js.booleanLiteral(false)]),
+							{ accessibility: "protected", readonly: true },
+						),
+					);
+				}
+				let type = item.type?.code;
+				if (type === undefined) {
+					const initial = plan.members.claim(`initial${pascalCase(name)}`);
+					type = `Awaited<ReturnType<typeof this.${initial}>>`;
+					methods.push(
+						js.methodDefinition(
+							initial,
+							[],
+							statements(placeholders, `return ${pure(context, item.value)};`),
+							{ accessibility: "private" },
+						),
+					);
+					awaits.push(`this.${name} = await this.${initial}();`);
+				} else {
+					awaits.push(`this.${name} = await ${pure(context, item.value)};`);
+				}
+				// Definitely assigned: the template and the rest of the setup read it only after.
+				const field = js.propertyDefinition(name, null, {
+					accessibility: visibility(name),
+					typeAnnotation: placeholders.type(type),
+				});
+				fields.push({ ...field, definite: true });
+				break;
+			}
+			case "State": {
+				const { name } = bindingById(plan, item.binding);
+				const form = formOf(plan, bindingById(plan, item.binding));
+				const type = item.type
+					? item.initial
+						? item.type.code
+						: `${parenthesised(item.type.code)} | undefined`
+					: undefined;
+				const initial = item.initial ? pure(context, item.initial) : "undefined";
+				let value: ReturnType<typeof js.callExpression>;
+				switch (form) {
+					case "linked":
+						value = js.callExpression(
+							js.identifier(core("linkedSignal")),
+							[expression(arrow(`${core("untracked")}(${arrow(initial)})`))],
+							typed(type),
+						);
+						pin(`this.${name}();`);
+						break;
+					case "signal":
+						value = js.callExpression(
+							js.identifier(core("signal")),
+							[expression(initial)],
+							typed(type),
+						);
+						break;
+					default:
+						throw new Error(`A state is declared as ${form}.`);
+				}
+				fields.push(
+					js.propertyDefinition(name, value, { accessibility: visibility(name), readonly: true }),
+				);
+				break;
+			}
+			case "Derived": {
+				const { name } = bindingById(plan, item.binding);
+				const getter = functionText(item.getter, component, context.rules, "pure");
+				fields.push(
+					js.propertyDefinition(
+						name,
+						js.callExpression(
+							js.identifier(core("computed")),
+							[expression(getter)],
+							typed(item.type?.code),
+						),
+						{ accessibility: visibility(name), readonly: true },
+					),
+				);
+				break;
+			}
+			case "TemplateRef":
+				break;
+			case "Id": {
+				const { name } = bindingById(plan, item.binding);
+				if (context.nextId === undefined) throw new Error("An id is declared without a counter.");
+				// Angular has no id API: a counter, as Angular Material writes its ids, one per
+				// application (ADR-0095). The component's name keeps two components' ids apart.
+				const id = `\`uf-id-${kebabCase(component.name)}-\${${core("inject")}(${context.nextId}).next++}\``;
+				fields.push(
+					js.propertyDefinition(name, expression(id), {
+						accessibility: visibility(name),
+						readonly: true,
+					}),
+				);
+				break;
+			}
+			case "Const": {
+				const binding = bindingById(plan, item.binding);
+				const value = pure(context, item.value);
+				const form = formOf(plan, binding);
+				switch (form) {
+					case "once":
+						fields.push(
+							js.propertyDefinition(
+								binding.name,
+								js.callExpression(
+									js.identifier(core("computed")),
+									[expression(arrow(`${core("untracked")}(${arrow(value)})`))],
+									typed(item.type?.code),
+								),
+								{ accessibility: visibility(binding.name), readonly: true },
+							),
+						);
+						pin(`this.${binding.name}();`);
+						break;
+					case "value":
+						fields.push(
+							js.propertyDefinition(binding.name, expression(value), {
+								accessibility: visibility(binding.name),
+								readonly: true,
+								...(item.type ? { typeAnnotation: placeholders.type(item.type.code) } : {}),
+							}),
+						);
+						break;
+					default:
+						throw new Error(`A constant is declared as ${form}.`);
+				}
+				break;
+			}
+			case "Variable": {
+				const { name } = bindingById(plan, item.binding);
+				if (plan.seeded.has(item.binding) && item.initial) {
+					// Its initial value reads an input: assigned once the inputs are set, in source order
+					// with the seeded values, and declared with its type, which nothing infers then.
+					let type = item.type?.code ?? valueType(item.initial, plan, context.declarations);
+					if (type === undefined) {
+						const initial = plan.members.claim(`initial${pascalCase(name)}`);
+						type = `ReturnType<typeof this.${initial}>`;
+						methods.push(
+							js.methodDefinition(
+								initial,
+								[],
+								statements(placeholders, `return ${pure(context, item.initial)};`),
+								{ accessibility: "private" },
+							),
+						);
+						pin(`this.${name} = this.${initial}();`);
+					} else {
+						pin(`this.${name} = ${pure(context, item.initial)};`);
+					}
+					// Definitely assigned: `ngOnInit` assigns it before any code reads it.
+					const field = js.propertyDefinition(name, null, {
+						accessibility: "private",
+						typeAnnotation: placeholders.type(type),
+					});
+					fields.push({ ...field, definite: true });
+					break;
+				}
+				// Without an initial value its type admits `undefined` (UF2021), as the field's does.
+				fields.push(
+					js.propertyDefinition(
+						name,
+						item.initial ? expression(pure(context, item.initial)) : null,
+						{
+							accessibility: "private",
+							...(item.type ? { typeAnnotation: placeholders.type(item.type.code) } : {}),
+						},
+					),
+				);
+				break;
+			}
+			case "Function": {
+				const binding = bindingById(plan, item.binding);
+				const fn = item.function;
+				if (formOf(plan, binding) === "arrow") {
+					arrows.push(
+						js.propertyDefinition(
+							binding.name,
+							expression(
+								tidied(functionText(fn, component, context.rules, "client"), "expression"),
+							),
+							{ accessibility: visibility(binding.name), readonly: true },
+						),
+					);
+					break;
+				}
+				methods.push(
+					js.methodDefinition(
+						binding.name,
+						fn.parameters.map((parameter) => placeholders.parameter(parameterText(parameter))),
+						statements(
+							placeholders,
+							tidied(functionBodyText(fn, component, context.rules, "client"), "statements"),
+						),
+						{
+							accessibility: visibility(binding.name),
+							...(fn.async ? { async: true } : {}),
+							...(fn.returnType ? { returnType: placeholders.type(fn.returnType.code) } : {}),
+						},
+					),
+				);
+				break;
+			}
+			case "Watch":
+				effect(initCode, watcherCode(item, plan, context.rules, names));
+				pins = undefined;
+				break;
+			// After a composable's call with effects in `ngOnInit`, in `ngOnInit` after it (ADR-0069).
+			case "WatchEffect":
+				if (plan.late.has(item)) {
+					effect(initCode, watchEffectCode(item, plan, context.rules, names, true));
+					pins = undefined;
+				} else effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
+				break;
+			case "Lifecycle":
+				if (plan.late.has(item)) {
+					effect(initCode, lifecycleCode(item, plan, context.rules, names, true), true);
+					pins = undefined;
+				} else effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
+				break;
+			case "Inject": {
+				// Its parent's value (`skipSelf`, since a component that provides the key it injects
+				// reads its parent's, ADR-0054), or the fallback, or `undefined` as Vue gives.
+				const { name } = bindingById(plan, item.binding);
+				const key = context.keyNames.get(item.key) ?? item.key;
+				const fallback = item.fallback ? pure(context, item.fallback) : "undefined";
+				const value =
+					item.fallback && keyOf(plan, item.key).ref
+						? `${context.refObject}(${fallback})`
+						: fallback;
+				// Read once the inputs are set: a consumer projected into its provider is created
+				// before the provider's inputs are set, which a provided value may read (NG0950).
+				const read = `this.${names.member("injector")}.get(${key}, null, { optional: true, skipSelf: true }) ?? ${value}`;
+				fields.push(
+					js.propertyDefinition(
+						name,
+						js.callExpression(js.identifier(core("computed")), [
+							expression(arrow(`${core("untracked")}(${arrow(read)})`)),
+						]),
+						{ accessibility: visibility(name), readonly: true },
+					),
+				);
+				pin(`this.${name}();`);
+				break;
+			}
+			// A model is declared with the inputs, and a provided value in the metadata.
+			case "Model":
+			case "Provide":
+				break;
+			// A composable's call, run in an injection context (ADR-0069): a field initialiser, or
+			// where its order among the class's code holds (`CallPlacement`), its result then typed
+			// by the composable's return type.
+			case "Use": {
+				const { holder, placement, injector } = calls.get(item)!;
+				// A call the constructor or `ngOnInit` makes is a private method's, whose return type
+				// types the holder: the composable's own return type would leave a type parameter
+				// `unknown`, where the call infers it (`useControllableState`).
+				let invocation = callCode(context, item);
+				let type: string | undefined;
+				if (placement !== "field") {
+					const factory = plan.members.claim(`create${pascalCase(holder)}`);
+					methods.push(
+						js.methodDefinition(factory, [], statements(placeholders, `return ${invocation};`), {
+							accessibility: "private",
+						}),
+					);
+					invocation = `this.${factory}()`;
+					type = `ReturnType<typeof this.${factory}>`;
+				}
+				const run = (into: string) =>
+					`${core("runInInjectionContext")}(this.${into}, () => ${invocation})`;
+				// A composable with effects runs in an injector of its own, which `ngOnDestroy`
+				// destroys here among the `onUnmounted` hooks, running the teardown it registered.
+				if (injector !== undefined) {
+					fields.push(
+						js.propertyDefinition(
+							injector,
+							expression(
+								`${core("Injector")}.create({ providers: [], parent: this.${names.member("injector")} })`,
+							),
+							{ accessibility: "private", readonly: true },
+						),
+					);
+					effect(initCode, { destroy: `this.${injector}.destroy();` }, true);
+				}
+				const call = injector === undefined ? invocation : run(injector);
+				switch (placement) {
+					case "field":
+						fields.push(
+							js.propertyDefinition(holder, expression(call), {
+								accessibility: visibility(holder),
+								readonly: true,
+							}),
+						);
+						break;
+					case "constructor":
+						fields.push(
+							js.propertyDefinition(holder, null, {
+								accessibility: visibility(holder),
+								readonly: true,
+								typeAnnotation: placeholders.type(type!),
+							}),
+						);
+						constructorCode.push(`this.${holder} = ${call};`);
+						break;
+					case "init": {
+						// Definitely assigned: `ngOnInit` assigns it before the template reads it.
+						const field = js.propertyDefinition(holder, null, {
+							accessibility: visibility(holder),
+							typeAnnotation: placeholders.type(type!),
+						});
+						fields.push({ ...field, definite: true });
+						initCode.push(
+							`this.${holder} = ${injector === undefined ? run(names.member("injector")) : call};`,
+						);
+						pins = undefined;
+						break;
+					}
+					default:
+						unreachable(placement);
+				}
+				break;
+			}
+			// In `ngOnInit`, once the inputs are set, in source order among what runs there
+			// (ADR-0117).
+			case "DevCheck":
+				initCode.push(pure(context, item.code));
+				pins = undefined;
+				break;
+			default:
+				unreachable(item);
+		}
+	}
 
-  for (const guard of context.guards) {
-    // The elements a once listener ran on, which it never runs on again (./listeners.ts).
-    fields.push(
-      js.propertyDefinition(guard, expression("new WeakSet<EventTarget>()"), {
-        accessibility: "protected",
-        readonly: true,
-      }),
-    );
-  }
-  for (const handler of context.handlers) {
-    methods.push(
-      js.methodDefinition(
-        handler.name,
-        handler.parameters.map((parameter) => placeholders.parameter(parameter)),
-        statements(placeholders, handler.body),
-        { accessibility: "protected", ...(handler.async ? { async: true } : {}) },
-      ),
-    );
-  }
-  if (context.once !== undefined) {
-    // `{ once: true }` removes a listener from its own element, before it runs: so a once
-    // listener of a group runs the first time its element hears the event (ADR-0047).
-    methods.push(
-      js.methodDefinition(
-        context.once,
-        [
-          placeholders.parameter("elements: WeakSet<EventTarget>"),
-          placeholders.parameter("event: Event"),
-        ],
-        statements(
-          placeholders,
-          [
-            "const element = event.currentTarget;",
-            "if (element === null || elements.has(element)) return false;",
-            "elements.add(element);",
-            "return true;",
-          ].join("\n"),
-        ),
-        { accessibility: "protected", returnType: placeholders.type("boolean") },
-      ),
-    );
-  }
-  if (context.nextTick !== undefined) {
-    // Vue's `nextTick` (ADR-0048): Vue renders pending writes in a microtask, and `nextTick()`
-    // resolves after it, so its continuation runs in the same task, before the next event of the
-    // same input. Angular schedules its render for a later task: the helper renders the pending
-    // change itself in a microtask, `ApplicationRef.tick()` (render hooks included), and resolves
-    // after it.
-    const appRef = names.member("appRef");
-    methods.push(
-      js.methodDefinition(
-        context.nextTick,
-        [],
-        statements(placeholders, `await Promise.resolve();\nthis.${appRef}.tick();`),
-        {
-          accessibility: "private",
-          async: true,
-          returnType: placeholders.type("Promise<void>"),
-        },
-      ),
-    );
-  }
+	for (const guard of context.guards) {
+		// The elements a once listener ran on, which it never runs on again (./listeners.ts).
+		fields.push(
+			js.propertyDefinition(guard, expression("new WeakSet<EventTarget>()"), {
+				accessibility: "protected",
+				readonly: true,
+			}),
+		);
+	}
+	for (const handler of context.handlers) {
+		methods.push(
+			js.methodDefinition(
+				handler.name,
+				handler.parameters.map((parameter) => placeholders.parameter(parameter)),
+				statements(placeholders, handler.body),
+				{ accessibility: "protected", ...(handler.async ? { async: true } : {}) },
+			),
+		);
+	}
+	if (context.once !== undefined) {
+		// `{ once: true }` removes a listener from its own element, before it runs: so a once
+		// listener of a group runs the first time its element hears the event (ADR-0047).
+		methods.push(
+			js.methodDefinition(
+				context.once,
+				[
+					placeholders.parameter("elements: WeakSet<EventTarget>"),
+					placeholders.parameter("event: Event"),
+				],
+				statements(
+					placeholders,
+					[
+						"const element = event.currentTarget;",
+						"if (element === null || elements.has(element)) return false;",
+						"elements.add(element);",
+						"return true;",
+					].join("\n"),
+				),
+				{ accessibility: "protected", returnType: placeholders.type("boolean") },
+			),
+		);
+	}
+	if (context.nextTick !== undefined) {
+		// Vue's `nextTick` (ADR-0048): Vue renders pending writes in a microtask, and `nextTick()`
+		// resolves after it, so its continuation runs in the same task, before the next event of the
+		// same input. Angular schedules its render for a later task: the helper renders the pending
+		// change itself in a microtask, `ApplicationRef.tick()` (render hooks included), and resolves
+		// after it.
+		const appRef = names.member("appRef");
+		methods.push(
+			js.methodDefinition(
+				context.nextTick,
+				[],
+				statements(placeholders, `await Promise.resolve();\nthis.${appRef}.tick();`),
+				{
+					accessibility: "private",
+					async: true,
+					returnType: placeholders.type("Promise<void>"),
+				},
+			),
+		);
+	}
 
-  if (awaits.length && plan.resolved !== undefined) {
-    // The setup goes on once the inputs are set, as a pending task, so the server's render and
-    // the application's stability wait for it; the rest of the setup runs after the awaits, then
-    // the template renders (ADR-0101).
-    const rest = [
-      "// Destroyed while it waited: the rest of the setup never runs.",
-      `if (this.${service("destroyRef")}.destroyed) return;`,
-    ].join("\n");
-    const body = [awaits.join("\n"), rest, ...initCode, `this.${plan.resolved}.set(true);`];
-    initCode.splice(
-      0,
-      initCode.length,
-      `this.${service("pendingTasks")}.run(async () => {\n${body.join("\n\n")}\n});`,
-    );
-  }
-  const services = SERVICES.flatMap((name) => injected.get(name) ?? []).map(({ member, token }) =>
-    js.propertyDefinition(
-      member,
-      js.callExpression(js.identifier(core("inject")), [js.identifier(core(token))]),
-      { accessibility: "private", readonly: true },
-    ),
-  );
-  if (context.server !== undefined) {
-    fields.push(
-      js.propertyDefinition(
-        context.server,
-        expression(
-          `${imports.add("@angular/common", "isPlatformServer")}(${core("inject")}(${core("PLATFORM_ID")}))`,
-        ),
-        { accessibility: "protected", readonly: true },
-      ),
-    );
-  }
-  // The template reads module functions through members of their names, as it reads globals,
-  // and each pass-through name through the member the plan gives it (ADR-0064).
-  const globals = [
-    ...[
-      ...context.globals.map((name) => [name, name] as const),
-      ...context.moduleMembers,
-      ...plan.recipes,
-    ]
-      .map(([value, member]) => ({ value, member }))
-      .toSorted((a, b) => (a.member < b.member ? -1 : a.member > b.member ? 1 : 0)),
-    ...context.helpers.map(({ name }) => ({ value: name, member: name })),
-  ].map(({ value, member }) =>
-    js.propertyDefinition(member, js.identifier(value), {
-      accessibility: "protected",
-      readonly: true,
-    }),
-  );
-  const lifecycle: Member[] = [];
-  const implementing: string[] = [];
-  if (constructorCode.length) {
-    lifecycle.push(
-      js.methodDefinition(
-        "constructor",
-        [],
-        statements(placeholders, constructorCode.join("\n\n")),
-        {
-          kind: "constructor",
-        },
-      ),
-    );
-  }
-  if (initCode.length) {
-    implementing.push(imports.add("@angular/core", "OnInit", { type: true }));
-    lifecycle.push(
-      js.methodDefinition("ngOnInit", [], statements(placeholders, initCode.join("\n\n")), {
-        returnType: js.keywordType("void"),
-      }),
-    );
-  }
-  // The `onUnmounted` hooks of a setup that awaits come after the awaits: they run only where
-  // the setup has resolved, as on every target (ADR-0101).
-  if (unmounted.length && plan.resolved !== undefined) {
-    unmounted.splice(
-      0,
-      unmounted.length,
-      `if (this.${plan.resolved}()) {\n${unmounted.join("\n")}\n}`,
-    );
-  }
-  const teardown = [...destroyCode, ...unmounted];
-  if (teardown.length) {
-    implementing.push(imports.add("@angular/core", "OnDestroy", { type: true }));
-    const why = destroyCode.length
-      ? ["// Before Angular stops the outputs: a cleanup may still emit, as on every target."]
-      : [];
-    lifecycle.push(
-      js.methodDefinition(
-        "ngOnDestroy",
-        [],
-        statements(placeholders, [...why, ...destroyCode, ...unmounted].join("\n")),
-        { returnType: js.keywordType("void") },
-      ),
-    );
-  }
-  return {
-    members: [
-      ...members,
-      ...services,
-      ...arrows,
-      ...fields,
-      ...refs,
-      ...globals,
-      ...lifecycle,
-      ...methods,
-    ],
-    implements: implementing,
-  };
+	if (awaits.length && plan.resolved !== undefined) {
+		// The setup goes on once the inputs are set, as a pending task, so the server's render and
+		// the application's stability wait for it; the rest of the setup runs after the awaits, then
+		// the template renders (ADR-0101).
+		const rest = [
+			"// Destroyed while it waited: the rest of the setup never runs.",
+			`if (this.${service("destroyRef")}.destroyed) return;`,
+		].join("\n");
+		const body = [awaits.join("\n"), rest, ...initCode, `this.${plan.resolved}.set(true);`];
+		initCode.splice(
+			0,
+			initCode.length,
+			`this.${service("pendingTasks")}.run(async () => {\n${body.join("\n\n")}\n});`,
+		);
+	}
+	const services = SERVICES.flatMap((name) => injected.get(name) ?? []).map(({ member, token }) =>
+		js.propertyDefinition(
+			member,
+			js.callExpression(js.identifier(core("inject")), [js.identifier(core(token))]),
+			{ accessibility: "private", readonly: true },
+		),
+	);
+	if (context.server !== undefined) {
+		fields.push(
+			js.propertyDefinition(
+				context.server,
+				expression(
+					`${imports.add("@angular/common", "isPlatformServer")}(${core("inject")}(${core("PLATFORM_ID")}))`,
+				),
+				{ accessibility: "protected", readonly: true },
+			),
+		);
+	}
+	// The template reads module functions through members of their names, as it reads globals,
+	// and each pass-through name through the member the plan gives it (ADR-0064).
+	const globals = [
+		...[
+			...context.globals.map((name) => [name, name] as const),
+			...context.moduleMembers,
+			...plan.recipes,
+		]
+			.map(([value, member]) => ({ value, member }))
+			.toSorted((a, b) => (a.member < b.member ? -1 : a.member > b.member ? 1 : 0)),
+		...context.helpers.map(({ name }) => ({ value: name, member: name })),
+	].map(({ value, member }) =>
+		js.propertyDefinition(member, js.identifier(value), {
+			accessibility: "protected",
+			readonly: true,
+		}),
+	);
+	const lifecycle: Member[] = [];
+	const implementing: string[] = [];
+	if (constructorCode.length) {
+		lifecycle.push(
+			js.methodDefinition(
+				"constructor",
+				[],
+				statements(placeholders, constructorCode.join("\n\n")),
+				{
+					kind: "constructor",
+				},
+			),
+		);
+	}
+	if (initCode.length) {
+		implementing.push(imports.add("@angular/core", "OnInit", { type: true }));
+		lifecycle.push(
+			js.methodDefinition("ngOnInit", [], statements(placeholders, initCode.join("\n\n")), {
+				returnType: js.keywordType("void"),
+			}),
+		);
+	}
+	// The `onUnmounted` hooks of a setup that awaits come after the awaits: they run only where
+	// the setup has resolved, as on every target (ADR-0101).
+	if (unmounted.length && plan.resolved !== undefined) {
+		unmounted.splice(
+			0,
+			unmounted.length,
+			`if (this.${plan.resolved}()) {\n${unmounted.join("\n")}\n}`,
+		);
+	}
+	const teardown = [...destroyCode, ...unmounted];
+	if (teardown.length) {
+		implementing.push(imports.add("@angular/core", "OnDestroy", { type: true }));
+		const why = destroyCode.length
+			? ["// Before Angular stops the outputs: a cleanup may still emit, as on every target."]
+			: [];
+		lifecycle.push(
+			js.methodDefinition(
+				"ngOnDestroy",
+				[],
+				statements(placeholders, [...why, ...destroyCode, ...unmounted].join("\n")),
+				{ returnType: js.keywordType("void") },
+			),
+		);
+	}
+	return {
+		members: [
+			...members,
+			...services,
+			...arrows,
+			...fields,
+			...refs,
+			...globals,
+			...lifecycle,
+			...methods,
+		],
+		implements: implementing,
+	};
 }
 
 /**
@@ -892,23 +892,23 @@ export function classMembers(context: MemberContext): {
  * as the setup evaluates it, a getter as a pure arrow, a callback as client code (ADR-0069).
  */
 function callCode(context: MemberContext, item: UseItem): string {
-  const { component } = context.plan;
-  const parts = item.arguments.map((argument) => {
-    switch (argument.kind) {
-      case "Value":
-        return pure(context, argument.value);
-      case "Getter":
-        return functionText(argument.getter, component, context.rules, "pure");
-      case "Callback":
-        return tidied(
-          functionText(argument.callback, component, context.rules, "client"),
-          "expression",
-        );
-      default:
-        return unreachable(argument);
-    }
-  });
-  return `${composableName(context.plan, item.composable)}(${parts.join(", ")})`;
+	const { component } = context.plan;
+	const parts = item.arguments.map((argument) => {
+		switch (argument.kind) {
+			case "Value":
+				return pure(context, argument.value);
+			case "Getter":
+				return functionText(argument.getter, component, context.rules, "pure");
+			case "Callback":
+				return tidied(
+					functionText(argument.callback, component, context.rules, "client"),
+					"expression",
+				);
+			default:
+				return unreachable(argument);
+		}
+	});
+	return `${composableName(context.plan, item.composable)}(${parts.join(", ")})`;
 }
 
 /**
@@ -916,29 +916,29 @@ function callCode(context: MemberContext, item: UseItem): string {
  * (`./use-toggle`, ADR-0069) under the source's local name.
  */
 export function composableName(plan: Plan, local: string): string {
-  for (const entry of plan.module.imports ?? []) {
-    const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
-    if (name === undefined) continue;
-    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
-    return plan.imports.add(`${directory}${kebabCase(name.imported)}`, name.imported, {
-      local,
-      exact: true,
-    });
-  }
-  throw new Error(`\`${local}\` is called as a composable, and no import names it.`);
+	for (const entry of plan.module.imports ?? []) {
+		const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
+		if (name === undefined) continue;
+		const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+		return plan.imports.add(`${directory}${kebabCase(name.imported)}`, name.imported, {
+			local,
+			exact: true,
+		});
+	}
+	throw new Error(`\`${local}\` is called as a composable, and no import names it.`);
 }
 
 /** Code the setup evaluates (an initial value, a constant), spelled for the class. */
 function pure(context: MemberContext, code: Code): string {
-  return rewriteCode(code, context.plan.component, context.rules, "pure");
+	return rewriteCode(code, context.plan.component, context.rules, "pure");
 }
 
 /** A method's body as one statements placeholder, or none for an empty body. */
 function statements(
-  placeholders: Placeholders,
-  code: string,
+	placeholders: Placeholders,
+	code: string,
 ): ReturnType<Placeholders["statements"]>[] {
-  return code.trim() === "" ? [] : [placeholders.statements(code)];
+	return code.trim() === "" ? [] : [placeholders.statements(code)];
 }
 
 /**
@@ -955,48 +955,48 @@ function statements(
  *   so the test is `=== undefined`, never `??` (ADR-0034).
  */
 function inputMember(
-  prop: Prop,
-  component: UfComponent,
-  input: string,
-  placeholders: Placeholders,
-  declarations: readonly TypeDeclaration[],
+	prop: Prop,
+	component: UfComponent,
+	input: string,
+	placeholders: Placeholders,
+	declarations: readonly TypeDeclaration[],
 ): Member {
-  const callee = js.identifier(input);
-  const { default: initial } = prop;
-  const type = propType(prop, component);
-  if (!prop.optional) {
-    const required = js.memberExpression(callee, "required");
-    return readonlyField(prop, js.callExpression(required, [], [placeholders.type(type)]));
-  }
-  if (initial === undefined) {
-    return readonlyField(prop, js.callExpression(callee, [], [placeholders.type(type)]));
-  }
-  const value = defaultedType(prop, component, declarations);
-  const transform = js.arrowFunction(
-    [js.bindingIdentifier("value")],
-    js.conditionalExpression(
-      js.binaryExpression("===", js.identifier("value"), js.identifier("undefined")),
-      placeholders.expression(initial.code),
-      js.identifier("value"),
-    ),
-  );
-  return readonlyField(
-    prop,
-    js.callExpression(
-      callee,
-      [placeholders.expression(initial.code), js.objectExpression([["transform", transform]])],
-      [
-        placeholders.type(value),
-        // An indexed access of an optional member admits `undefined` already.
-        prop.declaredBy && type !== prop.type.code
-          ? placeholders.type(type)
-          : js.unionType([placeholders.type(value), js.keywordType("undefined")]),
-      ],
-    ),
-  );
+	const callee = js.identifier(input);
+	const { default: initial } = prop;
+	const type = propType(prop, component);
+	if (!prop.optional) {
+		const required = js.memberExpression(callee, "required");
+		return readonlyField(prop, js.callExpression(required, [], [placeholders.type(type)]));
+	}
+	if (initial === undefined) {
+		return readonlyField(prop, js.callExpression(callee, [], [placeholders.type(type)]));
+	}
+	const value = defaultedType(prop, component, declarations);
+	const transform = js.arrowFunction(
+		[js.bindingIdentifier("value")],
+		js.conditionalExpression(
+			js.binaryExpression("===", js.identifier("value"), js.identifier("undefined")),
+			placeholders.expression(initial.code),
+			js.identifier("value"),
+		),
+	);
+	return readonlyField(
+		prop,
+		js.callExpression(
+			callee,
+			[placeholders.expression(initial.code), js.objectExpression([["transform", transform]])],
+			[
+				placeholders.type(value),
+				// An indexed access of an optional member admits `undefined` already.
+				prop.declaredBy && type !== prop.type.code
+					? placeholders.type(type)
+					: js.unionType([placeholders.type(value), js.keywordType("undefined")]),
+			],
+		),
+	);
 }
 
 /** `readonly name = …;`: public, as `strictInputAccessModifiers` requires of an input. */
 function readonlyField(prop: Prop, value: Parameters<typeof js.propertyDefinition>[1]): Member {
-  return js.propertyDefinition(prop.name, value, { readonly: true });
+	return js.propertyDefinition(prop.name, value, { readonly: true });
 }

@@ -3,5 +3,5 @@
 export type { Tone } from "./tone";
 
 export default function Badge({ label }: { label: string }) {
-  return <span class="badge">{label}</span>;
+	return <span class="badge">{label}</span>;
 }

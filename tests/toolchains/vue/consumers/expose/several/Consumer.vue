@@ -3,5 +3,5 @@ import Counter from "../../../../../integration/cases/expose/several/__output__/
 </script>
 
 <template>
-  <Counter :start="1" />
+	<Counter :start="1" />
 </template>

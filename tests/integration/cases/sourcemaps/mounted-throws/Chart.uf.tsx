@@ -1,9 +1,9 @@
 import { onMounted } from "@uxfront/unframework";
 
 export default function Chart() {
-  onMounted(() => {
-    throw new Error("The chart could not start");
-  });
+	onMounted(() => {
+		throw new Error("The chart could not start");
+	});
 
-  return <p>Chart</p>;
+	return <p>Chart</p>;
 }

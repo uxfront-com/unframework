@@ -11,22 +11,22 @@ import { isFrameworkAttribute } from "./framework-attributes.ts";
  * unwrapped, so the difference it makes stays visible.
  */
 export function isAngularHost(element: TreeElement): boolean {
-  if (element.namespaceURI !== HTML_NAMESPACE || !element.tagName.startsWith("uf-")) return false;
-  let contents = false;
-  for (const attribute of element.attrs) {
-    const name = attributeName(attribute);
-    if (name === "style") {
-      const declarations = dedupeDeclarations(parseStyle(attribute.value));
-      contents =
-        declarations.length === 1 &&
-        declarations[0]!.property === "display" &&
-        declarations[0]!.value?.toLowerCase() === "contents";
-      if (!contents) return false;
-    } else if (!isFrameworkAttribute(name, "angular")) {
-      return false;
-    }
-  }
-  return contents;
+	if (element.namespaceURI !== HTML_NAMESPACE || !element.tagName.startsWith("uf-")) return false;
+	let contents = false;
+	for (const attribute of element.attrs) {
+		const name = attributeName(attribute);
+		if (name === "style") {
+			const declarations = dedupeDeclarations(parseStyle(attribute.value));
+			contents =
+				declarations.length === 1 &&
+				declarations[0]!.property === "display" &&
+				declarations[0]!.value?.toLowerCase() === "contents";
+			if (!contents) return false;
+		} else if (!isFrameworkAttribute(name, "angular")) {
+			return false;
+		}
+	}
+	return contents;
 }
 
 /**
@@ -37,26 +37,26 @@ export function isAngularHost(element: TreeElement): boolean {
  * stays.
  */
 export function unwrapAngularHosts(root: TreeParent, target?: NormalizeTarget): void {
-  if (target !== "angular") return;
-  unwrap(root);
+	if (target !== "angular") return;
+	unwrap(root);
 }
 
 function unwrap(root: TreeParent): void {
-  const children = childrenOf(root);
-  const unwrapped: TreeChild[] = [];
-  let changed = false;
-  for (const node of children) {
-    if (!isElement(node)) {
-      unwrapped.push(node);
-      continue;
-    }
-    unwrap(node);
-    if (isAngularHost(node)) {
-      unwrapped.push(...childrenOf(node));
-      changed = true;
-    } else {
-      unwrapped.push(node);
-    }
-  }
-  if (changed) replaceChildren(root, unwrapped);
+	const children = childrenOf(root);
+	const unwrapped: TreeChild[] = [];
+	let changed = false;
+	for (const node of children) {
+		if (!isElement(node)) {
+			unwrapped.push(node);
+			continue;
+		}
+		unwrap(node);
+		if (isAngularHost(node)) {
+			unwrapped.push(...childrenOf(node));
+			changed = true;
+		} else {
+			unwrapped.push(node);
+		}
+	}
+	if (changed) replaceChildren(root, unwrapped);
 }

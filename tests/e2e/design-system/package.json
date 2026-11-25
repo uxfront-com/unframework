@@ -1,42 +1,42 @@
 {
-  "name": "@unframework.dev/e2e-design-system",
-  "version": "0.0.0",
-  "private": true,
-  "description": "The sample design system the end-to-end apps consume, written in the built subset.",
-  "files": [
-    "src"
-  ],
-  "type": "module",
-  "exports": {
-    "./source/*": "./src/*"
-  },
-  "scripts": {
-    "pack:dist": "unframework build --package",
-    "parity": "unframework test",
-    "preview": "unframework preview",
-    "visual": "unframework visual"
-  },
-  "devDependencies": {
-    "@angular/common": "catalog:",
-    "@angular/core": "catalog:",
-    "@babel/core": "catalog:",
-    "@qwik.dev/core": "catalog:",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "@unframework.dev/testing": "workspace:*",
-    "@unframework.dev/visual": "workspace:*",
-    "@uxfront/unframework": "workspace:*",
-    "@vitest/browser-playwright": "catalog:",
-    "astro": "catalog:",
-    "babel-preset-solid": "catalog:",
-    "playwright": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "solid-js": "catalog:",
-    "svelte": "catalog:",
-    "tsdown": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:",
-    "vue": "catalog:"
-  }
+	"name": "@unframework.dev/e2e-design-system",
+	"version": "0.0.0",
+	"private": true,
+	"description": "The sample design system the end-to-end apps consume, written in the built subset.",
+	"files": [
+		"src"
+	],
+	"type": "module",
+	"exports": {
+		"./source/*": "./src/*"
+	},
+	"scripts": {
+		"pack:dist": "unframework build --package",
+		"parity": "unframework test",
+		"preview": "unframework preview",
+		"visual": "unframework visual"
+	},
+	"devDependencies": {
+		"@angular/common": "catalog:",
+		"@angular/core": "catalog:",
+		"@babel/core": "catalog:",
+		"@qwik.dev/core": "catalog:",
+		"@types/react": "catalog:",
+		"@types/react-dom": "catalog:",
+		"@unframework.dev/testing": "workspace:*",
+		"@unframework.dev/visual": "workspace:*",
+		"@uxfront/unframework": "workspace:*",
+		"@vitest/browser-playwright": "catalog:",
+		"astro": "catalog:",
+		"babel-preset-solid": "catalog:",
+		"playwright": "catalog:",
+		"react": "catalog:",
+		"react-dom": "catalog:",
+		"solid-js": "catalog:",
+		"svelte": "catalog:",
+		"tsdown": "catalog:",
+		"vite": "catalog:",
+		"vitest": "catalog:",
+		"vue": "catalog:"
+	}
 }

@@ -8,12 +8,12 @@ import { expect } from "vitest";
 import Gallery from "./Gallery.uf.tsx";
 
 describeTargets("styles/slotted", () => {
-  it("styles the slotted captions, and not the one outside the frame", async () => {
-    const view = await mount(Gallery);
-    await view.expectParity("initial");
-    await expect.element(view.getByText("A quiet harbour")).toBeVisible();
-    await expect.element(view.getByText("Harbour at dusk")).toBeVisible();
-    await expect.element(view.getByText("A matted print")).toBeVisible();
-    await expect.element(view.getByText("Outside the frame")).toBeVisible();
-  });
+	it("styles the slotted captions, and not the one outside the frame", async () => {
+		const view = await mount(Gallery);
+		await view.expectParity("initial");
+		await expect.element(view.getByText("A quiet harbour")).toBeVisible();
+		await expect.element(view.getByText("Harbour at dusk")).toBeVisible();
+		await expect.element(view.getByText("A matted print")).toBeVisible();
+		await expect.element(view.getByText("Outside the frame")).toBeVisible();
+	});
 });

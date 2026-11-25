@@ -10,12 +10,12 @@ import type { PreviewCatalogue } from "./catalogue.ts";
 import { embedOptions } from "./embed-options.ts";
 import type { EmbedParamNames } from "./embed-options.ts";
 import {
-  CONTROLS_PARAM,
-  EMBED_FILE,
-  EXAMPLE_PARAM,
-  RESIZE_PARAM,
-  TARGET_PARAM,
-  THEME_PARAM,
+	CONTROLS_PARAM,
+	EMBED_FILE,
+	EXAMPLE_PARAM,
+	RESIZE_PARAM,
+	TARGET_PARAM,
+	THEME_PARAM,
 } from "./protocol.ts";
 import { scriptJson } from "./shell.ts";
 
@@ -24,30 +24,30 @@ import { scriptJson } from "./shell.ts";
  * development, relative in a static preview), and the examples' ids, in the catalogue's order.
  */
 export interface EmbedData {
-  frames: { target: string; src: string }[];
-  examples: string[];
+	frames: { target: string; src: string }[];
+	examples: string[];
 }
 
 /** The embed page's data, from the catalogue and the frame pages' URLs. */
 export function embedData(
-  catalogue: Pick<PreviewCatalogue, "examples">,
-  frames: readonly { target: string; src: string }[],
+	catalogue: Pick<PreviewCatalogue, "examples">,
+	frames: readonly { target: string; src: string }[],
 ): EmbedData {
-  return {
-    frames: frames.map(({ target, src }) => ({ target, src })),
-    examples: catalogue.examples.map((example) => example.id),
-  };
+	return {
+		frames: frames.map(({ target, src }) => ({ target, src })),
+		examples: catalogue.examples.map((example) => example.id),
+	};
 }
 
 /** The embed page. */
 export function embedPage(data: EmbedData): string {
-  const constants = {
-    file: EMBED_FILE,
-    example: EXAMPLE_PARAM,
-    target: TARGET_PARAM,
-    options: { controls: CONTROLS_PARAM, theme: THEME_PARAM, resize: RESIZE_PARAM },
-  };
-  return `<!doctype html>
+	const constants = {
+		file: EMBED_FILE,
+		example: EXAMPLE_PARAM,
+		target: TARGET_PARAM,
+		options: { controls: CONTROLS_PARAM, theme: THEME_PARAM, resize: RESIZE_PARAM },
+	};
+	return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -68,48 +68,48 @@ export function embedPage(data: EmbedData): string {
  * target, with `location.replace` so Back skips this page, or a message, written as text.
  */
 function embedScript(
-  constants: {
-    file: string;
-    example: string;
-    target: string;
-    options: EmbedParamNames;
-  },
-  readOptions: typeof embedOptions,
+	constants: {
+		file: string;
+		example: string;
+		target: string;
+		options: EmbedParamNames;
+	},
+	readOptions: typeof embedOptions,
 ): void {
-  const data = JSON.parse(document.getElementById("uf-embed-data")!.textContent!) as EmbedData;
-  const params = new URLSearchParams(location.search);
-  const example = params.get(constants.example);
-  const target = params.get(constants.target);
-  const targets = data.frames.map((frame) => frame.target).join(", ");
-  const say = (text: string) => {
-    const paragraph = document.createElement("p");
-    paragraph.textContent = text;
-    document.body.replaceChildren(paragraph);
-  };
-  if (!example || !target) {
-    say(
-      `Open an example with ${constants.file}?${constants.example}=<id>&${constants.target}=<target>. The targets are ${targets}.`,
-    );
-    return;
-  }
-  const frame = data.frames.find((each) => each.target === target);
-  if (!frame) {
-    say(`This preview has no target ${JSON.stringify(target)}. Its targets are ${targets}.`);
-    return;
-  }
-  if (!data.examples.includes(example)) {
-    say(`This preview has no example ${JSON.stringify(example)}.`);
-    return;
-  }
-  const options = readOptions(params, constants.options);
-  if ("error" in options) {
-    say(options.error);
-    return;
-  }
-  const url = new URL(frame.src, location.href);
-  url.searchParams.set(constants.example, example);
-  if (options.controls) url.searchParams.set(constants.options.controls, "true");
-  if (options.theme) url.searchParams.set(constants.options.theme, options.theme);
-  if (options.resize) url.searchParams.set(constants.options.resize, "true");
-  location.replace(url.href);
+	const data = JSON.parse(document.getElementById("uf-embed-data")!.textContent!) as EmbedData;
+	const params = new URLSearchParams(location.search);
+	const example = params.get(constants.example);
+	const target = params.get(constants.target);
+	const targets = data.frames.map((frame) => frame.target).join(", ");
+	const say = (text: string) => {
+		const paragraph = document.createElement("p");
+		paragraph.textContent = text;
+		document.body.replaceChildren(paragraph);
+	};
+	if (!example || !target) {
+		say(
+			`Open an example with ${constants.file}?${constants.example}=<id>&${constants.target}=<target>. The targets are ${targets}.`,
+		);
+		return;
+	}
+	const frame = data.frames.find((each) => each.target === target);
+	if (!frame) {
+		say(`This preview has no target ${JSON.stringify(target)}. Its targets are ${targets}.`);
+		return;
+	}
+	if (!data.examples.includes(example)) {
+		say(`This preview has no example ${JSON.stringify(example)}.`);
+		return;
+	}
+	const options = readOptions(params, constants.options);
+	if ("error" in options) {
+		say(options.error);
+		return;
+	}
+	const url = new URL(frame.src, location.href);
+	url.searchParams.set(constants.example, example);
+	if (options.controls) url.searchParams.set(constants.options.controls, "true");
+	if (options.theme) url.searchParams.set(constants.options.theme, options.theme);
+	if (options.resize) url.searchParams.set(constants.options.resize, "true");
+	location.replace(url.href);
 }

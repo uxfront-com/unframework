@@ -3,7 +3,7 @@ import Names from "../../../../../integration/cases/slots/scoped-default/__outpu
 </script>
 
 <template>
-  <Names :names="['Ada']">
-    <template #default="{ item }">{{ item.toUpperCase() }}</template>
-  </Names>
+	<Names :names="['Ada']">
+		<template #default="{ item }">{{ item.toUpperCase() }}</template>
+	</Names>
 </template>

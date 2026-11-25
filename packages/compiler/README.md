@@ -6,8 +6,8 @@ The Unframework compiler (plan §5.1):
 import { compile } from "@unframework.dev/compiler";
 
 const result = await compile(source, {
-  filename: "src/Hello.uf.tsx",
-  targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
+	filename: "src/Hello.uf.tsx",
+	targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
 });
 result.outputs.vue; // [{ path: "Hello.vue", contents: "<template>…</template>\n" }]
 result.diagnostics; // sorted, with stable UF codes
@@ -163,10 +163,10 @@ bundler plugin doesn't call them: it takes explicit options.
 import { loadConfig, resolveConfig } from "@unframework.dev/compiler";
 
 async function readConfig(root: string) {
-  const loaded = await loadConfig(root);
-  // A file that failed to load leaves nothing to check.
-  if (loaded.diagnostics.length > 0) return { config: undefined, diagnostics: loaded.diagnostics };
-  return resolveConfig(loaded.raw, loaded);
+	const loaded = await loadConfig(root);
+	// A file that failed to load leaves nothing to check.
+	if (loaded.diagnostics.length > 0) return { config: undefined, diagnostics: loaded.diagnostics };
+	return resolveConfig(loaded.raw, loaded);
 }
 ```
 

@@ -6,9 +6,9 @@ import { expect } from "vitest";
 import Membership from "./Membership.uf.tsx";
 
 describeTargets("async-setup/chained", () => {
-  it("renders what both awaits loaded", async () => {
-    const view = await mountScenario(Membership, "ada");
-    await view.expectParity("ada");
-    await expect.element(view.getByRole("status")).toHaveTextContent("User ada is in Team team-3");
-  });
+	it("renders what both awaits loaded", async () => {
+		const view = await mountScenario(Membership, "ada");
+		await view.expectParity("ada");
+		await expect.element(view.getByRole("status")).toHaveTextContent("User ada is in Team team-3");
+	});
 });

@@ -1,7 +1,7 @@
 export interface Sized {
-  size: "small" | "large";
+	size: "small" | "large";
 }
 
 export interface Toned {
-  tone?: "neutral" | "accent";
+	tone?: "neutral" | "accent";
 }

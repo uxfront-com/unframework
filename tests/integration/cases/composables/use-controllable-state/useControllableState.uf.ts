@@ -4,17 +4,17 @@
 import { computed, ref } from "@uxfront/unframework";
 
 export function useControllableState<T>(
-  value: () => T | undefined,
-  initial: T,
-  onChange: (next: T) => void,
+	value: () => T | undefined,
+	initial: T,
+	onChange: (next: T) => void,
 ) {
-  const local = ref<T>(initial);
-  const current = computed(() => value() ?? local.value);
+	const local = ref<T>(initial);
+	const current = computed(() => value() ?? local.value);
 
-  function set(next: T) {
-    local.value = next;
-    onChange(next);
-  }
+	function set(next: T) {
+		local.value = next;
+		onChange(next);
+	}
 
-  return { current, set };
+	return { current, set };
 }

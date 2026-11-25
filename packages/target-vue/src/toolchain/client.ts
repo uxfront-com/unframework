@@ -17,40 +17,40 @@ import type { Component } from "vue";
  * as a native listener.
  */
 export const mount: MountAdapter = async (component, container, { props, on }) => {
-  const current: Record<string, unknown> = shallowReactive({ ...props });
-  const listeners = listenerProps(on);
-  const app = createApp({
-    render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
-  });
-  app.mount(container);
-  await nextTick();
-  return {
-    async settle() {
-      await nextTick();
-    },
-    async rerender(next) {
-      for (const key of Object.keys(current)) {
-        if (!Object.hasOwn(next, key)) Reflect.deleteProperty(current, key);
-      }
-      Object.assign(current, next);
-      await nextTick();
-    },
-    async unmount() {
-      app.unmount();
-    },
-  };
+	const current: Record<string, unknown> = shallowReactive({ ...props });
+	const listeners = listenerProps(on);
+	const app = createApp({
+		render: () => rootOf(component as Component, () => ({ ...current, ...listeners })),
+	});
+	app.mount(container);
+	await nextTick();
+	return {
+		async settle() {
+			await nextTick();
+		},
+		async rerender(next) {
+			for (const key of Object.keys(current)) {
+				if (!Object.hasOwn(next, key)) Reflect.deleteProperty(current, key);
+			}
+			Object.assign(current, next);
+			await nextTick();
+		},
+		async unmount() {
+			app.unmount();
+		},
+	};
 };
 
 /** Vue's listener props for the test's listeners: `onChange` for `change` (`toHandlerKey`). */
 function listenerProps(
-  on: Readonly<Record<string, MountListener>> = {},
+	on: Readonly<Record<string, MountListener>> = {},
 ): Record<string, MountListener> {
-  return Object.fromEntries(
-    Object.entries(on).map(([name, listener]) => [
-      `on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
-      listener,
-    ]),
-  );
+	return Object.fromEntries(
+		Object.entries(on).map(([name, listener]) => [
+			`on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
+			listener,
+		]),
+	);
 }
 
 /**
@@ -59,9 +59,9 @@ function listenerProps(
  * other case mounts through `<Suspense>`'s hidden container.
  */
 function rootOf(component: Component, props: () => Record<string, unknown>) {
-  const { setup } = component as { setup?: unknown };
-  if (Object.prototype.toString.call(setup) !== "[object AsyncFunction]") {
-    return h(component, props());
-  }
-  return h(Suspense, null, { default: () => h(component, props()) });
+	const { setup } = component as { setup?: unknown };
+	if (Object.prototype.toString.call(setup) !== "[object AsyncFunction]") {
+		return h(component, props());
+	}
+	return h(Suspense, null, { default: () => h(component, props()) });
 }

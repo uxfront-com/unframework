@@ -3,16 +3,16 @@
 // their scheduler stay inline, since each output tailors them and their queue is the file's (R1,
 // R2), and so do `restAttributes`, `textCaret`, `toggle` and `selectedValues`.
 export const SHARED_HELPER_NAMES: readonly string[] = [
-  "cx",
-  "KeyedFor",
-  "modelText",
-  "nextTick",
-  "queueHook",
-  "scopeAttributes",
-  "selectOptions",
-  "styleProperties",
-  "Teleport",
-  "Transition",
+	"cx",
+	"KeyedFor",
+	"modelText",
+	"nextTick",
+	"queueHook",
+	"scopeAttributes",
+	"selectOptions",
+	"styleProperties",
+	"Teleport",
+	"Transition",
 ];
 
 /**
@@ -20,7 +20,7 @@ export const SHARED_HELPER_NAMES: readonly string[] = [
  * imports once its helpers are collected (`./shared.ts`, `importShared`).
  */
 export class SharedHelpers {
-  readonly used: Map<string, string> = new Map();
+	readonly used: Map<string, string> = new Map();
 }
 
 /**
@@ -28,14 +28,14 @@ export class SharedHelpers {
  * one is shared, which records that the file imports it under `local` (ADR-0121).
  */
 export function printHelper(
-  shared: SharedHelpers | undefined,
-  name: string,
-  local: string,
-  code: (local: string) => string,
+	shared: SharedHelpers | undefined,
+	name: string,
+	local: string,
+	code: (local: string) => string,
 ): string[] {
-  if (!shared || !SHARED_HELPER_NAMES.includes(name)) return [code(local)];
-  shared.used.set(name, local);
-  return [];
+	if (!shared || !SHARED_HELPER_NAMES.includes(name)) return [code(local)];
+	shared.used.set(name, local);
+	return [];
 }
 
 /**
@@ -44,11 +44,11 @@ export function printHelper(
  * and the unplugin's join writes one import (ADR-0053, ADR-0121).
  */
 export function reserveSharedNames(
-  names: Set<string>,
-  reserved: readonly Iterable<string>[],
+	names: Set<string>,
+	reserved: readonly Iterable<string>[],
 ): void {
-  for (const helper of SHARED_HELPER_NAMES) {
-    const own = new RegExp(`^${helper}(?:_\\d+)*$`);
-    for (const each of reserved) for (const name of each) if (own.test(name)) names.add(name);
-  }
+	for (const helper of SHARED_HELPER_NAMES) {
+		const own = new RegExp(`^${helper}(?:_\\d+)*$`);
+		for (const each of reserved) for (const name of each) if (own.test(name)) names.add(name);
+	}
 }

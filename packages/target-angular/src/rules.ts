@@ -17,62 +17,62 @@ import type { MemberForm, Plan } from "./plan.ts";
  * output, and `nextTick()` through the class's own helper (`nextTick` names it).
  */
 export function classRules(plan: Plan, nextTick?: string): RewriteRules {
-  return {
-    binding: (reference, binding, written) =>
-      wholeRef(plan, binding, written)
-        ? `this.${memberOf(plan, binding)}`
-        : classRead(plan, binding, narrowedWhole(reference), written),
-    slot: (reference) => slotPresence(plan, reference.slot),
-    write: (write, binding, parts) => {
-      const form = formOf(plan, binding);
-      switch (form) {
-        case "signal":
-        case "linked":
-        case "model":
-          if (write.operator === "=") return `this.${binding.name}.set(${parts.value})`;
-          // `update` for a new value made from the current one, as Angular's guide writes it,
-          // where the value reads only literals and signals. Its callback is a closure, where
-          // TypeScript keeps no narrowing of a local, a parameter or a field (`row.size` under
-          // `row.size !== undefined`), and types no `let` that has no type yet: a value that
-          // reads one is `set` from the current value, where the source reads it. So is a value
-          // whose current one a condition narrows (`this.count()!`, as `classRead` spells it).
-          return !parts.target.endsWith("!") &&
-            (parts.value === undefined || readsOnlySignals(parts.value))
-            ? `this.${binding.name}.update((${binding.name}) => ${writtenValue(write, { ...parts, target: binding.name })})`
-            : `this.${binding.name}.set(${writtenValue(write, parts)})`;
-        case "field":
-          // A setup `let` is a plain field: written as the source writes it, through `this.`.
-          return undefined;
-        case "input":
-        case "computed":
-        case "once":
-        case "value":
-        case "query":
-        case "method":
-        case "arrow":
-        case "loop":
-        case "emit":
-        case "context":
-        case "instance":
-        case "component":
-        case "module":
-        case "result":
-        case "resultValue":
-          throw new Error(`\`${binding.name}\` is written, which the analyser rejects (UF2011).`);
-        default:
-          return unreachable(form);
-      }
-    },
-    emit: (emit, _binding, parts) =>
-      emitCall(`this.${outputName(emit.event)}`, eventOf(plan, emit), parts.arguments),
-    api: () => {
-      if (nextTick === undefined) throw new Error("`nextTick` is called, and no helper declared.");
-      return `this.${nextTick}`;
-    },
-    // The global `@angular/core` declares, which a production build defines as `false`; a test
-    // bed or a server may leave it undefined, which Angular reads as development (ADR-0117).
-    dev: () => 'typeof ngDevMode === "undefined" || ngDevMode',
-  };
+	return {
+		binding: (reference, binding, written) =>
+			wholeRef(plan, binding, written)
+				? `this.${memberOf(plan, binding)}`
+				: classRead(plan, binding, narrowedWhole(reference), written),
+		slot: (reference) => slotPresence(plan, reference.slot),
+		write: (write, binding, parts) => {
+			const form = formOf(plan, binding);
+			switch (form) {
+				case "signal":
+				case "linked":
+				case "model":
+					if (write.operator === "=") return `this.${binding.name}.set(${parts.value})`;
+					// `update` for a new value made from the current one, as Angular's guide writes it,
+					// where the value reads only literals and signals. Its callback is a closure, where
+					// TypeScript keeps no narrowing of a local, a parameter or a field (`row.size` under
+					// `row.size !== undefined`), and types no `let` that has no type yet: a value that
+					// reads one is `set` from the current value, where the source reads it. So is a value
+					// whose current one a condition narrows (`this.count()!`, as `classRead` spells it).
+					return !parts.target.endsWith("!") &&
+						(parts.value === undefined || readsOnlySignals(parts.value))
+						? `this.${binding.name}.update((${binding.name}) => ${writtenValue(write, { ...parts, target: binding.name })})`
+						: `this.${binding.name}.set(${writtenValue(write, parts)})`;
+				case "field":
+					// A setup `let` is a plain field: written as the source writes it, through `this.`.
+					return undefined;
+				case "input":
+				case "computed":
+				case "once":
+				case "value":
+				case "query":
+				case "method":
+				case "arrow":
+				case "loop":
+				case "emit":
+				case "context":
+				case "instance":
+				case "component":
+				case "module":
+				case "result":
+				case "resultValue":
+					throw new Error(`\`${binding.name}\` is written, which the analyser rejects (UF2011).`);
+				default:
+					return unreachable(form);
+			}
+		},
+		emit: (emit, _binding, parts) =>
+			emitCall(`this.${outputName(emit.event)}`, eventOf(plan, emit), parts.arguments),
+		api: () => {
+			if (nextTick === undefined) throw new Error("`nextTick` is called, and no helper declared.");
+			return `this.${nextTick}`;
+		},
+		// The global `@angular/core` declares, which a production build defines as `false`; a test
+		// bed or a server may leave it undefined, which Angular reads as development (ADR-0117).
+		dev: () => 'typeof ngDevMode === "undefined" || ngDevMode',
+	};
 }
 
 /**
@@ -81,34 +81,34 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
  * callback, and no field (`this.last`).
  */
 function readsOnlySignals(code: string): boolean {
-  return closed(parseExpression(code));
+	return closed(parseExpression(code));
 }
 
 /** Whether a node of class code reads only literals, signals and methods (see `readsOnlySignals`). */
 function closed(value: unknown, parent?: Node, key = ""): boolean {
-  if (Array.isArray(value)) return value.every((item) => closed(item, parent, key));
-  if (!isNode(value)) return true;
-  switch (value.type) {
-    case "Identifier":
-      // A member's or a key's own name reads nothing.
-      return (key === "property" || key === "key") && parent?.computed === false;
-    case "ThisExpression":
-      return false;
-    case "CallExpression": {
-      // `this.x(…)`: a signal's read or a method's call, which no condition narrows.
-      const callee = value.callee as Node;
-      const member =
-        callee.type === "MemberExpression" &&
-        !callee.computed &&
-        (callee.object as Node).type === "ThisExpression";
-      return (member || closed(callee, value, "callee")) && closed(value.arguments, value);
-    }
-    default:
-      return Object.entries(value).every(
-        ([child, node]) =>
-          child === "parent" || typeof node !== "object" || closed(node, value, child),
-      );
-  }
+	if (Array.isArray(value)) return value.every((item) => closed(item, parent, key));
+	if (!isNode(value)) return true;
+	switch (value.type) {
+		case "Identifier":
+			// A member's or a key's own name reads nothing.
+			return (key === "property" || key === "key") && parent?.computed === false;
+		case "ThisExpression":
+			return false;
+		case "CallExpression": {
+			// `this.x(…)`: a signal's read or a method's call, which no condition narrows.
+			const callee = value.callee as Node;
+			const member =
+				callee.type === "MemberExpression" &&
+				!callee.computed &&
+				(callee.object as Node).type === "ThisExpression";
+			return (member || closed(callee, value, "callee")) && closed(value.arguments, value);
+		}
+		default:
+			return Object.entries(value).every(
+				([child, node]) =>
+					child === "parent" || typeof node !== "object" || closed(node, value, child),
+			);
+	}
 }
 
 /**
@@ -123,101 +123,101 @@ function closed(value: unknown, parent?: Node, key = ""): boolean {
  * source may use, so the text is the rules' own.
  */
 export function tidied(code: string, kind: CodeKind): string {
-  if (!code.includes("?.nativeElement")) return code;
-  const read = code.includes("?.nativeElement?.")
-    ? mapCode(code, { other: (text) => text.replace(/(\(\)\?\.nativeElement)\?\./g, "$1.") }, kind)
-    : code;
-  return withNullElements(read, kind);
+	if (!code.includes("?.nativeElement")) return code;
+	const read = code.includes("?.nativeElement?.")
+		? mapCode(code, { other: (text) => text.replace(/(\(\)\?\.nativeElement)\?\./g, "$1.") }, kind)
+		: code;
+	return withNullElements(read, kind);
 }
 
 interface Node {
-  type: string;
-  start: number;
-  end: number;
-  [key: string]: unknown;
+	type: string;
+	start: number;
+	end: number;
+	[key: string]: unknown;
 }
 
 /** Class code with each template ref's read used as a value ending `?? null` (see `tidied`). */
 function withNullElements(code: string, kind: CodeKind): string {
-  const edits: { start: number; end: number }[] = [];
-  const visit = (value: unknown, parent: Node | undefined, key: string): void => {
-    if (Array.isArray(value)) {
-      for (const item of value) visit(item, parent, key);
-      return;
-    }
-    if (!isNode(value)) return;
-    if (value.type === "ChainExpression" && isElementRead(value.expression as Node)) {
-      if (parent === undefined || !testsOnly(parent, key, value)) edits.push(value);
-      return;
-    }
-    for (const [child, node] of Object.entries(value)) {
-      if (child !== "type" && child !== "parent" && typeof node === "object") {
-        visit(node, value, child);
-      }
-    }
-  };
-  visit(parseCodeSource(code, kind).root, undefined, "");
-  let result = code;
-  for (const { start, end } of edits.toSorted((a, b) => b.start - a.start)) {
-    // In parentheses, which oxfmt drops where they are not needed (`??` beside `||` needs them).
-    result = `${result.slice(0, start)}(${result.slice(start, end)} ?? null)${result.slice(end)}`;
-  }
-  return result;
+	const edits: { start: number; end: number }[] = [];
+	const visit = (value: unknown, parent: Node | undefined, key: string): void => {
+		if (Array.isArray(value)) {
+			for (const item of value) visit(item, parent, key);
+			return;
+		}
+		if (!isNode(value)) return;
+		if (value.type === "ChainExpression" && isElementRead(value.expression as Node)) {
+			if (parent === undefined || !testsOnly(parent, key, value)) edits.push(value);
+			return;
+		}
+		for (const [child, node] of Object.entries(value)) {
+			if (child !== "type" && child !== "parent" && typeof node === "object") {
+				visit(node, value, child);
+			}
+		}
+	};
+	visit(parseCodeSource(code, kind).root, undefined, "");
+	let result = code;
+	for (const { start, end } of edits.toSorted((a, b) => b.start - a.start)) {
+		// In parentheses, which oxfmt drops where they are not needed (`??` beside `||` needs them).
+		result = `${result.slice(0, start)}(${result.slice(start, end)} ?? null)${result.slice(end)}`;
+	}
+	return result;
 }
 
 /** `this.field()?.nativeElement`: a template ref's element, read in the class. */
 function isElementRead(node: Node): boolean {
-  if (node.type !== "MemberExpression" || node.computed || !node.optional) return false;
-  const object = node.object as Node;
-  const property = node.property as Node;
-  if (property.name !== "nativeElement" || object.type !== "CallExpression") return false;
-  const callee = object.callee as Node;
-  return (
-    (object.arguments as unknown[]).length === 0 &&
-    callee.type === "MemberExpression" &&
-    (callee.object as Node).type === "ThisExpression"
-  );
+	if (node.type !== "MemberExpression" || node.computed || !node.optional) return false;
+	const object = node.object as Node;
+	const property = node.property as Node;
+	if (property.name !== "nativeElement" || object.type !== "CallExpression") return false;
+	const callee = object.callee as Node;
+	return (
+		(object.arguments as unknown[]).length === 0 &&
+		callee.type === "MemberExpression" &&
+		(callee.object as Node).type === "ThisExpression"
+	);
 }
 
 /** Whether a value in `parent`'s `key` is only tested, asserted or read through, never kept. */
 function testsOnly(parent: Node, key: string, node: Node): boolean {
-  switch (parent.type) {
-    case "IfStatement":
-    case "WhileStatement":
-    case "DoWhileStatement":
-    case "ForStatement":
-    case "ConditionalExpression":
-      return key === "test";
-    case "UnaryExpression":
-      return parent.operator === "!";
-    case "LogicalExpression":
-      return parent.left === node;
-    case "BinaryExpression": {
-      if (parent.operator !== "==" && parent.operator !== "!=") return false;
-      const other = (parent.left === node ? parent.right : parent.left) as Node;
-      return (
-        (other.type === "Literal" && other.value === null) ||
-        (other.type === "Identifier" && other.name === "undefined")
-      );
-    }
-    case "TSNonNullExpression":
-    case "MemberExpression":
-    case "CallExpression":
-      return key === "expression" || key === "object" || key === "callee";
-    case "ExpressionStatement":
-      return true;
-    default:
-      return false;
-  }
+	switch (parent.type) {
+		case "IfStatement":
+		case "WhileStatement":
+		case "DoWhileStatement":
+		case "ForStatement":
+		case "ConditionalExpression":
+			return key === "test";
+		case "UnaryExpression":
+			return parent.operator === "!";
+		case "LogicalExpression":
+			return parent.left === node;
+		case "BinaryExpression": {
+			if (parent.operator !== "==" && parent.operator !== "!=") return false;
+			const other = (parent.left === node ? parent.right : parent.left) as Node;
+			return (
+				(other.type === "Literal" && other.value === null) ||
+				(other.type === "Identifier" && other.name === "undefined")
+			);
+		}
+		case "TSNonNullExpression":
+		case "MemberExpression":
+		case "CallExpression":
+			return key === "expression" || key === "object" || key === "callee";
+		case "ExpressionStatement":
+			return true;
+		default:
+			return false;
+	}
 }
 
 function isNode(value: unknown): value is Node {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as Node).type === "string" &&
-    typeof (value as Node).start === "number"
-  );
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		typeof (value as Node).type === "string" &&
+		typeof (value as Node).start === "number"
+	);
 }
 
 /**
@@ -227,39 +227,39 @@ function isNode(value: unknown): value is Node {
  * optional).
  */
 export function classRead(plan: Plan, binding: Binding, narrowed = false, written = ""): string {
-  const form = formOf(plan, binding);
-  switch (form) {
-    case "input":
-    case "signal":
-    case "linked":
-    case "computed":
-    case "once":
-    case "model":
-    case "instance":
-      return `this.${binding.name}()${narrowed ? "!" : ""}`;
-    case "context":
-      return `this.${binding.name}()${narrowed ? "!" : ""}${refMember(written)}`;
-    case "query":
-      return `this.${binding.name}()${narrowed ? "!." : "?."}nativeElement`;
-    case "value":
-    case "method":
-    case "arrow":
-    case "field":
-      return `this.${binding.name}`;
-    // The module declares it under its own name (ADR-0070).
-    case "module":
-      return binding.name;
-    case "result":
-      return `this.${memberOf(plan, binding)}()${narrowed ? "!" : ""}`;
-    case "resultValue":
-      return `this.${memberOf(plan, binding)}`;
-    case "loop":
-    case "emit":
-    case "component":
-      throw new Error(`\`${binding.name}\` is read in the class, where it is not in scope.`);
-    default:
-      return unreachable(form);
-  }
+	const form = formOf(plan, binding);
+	switch (form) {
+		case "input":
+		case "signal":
+		case "linked":
+		case "computed":
+		case "once":
+		case "model":
+		case "instance":
+			return `this.${binding.name}()${narrowed ? "!" : ""}`;
+		case "context":
+			return `this.${binding.name}()${narrowed ? "!" : ""}${refMember(written)}`;
+		case "query":
+			return `this.${binding.name}()${narrowed ? "!." : "?."}nativeElement`;
+		case "value":
+		case "method":
+		case "arrow":
+		case "field":
+			return `this.${binding.name}`;
+		// The module declares it under its own name (ADR-0070).
+		case "module":
+			return binding.name;
+		case "result":
+			return `this.${memberOf(plan, binding)}()${narrowed ? "!" : ""}`;
+		case "resultValue":
+			return `this.${memberOf(plan, binding)}`;
+		case "loop":
+		case "emit":
+		case "component":
+			throw new Error(`\`${binding.name}\` is read in the class, where it is not in scope.`);
+		default:
+			return unreachable(form);
+	}
 }
 
 /**
@@ -269,56 +269,56 @@ export function classRead(plan: Plan, binding: Binding, narrowed = false, writte
  * index and the component's members (NG8009), a signal from the class.
  */
 export function templateRules(
-  plan: Plan,
-  signals: ReadonlySet<Expression> = new Set(),
+	plan: Plan,
+	signals: ReadonlySet<Expression> = new Set(),
 ): RewriteRules {
-  const written = new Set([...signals].map(({ span }) => `${span.start}:${span.end}`));
-  return {
-    binding: (reference, binding, text, site) =>
-      written.has(`${reference.span.start}:${reference.span.end}`)
-        ? `this.${binding.name}`
-        : templateRead(plan, binding, site, text),
-    slot: (reference) => slotPresence(plan, reference.slot),
-    import: (reference) => plan.recipes.get(reference.name) ?? reference.name,
-  };
+	const written = new Set([...signals].map(({ span }) => `${span.start}:${span.end}`));
+	return {
+		binding: (reference, binding, text, site) =>
+			written.has(`${reference.span.start}:${reference.span.end}`)
+				? `this.${binding.name}`
+				: templateRead(plan, binding, site, text),
+		slot: (reference) => slotPresence(plan, reference.slot),
+		import: (reference) => plan.recipes.get(reference.name) ?? reference.name,
+	};
 }
 
 function templateRead(plan: Plan, binding: Binding, site: RewriteSite, written: string): string {
-  const form = formOf(plan, binding);
-  switch (form) {
-    case "input":
-    case "signal":
-    case "linked":
-    case "computed":
-    case "once":
-    case "model":
-      return site === "key" ? `this.${binding.name}()` : binding.name;
-    case "value":
-    case "method":
-    case "arrow":
-    // A member of its own name, or another where the class declares that one (ADR-0070).
-    case "module":
-      return site === "key" ? `this.${moduleMember(plan, binding)}` : moduleMember(plan, binding);
-    // Through its `@let`, as the setup's own signals.
-    case "result":
-      return site === "key" ? `this.${memberOf(plan, binding)}()` : binding.name;
-    case "resultValue":
-      return site === "key" ? `this.${memberOf(plan, binding)}` : memberOf(plan, binding);
-    case "context":
-      return `${site === "key" ? `this.${binding.name}()` : binding.name}${refMember(written)}`;
-    case "loop":
-      return binding.name;
-    // A component `<component is>` names: the `@switch` matches its name (`angularDialect`).
-    case "component":
-      return JSON.stringify(binding.name);
-    case "query":
-    case "field":
-    case "emit":
-    case "instance":
-      throw new Error(`\`${binding.name}\` is read in the template, which the analyser rejects.`);
-    default:
-      return unreachable(form);
-  }
+	const form = formOf(plan, binding);
+	switch (form) {
+		case "input":
+		case "signal":
+		case "linked":
+		case "computed":
+		case "once":
+		case "model":
+			return site === "key" ? `this.${binding.name}()` : binding.name;
+		case "value":
+		case "method":
+		case "arrow":
+		// A member of its own name, or another where the class declares that one (ADR-0070).
+		case "module":
+			return site === "key" ? `this.${moduleMember(plan, binding)}` : moduleMember(plan, binding);
+		// Through its `@let`, as the setup's own signals.
+		case "result":
+			return site === "key" ? `this.${memberOf(plan, binding)}()` : binding.name;
+		case "resultValue":
+			return site === "key" ? `this.${memberOf(plan, binding)}` : memberOf(plan, binding);
+		case "context":
+			return `${site === "key" ? `this.${binding.name}()` : binding.name}${refMember(written)}`;
+		case "loop":
+			return binding.name;
+		// A component `<component is>` names: the `@switch` matches its name (`angularDialect`).
+		case "component":
+			return JSON.stringify(binding.name);
+		case "query":
+		case "field":
+		case "emit":
+		case "instance":
+			throw new Error(`\`${binding.name}\` is read in the template, which the analyser rejects.`);
+		default:
+			return unreachable(form);
+	}
 }
 
 /**
@@ -329,16 +329,16 @@ function templateRead(plan: Plan, binding: Binding, site: RewriteSite, written: 
  * `this.` where a list's variable shadows it or JavaScript reads its name as a keyword).
  */
 export function statementRules(plan: Plan): RewriteRules {
-  return {
-    binding: (reference, binding, written) =>
-      statementRead(plan, binding, narrowedWhole(reference), written),
-    event: (reference) => `$event.${reference.member}`,
-    emit: (emit, _binding, parts) => {
-      const name = outputName(emit.event);
-      const output = plan.loopNames.has(name) || !readsAsName(name) ? `this.${name}` : name;
-      return emitCall(output, eventOf(plan, emit), parts.arguments);
-    },
-  };
+	return {
+		binding: (reference, binding, written) =>
+			statementRead(plan, binding, narrowedWhole(reference), written),
+		event: (reference) => `$event.${reference.member}`,
+		emit: (emit, _binding, parts) => {
+			const name = outputName(emit.event);
+			const output = plan.loopNames.has(name) || !readsAsName(name) ? `this.${name}` : name;
+			return emitCall(output, eventOf(plan, emit), parts.arguments);
+		},
+	};
 }
 
 /**
@@ -349,17 +349,17 @@ export function statementRules(plan: Plan): RewriteRules {
  * read as the member.
  */
 function readsAsName(name: string): boolean {
-  let known = NAMES.get(name);
-  if (known === undefined) {
-    try {
-      parseExpression(`${name}.emit()`);
-      known = true;
-    } catch {
-      known = false;
-    }
-    NAMES.set(name, known);
-  }
-  return known;
+	let known = NAMES.get(name);
+	if (known === undefined) {
+		try {
+			parseExpression(`${name}.emit()`);
+			known = true;
+		} catch {
+			known = false;
+		}
+		NAMES.set(name, known);
+	}
+	return known;
 }
 
 const NAMES = new Map<string, boolean>();
@@ -369,42 +369,42 @@ const NAMES = new Map<string, boolean>();
  * input, read through the template's own name, needs not.
  */
 export function statementRead(
-  plan: Plan,
-  binding: Binding,
-  narrowed = false,
-  written = "",
+	plan: Plan,
+	binding: Binding,
+	narrowed = false,
+	written = "",
 ): string {
-  const form: MemberForm = formOf(plan, binding);
-  switch (form) {
-    case "input":
-    case "value":
-    case "method":
-    case "arrow":
-    case "loop":
-      return binding.name;
-    case "module":
-      return moduleMember(plan, binding);
-    case "resultValue":
-      return memberOf(plan, binding);
-    case "result":
-      return `this.${memberOf(plan, binding)}()${narrowed ? "!" : ""}`;
-    case "signal":
-    case "linked":
-    case "computed":
-    case "once":
-    case "model":
-      return `this.${binding.name}()${narrowed ? "!" : ""}`;
-    case "context":
-      return `this.${binding.name}()${narrowed ? "!" : ""}${refMember(written)}`;
-    case "query":
-    case "field":
-    case "emit":
-    case "instance":
-    case "component":
-      throw new Error(`\`${binding.name}\` is read in a template statement.`);
-    default:
-      return unreachable(form);
-  }
+	const form: MemberForm = formOf(plan, binding);
+	switch (form) {
+		case "input":
+		case "value":
+		case "method":
+		case "arrow":
+		case "loop":
+			return binding.name;
+		case "module":
+			return moduleMember(plan, binding);
+		case "resultValue":
+			return memberOf(plan, binding);
+		case "result":
+			return `this.${memberOf(plan, binding)}()${narrowed ? "!" : ""}`;
+		case "signal":
+		case "linked":
+		case "computed":
+		case "once":
+		case "model":
+			return `this.${binding.name}()${narrowed ? "!" : ""}`;
+		case "context":
+			return `this.${binding.name}()${narrowed ? "!" : ""}${refMember(written)}`;
+		case "query":
+		case "field":
+		case "emit":
+		case "instance":
+		case "component":
+			throw new Error(`\`${binding.name}\` is read in a template statement.`);
+		default:
+			return unreachable(form);
+	}
 }
 
 /**
@@ -412,14 +412,14 @@ export function statementRead(
  * of a ref, ADR-0054): the signal, which `refObject` wraps.
  */
 function wholeRef(plan: Plan, binding: Binding, written: string): boolean {
-  const form = formOf(plan, binding);
-  const ref =
-    form === "signal" ||
-    form === "linked" ||
-    form === "computed" ||
-    form === "model" ||
-    form === "result";
-  return ref && !written.endsWith(".value");
+	const form = formOf(plan, binding);
+	const ref =
+		form === "signal" ||
+		form === "linked" ||
+		form === "computed" ||
+		form === "model" ||
+		form === "result";
+	return ref && !written.endsWith(".value");
 }
 
 /**
@@ -427,8 +427,8 @@ function wholeRef(plan: Plan, binding: Binding, written: string): boolean {
  * (`count.value`), which `refObject`'s getter gives (ADR-0054); any other value is read whole.
  */
 function refMember(written: string): string {
-  const dot = written.indexOf(".");
-  return dot === -1 ? "" : written.slice(dot);
+	const dot = written.indexOf(".");
+	return dot === -1 ? "" : written.slice(dot);
 }
 
 /**
@@ -438,19 +438,19 @@ function refMember(written: string): string {
  * reads the query from the class too, so no template variable of its name hides it.
  */
 function slotPresence(plan: Plan, slot: string): string {
-  const props = plan.component.slots?.slots.find((each) => each.name === slot)?.props;
-  return slot === "default" && props === undefined ? "true" : `this.${slotQuery(slot)}()`;
+	const props = plan.component.slots?.slots.find((each) => each.name === slot)?.props;
+	return slot === "default" && props === undefined ? "true" : `this.${slotQuery(slot)}()`;
 }
 
 /** Whether the template reads a binding through a `@let`: a signal's value. */
 export function readThroughLet(plan: Plan, binding: Binding): boolean {
-  return isSignal(formOf(plan, binding));
+	return isSignal(formOf(plan, binding));
 }
 
 function eventOf(plan: Plan, emit: EmitReference): EventDeclaration {
-  const event = plan.events.get(emit.event);
-  if (!event) throw new Error(`\`${emit.event}\` is emitted and not declared.`);
-  return event;
+	const event = plan.events.get(emit.event);
+	if (!event) throw new Error(`\`${emit.event}\` is emitted and not declared.`);
+	return event;
 }
 
 /**
@@ -459,18 +459,18 @@ function eventOf(plan: Plan, emit: EmitReference): EventDeclaration {
  * otherwise (the mount adapter spreads it back).
  */
 export function emitCall(output: string, event: EventDeclaration, args: readonly string[]): string {
-  const [only, ...more] = event.parameters;
-  if (only === undefined) return `${output}.emit()`;
-  if (more.length === 0 && !only.optional) return `${output}.emit(${args[0] ?? ""})`;
-  return `${output}.emit([${args.join(", ")}])`;
+	const [only, ...more] = event.parameters;
+	if (only === undefined) return `${output}.emit()`;
+	if (more.length === 0 && !only.optional) return `${output}.emit(${args[0] ?? ""})`;
+	return `${output}.emit([${args.join(", ")}])`;
 }
 
 /** An output's value type by the same rule: `void`, the member's type, or the named tuple. */
 export function outputType(event: EventDeclaration): string {
-  const [only, ...more] = event.parameters;
-  if (only === undefined) return "void";
-  if (more.length === 0 && !only.optional) return only.type.code;
-  return `[${event.parameters
-    .map(({ name, optional, type }) => `${name}${optional ? "?" : ""}: ${type.code}`)
-    .join(", ")}]`;
+	const [only, ...more] = event.parameters;
+	if (only === undefined) return "void";
+	if (more.length === 0 && !only.optional) return only.type.code;
+	return `[${event.parameters
+		.map(({ name, optional, type }) => `${name}${optional ? "?" : ""}: ${type.code}`)
+		.join(", ")}]`;
 }

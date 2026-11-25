@@ -5,15 +5,15 @@ import { addPluginTemplate, createResolver, defineNuxtModule, installModule } fr
 const SDK_URL = "https://cdn.amplitude.com/libs/analytics-browser-2.47.2-min.js.gz";
 
 export interface ModuleOptions {
-  /** The Amplitude project's API key. Without one, the module adds nothing to the site. */
-  apiKey: string;
-  /** `EU` for a project in Amplitude's EU data center. */
-  serverZone: "US" | "EU";
-  /**
-   * The share of sessions Session Replay records, from 0 (off) to 1. The
-   * sample rate in the project's Session Replay settings, once set, wins.
-   */
-  sessionReplaySampleRate: number;
+	/** The Amplitude project's API key. Without one, the module adds nothing to the site. */
+	apiKey: string;
+	/** `EU` for a project in Amplitude's EU data center. */
+	serverZone: "US" | "EU";
+	/**
+	 * The share of sessions Session Replay records, from 0 (off) to 1. The
+	 * sample rate in the project's Session Replay settings, once set, wins.
+	 */
+	sessionReplaySampleRate: number;
 }
 
 /**
@@ -29,62 +29,62 @@ export interface ModuleOptions {
  * click on a link to another page) doesn't reach the worker in time.
  */
 export default defineNuxtModule<ModuleOptions>({
-  meta: { name: "amplitude", configKey: "amplitude" },
-  defaults: () => ({
-    apiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY ?? "",
-    serverZone: "US",
-    sessionReplaySampleRate: 1,
-  }),
-  async setup({ apiKey, serverZone, sessionReplaySampleRate }) {
-    if (!apiKey) return;
-    const resolver = createResolver(import.meta.url);
-    const replay = sessionReplaySampleRate > 0;
+	meta: { name: "amplitude", configKey: "amplitude" },
+	defaults: () => ({
+		apiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY ?? "",
+		serverZone: "US",
+		sessionReplaySampleRate: 1,
+	}),
+	async setup({ apiKey, serverZone, sessionReplaySampleRate }) {
+		if (!apiKey) return;
+		const resolver = createResolver(import.meta.url);
+		const replay = sessionReplaySampleRate > 0;
 
-    await installModule("@nuxtjs/partytown", {
-      forward: ["amplitude.track", ...(replay ? ["amplitudeSessionReplayReady"] : [])],
-      // Read from the worker on the main thread's window, not the worker's own.
-      mainWindowAccessors: replay ? ["amplitudeSessionReplay"] : [],
-    });
+		await installModule("@nuxtjs/partytown", {
+			forward: ["amplitude.track", ...(replay ? ["amplitudeSessionReplayReady"] : [])],
+			// Read from the worker on the main thread's window, not the worker's own.
+			mainWindowAccessors: replay ? ["amplitudeSessionReplay"] : [],
+		});
 
-    const options = {
-      serverZone,
-      autocapture: {
-        // Hash changes are the homepage's chapter links, not new pages.
-        pageViews: { trackHistoryChanges: "pathOnly" },
-        // Off, as by default: from the worker, the SDK can't read the clicked
-        // element, and its clicks arrive without one.
-        elementInteractions: false,
-      },
-    };
-    const scripts = [
-      { type: "text/partytown", src: SDK_URL },
-      { type: "text/partytown", innerHTML: workerScript(apiKey, options, replay) },
-    ];
-    // Rendered on the server only. Partytown retypes the scripts it has run,
-    // so the client's head would no longer find them, add them again, and
-    // Partytown would run the SDK twice.
-    addPluginTemplate({
-      filename: "amplitude.server.mjs",
-      mode: "server",
-      getContents: () =>
-        [
-          `import { defineNuxtPlugin, useHead } from "#imports";`,
-          `export default defineNuxtPlugin(() => { useHead({ script: ${JSON.stringify(scripts)} }); });`,
-        ].join("\n"),
-    });
+		const options = {
+			serverZone,
+			autocapture: {
+				// Hash changes are the homepage's chapter links, not new pages.
+				pageViews: { trackHistoryChanges: "pathOnly" },
+				// Off, as by default: from the worker, the SDK can't read the clicked
+				// element, and its clicks arrive without one.
+				elementInteractions: false,
+			},
+		};
+		const scripts = [
+			{ type: "text/partytown", src: SDK_URL },
+			{ type: "text/partytown", innerHTML: workerScript(apiKey, options, replay) },
+		];
+		// Rendered on the server only. Partytown retypes the scripts it has run,
+		// so the client's head would no longer find them, add them again, and
+		// Partytown would run the SDK twice.
+		addPluginTemplate({
+			filename: "amplitude.server.mjs",
+			mode: "server",
+			getContents: () =>
+				[
+					`import { defineNuxtPlugin, useHead } from "#imports";`,
+					`export default defineNuxtPlugin(() => { useHead({ script: ${JSON.stringify(scripts)} }); });`,
+				].join("\n"),
+		});
 
-    if (!replay) return;
-    addPluginTemplate({
-      filename: "amplitude-session-replay.client.mjs",
-      mode: "client",
-      getContents: () =>
-        [
-          `import { defineNuxtPlugin } from "#app/nuxt";`,
-          `import { recordSessions } from ${JSON.stringify(resolver.resolve("./amplitude/runtime/session-replay"))};`,
-          `export default defineNuxtPlugin(() => recordSessions(${JSON.stringify(apiKey)}, ${JSON.stringify({ serverZone, sampleRate: sessionReplaySampleRate })}));`,
-        ].join("\n"),
-    });
-  },
+		if (!replay) return;
+		addPluginTemplate({
+			filename: "amplitude-session-replay.client.mjs",
+			mode: "client",
+			getContents: () =>
+				[
+					`import { defineNuxtPlugin } from "#app/nuxt";`,
+					`import { recordSessions } from ${JSON.stringify(resolver.resolve("./amplitude/runtime/session-replay"))};`,
+					`export default defineNuxtPlugin(() => recordSessions(${JSON.stringify(apiKey)}, ${JSON.stringify({ serverZone, sampleRate: sessionReplaySampleRate })}));`,
+				].join("\n"),
+		});
+	},
 });
 
 /**
@@ -95,9 +95,9 @@ export default defineNuxtModule<ModuleOptions>({
  * session). Amplitude links each replay to the session's events by those IDs.
  */
 const workerScript = (
-  apiKey: string,
-  options: object,
-  replay: boolean,
+	apiKey: string,
+	options: object,
+	replay: boolean,
 ) => `(function (apiKey, options, replay) {
   // No SDK: an ad blocker blocked Amplitude's CDN, or Partytown's fallback, for
   // browsers it can't run in, runs this on the main thread before the SDK's

@@ -16,8 +16,8 @@
 
 /** A half-open range `[start, end)` of UTF-16 offsets into the source file. */
 export interface Span {
-  start: number;
-  end: number;
+	start: number;
+	end: number;
 }
 
 /**
@@ -29,67 +29,67 @@ export type BindingId = string;
 
 /** One `.uf.tsx` module, or a `.uf.ts` module of composables and directives (ADR-0069, ADR-0099). */
 export interface UfModule {
-  /** The IR format version. Bumped, with a migration, on every breaking change. */
-  irVersion: 1;
-  /** The source file as the caller named it: relative and with forward slashes in snapshots. */
-  file: string;
-  /** The module's components, in source order. */
-  components: UfComponent[];
-  /** What the module exports, in source order. Targets keep the same export shape. */
-  exports: UfExport[];
-  /**
-   * The local type declarations the components' props, events and setup code use, in source
-   * order, each name once: the targets that print types copy them into the outputs of the
-   * components that use them.
-   */
-  types: TypeDeclaration[];
-  /**
-   * The module's imports of other `.uf.tsx` modules, in source order, each with the API the
-   * resolver gave for it (ADR-0053). Absent when it imports none.
-   */
-  imports?: ModuleImport[];
-  /** The injection keys the module declares and exports, in source order (ADR-0054). */
-  keys?: InjectionKeyDeclaration[];
-  /**
-   * The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0064): every
-   * output keeps them as written, in this order, and the plugin that registers each module
-   * resolves it. Absent when it has none.
-   */
-  passThroughImports?: PassThroughImport[];
-  /**
-   * The module's `import type` declarations, in source order (ADR-0067): the types its props,
-   * events and setup name from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, which
-   * every output re-imports by name. Absent when it has none.
-   */
-  typeImports?: TypeImport[];
-  /**
-   * What the module exports of types that `TypeDeclaration.exported` cannot hold, in source order
-   * (ADR-0068): type re-exports, and exported types no component reaches. Every output exports
-   * them under the same names. Absent when it has none.
-   */
-  typeExports?: TypeExport[];
-  /**
-   * The module's imports of values from relative `.ts` modules, in source order (ADR-0070):
-   * copied into each output tree unchanged, and read through `import` bindings. Absent when it
-   * imports none.
-   */
-  moduleImports?: SharedModuleImport[];
-  /**
-   * The module's top-level `const` declarations its components read, in source order (ADR-0070),
-   * through `moduleConst` bindings. Absent when it has none.
-   */
-  constants?: ModuleConstant[];
-  /**
-   * The composables a `.uf.ts` module declares, in source order (ADR-0069): named exports
-   * `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module.
-   */
-  composables?: UfComposable[];
-  /**
-   * The module's directives, in source order (ADR-0099): a `.uf.ts` module's exports `v[A-Z]…`,
-   * each compiled to one module per target, and a `.uf.tsx` module's top-level ones, which every
-   * output that applies one declares. Absent when it has none.
-   */
-  directives?: UfDirective[];
+	/** The IR format version. Bumped, with a migration, on every breaking change. */
+	irVersion: 1;
+	/** The source file as the caller named it: relative and with forward slashes in snapshots. */
+	file: string;
+	/** The module's components, in source order. */
+	components: UfComponent[];
+	/** What the module exports, in source order. Targets keep the same export shape. */
+	exports: UfExport[];
+	/**
+	 * The local type declarations the components' props, events and setup code use, in source
+	 * order, each name once: the targets that print types copy them into the outputs of the
+	 * components that use them.
+	 */
+	types: TypeDeclaration[];
+	/**
+	 * The module's imports of other `.uf.tsx` modules, in source order, each with the API the
+	 * resolver gave for it (ADR-0053). Absent when it imports none.
+	 */
+	imports?: ModuleImport[];
+	/** The injection keys the module declares and exports, in source order (ADR-0054). */
+	keys?: InjectionKeyDeclaration[];
+	/**
+	 * The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0064): every
+	 * output keeps them as written, in this order, and the plugin that registers each module
+	 * resolves it. Absent when it has none.
+	 */
+	passThroughImports?: PassThroughImport[];
+	/**
+	 * The module's `import type` declarations, in source order (ADR-0067): the types its props,
+	 * events and setup name from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, which
+	 * every output re-imports by name. Absent when it has none.
+	 */
+	typeImports?: TypeImport[];
+	/**
+	 * What the module exports of types that `TypeDeclaration.exported` cannot hold, in source order
+	 * (ADR-0068): type re-exports, and exported types no component reaches. Every output exports
+	 * them under the same names. Absent when it has none.
+	 */
+	typeExports?: TypeExport[];
+	/**
+	 * The module's imports of values from relative `.ts` modules, in source order (ADR-0070):
+	 * copied into each output tree unchanged, and read through `import` bindings. Absent when it
+	 * imports none.
+	 */
+	moduleImports?: SharedModuleImport[];
+	/**
+	 * The module's top-level `const` declarations its components read, in source order (ADR-0070),
+	 * through `moduleConst` bindings. Absent when it has none.
+	 */
+	constants?: ModuleConstant[];
+	/**
+	 * The composables a `.uf.ts` module declares, in source order (ADR-0069): named exports
+	 * `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module.
+	 */
+	composables?: UfComposable[];
+	/**
+	 * The module's directives, in source order (ADR-0099): a `.uf.ts` module's exports `v[A-Z]…`,
+	 * each compiled to one module per target, and a `.uf.tsx` module's top-level ones, which every
+	 * output that applies one declares. Absent when it has none.
+	 */
+	directives?: UfDirective[];
 }
 
 /**
@@ -99,65 +99,65 @@ export interface UfModule {
  * module, the module's constants and value imports.
  */
 export interface UfDirective {
-  /**
-   * The constant's name: `v` and an upper-case letter, in ASCII letters and digits. An element
-   * applies it as `v-` and the rest in kebab case (`v-focus-trap`).
-   * @pattern ^v[A-Z][A-Za-z0-9]*$
-   */
-  name: string;
-  /** Set for a `.uf.ts` module's export, which compiles to a module of its own. */
-  exported?: true;
-  /** The value's type, `T` in `defineDirective<T>`, as written. */
-  value: TypeText;
-  /** The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent. */
-  element?: TypeText;
-  /** The hooks, in source order, each named once. */
-  hooks: DirectiveHook[];
-  /**
-   * The module's constants and value imports the hooks read, in source order: `moduleConst` and
-   * `import` bindings, which its output declares and imports as a composable's does (ADR-0070).
-   */
-  bindings: Binding[];
-  /** The names of the module's `types` its hooks name, in source order. */
-  types: string[];
-  /** The `const` declaration, from `export` or `const` to its end. */
-  span: Span;
+	/**
+	 * The constant's name: `v` and an upper-case letter, in ASCII letters and digits. An element
+	 * applies it as `v-` and the rest in kebab case (`v-focus-trap`).
+	 * @pattern ^v[A-Z][A-Za-z0-9]*$
+	 */
+	name: string;
+	/** Set for a `.uf.ts` module's export, which compiles to a module of its own. */
+	exported?: true;
+	/** The value's type, `T` in `defineDirective<T>`, as written. */
+	value: TypeText;
+	/** The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent. */
+	element?: TypeText;
+	/** The hooks, in source order, each named once. */
+	hooks: DirectiveHook[];
+	/**
+	 * The module's constants and value imports the hooks read, in source order: `moduleConst` and
+	 * `import` bindings, which its output declares and imports as a composable's does (ADR-0070).
+	 */
+	bindings: Binding[];
+	/** The names of the module's `types` its hooks name, in source order. */
+	types: string[];
+	/** The `const` declaration, from `export` or `const` to its end. */
+	span: Span;
 }
 
 /** A hook of a directive (ADR-0099): a method of the object `defineDirective` takes. */
 export interface DirectiveHook {
-  /** When it runs: once the element is in the DOM, after a render that changes the value, and once it leaves. */
-  name: "mounted" | "updated" | "unmounted";
-  /** Set for an `async` method, which nothing waits for. */
-  async?: true;
-  /**
-   * Its parameters' names, as written and unannotated: the element, then the value and the
-   * previous value, as many as the hook takes.
-   */
-  parameters: string[];
-  /** The method's block body, `{ … }`, with every name it reads resolved. */
-  body: Code;
-  /** The method, from its name to the end of its body. */
-  span: Span;
+	/** When it runs: once the element is in the DOM, after a render that changes the value, and once it leaves. */
+	name: "mounted" | "updated" | "unmounted";
+	/** Set for an `async` method, which nothing waits for. */
+	async?: true;
+	/**
+	 * Its parameters' names, as written and unannotated: the element, then the value and the
+	 * previous value, as many as the hook takes.
+	 */
+	parameters: string[];
+	/** The method's block body, `{ … }`, with every name it reads resolved. */
+	body: Code;
+	/** The method, from its name to the end of its body. */
+	span: Span;
 }
 
 /** `import type { ButtonProps } from "./types"` (ADR-0067): types an output re-imports by name. */
 export interface TypeImport {
-  /** The specifier as written: a relative module, a `.uf.tsx`, a `.uf.ts` or a package. */
-  specifier: string;
-  /** The names it binds, in source order. */
-  names: NamedImport[];
-  /** The import declaration. */
-  span: Span;
+	/** The specifier as written: a relative module, a `.uf.tsx`, a `.uf.ts` or a package. */
+	specifier: string;
+	/** The names it binds, in source order. */
+	names: NamedImport[];
+	/** The import declaration. */
+	span: Span;
 }
 
 /** A name a type or value import binds. */
 export interface NamedImport {
-  /** The imported name. */
-  imported: string;
-  /** The local name the module uses. */
-  local: string;
-  span: Span;
+	/** The imported name. */
+	imported: string;
+	/** The local name the module uses. */
+	local: string;
+	span: Span;
 }
 
 /** A type the module exports that no `TypeDeclaration` holds (ADR-0068). */
@@ -165,32 +165,32 @@ export type TypeExport = TypeReExport | DeclaredTypeExport;
 
 /** `export type { Tone } from "./types"`: types re-exported from another module. */
 export interface TypeReExport {
-  kind: "ReExport";
-  /** The specifier as written. */
-  specifier: string;
-  /** The names it re-exports, in source order. */
-  names: TypeExportName[];
-  /** The export declaration. */
-  span: Span;
+	kind: "ReExport";
+	/** The specifier as written. */
+	specifier: string;
+	/** The names it re-exports, in source order. */
+	names: TypeExportName[];
+	/** The export declaration. */
+	span: Span;
 }
 
 /** A name a type re-export exports. */
 export interface TypeExportName {
-  /** The name in the module it comes from. */
-  imported: string;
-  /** The name it is exported under. */
-  exported: string;
-  span: Span;
+	/** The name in the module it comes from. */
+	imported: string;
+	/** The name it is exported under. */
+	exported: string;
+	span: Span;
 }
 
 /** `export type Tone = "info" | "danger"`, a type the module exports and no component reaches. */
 export interface DeclaredTypeExport {
-  kind: "Declaration";
-  /** The declared name. */
-  name: string;
-  /** The declaration from `interface` or `type` to its end, without `export`, as written. */
-  code: string;
-  span: Span;
+	kind: "Declaration";
+	/** The declared name. */
+	name: string;
+	/** The declaration from `interface` or `type` to its end, without `export`, as written. */
+	code: string;
+	span: Span;
 }
 
 /**
@@ -198,20 +198,20 @@ export interface DeclaredTypeExport {
  * which each output imports from its copy of the module, as the source does.
  */
 export interface SharedModuleImport {
-  /**
-   * The specifier as written: a relative path.
-   * @pattern ^\.\.?/
-   */
-  specifier: string;
-  /** The resolved `.ts`, relative to the importer, with forward slashes. */
-  file: string;
-  /**
-   * The names it binds, in source order: each an `import` binding of the components that read
-   * it.
-   */
-  names: NamedImport[];
-  /** The import declaration. */
-  span: Span;
+	/**
+	 * The specifier as written: a relative path.
+	 * @pattern ^\.\.?/
+	 */
+	specifier: string;
+	/** The resolved `.ts`, relative to the importer, with forward slashes. */
+	file: string;
+	/**
+	 * The names it binds, in source order: each an `import` binding of the components that read
+	 * it.
+	 */
+	names: NamedImport[];
+	/** The import declaration. */
+	span: Span;
 }
 
 /**
@@ -220,19 +220,19 @@ export interface SharedModuleImport {
  * `moduleConst` bindings.
  */
 export interface ModuleConstant {
-  /** The declared name. */
-  name: string;
-  /** `name@offset` of the declared name: the id of every `moduleConst` binding of it. */
-  binding: BindingId;
-  /** The type annotation as written. */
-  type?: TypeText;
-  /**
-   * The value: code that reads only globals every context may read, the module's other
-   * constants and its value imports, by their binding ids.
-   */
-  value: Code;
-  /** The declaration, from `const` to its end. */
-  span: Span;
+	/** The declared name. */
+	name: string;
+	/** `name@offset` of the declared name: the id of every `moduleConst` binding of it. */
+	binding: BindingId;
+	/** The type annotation as written. */
+	type?: TypeText;
+	/**
+	 * The value: code that reads only globals every context may read, the module's other
+	 * constants and its value imports, by their binding ids.
+	 */
+	value: Code;
+	/** The declaration, from `const` to its end. */
+	span: Span;
 }
 
 /**
@@ -241,24 +241,24 @@ export interface ModuleConstant {
  * in place of props and a returned object in place of JSX.
  */
 export interface UfComposable {
-  /**
-   * The exported function's name: `use` and an upper-case letter, in ASCII letters and digits.
-   * @pattern ^use[A-Z][A-Za-z0-9]*$
-   */
-  name: string;
-  span: Span;
-  /** The function's type parameters, in order. Absent when it has none. */
-  typeParameters?: TypeParameter[];
-  /** The parameters, in order, each with its kind. */
-  parameters: ComposableParameter[];
-  /** The names of the module's `types` its output declares, in source order. */
-  types: string[];
-  /** Every binding the composable declares, by the start of its span: its arguments and setup. */
-  bindings: Binding[];
-  /** The body before its return, in source order. */
-  setup: SetupItem[];
-  /** The members of the returned shorthand object, `return { on, toggle }`, in order. */
-  returns: ReturnedMember[];
+	/**
+	 * The exported function's name: `use` and an upper-case letter, in ASCII letters and digits.
+	 * @pattern ^use[A-Z][A-Za-z0-9]*$
+	 */
+	name: string;
+	span: Span;
+	/** The function's type parameters, in order. Absent when it has none. */
+	typeParameters?: TypeParameter[];
+	/** The parameters, in order, each with its kind. */
+	parameters: ComposableParameter[];
+	/** The names of the module's `types` its output declares, in source order. */
+	types: string[];
+	/** Every binding the composable declares, by the start of its span: its arguments and setup. */
+	bindings: Binding[];
+	/** The body before its return, in source order. */
+	setup: SetupItem[];
+	/** The members of the returned shorthand object, `return { on, toggle }`, in order. */
+	returns: ReturnedMember[];
 }
 
 /**
@@ -267,15 +267,15 @@ export interface UfComposable {
  * client code. An `argument` binding.
  */
 export interface ComposableParameter {
-  name: string;
-  kind: ComposableParameterKind;
-  /** The annotation as written. */
-  type: TypeText;
-  /** Set for an optional parameter. */
-  optional?: true;
-  /** The `argument` binding the body reads it through. */
-  binding: BindingId;
-  span: Span;
+	name: string;
+	kind: ComposableParameterKind;
+	/** The annotation as written. */
+	type: TypeText;
+	/** Set for an optional parameter. */
+	optional?: true;
+	/** The `argument` binding the body reads it through. */
+	binding: BindingId;
+	span: Span;
 }
 
 /** How a composable reads a parameter (ADR-0069). */
@@ -283,11 +283,11 @@ export type ComposableParameterKind = "value" | "getter" | "callback";
 
 /** A member of a composable's returned object: a shorthand property naming a binding. */
 export interface ReturnedMember {
-  /** The member's name: the binding's. */
-  name: string;
-  /** A `state`, `derived`, `localFn` or `localConst` binding of the composable. */
-  binding: BindingId;
-  span: Span;
+	/** The member's name: the binding's. */
+	name: string;
+	/** A `state`, `derived`, `localFn` or `localConst` binding of the composable. */
+	binding: BindingId;
+	span: Span;
 }
 
 /**
@@ -295,13 +295,13 @@ export interface ReturnedMember {
  * outputs write each target's generic form from it.
  */
 export interface TypeParameter {
-  /** The parameter's name. */
-  name: string;
-  /** The constraint after `extends`, as written. */
-  constraint?: TypeText;
-  /** The default after `=`, as written. */
-  default?: TypeText;
-  span: Span;
+	/** The parameter's name. */
+	name: string;
+	/** The constraint after `extends`, as written. */
+	constraint?: TypeText;
+	/** The default after `=`, as written. */
+	default?: TypeText;
+	span: Span;
 }
 
 /**
@@ -311,23 +311,23 @@ export interface TypeParameter {
  * option; the IR keeps any that is neither relative nor absolute.
  */
 export interface PassThroughImport {
-  /**
-   * The specifier as written: not empty, and neither relative nor absolute.
-   * @pattern ^(?![./\\]|[A-Za-z]:).+
-   */
-  specifier: string;
-  /** The names a named import binds, in source order: none for a side-effect import. */
-  names: PassThroughName[];
-  /** The import declaration. */
-  span: Span;
+	/**
+	 * The specifier as written: not empty, and neither relative nor absolute.
+	 * @pattern ^(?![./\\]|[A-Za-z]:).+
+	 */
+	specifier: string;
+	/** The names a named import binds, in source order: none for a side-effect import. */
+	names: PassThroughName[];
+	/** The import declaration. */
+	span: Span;
 }
 
 /** A name a pass-through import binds, which an {@link ImportReference} reads. */
 export interface PassThroughName {
-  imported: string;
-  /** The local name the module uses. */
-  local: string;
-  span: Span;
+	imported: string;
+	/** The local name the module uses. */
+	local: string;
+	span: Span;
 }
 
 /**
@@ -336,16 +336,16 @@ export interface PassThroughName {
  * The analyser records the API it resolved, so every target emits from the IR alone (P5, P6).
  */
 export interface ModuleImport {
-  /** The specifier as written, which ends in `.uf.tsx` or `.uf.ts`. */
-  specifier: string;
-  /** The resolved `.uf.tsx` or `.uf.ts`, relative to the importer, with forward slashes. */
-  file: string;
-  /** What the resolver returned for the module. */
-  api: ModuleApi;
-  /** The names the import binds, in source order. */
-  names: ImportedName[];
-  /** The import declaration. */
-  span: Span;
+	/** The specifier as written, which ends in `.uf.tsx` or `.uf.ts`. */
+	specifier: string;
+	/** The resolved `.uf.tsx` or `.uf.ts`, relative to the importer, with forward slashes. */
+	file: string;
+	/** What the resolver returned for the module. */
+	api: ModuleApi;
+	/** The names the import binds, in source order. */
+	names: ImportedName[];
+	/** The import declaration. */
+	span: Span;
 }
 
 /**
@@ -353,12 +353,12 @@ export interface ModuleImport {
  * (ADR-0099).
  */
 export interface ImportedName {
-  kind: "Component" | "Key" | "Composable" | "Directive";
-  /** The imported name: `default` for a default import. */
-  imported: string;
-  /** The local name the module uses. */
-  local: string;
-  span: Span;
+	kind: "Component" | "Key" | "Composable" | "Directive";
+	/** The imported name: `default` for a default import. */
+	imported: string;
+	/** The local name the module uses. */
+	local: string;
+	span: Span;
 }
 
 /**
@@ -366,18 +366,18 @@ export interface ImportedName {
  * `inject` name, declared in the providing `.uf.tsx`.
  */
 export interface InjectionKeyDeclaration {
-  /** The exported `const`'s name. */
-  name: string;
-  /** The `Symbol`'s description: a string literal's value. */
-  description: string;
-  /** The value's type, `Theme` in `InjectionKey<Theme>`, as written. */
-  type: TypeText;
-  /**
-   * The authoring type of the ref the key holds, read from its type (`InjectionKey<Ref<number>>`):
-   * it is provided the ref itself, and its injection is read as `x.value` (ADR-0054).
-   */
-  ref?: RefType;
-  span: Span;
+	/** The exported `const`'s name. */
+	name: string;
+	/** The `Symbol`'s description: a string literal's value. */
+	description: string;
+	/** The value's type, `Theme` in `InjectionKey<Theme>`, as written. */
+	type: TypeText;
+	/**
+	 * The authoring type of the ref the key holds, read from its type (`InjectionKey<Ref<number>>`):
+	 * it is provided the ref itself, and its injection is read as `x.value` (ADR-0054).
+	 */
+	ref?: RefType;
+	span: Span;
 }
 
 /** An authoring type of a ref a key may hold. */
@@ -388,22 +388,22 @@ export type RefType = "Ref" | "ComputedRef" | "ModelRef";
  * reads of its children. It points into another file, so it holds types as text and no spans.
  */
 export interface ModuleApi {
-  /** The module's file, relative to the importer, with forward slashes. */
-  file: string;
-  /** The module's components, in source order, its non-exported ones included. */
-  components: ComponentApi[];
-  /** The injection keys the module exports, in source order. */
-  keys: KeyApi[];
-  /**
-   * The composables a `.uf.ts` module exports, in source order (ADR-0069). Absent when it has
-   * none.
-   */
-  composables?: ComposableApi[];
-  /**
-   * The directives a `.uf.ts` module exports, in source order (ADR-0099). Absent when it has
-   * none.
-   */
-  directives?: DirectiveApi[];
+	/** The module's file, relative to the importer, with forward slashes. */
+	file: string;
+	/** The module's components, in source order, its non-exported ones included. */
+	components: ComponentApi[];
+	/** The injection keys the module exports, in source order. */
+	keys: KeyApi[];
+	/**
+	 * The composables a `.uf.ts` module exports, in source order (ADR-0069). Absent when it has
+	 * none.
+	 */
+	composables?: ComposableApi[];
+	/**
+	 * The directives a `.uf.ts` module exports, in source order (ADR-0099). Absent when it has
+	 * none.
+	 */
+	directives?: DirectiveApi[];
 }
 
 /**
@@ -412,8 +412,8 @@ export interface ModuleApi {
  * element's type from the directive's own module, `typeof vFocusTrap`.
  */
 export interface DirectiveApi {
-  /** @pattern ^v[A-Z][A-Za-z0-9]*$ */
-  name: string;
+	/** @pattern ^v[A-Z][A-Za-z0-9]*$ */
+	name: string;
 }
 
 /**
@@ -421,26 +421,26 @@ export interface DirectiveApi {
  * caller's output never depends on the composable's body.
  */
 export interface ComposableApi {
-  name: string;
-  /** The names of its type parameters, in order. Absent when it has none. */
-  typeParameters?: string[];
-  /** The parameters, in order. */
-  parameters: ComposableParameterApi[];
-  /** The returned members, in order. */
-  members: ComposableMemberApi[];
-  /**
-   * Set where its setup runs code in the browser (a watcher, an effect or a lifecycle hook):
-   * a call then requires `composable-effect-order`, and its `Use` item copies the flag.
-   */
-  hasEffects?: true;
+	name: string;
+	/** The names of its type parameters, in order. Absent when it has none. */
+	typeParameters?: string[];
+	/** The parameters, in order. */
+	parameters: ComposableParameterApi[];
+	/** The returned members, in order. */
+	members: ComposableMemberApi[];
+	/**
+	 * Set where its setup runs code in the browser (a watcher, an effect or a lifecycle hook):
+	 * a call then requires `composable-effect-order`, and its `Use` item copies the flag.
+	 */
+	hasEffects?: true;
 }
 
 /** A parameter of a composable's API: its name, its kind and its type as written. */
 export interface ComposableParameterApi {
-  name: string;
-  kind: ComposableParameterKind;
-  optional?: true;
-  type: string;
+	name: string;
+	kind: ComposableParameterKind;
+	optional?: true;
+	type: string;
 }
 
 /**
@@ -448,118 +448,118 @@ export interface ComposableParameterApi {
  * constant, with its type.
  */
 export interface ComposableMemberApi {
-  name: string;
-  kind: "state" | "derived" | "function" | "constant";
-  /**
-   * Its type as written (`ref<User | null>`). Where the source writes none, a ref's or a derived
-   * value's type as the analyser infers it from the value, `unknown` where it cannot tell, so a
-   * caller checks and narrows its reads as its own (ADR-0046). Absent where nothing is known.
-   */
-  type?: string;
-  /** Set for an `async` function. */
-  async?: true;
-  /** Set for a function that only client code may call: it writes, emits or awaits. */
-  client?: true;
-  /** Set for a function a template or a getter may call: it reads, and changes nothing. */
-  pure?: true;
+	name: string;
+	kind: "state" | "derived" | "function" | "constant";
+	/**
+	 * Its type as written (`ref<User | null>`). Where the source writes none, a ref's or a derived
+	 * value's type as the analyser infers it from the value, `unknown` where it cannot tell, so a
+	 * caller checks and narrows its reads as its own (ADR-0046). Absent where nothing is known.
+	 */
+	type?: string;
+	/** Set for an `async` function. */
+	async?: true;
+	/** Set for a function that only client code may call: it writes, emits or awaits. */
+	client?: true;
+	/** Set for a function a template or a getter may call: it reads, and changes nothing. */
+	pure?: true;
 }
 
 /** What a parent reads of a child component (ADR-0053, ADR-0055). */
 export interface ComponentApi {
-  name: string;
-  /** How the module exports it: as the default, by name, or not at all (a sibling file). */
-  export: "default" | "named" | "local";
-  /** The props, in member order. */
-  props: ApiMember[];
-  /** The events `defineEmits` declares, in member order. */
-  events: ApiEvent[];
-  /** The models `defineModel` declares, in source order. */
-  models: ApiMember[];
-  /** The slots `defineSlots` declares, in member order. */
-  slots: ApiSlot[];
-  /** The names `defineExpose` exposes, in source order. */
-  exposes: string[];
-  /** `false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off. */
-  inheritAttrs: boolean;
-  /**
-   * What the component's render root is: one element, one component, one `<component is>` over
-   * tags (`dynamic`, ADR-0119), or anything else (a fragment, a conditional, a slot outlet).
-   * Fallthrough and Angular's host need it (ADR-0056).
-   */
-  root: "element" | "component" | "dynamic" | "other";
-  /** The root element's tag, when the root is an element. */
-  rootTag?: string;
-  /**
-   * The tag of the element a consumer's undeclared attributes and listeners land on (ADR-0118):
-   * the root element's, the root component's own, or, with `inheritAttrs: false`, the element
-   * that spreads the props' rest. A parent checks what falls through against it. Absent where
-   * nothing but declared names may be passed.
-   */
-  fallthroughTag?: string;
-  /**
-   * `svg` where the fallthrough element is an SVG one (ADR-0118): an `<svg>`, or an element
-   * inside one that spreads the props' rest, whose attributes a parent checks as SVG's. Absent
-   * for an HTML element.
-   */
-  fallthroughNamespace?: "svg";
-  /**
-   * The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer
-   * passes is checked as that element would be checked with it, its `role`, its `tabindex` and
-   * its own key handlers included (UF3030). A `dynamic` root's are its `<component is>`'s, which
-   * each tag it may render is checked with (ADR-0122). Absent where nothing falls through.
-   */
-  fallthroughOwn?: ApiFallthroughOwn;
-  /**
-   * What the components the root renders declare, through a chain of root components, nearest
-   * first (ADR-0118): a name a consumer passes that would fall through reaches that component's
-   * own prop, model or event instead, which the targets do not pass alike, so a parent reports
-   * it (UF1002). Absent where the root is no component, or nothing falls through to it.
-   */
-  rootDeclarations?: ApiRootDeclaration[];
-  /**
-   * The root component that exposes functions (ADR-0118), through a chain of root components
-   * that expose nothing, where this component exposes nothing either: a ref on it holds neither
-   * an element nor those functions, so a parent reports it (UF3046). Absent otherwise.
-   */
-  exposingRoot?: string;
-  /**
-   * The tag of the element a `ref` on the component holds, where the component exposes nothing
-   * (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no
-   * element.
-   */
-  refTag?: string;
-  /**
-   * The tags of the element a `ref` on the component holds, where it exposes nothing and its
-   * root is `dynamic` (ADR-0122): the element that renders, typed as the union of the tags' DOM
-   * interfaces. A root component that renders such a root, through a chain of root components
-   * that expose nothing, takes them too. Absent otherwise: `refTag` names one element.
-   */
-  refTags?: string[];
-  /**
-   * The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it
-   * places them, and merges its `class` and `style` into whichever renders. Where the component
-   * keeps `inheritAttrs`, what else falls through is checked against every tag, and passes only
-   * where every tag takes it (ADR-0122). A root component that renders a `dynamic` root, through
-   * a chain of root components that keep `inheritAttrs`, takes its tags too.
-   */
-  rootTags?: string[];
-  /**
-   * Set when the root is a `<component is>` whose `is` the API cannot list the tags of, as a
-   * setup value's (ADR-0119), so a parent's UF3045 says why. Absent otherwise.
-   */
-  rootUnlisted?: true;
-  /** The component's scoped styles, when it imports a stylesheet (ADR-0063). */
-  styles?: ComponentStylesApi;
-  /**
-   * The names of the component's type parameters, in order (ADR-0068), so a parent knows the
-   * child is generic. Absent when it has none.
-   */
-  typeParameters?: string[];
-  /**
-   * Set when the component's setup awaits (ADR-0101), so a parent in another file knows: Vue's
-   * parent wraps it in `<Suspense>`. Absent otherwise.
-   */
-  async?: true;
+	name: string;
+	/** How the module exports it: as the default, by name, or not at all (a sibling file). */
+	export: "default" | "named" | "local";
+	/** The props, in member order. */
+	props: ApiMember[];
+	/** The events `defineEmits` declares, in member order. */
+	events: ApiEvent[];
+	/** The models `defineModel` declares, in source order. */
+	models: ApiMember[];
+	/** The slots `defineSlots` declares, in member order. */
+	slots: ApiSlot[];
+	/** The names `defineExpose` exposes, in source order. */
+	exposes: string[];
+	/** `false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off. */
+	inheritAttrs: boolean;
+	/**
+	 * What the component's render root is: one element, one component, one `<component is>` over
+	 * tags (`dynamic`, ADR-0119), or anything else (a fragment, a conditional, a slot outlet).
+	 * Fallthrough and Angular's host need it (ADR-0056).
+	 */
+	root: "element" | "component" | "dynamic" | "other";
+	/** The root element's tag, when the root is an element. */
+	rootTag?: string;
+	/**
+	 * The tag of the element a consumer's undeclared attributes and listeners land on (ADR-0118):
+	 * the root element's, the root component's own, or, with `inheritAttrs: false`, the element
+	 * that spreads the props' rest. A parent checks what falls through against it. Absent where
+	 * nothing but declared names may be passed.
+	 */
+	fallthroughTag?: string;
+	/**
+	 * `svg` where the fallthrough element is an SVG one (ADR-0118): an `<svg>`, or an element
+	 * inside one that spreads the props' rest, whose attributes a parent checks as SVG's. Absent
+	 * for an HTML element.
+	 */
+	fallthroughNamespace?: "svg";
+	/**
+	 * The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer
+	 * passes is checked as that element would be checked with it, its `role`, its `tabindex` and
+	 * its own key handlers included (UF3030). A `dynamic` root's are its `<component is>`'s, which
+	 * each tag it may render is checked with (ADR-0122). Absent where nothing falls through.
+	 */
+	fallthroughOwn?: ApiFallthroughOwn;
+	/**
+	 * What the components the root renders declare, through a chain of root components, nearest
+	 * first (ADR-0118): a name a consumer passes that would fall through reaches that component's
+	 * own prop, model or event instead, which the targets do not pass alike, so a parent reports
+	 * it (UF1002). Absent where the root is no component, or nothing falls through to it.
+	 */
+	rootDeclarations?: ApiRootDeclaration[];
+	/**
+	 * The root component that exposes functions (ADR-0118), through a chain of root components
+	 * that expose nothing, where this component exposes nothing either: a ref on it holds neither
+	 * an element nor those functions, so a parent reports it (UF3046). Absent otherwise.
+	 */
+	exposingRoot?: string;
+	/**
+	 * The tag of the element a `ref` on the component holds, where the component exposes nothing
+	 * (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no
+	 * element.
+	 */
+	refTag?: string;
+	/**
+	 * The tags of the element a `ref` on the component holds, where it exposes nothing and its
+	 * root is `dynamic` (ADR-0122): the element that renders, typed as the union of the tags' DOM
+	 * interfaces. A root component that renders such a root, through a chain of root components
+	 * that expose nothing, takes them too. Absent otherwise: `refTag` names one element.
+	 */
+	refTags?: string[];
+	/**
+	 * The tags a `dynamic` root may render, in source order (ADR-0119): a parent checks where it
+	 * places them, and merges its `class` and `style` into whichever renders. Where the component
+	 * keeps `inheritAttrs`, what else falls through is checked against every tag, and passes only
+	 * where every tag takes it (ADR-0122). A root component that renders a `dynamic` root, through
+	 * a chain of root components that keep `inheritAttrs`, takes its tags too.
+	 */
+	rootTags?: string[];
+	/**
+	 * Set when the root is a `<component is>` whose `is` the API cannot list the tags of, as a
+	 * setup value's (ADR-0119), so a parent's UF3045 says why. Absent otherwise.
+	 */
+	rootUnlisted?: true;
+	/** The component's scoped styles, when it imports a stylesheet (ADR-0063). */
+	styles?: ComponentStylesApi;
+	/**
+	 * The names of the component's type parameters, in order (ADR-0068), so a parent knows the
+	 * child is generic. Absent when it has none.
+	 */
+	typeParameters?: string[];
+	/**
+	 * Set when the component's setup awaits (ADR-0101), so a parent in another file knows: Vue's
+	 * parent wraps it in `<Suspense>`. Absent otherwise.
+	 */
+	async?: true;
 }
 
 /**
@@ -568,47 +568,47 @@ export interface ComponentApi {
  * `data-uf-<scopeId>-s` on the content it fills into the child's slots.
  */
 export interface ComponentStylesApi {
-  /** @pattern ^[0-9a-f]{8}$ */
-  scopeId: string;
-  slotted: boolean;
+	/** @pattern ^[0-9a-f]{8}$ */
+	scopeId: string;
+	slotted: boolean;
 }
 
 /** The fallthrough element's own attributes and listeners, as its source writes them. */
 export interface ApiFallthroughOwn {
-  /**
-   * Each attribute: its static value, `true` written without one, and no value where bound
-   * (a form `validateModule` checks, as a static attribute's).
-   */
-  attributes: { name: string; value?: string | true }[];
-  /** The DOM events its own listeners listen to, in lower case (`keydown`). */
-  listeners: string[];
+	/**
+	 * Each attribute: its static value, `true` written without one, and no value where bound
+	 * (a form `validateModule` checks, as a static attribute's).
+	 */
+	attributes: { name: string; value?: string | true }[];
+	/** The DOM events its own listeners listen to, in lower case (`keydown`). */
+	listeners: string[];
 }
 
 /** A prop, a model or an event that a component's root component declares (ADR-0118). */
 export interface ApiRootDeclaration {
-  /** The prop's or the model's name, or the event's, as `defineEmits` declares it (`click`). */
-  name: string;
-  kind: "prop" | "model" | "event";
-  /** The root component that declares it. */
-  component: string;
+	/** The prop's or the model's name, or the event's, as `defineEmits` declares it (`click`). */
+	name: string;
+	kind: "prop" | "model" | "event";
+	/** The root component that declares it. */
+	component: string;
 }
 
 /** A prop or a model of a child's API: its name, its optionality and its type as written. */
 export interface ApiMember {
-  name: string;
-  optional: boolean;
-  type: string;
-  /**
-   * The names its type references, in order of their first use (ADR-0067), so a parent imports
-   * what it prints. Absent when it references none.
-   */
-  references?: string[];
-  /**
-   * The literals a prop's type resolves to when it is a union of literals the text as written
-   * does not spell, as an alias does (`tone?: Tone`), each as TypeScript writes it (`"info"`,
-   * `2`, `true`), so a parent checks a literal it passes against them (UF3039). Absent otherwise.
-   */
-  literals?: string[];
+	name: string;
+	optional: boolean;
+	type: string;
+	/**
+	 * The names its type references, in order of their first use (ADR-0067), so a parent imports
+	 * what it prints. Absent when it references none.
+	 */
+	references?: string[];
+	/**
+	 * The literals a prop's type resolves to when it is a union of literals the text as written
+	 * does not spell, as an alias does (`tone?: Tone`), each as TypeScript writes it (`"info"`,
+	 * `2`, `true`), so a parent checks a literal it passes against them (UF3039). Absent otherwise.
+	 */
+	literals?: string[];
 }
 
 /**
@@ -616,203 +616,203 @@ export interface ApiMember {
  * spreads (Angular's tuple payload rule, ADR-0047).
  */
 export interface ApiEvent {
-  /** @pattern ^[a-z][A-Za-z0-9]*$ */
-  name: string;
-  parameters: ApiEventParameter[];
+	/** @pattern ^[a-z][A-Za-z0-9]*$ */
+	name: string;
+	parameters: ApiEventParameter[];
 }
 
 /** A member of an event's payload in a child's API. */
 export interface ApiEventParameter {
-  name: string;
-  optional?: true;
-  type: string;
+	name: string;
+	optional?: true;
+	type: string;
 }
 
 /** A slot of a child's API: its name, its optionality and its props' type as written. */
 export interface ApiSlot {
-  name: string;
-  optional: boolean;
-  /** The slot's props' type, for a scoped slot. */
-  props?: string;
-  /** The names its props' type references, as `ApiMember.references`. */
-  references?: string[];
+	name: string;
+	optional: boolean;
+	/** The slot's props' type, for a scoped slot. */
+	props?: string;
+	/** The names its props' type references, as `ApiMember.references`. */
+	references?: string[];
 }
 
 /** An injection key of a child module's API. */
 export interface KeyApi {
-  name: string;
-  description: string;
-  type: string;
-  /** The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`. */
-  ref?: RefType;
-  /** The names its type references, as `ApiMember.references`. */
-  references?: string[];
+	name: string;
+	description: string;
+	type: string;
+	/** The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`. */
+	ref?: RefType;
+	/** The names its type references, as `ApiMember.references`. */
+	references?: string[];
 }
 
 /** An export of a module. */
 export interface UfExport {
-  /** `default` for `export default function Name`, `named` for `export function Name`. */
-  kind: "default" | "named";
-  /** The exported name: `"default"` for the default export, and an identifier otherwise. */
-  name: string;
-  /** The name of the component that is exported: one of the module's components. */
-  local: string;
-  span: Span;
+	/** `default` for `export default function Name`, `named` for `export function Name`. */
+	kind: "default" | "named";
+	/** The exported name: `"default"` for the default export, and an identifier otherwise. */
+	name: string;
+	/** The name of the component that is exported: one of the module's components. */
+	local: string;
+	span: Span;
 }
 
 /** A top-level `interface` or `type` declaration that a component's props use (ADR-0034). */
 export interface TypeDeclaration {
-  /** The declared name, which the props' types refer to. */
-  name: string;
-  /** Whether the source exports it: the outputs export it too. */
-  exported: boolean;
-  /**
-   * The declaration from `interface` or `type` to its end, without `export`: exactly
-   * `source.slice(span.start, span.end)`. Targets copy it as written.
-   */
-  code: string;
-  span: Span;
+	/** The declared name, which the props' types refer to. */
+	name: string;
+	/** Whether the source exports it: the outputs export it too. */
+	exported: boolean;
+	/**
+	 * The declaration from `interface` or `type` to its end, without `export`: exactly
+	 * `source.slice(span.start, span.end)`. Targets copy it as written.
+	 */
+	code: string;
+	span: Span;
 }
 
 /** A component: an exported PascalCase function whose last statement returns JSX. */
 export interface UfComponent {
-  /**
-   * The function's name, PascalCase in ASCII letters and digits, and unique in the module
-   * without case: every target writes it as an identifier and names the output file by it.
-   */
-  name: string;
-  span: Span;
-  /**
-   * The function's type parameters, `function List<T>(props: ListProps<T>)`, in order
-   * (ADR-0068). Absent when it has none.
-   */
-  typeParameters?: TypeParameter[];
-  /** The members of the props type, in member order: none for a component without props. */
-  props: Prop[];
-  /** The props parameter as written. Absent when the component takes no parameter. */
-  propsParameter?: PropsParameter;
-  /**
-   * The names of the module's `types` this component's output declares: the declarations its
-   * props' types, its events' payloads and its setup code's annotations reach, in source order.
-   */
-  types: string[];
-  /**
-   * The events the component declares with `const emit = defineEmits<{ … }>()` (ADR-0047).
-   * Absent when it declares none.
-   */
-  emits?: Emits;
-  /** The slots the component declares with `const slots = defineSlots<{ … }>()` (ADR-0054). */
-  slots?: Slots;
-  /** The local functions the component exposes with `defineExpose({ … })` (ADR-0054). */
-  exposes?: Exposes;
-  /**
-   * Set by `defineOptions({ inheritAttrs: false })`: nothing falls through to the root. What a
-   * consumer passes reaches the element that spreads the props' rest, if one does (ADR-0118).
-   */
-  inheritAttrs?: false;
-  /**
-   * Every binding the component declares, by the start of its span: the props (each
-   * destructured prop, or every prop in the object form), the setup's declarations, the `emit`
-   * function and the loop variables. Expressions and code refer to them by id.
-   */
-  bindings: Binding[];
-  /**
-   * The setup: what the component's body declares and runs before its return, in source order
-   * (plan §4.2, ADR-0045). Empty for a component whose body is only its return.
-   */
-  setup: SetupItem[];
-  /** The returned JSX: one element, or several roots in a fragment. */
-  render: ElementNode | FragmentNode;
-  /**
-   * The stylesheets the component imports, `import "./Button.css"`, in source order (plan §4.4,
-   * ADR-0063): the compiler scopes them under `scopeId`. Only the one component of a module
-   * imports any. Absent when it imports none.
-   */
-  styles?: StyleSheet[];
-  /**
-   * The id that scopes the component's sheets, in the attribute `data-uf-<scopeId>` (ADR-0063):
-   * eight hex digits of a hash of the component's name and its sheets' text, never of a path
-   * (P8). Set exactly when `styles` is.
-   * @pattern ^[0-9a-f]{8}$
-   */
-  scopeId?: string;
+	/**
+	 * The function's name, PascalCase in ASCII letters and digits, and unique in the module
+	 * without case: every target writes it as an identifier and names the output file by it.
+	 */
+	name: string;
+	span: Span;
+	/**
+	 * The function's type parameters, `function List<T>(props: ListProps<T>)`, in order
+	 * (ADR-0068). Absent when it has none.
+	 */
+	typeParameters?: TypeParameter[];
+	/** The members of the props type, in member order: none for a component without props. */
+	props: Prop[];
+	/** The props parameter as written. Absent when the component takes no parameter. */
+	propsParameter?: PropsParameter;
+	/**
+	 * The names of the module's `types` this component's output declares: the declarations its
+	 * props' types, its events' payloads and its setup code's annotations reach, in source order.
+	 */
+	types: string[];
+	/**
+	 * The events the component declares with `const emit = defineEmits<{ … }>()` (ADR-0047).
+	 * Absent when it declares none.
+	 */
+	emits?: Emits;
+	/** The slots the component declares with `const slots = defineSlots<{ … }>()` (ADR-0054). */
+	slots?: Slots;
+	/** The local functions the component exposes with `defineExpose({ … })` (ADR-0054). */
+	exposes?: Exposes;
+	/**
+	 * Set by `defineOptions({ inheritAttrs: false })`: nothing falls through to the root. What a
+	 * consumer passes reaches the element that spreads the props' rest, if one does (ADR-0118).
+	 */
+	inheritAttrs?: false;
+	/**
+	 * Every binding the component declares, by the start of its span: the props (each
+	 * destructured prop, or every prop in the object form), the setup's declarations, the `emit`
+	 * function and the loop variables. Expressions and code refer to them by id.
+	 */
+	bindings: Binding[];
+	/**
+	 * The setup: what the component's body declares and runs before its return, in source order
+	 * (plan §4.2, ADR-0045). Empty for a component whose body is only its return.
+	 */
+	setup: SetupItem[];
+	/** The returned JSX: one element, or several roots in a fragment. */
+	render: ElementNode | FragmentNode;
+	/**
+	 * The stylesheets the component imports, `import "./Button.css"`, in source order (plan §4.4,
+	 * ADR-0063): the compiler scopes them under `scopeId`. Only the one component of a module
+	 * imports any. Absent when it imports none.
+	 */
+	styles?: StyleSheet[];
+	/**
+	 * The id that scopes the component's sheets, in the attribute `data-uf-<scopeId>` (ADR-0063):
+	 * eight hex digits of a hash of the component's name and its sheets' text, never of a path
+	 * (P8). Set exactly when `styles` is.
+	 * @pattern ^[0-9a-f]{8}$
+	 */
+	scopeId?: string;
 }
 
 /** A sibling stylesheet a component imports, `import "./Button.css"` (ADR-0063). */
 export interface StyleSheet {
-  /**
-   * The specifier as written: a relative path that ends in `.css`.
-   * @pattern ^\.\.?/.*\.css$
-   */
-  specifier: string;
-  /** The sheet's text, as the compiler's resolver read it: what the compiler scopes. */
-  source: string;
-  /** The import declaration. */
-  span: Span;
+	/**
+	 * The specifier as written: a relative path that ends in `.css`.
+	 * @pattern ^\.\.?/.*\.css$
+	 */
+	specifier: string;
+	/** The sheet's text, as the compiler's resolver read it: what the compiler scopes. */
+	source: string;
+	/** The import declaration. */
+	span: Span;
 }
 
 /** How a component declares its props: `({ label, tone = "info" }: Props)` or `(props: Props)`. */
 export interface PropsParameter {
-  /** `destructured` for an object pattern, `object` for an identifier (ADR-0034). */
-  form: "destructured" | "object";
-  /**
-   * The parameter's name, exactly in the object form: the name its uses are written with
-   * (`props.label`), which the targets that keep the object form keep too.
-   */
-  name?: string;
-  /** The annotation as written: a reference to a local type, or an object type literal. */
-  type: TypeText;
-  span: Span;
+	/** `destructured` for an object pattern, `object` for an identifier (ADR-0034). */
+	form: "destructured" | "object";
+	/**
+	 * The parameter's name, exactly in the object form: the name its uses are written with
+	 * (`props.label`), which the targets that keep the object form keep too.
+	 */
+	name?: string;
+	/** The annotation as written: a reference to a local type, or an object type literal. */
+	type: TypeText;
+	span: Span;
 }
 
 /** A member of a component's props type. */
 export interface Prop {
-  /**
-   * The name a consumer passes: ASCII letters and digits that every target can declare and
-   * read as an identifier, and none a target reserves (`RESERVED_PROP_NAMES`).
-   */
-  name: string;
-  /** Whether the member is optional (`label?: string`). */
-  optional: boolean;
-  /**
-   * The member's type annotation as written: the targets that declare inputs print it. For a
-   * member from another file, its text as written in the declaring file, at the props
-   * annotation's span (ADR-0067).
-   */
-  type: TypeText;
-  /**
-   * The default, in the destructured form only: a static value, which references nothing,
-   * since Vue hoists defaults out of the component and Angular evaluates them before any input
-   * is set. Absent, or explicitly `undefined`, the prop takes it.
-   */
-  default?: Expression;
-  /**
-   * The binding expressions read the prop through. Absent when the destructured form leaves
-   * the prop out; the object form has one for every prop.
-   */
-  binding?: BindingId;
-  /**
-   * Where the member is declared, when another declaration than the props type declares it: an
-   * interface it extends, a type it intersects or picks from, or an imported one (ADR-0067).
-   * The prop's span is then the props annotation's, and its type's text is the declaring
-   * file's. Absent for a member the props type itself declares.
-   */
-  declaredBy?: DeclaredBy;
-  span: Span;
+	/**
+	 * The name a consumer passes: ASCII letters and digits that every target can declare and
+	 * read as an identifier, and none a target reserves (`RESERVED_PROP_NAMES`).
+	 */
+	name: string;
+	/** Whether the member is optional (`label?: string`). */
+	optional: boolean;
+	/**
+	 * The member's type annotation as written: the targets that declare inputs print it. For a
+	 * member from another file, its text as written in the declaring file, at the props
+	 * annotation's span (ADR-0067).
+	 */
+	type: TypeText;
+	/**
+	 * The default, in the destructured form only: a static value, which references nothing,
+	 * since Vue hoists defaults out of the component and Angular evaluates them before any input
+	 * is set. Absent, or explicitly `undefined`, the prop takes it.
+	 */
+	default?: Expression;
+	/**
+	 * The binding expressions read the prop through. Absent when the destructured form leaves
+	 * the prop out; the object form has one for every prop.
+	 */
+	binding?: BindingId;
+	/**
+	 * Where the member is declared, when another declaration than the props type declares it: an
+	 * interface it extends, a type it intersects or picks from, or an imported one (ADR-0067).
+	 * The prop's span is then the props annotation's, and its type's text is the declaring
+	 * file's. Absent for a member the props type itself declares.
+	 */
+	declaredBy?: DeclaredBy;
+	span: Span;
 }
 
 /** The declaration a prop's member comes from (ADR-0067). */
 export interface DeclaredBy {
-  /**
-   * The declaring file, as the type oracle names it (ADR-0067): root-relative, with forward
-   * slashes, or `pkg:<name>` for a package's. Never absolute (P8).
-   * @pattern ^(?![/\\]|[A-Za-z]:).+
-   */
-  file: string;
-  /** The name of the interface or type alias that declares the member. */
-  declaration: string;
-  /** The member's span in the declaring file. */
-  span: Span;
+	/**
+	 * The declaring file, as the type oracle names it (ADR-0067): root-relative, with forward
+	 * slashes, or `pkg:<name>` for a package's. Never absolute (P8).
+	 * @pattern ^(?![/\\]|[A-Za-z]:).+
+	 */
+	file: string;
+	/** The name of the interface or type alias that declares the member. */
+	declaration: string;
+	/** The member's span in the declaring file. */
+	span: Span;
 }
 
 /**
@@ -820,22 +820,22 @@ export interface DeclaredBy {
  * whose member another file declares (`Prop.declaredBy`), which is that file's text.
  */
 export interface TypeText {
-  code: string;
-  span: Span;
+	code: string;
+	span: Span;
 }
 
 /** A name a component declares, which its expressions refer to. */
 export interface Binding {
-  /** `name@span.start`. */
-  id: BindingId;
-  /** The name as declared. */
-  name: string;
-  kind: BindingKind;
-  /**
-   * Where the binding is declared: the destructured name, the props member, the parameter, or
-   * the identifier a setup declaration binds.
-   */
-  span: Span;
+	/** `name@span.start`. */
+	id: BindingId;
+	/** The name as declared. */
+	name: string;
+	kind: BindingKind;
+	/**
+	 * Where the binding is declared: the destructured name, the props member, the parameter, or
+	 * the identifier a setup declaration binds.
+	 */
+	span: Span;
 }
 
 /**
@@ -867,39 +867,39 @@ export interface Binding {
  *   written (UF2036), a derived value, a function and a constant (ADR-0069).
  */
 export type BindingKind =
-  | "prop"
-  | "loopVar"
-  | "state"
-  | "derived"
-  | "templateRef"
-  | "localConst"
-  | "localFn"
-  | "localVar"
-  | "awaited"
-  | "emit"
-  | "model"
-  | "slots"
-  | "slotScope"
-  | "context"
-  | "component"
-  | "moduleConst"
-  | "import"
-  | "argument"
-  | "usedState"
-  | "usedDerived"
-  | "usedFn"
-  | "usedConst";
+	| "prop"
+	| "loopVar"
+	| "state"
+	| "derived"
+	| "templateRef"
+	| "localConst"
+	| "localFn"
+	| "localVar"
+	| "awaited"
+	| "emit"
+	| "model"
+	| "slots"
+	| "slotScope"
+	| "context"
+	| "component"
+	| "moduleConst"
+	| "import"
+	| "argument"
+	| "usedState"
+	| "usedDerived"
+	| "usedFn"
+	| "usedConst";
 
 /**
  * An expression the analyser accepted, with every identifier in it resolved (plan §5.4).
  * Targets print it by splicing their own spelling of each reference into the code.
  */
 export interface Expression {
-  /** The source text, exactly `source.slice(span.start, span.end)`: never rewritten in the IR. */
-  code: string;
-  span: Span;
-  /** Each reference to a binding or an allowed global, in source order, without overlap. */
-  refs: Reference[];
+	/** The source text, exactly `source.slice(span.start, span.end)`: never rewritten in the IR. */
+	code: string;
+	span: Span;
+	/** Each reference to a binding or an allowed global, in source order, without overlap. */
+	refs: Reference[];
 }
 
 /** A resolved identifier in an expression. */
@@ -911,11 +911,11 @@ export type Reference = BindingReference | GlobalReference | SlotReference | Imp
  * code.
  */
 export interface ImportReference {
-  kind: "Import";
-  /** The local name, as the module's pass-through import binds it. */
-  name: string;
-  /** The identifier. */
-  span: Span;
+	kind: "Import";
+	/** The local name, as the module's pass-through import binds it. */
+	name: string;
+	/** The identifier. */
+	span: Span;
 }
 
 /**
@@ -923,48 +923,48 @@ export interface ImportReference {
  * expression holds one, never setup code; rendering a slot is a {@link SlotOutletNode}.
  */
 export interface SlotReference {
-  kind: "Slot";
-  /** The slot's name, as `defineSlots` declares it. */
-  slot: string;
-  /** The member expression, `slots.title`. */
-  span: Span;
+	kind: "Slot";
+	/** The slot's name, as `defineSlots` declares it. */
+	slot: string;
+	/** The member expression, `slots.title`. */
+	span: Span;
 }
 
 /** A read of one of the component's bindings. */
 export interface BindingReference {
-  kind: "Binding";
-  binding: BindingId;
-  /**
-   * What a target replaces with its own spelling of the binding: the identifier; the whole
-   * `props.label` in the object form; and the whole `count.value` for a `state`, `derived`,
-   * `templateRef` or `model` binding, or a `context` binding of a key of a ref, whose value is the
-   * only thing code reads (ADR-0045, ADR-0054). A key of a ref is provided the ref itself, by its
-   * name.
-   */
-  span: Span;
-  /** Set for a shorthand property (`{ label }`), which a rewrite must expand to `label: …`. */
-  shorthand?: true;
-  /**
-   * Set where the reference is the callee of a call (`save()`, `format(total.value)`): only a
-   * `localFn` binding is called, and outside client code it is used only so; client code may
-   * also pass one as a call's argument (`setTimeout(tick, 100)`, ADR-0045). A target whose
-   * functions are asynchronous there (Qwik's QRLs) awaits the call.
-   */
-  call?: true;
-  /**
-   * The paths of the read that a condition around it narrows, where the read relies on it
-   * (ADR-0046): set on a read of a prop or of a ref's value only, shortest path first.
-   */
-  narrowed?: NarrowedPath[];
-  /**
-   * Set where the reference lies in client code that runs later than the code around it (ADR-0048):
-   * in a function that code hands to a call that runs it later or never (a timer's or an
-   * observer's callback, a promise's `then`, `addEventListener`, `onCleanup`), written in place
-   * or held in a local `const` that only such calls are given. No target tracks what it reads
-   * while the code around it runs: a `watchEffect` lists only the other reads as its
-   * dependencies (`summarizeTracked`).
-   */
-  later?: true;
+	kind: "Binding";
+	binding: BindingId;
+	/**
+	 * What a target replaces with its own spelling of the binding: the identifier; the whole
+	 * `props.label` in the object form; and the whole `count.value` for a `state`, `derived`,
+	 * `templateRef` or `model` binding, or a `context` binding of a key of a ref, whose value is the
+	 * only thing code reads (ADR-0045, ADR-0054). A key of a ref is provided the ref itself, by its
+	 * name.
+	 */
+	span: Span;
+	/** Set for a shorthand property (`{ label }`), which a rewrite must expand to `label: …`. */
+	shorthand?: true;
+	/**
+	 * Set where the reference is the callee of a call (`save()`, `format(total.value)`): only a
+	 * `localFn` binding is called, and outside client code it is used only so; client code may
+	 * also pass one as a call's argument (`setTimeout(tick, 100)`, ADR-0045). A target whose
+	 * functions are asynchronous there (Qwik's QRLs) awaits the call.
+	 */
+	call?: true;
+	/**
+	 * The paths of the read that a condition around it narrows, where the read relies on it
+	 * (ADR-0046): set on a read of a prop or of a ref's value only, shortest path first.
+	 */
+	narrowed?: NarrowedPath[];
+	/**
+	 * Set where the reference lies in client code that runs later than the code around it (ADR-0048):
+	 * in a function that code hands to a call that runs it later or never (a timer's or an
+	 * observer's callback, a promise's `then`, `addEventListener`, `onCleanup`), written in place
+	 * or held in a local `const` that only such calls are given. No target tracks what it reads
+	 * while the code around it runs: a `watchEffect` lists only the other reads as its
+	 * dependencies (`summarizeTracked`).
+	 */
+	later?: true;
 }
 
 /**
@@ -978,24 +978,24 @@ export interface BindingReference {
  * the analyser rejects such a narrowing in code (UF3031), where no target keeps it.
  */
 export interface NarrowedPath {
-  /**
-   * The path, from the reference's start: the reference itself (`selected.value`, `user`,
-   * `props.user`) or a member path off it written with `.` or a literal key (`draft.value.email`,
-   * `contact.email`, `rows.value[0]`), no `?.` in it.
-   */
-  span: Span;
-  /**
-   * Where the innermost condition that narrows the path is:
-   * - `local`: no function lies between it and the read (an `if`'s or a guard clause's test in
-   *   the read's function, or a `?:`, `&&` or `||` in the same expression), where TypeScript
-   *   narrows a property (`props.user`, `userRef.current`) too, and never a call;
-   * - `closure`: in a function of the setup around the read's: only a destructured prop's own
-   *   read, which TypeScript narrows in a closure as a parameter, and a property's not;
-   * - `template`: a conditional of the template around the read's handler, whose branch the
-   *   targets keep narrowed (UF3029 keeps the read to an argument of the handler's one call). It
-   *   may narrow kinds (`typeof`), where an assertion is not enough.
-   */
-  scope: "local" | "closure" | "template";
+	/**
+	 * The path, from the reference's start: the reference itself (`selected.value`, `user`,
+	 * `props.user`) or a member path off it written with `.` or a literal key (`draft.value.email`,
+	 * `contact.email`, `rows.value[0]`), no `?.` in it.
+	 */
+	span: Span;
+	/**
+	 * Where the innermost condition that narrows the path is:
+	 * - `local`: no function lies between it and the read (an `if`'s or a guard clause's test in
+	 *   the read's function, or a `?:`, `&&` or `||` in the same expression), where TypeScript
+	 *   narrows a property (`props.user`, `userRef.current`) too, and never a call;
+	 * - `closure`: in a function of the setup around the read's: only a destructured prop's own
+	 *   read, which TypeScript narrows in a closure as a parameter, and a property's not;
+	 * - `template`: a conditional of the template around the read's handler, whose branch the
+	 *   targets keep narrowed (UF3029 keeps the read to an argument of the handler's one call). It
+	 *   may narrow kinds (`typeof`), where an assertion is not enough.
+	 */
+	scope: "local" | "closure" | "template";
 }
 
 /**
@@ -1004,11 +1004,11 @@ export interface NarrowedPath {
  * in setup code one of `PURE_GLOBALS` or, in client code, `CLIENT_GLOBALS` (ADR-0045).
  */
 export interface GlobalReference {
-  kind: "Global";
-  /** The global's name: one of the globals its context may read. */
-  name: string;
-  /** The identifier. */
-  span: Span;
+	kind: "Global";
+	/** The global's name: one of the globals its context may read. */
+	name: string;
+	/** The identifier. */
+	span: Span;
 }
 
 /**
@@ -1018,28 +1018,28 @@ export interface GlobalReference {
  * one, it may write state, call `emit` and `nextTick`, and read what only client code may.
  */
 export interface Code {
-  /** The source text, exactly `source.slice(span.start, span.end)`. */
-  code: string;
-  span: Span;
-  /**
-   * Each reference in source order, by the start of its span. A `Write`'s value and an
-   * `Emit`'s arguments hold references of their own, which follow it in the list; no other
-   * references overlap.
-   */
-  refs: CodeReference[];
+	/** The source text, exactly `source.slice(span.start, span.end)`. */
+	code: string;
+	span: Span;
+	/**
+	 * Each reference in source order, by the start of its span. A `Write`'s value and an
+	 * `Emit`'s arguments hold references of their own, which follow it in the list; no other
+	 * references overlap.
+	 */
+	refs: CodeReference[];
 }
 
 /** A resolved name in setup code. */
 export type CodeReference =
-  | BindingReference
-  | GlobalReference
-  | WriteReference
-  | EmitReference
-  | ApiReference
-  | EventReference
-  | SlotReference
-  | ImportReference
-  | DevReference;
+	| BindingReference
+	| GlobalReference
+	| WriteReference
+	| EmitReference
+	| ApiReference
+	| EventReference
+	| SlotReference
+	| ImportReference
+	| DevReference;
 
 /**
  * A write of a `state` or `model` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`,
@@ -1047,33 +1047,33 @@ export type CodeReference =
  * whole expression of an expression statement, or the whole body of an arrow function.
  */
 export interface WriteReference {
-  kind: "Write";
-  /** A `state`, a `model` or a `localVar` binding. */
-  binding: BindingId;
-  /**
-   * `=`, an arithmetic or logical compound assignment operator (`+=`, `??=`, …), or `++` or `--`.
-   * Bitwise and shift assignments are not accepted (UF1002).
-   * @pattern ^(?:=|\+=|-=|\*=|\/=|%=|\*\*=|&&=|\|\|=|\?\?=|\+\+|--)$
-   */
-  operator: string;
-  /**
-   * The whole assignment or update expression; for a write that is an arrow's expression body,
-   * the whole body, its parentheses included (`() => (open.value = !open.value)`).
-   */
-  span: Span;
-  /** What is written: `count.value`, or the variable. */
-  target: Span;
-  /** An assignment's value: its references follow this one in the list. Absent for `++`/`--`. */
-  value?: Span;
-  /** Set where the write is an arrow function's expression body (`() => count.value++`). */
-  arrowBody?: true;
-  /**
-   * The target, where the operator reads it (`+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `++`, `--`)
-   * and a condition around the write narrows it present
-   * (`if (count.value !== null) count.value += 1`, ADR-0046): one `local` path spanning `target`.
-   * A target that reads the written value through a call asserts it (`count()! + 1`).
-   */
-  narrowed?: NarrowedPath[];
+	kind: "Write";
+	/** A `state`, a `model` or a `localVar` binding. */
+	binding: BindingId;
+	/**
+	 * `=`, an arithmetic or logical compound assignment operator (`+=`, `??=`, …), or `++` or `--`.
+	 * Bitwise and shift assignments are not accepted (UF1002).
+	 * @pattern ^(?:=|\+=|-=|\*=|\/=|%=|\*\*=|&&=|\|\|=|\?\?=|\+\+|--)$
+	 */
+	operator: string;
+	/**
+	 * The whole assignment or update expression; for a write that is an arrow's expression body,
+	 * the whole body, its parentheses included (`() => (open.value = !open.value)`).
+	 */
+	span: Span;
+	/** What is written: `count.value`, or the variable. */
+	target: Span;
+	/** An assignment's value: its references follow this one in the list. Absent for `++`/`--`. */
+	value?: Span;
+	/** Set where the write is an arrow function's expression body (`() => count.value++`). */
+	arrowBody?: true;
+	/**
+	 * The target, where the operator reads it (`+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `++`, `--`)
+	 * and a condition around the write narrows it present
+	 * (`if (count.value !== null) count.value += 1`, ADR-0046): one `local` path spanning `target`.
+	 * A target that reads the written value through a call asserts it (`count()! + 1`).
+	 */
+	narrowed?: NarrowedPath[];
 }
 
 /**
@@ -1082,13 +1082,13 @@ export interface WriteReference {
  * parameter is the one a {@link Parameter} marks with `event`.
  */
 export interface EventReference {
-  kind: "Event";
-  /** The member: `key`, `currentTarget`, `preventDefault`, … */
-  member: string;
-  /** The member expression, `event.key`. */
-  span: Span;
-  /** Set where the member is called (`event.preventDefault()`). */
-  call?: true;
+	kind: "Event";
+	/** The member: `key`, `currentTarget`, `preventDefault`, … */
+	member: string;
+	/** The member expression, `event.key`. */
+	span: Span;
+	/** Set where the member is called (`event.preventDefault()`). */
+	call?: true;
 }
 
 /**
@@ -1100,11 +1100,11 @@ export interface EventReference {
  * apart from the lazily loaded handler.
  */
 export interface EventControl {
-  method: "preventDefault" | "stopPropagation";
-  /** The `if`'s test when the call is conditional: code that reads only the event. */
-  condition?: Code;
-  /** The statement that makes the call: the expression statement, or the whole `if`. */
-  span: Span;
+	method: "preventDefault" | "stopPropagation";
+	/** The `if`'s test when the call is conditional: code that reads only the event. */
+	condition?: Code;
+	/** The statement that makes the call: the expression statement, or the whole `if`. */
+	span: Span;
 }
 
 /**
@@ -1112,15 +1112,15 @@ export interface EventControl {
  * string literal naming one the component declares.
  */
 export interface EmitReference {
-  kind: "Emit";
-  /** The `emit` binding. */
-  binding: BindingId;
-  /** The event's name, as `defineEmits` declares it. */
-  event: string;
-  /** The whole call, from `emit` to its closing parenthesis. */
-  span: Span;
-  /** The payload's arguments, in order: their references follow this one in the list. */
-  arguments: Span[];
+	kind: "Emit";
+	/** The `emit` binding. */
+	binding: BindingId;
+	/** The event's name, as `defineEmits` declares it. */
+	event: string;
+	/** The whole call, from `emit` to its closing parenthesis. */
+	span: Span;
+	/** The payload's arguments, in order: their references follow this one in the list. */
+	arguments: Span[];
 }
 
 /**
@@ -1129,9 +1129,9 @@ export interface EmitReference {
  * which a production build folds to `false`.
  */
 export interface DevReference {
-  kind: "Dev";
-  /** The identifier. */
-  span: Span;
+	kind: "Dev";
+	/** The identifier. */
+	span: Span;
 }
 
 /**
@@ -1139,11 +1139,11 @@ export interface DevReference {
  * other APIs are setup items, called at the top level of the body.
  */
 export interface ApiReference {
-  kind: "Api";
-  /** The API: `nextTick`. */
-  api: "nextTick";
-  /** The identifier. */
-  span: Span;
+	kind: "Api";
+	/** The API: `nextTick`. */
+	api: "nextTick";
+	/** The identifier. */
+	span: Span;
 }
 
 /**
@@ -1152,27 +1152,27 @@ export interface ApiReference {
  * apart, and every other target prints them back as the author wrote them.
  */
 export interface FunctionCode {
-  /** Set for an `async` function. */
-  async?: true;
-  /** The parameters, in order. */
-  parameters: Parameter[];
-  /** The return type annotation as written, without its colon. */
-  returnType?: TypeText;
-  /** The body: a block `{ … }`, or an arrow's expression. */
-  body: Code;
-  /** Set where the body is an arrow's expression rather than a block. */
-  expression?: true;
-  /**
-   * The leading `preventDefault()` and `stopPropagation()` calls of a handler's body (see
-   * {@link EventControl}), in source order: set on a function that handles an event (an inline
-   * handler, or a setup function a handler names) when it makes any. The body may make others
-   * while the event is dispatched (in an `if` block beside other statements, a `switch` case,
-   * after a guard on state), which every target runs in place and codegen's `handlerControls`
-   * reads from the body; never one after an `await` or in a function inside it (UF3033).
-   */
-  eventControls?: EventControl[];
-  /** The whole function, from `async` or its first parameter to the end of its body. */
-  span: Span;
+	/** Set for an `async` function. */
+	async?: true;
+	/** The parameters, in order. */
+	parameters: Parameter[];
+	/** The return type annotation as written, without its colon. */
+	returnType?: TypeText;
+	/** The body: a block `{ … }`, or an arrow's expression. */
+	body: Code;
+	/** Set where the body is an arrow's expression rather than a block. */
+	expression?: true;
+	/**
+	 * The leading `preventDefault()` and `stopPropagation()` calls of a handler's body (see
+	 * {@link EventControl}), in source order: set on a function that handles an event (an inline
+	 * handler, or a setup function a handler names) when it makes any. The body may make others
+	 * while the event is dispatched (in an `if` block beside other statements, a `switch` case,
+	 * after a guard on state), which every target runs in place and codegen's `handlerControls`
+	 * reads from the body; never one after an `await` or in a function inside it (UF3033).
+	 */
+	eventControls?: EventControl[];
+	/** The whole function, from `async` or its first parameter to the end of its body. */
+	span: Span;
 }
 
 /**
@@ -1180,54 +1180,54 @@ export interface FunctionCode {
  * type and default. A function's own names are not bindings: code refers to them as written.
  */
 export interface Parameter {
-  /** The name of an identifier parameter. Absent for a pattern. */
-  name?: string;
-  /** A destructuring pattern (`[first, last]`, `{ id }`), as written. Absent for an identifier. */
-  pattern?: ParameterPattern;
-  /** The type annotation as written, without its colon. */
-  type?: TypeText;
-  /** Set for an optional parameter (`label?: string`). */
-  optional?: true;
-  /** A rest parameter (`...values`). */
-  rest?: true;
-  /** The default: a static value, which references nothing. */
-  default?: Expression;
-  /**
-   * Set on a handler's event parameter: the DOM interface of its event (`KeyboardEvent`), from
-   * its annotation or, unannotated, from the event's own (`DOM_EVENTS`). Code uses it only
-   * through {@link EventReference}s.
-   */
-  event?: string;
-  span: Span;
+	/** The name of an identifier parameter. Absent for a pattern. */
+	name?: string;
+	/** A destructuring pattern (`[first, last]`, `{ id }`), as written. Absent for an identifier. */
+	pattern?: ParameterPattern;
+	/** The type annotation as written, without its colon. */
+	type?: TypeText;
+	/** Set for an optional parameter (`label?: string`). */
+	optional?: true;
+	/** A rest parameter (`...values`). */
+	rest?: true;
+	/** The default: a static value, which references nothing. */
+	default?: Expression;
+	/**
+	 * Set on a handler's event parameter: the DOM interface of its event (`KeyboardEvent`), from
+	 * its annotation or, unannotated, from the event's own (`DOM_EVENTS`). Code uses it only
+	 * through {@link EventReference}s.
+	 */
+	event?: string;
+	span: Span;
 }
 
 /** A destructuring pattern in a parameter: its code, and the names it declares, in order. */
 export interface ParameterPattern {
-  /** Exactly `source.slice(span.start, span.end)`: its defaults are static. */
-  code: string;
-  /** The names the pattern binds, each an identifier. */
-  names: string[];
-  span: Span;
+	/** Exactly `source.slice(span.start, span.end)`: its defaults are static. */
+	code: string;
+	/** The names the pattern binds, each an identifier. */
+	names: string[];
+	span: Span;
 }
 
 /** What a component's setup declares or runs, in source order (ADR-0045). */
 export type SetupItem =
-  | AwaitItem
-  | StateItem
-  | DerivedItem
-  | TemplateRefItem
-  | IdItem
-  | ConstItem
-  | VariableItem
-  | FunctionItem
-  | WatchItem
-  | WatchEffectItem
-  | LifecycleItem
-  | ModelItem
-  | ProvideItem
-  | InjectItem
-  | UseItem
-  | DevCheckItem;
+	| AwaitItem
+	| StateItem
+	| DerivedItem
+	| TemplateRefItem
+	| IdItem
+	| ConstItem
+	| VariableItem
+	| FunctionItem
+	| WatchItem
+	| WatchEffectItem
+	| LifecycleItem
+	| ModelItem
+	| ProvideItem
+	| InjectItem
+	| UseItem
+	| DevCheckItem;
 
 /**
  * `const user = await loadUser(props.id)`: an `awaited` binding (ADR-0101). The awaits open the
@@ -1235,65 +1235,65 @@ export type SetupItem =
  * and the `awaited` bindings before it.
  */
 export interface AwaitItem {
-  kind: "Await";
-  binding: BindingId;
-  /** The type annotation as written. */
-  type?: TypeText;
-  /** The awaited expression, without `await`. */
-  value: Code;
-  /** The declaration, from `const` to its end. */
-  span: Span;
+	kind: "Await";
+	binding: BindingId;
+	/** The type annotation as written. */
+	type?: TypeText;
+	/** The awaited expression, without `await`. */
+	value: Code;
+	/** The declaration, from `const` to its end. */
+	span: Span;
 }
 
 /** `const count = ref(initial)`: a `state` binding (ADR-0046). */
 export interface StateItem {
-  kind: "State";
-  binding: BindingId;
-  /** The type argument as written (`ref<Item[]>([])`). */
-  type?: TypeText;
-  /**
-   * The initial value: an expression the setup evaluates once, which may read props and the
-   * values declared before it. Absent for `ref()`, which starts `undefined`.
-   */
-  initial?: Code;
-  span: Span;
+	kind: "State";
+	binding: BindingId;
+	/** The type argument as written (`ref<Item[]>([])`). */
+	type?: TypeText;
+	/**
+	 * The initial value: an expression the setup evaluates once, which may read props and the
+	 * values declared before it. Absent for `ref()`, which starts `undefined`.
+	 */
+	initial?: Code;
+	span: Span;
 }
 
 /** `const total = computed(() => …)`: a `derived` binding (ADR-0046). */
 export interface DerivedItem {
-  kind: "Derived";
-  binding: BindingId;
-  /** The type argument as written (`computed<number>(…)`). */
-  type?: TypeText;
-  /** The getter: a function without parameters, pure as a template expression is. */
-  getter: FunctionCode;
-  span: Span;
+	kind: "Derived";
+	binding: BindingId;
+	/** The type argument as written (`computed<number>(…)`). */
+	type?: TypeText;
+	/** The getter: a function without parameters, pure as a template expression is. */
+	getter: FunctionCode;
+	span: Span;
 }
 
 /** `const input = useTemplateRef<HTMLInputElement>()`: a `templateRef` binding (ADR-0049). */
 export interface TemplateRefItem {
-  kind: "TemplateRef";
-  binding: BindingId;
-  /** The element type as written (`HTMLInputElement`). */
-  type?: TypeText;
-  span: Span;
+	kind: "TemplateRef";
+	binding: BindingId;
+	/** The element type as written (`HTMLInputElement`). */
+	type?: TypeText;
+	span: Span;
 }
 
 /** `const id = useId()`: a `localConst` binding holding an id unique to the instance (ADR-0049). */
 export interface IdItem {
-  kind: "Id";
-  binding: BindingId;
-  span: Span;
+	kind: "Id";
+	binding: BindingId;
+	span: Span;
 }
 
 /** `const label = …`: a `localConst` binding, evaluated once when the setup runs (ADR-0045). */
 export interface ConstItem {
-  kind: "Const";
-  binding: BindingId;
-  /** The type annotation as written. */
-  type?: TypeText;
-  value: Code;
-  span: Span;
+	kind: "Const";
+	binding: BindingId;
+	/** The type annotation as written. */
+	type?: TypeText;
+	value: Code;
+	span: Span;
 }
 
 /**
@@ -1301,22 +1301,22 @@ export interface ConstItem {
  * reads and no template, getter or watched source reads.
  */
 export interface VariableItem {
-  kind: "Variable";
-  binding: BindingId;
-  /** The type annotation as written. */
-  type?: TypeText;
-  initial?: Code;
-  span: Span;
+	kind: "Variable";
+	binding: BindingId;
+	/** The type annotation as written. */
+	type?: TypeText;
+	initial?: Code;
+	span: Span;
 }
 
 /** `function save() {…}` or `const save = () => …`: a `localFn` binding (ADR-0045). */
 export interface FunctionItem {
-  kind: "Function";
-  binding: BindingId;
-  /** How the source declares it: a function declaration, or a `const` holding an arrow. */
-  form: "declaration" | "arrow";
-  function: FunctionCode;
-  span: Span;
+	kind: "Function";
+	binding: BindingId;
+	/** How the source declares it: a function declaration, or a `const` holding an arrow. */
+	form: "declaration" | "arrow";
+	function: FunctionCode;
+	span: Span;
 }
 
 /**
@@ -1324,18 +1324,18 @@ export interface FunctionItem {
  * the browser after the sources change.
  */
 export interface WatchItem {
-  kind: "Watch";
-  /** What it watches: one source, or each element of an array of sources. */
-  sources: WatchSource[];
-  /** Set for an array of sources (`watch([a, b], …)`): the callback gets arrays of values. */
-  array?: true;
-  /** The callback: its parameters are the value, the previous value and `onCleanup`. */
-  callback: FunctionCode;
-  /** `immediate: true`: the callback also runs once when the setup does. */
-  immediate?: true;
-  /** `flush: "post"`: the callback runs after the DOM has updated. */
-  post?: true;
-  span: Span;
+	kind: "Watch";
+	/** What it watches: one source, or each element of an array of sources. */
+	sources: WatchSource[];
+	/** Set for an array of sources (`watch([a, b], …)`): the callback gets arrays of values. */
+	array?: true;
+	/** The callback: its parameters are the value, the previous value and `onCleanup`. */
+	callback: FunctionCode;
+	/** `immediate: true`: the callback also runs once when the setup does. */
+	immediate?: true;
+	/** `flush: "post"`: the callback runs after the DOM has updated. */
+	post?: true;
+	span: Span;
 }
 
 /** What a watcher watches: a `state` or `derived` binding, or a getter. */
@@ -1343,16 +1343,16 @@ export type WatchSource = RefSource | GetterSource;
 
 /** A `state` or `derived` binding, written as the ref itself: `watch(count, …)`. */
 export interface RefSource {
-  kind: "Ref";
-  binding: BindingId;
-  span: Span;
+	kind: "Ref";
+	binding: BindingId;
+	span: Span;
 }
 
 /** A getter, `watch(() => step, …)`: a function without parameters, pure as a getter is. */
 export interface GetterSource {
-  kind: "Getter";
-  getter: FunctionCode;
-  span: Span;
+	kind: "Getter";
+	getter: FunctionCode;
+	span: Span;
 }
 
 /**
@@ -1360,10 +1360,10 @@ export interface GetterSource {
  * and again after any value it reads changes.
  */
 export interface WatchEffectItem {
-  kind: "WatchEffect";
-  /** The effect: its one parameter, when it has one, is `onCleanup`. */
-  effect: FunctionCode;
-  span: Span;
+	kind: "WatchEffect";
+	/** The effect: its one parameter, when it has one, is `onCleanup`. */
+	effect: FunctionCode;
+	span: Span;
 }
 
 /**
@@ -1373,19 +1373,19 @@ export interface WatchEffectItem {
  * a production one are the same.
  */
 export interface DevCheckItem {
-  kind: "DevCheck";
-  /** The whole statement, `if` to its block's end: its test is a {@link DevReference}. */
-  code: Code;
-  span: Span;
+	kind: "DevCheck";
+	/** The whole statement, `if` to its block's end: its test is a {@link DevReference}. */
+	code: Code;
+	span: Span;
 }
 
 /** `onMounted(…)` or `onUnmounted(…)` (ADR-0048): runs in the browser only. */
 export interface LifecycleItem {
-  kind: "Lifecycle";
-  hook: "mounted" | "unmounted";
-  /** The hook: a function without parameters. */
-  callback: FunctionCode;
-  span: Span;
+	kind: "Lifecycle";
+	hook: "mounted" | "unmounted";
+	/** The hook: a function without parameters. */
+	callback: FunctionCode;
+	span: Span;
 }
 
 /**
@@ -1393,38 +1393,38 @@ export interface LifecycleItem {
  * a prop the parent may bind two ways.
  */
 export interface ModelItem {
-  kind: "Model";
-  binding: BindingId;
-  /** The model's name, the string literal `defineModel` takes. */
-  name: string;
-  /** The type argument as written. */
-  type?: TypeText;
-  /** The `default` option: a static value, as a prop's default is. */
-  default?: Expression;
-  /** `required: true`. */
-  required?: true;
-  span: Span;
+	kind: "Model";
+	binding: BindingId;
+	/** The model's name, the string literal `defineModel` takes. */
+	name: string;
+	/** The type argument as written. */
+	type?: TypeText;
+	/** The `default` option: a static value, as a prop's default is. */
+	default?: Expression;
+	/** `required: true`. */
+	required?: true;
+	span: Span;
 }
 
 /** `provide(ThemeKey, theme)` (ADR-0054): a value the component's descendants inject. */
 export interface ProvideItem {
-  kind: "Provide";
-  /** The local name of the module's key or of an imported one. */
-  key: string;
-  /** The provided value. */
-  value: Code;
-  span: Span;
+	kind: "Provide";
+	/** The local name of the module's key or of an imported one. */
+	key: string;
+	/** The provided value. */
+	value: Code;
+	span: Span;
 }
 
 /** `const theme = inject(ThemeKey, fallback)`: a `context` binding (ADR-0054). */
 export interface InjectItem {
-  kind: "Inject";
-  binding: BindingId;
-  /** The local name of the module's key or of an imported one. */
-  key: string;
-  /** What `inject` gives where no ancestor provides the key. */
-  fallback?: Code;
-  span: Span;
+	kind: "Inject";
+	binding: BindingId;
+	/** The local name of the module's key or of an imported one. */
+	key: string;
+	/** What `inject` gives where no ancestor provides the key. */
+	fallback?: Code;
+	span: Span;
 }
 
 /**
@@ -1432,17 +1432,17 @@ export interface InjectItem {
  * top level of the setup, whose result is destructured into `used*` bindings.
  */
 export interface UseItem {
-  kind: "Use";
-  /** The local name of the imported composable. */
-  composable: string;
-  /** The arguments, in order, each as its parameter's kind reads it. */
-  arguments: UseArgument[];
-  /** The destructured members, in source order. */
-  members: UsedMember[];
-  /** Copied from the composable's API: a call requires `composable-effect-order`. */
-  hasEffects?: true;
-  /** The declaration, from `const` to its end. */
-  span: Span;
+	kind: "Use";
+	/** The local name of the imported composable. */
+	composable: string;
+	/** The arguments, in order, each as its parameter's kind reads it. */
+	arguments: UseArgument[];
+	/** The destructured members, in source order. */
+	members: UsedMember[];
+	/** Copied from the composable's API: a call requires `composable-effect-order`. */
+	hasEffects?: true;
+	/** The declaration, from `const` to its end. */
+	span: Span;
 }
 
 /**
@@ -1453,133 +1453,133 @@ export type UseArgument = ValueArgument | GetterArgument | CallbackArgument;
 
 /** An argument of a `value` parameter: code the setup evaluates once. */
 export interface ValueArgument {
-  kind: "Value";
-  value: Code;
-  span: Span;
+	kind: "Value";
+	value: Code;
+	span: Span;
 }
 
 /** An argument of a `getter` parameter: a function without parameters, pure as a getter is. */
 export interface GetterArgument {
-  kind: "Getter";
-  getter: FunctionCode;
-  span: Span;
+	kind: "Getter";
+	getter: FunctionCode;
+	span: Span;
 }
 
 /** An argument of a `callback` parameter: a function client code calls. */
 export interface CallbackArgument {
-  kind: "Callback";
-  callback: FunctionCode;
-  span: Span;
+	kind: "Callback";
+	callback: FunctionCode;
+	span: Span;
 }
 
 /** A member a `Use` item destructures: `on`, or `on: open` under another name. */
 export interface UsedMember {
-  /** The member's name in the composable's API. */
-  member: string;
-  /** The `used*` binding of the member's kind. */
-  binding: BindingId;
-  span: Span;
+	/** The member's name in the composable's API. */
+	member: string;
+	/** The `used*` binding of the member's kind. */
+	binding: BindingId;
+	span: Span;
 }
 
 /** The slots a component declares: `const slots = defineSlots<{ title?: () => any }>()`. */
 export interface Slots {
-  /** The `slots` binding. */
-  binding: BindingId;
-  /** The type argument as written. */
-  type: TypeText;
-  /** The slots, in member order, each name once. */
-  slots: SlotDeclaration[];
-  /** The declaration, from `const` to its end. */
-  span: Span;
+	/** The `slots` binding. */
+	binding: BindingId;
+	/** The type argument as written. */
+	type: TypeText;
+	/** The slots, in member order, each name once. */
+	slots: SlotDeclaration[];
+	/** The declaration, from `const` to its end. */
+	span: Span;
 }
 
 /** A slot a component declares (ADR-0054). */
 export interface SlotDeclaration {
-  /** `default`, or the name of a named slot. */
-  name: string;
-  /** Whether the member is optional: every slot is (UF2029), so a parent may leave it empty. */
-  optional: boolean;
-  /** The props a scoped slot passes, as written: the type of the member's parameter. */
-  props?: TypeText;
-  /**
-   * The names its props' type references, in order of their first use (ADR-0067), so a type
-   * parameter a slot passes is seen (`generic-slot-props`). Absent when it references none.
-   */
-  references?: string[];
-  span: Span;
+	/** `default`, or the name of a named slot. */
+	name: string;
+	/** Whether the member is optional: every slot is (UF2029), so a parent may leave it empty. */
+	optional: boolean;
+	/** The props a scoped slot passes, as written: the type of the member's parameter. */
+	props?: TypeText;
+	/**
+	 * The names its props' type references, in order of their first use (ADR-0067), so a type
+	 * parameter a slot passes is seen (`generic-slot-props`). Absent when it references none.
+	 */
+	references?: string[];
+	span: Span;
 }
 
 /** What a component exposes with `defineExpose({ focus, clear })` (ADR-0054). */
 export interface Exposes {
-  /** The exposed `localFn` bindings, in source order. */
-  functions: BindingId[];
-  /** The call. */
-  span: Span;
+	/** The exposed `localFn` bindings, in source order. */
+	functions: BindingId[];
+	/** The call. */
+	span: Span;
 }
 
 /** The events a component declares: `const emit = defineEmits<{ change: [value: number] }>()`. */
 export interface Emits {
-  /** The `emit` binding. */
-  binding: BindingId;
-  /** The type argument as written: an object type literal, or a reference to a local type. */
-  type: TypeText;
-  /** The events, in member order, each name once. */
-  events: EventDeclaration[];
-  /** The declaration, from `const` to its end. */
-  span: Span;
+	/** The `emit` binding. */
+	binding: BindingId;
+	/** The type argument as written: an object type literal, or a reference to a local type. */
+	type: TypeText;
+	/** The events, in member order, each name once. */
+	events: EventDeclaration[];
+	/** The declaration, from `const` to its end. */
+	span: Span;
 }
 
 /** An event a component declares (ADR-0047). */
 export interface EventDeclaration {
-  /**
-   * The name a consumer listens to (`onChange` in the source): camelCase ASCII, which every
-   * target spells its own way (ADR-0012).
-   * @pattern ^[a-z][A-Za-z0-9]*$
-   */
-  name: string;
-  /** The payload: the members of the event's named tuple, in order. */
-  parameters: EventParameter[];
-  /** The member that declares the event. */
-  span: Span;
+	/**
+	 * The name a consumer listens to (`onChange` in the source): camelCase ASCII, which every
+	 * target spells its own way (ADR-0012).
+	 * @pattern ^[a-z][A-Za-z0-9]*$
+	 */
+	name: string;
+	/** The payload: the members of the event's named tuple, in order. */
+	parameters: EventParameter[];
+	/** The member that declares the event. */
+	span: Span;
 }
 
 /** A member of an event's named tuple: `value: number` in `change: [value: number]`. */
 export interface EventParameter {
-  /** The member's label. */
-  name: string;
-  /** Set for an optional member (`value?: number`). */
-  optional?: true;
-  /** The member's type as written. */
-  type: TypeText;
-  span: Span;
+	/** The member's label. */
+	name: string;
+	/** Set for an optional member (`value?: number`). */
+	optional?: true;
+	/** The member's type as written. */
+	type: TypeText;
+	span: Span;
 }
 
 /** A node of the render tree. */
 export type RenderNode =
-  | ElementNode
-  | TextNode
-  | InterpolationNode
-  | IfNode
-  | ForNode
-  | ComponentNode
-  | SlotOutletNode
-  | DynamicNode
-  | TeleportNode
-  | TransitionNode;
+	| ElementNode
+	| TextNode
+	| InterpolationNode
+	| IfNode
+	| ForNode
+	| ComponentNode
+	| SlotOutletNode
+	| DynamicNode
+	| TeleportNode
+	| TransitionNode;
 
 /**
  * A component element, `<Field label="Name" onClear={reset} />` (ADR-0053): an imported
  * component, one of the module's own, or the component itself.
  */
 export interface ComponentNode {
-  kind: "Component";
-  /** The local name of an imported component, or the name of one of the module's own. */
-  component: string;
-  /** Each attribute, each name set once. */
-  attributes: ComponentAttribute[];
-  /** What fills the child's slots: the children as the default slot's, then the named ones. */
-  fills: SlotFill[];
-  span: Span;
+	kind: "Component";
+	/** The local name of an imported component, or the name of one of the module's own. */
+	component: string;
+	/** Each attribute, each name set once. */
+	attributes: ComponentAttribute[];
+	/** What fills the child's slots: the children as the default slot's, then the named ones. */
+	fills: SlotFill[];
+	span: Span;
 }
 
 /**
@@ -1587,14 +1587,14 @@ export interface ComponentNode {
  * fallback after `??` (ADR-0054).
  */
 export interface SlotOutletNode {
-  kind: "SlotOutlet";
-  /** The slot's name, as `defineSlots` declares it. */
-  slot: string;
-  /** The object a scoped slot is called with. */
-  props?: Expression;
-  /** What renders when the parent leaves the slot empty: nothing when empty. */
-  fallback: RenderNode[];
-  span: Span;
+	kind: "SlotOutlet";
+	/** The slot's name, as `defineSlots` declares it. */
+	slot: string;
+	/** The object a scoped slot is called with. */
+	props?: Expression;
+	/** What renders when the parent leaves the slot empty: nothing when empty. */
+	fallback: RenderNode[];
+	span: Span;
 }
 
 /**
@@ -1603,31 +1603,31 @@ export interface SlotOutletNode {
  * attributes and fills, each declared by every candidate.
  */
 export interface DynamicNode {
-  kind: "Dynamic";
-  /** What chooses the candidate: an expression whose value is one of `candidates`. */
-  is: Expression;
-  /** The set it chooses from, in source order. */
-  candidates: DynamicCandidate[];
-  attributes: (Attribute | ComponentAttribute)[];
-  /** The children of a tag candidate: none for components, whose content is `fills`. */
-  children: RenderNode[];
-  /** The fills of component candidates. */
-  fills?: SlotFill[];
-  /**
-   * The attributes only some tag candidates take, by name, each with the tags that take it
-   * (ADR-0119): it renders only when one of them does. An attribute every candidate takes has no
-   * entry, and the field is absent when there are none.
-   */
-  only?: DynamicOnly[];
-  span: Span;
+	kind: "Dynamic";
+	/** What chooses the candidate: an expression whose value is one of `candidates`. */
+	is: Expression;
+	/** The set it chooses from, in source order. */
+	candidates: DynamicCandidate[];
+	attributes: (Attribute | ComponentAttribute)[];
+	/** The children of a tag candidate: none for components, whose content is `fills`. */
+	children: RenderNode[];
+	/** The fills of component candidates. */
+	fills?: SlotFill[];
+	/**
+	 * The attributes only some tag candidates take, by name, each with the tags that take it
+	 * (ADR-0119): it renders only when one of them does. An attribute every candidate takes has no
+	 * entry, and the field is absent when there are none.
+	 */
+	only?: DynamicOnly[];
+	span: Span;
 }
 
 /** An attribute of a `Dynamic` node that only some of its tag candidates take (ADR-0119). */
 export interface DynamicOnly {
-  /** The attribute's name, as its `Static` or `Bound` attribute spells it. */
-  name: string;
-  /** The candidate tags that take it, in candidate order: some of them, never all. */
-  tags: string[];
+	/** The attribute's name, as its `Static` or `Bound` attribute spells it. */
+	name: string;
+	/** The candidate tags that take it, in candidate order: some of them, never all. */
+	tags: string[];
 }
 
 /**
@@ -1635,12 +1635,12 @@ export interface DynamicOnly {
  * once its component has mounted. The server renders none of it.
  */
 export interface TeleportNode {
-  kind: "Teleport";
-  /** The CSS selector of the element the content mounts into: a static string, not empty. */
-  to: string;
-  /** The content: exactly one element (ADR-0098). */
-  children: RenderNode[];
-  span: Span;
+	kind: "Teleport";
+	/** The CSS selector of the element the content mounts into: a static string, not empty. */
+	to: string;
+	/** The content: exactly one element (ADR-0098). */
+	children: RenderNode[];
+	span: Span;
 }
 
 /**
@@ -1650,17 +1650,17 @@ export interface TeleportNode {
  * the settled child.
  */
 export interface TransitionNode {
-  kind: "Transition";
-  /** The prefix of the transition's classes, a static string: `"v"` when the source leaves it out. */
-  name: string;
-  /** Set when the first element enters on a client mount too (`appear`). */
-  appear?: true;
-  /**
-   * The child: exactly one element, or one `If` whose every branch holds one element or nothing
-   * (ADR-0100).
-   */
-  children: RenderNode[];
-  span: Span;
+	kind: "Transition";
+	/** The prefix of the transition's classes, a static string: `"v"` when the source leaves it out. */
+	name: string;
+	/** Set when the first element enters on a client mount too (`appear`). */
+	appear?: true;
+	/**
+	 * The child: exactly one element, or one `If` whose every branch holds one element or nothing
+	 * (ADR-0100).
+	 */
+	children: RenderNode[];
+	span: Span;
 }
 
 /** A candidate of `<component is>`: a tag, or a component by its local name. */
@@ -1668,16 +1668,16 @@ export type DynamicCandidate = TagCandidate | ComponentCandidate;
 
 /** A tag `<component is>` may render: an HTML element's name. */
 export interface TagCandidate {
-  kind: "Tag";
-  /** @pattern ^[a-z][a-z0-9]*$ */
-  tag: string;
+	kind: "Tag";
+	/** @pattern ^[a-z][a-z0-9]*$ */
+	tag: string;
 }
 
 /** A component `<component is>` may render: a `component` binding's component. */
 export interface ComponentCandidate {
-  kind: "Component";
-  /** The local name of an imported component, or the name of one of the module's own. */
-  component: string;
+	kind: "Component";
+	/** The local name of an imported component, or the name of one of the module's own. */
+	component: string;
 }
 
 /**
@@ -1686,46 +1686,46 @@ export interface ComponentCandidate {
  * passed on.
  */
 export interface SlotFill {
-  /** The child's slot: `default`, or a named slot. */
-  slot: string;
-  /** A scoped fill's parameter, whose names are `slotScope` bindings. */
-  parameter?: Parameter;
-  /** What fills the slot: none for a forwarded one. */
-  children: RenderNode[];
-  /** The parent's own slot this fill passes on, `{{ title: slots.title }}`, with no children. */
-  forward?: string;
-  span: Span;
+	/** The child's slot: `default`, or a named slot. */
+	slot: string;
+	/** A scoped fill's parameter, whose names are `slotScope` bindings. */
+	parameter?: Parameter;
+	/** What fills the slot: none for a forwarded one. */
+	children: RenderNode[];
+	/** The parent's own slot this fill passes on, `{{ title: slots.title }}`, with no children. */
+	forward?: string;
+	span: Span;
 }
 
 /** An element: an HTML element such as `<p>`, or an SVG element inside an `<svg>`. */
 export interface ElementNode {
-  kind: "Element";
-  /**
-   * The tag name: an element of the HTML Living Standard in lower case, or, inside an `<svg>`,
-   * an SVG element with its own case (`linearGradient`). The namespace follows from the tree:
-   * `<svg>` starts SVG, and everything inside it is SVG.
-   * @pattern ^[A-Za-z][A-Za-z0-9]*$
-   */
-  tag: string;
-  /** Each attribute of the element, each name set once. */
-  attributes: Attribute[];
-  /** None for a void element (`<br>`). */
-  children: RenderNode[];
-  span: Span;
+	kind: "Element";
+	/**
+	 * The tag name: an element of the HTML Living Standard in lower case, or, inside an `<svg>`,
+	 * an SVG element with its own case (`linearGradient`). The namespace follows from the tree:
+	 * `<svg>` starts SVG, and everything inside it is SVG.
+	 * @pattern ^[A-Za-z][A-Za-z0-9]*$
+	 */
+	tag: string;
+	/** Each attribute of the element, each name set once. */
+	attributes: Attribute[];
+	/** None for a void element (`<br>`). */
+	children: RenderNode[];
+	span: Span;
 }
 
 /** A text node. */
 export interface TextNode {
-  kind: "Text";
-  /**
-   * The text exactly as the DOM holds it: after JSX whitespace rules and entity decoding, as
-   * every JSX implementation reads it, or a string literal's value. It holds only characters
-   * HTML keeps as they are (no carriage return, NUL, lone surrogate, control character or
-   * noncharacter). Targets escape it for their own syntax. Two Texts are never adjacent: the
-   * analyser merges them.
-   */
-  value: string;
-  span: Span;
+	kind: "Text";
+	/**
+	 * The text exactly as the DOM holds it: after JSX whitespace rules and entity decoding, as
+	 * every JSX implementation reads it, or a string literal's value. It holds only characters
+	 * HTML keeps as they are (no carriage return, NUL, lone surrogate, control character or
+	 * noncharacter). Targets escape it for their own syntax. Two Texts are never adjacent: the
+	 * analyser merges them.
+	 */
+	value: string;
+	span: Span;
 }
 
 /**
@@ -1734,9 +1734,9 @@ export interface TextNode {
  * differently.
  */
 export interface InterpolationNode {
-  kind: "Interpolation";
-  value: Expression;
-  span: Span;
+	kind: "Interpolation";
+	value: Expression;
+	span: Span;
 }
 
 /**
@@ -1745,58 +1745,58 @@ export interface InterpolationNode {
  * value JavaScript's `&&` would give (ADR-0036).
  */
 export interface IfNode {
-  kind: "If";
-  /** The branches in order: the first whose condition holds renders, or the final else. */
-  branches: IfBranch[];
-  span: Span;
+	kind: "If";
+	/** The branches in order: the first whose condition holds renders, or the final else. */
+	branches: IfBranch[];
+	span: Span;
 }
 
 /** A branch of an `If`. */
 export interface IfBranch {
-  /** The condition: absent on the final else branch. */
-  condition?: Expression;
-  /** What the branch renders: nothing for an empty branch, which only the else may not be. */
-  children: RenderNode[];
-  span: Span;
+	/** The condition: absent on the final else branch. */
+	condition?: Expression;
+	/** What the branch renders: nothing for an empty branch, which only the else may not be. */
+	children: RenderNode[];
+	span: Span;
 }
 
 /** A list, `source.map((item, index) => <li key={…}>…</li>)` (ADR-0036). */
 export interface ForNode {
-  kind: "For";
-  /** The array the list renders. */
-  source: Expression;
-  /** The callback's item parameter: a `loopVar` binding. */
-  item: BindingId;
-  /** The callback's index parameter, when it has one: a `loopVar` binding. */
-  index?: BindingId;
-  /** The `key` of the callback's root, lifted off the element: `key` is no attribute. */
-  key: Expression;
-  /** The callback's root element or component, without its `key` (ADR-0053). */
-  body: ElementNode | ComponentNode;
-  span: Span;
+	kind: "For";
+	/** The array the list renders. */
+	source: Expression;
+	/** The callback's item parameter: a `loopVar` binding. */
+	item: BindingId;
+	/** The callback's index parameter, when it has one: a `loopVar` binding. */
+	index?: BindingId;
+	/** The `key` of the callback's root, lifted off the element: `key` is no attribute. */
+	key: Expression;
+	/** The callback's root element or component, without its `key` (ADR-0053). */
+	body: ElementNode | ComponentNode;
+	span: Span;
 }
 
 /** Several root nodes, `<>…</>`: only ever a component's render root. */
 export interface FragmentNode {
-  kind: "Fragment";
-  /** The roots, one or more. */
-  children: RenderNode[];
-  span: Span;
+	kind: "Fragment";
+	/** The roots, one or more. */
+	children: RenderNode[];
+	span: Span;
 }
 
 /** An attribute on an element. */
 export type Attribute =
-  | StaticAttribute
-  | BoundAttribute
-  | ClassAttribute
-  | StyleAttribute
-  | SpreadAttribute
-  | RestAttribute
-  | EventAttribute
-  | RefAttribute
-  | ModelAttribute
-  | RawHtmlAttribute
-  | DirectiveAttribute;
+	| StaticAttribute
+	| BoundAttribute
+	| ClassAttribute
+	| StyleAttribute
+	| SpreadAttribute
+	| RestAttribute
+	| EventAttribute
+	| RefAttribute
+	| ModelAttribute
+	| RawHtmlAttribute
+	| DirectiveAttribute;
 
 /**
  * An attribute on a component (ADR-0053, ADR-0054, ADR-0118): a prop, a listener of an event the
@@ -1805,23 +1805,23 @@ export type Attribute =
  * element (`Static`, `Bound`) or a native listener (`Event`, with no option).
  */
 export type ComponentAttribute =
-  | PropAttribute
-  | ListenerAttribute
-  | ModelBindingAttribute
-  | ClassAttribute
-  | StyleAttribute
-  | RefAttribute
-  | StaticAttribute
-  | BoundAttribute
-  | EventAttribute;
+	| PropAttribute
+	| ListenerAttribute
+	| ModelBindingAttribute
+	| ClassAttribute
+	| StyleAttribute
+	| RefAttribute
+	| StaticAttribute
+	| BoundAttribute
+	| EventAttribute;
 
 /** A prop passed to a component, `label="Name"` or `label={name}`: a static value is a literal. */
 export interface PropAttribute {
-  kind: "Prop";
-  /** A prop the child declares. */
-  name: string;
-  value: Expression;
-  span: Span;
+	kind: "Prop";
+	/** A prop the child declares. */
+	name: string;
+	value: Expression;
+	span: Span;
 }
 
 /**
@@ -1829,21 +1829,21 @@ export interface PropAttribute {
  * parameters are the event's payload, never a DOM event.
  */
 export interface ListenerAttribute {
-  kind: "Listener";
-  /** The event's name, as the child's `defineEmits` declares it. */
-  event: string;
-  handler: Handler;
-  span: Span;
+	kind: "Listener";
+	/** The event's name, as the child's `defineEmits` declares it. */
+	event: string;
+	handler: Handler;
+	span: Span;
 }
 
 /** `v-model:open={open.value}` on a component: binds a model the child declares (ADR-0054). */
 export interface ModelBindingAttribute {
-  kind: "ModelBinding";
-  /** The child's model. */
-  model: string;
-  /** A `state` or `model` binding's `.value`. */
-  value: Expression;
-  span: Span;
+	kind: "ModelBinding";
+	/** The child's model. */
+	model: string;
+	/** A `state` or `model` binding's `.value`. */
+	value: Expression;
+	span: Span;
 }
 
 /**
@@ -1851,26 +1851,26 @@ export interface ModelBindingAttribute {
  * checked state, two ways.
  */
 export interface ModelAttribute {
-  kind: "Model";
-  /** A `state` or `model` binding's `.value`. */
-  value: Expression;
-  /** The control, from its tag and its `type`. */
-  control:
-    | "text"
-    | "number"
-    | "textarea"
-    | "select"
-    | "select-multiple"
-    | "checkbox"
-    | "checkbox-group"
-    | "radio";
-  /** `v-model_trim`: the value is trimmed. */
-  trim?: true;
-  /** `v-model_lazy`: the value is written on `change`, not on `input`. */
-  lazy?: true;
-  /** `v-model_number`: the value is parsed as a number. */
-  number?: true;
-  span: Span;
+	kind: "Model";
+	/** A `state` or `model` binding's `.value`. */
+	value: Expression;
+	/** The control, from its tag and its `type`. */
+	control:
+		| "text"
+		| "number"
+		| "textarea"
+		| "select"
+		| "select-multiple"
+		| "checkbox"
+		| "checkbox-group"
+		| "radio";
+	/** `v-model_trim`: the value is trimmed. */
+	trim?: true;
+	/** `v-model_lazy`: the value is written on `change`, not on `input`. */
+	lazy?: true;
+	/** `v-model_number`: the value is parsed as a number. */
+	number?: true;
+	span: Span;
 }
 
 /**
@@ -1878,21 +1878,21 @@ export interface ModelAttribute {
  * no attribute, and runs in the browser only.
  */
 export interface EventAttribute {
-  kind: "Event";
-  /**
-   * The DOM event's name, as `addEventListener` takes it: the source's name without `on` and
-   * its option suffix, in lower case (`onDblclick` → `dblclick`).
-   * @pattern ^[a-z][a-z0-9]*$
-   */
-  event: string;
-  /** `onClickCapture`: the listener runs in the capture phase. */
-  capture?: true;
-  /** `onClickOnce`: the listener runs once, then is removed. */
-  once?: true;
-  /** `onWheelPassive`: the listener is passive. */
-  passive?: true;
-  handler: Handler;
-  span: Span;
+	kind: "Event";
+	/**
+	 * The DOM event's name, as `addEventListener` takes it: the source's name without `on` and
+	 * its option suffix, in lower case (`onDblclick` → `dblclick`).
+	 * @pattern ^[a-z][a-z0-9]*$
+	 */
+	event: string;
+	/** `onClickCapture`: the listener runs in the capture phase. */
+	capture?: true;
+	/** `onClickOnce`: the listener runs once, then is removed. */
+	once?: true;
+	/** `onWheelPassive`: the listener is passive. */
+	passive?: true;
+	handler: Handler;
+	span: Span;
 }
 
 /** What an event runs: a setup function by name, or a function written in place. */
@@ -1900,25 +1900,25 @@ export type Handler = FunctionHandler | InlineHandler;
 
 /** `onClick={save}`: a `localFn` binding, which runs with the event as its argument. */
 export interface FunctionHandler {
-  kind: "Function";
-  binding: BindingId;
-  /** The identifier. */
-  span: Span;
+	kind: "Function";
+	binding: BindingId;
+	/** The identifier. */
+	span: Span;
 }
 
 /** `onClick={() => count.value++}`: an arrow function, which runs with the event as its argument. */
 export interface InlineHandler {
-  kind: "Inline";
-  function: FunctionCode;
-  span: Span;
+	kind: "Inline";
+	function: FunctionCode;
+	span: Span;
 }
 
 /** `ref={input}` (ADR-0049): attaches the element to a `templateRef` binding. It renders nothing. */
 export interface RefAttribute {
-  kind: "Ref";
-  /** The `templateRef` binding. */
-  binding: BindingId;
-  span: Span;
+	kind: "Ref";
+	/** The `templateRef` binding. */
+	binding: BindingId;
+	span: Span;
 }
 
 /**
@@ -1927,10 +1927,10 @@ export interface RefAttribute {
  * children of its own. A static `innerHTML="<b>Hi</b>"` is a string literal's expression.
  */
 export interface RawHtmlAttribute {
-  kind: "RawHtml";
-  /** An expression whose value is a string: the markup. */
-  value: Expression;
-  span: Span;
+	kind: "RawHtml";
+	/** An expression whose value is a string: the markup. */
+	value: Expression;
+	span: Span;
 }
 
 /**
@@ -1938,39 +1938,39 @@ export interface RawHtmlAttribute {
  * and its hooks run in the browser only. A static `v-x="text"` is a string literal's expression.
  */
 export interface DirectiveAttribute {
-  kind: "Directive";
-  /**
-   * The directive's local name: a top-level directive of the module, or a directive it imports
-   * from a `.uf.ts` module.
-   * @pattern ^v[A-Z][A-Za-z0-9]*$
-   */
-  name: string;
-  /** The value the hooks receive. */
-  value: Expression;
-  span: Span;
+	kind: "Directive";
+	/**
+	 * The directive's local name: a top-level directive of the module, or a directive it imports
+	 * from a `.uf.ts` module.
+	 * @pattern ^v[A-Z][A-Za-z0-9]*$
+	 */
+	name: string;
+	/** The value the hooks receive. */
+	value: Expression;
+	span: Span;
 }
 
 /** An attribute whose value is known at compile time: `class="card"`, `disabled`. */
 export interface StaticAttribute {
-  kind: "Static";
-  /**
-   * The attribute name as HTML spells it (`class`, `for`, `aria-label`), in lower case on an
-   * HTML element and with SVG's own case on an SVG element (`viewBox`): an attribute of the
-   * element (its own, a global, an ARIA or a `data-*` attribute). Targets map names to their
-   * own spellings by it.
-   * @pattern ^[^\s"'<>/=]+$
-   */
-  name: string;
-  /**
-   * The decoded value. `true` for an HTML boolean attribute (`<input disabled />`), which is on
-   * by being present and renders without a value, and only for one. Any other attribute
-   * written without a value has the string `"true"`, as in Vue's and React's JSX
-   * (`<span aria-hidden>`); SVG has no boolean attributes. A `class` holds one or more class
-   * names separated by single spaces, as Vue, Svelte and Angular render it. Like text, a value
-   * holds only characters HTML keeps as they are.
-   */
-  value: string | true;
-  span: Span;
+	kind: "Static";
+	/**
+	 * The attribute name as HTML spells it (`class`, `for`, `aria-label`), in lower case on an
+	 * HTML element and with SVG's own case on an SVG element (`viewBox`): an attribute of the
+	 * element (its own, a global, an ARIA or a `data-*` attribute). Targets map names to their
+	 * own spellings by it.
+	 * @pattern ^[^\s"'<>/=]+$
+	 */
+	name: string;
+	/**
+	 * The decoded value. `true` for an HTML boolean attribute (`<input disabled />`), which is on
+	 * by being present and renders without a value, and only for one. Any other attribute
+	 * written without a value has the string `"true"`, as in Vue's and React's JSX
+	 * (`<span aria-hidden>`); SVG has no boolean attributes. A `class` holds one or more class
+	 * names separated by single spaces, as Vue, Svelte and Angular render it. Like text, a value
+	 * holds only characters HTML keeps as they are.
+	 */
+	value: string | true;
+	span: Span;
 }
 
 /**
@@ -1978,14 +1978,14 @@ export interface StaticAttribute {
  * its value otherwise, by the rules for its name (ADR-0037).
  */
 export interface BoundAttribute {
-  kind: "Bound";
-  /**
-   * As a static attribute's name; never `class` or `style`, which have kinds of their own.
-   * @pattern ^[^\s"'<>/=]+$
-   */
-  name: string;
-  value: Expression;
-  span: Span;
+	kind: "Bound";
+	/**
+	 * As a static attribute's name; never `class` or `style`, which have kinds of their own.
+	 * @pattern ^[^\s"'<>/=]+$
+	 */
+	name: string;
+	value: Expression;
+	span: Span;
 }
 
 /**
@@ -1994,9 +1994,9 @@ export interface BoundAttribute {
  * particular order. A `class` with no names renders as no `class` attribute.
  */
 export interface ClassAttribute {
-  kind: "Class";
-  items: ClassItem[];
-  span: Span;
+	kind: "Class";
+	items: ClassItem[];
+	span: Span;
 }
 
 /** A part of a `class`. */
@@ -2004,19 +2004,19 @@ export type ClassItem = StaticClass | ToggleClass | DynamicClass;
 
 /** Class names known at compile time: `"card"` in `class={["card", tone]}`. */
 export interface StaticClass {
-  kind: "Static";
-  /** One or more class names separated by single spaces. */
-  value: string;
-  span: Span;
+	kind: "Static";
+	/** One or more class names separated by single spaces. */
+	value: string;
+	span: Span;
 }
 
 /** One class name, present when its condition is truthy: `{ active: on }`, `on && "active"`. */
 export interface ToggleClass {
-  kind: "Toggle";
-  /** One class name. */
-  name: string;
-  condition: Expression;
-  span: Span;
+	kind: "Toggle";
+	/** One class name. */
+	name: string;
+	condition: Expression;
+	span: Span;
 }
 
 /**
@@ -2024,15 +2024,15 @@ export interface ToggleClass {
  * where `collection` is set, an array or an object.
  */
 export interface DynamicClass {
-  kind: "Dynamic";
-  value: Expression;
-  /**
-   * Set where the value may be an array or an object at run time (a prop typed `string[]`), whose
-   * names render as Vue's `normalizeClass` reads them: an array's entries, recursively, and an
-   * object's keys whose values are truthy (ADR-0038's deferred form).
-   */
-  collection?: true;
-  span: Span;
+	kind: "Dynamic";
+	value: Expression;
+	/**
+	 * Set where the value may be an array or an object at run time (a prop typed `string[]`), whose
+	 * names render as Vue's `normalizeClass` reads them: an array's entries, recursively, and an
+	 * object's keys whose values are truthy (ADR-0038's deferred form).
+	 */
+	collection?: true;
+	span: Span;
 }
 
 /**
@@ -2041,15 +2041,15 @@ export interface DynamicClass {
  * the same property. A `style` with none, and no value, renders as no `style` attribute.
  */
 export interface StyleAttribute {
-  kind: "Style";
-  declarations: StyleDeclaration[];
-  /**
-   * A `style` bound to an expression that is not an object literal, `style={styles}` (ADR-0038's
-   * deferred form): a style object keyed as an object literal's are, a style string, or nothing.
-   * Its properties are known only at run time, so the Style then has no declarations.
-   */
-  value?: Expression;
-  span: Span;
+	kind: "Style";
+	declarations: StyleDeclaration[];
+	/**
+	 * A `style` bound to an expression that is not an object literal, `style={styles}` (ADR-0038's
+	 * deferred form): a style object keyed as an object literal's are, a style string, or nothing.
+	 * Its properties are known only at run time, so the Style then has no declarations.
+	 */
+	value?: Expression;
+	span: Span;
 }
 
 /** A declaration of a `style`. */
@@ -2057,21 +2057,21 @@ export type StyleDeclaration = StaticStyle | BoundStyle;
 
 /** A declaration whose value is known at compile time. */
 export interface StaticStyle {
-  kind: "Static";
-  /** The CSS property name in lower case (`margin-top`), or a custom property (`--gap`). */
-  property: string;
-  /** The value as written, trimmed: one CSS value, without `!important`. */
-  value: string;
-  span: Span;
+	kind: "Static";
+	/** The CSS property name in lower case (`margin-top`), or a custom property (`--gap`). */
+	property: string;
+	/** The value as written, trimmed: one CSS value, without `!important`. */
+	value: string;
+	span: Span;
 }
 
 /** A declaration bound to an expression: left out when its value is nullish or `""`. */
 export interface BoundStyle {
-  kind: "Bound";
-  /** As a static declaration's property. */
-  property: string;
-  value: Expression;
-  span: Span;
+	kind: "Bound";
+	/** As a static declaration's property. */
+	property: string;
+	value: Expression;
+	span: Span;
 }
 
 /**
@@ -2080,22 +2080,22 @@ export interface BoundStyle {
  * merges with the element's own `class`.
  */
 export interface SpreadAttribute {
-  kind: "Spread";
-  /**
-   * The object spread: an expression whose type is one object type the module declares, as a
-   * prop, a list's item or a member of one is.
-   */
-  value: Expression;
-  /** The keys the object's type declares, in member order. */
-  keys: SpreadKey[];
-  /**
-   * Whether the object may be `null` or `undefined` where the spread is, as its type says once
-   * the conditions around the spread narrow it: then it renders no key, and the targets read
-   * each key through `?.` (`attrs?.title`). A read through `?.` of an object that cannot be
-   * nullish is an error on Angular (NG8107), and one through `.` of an object that may be throws.
-   */
-  nullish: boolean;
-  span: Span;
+	kind: "Spread";
+	/**
+	 * The object spread: an expression whose type is one object type the module declares, as a
+	 * prop, a list's item or a member of one is.
+	 */
+	value: Expression;
+	/** The keys the object's type declares, in member order. */
+	keys: SpreadKey[];
+	/**
+	 * Whether the object may be `null` or `undefined` where the spread is, as its type says once
+	 * the conditions around the spread narrow it: then it renders no key, and the targets read
+	 * each key through `?.` (`attrs?.title`). A read through `?.` of an object that cannot be
+	 * nullish is an error on Angular (NG8107), and one through `.` of an object that may be throws.
+	 */
+	nullish: boolean;
+	span: Span;
 }
 
 /**
@@ -2105,17 +2105,17 @@ export interface SpreadAttribute {
  * them where `inheritAttrs` is on.
  */
 export interface RestAttribute {
-  kind: "Rest";
-  span: Span;
+	kind: "Rest";
+	span: Span;
 }
 
 /** A key a spread's type declares: an attribute the spread renders. */
 export interface SpreadKey {
-  /**
-   * The attribute name, as a bound attribute's.
-   * @pattern ^[^\s"'<>/=]+$
-   */
-  name: string;
-  /** The member's key in the type. */
-  span: Span;
+	/**
+	 * The attribute name, as a bound attribute's.
+	 * @pattern ^[^\s"'<>/=]+$
+	 */
+	name: string;
+	/** The member's key in the type. */
+	span: Span;
 }

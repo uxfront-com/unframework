@@ -1,7 +1,7 @@
 {
-  "main": "Card.uf.tsx",
-  "description": "A directive on an element in a child's slot content, which the child renders behind its own state: its hooks run as the child shows and hides the content, though the component that applies the directive doesn't render again.",
-  "ssr": {
-    "initial": {}
-  }
+	"main": "Card.uf.tsx",
+	"description": "A directive on an element in a child's slot content, which the child renders behind its own state: its hooks run as the child shows and hides the content, though the component that applies the directive doesn't render again.",
+	"ssr": {
+		"initial": {}
+	}
 }

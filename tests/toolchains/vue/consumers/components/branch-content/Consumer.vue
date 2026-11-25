@@ -3,5 +3,5 @@ import Notice from "../../../../../integration/cases/components/branch-content/_
 </script>
 
 <template>
-  <Notice text="Saved" tone="quiet" />
+	<Notice text="Saved" tone="quiet" />
 </template>

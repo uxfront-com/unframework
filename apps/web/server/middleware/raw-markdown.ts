@@ -11,15 +11,15 @@ import { rawMarkdown, type DocsPage } from "../utils/raw-markdown";
  * a docs page (returning `undefined` hands the request on).
  */
 export default defineEventHandler(async (event) => {
-  const match = event.path.match(/^\/raw(\/.+?)(?:\/index)?\.md$/);
-  if (!match?.[1]) return undefined;
+	const match = event.path.match(/^\/raw(\/.+?)(?:\/index)?\.md$/);
+	if (!match?.[1]) return undefined;
 
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
-  const page = (await queryCollection(event, "docs" as never)
-    .path(match[1])
-    .first()) as DocsPage | null;
-  if (!page) return undefined;
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
+	const page = (await queryCollection(event, "docs" as never)
+		.path(match[1])
+		.first()) as DocsPage | null;
+	if (!page) return undefined;
 
-  setHeader(event, "Content-Type", "text/markdown; charset=utf-8");
-  return rawMarkdown(page);
+	setHeader(event, "Content-Type", "text/markdown; charset=utf-8");
+	return rawMarkdown(page);
 });

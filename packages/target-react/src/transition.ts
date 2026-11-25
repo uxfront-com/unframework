@@ -13,21 +13,21 @@ import type { ReactPlan, TransitionNames } from "./plan.ts";
 
 /** The dialect's `transition` hook: `<Transition name="fade">{open ? <p key={0} /> : null}</Transition>`. */
 export function transitionCall(plan: ReactPlan): JsxDialect["transition"] {
-  const names = plan.helpers.transition;
-  if (!names) return undefined;
-  return (node, context) => {
-    const [child] = node.children;
-    const content =
-      child?.kind === "If" ? keyedBranches(child, context, plan.names) : jsxNode(child!, context);
-    return js.jsxElement(
-      names.component,
-      [
-        js.jsxAttribute("name", jsxAttributeValue(node.name)),
-        ...(node.appear ? [js.jsxAttribute("appear")] : []),
-      ],
-      [content.type === "JSXElement" ? content : js.jsxExpressionContainer(content)],
-    );
-  };
+	const names = plan.helpers.transition;
+	if (!names) return undefined;
+	return (node, context) => {
+		const [child] = node.children;
+		const content =
+			child?.kind === "If" ? keyedBranches(child, context, plan.names) : jsxNode(child!, context);
+		return js.jsxElement(
+			names.component,
+			[
+				js.jsxAttribute("name", jsxAttributeValue(node.name)),
+				...(node.appear ? [js.jsxAttribute("appear")] : []),
+			],
+			[content.type === "JSXElement" ? content : js.jsxExpressionContainer(content)],
+		);
+	};
 }
 
 /**
@@ -35,16 +35,16 @@ export function transitionCall(plan: ReactPlan): JsxDialect["transition"] {
  * no teleport's helpers declare it already.
  */
 export function transitionHelpers(
-  names: TransitionNames,
-  imports: ImportSet,
-  subscribes: boolean,
+	names: TransitionNames,
+	imports: ImportSet,
+	subscribes: boolean,
 ): string[] {
-  const react = (name: string) => imports.add("react", name);
-  const type = (name: string) => imports.add("react", name, { type: true });
-  const { component, item, entry, subscribe, attach } = names;
-  const element = `${type("ReactElement")}<{ className?: string; ref?: ${type("Ref")}<Element> }>`;
-  return [
-    `/** One element a \`${component}\` renders: its key, its last render and the phase it is in. */
+	const react = (name: string) => imports.add("react", name);
+	const type = (name: string) => imports.add("react", name, { type: true });
+	const { component, item, entry, subscribe, attach } = names;
+	const element = `${type("ReactElement")}<{ className?: string; ref?: ${type("Ref")}<Element> }>`;
+	return [
+		`/** One element a \`${component}\` renders: its key, its last render and the phase it is in. */
 interface ${entry} {
   key: string;
   node: ${element};
@@ -52,15 +52,15 @@ interface ${entry} {
   step: "from" | "to";
   time: number;
 }`,
-    ...(subscribes
-      ? [
-          `/** Subscribes to nothing: whether the component renders on a client never changes once it does. */
+		...(subscribes
+			? [
+					`/** Subscribes to nothing: whether the component renders on a client never changes once it does. */
 function ${subscribe}(): () => void {
   return () => {};
 }`,
-        ]
-      : []),
-    `/**
+				]
+			: []),
+		`/**
  * Runs Vue's transition classes of \`name\` on the element \`children\` renders, keyed by its
  * branch, as it enters and leaves: \`-from\` and \`-active\` first, \`-to\` for \`-from\` two frames
  * later, and none once the element's own \`transitionend\` or \`animationend\` fires, or its longest
@@ -168,7 +168,7 @@ function ${component}({
     );
   });
 }`,
-    `/** Renders one element of a \`${component}\` with its classes, its own ref kept beside the transition's. */
+		`/** Renders one element of a \`${component}\` with its classes, its own ref kept beside the transition's. */
 function ${item}({
   id,
   node,
@@ -194,7 +194,7 @@ function ${item}({
   );
   return ${react("cloneElement")}(node, { className, ref });
 }`,
-    `/** Gives a ref the element, as React would, and returns what takes it back. */
+		`/** Gives a ref the element, as React would, and returns what takes it back. */
 function ${attach}(ref: ${type("Ref")}<Element> | undefined, element: Element): () => void {
   if (typeof ref === "function") {
     const cleanup = ref(element);
@@ -205,5 +205,5 @@ function ${attach}(ref: ${type("Ref")}<Element> | undefined, element: Element): 
     if (ref) ref.current = null;
   };
 }`,
-  ];
+	];
 }

@@ -10,7 +10,7 @@
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.vue": `<script setup lang="ts">
+	"Badge.vue": `<script setup lang="ts">
 export interface BadgeProps {
   label: string;
   tone?: "info" | "warn";
@@ -53,7 +53,7 @@ const {
   </span>
 </template>
 `,
-  "LinkCard.vue": `<script setup lang="ts">
+	"LinkCard.vue": `<script setup lang="ts">
 interface LinkAttrs {
   href: string;
   title?: string;
@@ -79,7 +79,7 @@ const props = withDefaults(defineProps<LinkCardProps>(), { extra: undefined, acc
   </div>
 </template>
 `,
-  "TodoList.vue": `<script setup lang="ts">
+	"TodoList.vue": `<script setup lang="ts">
 interface Todo {
   id: string;
   title: string;
@@ -121,7 +121,7 @@ const { todos, heading = undefined } = defineProps<TodoListProps>();
 
 /** File name → contents. */
 export const M2_SHAPES: Readonly<Record<string, string>> = {
-  "Counter.vue": `<script setup lang="ts">
+	"Counter.vue": `<script setup lang="ts">
 import { computed, ref } from "vue";
 
 export interface CounterProps {
@@ -150,7 +150,7 @@ function increment() {
   </div>
 </template>
 `,
-  "EventLog.vue": `<script setup lang="ts">
+	"EventLog.vue": `<script setup lang="ts">
 import { ref, useTemplateRef } from "vue";
 
 const emit = defineEmits<{ logged: [entries: string[]]; cleared: [] }>();
@@ -208,7 +208,7 @@ function onClick() {
   </section>
 </template>
 `,
-  "Effects.vue": `<script setup lang="ts">
+	"Effects.vue": `<script setup lang="ts">
 import {
   nextTick,
   onMounted,
@@ -303,7 +303,7 @@ onUnmounted(() => {
   </section>
 </template>
 `,
-  "Silent.vue": `<script setup lang="ts">
+	"Silent.vue": `<script setup lang="ts">
 defineEmits<{ ready: [] }>();
 </script>
 

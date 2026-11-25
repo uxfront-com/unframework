@@ -20,35 +20,35 @@ const ITEM_LAYOUTS = new Set(["flex", "inline-flex", "grid", "inline-grid"]);
  * and so boxes, on every target, so the snapshot spaces them anyway.
  */
 export function inlineHosts(root: Element, target?: NormalizeTarget): () => void {
-  if (target !== "angular") return () => {};
-  const hosts = [...root.querySelectorAll("*")].filter(
-    (element): element is HTMLElement =>
-      element instanceof HTMLElement &&
-      element.localName.startsWith("uf-") &&
-      getComputedStyle(element).display === "contents" &&
-      !ITEM_LAYOUTS.has(getComputedStyle(boxParent(element)).display),
-  );
-  const styles = hosts.map((host) => host.getAttribute("style"));
-  // The attribute itself, not `host.style`: Chrome writes a CSSOM change back to the attribute
-  // later, which would undo the restore.
-  hosts.forEach((host, index) => {
-    const style = styles[index];
-    host.setAttribute("style", `${style ? `${style};` : ""}display: inline !important`);
-  });
-  return () => {
-    hosts.forEach((host, index) => {
-      const style = styles[index]!;
-      if (style === null) host.removeAttribute("style");
-      else host.setAttribute("style", style);
-    });
-  };
+	if (target !== "angular") return () => {};
+	const hosts = [...root.querySelectorAll("*")].filter(
+		(element): element is HTMLElement =>
+			element instanceof HTMLElement &&
+			element.localName.startsWith("uf-") &&
+			getComputedStyle(element).display === "contents" &&
+			!ITEM_LAYOUTS.has(getComputedStyle(boxParent(element)).display),
+	);
+	const styles = hosts.map((host) => host.getAttribute("style"));
+	// The attribute itself, not `host.style`: Chrome writes a CSSOM change back to the attribute
+	// later, which would undo the restore.
+	hosts.forEach((host, index) => {
+		const style = styles[index];
+		host.setAttribute("style", `${style ? `${style};` : ""}display: inline !important`);
+	});
+	return () => {
+		hosts.forEach((host, index) => {
+			const style = styles[index]!;
+			if (style === null) host.removeAttribute("style");
+			else host.setAttribute("style", style);
+		});
+	};
 }
 
 /** The element whose box holds `element`'s: its nearest parent that isn't `display: contents`. */
 function boxParent(element: Element): Element {
-  let parent = element.parentElement!;
-  while (parent.parentElement && getComputedStyle(parent).display === "contents") {
-    parent = parent.parentElement;
-  }
-  return parent;
+	let parent = element.parentElement!;
+	while (parent.parentElement && getComputedStyle(parent).display === "contents") {
+		parent = parent.parentElement;
+	}
+	return parent;
 }

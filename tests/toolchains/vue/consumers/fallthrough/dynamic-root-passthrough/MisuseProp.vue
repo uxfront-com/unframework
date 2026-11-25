@@ -3,6 +3,6 @@ import Base from "../../../../../integration/cases/fallthrough/dynamic-root-pass
 </script>
 
 <template>
-  <!-- @uf-expect TS2561 Base.prop:text -->
-  <Base txt="Docs" />
+	<!-- @uf-expect TS2561 Base.prop:text -->
+	<Base txt="Docs" />
 </template>

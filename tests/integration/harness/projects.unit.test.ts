@@ -5,22 +5,22 @@ import type { UserWorkspaceConfig } from "vitest/config";
 import { caseConfigs, listCases } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
 import {
-  BENCH_PROJECT,
-  FRESH_PAGE_PER_FILE,
-  fileParallelism,
-  harnessProjects,
-  isolatesFiles,
-  isSelected,
-  LEAVES_PAGE_UNUSABLE,
-  noErrorBroadcast,
-  parityProjects,
-  projectEntries,
-  projectGroup,
-  projectNames,
-  projectPatterns,
-  projectTest,
-  referencePages,
-  referencesOnly,
+	BENCH_PROJECT,
+	FRESH_PAGE_PER_FILE,
+	fileParallelism,
+	harnessProjects,
+	isolatesFiles,
+	isSelected,
+	LEAVES_PAGE_UNUSABLE,
+	noErrorBroadcast,
+	parityProjects,
+	projectEntries,
+	projectGroup,
+	projectNames,
+	projectPatterns,
+	projectTest,
+	referencePages,
+	referencesOnly,
 } from "./projects.ts";
 import { selectTargets } from "./targets.ts";
 
@@ -28,340 +28,340 @@ const harness: HarnessContext = inject("ufHarness");
 const mode = { update: false, pixels: "baseline", canary: null, ci: false } as const;
 
 describe("selectTargets", () => {
-  it("selects every target by default, in the documented order", () => {
-    expect(selectTargets(undefined)).toEqual([
-      "react",
-      "vue",
-      "svelte",
-      "solid",
-      "solid2",
-      "angular",
-      "qwik",
-      "astro",
-    ]);
-    expect(selectTargets(" ")).toHaveLength(8);
-  });
+	it("selects every target by default, in the documented order", () => {
+		expect(selectTargets(undefined)).toEqual([
+			"react",
+			"vue",
+			"svelte",
+			"solid",
+			"solid2",
+			"angular",
+			"qwik",
+			"astro",
+		]);
+		expect(selectTargets(" ")).toHaveLength(8);
+	});
 
-  it("restricts the run to UF_TARGETS, in the documented order", () => {
-    expect(selectTargets("vue, react")).toEqual(["react", "vue"]);
-  });
+	it("restricts the run to UF_TARGETS, in the documented order", () => {
+		expect(selectTargets("vue, react")).toEqual(["react", "vue"]);
+	});
 
-  it("refuses unknown targets", () => {
-    expect(() => selectTargets("vue,lit")).toThrow(/unknown target\(s\): lit/);
-  });
+	it("refuses unknown targets", () => {
+		expect(() => selectTargets("vue,lit")).toThrow(/unknown target\(s\): lit/);
+	});
 });
 
 describe("projects", () => {
-  it("runs spec files in parallel in Chromium only (ADR-0081)", () => {
-    expect(fileParallelism({})).toBe(true);
-    expect(fileParallelism({ browser: "chromium" })).toBe(true);
-    expect(fileParallelism({ browser: "firefox" })).toBe(false);
-    expect(fileParallelism({ browser: "webkit" })).toBe(false);
-  });
+	it("runs spec files in parallel in Chromium only (ADR-0081)", () => {
+		expect(fileParallelism({})).toBe(true);
+		expect(fileParallelism({ browser: "chromium" })).toBe(true);
+		expect(fileParallelism({ browser: "firefox" })).toBe(false);
+		expect(fileParallelism({ browser: "webkit" })).toBe(false);
+	});
 
-  it("shares each page among spec files, but in Vue's browser project, with the reason (ADR-0092)", () => {
-    const targets = selectTargets(undefined);
-    expect(targets.filter((target) => isolatesFiles("browser", target))).toEqual(["vue"]);
-    expect(FRESH_PAGE_PER_FILE.vue).toMatch(/post-flush queue/);
-  });
+	it("shares each page among spec files, but in Vue's browser project, with the reason (ADR-0092)", () => {
+		const targets = selectTargets(undefined);
+		expect(targets.filter((target) => isolatesFiles("browser", target))).toEqual(["vue"]);
+		expect(FRESH_PAGE_PER_FILE.vue).toMatch(/post-flush queue/);
+	});
 
-  it("shares each page among spec files in every hydrate project (ADR-0106)", () => {
-    const targets = selectTargets(undefined);
-    expect(targets).toHaveLength(8);
-    for (const target of targets) expect(isolatesFiles("hydrate", target)).toBe(false);
-  });
+	it("shares each page among spec files in every hydrate project (ADR-0106)", () => {
+		const targets = selectTargets(undefined);
+		expect(targets).toHaveLength(8);
+		for (const target of targets) expect(isolatesFiles("hydrate", target)).toBe(false);
+	});
 
-  it("names, for Vue alone, the case that leaves a page unusable, with the reason (ADR-0106)", () => {
-    expect(Object.keys(LEAVES_PAGE_UNUSABLE)).toEqual(["vue"]);
-    expect(LEAVES_PAGE_UNUSABLE.vue).toEqual({
-      case: "sourcemaps/mounted-throws",
-      reason: expect.stringMatching(/post-flush queue/),
-    });
-    const corpus = listCases();
-    for (const entry of Object.values(LEAVES_PAGE_UNUSABLE)) {
-      expect(corpus.find((info) => info.id === entry.case)?.spec).toBeDefined();
-    }
-  });
+	it("names, for Vue alone, the case that leaves a page unusable, with the reason (ADR-0106)", () => {
+		expect(Object.keys(LEAVES_PAGE_UNUSABLE)).toEqual(["vue"]);
+		expect(LEAVES_PAGE_UNUSABLE.vue).toEqual({
+			case: "sourcemaps/mounted-throws",
+			reason: expect.stringMatching(/post-flush queue/),
+		});
+		const corpus = listCases();
+		for (const entry of Object.values(LEAVES_PAGE_UNUSABLE)) {
+			expect(corpus.find((info) => info.id === entry.case)?.spec).toBeDefined();
+		}
+	});
 
-  it("names one compile and one harness project, and four projects per target", () => {
-    expect(projectNames(["react", "vue"])).toEqual([
-      "compile",
-      "harness",
-      "toolchain:react",
-      "toolchain:vue",
-      "ssr:react",
-      "ssr:vue",
-      "browser:react",
-      "browser:vue",
-      "hydrate:react",
-      "hydrate:vue",
-    ]);
-  });
+	it("names one compile and one harness project, and four projects per target", () => {
+		expect(projectNames(["react", "vue"])).toEqual([
+			"compile",
+			"harness",
+			"toolchain:react",
+			"toolchain:vue",
+			"ssr:react",
+			"ssr:vue",
+			"browser:react",
+			"browser:vue",
+			"hydrate:react",
+			"hydrate:vue",
+		]);
+	});
 
-  it("reads --project patterns from a command line, in every spelling Vitest accepts", () => {
-    expect(
-      projectPatterns([
-        "vitest",
-        "run",
-        "--project",
-        "ssr:*",
-        "--project=compile",
-        "-p",
-        "browser:vue",
-        "-p=toolchain:*",
-        "--passWithNoTests",
-      ]),
-    ).toEqual(["ssr:*", "compile", "browser:vue", "toolchain:*"]);
-  });
+	it("reads --project patterns from a command line, in every spelling Vitest accepts", () => {
+		expect(
+			projectPatterns([
+				"vitest",
+				"run",
+				"--project",
+				"ssr:*",
+				"--project=compile",
+				"-p",
+				"browser:vue",
+				"-p=toolchain:*",
+				"--passWithNoTests",
+			]),
+		).toEqual(["ssr:*", "compile", "browser:vue", "toolchain:*"]);
+	});
 
-  it("selects projects as Vitest does: wildcards, negations, any letter case", () => {
-    expect(isSelected("ssr:vue", undefined)).toBe(true);
-    expect(isSelected("ssr:vue", ["ssr:*"])).toBe(true);
-    expect(isSelected("browser:vue", ["ssr:*"])).toBe(false);
-    expect(isSelected("browser:vue", ["!browser:react"])).toBe(true);
-    expect(isSelected("browser:react", ["browser:*", "!browser:react"])).toBe(false);
-    expect(isSelected("browser:vue", ["Browser:Vue"])).toBe(true);
-    expect(isSelected("browser:react", ["!BROWSER:*"])).toBe(false);
-    expect(isSelected("ssr:vue", ["ssr.vue"])).toBe(false);
-  });
+	it("selects projects as Vitest does: wildcards, negations, any letter case", () => {
+		expect(isSelected("ssr:vue", undefined)).toBe(true);
+		expect(isSelected("ssr:vue", ["ssr:*"])).toBe(true);
+		expect(isSelected("browser:vue", ["ssr:*"])).toBe(false);
+		expect(isSelected("browser:vue", ["!browser:react"])).toBe(true);
+		expect(isSelected("browser:react", ["browser:*", "!browser:react"])).toBe(false);
+		expect(isSelected("browser:vue", ["Browser:Vue"])).toBe(true);
+		expect(isSelected("browser:react", ["!BROWSER:*"])).toBe(false);
+		expect(isSelected("ssr:vue", ["ssr.vue"])).toBe(false);
+	});
 });
 
 describe("the bench project", () => {
-  const names = (projectFilter?: string[]) =>
-    harnessProjects({ harness, mode, targets: ["vue"], projectFilter })
-      .filter((project) => typeof project === "object")
-      .map((project) => (project as UserWorkspaceConfig).test?.name);
+	const names = (projectFilter?: string[]) =>
+		harnessProjects({ harness, mode, targets: ["vue"], projectFilter })
+			.filter((project) => typeof project === "object")
+			.map((project) => (project as UserWorkspaceConfig).test?.name);
 
-  it("stays out of the default run, and of a wildcard that selects everything", () => {
-    expect(names()).toEqual(["compile", "harness", "toolchain:vue"]);
-    expect(names(["*"])).toEqual(["compile", "harness", "toolchain:vue"]);
-    expect(names(["compile"])).toEqual(["compile", "harness", "toolchain:vue"]);
-    expect(projectNames(["vue"])).not.toContain(BENCH_PROJECT);
-  });
+	it("stays out of the default run, and of a wildcard that selects everything", () => {
+		expect(names()).toEqual(["compile", "harness", "toolchain:vue"]);
+		expect(names(["*"])).toEqual(["compile", "harness", "toolchain:vue"]);
+		expect(names(["compile"])).toEqual(["compile", "harness", "toolchain:vue"]);
+		expect(projectNames(["vue"])).not.toContain(BENCH_PROJECT);
+	});
 
-  it("runs when a run names it", () => {
-    expect(names(["bench"])).toEqual(["compile", "harness", "bench", "toolchain:vue"]);
-    expect(names(projectPatterns(["vitest", "run", "--project=bench"]))).toContain("bench");
-  });
+	it("runs when a run names it", () => {
+		expect(names(["bench"])).toEqual(["compile", "harness", "bench", "toolchain:vue"]);
+		expect(names(projectPatterns(["vitest", "run", "--project=bench"]))).toContain("bench");
+	});
 
-  it("is what CI's parity job adds to the default run", () => {
-    expect(parityProjects(["vue"])).toEqual([...projectNames(["vue"]), "bench"]);
-  });
+	it("is what CI's parity job adds to the default run", () => {
+		expect(parityProjects(["vue"])).toEqual([...projectNames(["vue"]), "bench"]);
+	});
 });
 
 describe("projectTest", () => {
-  const owned = {
-    name: "browser:vue",
-    include: ["cases/**/*.test.ts"],
-    setupFiles: ["/setup.ts"],
-  };
+	const owned = {
+		name: "browser:vue",
+		include: ["cases/**/*.test.ts"],
+		setupFiles: ["/setup.ts"],
+	};
 
-  it("keeps the toolchain's own options over the harness's defaults", () => {
-    const test = projectTest(
-      "vue",
-      { pool: "threads", setupFiles: "/framework.ts", server: { deps: { inline: ["vue"] } } },
-      { pool: "forks", testTimeout: 60_000 },
-      owned,
-    );
-    expect(test).toEqual({
-      ...owned,
-      pool: "threads",
-      testTimeout: 60_000,
-      server: { deps: { inline: ["vue"] } },
-      // The harness's setup (determinism, the console capture) runs first.
-      setupFiles: ["/setup.ts", "/framework.ts"],
-    });
-  });
+	it("keeps the toolchain's own options over the harness's defaults", () => {
+		const test = projectTest(
+			"vue",
+			{ pool: "threads", setupFiles: "/framework.ts", server: { deps: { inline: ["vue"] } } },
+			{ pool: "forks", testTimeout: 60_000 },
+			owned,
+		);
+		expect(test).toEqual({
+			...owned,
+			pool: "threads",
+			testTimeout: 60_000,
+			server: { deps: { inline: ["vue"] } },
+			// The harness's setup (determinism, the console capture) runs first.
+			setupFiles: ["/setup.ts", "/framework.ts"],
+		});
+	});
 
-  it("refuses a toolchain option that the harness owns, rather than dropping it", () => {
-    expect(() => projectTest("vue", { include: ["src/**"], name: "mine" }, {}, owned)).toThrow(
-      "The vue toolchain's Vite configuration sets test.include, test.name, which the harness owns in its projects.",
-    );
-  });
+	it("refuses a toolchain option that the harness owns, rather than dropping it", () => {
+		expect(() => projectTest("vue", { include: ["src/**"], name: "mine" }, {}, owned)).toThrow(
+			"The vue toolchain's Vite configuration sets test.include, test.name, which the harness owns in its projects.",
+		);
+	});
 });
 
 describe("project factories", () => {
-  it("turn a project whose toolchain cannot load into one that fails every case, with the reason", async () => {
-    const [, , , ssr, browser] = harnessProjects({ harness, mode, targets: ["missing"] });
-    for (const [factory, layers] of [
-      [ssr, ["L6", "L13"]],
-      [browser, ["L7", "L8", "L9", "L10", "L11", "L13", "L14"]],
-    ] as const) {
-      const project = await (factory as () => Promise<UserWorkspaceConfig>)();
-      expect(project.test?.include).toEqual(["harness/unavailable.test.ts"]);
-      const provided = project.test?.provide as
-        | { ufUnavailable: { layers: string[]; message: string } }
-        | undefined;
-      const unavailable = provided?.ufUnavailable;
-      if (!unavailable) throw new Error("The project provides no ufUnavailable.");
-      expect(unavailable.layers).toEqual(layers);
-      expect(unavailable.message).toMatch(
-        /^The missing toolchain \(@unframework\.dev\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
-      );
-    }
-  });
+	it("turn a project whose toolchain cannot load into one that fails every case, with the reason", async () => {
+		const [, , , ssr, browser] = harnessProjects({ harness, mode, targets: ["missing"] });
+		for (const [factory, layers] of [
+			[ssr, ["L6", "L13"]],
+			[browser, ["L7", "L8", "L9", "L10", "L11", "L13", "L14"]],
+		] as const) {
+			const project = await (factory as () => Promise<UserWorkspaceConfig>)();
+			expect(project.test?.include).toEqual(["harness/unavailable.test.ts"]);
+			const provided = project.test?.provide as
+				| { ufUnavailable: { layers: string[]; message: string } }
+				| undefined;
+			const unavailable = provided?.ufUnavailable;
+			if (!unavailable) throw new Error("The project provides no ufUnavailable.");
+			expect(unavailable.layers).toEqual(layers);
+			expect(unavailable.message).toMatch(
+				/^The missing toolchain \(@unframework\.dev\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
+			);
+		}
+	});
 
-  it("load no toolchain for a project that --project does not select", async () => {
-    const [, , , ssr] = harnessProjects({
-      harness,
-      mode,
-      targets: ["missing"],
-      projectFilter: ["compile"],
-    });
-    const project = await (ssr as () => Promise<UserWorkspaceConfig>)();
-    expect(project.test).toMatchObject({ name: "ssr:missing", include: [] });
-  });
+	it("load no toolchain for a project that --project does not select", async () => {
+		const [, , , ssr] = harnessProjects({
+			harness,
+			mode,
+			targets: ["missing"],
+			projectFilter: ["compile"],
+		});
+		const project = await (ssr as () => Promise<UserWorkspaceConfig>)();
+		expect(project.test).toMatchObject({ name: "ssr:missing", include: [] });
+	});
 });
 
 /** The browser instances of Vue's browser project, in the engine a mode names. */
 async function instances(browser?: "firefox" | "webkit") {
-  const [, , , , project] = harnessProjects({
-    harness,
-    mode: browser ? { ...mode, pixels: "live", browser } : mode,
-    targets: ["vue"],
-  });
-  return (await (project as () => Promise<UserWorkspaceConfig>)()).test?.browser?.instances;
+	const [, , , , project] = harnessProjects({
+		harness,
+		mode: browser ? { ...mode, pixels: "live", browser } : mode,
+		targets: ["vue"],
+	});
+	return (await (project as () => Promise<UserWorkspaceConfig>)()).test?.browser?.instances;
 }
 
 describe("browser projects", () => {
-  it("serve stand-ins for the cases their target has no output for, before the styling engines' plugins and the unplugin", async () => {
-    const [, , , , browser] = harnessProjects({ harness, mode, targets: ["qwik"] });
-    const project = await (browser as () => Promise<UserWorkspaceConfig>)();
-    expect(project.test?.include).toEqual(["cases/**/*.test.ts"]);
-    const provided = project.test?.provide as { ufNoOutput?: Record<string, string> } | undefined;
-    expect(provided?.ufNoOutput).toEqual(noOutputCases(listCases(harness.casesDir), "qwik"));
-    const names = (project.plugins ?? [])
-      .flat()
-      .map((plugin) => (plugin as { name?: string }).name);
-    expect(names.slice(0, 5)).toEqual([
-      "uf-harness:no-output",
-      "uf-harness:no-error-broadcast",
-      "styleframe",
-      "fixture-engine",
-      "unframework",
-    ]);
-  });
+	it("serve stand-ins for the cases their target has no output for, before the styling engines' plugins and the unplugin", async () => {
+		const [, , , , browser] = harnessProjects({ harness, mode, targets: ["qwik"] });
+		const project = await (browser as () => Promise<UserWorkspaceConfig>)();
+		expect(project.test?.include).toEqual(["cases/**/*.test.ts"]);
+		const provided = project.test?.provide as { ufNoOutput?: Record<string, string> } | undefined;
+		expect(provided?.ufNoOutput).toEqual(noOutputCases(listCases(harness.casesDir), "qwik"));
+		const names = (project.plugins ?? [])
+			.flat()
+			.map((plugin) => (plugin as { name?: string }).name);
+		expect(names.slice(0, 5)).toEqual([
+			"uf-harness:no-output",
+			"uf-harness:no-error-broadcast",
+			"styleframe",
+			"fixture-engine",
+			"unframework",
+		]);
+	});
 
-  it("launch the engine the mode names, Chromium by default (ADR-0066)", async () => {
-    expect(await instances()).toEqual([{ browser: "chromium", name: "browser:vue" }]);
-    expect(await instances("firefox")).toEqual([{ browser: "firefox", name: "browser:vue" }]);
-    expect(await instances("webkit")).toEqual([{ browser: "webkit", name: "browser:vue" }]);
-  });
+	it("launch the engine the mode names, Chromium by default (ADR-0066)", async () => {
+		expect(await instances()).toEqual([{ browser: "chromium", name: "browser:vue" }]);
+		expect(await instances("firefox")).toEqual([{ browser: "firefox", name: "browser:vue" }]);
+		expect(await instances("webkit")).toEqual([{ browser: "webkit", name: "browser:vue" }]);
+	});
 
-  it("send no compile error to the pages, whose overlay would cover every later spec", () => {
-    const sent: unknown[][] = [];
-    const hot = { send: (...args: unknown[]) => void sent.push(args) };
-    const server = { environments: { client: { hot } } };
-    const plugin = noErrorBroadcast();
-    (plugin.configureServer as (server: unknown) => void)(server);
-    hot.send({ type: "error", err: { message: "error[UF4001]" } });
-    hot.send({ type: "full-reload", path: "*" });
-    hot.send("vitest:custom", { data: 1 });
-    expect(sent).toEqual([[{ type: "full-reload", path: "*" }], ["vitest:custom", { data: 1 }]]);
-  });
+	it("send no compile error to the pages, whose overlay would cover every later spec", () => {
+		const sent: unknown[][] = [];
+		const hot = { send: (...args: unknown[]) => void sent.push(args) };
+		const server = { environments: { client: { hot } } };
+		const plugin = noErrorBroadcast();
+		(plugin.configureServer as (server: unknown) => void)(server);
+		hot.send({ type: "error", err: { message: "error[UF4001]" } });
+		hot.send({ type: "full-reload", path: "*" });
+		hot.send("vitest:custom", { data: 1 });
+		expect(sent).toEqual([[{ type: "full-reload", path: "*" }], ["vitest:custom", { data: 1 }]]);
+	});
 });
 
 describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
-  const configs = caseConfigs(listCases(harness.casesDir));
+	const configs = caseConfigs(listCases(harness.casesDir));
 
-  it("adds the reference a case names where the run's targets leave it out", () => {
-    expect(referencesOnly(configs, ["vue"])).toEqual({ react: ["semantics/listbox"] });
-    expect(referencesOnly(configs, ["vue", "svelte"])).toEqual({ react: ["semantics/listbox"] });
-    expect(referencesOnly(configs, ["react", "vue"])).toEqual({});
-  });
+	it("adds the reference a case names where the run's targets leave it out", () => {
+		expect(referencesOnly(configs, ["vue"])).toEqual({ react: ["semantics/listbox"] });
+		expect(referencesOnly(configs, ["vue", "svelte"])).toEqual({ react: ["semantics/listbox"] });
+		expect(referencesOnly(configs, ["react", "vue"])).toEqual({});
+	});
 
-  it("runs its ssr and browser projects alone, on those cases", async () => {
-    const only = { react: ["semantics/listbox"] };
-    const projects = harnessProjects({ harness, mode, targets: ["vue"], referencesOnly: only });
-    // compile, harness, then vue's four (the hydrate project among them), then react's two: a
-    // hydrate project compares with the expectations and writes none, so the reference needs none.
-    expect(projects).toHaveLength(8);
-    const [ssr, browser] = await Promise.all(
-      projects.slice(6).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
-    );
-    expect(ssr!.test?.name).toBe("ssr:react");
-    const provided = ssr!.test?.provide as { ufOnly?: string[] } | undefined;
-    expect(provided?.ufOnly).toEqual(["semantics/listbox"]);
-    expect(browser!.test?.name).toBe("browser:react");
-    expect(browser!.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
-    const full = harnessProjects({ harness, mode, targets: ["react", "vue"] });
-    expect(full).toHaveLength(10);
-  });
+	it("runs its ssr and browser projects alone, on those cases", async () => {
+		const only = { react: ["semantics/listbox"] };
+		const projects = harnessProjects({ harness, mode, targets: ["vue"], referencesOnly: only });
+		// compile, harness, then vue's four (the hydrate project among them), then react's two: a
+		// hydrate project compares with the expectations and writes none, so the reference needs none.
+		expect(projects).toHaveLength(8);
+		const [ssr, browser] = await Promise.all(
+			projects.slice(6).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
+		);
+		expect(ssr!.test?.name).toBe("ssr:react");
+		const provided = ssr!.test?.provide as { ufOnly?: string[] } | undefined;
+		expect(provided?.ufOnly).toEqual(["semantics/listbox"]);
+		expect(browser!.test?.name).toBe("browser:react");
+		expect(browser!.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
+		const full = harnessProjects({ harness, mode, targets: ["react", "vue"] });
+		expect(full).toHaveLength(10);
+	});
 
-  it("keeps the reference to those cases in the baseline script's pass (UF_REFERENCE_PASS)", async () => {
-    const only = referencesOnly(configs, ["react", "vue"], true);
-    expect(only).toEqual({ react: ["semantics/listbox"] });
-    const projects = harnessProjects({
-      harness,
-      mode,
-      targets: ["react", "vue"],
-      referencesOnly: only,
-    });
-    expect(projects).toHaveLength(10);
-    const browser = await (projects[6] as () => Promise<UserWorkspaceConfig>)();
-    expect(browser.test?.name).toBe("browser:react");
-    expect(browser.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
-  });
+	it("keeps the reference to those cases in the baseline script's pass (UF_REFERENCE_PASS)", async () => {
+		const only = referencesOnly(configs, ["react", "vue"], true);
+		expect(only).toEqual({ react: ["semantics/listbox"] });
+		const projects = harnessProjects({
+			harness,
+			mode,
+			targets: ["react", "vue"],
+			referencesOnly: only,
+		});
+		expect(projects).toHaveLength(10);
+		const browser = await (projects[6] as () => Promise<UserWorkspaceConfig>)();
+		expect(browser.test?.name).toBe("browser:react");
+		expect(browser.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
+	});
 });
 
 describe("the reference's own page count (ADR-0092)", () => {
-  const targets = selectTargets(undefined);
-  const live = { ...mode, pixels: "live" } as const;
-  const modes = { live, update: { ...live, update: true }, baseline: mode } as const;
-  const filters: Record<string, string[] | undefined> = {
-    "no filter": undefined,
-    "browser:*": ["browser:*"],
-    "harness and browser:vue": ["harness", "browser:vue"],
-  };
+	const targets = selectTargets(undefined);
+	const live = { ...mode, pixels: "live" } as const;
+	const modes = { live, update: { ...live, update: true }, baseline: mode } as const;
+	const filters: Record<string, string[] | undefined> = {
+		"no filter": undefined,
+		"browser:*": ["browser:*"],
+		"harness and browser:vue": ["harness", "browser:vue"],
+	};
 
-  for (const [modeName, runMode] of Object.entries(modes)) {
-    for (const [filterName, projectFilter] of Object.entries(filters)) {
-      it(`gives every group one maxWorkers: ${modeName}, ${filterName}`, () => {
-        const setup = { harness, mode: runMode, targets, projectFilter };
-        const pages = referencePages(setup, 14, [], {});
-        const groups = new Map<number, Set<number | undefined>>();
-        for (const entry of projectEntries(setup)) {
-          if (!isSelected(entry.name, projectFilter)) continue;
-          const group = projectGroup(setup, entry.kind, entry.target);
-          const workers = entry.name === "browser:vue" ? pages : undefined;
-          groups.set(group, (groups.get(group) ?? new Set()).add(workers));
-        }
-        for (const workers of groups.values()) expect(workers.size).toBe(1);
-        // Only a live run of the browser projects leaves the reference alone in its group.
-        const alone = modeName === "live" && filterName === "browser:*";
-        expect(pages).toBe(alone ? 28 : undefined);
-      });
-    }
-  }
+	for (const [modeName, runMode] of Object.entries(modes)) {
+		for (const [filterName, projectFilter] of Object.entries(filters)) {
+			it(`gives every group one maxWorkers: ${modeName}, ${filterName}`, () => {
+				const setup = { harness, mode: runMode, targets, projectFilter };
+				const pages = referencePages(setup, 14, [], {});
+				const groups = new Map<number, Set<number | undefined>>();
+				for (const entry of projectEntries(setup)) {
+					if (!isSelected(entry.name, projectFilter)) continue;
+					const group = projectGroup(setup, entry.kind, entry.target);
+					const workers = entry.name === "browser:vue" ? pages : undefined;
+					groups.set(group, (groups.get(group) ?? new Set()).add(workers));
+				}
+				for (const workers of groups.values()) expect(workers.size).toBe(1);
+				// Only a live run of the browser projects leaves the reference alone in its group.
+				const alone = modeName === "live" && filterName === "browser:*";
+				expect(pages).toBe(alone ? 28 : undefined);
+			});
+		}
+	}
 
-  it("leaves the page count to a caller's --maxWorkers, and to the engines outside Chromium", () => {
-    const setup = { harness, mode: live, targets, projectFilter: ["browser:*"] };
-    expect(referencePages(setup, 14, ["--maxWorkers=1"], {})).toBeUndefined();
-    expect(referencePages(setup, 14, ["--maxWorkers", "1"], {})).toBeUndefined();
-    expect(referencePages(setup, 14, [], { VITEST_MAX_WORKERS: "1" })).toBeUndefined();
-    const firefox = { ...setup, mode: { ...live, browser: "firefox" as const } };
-    expect(referencePages(firefox, 14, [], {})).toBeUndefined();
-    expect(referencePages(setup, 1, [], {})).toBe(2);
-    // At most the count measured best, however many CPUs the machine has.
-    expect(referencePages(setup, 32, [], {})).toBe(28);
-  });
+	it("leaves the page count to a caller's --maxWorkers, and to the engines outside Chromium", () => {
+		const setup = { harness, mode: live, targets, projectFilter: ["browser:*"] };
+		expect(referencePages(setup, 14, ["--maxWorkers=1"], {})).toBeUndefined();
+		expect(referencePages(setup, 14, ["--maxWorkers", "1"], {})).toBeUndefined();
+		expect(referencePages(setup, 14, [], { VITEST_MAX_WORKERS: "1" })).toBeUndefined();
+		const firefox = { ...setup, mode: { ...live, browser: "firefox" as const } };
+		expect(referencePages(firefox, 14, [], {})).toBeUndefined();
+		expect(referencePages(setup, 1, [], {})).toBe(2);
+		// At most the count measured best, however many CPUs the machine has.
+		expect(referencePages(setup, 32, [], {})).toBe(28);
+	});
 
-  it("lists the projects harnessProjects makes, in its order", async () => {
-    const only = { react: ["semantics/listbox"] };
-    for (const setup of [
-      { harness, mode, targets, projectFilter: ["none"] },
-      { harness, mode, targets: ["vue"], referencesOnly: only, projectFilter: ["none", "bench"] },
-    ]) {
-      const projects = await Promise.all(
-        harnessProjects(setup).map(async (project) =>
-          typeof project === "function"
-            ? await (project as () => Promise<UserWorkspaceConfig>)()
-            : (project as UserWorkspaceConfig),
-        ),
-      );
-      expect(projects.map((project) => project.test?.name)).toEqual(
-        projectEntries(setup).map((entry) => entry.name),
-      );
-    }
-  });
+	it("lists the projects harnessProjects makes, in its order", async () => {
+		const only = { react: ["semantics/listbox"] };
+		for (const setup of [
+			{ harness, mode, targets, projectFilter: ["none"] },
+			{ harness, mode, targets: ["vue"], referencesOnly: only, projectFilter: ["none", "bench"] },
+		]) {
+			const projects = await Promise.all(
+				harnessProjects(setup).map(async (project) =>
+					typeof project === "function"
+						? await (project as () => Promise<UserWorkspaceConfig>)()
+						: (project as UserWorkspaceConfig),
+				),
+			);
+			expect(projects.map((project) => project.test?.name)).toEqual(
+				projectEntries(setup).map((entry) => entry.name),
+			);
+		}
+	});
 });

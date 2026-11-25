@@ -3,17 +3,17 @@
 export type Tone = "neutral" | "info" | "danger";
 
 interface Labelled {
-  label: string;
+	label: string;
 }
 
 export interface BadgeProps extends Labelled {
-  tone?: Tone;
-  count?: number;
+	tone?: Tone;
+	count?: number;
 }
 
 export type ChipProps = Readonly<Omit<BadgeProps, "count">> & { removable?: boolean };
 
 export interface Option {
-  id: string;
-  label: string;
+	id: string;
+	label: string;
 }

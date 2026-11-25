@@ -5,19 +5,19 @@ import { table, words } from "./tables.ts";
 
 /** HTML elements that never have children or a closing tag. */
 export const VOID_ELEMENTS: ReadonlySet<string> = new Set([
-  "area",
-  "base",
-  "br",
-  "col",
-  "embed",
-  "hr",
-  "img",
-  "input",
-  "link",
-  "meta",
-  "source",
-  "track",
-  "wbr",
+	"area",
+	"base",
+	"br",
+	"col",
+	"embed",
+	"hr",
+	"img",
+	"input",
+	"link",
+	"meta",
+	"source",
+	"track",
+	"wbr",
 ]);
 
 /**
@@ -26,72 +26,72 @@ export const VOID_ELEMENTS: ReadonlySet<string> = new Set([
  * lines there; whitespace between two inline elements renders as a space.
  */
 export const BLOCK_ELEMENTS: ReadonlySet<string> = new Set([
-  "address",
-  "article",
-  "aside",
-  "blockquote",
-  "body",
-  "caption",
-  "col",
-  "colgroup",
-  "dd",
-  "details",
-  "dialog",
-  "dir",
-  "div",
-  "dl",
-  "dt",
-  "fieldset",
-  "figcaption",
-  "figure",
-  "footer",
-  "form",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "head",
-  "header",
-  "hgroup",
-  "hr",
-  "html",
-  "legend",
-  "li",
-  "link",
-  "main",
-  "menu",
-  "meta",
-  "nav",
-  "ol",
-  "optgroup",
-  "option",
-  "p",
-  "pre",
-  "script",
-  "search",
-  "section",
-  "style",
-  "summary",
-  "table",
-  "tbody",
-  "td",
-  "template",
-  "tfoot",
-  "th",
-  "thead",
-  "title",
-  "tr",
-  "ul",
+	"address",
+	"article",
+	"aside",
+	"blockquote",
+	"body",
+	"caption",
+	"col",
+	"colgroup",
+	"dd",
+	"details",
+	"dialog",
+	"dir",
+	"div",
+	"dl",
+	"dt",
+	"fieldset",
+	"figcaption",
+	"figure",
+	"footer",
+	"form",
+	"h1",
+	"h2",
+	"h3",
+	"h4",
+	"h5",
+	"h6",
+	"head",
+	"header",
+	"hgroup",
+	"hr",
+	"html",
+	"legend",
+	"li",
+	"link",
+	"main",
+	"menu",
+	"meta",
+	"nav",
+	"ol",
+	"optgroup",
+	"option",
+	"p",
+	"pre",
+	"script",
+	"search",
+	"section",
+	"style",
+	"summary",
+	"table",
+	"tbody",
+	"td",
+	"template",
+	"tfoot",
+	"th",
+	"thead",
+	"title",
+	"tr",
+	"ul",
 ]);
 
 /** Elements whose text content keeps its whitespace, so printers never reflow it. */
 export const WHITESPACE_PRESERVING_ELEMENTS: ReadonlySet<string> = new Set([
-  "pre",
-  "textarea",
-  "listing",
-  "plaintext",
+	"pre",
+	"textarea",
+	"listing",
+	"plaintext",
 ]);
 
 /**
@@ -100,40 +100,40 @@ export const WHITESPACE_PRESERVING_ELEMENTS: ReadonlySet<string> = new Set([
  * means the string "true", as it does in Vue's and React's JSX (`aria-hidden` → `"true"`).
  */
 export const BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
-  "allowfullscreen",
-  "async",
-  "autofocus",
-  "autoplay",
-  "checked",
-  "controls",
-  "default",
-  "defer",
-  "disabled",
-  "formnovalidate",
-  "hidden",
-  "inert",
-  "ismap",
-  "itemscope",
-  "loop",
-  "multiple",
-  "muted",
-  "nomodule",
-  "novalidate",
-  "open",
-  "playsinline",
-  "readonly",
-  "required",
-  "reversed",
-  "selected",
-  "shadowrootclonable",
-  "shadowrootcustomelementregistry",
-  "shadowrootdelegatesfocus",
-  "shadowrootserializable",
+	"allowfullscreen",
+	"async",
+	"autofocus",
+	"autoplay",
+	"checked",
+	"controls",
+	"default",
+	"defer",
+	"disabled",
+	"formnovalidate",
+	"hidden",
+	"inert",
+	"ismap",
+	"itemscope",
+	"loop",
+	"multiple",
+	"muted",
+	"nomodule",
+	"novalidate",
+	"open",
+	"playsinline",
+	"readonly",
+	"required",
+	"reversed",
+	"selected",
+	"shadowrootclonable",
+	"shadowrootcustomelementregistry",
+	"shadowrootdelegatesfocus",
+	"shadowrootserializable",
 ]);
 
 /** Whether an attribute is one of HTML's boolean attributes (names are case-insensitive). */
 export function isBooleanAttribute(name: string): boolean {
-  return BOOLEAN_ATTRIBUTES.has(name.toLowerCase());
+	return BOOLEAN_ATTRIBUTES.has(name.toLowerCase());
 }
 
 /**
@@ -152,12 +152,12 @@ export const BINDABLE_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = words(`
 
 /** Whether an element is void. */
 export function isVoidElement(tag: string): boolean {
-  return VOID_ELEMENTS.has(tag);
+	return VOID_ELEMENTS.has(tag);
 }
 
 /** Whether an element is block-level by default. Custom elements are inline. */
 export function isBlockElement(tag: string): boolean {
-  return BLOCK_ELEMENTS.has(tag);
+	return BLOCK_ELEMENTS.has(tag);
 }
 
 /**
@@ -200,19 +200,19 @@ export const P_CLOSING_ELEMENTS: ReadonlySet<string> = words(`
  * compiler (a warning) and React (a console error), and valid HTML never contains them.
  */
 export const REPAIRED_DESCENDANTS: ReadonlyMap<
-  string,
-  { descendants: ReadonlySet<string>; resetBy?: ReadonlySet<string> }
+	string,
+	{ descendants: ReadonlySet<string>; resetBy?: ReadonlySet<string> }
 > = table({
-  p: { descendants: P_CLOSING_ELEMENTS },
-  a: { descendants: words("a") },
-  button: { descendants: words("button") },
-  form: { descendants: words("form") },
-  li: { descendants: words("li"), resetBy: words("ol ul menu") },
-  dd: { descendants: words("dd dt"), resetBy: words("dl") },
-  dt: { descendants: words("dd dt"), resetBy: words("dl") },
-  ...Object.fromEntries(
-    [...HEADING_ELEMENTS].map((tag) => [tag, { descendants: HEADING_ELEMENTS }]),
-  ),
+	p: { descendants: P_CLOSING_ELEMENTS },
+	a: { descendants: words("a") },
+	button: { descendants: words("button") },
+	form: { descendants: words("form") },
+	li: { descendants: words("li"), resetBy: words("ol ul menu") },
+	dd: { descendants: words("dd dt"), resetBy: words("dl") },
+	dt: { descendants: words("dd dt"), resetBy: words("dl") },
+	...Object.fromEntries(
+		[...HEADING_ELEMENTS].map((tag) => [tag, { descendants: HEADING_ELEMENTS }]),
+	),
 });
 
 /**
@@ -221,14 +221,14 @@ export const REPAIRED_DESCENDANTS: ReadonlyMap<
  * `<tr>`, `<colgroup>`) or dropped. Vue's compiler and React check the same lists.
  */
 export const PERMITTED_CHILDREN: ReadonlyMap<string, ReadonlySet<string>> = table({
-  table: words("caption colgroup thead tbody tfoot script style template"),
-  thead: words("tr script style template"),
-  tbody: words("tr script style template"),
-  tfoot: words("tr script style template"),
-  tr: words("td th script style template"),
-  colgroup: words("col template"),
-  select: words("option optgroup hr script template"),
-  optgroup: words("option script template"),
+	table: words("caption colgroup thead tbody tfoot script style template"),
+	thead: words("tr script style template"),
+	tbody: words("tr script style template"),
+	tfoot: words("tr script style template"),
+	tr: words("td th script style template"),
+	colgroup: words("col template"),
+	select: words("option optgroup hr script template"),
+	optgroup: words("option script template"),
 });
 
 /**
@@ -237,22 +237,22 @@ export const PERMITTED_CHILDREN: ReadonlyMap<string, ReadonlySet<string>> = tabl
  * which React reports under `<p>`, `<li>` and the other elements with implied end tags.
  */
 export const REQUIRED_PARENTS: ReadonlyMap<string, ReadonlySet<string>> = table({
-  caption: words("table"),
-  colgroup: words("table"),
-  thead: words("table"),
-  tbody: words("table"),
-  tfoot: words("table"),
-  tr: words("thead tbody tfoot"),
-  td: words("tr"),
-  th: words("tr"),
-  col: words("colgroup"),
-  dd: words("dl div"),
-  dt: words("dl div"),
-  figcaption: words("figure"),
-  summary: words("details"),
-  area: words("map"),
-  rp: words("ruby"),
-  rt: words("ruby"),
+	caption: words("table"),
+	colgroup: words("table"),
+	thead: words("table"),
+	tbody: words("table"),
+	tfoot: words("table"),
+	tr: words("thead tbody tfoot"),
+	td: words("tr"),
+	th: words("tr"),
+	col: words("colgroup"),
+	dd: words("dl div"),
+	dt: words("dl div"),
+	figcaption: words("figure"),
+	summary: words("details"),
+	area: words("map"),
+	rp: words("ruby"),
+	rt: words("ruby"),
 });
 
 /**
@@ -261,27 +261,27 @@ export const REQUIRED_PARENTS: ReadonlyMap<string, ReadonlySet<string>> = table(
  * reports them (UF3002), and no IR holds one.
  */
 export const UNRENDERABLE_ELEMENTS: ReadonlyMap<string, string> = table({
-  html: "<html> is the document's root: the browser drops it inside the page.",
-  head: "<head> belongs to the document: the browser drops it inside the page.",
-  body: "<body> belongs to the document: the browser drops it inside the page.",
-  base: "<base> describes the document, so a component cannot render it.",
-  link: "<link> describes the document: React moves it into the <head>, and the other frameworks leave it in place.",
-  meta: "<meta> describes the document: React moves it into the <head>, and the other frameworks leave it in place.",
-  title:
-    "<title> names the document: React moves it into the <head>, and the other frameworks leave it in place.",
-  script:
-    "<script> holds code the compiler cannot analyse, and Vue and Angular drop it from templates.",
-  style:
-    "<style> is not supported: Vue and Angular drop it from templates. A component's styles are a stylesheet it imports.",
-  noscript:
-    "<noscript> renders differently with scripting on and off, so the server and the browser disagree.",
-  template: "<template> is template syntax in Vue and Astro, and its content is not rendered.",
-  slot: "<slot> is template syntax in Vue, Svelte and Astro. A component renders its slots with `slots.title?.()`.",
+	html: "<html> is the document's root: the browser drops it inside the page.",
+	head: "<head> belongs to the document: the browser drops it inside the page.",
+	body: "<body> belongs to the document: the browser drops it inside the page.",
+	base: "<base> describes the document, so a component cannot render it.",
+	link: "<link> describes the document: React moves it into the <head>, and the other frameworks leave it in place.",
+	meta: "<meta> describes the document: React moves it into the <head>, and the other frameworks leave it in place.",
+	title:
+		"<title> names the document: React moves it into the <head>, and the other frameworks leave it in place.",
+	script:
+		"<script> holds code the compiler cannot analyse, and Vue and Angular drop it from templates.",
+	style:
+		"<style> is not supported: Vue and Angular drop it from templates. A component's styles are a stylesheet it imports.",
+	noscript:
+		"<noscript> renders differently with scripting on and off, so the server and the browser disagree.",
+	template: "<template> is template syntax in Vue and Astro, and its content is not rendered.",
+	slot: "<slot> is template syntax in Vue, Svelte and Astro. A component renders its slots with `slots.title?.()`.",
 });
 
 /** Elements whose content is text only: the parser reads markup inside them as text. */
 export const TEXT_ONLY_ELEMENTS: ReadonlySet<string> = words(
-  "iframe option script style textarea title",
+	"iframe option script style textarea title",
 );
 
 /**
@@ -289,7 +289,7 @@ export const TEXT_ONLY_ELEMENTS: ReadonlySet<string> = words(
  * React reports whitespace there as a hydration error.
  */
 export const TEXTLESS_ELEMENTS: ReadonlySet<string> = words(
-  "colgroup frameset head html table tbody tfoot thead tr",
+	"colgroup frameset head html table tbody tfoot thead tr",
 );
 
 /** HTML's global attributes, which every HTML element accepts, and ARIA's `role`. */
@@ -304,75 +304,75 @@ export const GLOBAL_ATTRIBUTES: ReadonlySet<string> = words(`
  * `capture` of HTML Media Capture on `<input>`, which React and the authoring types know.
  */
 export const ELEMENT_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = table({
-  a: words("download href hreflang ping referrerpolicy rel target type"),
-  area: words("alt coords download href ping referrerpolicy rel shape target"),
-  audio: words("autoplay controls crossorigin loop muted preload src"),
-  base: words("href target"),
-  blockquote: words("cite"),
-  button: words(`
+	a: words("download href hreflang ping referrerpolicy rel target type"),
+	area: words("alt coords download href ping referrerpolicy rel shape target"),
+	audio: words("autoplay controls crossorigin loop muted preload src"),
+	base: words("href target"),
+	blockquote: words("cite"),
+	button: words(`
     command commandfor disabled form formaction formenctype formmethod formnovalidate
     formtarget name popovertarget popovertargetaction type value
   `),
-  canvas: words("height width"),
-  col: words("span"),
-  colgroup: words("span"),
-  data: words("value"),
-  del: words("cite datetime"),
-  details: words("name open"),
-  dialog: words("closedby open"),
-  embed: words("height src type width"),
-  fieldset: words("disabled form name"),
-  form: words("accept-charset action autocomplete enctype method name novalidate rel target"),
-  iframe: words(
-    "allow allowfullscreen height loading name referrerpolicy sandbox src srcdoc width",
-  ),
-  img: words(`
+	canvas: words("height width"),
+	col: words("span"),
+	colgroup: words("span"),
+	data: words("value"),
+	del: words("cite datetime"),
+	details: words("name open"),
+	dialog: words("closedby open"),
+	embed: words("height src type width"),
+	fieldset: words("disabled form name"),
+	form: words("accept-charset action autocomplete enctype method name novalidate rel target"),
+	iframe: words(
+		"allow allowfullscreen height loading name referrerpolicy sandbox src srcdoc width",
+	),
+	img: words(`
     alt crossorigin decoding fetchpriority height ismap loading referrerpolicy sizes src
     srcset usemap width
   `),
-  input: words(`
+	input: words(`
     accept alt autocomplete capture checked dirname disabled form formaction formenctype
     formmethod formnovalidate formtarget height list max maxlength min minlength multiple name
     pattern placeholder popovertarget popovertargetaction readonly required size src step type
     value width
   `),
-  ins: words("cite datetime"),
-  label: words("for"),
-  li: words("value"),
-  link: words(`
+	ins: words("cite datetime"),
+	label: words("for"),
+	li: words("value"),
+	link: words(`
     as blocking color crossorigin disabled fetchpriority href hreflang imagesizes imagesrcset
     integrity media referrerpolicy rel sizes type
   `),
-  map: words("name"),
-  meta: words("charset content http-equiv media name"),
-  meter: words("high low max min optimum value"),
-  object: words("data form height name type width"),
-  ol: words("reversed start type"),
-  optgroup: words("disabled label"),
-  option: words("disabled label selected value"),
-  output: words("for form name"),
-  progress: words("max value"),
-  q: words("cite"),
-  script: words(`
+	map: words("name"),
+	meta: words("charset content http-equiv media name"),
+	meter: words("high low max min optimum value"),
+	object: words("data form height name type width"),
+	ol: words("reversed start type"),
+	optgroup: words("disabled label"),
+	option: words("disabled label selected value"),
+	output: words("for form name"),
+	progress: words("max value"),
+	q: words("cite"),
+	script: words(`
     async blocking crossorigin defer fetchpriority integrity nomodule referrerpolicy src type
   `),
-  select: words("autocomplete disabled form multiple name required size"),
-  slot: words("name"),
-  source: words("height media sizes src srcset type width"),
-  style: words("blocking media"),
-  td: words("colspan headers rowspan"),
-  template: words(`
+	select: words("autocomplete disabled form multiple name required size"),
+	slot: words("name"),
+	source: words("height media sizes src srcset type width"),
+	style: words("blocking media"),
+	td: words("colspan headers rowspan"),
+	template: words(`
     shadowrootclonable shadowrootcustomelementregistry shadowrootdelegatesfocus shadowrootmode
     shadowrootserializable
   `),
-  textarea: words(`
+	textarea: words(`
     autocomplete cols dirname disabled form maxlength minlength name placeholder readonly
     required rows wrap
   `),
-  th: words("abbr colspan headers rowspan scope"),
-  time: words("datetime"),
-  track: words("default kind label src srclang"),
-  video: words(`
+	th: words("abbr colspan headers rowspan scope"),
+	time: words("datetime"),
+	track: words("default kind label src srclang"),
+	video: words(`
     autoplay controls crossorigin height loop muted playsinline poster preload src width
   `),
 });
@@ -407,7 +407,7 @@ export const TRUE_VALUED_ATTRIBUTES: ReadonlySet<string> = words(`
 
 /** Attributes whose value is a URL. */
 export const URL_ATTRIBUTES: ReadonlySet<string> = words(
-  "action cite data formaction href poster src",
+	"action cite data formaction href poster src",
 );
 
 /**
@@ -416,9 +416,9 @@ export const URL_ATTRIBUTES: ReadonlySet<string> = words(
  * line breaks anywhere, before it reads the scheme.
  */
 function urlScheme(url: string): string | undefined {
-  // oxlint-disable-next-line no-control-regex -- the leading C0 controls the URL parser strips.
-  const stripped = url.replace(/^[\u0000-\u001F ]+/, "").replace(/[\t\n\r]/g, "");
-  return /^([a-z][a-z\d+.-]*):/i.exec(stripped)?.[1]?.toLowerCase();
+	// oxlint-disable-next-line no-control-regex -- the leading C0 controls the URL parser strips.
+	const stripped = url.replace(/^[\u0000-\u001F ]+/, "").replace(/[\t\n\r]/g, "");
+	return /^([a-z][a-z\d+.-]*):/i.exec(stripped)?.[1]?.toLowerCase();
 }
 
 /**
@@ -427,7 +427,7 @@ function urlScheme(url: string): string | undefined {
  * written.
  */
 export function isJavaScriptUrl(url: string): boolean {
-  return urlScheme(url) === "javascript";
+	return urlScheme(url) === "javascript";
 }
 
 /**
@@ -443,9 +443,9 @@ export const DOCUMENT_ATTRIBUTES: ReadonlySet<string> = words("srcdoc");
  * follows it.)
  */
 export const NESTED_DOCUMENT_ATTRIBUTES: ReadonlyMap<string, string> = table({
-  embed: "src",
-  iframe: "src",
-  object: "data",
+	embed: "src",
+	iframe: "src",
+	object: "data",
 });
 
 /**
@@ -461,14 +461,14 @@ export const NESTED_DOCUMENT_ATTRIBUTES: ReadonlyMap<string, string> = table({
  * page creates at run time, outside the source, so it is a URL like any other.
  */
 export function unanalysableUrl(
-  tag: string,
-  name: string,
-  value: string,
+	tag: string,
+	name: string,
+	value: string,
 ): "javascript" | "data" | undefined {
-  if (!URL_ATTRIBUTES.has(name)) return undefined;
-  if (isJavaScriptUrl(value)) return "javascript";
-  if (NESTED_DOCUMENT_ATTRIBUTES.get(tag) === name && urlScheme(value) === "data") return "data";
-  return undefined;
+	if (!URL_ATTRIBUTES.has(name)) return undefined;
+	if (isJavaScriptUrl(value)) return "javascript";
+	if (NESTED_DOCUMENT_ATTRIBUTES.get(tag) === name && urlScheme(value) === "data") return "data";
+	return undefined;
 }
 
 /**
@@ -491,9 +491,9 @@ export const GENERATED_ID_PREFIX = "uf-id-";
 
 /** Attributes that point at an element by a `#id` value: the URLs, SVG's `xlink:href`, `usemap`. */
 const FRAGMENT_ATTRIBUTES: ReadonlySet<string> = new Set([
-  ...URL_ATTRIBUTES,
-  "usemap",
-  "xlink:href",
+	...URL_ATTRIBUTES,
+	"usemap",
+	"xlink:href",
 ]);
 
 /** `url(#id)`, in any value: SVG's paint and clip references, in attributes and in `style`. */
@@ -506,30 +506,30 @@ const URL_REFERENCE = /url\(\s*(["']?)#([^"')\s]+)\1\s*\)/gi;
  * id one of them sees, the other does too.
  */
 export function replaceIdReferences(
-  name: string,
-  value: string,
-  replace: (id: string) => string,
+	name: string,
+	value: string,
+	replace: (id: string) => string,
 ): string {
-  if (ID_REFERENCE_ATTRIBUTES.has(name)) {
-    return value.replace(/[^\t\n\f\r ]+/g, (id) => replace(id));
-  }
-  if (FRAGMENT_ATTRIBUTES.has(name) && value.length > 1 && value.startsWith("#")) {
-    return `#${replace(value.slice(1))}`;
-  }
-  return value.replace(
-    URL_REFERENCE,
-    (_reference, quote: string, id: string) => `url(${quote}#${replace(id)}${quote})`,
-  );
+	if (ID_REFERENCE_ATTRIBUTES.has(name)) {
+		return value.replace(/[^\t\n\f\r ]+/g, (id) => replace(id));
+	}
+	if (FRAGMENT_ATTRIBUTES.has(name) && value.length > 1 && value.startsWith("#")) {
+		return `#${replace(value.slice(1))}`;
+	}
+	return value.replace(
+		URL_REFERENCE,
+		(_reference, quote: string, id: string) => `url(${quote}#${replace(id)}${quote})`,
+	);
 }
 
 /** The ids an attribute value refers to, in order (see {@link replaceIdReferences}). */
 export function idReferencesIn(name: string, value: string): string[] {
-  const ids: string[] = [];
-  replaceIdReferences(name, value, (id) => {
-    ids.push(id);
-    return id;
-  });
-  return ids;
+	const ids: string[] = [];
+	replaceIdReferences(name, value, (id) => {
+		ids.push(id);
+		return id;
+	});
+	return ids;
 }
 
 /** Why HTML does not keep a character of text or an attribute value as written. */
@@ -542,19 +542,19 @@ export type UnkeptCharacter = "carriage-return" | "nul" | "surrogate" | "control
  * controls (but tab, line feed and form feed) or the noncharacters in a document.
  */
 export function unkeptCharacter(codePoint: number): UnkeptCharacter | undefined {
-  if (codePoint === 0x0d) return "carriage-return";
-  if (codePoint === 0) return "nul";
-  if (codePoint >= 0xd800 && codePoint <= 0xdfff) return "surrogate";
-  if (
-    (codePoint < 0x20 && codePoint !== 0x09 && codePoint !== 0x0a && codePoint !== 0x0c) ||
-    (codePoint >= 0x7f && codePoint <= 0x9f)
-  ) {
-    return "control";
-  }
-  if ((codePoint >= 0xfdd0 && codePoint <= 0xfdef) || (codePoint & 0xfffe) === 0xfffe) {
-    return "noncharacter";
-  }
-  return undefined;
+	if (codePoint === 0x0d) return "carriage-return";
+	if (codePoint === 0) return "nul";
+	if (codePoint >= 0xd800 && codePoint <= 0xdfff) return "surrogate";
+	if (
+		(codePoint < 0x20 && codePoint !== 0x09 && codePoint !== 0x0a && codePoint !== 0x0c) ||
+		(codePoint >= 0x7f && codePoint <= 0x9f)
+	) {
+		return "control";
+	}
+	if ((codePoint >= 0xfdd0 && codePoint <= 0xfdef) || (codePoint & 0xfffe) === 0xfffe) {
+		return "noncharacter";
+	}
+	return undefined;
 }
 
 /** The kinds of number HTML's numeric attributes take. */
@@ -567,41 +567,41 @@ export type NumberKind = "integer" | "non-negative-integer" | "positive-integer"
  * `rowspan` is listed because renderers parse it as a number too.
  */
 export const NUMERIC_ATTRIBUTES: ReadonlyMap<
-  string,
-  ReadonlyMap<string, { kind: NumberKind; max?: number }>
+	string,
+	ReadonlyMap<string, { kind: NumberKind; max?: number }>
 > = new Map(
-  Object.entries<Readonly<Record<string, { kind: NumberKind; max?: number }>>>({
-    col: { span: { kind: "positive-integer", max: 1000 } },
-    colgroup: { span: { kind: "positive-integer", max: 1000 } },
-    input: {
-      height: { kind: "non-negative-integer" },
-      size: { kind: "positive-integer" },
-      width: { kind: "non-negative-integer" },
-    },
-    li: { value: { kind: "integer" } },
-    meter: {
-      high: { kind: "number" },
-      low: { kind: "number" },
-      max: { kind: "number" },
-      min: { kind: "number" },
-      optimum: { kind: "number" },
-      value: { kind: "number" },
-    },
-    ol: { start: { kind: "integer" } },
-    progress: { max: { kind: "number" }, value: { kind: "number" } },
-    select: { size: { kind: "positive-integer" } },
-    td: { rowspan: { kind: "non-negative-integer", max: 65534 } },
-    textarea: { cols: { kind: "positive-integer" }, rows: { kind: "positive-integer" } },
-    th: { rowspan: { kind: "non-negative-integer", max: 65534 } },
-  }).map(([tag, attributes]) => [tag, table(attributes)]),
+	Object.entries<Readonly<Record<string, { kind: NumberKind; max?: number }>>>({
+		col: { span: { kind: "positive-integer", max: 1000 } },
+		colgroup: { span: { kind: "positive-integer", max: 1000 } },
+		input: {
+			height: { kind: "non-negative-integer" },
+			size: { kind: "positive-integer" },
+			width: { kind: "non-negative-integer" },
+		},
+		li: { value: { kind: "integer" } },
+		meter: {
+			high: { kind: "number" },
+			low: { kind: "number" },
+			max: { kind: "number" },
+			min: { kind: "number" },
+			optimum: { kind: "number" },
+			value: { kind: "number" },
+		},
+		ol: { start: { kind: "integer" } },
+		progress: { max: { kind: "number" }, value: { kind: "number" } },
+		select: { size: { kind: "positive-integer" } },
+		td: { rowspan: { kind: "non-negative-integer", max: 65534 } },
+		textarea: { cols: { kind: "positive-integer" }, rows: { kind: "positive-integer" } },
+		th: { rowspan: { kind: "non-negative-integer", max: 65534 } },
+	}).map(([tag, attributes]) => [tag, table(attributes)]),
 );
 
 /** HTML's syntax for each kind of number. */
 const NUMBER_SYNTAX: Readonly<Record<NumberKind, RegExp>> = {
-  integer: /^-?\d+$/,
-  "non-negative-integer": /^\d+$/,
-  "positive-integer": /^\d+$/,
-  number: /^-?(\d+|\d*\.\d+)(e[+-]?\d+)?$/i,
+	integer: /^-?\d+$/,
+	"non-negative-integer": /^\d+$/,
+	"positive-integer": /^\d+$/,
+	number: /^-?(\d+|\d*\.\d+)(e[+-]?\d+)?$/i,
 };
 
 /**
@@ -610,15 +610,15 @@ const NUMBER_SYNTAX: Readonly<Record<NumberKind, RegExp>> = {
  * reject or replace. Only a value that is its own canonical form renders alike everywhere.
  */
 export function canonicalNumber(
-  value: string,
-  { kind, max }: { kind: NumberKind; max?: number },
+	value: string,
+	{ kind, max }: { kind: NumberKind; max?: number },
 ): string | undefined {
-  const number = Number(value);
-  const limit = max ?? 2 ** 31 - 1;
-  const min = kind === "integer" ? -(2 ** 31) : kind === "positive-integer" ? 1 : 0;
-  const inRange =
-    Number.isFinite(number) && (kind === "number" || (number <= limit && number >= min));
-  return NUMBER_SYNTAX[kind].test(value) && inRange ? String(number) : undefined;
+	const number = Number(value);
+	const limit = max ?? 2 ** 31 - 1;
+	const min = kind === "integer" ? -(2 ** 31) : kind === "positive-integer" ? 1 : 0;
+	const inRange =
+		Number.isFinite(number) && (kind === "number" || (number <= limit && number >= min));
+	return NUMBER_SYNTAX[kind].test(value) && inRange ? String(number) : undefined;
 }
 
 /**
@@ -640,43 +640,43 @@ export const NUMBER_TYPED_GLOBAL_ATTRIBUTES: ReadonlySet<string> = words(`
  * `NUMBER_TYPED_GLOBAL_ATTRIBUTES`.
  */
 export const NUMBER_TYPED_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = table({
-  col: words("span"),
-  colgroup: words("span"),
-  img: words("height width"),
-  input: words("maxlength minlength size"),
-  meter: words("high low max min optimum"),
-  ol: words("start"),
-  select: words("size"),
-  td: words("colspan rowspan"),
-  textarea: words("cols maxlength minlength rows"),
-  th: words("colspan rowspan"),
-  video: words("height width"),
+	col: words("span"),
+	colgroup: words("span"),
+	img: words("height width"),
+	input: words("maxlength minlength size"),
+	meter: words("high low max min optimum"),
+	ol: words("start"),
+	select: words("size"),
+	td: words("colspan rowspan"),
+	textarea: words("cols maxlength minlength rows"),
+	th: words("colspan rowspan"),
+	video: words("height width"),
 });
 
 /** Whether an attribute of an element is number-typed (`NUMBER_TYPED_ATTRIBUTES`). */
 export function isNumberTypedAttribute(tag: string, name: string): boolean {
-  return (
-    NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(name) ||
-    (NUMBER_TYPED_ATTRIBUTES.get(tag)?.has(name) ?? false)
-  );
+	return (
+		NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(name) ||
+		(NUMBER_TYPED_ATTRIBUTES.get(tag)?.has(name) ?? false)
+	);
 }
 
 /** Whether a tag is an element of the HTML Living Standard. */
 export function isHtmlElement(tag: string): boolean {
-  return HTML_ELEMENTS.has(tag);
+	return HTML_ELEMENTS.has(tag);
 }
 
 /** Whether an attribute (in lower case) is an HTML attribute of the element. */
 export function isHtmlAttribute(tag: string, name: string): boolean {
-  return (
-    GLOBAL_ATTRIBUTES.has(name) ||
-    (ELEMENT_ATTRIBUTES.get(tag)?.has(name) ?? false) ||
-    ARIA_ATTRIBUTES.has(name) ||
-    isDataAttribute(name)
-  );
+	return (
+		GLOBAL_ATTRIBUTES.has(name) ||
+		(ELEMENT_ATTRIBUTES.get(tag)?.has(name) ?? false) ||
+		ARIA_ATTRIBUTES.has(name) ||
+		isDataAttribute(name)
+	);
 }
 
 /** Whether a name is a custom data attribute: `data-` and at least one more name character. */
 export function isDataAttribute(name: string): boolean {
-  return /^data-[\p{Ll}\p{Lo}\p{N}_.-]+$/u.test(name);
+	return /^data-[\p{Ll}\p{Lo}\p{N}_.-]+$/u.test(name);
 }

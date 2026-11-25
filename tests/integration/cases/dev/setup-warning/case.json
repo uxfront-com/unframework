@@ -1,5 +1,5 @@
 {
-  "description": "A top-level `if (isDev)` block that warns when the button has no accessible name: each target's own development check, which a production build drops.",
-  "ssr": { "labelled": { "props": { "label": "Save" } } },
-  "axe": ["button-name"]
+	"description": "A top-level `if (isDev)` block that warns when the button has no accessible name: each target's own development check, which a production build drops.",
+	"ssr": { "labelled": { "props": { "label": "Save" } } },
+	"axe": ["button-name"]
 }

@@ -11,7 +11,7 @@
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.tsx": `import { Match, merge, Switch } from "solid-js";
+	"Badge.tsx": `import { Match, merge, Switch } from "solid-js";
 
 export interface BadgeProps {
   label: string;
@@ -75,7 +75,7 @@ function enumeratedValue<T>(value: T): T extends boolean ? \`\${T}\` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? \`\${T}\` : T;
 }
 `,
-  "LinkCard.tsx": `interface LinkAttrs {
+	"LinkCard.tsx": `interface LinkAttrs {
   href: string;
   title?: string;
   class?: string;
@@ -113,7 +113,7 @@ function cx(...parts: unknown[]): string {
   return names.join(" ");
 }
 `,
-  "TodoList.tsx": `import { For, Show } from "solid-js";
+	"TodoList.tsx": `import { For, Show } from "solid-js";
 
 interface Todo {
   id: string;
@@ -170,7 +170,7 @@ export default function TodoList(props: TodoListProps) {
 // the `nextTick` helper, and what captures nothing hoisted to module scope. lint.test.ts pins the
 // L5 configuration against them.
 export const M2_SHAPES: Readonly<Record<string, string>> = {
-  "Counter.tsx": `import { createSignal, getObserver, merge, Show, untrack } from "solid-js";
+	"Counter.tsx": `import { createSignal, getObserver, merge, Show, untrack } from "solid-js";
 
 export interface CounterProps {
   initial?: number;
@@ -247,7 +247,7 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   return [read, write];
 }
 `,
-  "Watchers.tsx": `import {
+	"Watchers.tsx": `import {
   createReaction,
   createRoot,
   createSignal,
@@ -493,7 +493,7 @@ function createState<T>(initial?: T): [() => T | undefined, (value: T | undefine
   return [read, write];
 }
 `,
-  "Panel.tsx": `import {
+	"Panel.tsx": `import {
   createSignal,
   createUniqueId,
   For,

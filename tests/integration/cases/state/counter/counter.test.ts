@@ -6,32 +6,32 @@ import { expect } from "vitest";
 import Counter from "./Counter.uf.tsx";
 
 describeTargets("state/counter", () => {
-  it("renders the initial count and the step", async () => {
-    const view = await mountScenario(Counter, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("status")).toHaveTextContent("2");
-    await expect.element(view.getByRole("button", { name: "+3" })).toBeVisible();
-  });
+	it("renders the initial count and the step", async () => {
+		const view = await mountScenario(Counter, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("status")).toHaveTextContent("2");
+		await expect.element(view.getByRole("button", { name: "+3" })).toBeVisible();
+	});
 
-  it(
-    "increments by the step and emits the new value",
-    { requires: ["interactivity"] },
-    async () => {
-      const view = await mountScenario(Counter, "initial");
-      await view.user.click(view.getByRole("button", { name: "+3" }));
-      await view.expectParity("after-increment");
-      await expect.element(view.getByRole("status")).toHaveTextContent("5");
-      expect(view.emitted("change")).toEqual([[5]]);
-    },
-  );
+	it(
+		"increments by the step and emits the new value",
+		{ requires: ["interactivity"] },
+		async () => {
+			const view = await mountScenario(Counter, "initial");
+			await view.user.click(view.getByRole("button", { name: "+3" }));
+			await view.expectParity("after-increment");
+			await expect.element(view.getByRole("status")).toHaveTextContent("5");
+			expect(view.emitted("change")).toEqual([[5]]);
+		},
+	);
 
-  it("shows Big once the double passes ten", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(Counter, "initial");
-    await view.user.click(view.getByRole("button", { name: "+3" }));
-    await view.user.click(view.getByRole("button", { name: "+3" }));
-    await view.expectParity("big");
-    await expect.element(view.getByRole("status")).toHaveTextContent("8");
-    await expect.element(view.getByText("Big")).toBeVisible();
-    expect(view.emitted("change")).toEqual([[5], [8]]);
-  });
+	it("shows Big once the double passes ten", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(Counter, "initial");
+		await view.user.click(view.getByRole("button", { name: "+3" }));
+		await view.user.click(view.getByRole("button", { name: "+3" }));
+		await view.expectParity("big");
+		await expect.element(view.getByRole("status")).toHaveTextContent("8");
+		await expect.element(view.getByText("Big")).toBeVisible();
+		expect(view.emitted("change")).toEqual([[5], [8]]);
+	});
 });

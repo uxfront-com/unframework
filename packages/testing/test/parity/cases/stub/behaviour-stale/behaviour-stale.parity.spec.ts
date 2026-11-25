@@ -9,12 +9,12 @@ import { describeTargets, mount } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
 
 describeTargets("stub/behaviour-stale", () => {
-  it("passes, and records the pass under the entry as it is", async () => {
-    const view = await mount({ html: "<p>Fixed</p>" });
-    await expect.element(view.getByText("Fixed")).toBeVisible();
-  });
+	it("passes, and records the pass under the entry as it is", async () => {
+		const view = await mount({ html: "<p>Fixed</p>" });
+		await expect.element(view.getByText("Fixed")).toBeVisible();
+	});
 
-  it("recorded L8 as a pass", ({ task }) => {
-    expect(task.suite?.tasks[0]?.meta.uf?.layers.L8).toEqual({ status: "pass" });
-  });
+	it("recorded L8 as a pass", ({ task }) => {
+		expect(task.suite?.tasks[0]?.meta.uf?.layers.L8).toEqual({ status: "pass" });
+	});
 });

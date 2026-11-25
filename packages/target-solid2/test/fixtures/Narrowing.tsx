@@ -2,336 +2,336 @@ import type { ComponentProps, JSX } from "@solidjs/web";
 import { For, Match, Show, Switch, createMemo, merge, omit, untrack } from "solid-js";
 
 interface Account {
-  name: string;
-  nick?: string;
-  admin?: boolean;
-  colour?: string;
-  age?: number;
-  tags: string[];
-  address?: { city: string };
-  link?: { href: string; lang?: string };
+	name: string;
+	nick?: string;
+	admin?: boolean;
+	colour?: string;
+	age?: number;
+	tags: string[];
+	address?: { city: string };
+	link?: { href: string; lang?: string };
 }
 
 interface Circle {
-  kind: "circle";
-  r: number;
+	kind: "circle";
+	r: number;
 }
 
 interface Square {
-  kind: "square";
-  side: number;
+	kind: "square";
+	side: number;
 }
 
 interface Ok {
-  ok: true;
-  value: string;
+	ok: true;
+	value: string;
 }
 
 interface Failed {
-  ok: false;
-  error: string;
+	ok: false;
+	error: string;
 }
 
 interface Format {
-  separator: "," | ";" | null;
+	separator: "," | ";" | null;
 }
 
 interface Attrs {
-  title: string;
-  id?: string;
+	title: string;
+	id?: string;
 }
 
 export interface NarrowingProps {
-  user?: Account;
-  note?: string | null;
-  rows: (Account | null)[];
-  ready: boolean;
-  places: string[];
-  count?: number;
-  value: string | number | null;
-  shape: Circle | Square;
-  result: Ok | Failed;
-  label: string;
-  format: Format;
-  attrs?: Attrs;
+	user?: Account;
+	note?: string | null;
+	rows: (Account | null)[];
+	ready: boolean;
+	places: string[];
+	count?: number;
+	value: string | number | null;
+	shape: Circle | Square;
+	result: Ok | Failed;
+	label: string;
+	format: Format;
+	attrs?: Attrs;
 }
 
 export default function Narrowing(
-  rawProps: NarrowingProps &
-    Omit<
-      ComponentProps<"div">,
-      | "user"
-      | "note"
-      | "rows"
-      | "ready"
-      | "places"
-      | "count"
-      | "value"
-      | "shape"
-      | "result"
-      | "label"
-      | "format"
-      | "attrs"
-      | "class"
-      | "style"
-    > & { class?: string; style?: JSX.CSSProperties },
+	rawProps: NarrowingProps &
+		Omit<
+			ComponentProps<"div">,
+			| "user"
+			| "note"
+			| "rows"
+			| "ready"
+			| "places"
+			| "count"
+			| "value"
+			| "shape"
+			| "result"
+			| "label"
+			| "format"
+			| "attrs"
+			| "class"
+			| "style"
+		> & { class?: string; style?: JSX.CSSProperties },
 ) {
-  const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };
-  const props = merge(rawProps, {
-    get attrs() {
-      return rawProps.attrs === undefined ? defaults.attrs : rawProps.attrs;
-    },
-  });
-  const others = omit(
-    props,
-    "user",
-    "note",
-    "rows",
-    "ready",
-    "places",
-    "count",
-    "value",
-    "shape",
-    "result",
-    "label",
-    "format",
-    "attrs",
-  );
+	const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };
+	const props = merge(rawProps, {
+		get attrs() {
+			return rawProps.attrs === undefined ? defaults.attrs : rawProps.attrs;
+		},
+	});
+	const others = omit(
+		props,
+		"user",
+		"note",
+		"rows",
+		"ready",
+		"places",
+		"count",
+		"value",
+		"shape",
+		"result",
+		"label",
+		"format",
+		"attrs",
+	);
 
-  return (
-    <div {...others}>
-      <Show when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Show>
-      <Show when={props.user || undefined} fallback={<i>anon</i>}>
-        {(user) => <b title={user().name}>{user().name}</b>}
-      </Show>
-      <Switch fallback={<i>none</i>}>
-        <Match when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Match>
-        <Match when={props.user ? undefined : props.note ? { note: props.note } : undefined}>
-          {(narrowed) => <em>{narrowed().note.trim()}</em>}
-        </Match>
-      </Switch>
-      <Switch>
-        <Match when={!props.ready}>
-          <i>wait</i>
-        </Match>
-        <Match when={!props.user}>
-          <i>anon</i>
-        </Match>
-        <Match
-          when={
-            !props.ready
-              ? undefined
-              : !props.user
-                ? undefined
-                : props.user.admin
-                  ? { user: props.user }
-                  : undefined
-          }
-        >
-          {(narrowed) => <b>{narrowed().user.name}</b>}
-        </Match>
-        <Match
-          when={
-            !props.ready
-              ? undefined
-              : !props.user
-                ? undefined
-                : props.user.admin
-                  ? undefined
-                  : { user: props.user }
-          }
-        >
-          {(narrowed) => <p>{narrowed().user.name}</p>}
-        </Match>
-      </Switch>
-      <Show when={props.user && props.user.admin ? { user: props.user } : undefined}>
-        {(narrowed) => <b>{narrowed().user.name}</b>}
-      </Show>
-      <Show when={props.label && props.user ? { user: props.user } : undefined}>
-        {(narrowed) => <p>{narrowed().user.name}</p>}
-      </Show>
-      <Show keyed when={props.user || undefined}>
-        {(user) => (
-          <p
-            title={user.nick ? user.nick.trim() : "none"}
-            class={{ grown: user.age !== undefined && user.age > 17 }}
-            style={{ color: user.colour }}
-          >
-            {user.age !== undefined ? user.age.toFixed() : "-"}
-            <Show when={props.ready}>
-              <b>{user.name}</b>
-            </Show>
-          </p>
-        )}
-      </Show>
-      <Show when={props.user?.address?.city || undefined}>{(city) => <p>{city()}</p>}</Show>
-      <Show when={props.user || undefined}>
-        {(user) => (
-          <a
-            href={user().link?.href}
-            lang={user().link?.lang}
-            data-json={JSON.stringify({ user: user() })}
-          >
-            <KeyedFor each={user().tags} by={(tag) => tag}>
-              {(tag) => <span>{tag.value}</span>}
-            </KeyedFor>
-          </a>
-        )}
-      </Show>
-      <ul>
-        <KeyedFor each={props.rows} by={(row, index) => index}>
-          {(row) => (
-            <li>
-              <Show when={row.value || undefined}>{(row_1) => <>{row_1().name}</>}</Show>
-              <Show when={row.index > 0 && row.value ? { row: row.value } : undefined} fallback="-">
-                {(narrowed) => <b>{narrowed().row.name}</b>}
-              </Show>
-              <Show
-                when={row.value && row.value.age !== undefined ? { age: row.value.age } : undefined}
-              >
-                {(narrowed) => <s>{Math.round(narrowed().age)}</s>}
-              </Show>
-            </li>
-          )}
-        </KeyedFor>
-      </ul>
-      <Show when={props.count !== undefined ? { count: props.count } : undefined}>
-        {(narrowed) => <b title={String(narrowed().count)}>{Math.round(narrowed().count)}</b>}
-      </Show>
-      <Switch>
-        <Match when={props.count === undefined}>
-          <i>none</i>
-        </Match>
-        <Match when={props.count === undefined ? undefined : { count: props.count }}>
-          {(narrowed) => <u>{narrowed().count.toFixed(1)}</u>}
-        </Match>
-      </Switch>
-      <Show when={props.note != null ? { note: props.note } : undefined}>
-        {(narrowed) => <i title={narrowed().note}>{narrowed().note}</i>}
-      </Show>
-      <Switch>
-        <Match when={typeof props.value === "string" ? { value: props.value } : undefined}>
-          {(narrowed) => <b>{narrowed().value.toUpperCase()}</b>}
-        </Match>
-        <Match
-          when={
-            typeof props.value === "string"
-              ? undefined
-              : props.value !== null
-                ? { value: props.value }
-                : undefined
-          }
-        >
-          {(narrowed) => <i>{narrowed().value.toFixed(1)}</i>}
-        </Match>
-      </Switch>
-      <svg>
-        <Switch>
-          <Match when={props.shape.kind === `circle` ? { shape: props.shape } : undefined}>
-            {(narrowed) => <circle r={narrowed().shape.r} />}
-          </Match>
-          <Match when={props.shape.kind === `circle` ? undefined : { shape: props.shape }}>
-            {(narrowed) => <rect width={narrowed().shape.side} />}
-          </Match>
-        </Switch>
-      </svg>
-      <Switch>
-        <Match when={props.result.ok ? { result: props.result } : undefined}>
-          {(narrowed) => <p>{narrowed().result.value}</p>}
-        </Match>
-        <Match when={props.result.ok ? undefined : { result: props.result }}>
-          {(narrowed) => <p>{narrowed().result.error}</p>}
-        </Match>
-      </Switch>
-      <Show
-        when={props.format.separator !== null ? { separator: props.format.separator } : undefined}
-      >
-        {(narrowed) => <b>{narrowed().separator.repeat(2)}</b>}
-      </Show>
-      <ul>
-        <KeyedFor each={props.places} by={(place) => place}>
-          {(place) => (
-            <li>
-              <Show when={place.value === "x" && props.user ? { user: props.user } : undefined}>
-                {(narrowed) => <i>{narrowed().user.name}</i>}
-              </Show>
-            </li>
-          )}
-        </KeyedFor>
-      </ul>
-      <Show when={props.user || undefined} fallback="<anonymous>">
-        {(user) => <p>{user().name}</p>}
-      </Show>
-      <p title={props.attrs.title} id={props.attrs.id}>
-        a
-      </p>
-      <Switch>
-        <Match
-          when={props.user && props.user.name.length > 2 ? { name: props.user.name } : undefined}
-        >
-          {(narrowed) => <p>{narrowed().name}</p>}
-        </Match>
-        <Match when={props.user && props.user.name.length > 2 ? undefined : { user: props.user }}>
-          {(narrowed) => <p>{narrowed().user?.name ?? "anon"}</p>}
-        </Match>
-      </Switch>
-      <Show when={props.user || undefined}>
-        {(user) => (
-          <ul>
-            <KeyedFor each={props.places} by={(place) => place}>
-              {(place) => (
-                <li>
-                  {user().name}: {place.value}
-                </li>
-              )}
-            </KeyedFor>
-          </ul>
-        )}
-      </Show>
-      <Show when={props.user || undefined}>
-        {(user) => <p>{props.places.map((place) => user().name + place).join(", ")}</p>}
-      </Show>
-      <p>
-        <Show when={props.user || undefined}>{(user) => <>{user().name + props.label}</>}</Show>
-      </p>
-      <p>
-        <Show when={props.count !== undefined ? { count: props.count } : undefined}>
-          {(narrowed) => <>{narrowed().count.toFixed(1) + props.label}</>}
-        </Show>
-      </p>
-    </div>
-  );
+	return (
+		<div {...others}>
+			<Show when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Show>
+			<Show when={props.user || undefined} fallback={<i>anon</i>}>
+				{(user) => <b title={user().name}>{user().name}</b>}
+			</Show>
+			<Switch fallback={<i>none</i>}>
+				<Match when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Match>
+				<Match when={props.user ? undefined : props.note ? { note: props.note } : undefined}>
+					{(narrowed) => <em>{narrowed().note.trim()}</em>}
+				</Match>
+			</Switch>
+			<Switch>
+				<Match when={!props.ready}>
+					<i>wait</i>
+				</Match>
+				<Match when={!props.user}>
+					<i>anon</i>
+				</Match>
+				<Match
+					when={
+						!props.ready
+							? undefined
+							: !props.user
+								? undefined
+								: props.user.admin
+									? { user: props.user }
+									: undefined
+					}
+				>
+					{(narrowed) => <b>{narrowed().user.name}</b>}
+				</Match>
+				<Match
+					when={
+						!props.ready
+							? undefined
+							: !props.user
+								? undefined
+								: props.user.admin
+									? undefined
+									: { user: props.user }
+					}
+				>
+					{(narrowed) => <p>{narrowed().user.name}</p>}
+				</Match>
+			</Switch>
+			<Show when={props.user && props.user.admin ? { user: props.user } : undefined}>
+				{(narrowed) => <b>{narrowed().user.name}</b>}
+			</Show>
+			<Show when={props.label && props.user ? { user: props.user } : undefined}>
+				{(narrowed) => <p>{narrowed().user.name}</p>}
+			</Show>
+			<Show keyed when={props.user || undefined}>
+				{(user) => (
+					<p
+						title={user.nick ? user.nick.trim() : "none"}
+						class={{ grown: user.age !== undefined && user.age > 17 }}
+						style={{ color: user.colour }}
+					>
+						{user.age !== undefined ? user.age.toFixed() : "-"}
+						<Show when={props.ready}>
+							<b>{user.name}</b>
+						</Show>
+					</p>
+				)}
+			</Show>
+			<Show when={props.user?.address?.city || undefined}>{(city) => <p>{city()}</p>}</Show>
+			<Show when={props.user || undefined}>
+				{(user) => (
+					<a
+						href={user().link?.href}
+						lang={user().link?.lang}
+						data-json={JSON.stringify({ user: user() })}
+					>
+						<KeyedFor each={user().tags} by={(tag) => tag}>
+							{(tag) => <span>{tag.value}</span>}
+						</KeyedFor>
+					</a>
+				)}
+			</Show>
+			<ul>
+				<KeyedFor each={props.rows} by={(row, index) => index}>
+					{(row) => (
+						<li>
+							<Show when={row.value || undefined}>{(row_1) => <>{row_1().name}</>}</Show>
+							<Show when={row.index > 0 && row.value ? { row: row.value } : undefined} fallback="-">
+								{(narrowed) => <b>{narrowed().row.name}</b>}
+							</Show>
+							<Show
+								when={row.value && row.value.age !== undefined ? { age: row.value.age } : undefined}
+							>
+								{(narrowed) => <s>{Math.round(narrowed().age)}</s>}
+							</Show>
+						</li>
+					)}
+				</KeyedFor>
+			</ul>
+			<Show when={props.count !== undefined ? { count: props.count } : undefined}>
+				{(narrowed) => <b title={String(narrowed().count)}>{Math.round(narrowed().count)}</b>}
+			</Show>
+			<Switch>
+				<Match when={props.count === undefined}>
+					<i>none</i>
+				</Match>
+				<Match when={props.count === undefined ? undefined : { count: props.count }}>
+					{(narrowed) => <u>{narrowed().count.toFixed(1)}</u>}
+				</Match>
+			</Switch>
+			<Show when={props.note != null ? { note: props.note } : undefined}>
+				{(narrowed) => <i title={narrowed().note}>{narrowed().note}</i>}
+			</Show>
+			<Switch>
+				<Match when={typeof props.value === "string" ? { value: props.value } : undefined}>
+					{(narrowed) => <b>{narrowed().value.toUpperCase()}</b>}
+				</Match>
+				<Match
+					when={
+						typeof props.value === "string"
+							? undefined
+							: props.value !== null
+								? { value: props.value }
+								: undefined
+					}
+				>
+					{(narrowed) => <i>{narrowed().value.toFixed(1)}</i>}
+				</Match>
+			</Switch>
+			<svg>
+				<Switch>
+					<Match when={props.shape.kind === `circle` ? { shape: props.shape } : undefined}>
+						{(narrowed) => <circle r={narrowed().shape.r} />}
+					</Match>
+					<Match when={props.shape.kind === `circle` ? undefined : { shape: props.shape }}>
+						{(narrowed) => <rect width={narrowed().shape.side} />}
+					</Match>
+				</Switch>
+			</svg>
+			<Switch>
+				<Match when={props.result.ok ? { result: props.result } : undefined}>
+					{(narrowed) => <p>{narrowed().result.value}</p>}
+				</Match>
+				<Match when={props.result.ok ? undefined : { result: props.result }}>
+					{(narrowed) => <p>{narrowed().result.error}</p>}
+				</Match>
+			</Switch>
+			<Show
+				when={props.format.separator !== null ? { separator: props.format.separator } : undefined}
+			>
+				{(narrowed) => <b>{narrowed().separator.repeat(2)}</b>}
+			</Show>
+			<ul>
+				<KeyedFor each={props.places} by={(place) => place}>
+					{(place) => (
+						<li>
+							<Show when={place.value === "x" && props.user ? { user: props.user } : undefined}>
+								{(narrowed) => <i>{narrowed().user.name}</i>}
+							</Show>
+						</li>
+					)}
+				</KeyedFor>
+			</ul>
+			<Show when={props.user || undefined} fallback="<anonymous>">
+				{(user) => <p>{user().name}</p>}
+			</Show>
+			<p title={props.attrs.title} id={props.attrs.id}>
+				a
+			</p>
+			<Switch>
+				<Match
+					when={props.user && props.user.name.length > 2 ? { name: props.user.name } : undefined}
+				>
+					{(narrowed) => <p>{narrowed().name}</p>}
+				</Match>
+				<Match when={props.user && props.user.name.length > 2 ? undefined : { user: props.user }}>
+					{(narrowed) => <p>{narrowed().user?.name ?? "anon"}</p>}
+				</Match>
+			</Switch>
+			<Show when={props.user || undefined}>
+				{(user) => (
+					<ul>
+						<KeyedFor each={props.places} by={(place) => place}>
+							{(place) => (
+								<li>
+									{user().name}: {place.value}
+								</li>
+							)}
+						</KeyedFor>
+					</ul>
+				)}
+			</Show>
+			<Show when={props.user || undefined}>
+				{(user) => <p>{props.places.map((place) => user().name + place).join(", ")}</p>}
+			</Show>
+			<p>
+				<Show when={props.user || undefined}>{(user) => <>{user().name + props.label}</>}</Show>
+			</p>
+			<p>
+				<Show when={props.count !== undefined ? { count: props.count } : undefined}>
+					{(narrowed) => <>{narrowed().count.toFixed(1) + props.label}</>}
+				</Show>
+			</p>
+		</div>
+	);
 }
 
 /** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function KeyedFor<T>(props: {
-  each: readonly T[];
-  by: (item: T, index: number) => unknown;
-  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
+	each: readonly T[];
+	by: (item: T, index: number) => unknown;
+	children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
-  const items = createMemo(() => {
-    const rows = new Map<unknown, T>();
-    props.each.forEach((item, index) => {
-      const key = props.by(item, index);
-      rows.set(rows.has(key) ? {} : key, item);
-    });
-    return rows;
-  });
-  return (
-    <For each={[...items().keys()]}>
-      {(key, index) => {
-        const item = createMemo(() => items().get(key) as T);
-        return untrack(() =>
-          props.children({
-            get value() {
-              return item();
-            },
-            get index() {
-              return index();
-            },
-          }),
-        );
-      }}
-    </For>
-  );
+	const items = createMemo(() => {
+		const rows = new Map<unknown, T>();
+		props.each.forEach((item, index) => {
+			const key = props.by(item, index);
+			rows.set(rows.has(key) ? {} : key, item);
+		});
+		return rows;
+	});
+	return (
+		<For each={[...items().keys()]}>
+			{(key, index) => {
+				const item = createMemo(() => items().get(key) as T);
+				return untrack(() =>
+					props.children({
+						get value() {
+							return item();
+						},
+						get index() {
+							return index();
+						},
+					}),
+				);
+			}}
+		</For>
+	);
 }

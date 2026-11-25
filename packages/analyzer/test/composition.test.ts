@@ -10,33 +10,33 @@ import { analyze, componentImports } from "../src/index.ts";
 import { applyAndRecheck, codes, problems, run } from "./helpers.ts";
 
 const API =
-  'import { defineEmits, defineExpose, defineOptions, defineSlots, ref, useTemplateRef } from "@uxfront/unframework";\nimport type { Element } from "@uxfront/unframework";\n';
+	'import { defineEmits, defineExpose, defineOptions, defineSlots, ref, useTemplateRef } from "@uxfront/unframework";\nimport type { Element } from "@uxfront/unframework";\n';
 
 /** The first component node of a component's render tree, depth first. */
 function componentNode(render: unknown): ComponentNode {
-  const found = find(render, (node) => node.kind === "Component");
-  if (!found) throw new Error("no component node");
-  return found as ComponentNode;
+	const found = find(render, (node) => node.kind === "Component");
+	if (!found) throw new Error("no component node");
+	return found as ComponentNode;
 }
 
 /** The first slot outlet of a render tree. */
 function outlet(render: unknown): SlotOutletNode {
-  const found = find(render, (node) => node.kind === "SlotOutlet");
-  if (!found) throw new Error("no slot outlet");
-  return found as SlotOutletNode;
+	const found = find(render, (node) => node.kind === "SlotOutlet");
+	if (!found) throw new Error("no slot outlet");
+	return found as SlotOutletNode;
 }
 
 function find(
-  value: unknown,
-  test: (node: { kind?: string }) => boolean,
+	value: unknown,
+	test: (node: { kind?: string }) => boolean,
 ): { kind?: string } | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  if (!Array.isArray(value) && test(value as { kind?: string })) return value as { kind?: string };
-  for (const item of Object.values(value)) {
-    const found = find(item, test);
-    if (found) return found;
-  }
-  return undefined;
+	if (!value || typeof value !== "object") return undefined;
+	if (!Array.isArray(value) && test(value as { kind?: string })) return value as { kind?: string };
+	for (const item of Object.values(value)) {
+		const found = find(item, test);
+		if (found) return found;
+	}
+	return undefined;
 }
 
 const CHILD = `${API}
@@ -61,197 +61,197 @@ function Field({ label, tone }: { label: string; tone?: "a" | "b" }) {
 
 /** A parent of `Field` in the same module, returning `jsx`, with `setup` before it. */
 function parent(jsx: string, setup = "") {
-  const source = `${CHILD}\nexport function Form() {\n  ${setup}\n  return ${jsx};\n}\n`;
-  return { source, ...run(source) };
+	const source = `${CHILD}\nexport function Form() {\n  ${setup}\n  return ${jsx};\n}\n`;
+	return { source, ...run(source) };
 }
 
 describe("the module's components", () => {
-  it("reads each component's API from its declarations", () => {
-    const { api } = parent("<Field label='a' />");
-    expect(api!.components).toEqual([
-      {
-        name: "Field",
-        export: "local",
-        props: [
-          { name: "label", optional: false, type: "string" },
-          { name: "tone", optional: true, type: '"a" | "b"' },
-        ],
-        events: [{ name: "clear", parameters: [{ name: "reason", type: "string" }] }],
-        models: [],
-        slots: [
-          { name: "default", optional: true },
-          { name: "hint", optional: true, props: "{ size: number }" },
-        ],
-        exposes: ["focus"],
-        inheritAttrs: true,
-        root: "element",
-        rootTag: "div",
-        // What a consumer passes lands on the root; a ref holds what it exposes (ADR-0118).
-        fallthroughTag: "div",
-        // The root's own attributes, which a consumer's listener is checked with (UF3030).
-        fallthroughOwn: { attributes: [{ name: "class" }], listeners: [] },
-      },
-      expect.objectContaining({ name: "Form", export: "named" }),
-    ]);
-  });
+	it("reads each component's API from its declarations", () => {
+		const { api } = parent("<Field label='a' />");
+		expect(api!.components).toEqual([
+			{
+				name: "Field",
+				export: "local",
+				props: [
+					{ name: "label", optional: false, type: "string" },
+					{ name: "tone", optional: true, type: '"a" | "b"' },
+				],
+				events: [{ name: "clear", parameters: [{ name: "reason", type: "string" }] }],
+				models: [],
+				slots: [
+					{ name: "default", optional: true },
+					{ name: "hint", optional: true, props: "{ size: number }" },
+				],
+				exposes: ["focus"],
+				inheritAttrs: true,
+				root: "element",
+				rootTag: "div",
+				// What a consumer passes lands on the root; a ref holds what it exposes (ADR-0118).
+				fallthroughTag: "div",
+				// The root's own attributes, which a consumer's listener is checked with (UF3030).
+				fallthroughOwn: { attributes: [{ name: "class" }], listeners: [] },
+			},
+			expect.objectContaining({ name: "Form", export: "named" }),
+		]);
+	});
 
-  it("lowers the slots, the exposed functions and the options it declares", () => {
-    const source = `${API}export function A() {
+	it("lowers the slots, the exposed functions and the options it declares", () => {
+		const source = `${API}export function A() {
   const slots = defineSlots<{ default?(): Element; item?(props: { id: number }): Element }>();
   defineOptions({ inheritAttrs: false });
   function reset() {}
   defineExpose({ reset });
   return <ul>{slots.item?.({ id: 1 })}{slots.default?.()}</ul>;
 }`;
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    const [component] = module!.components;
-    expect(component!.slots!.slots.map(({ name, props }) => [name, props?.code])).toEqual([
-      ["default", undefined],
-      ["item", "{ id: number }"],
-    ]);
-    expect(component!.exposes!.functions).toEqual([expect.stringMatching(/^reset@/)]);
-    expect(component!.inheritAttrs).toBe(false);
-  });
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		const [component] = module!.components;
+		expect(component!.slots!.slots.map(({ name, props }) => [name, props?.code])).toEqual([
+			["default", undefined],
+			["item", "{ id: number }"],
+		]);
+		expect(component!.exposes!.functions).toEqual([expect.stringMatching(/^reset@/)]);
+		expect(component!.inheritAttrs).toBe(false);
+	});
 });
 
 describe("component elements", () => {
-  it("lowers props, listeners, fallthrough and a ref", () => {
-    const { module, diagnostics } = parent(
-      `<Field ref={field} label="Name" tone={tone.value} class="wide" style={{ color: "red" }} onClear={(reason) => clear(reason)} />`,
-      'const field = useTemplateRef<{ focus(): void }>();\n  const tone = ref<"a" | "b">("a");\n  function clear(reason: string) { tone.value = reason === "x" ? "a" : "b"; }',
-    );
-    expect(diagnostics).toEqual([]);
-    const node = componentNode(module!.components[1]!.render);
-    expect(node.component).toBe("Field");
-    // In source order, what falls through among the rest (ADR-0118).
-    expect(node.attributes.map((attribute) => attribute.kind)).toEqual([
-      "Ref",
-      "Prop",
-      "Prop",
-      "Class",
-      "Style",
-      "Listener",
-    ]);
-    expect(node.attributes[1]).toMatchObject({ name: "label", value: { code: '"Name"' } });
-    expect(node.attributes[5]).toMatchObject({ event: "clear", handler: { kind: "Inline" } });
-  });
+	it("lowers props, listeners, fallthrough and a ref", () => {
+		const { module, diagnostics } = parent(
+			`<Field ref={field} label="Name" tone={tone.value} class="wide" style={{ color: "red" }} onClear={(reason) => clear(reason)} />`,
+			'const field = useTemplateRef<{ focus(): void }>();\n  const tone = ref<"a" | "b">("a");\n  function clear(reason: string) { tone.value = reason === "x" ? "a" : "b"; }',
+		);
+		expect(diagnostics).toEqual([]);
+		const node = componentNode(module!.components[1]!.render);
+		expect(node.component).toBe("Field");
+		// In source order, what falls through among the rest (ADR-0118).
+		expect(node.attributes.map((attribute) => attribute.kind)).toEqual([
+			"Ref",
+			"Prop",
+			"Prop",
+			"Class",
+			"Style",
+			"Listener",
+		]);
+		expect(node.attributes[1]).toMatchObject({ name: "label", value: { code: '"Name"' } });
+		expect(node.attributes[5]).toMatchObject({ event: "clear", handler: { kind: "Inline" } });
+	});
 
-  it("reports what the component does not declare, with the name it may mean", () => {
-    const { source, diagnostics } = parent(
-      '<Field lable="x" onCleer={() => {}} onClearOnce={() => {}} />',
-    );
-    expect(problems(source, diagnostics)).toEqual([
-      "UF3035 lable",
-      "UF3036 onCleer",
-      "UF3043 Once",
-    ]);
-    expect(diagnostics[0]!.message).toContain("Did you mean `label`?");
-    expect(diagnostics[1]!.message).toContain("Did you mean `onClear`?");
-    // UF3043's fix drops the suffix; the rest stays.
-    expect(applyAndRecheck(source, diagnostics)).toContain("onClear={() => {}}");
-  });
+	it("reports what the component does not declare, with the name it may mean", () => {
+		const { source, diagnostics } = parent(
+			'<Field lable="x" onCleer={() => {}} onClearOnce={() => {}} />',
+		);
+		expect(problems(source, diagnostics)).toEqual([
+			"UF3035 lable",
+			"UF3036 onCleer",
+			"UF3043 Once",
+		]);
+		expect(diagnostics[0]!.message).toContain("Did you mean `label`?");
+		expect(diagnostics[1]!.message).toContain("Did you mean `onClear`?");
+		// UF3043's fix drops the suffix; the rest stays.
+		expect(applyAndRecheck(source, diagnostics)).toContain("onClear={() => {}}");
+	});
 
-  it("reports an unknown component with the one it may mean, and fixes the name", () => {
-    const { source, diagnostics } = parent("<Feild label='a' />");
-    expect(problems(source, diagnostics)).toEqual(["UF3047 Feild"]);
-    expect(applyAndRecheck(source, diagnostics)).toContain("<Field label='a' />");
-  });
+	it("reports an unknown component with the one it may mean, and fixes the name", () => {
+		const { source, diagnostics } = parent("<Feild label='a' />");
+		expect(problems(source, diagnostics)).toEqual(["UF3047 Feild"]);
+		expect(applyAndRecheck(source, diagnostics)).toContain("<Field label='a' />");
+	});
 
-  it("reports a ref on a component that exposes nothing", () => {
-    const source = `${API}function Plain() { return <p />; }
+	it("reports a ref on a component that exposes nothing", () => {
+		const source = `${API}function Plain() { return <p />; }
 export function A() {
   const plain = useTemplateRef<{ go(): void }>();
   return <div><Plain ref={plain} /></div>;
 }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF3046 ref={plain}"]);
-  });
+		expect(problems(source, run(source).diagnostics)).toEqual(["UF3046 ref={plain}"]);
+	});
 
-  it.each([
-    ["defineOptions({ inheritAttrs: false });", "<p />"],
-    ["", "<><p /><p /></>"],
-  ])("reports a class it cannot render: %s %s", (setup, root) => {
-    const source = `${API}function Child() { ${setup} return ${root}; }
+	it.each([
+		["defineOptions({ inheritAttrs: false });", "<p />"],
+		["", "<><p /><p /></>"],
+	])("reports a class it cannot render: %s %s", (setup, root) => {
+		const source = `${API}function Child() { ${setup} return ${root}; }
 export function A() { return <div><Child class="x" style="color: red" /></div>; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF3045 class", "UF3045 style"]);
-  });
+		expect(problems(source, run(source).diagnostics)).toEqual(["UF3045 class", "UF3045 style"]);
+	});
 
-  it("checks a component's root where the component sits", () => {
-    const source = `function Row() { return <tr><td>a</td></tr>; }
+	it("checks a component's root where the component sits", () => {
+		const source = `function Row() { return <tr><td>a</td></tr>; }
 export function A() { return <div><table><tbody><Row /></tbody></table><Row /></div>; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Row"]);
-  });
+		expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Row"]);
+	});
 
-  it("lowers a component as a list's element, its key lifted", () => {
-    const source = `function Item({ label }: { label: string }) { return <li>{label}</li>; }
+	it("lowers a component as a list's element, its key lifted", () => {
+		const source = `function Item({ label }: { label: string }) { return <li>{label}</li>; }
 export function A({ items }: { items: string[] }) {
   return <ul>{items.map((item) => <Item key={item} label={item} />)}</ul>;
 }`;
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    const list = find(module!.components[1]!.render, (node) => node.kind === "For");
-    expect(list).toMatchObject({ key: { code: "item" }, body: { kind: "Component" } });
-  });
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		const list = find(module!.components[1]!.render, (node) => node.kind === "For");
+		expect(list).toMatchObject({ key: { code: "item" }, body: { kind: "Component" } });
+	});
 
-  it("wraps a component at the root in a fragment", () => {
-    const { module, diagnostics } = run(
-      "function B() { return <p />; }\nexport function A() { return <B />; }",
-    );
-    expect(diagnostics).toEqual([]);
-    expect(module!.components[1]!.render).toMatchObject({
-      kind: "Fragment",
-      children: [{ kind: "Component", component: "B" }],
-    });
-  });
+	it("wraps a component at the root in a fragment", () => {
+		const { module, diagnostics } = run(
+			"function B() { return <p />; }\nexport function A() { return <B />; }",
+		);
+		expect(diagnostics).toEqual([]);
+		expect(module!.components[1]!.render).toMatchObject({
+			kind: "Fragment",
+			children: [{ kind: "Component", component: "B" }],
+		});
+	});
 
-  it("lowers a component that renders itself", () => {
-    const source =
-      "export function T({ n }: { n: number }) { return <div>{n > 0 ? <T n={n - 1} /> : null}</div>; }";
-    expect(run(source).diagnostics).toEqual([]);
-  });
+	it("lowers a component that renders itself", () => {
+		const source =
+			"export function T({ n }: { n: number }) { return <div>{n > 0 ? <T n={n - 1} /> : null}</div>; }";
+		expect(run(source).diagnostics).toEqual([]);
+	});
 });
 
 describe("fills", () => {
-  it("lowers children as the default slot's fill, and a slot object's members", () => {
-    const children = parent("<Field label='a'><b>Hi</b></Field>");
-    expect(children.diagnostics).toEqual([]);
-    expect(componentNode(children.module!.components[1]!.render).fills).toMatchObject([
-      { slot: "default", children: [{ kind: "Element", tag: "b" }] },
-    ]);
-    const object = parent(
-      "<Field label='a'>{{ hint: ({ size }) => <i>{size}</i>, default: () => <b>Hi</b> }}</Field>",
-    );
-    expect(object.diagnostics).toEqual([]);
-    const { fills } = componentNode(object.module!.components[1]!.render);
-    // The default slot's fill comes first, as children would.
-    expect(fills.map((fill) => [fill.slot, fill.parameter?.pattern?.names])).toEqual([
-      ["default", undefined],
-      ["hint", ["size"]],
-    ]);
-    expect(object.module!.components[1]!.bindings).toContainEqual(
-      expect.objectContaining({ name: "size", kind: "slotScope" }),
-    );
-  });
+	it("lowers children as the default slot's fill, and a slot object's members", () => {
+		const children = parent("<Field label='a'><b>Hi</b></Field>");
+		expect(children.diagnostics).toEqual([]);
+		expect(componentNode(children.module!.components[1]!.render).fills).toMatchObject([
+			{ slot: "default", children: [{ kind: "Element", tag: "b" }] },
+		]);
+		const object = parent(
+			"<Field label='a'>{{ hint: ({ size }) => <i>{size}</i>, default: () => <b>Hi</b> }}</Field>",
+		);
+		expect(object.diagnostics).toEqual([]);
+		const { fills } = componentNode(object.module!.components[1]!.render);
+		// The default slot's fill comes first, as children would.
+		expect(fills.map((fill) => [fill.slot, fill.parameter?.pattern?.names])).toEqual([
+			["default", undefined],
+			["hint", ["size"]],
+		]);
+		expect(object.module!.components[1]!.bindings).toContainEqual(
+			expect.objectContaining({ name: "size", kind: "slotScope" }),
+		);
+	});
 
-  it.each([
-    ["{{ hint: <i /> }}", "UF3040"],
-    ["{{ hint: () => { return <i />; } }}", "UF3040"],
-    ["{{ default: (x) => <i /> }}", "UF3040"],
-    ["{{ hint: ({ size }: { size: number }) => <i /> }}", "UF3040"],
-    ["<b />{{ hint: () => <i /> }}", "UF3040"],
-    ["{{ footer: () => <i /> }}", "UF3038"],
-  ])("reports the fill %s", (fill, code) => {
-    const { diagnostics } = parent(`<Field label='a'>${fill}</Field>`);
-    expect(codes(diagnostics)).toEqual([code]);
-  });
+	it.each([
+		["{{ hint: <i /> }}", "UF3040"],
+		["{{ hint: () => { return <i />; } }}", "UF3040"],
+		["{{ default: (x) => <i /> }}", "UF3040"],
+		["{{ hint: ({ size }: { size: number }) => <i /> }}", "UF3040"],
+		["<b />{{ hint: () => <i /> }}", "UF3040"],
+		["{{ footer: () => <i /> }}", "UF3038"],
+	])("reports the fill %s", (fill, code) => {
+		const { diagnostics } = parent(`<Field label='a'>${fill}</Field>`);
+		expect(codes(diagnostics)).toEqual([code]);
+	});
 
-  it("reports children given to a component without a default slot", () => {
-    const source = `function Plain() { return <p />; }\nexport function A() { return <div><Plain>x</Plain></div>; }`;
-    expect(codes(run(source).diagnostics)).toEqual(["UF3038"]);
-  });
+	it("reports children given to a component without a default slot", () => {
+		const source = `function Plain() { return <p />; }\nexport function A() { return <div><Plain>x</Plain></div>; }`;
+		expect(codes(run(source).diagnostics)).toEqual(["UF3038"]);
+	});
 
-  it("forwards the parent's own slots, in a slot object or as children", () => {
-    const source = `${CHILD}
+	it("forwards the parent's own slots, in a slot object or as children", () => {
+		const source = `${CHILD}
 export function Outer() {
   const slots = defineSlots<{ default?(): Element; hint?(props: { size: number }): Element }>();
   return (
@@ -261,629 +261,629 @@ export function Outer() {
     </div>
   );
 }`;
-    const { module, diagnostics } = run(source);
-    expect(diagnostics).toEqual([]);
-    const render = module!.components[1]!.render;
-    const [first, second] = (render as { children: ComponentNode[] }).children;
-    expect(first!.fills.map(({ slot, forward }) => [slot, forward])).toEqual([
-      ["default", "default"],
-      ["hint", "hint"],
-    ]);
-    expect(second!.fills.map(({ slot, forward }) => [slot, forward])).toEqual([
-      ["default", "default"],
-    ]);
-  });
+		const { module, diagnostics } = run(source);
+		expect(diagnostics).toEqual([]);
+		const render = module!.components[1]!.render;
+		const [first, second] = (render as { children: ComponentNode[] }).children;
+		expect(first!.fills.map(({ slot, forward }) => [slot, forward])).toEqual([
+			["default", "default"],
+			["hint", "hint"],
+		]);
+		expect(second!.fills.map(({ slot, forward }) => [slot, forward])).toEqual([
+			["default", "default"],
+		]);
+	});
 });
 
 describe("a component's own slots", () => {
-  it("lowers a slot outlet with its props and fallback, and a slot's presence", () => {
-    const { module, diagnostics } = run(CHILD.replace("function Field", "export function Field"));
-    expect(diagnostics).toEqual([]);
-    const render = module!.components[0]!.render;
-    expect(outlet(render)).toMatchObject({
-      slot: "hint",
-      props: { code: "{ size: label.length }" },
-    });
-    const source = `${API}export function A() {
+	it("lowers a slot outlet with its props and fallback, and a slot's presence", () => {
+		const { module, diagnostics } = run(CHILD.replace("function Field", "export function Field"));
+		expect(diagnostics).toEqual([]);
+		const render = module!.components[0]!.render;
+		expect(outlet(render)).toMatchObject({
+			slot: "hint",
+			props: { code: "{ size: label.length }" },
+		});
+		const source = `${API}export function A() {
   const slots = defineSlots<{ title?(): Element }>();
   return <div>{slots.title ? <h2>{slots.title?.() ?? "Untitled"}</h2> : null}</div>;
 }`;
-    const presence = run(source);
-    expect(presence.diagnostics).toEqual([]);
-    const branch = find(presence.module!.components[0]!.render, (node) => node.kind === "If");
-    expect(branch).toMatchObject({
-      branches: [{ condition: { refs: [{ kind: "Slot", slot: "title" }] } }],
-    });
-  });
+		const presence = run(source);
+		expect(presence.diagnostics).toEqual([]);
+		const branch = find(presence.module!.components[0]!.render, (node) => node.kind === "If");
+		expect(branch).toMatchObject({
+			branches: [{ condition: { refs: [{ kind: "Slot", slot: "title" }] } }],
+		});
+	});
 
-  it.each([
-    ["{slots.title()}", "UF3041"],
-    ["{slots.other?.()}", "UF3041"],
-    ["{slots.title?.({ a: 1 })}", "UF3041"],
-    ["{String(slots)}", "UF3041"],
-  ])("reports the slot use %s", (use, code) => {
-    const source = `${API}export function A() {
+	it.each([
+		["{slots.title()}", "UF3041"],
+		["{slots.other?.()}", "UF3041"],
+		["{slots.title?.({ a: 1 })}", "UF3041"],
+		["{String(slots)}", "UF3041"],
+	])("reports the slot use %s", (use, code) => {
+		const source = `${API}export function A() {
   const slots = defineSlots<{ title?(): Element }>();
   return <div>${use}</div>;
 }`;
-    expect(codes(run(source).diagnostics)).toContain(code);
-  });
+		expect(codes(run(source).diagnostics)).toContain(code);
+	});
 
-  it.each([
-    ["{ title(): Element }", "UF2029"],
-    ["{ label?(): Element }", "UF2029"],
-    ["{ onClose?(): Element }", "UF2029"],
-    ["{ item?(a: string, b: string): Element }", "UF2029"],
-  ])("reports the slots %s", (type, code) => {
-    const source = `${API}export function A({ label }: { label: string }) {
+	it.each([
+		["{ title(): Element }", "UF2029"],
+		["{ label?(): Element }", "UF2029"],
+		["{ onClose?(): Element }", "UF2029"],
+		["{ item?(a: string, b: string): Element }", "UF2029"],
+	])("reports the slots %s", (type, code) => {
+		const source = `${API}export function A({ label }: { label: string }) {
   const emit = defineEmits<{ close: [] }>();
   const slots = defineSlots<${type}>();
   return <div onClick={() => emit("close")}>{label}</div>;
 }`;
-    expect(codes(run(source).diagnostics)).toContain(code);
-  });
+		expect(codes(run(source).diagnostics)).toContain(code);
+	});
 
-  it("reports a slot named `children`, with a rename to `content`", () => {
-    const source = `${API}export function A() {
+	it("reports a slot named `children`, with a rename to `content`", () => {
+		const source = `${API}export function A() {
   const slots = defineSlots<{ default?(): Element; children?(): Element }>();
   return <section>{slots.default?.()}{slots.children ? <div>{slots.children?.()}</div> : null}</section>;
 }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF2029 children"]);
-    expect(diagnostics[0]!.message).toContain("React, Svelte and Solid pass the default slot as");
-    expect(applyAndRecheck(source, diagnostics)).toContain(
-      "{slots.content ? <div>{slots.content?.()}</div> : null}",
-    );
-  });
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual(["UF2029 children"]);
+		expect(diagnostics[0]!.message).toContain("React, Svelte and Solid pass the default slot as");
+		expect(applyAndRecheck(source, diagnostics)).toContain(
+			"{slots.content ? <div>{slots.content?.()}</div> : null}",
+		);
+	});
 
-  it("offers no rename of `children` where the module already names `content`", () => {
-    const source = `${API}export function A({ content }: { content: string }) {
+	it("offers no rename of `children` where the module already names `content`", () => {
+		const source = `${API}export function A({ content }: { content: string }) {
   const slots = defineSlots<{ children?(): Element }>();
   return <div title={content}>{slots.children?.()}</div>;
 }`;
-    const { diagnostics } = run(source);
-    expect(codes(diagnostics)).toEqual(["UF2029"]);
-    expect(diagnostics[0]!.fixes).toBeUndefined();
-  });
+		const { diagnostics } = run(source);
+		expect(codes(diagnostics)).toEqual(["UF2029"]);
+		expect(diagnostics[0]!.fixes).toBeUndefined();
+	});
 
-  it.each(["default", "case", "class", "style"])("accepts a slot named `%s`", (name) => {
-    const source = `${API}export function A() {
+	it.each(["default", "case", "class", "style"])("accepts a slot named `%s`", (name) => {
+		const source = `${API}export function A() {
   const slots = defineSlots<{ ${name}?(): Element }>();
   return <div>{slots.${name}?.()}</div>;
 }`;
-    expect(run(source).diagnostics).toEqual([]);
-  });
+		expect(run(source).diagnostics).toEqual([]);
+	});
 
-  it.each([
-    ["defineExpose({ count })", "UF2030"],
-    ["defineExpose({ go: go })", "UF2030"],
-    ["defineExpose(go)", "UF2030"],
-    ['defineOptions({ name: "A" })', "UF2031"],
-    ["defineOptions({ inheritAttrs: true })", "UF2031"],
-    ["const options = defineOptions({ inheritAttrs: false })", "UF2005"],
-  ])("reports %s", (call, code) => {
-    const source = `${API}export function A() {
+	it.each([
+		["defineExpose({ count })", "UF2030"],
+		["defineExpose({ go: go })", "UF2030"],
+		["defineExpose(go)", "UF2030"],
+		['defineOptions({ name: "A" })', "UF2031"],
+		["defineOptions({ inheritAttrs: true })", "UF2031"],
+		["const options = defineOptions({ inheritAttrs: false })", "UF2005"],
+	])("reports %s", (call, code) => {
+		const source = `${API}export function A() {
   const count = ref(0);
   function go() {}
   ${call};
   return <button type="button" onClick={go}>{count.value}</button>;
 }`;
-    expect(codes(run(source).diagnostics)).toEqual([code]);
-  });
+		expect(codes(run(source).diagnostics)).toEqual([code]);
+	});
 });
 
 describe("imports of component modules", () => {
-  const FORM = `import Field from "./Field.uf.tsx";
+	const FORM = `import Field from "./Field.uf.tsx";
 import { Hint as Tip } from "./Field.uf.tsx";
 
 export default function Form() {
   return <form><Field label="a" /><Tip /></form>;
 }`;
 
-  /** `FORM` analysed with the API of `./Field.uf.tsx`, or none. */
-  function analyzed(child: string | undefined) {
-    const parsed = parseModule("Form.uf.tsx", FORM);
-    const imports = new Map<string, ModuleApi | undefined>();
-    for (const specifier of componentImports(parsed)) {
-      const api = child === undefined ? undefined : analyze(parseModule("Field.uf.tsx", child)).api;
-      imports.set(specifier, api && { ...api, file: "Field.uf.tsx" });
-    }
-    return analyze(parsed, { imports });
-  }
+	/** `FORM` analysed with the API of `./Field.uf.tsx`, or none. */
+	function analyzed(child: string | undefined) {
+		const parsed = parseModule("Form.uf.tsx", FORM);
+		const imports = new Map<string, ModuleApi | undefined>();
+		for (const specifier of componentImports(parsed)) {
+			const api = child === undefined ? undefined : analyze(parseModule("Field.uf.tsx", child)).api;
+			imports.set(specifier, api && { ...api, file: "Field.uf.tsx" });
+		}
+		return analyze(parsed, { imports });
+	}
 
-  it("lowers the imported components by the APIs the resolver gave", () => {
-    const { module, diagnostics } = analyzed(
-      `export default function Field({ label }: { label: string }) { return <p>{label}</p>; }
+	it("lowers the imported components by the APIs the resolver gave", () => {
+		const { module, diagnostics } = analyzed(
+			`export default function Field({ label }: { label: string }) { return <p>{label}</p>; }
 export function Hint() { return <small />; }`,
-    );
-    expect(diagnostics).toEqual([]);
-    expect(checkInvariants(module!)).toEqual([]);
-    expect(
-      module!.imports!.map(({ specifier, names }) => [
-        specifier,
-        names.map((name) => [name.imported, name.local]),
-      ]),
-    ).toEqual([
-      ["./Field.uf.tsx", [["default", "Field"]]],
-      ["./Field.uf.tsx", [["Hint", "Tip"]]],
-    ]);
-  });
+		);
+		expect(diagnostics).toEqual([]);
+		expect(checkInvariants(module!)).toEqual([]);
+		expect(
+			module!.imports!.map(({ specifier, names }) => [
+				specifier,
+				names.map((name) => [name.imported, name.local]),
+			]),
+		).toEqual([
+			["./Field.uf.tsx", [["default", "Field"]]],
+			["./Field.uf.tsx", [["Hint", "Tip"]]],
+		]);
+	});
 
-  it("reports an import it cannot resolve once, where it is imported", () => {
-    const { diagnostics } = analyzed(undefined);
-    expect(codes(diagnostics)).toEqual(["UF1202", "UF1202"]);
-  });
+	it("reports an import it cannot resolve once, where it is imported", () => {
+		const { diagnostics } = analyzed(undefined);
+		expect(codes(diagnostics)).toEqual(["UF1202", "UF1202"]);
+	});
 
-  it("reports a name the module does not export", () => {
-    const { diagnostics } = analyzed(
-      "export default function Field({ label }: { label: string }) { return <p>{label}</p>; }\nfunction Hint() { return <small />; }",
-    );
-    expect(codes(diagnostics)).toEqual(["UF1202"]);
-    expect(diagnostics[0]!.message).toContain("exports no component or injection key named `Hint`");
-  });
+	it("reports a name the module does not export", () => {
+		const { diagnostics } = analyzed(
+			"export default function Field({ label }: { label: string }) { return <p>{label}</p>; }\nfunction Hint() { return <small />; }",
+		);
+		expect(codes(diagnostics)).toEqual(["UF1202"]);
+		expect(diagnostics[0]!.message).toContain("exports no component or injection key named `Hint`");
+	});
 });
 
 describe("misuse the first review found (UXF-313)", () => {
-  it.each([
-    ['<Field label="a" label="b" />', ["UF3007 label"]],
-    ["<Field label='a' onClear={() => {}} onClear={() => {}} />", ["UF3007 onClear"]],
-    ["<Field label='a'>{{ hint: () => <i />, hint: () => <b /> }}</Field>", ["UF3007 hint"]],
-  ])("reports %s as set twice", (jsx, expected) => {
-    const { source, diagnostics } = parent(jsx);
-    expect(problems(source, diagnostics)).toEqual(expected);
-  });
+	it.each([
+		['<Field label="a" label="b" />', ["UF3007 label"]],
+		["<Field label='a' onClear={() => {}} onClear={() => {}} />", ["UF3007 onClear"]],
+		["<Field label='a'>{{ hint: () => <i />, hint: () => <b /> }}</Field>", ["UF3007 hint"]],
+	])("reports %s as set twice", (jsx, expected) => {
+		const { source, diagnostics } = parent(jsx);
+		expect(problems(source, diagnostics)).toEqual(expected);
+	});
 
-  it("reports two refs and two keys", () => {
-    const refs = parent(
-      "<Field ref={a} ref={b} label='x' />",
-      "const a = useTemplateRef<{ focus(): void }>();\n  const b = useTemplateRef<{ focus(): void }>();",
-    );
-    expect(codes(refs.diagnostics)).toContain("UF3007");
-    const keys = parent(
-      "<ul>{items.map((item) => <Field key={item} key={item} label={item} />)}</ul>",
-    );
-    expect(codes(keys.diagnostics)).toContain("UF3007");
-  });
+	it("reports two refs and two keys", () => {
+		const refs = parent(
+			"<Field ref={a} ref={b} label='x' />",
+			"const a = useTemplateRef<{ focus(): void }>();\n  const b = useTemplateRef<{ focus(): void }>();",
+		);
+		expect(codes(refs.diagnostics)).toContain("UF3007");
+		const keys = parent(
+			"<ul>{items.map((item) => <Field key={item} key={item} label={item} />)}</ul>",
+		);
+		expect(codes(keys.diagnostics)).toContain("UF3007");
+	});
 
-  it("reports forwarding a default slot the parent does not declare", () => {
-    const source = `${CHILD}
+	it("reports forwarding a default slot the parent does not declare", () => {
+		const source = `${CHILD}
 export function Outer() {
   const slots = defineSlots<{ title?(): Element }>();
   return <div>{slots.title ? <i /> : null}<Field label="a">{slots.default?.()}</Field></div>;
 }`;
-    expect(codes(run(source).diagnostics)).toEqual(["UF3041"]);
-  });
+		expect(codes(run(source).diagnostics)).toEqual(["UF3041"]);
+	});
 
-  it.each([
-    ["HTMLInputElement", "UF3046"],
-    ["{ focus(): void; clear(): void }", "UF3046"],
-    ["{ focus(): void }", undefined],
-    // A member's own type the oracle cannot read leaves its name known (ADR-0067).
-    ["{ focus(): Promise<void> }", undefined],
-    ["{ focus(): Promise<void>; clear(): void }", "UF3046"],
-    // Which members an index signature holds is unknown.
-    ["{ [name: string]: () => void }", "UF3046"],
-  ])("checks a component ref typed %s against what it exposes", (type, code) => {
-    const { diagnostics } = parent(
-      "<Field ref={field} label='x' />",
-      `const field = useTemplateRef<${type}>();`,
-    );
-    expect(codes(diagnostics)).toEqual(code ? [code] : []);
-  });
+	it.each([
+		["HTMLInputElement", "UF3046"],
+		["{ focus(): void; clear(): void }", "UF3046"],
+		["{ focus(): void }", undefined],
+		// A member's own type the oracle cannot read leaves its name known (ADR-0067).
+		["{ focus(): Promise<void> }", undefined],
+		["{ focus(): Promise<void>; clear(): void }", "UF3046"],
+		// Which members an index signature holds is unknown.
+		["{ [name: string]: () => void }", "UF3046"],
+	])("checks a component ref typed %s against what it exposes", (type, code) => {
+		const { diagnostics } = parent(
+			"<Field ref={field} label='x' />",
+			`const field = useTemplateRef<${type}>();`,
+		);
+		expect(codes(diagnostics)).toEqual(code ? [code] : []);
+	});
 
-  it("reads a component ref whose member names an imported type, without the compiler's shapes", () => {
-    const source = `${CHILD}
+	it("reads a component ref whose member names an imported type, without the compiler's shapes", () => {
+		const source = `${CHILD}
 import type { Target } from "./types.ts";
 export function Form() {
   const field = useTemplateRef<{ focus(target?: Target): void }>();
   return <Field ref={field} label="x" />;
 }
 `;
-    expect(codes(run(source).diagnostics)).toEqual([]);
-  });
+		expect(codes(run(source).diagnostics)).toEqual([]);
+	});
 
-  it('reads `"inheritAttrs": false` as the setup accepts it', () => {
-    const source = `${API}function Child() { defineOptions({ "inheritAttrs": false }); return <p />; }
+	it('reads `"inheritAttrs": false` as the setup accepts it', () => {
+		const source = `${API}function Child() { defineOptions({ "inheritAttrs": false }); return <p />; }
 export function A() { return <div><Child class="x" /></div>; }`;
-    expect(codes(run(source).diagnostics)).toEqual(["UF3045"]);
-  });
+		expect(codes(run(source).diagnostics)).toEqual(["UF3045"]);
+	});
 
-  it.each([["<section><Box><tr><td>a</td></tr></Box></section>", "UF3003"]])(
-    "checks an element that needs a parent inside a fill: %s",
-    (jsx, code) => {
-      const source = `${API}function Box() { const slots = defineSlots<{ default?(): Element }>(); return <div>{slots.default?.()}</div>; }
+	it.each([["<section><Box><tr><td>a</td></tr></Box></section>", "UF3003"]])(
+		"checks an element that needs a parent inside a fill: %s",
+		(jsx, code) => {
+			const source = `${API}function Box() { const slots = defineSlots<{ default?(): Element }>(); return <div>{slots.default?.()}</div>; }
 export function A() { return ${jsx}; }`;
-      expect(codes(run(source).diagnostics)).toContain(code);
-    },
-  );
+			expect(codes(run(source).diagnostics)).toContain(code);
+		},
+	);
 
-  it("checks a root component whose own root needs a parent", () => {
-    const source = `function Row() { return <tr><td>a</td></tr>; }
+	it("checks a root component whose own root needs a parent", () => {
+		const source = `function Row() { return <tr><td>a</td></tr>; }
 function Wrap() { return <Row />; }
 export function A() { return <table><tbody><Row /></tbody></table>; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Row"]);
-  });
+		expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Row"]);
+	});
 
-  it("reads a slot's presence in a conditional's condition only", () => {
-    const source = `${API}function C({ flag }: { flag: boolean }) { return <p>{flag ? "y" : "n"}</p>; }
+	it("reads a slot's presence in a conditional's condition only", () => {
+		const source = `${API}function C({ flag }: { flag: boolean }) { return <p>{flag ? "y" : "n"}</p>; }
 export function A() {
   const slots = defineSlots<{ title?(): Element }>();
   return <div><C flag={slots.title} /></div>;
 }`;
-    expect(codes(run(source).diagnostics)).toContain("UF3041");
-  });
+		expect(codes(run(source).diagnostics)).toContain("UF3041");
+	});
 
-  it("reads a JSX comment as no content", () => {
-    const source = `${CHILD}\nfunction Plain() { return <p />; }
+	it("reads a JSX comment as no content", () => {
+		const source = `${CHILD}\nfunction Plain() { return <p />; }
 export function A() { return <div><Plain>{/* note */}</Plain><Field label="a">{/* note */}{{ hint: () => <i /> }}</Field></div>; }`;
-    expect(run(source).diagnostics).toEqual([]);
-  });
+		expect(run(source).diagnostics).toEqual([]);
+	});
 
-  it("reports an imported child whose output file is a local component's", () => {
-    const parsed = parseModule(
-      "Form.uf.tsx",
-      'import Glyph from "./Icon.uf.tsx";\nfunction Icon() { return <i />; }\nexport default function Form() { return <p><Glyph /><Icon /></p>; }',
-    );
-    const api = analyze(
-      parseModule("Icon.uf.tsx", "export default function Icon() { return <b />; }"),
-    ).api!;
-    const { diagnostics } = analyze(parsed, {
-      imports: new Map([["./Icon.uf.tsx", { ...api, file: "Icon.uf.tsx" }]]),
-    });
-    expect(codes(diagnostics)).toContain("UF1104");
-  });
+	it("reports an imported child whose output file is a local component's", () => {
+		const parsed = parseModule(
+			"Form.uf.tsx",
+			'import Glyph from "./Icon.uf.tsx";\nfunction Icon() { return <i />; }\nexport default function Form() { return <p><Glyph /><Icon /></p>; }',
+		);
+		const api = analyze(
+			parseModule("Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+		).api!;
+		const { diagnostics } = analyze(parsed, {
+			imports: new Map([["./Icon.uf.tsx", { ...api, file: "Icon.uf.tsx" }]]),
+		});
+		expect(codes(diagnostics)).toContain("UF1104");
+	});
 
-  it("reports the clash once, with no UF3047 where the alias is rendered", () => {
-    const parsed = parseModule(
-      "Form.uf.tsx",
-      'import Glyph from "./Icon.uf.tsx";\nfunction Icon() { return <i />; }\nexport default function Form() { return <p><Glyph /><Icon /></p>; }',
-    );
-    const api = analyze(
-      parseModule("Icon.uf.tsx", "export default function Icon() { return <b />; }"),
-    ).api!;
-    const { diagnostics } = analyze(parsed, {
-      imports: new Map([["./Icon.uf.tsx", { ...api, file: "Icon.uf.tsx" }]]),
-    });
-    expect(codes(diagnostics)).toEqual(["UF1104"]);
-  });
+	it("reports the clash once, with no UF3047 where the alias is rendered", () => {
+		const parsed = parseModule(
+			"Form.uf.tsx",
+			'import Glyph from "./Icon.uf.tsx";\nfunction Icon() { return <i />; }\nexport default function Form() { return <p><Glyph /><Icon /></p>; }',
+		);
+		const api = analyze(
+			parseModule("Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+		).api!;
+		const { diagnostics } = analyze(parsed, {
+			imports: new Map([["./Icon.uf.tsx", { ...api, file: "Icon.uf.tsx" }]]),
+		});
+		expect(codes(diagnostics)).toEqual(["UF1104"]);
+	});
 
-  it("names the other component's module by its relative path", () => {
-    const icon = analyze(
-      parseModule("ui/Icon.uf.tsx", "export default function Icon() { return <b />; }"),
-    ).api!;
-    const glyph = analyze(
-      parseModule("ui/Glyph.uf.tsx", "export function Icon() { return <i />; }"),
-    ).api!;
-    const parsed = parseModule(
-      "app/Form.uf.tsx",
-      'import Icon from "../ui/Icon.uf.tsx";\nimport { Icon as Glyph } from "../ui/Glyph.uf.tsx";\nexport default function Form() { return <p><Icon /><Glyph /></p>; }',
-    );
-    const { diagnostics } = analyze(parsed, {
-      imports: new Map([
-        ["../ui/Icon.uf.tsx", { ...icon, file: "../ui/Icon.uf.tsx" }],
-        ["../ui/Glyph.uf.tsx", { ...glyph, file: "../ui/Glyph.uf.tsx" }],
-      ]),
-    });
-    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
-      'Icon from "../ui/Glyph.uf.tsx" and Icon from "../ui/Icon.uf.tsx" write one output file, which each output imports by its name.',
-    ]);
-  });
+	it("names the other component's module by its relative path", () => {
+		const icon = analyze(
+			parseModule("ui/Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+		).api!;
+		const glyph = analyze(
+			parseModule("ui/Glyph.uf.tsx", "export function Icon() { return <i />; }"),
+		).api!;
+		const parsed = parseModule(
+			"app/Form.uf.tsx",
+			'import Icon from "../ui/Icon.uf.tsx";\nimport { Icon as Glyph } from "../ui/Glyph.uf.tsx";\nexport default function Form() { return <p><Icon /><Glyph /></p>; }',
+		);
+		const { diagnostics } = analyze(parsed, {
+			imports: new Map([
+				["../ui/Icon.uf.tsx", { ...icon, file: "../ui/Icon.uf.tsx" }],
+				["../ui/Glyph.uf.tsx", { ...glyph, file: "../ui/Glyph.uf.tsx" }],
+			]),
+		});
+		expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+			'Icon from "../ui/Glyph.uf.tsx" and Icon from "../ui/Icon.uf.tsx" write one output file, which each output imports by its name.',
+		]);
+	});
 
-  // Recursion has one form, the component's own name (ADR-0053), so a self-import is no clash.
-  it("reports a module that imports itself, and renders the component by its own name", () => {
-    const source = `import Again from "./Tree.uf.tsx";
+	// Recursion has one form, the component's own name (ADR-0053), so a self-import is no clash.
+	it("reports a module that imports itself, and renders the component by its own name", () => {
+		const source = `import Again from "./Tree.uf.tsx";
 export default function Tree({ depth }: { depth: number }) {
   return <ul>{depth > 0 ? <li><Again depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
 }`;
-    const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
-    const { diagnostics } = analyze(parseModule("ui/Tree.uf.tsx", source), {
-      imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
-    });
-    expect(problems(source, diagnostics)).toEqual(['UF1203 "./Tree.uf.tsx"']);
-    const fixed = applyAndRecheck(source, diagnostics);
-    expect(fixed).not.toContain("import");
-    expect(fixed).toContain("<Tree depth={depth - 1} />");
-  });
+		const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
+		const { diagnostics } = analyze(parseModule("ui/Tree.uf.tsx", source), {
+			imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
+		});
+		expect(problems(source, diagnostics)).toEqual(['UF1203 "./Tree.uf.tsx"']);
+		const fixed = applyAndRecheck(source, diagnostics);
+		expect(fixed).not.toContain("import");
+		expect(fixed).toContain("<Tree depth={depth - 1} />");
+	});
 
-  /** A self-import's diagnostics, with the module's own API as the resolver gives it. */
-  const selfImported = (source: string) => {
-    const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
-    return analyze(parseModule("ui/Tree.uf.tsx", source), {
-      imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
-    }).diagnostics;
-  };
+	/** A self-import's diagnostics, with the module's own API as the resolver gives it. */
+	const selfImported = (source: string) => {
+		const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
+		return analyze(parseModule("ui/Tree.uf.tsx", source), {
+			imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
+		}).diagnostics;
+	};
 
-  it("renames every read of a self-import's name, closing tags and `is` included", () => {
-    const source = `import Again from "./Tree.uf.tsx";
+	it("renames every read of a self-import's name, closing tags and `is` included", () => {
+		const source = `import Again from "./Tree.uf.tsx";
 export default function Tree({ depth }: { depth: number }) {
   return <ul>{depth > 0 ? <li><Again depth={depth - 1}></Again><component is={Again} depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
 }`;
-    expect(applyAndRecheck(source, selfImported(source)))
-      .toBe(`export default function Tree({ depth }: { depth: number }) {
+		expect(applyAndRecheck(source, selfImported(source)))
+			.toBe(`export default function Tree({ depth }: { depth: number }) {
   return <ul>{depth > 0 ? <li><Tree depth={depth - 1}></Tree><component is={Tree} depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
 }`);
-  });
+	});
 
-  it("offers no fix where the component's name means something else", () => {
-    const source = `import Again from "./Tree.uf.tsx";
+	it("offers no fix where the component's name means something else", () => {
+		const source = `import Again from "./Tree.uf.tsx";
 export default function Tree({ items }: { items: string[] }) {
   return <ul>{items.map((Tree) => <li key={Tree}><Again items={[]} /></li>)}</ul>;
 }`;
-    const diagnostics = selfImported(source);
-    expect(problems(source, diagnostics)).toContain('UF1203 "./Tree.uf.tsx"');
-    expect(diagnostics.find((diagnostic) => diagnostic.code === "UF1203")!.fixes).toBeUndefined();
-  });
+		const diagnostics = selfImported(source);
+		expect(problems(source, diagnostics)).toContain('UF1203 "./Tree.uf.tsx"');
+		expect(diagnostics.find((diagnostic) => diagnostic.code === "UF1203")!.fixes).toBeUndefined();
+	});
 });
 
 describe("misuse the second review found (UXF-313)", () => {
-  const titled = (jsx: string) => `${API}export function A() {
+	const titled = (jsx: string) => `${API}export function A() {
   const slots = defineSlots<{ title?(): Element }>();
   return ${jsx};
 }`;
 
-  it.each([
-    '<div>{slots.title ? "has" : "none"}</div>',
-    '<div class={slots.title ? "a" : "b"} />',
-    '<div class={slots.title && "a"} />',
-    "<div class={{ titled: slots.title }} />",
-    '<div>{!slots.title || slots.title ? "a" : "b"}</div>',
-  ])("reads a slot's presence in an expression's test: %s", (jsx) => {
-    expect(run(titled(jsx)).diagnostics).toEqual([]);
-  });
+	it.each([
+		'<div>{slots.title ? "has" : "none"}</div>',
+		'<div class={slots.title ? "a" : "b"} />',
+		'<div class={slots.title && "a"} />',
+		"<div class={{ titled: slots.title }} />",
+		'<div>{!slots.title || slots.title ? "a" : "b"}</div>',
+	])("reads a slot's presence in an expression's test: %s", (jsx) => {
+		expect(run(titled(jsx)).diagnostics).toEqual([]);
+	});
 
-  it.each(['<div>{slots.title || "none"}</div>', '<div>{slots.title ? slots.title : "b"}</div>'])(
-    "reports a slot's presence read as a value: %s",
-    (jsx) => {
-      expect(codes(run(titled(jsx)).diagnostics)).toEqual(["UF3041"]);
-    },
-  );
+	it.each(['<div>{slots.title || "none"}</div>', '<div>{slots.title ? slots.title : "b"}</div>'])(
+		"reports a slot's presence read as a value: %s",
+		(jsx) => {
+			expect(codes(run(titled(jsx)).diagnostics)).toEqual(["UF3041"]);
+		},
+	);
 
-  it("reports a sibling that fails to lower once, and drops what renders it", () => {
-    const source = `function Box() { return <div class="a" class="b">x</div>; }
+	it("reports a sibling that fails to lower once, and drops what renders it", () => {
+		const source = `function Box() { return <div class="a" class="b">x</div>; }
 function Frame() { return <section><Box /></section>; }
 export default function A() { return <Frame />; }`;
-    const result = run(source);
-    expect(codes(result.diagnostics)).toEqual(["UF3007"]);
-    expect(result.module?.components ?? []).toEqual([]);
-  });
+		const result = run(source);
+		expect(codes(result.diagnostics)).toEqual(["UF3007"]);
+		expect(result.module?.components ?? []).toEqual([]);
+	});
 
-  it('reads a string key, `{ "focus"(): void }`, in a component ref\'s type', () => {
-    const { diagnostics } = parent(
-      "<Field ref={field} label='x' />",
-      'const field = useTemplateRef<{ "focus"(): void }>();',
-    );
-    expect(diagnostics).toEqual([]);
-  });
+	it('reads a string key, `{ "focus"(): void }`, in a component ref\'s type', () => {
+		const { diagnostics } = parent(
+			"<Field ref={field} label='x' />",
+			'const field = useTemplateRef<{ "focus"(): void }>();',
+		);
+		expect(diagnostics).toEqual([]);
+	});
 
-  it("helps an element that needs a parent in a fill to its parent, never to a component", () => {
-    const source = `${API}function Box() { const slots = defineSlots<{ default?(): Element }>(); return <div>{slots.default?.()}</div>; }
+	it("helps an element that needs a parent in a fill to its parent, never to a component", () => {
+		const source = `${API}function Box() { const slots = defineSlots<{ default?(): Element }>(); return <div>{slots.default?.()}</div>; }
 export function A() { return <Box><tr><td>a</td></tr></Box>; }`;
-    const [problem] = run(source).diagnostics;
-    expect(problem!.code).toBe("UF3003");
-    expect(problem!.help).toBe(
-      "Write the <thead>, <tbody> or <tfoot> it belongs in around it, in this template.",
-    );
-  });
+		const [problem] = run(source).diagnostics;
+		expect(problem!.code).toBe("UF3003");
+		expect(problem!.help).toBe(
+			"Write the <thead>, <tbody> or <tfoot> it belongs in around it, in this template.",
+		);
+	});
 });
 
 describe("a <component is> root over tags (ADR-0119)", () => {
-  /** The API of the source's component named `name`. */
-  function apiOf(source: string, name = "Child") {
-    return analyze(parseModule("Test.uf.tsx", source)).api!.components.find(
-      (each) => each.name === name,
-    )!;
-  }
+	/** The API of the source's component named `name`. */
+	function apiOf(source: string, name = "Child") {
+		return analyze(parseModule("Test.uf.tsx", source)).api!.components.find(
+			(each) => each.name === name,
+		)!;
+	}
 
-  it.each([
-    ['<component is="a" href="/" />', ["a"]],
-    ["<component is={`button`} />", ["button"]],
-    ['<component is={on ? "a" : "button"} />', ["a", "button"]],
-    ['<component is={on ? "a" : wide ? "section" : "a"} />', ["a", "section"]],
-    ["<component is={tag} />", ["h2", "h3"]],
-    ["<component is={props.tag} />", ["h2", "h3"]],
-  ])("lists the tags of %s", (root, tags) => {
-    const parameter = root.includes("props.")
-      ? "props: { on: boolean; wide: boolean; tag: 'h2' | 'h3' }"
-      : '{ on, wide, tag }: { on: boolean; wide: boolean; tag: "h2" | "h3" }';
-    const api = apiOf(`export function Child(${parameter}) { return ${root}; }`);
-    expect(api.root).toBe("dynamic");
-    expect(api.rootTags).toEqual(tags);
-    expect(api.rootUnlisted).toBeUndefined();
-  });
+	it.each([
+		['<component is="a" href="/" />', ["a"]],
+		["<component is={`button`} />", ["button"]],
+		['<component is={on ? "a" : "button"} />', ["a", "button"]],
+		['<component is={on ? "a" : wide ? "section" : "a"} />', ["a", "section"]],
+		["<component is={tag} />", ["h2", "h3"]],
+		["<component is={props.tag} />", ["h2", "h3"]],
+	])("lists the tags of %s", (root, tags) => {
+		const parameter = root.includes("props.")
+			? "props: { on: boolean; wide: boolean; tag: 'h2' | 'h3' }"
+			: '{ on, wide, tag }: { on: boolean; wide: boolean; tag: "h2" | "h3" }';
+		const api = apiOf(`export function Child(${parameter}) { return ${root}; }`);
+		expect(api.root).toBe("dynamic");
+		expect(api.rootTags).toEqual(tags);
+		expect(api.rootUnlisted).toBeUndefined();
+	});
 
-  it("reads a capitalised prop typed as tags as tags, not as a component", () => {
-    const api = apiOf(
-      'export function Child({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }',
-    );
-    expect(api.root).toBe("dynamic");
-    expect(api.rootTags).toEqual(["a", "button"]);
-    const source = `function A3({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }
+	it("reads a capitalised prop typed as tags as tags, not as a component", () => {
+		const api = apiOf(
+			'export function Child({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }',
+		);
+		expect(api.root).toBe("dynamic");
+		expect(api.rootTags).toEqual(["a", "button"]);
+		const source = `function A3({ Tag, text }: { Tag: "a" | "button"; text: string }) { return <component is={Tag}>{text}</component>; }
 export function P() { return <p><A3 Tag="a" text="3" class="c3" /></p>; }`;
-    expect(codes(run(source).diagnostics)).toEqual([]);
-  });
+		expect(codes(run(source).diagnostics)).toEqual([]);
+	});
 
-  it("reads a prop renamed in the pattern, and one typed through an alias", () => {
-    const renamed = apiOf(
-      'export function Child({ tag: t }: { tag: "h2" | "h3" }) { return <component is={t} />; }',
-    );
-    expect(renamed.rootTags).toEqual(["h2", "h3"]);
-    const aliased = apiOf(
-      'type Level = "h2" | "h3";\nexport function Child({ tag }: { tag: Level }) { return <component is={tag} />; }',
-    );
-    expect(aliased.rootTags).toEqual(["h2", "h3"]);
-  });
+	it("reads a prop renamed in the pattern, and one typed through an alias", () => {
+		const renamed = apiOf(
+			'export function Child({ tag: t }: { tag: "h2" | "h3" }) { return <component is={t} />; }',
+		);
+		expect(renamed.rootTags).toEqual(["h2", "h3"]);
+		const aliased = apiOf(
+			'type Level = "h2" | "h3";\nexport function Child({ tag }: { tag: Level }) { return <component is={tag} />; }',
+		);
+		expect(aliased.rootTags).toEqual(["h2", "h3"]);
+	});
 
-  it("is other over components, and unlisted where `is` reads a value it can't list", () => {
-    const components = apiOf(
-      "function B() { return <p />; }\nfunction C() { return <p />; }\nexport function Child({ on }: { on: boolean }) { return <component is={on ? B : C} />; }",
-    );
-    expect(components.root).toBe("other");
-    expect(components.rootUnlisted).toBeUndefined();
-    const value = apiOf(
-      `${API}export function Child() { const tag = ref<"a" | "b">("a"); return <component is={tag.value} />; }`,
-    );
-    expect(value.root).toBe("other");
-    expect(value.rootUnlisted).toBe(true);
-    expect(value.rootTags).toBeUndefined();
-  });
+	it("is other over components, and unlisted where `is` reads a value it can't list", () => {
+		const components = apiOf(
+			"function B() { return <p />; }\nfunction C() { return <p />; }\nexport function Child({ on }: { on: boolean }) { return <component is={on ? B : C} />; }",
+		);
+		expect(components.root).toBe("other");
+		expect(components.rootUnlisted).toBeUndefined();
+		const value = apiOf(
+			`${API}export function Child() { const tag = ref<"a" | "b">("a"); return <component is={tag.value} />; }`,
+		);
+		expect(value.root).toBe("other");
+		expect(value.rootUnlisted).toBe(true);
+		expect(value.rootTags).toBeUndefined();
+	});
 
-  it("is other inside a fragment or a conditional", () => {
-    for (const root of [
-      '<><component is={on ? "a" : "button"} /></>',
-      'on ? <component is="a" /> : <button />',
-    ]) {
-      const api = apiOf(`export function Child({ on }: { on: boolean }) { return ${root}; }`);
-      expect(api.root, root).toBe("other");
-    }
-  });
+	it("is other inside a fragment or a conditional", () => {
+		for (const root of [
+			'<><component is={on ? "a" : "button"} /></>',
+			'on ? <component is="a" /> : <button />',
+		]) {
+			const api = apiOf(`export function Child({ on }: { on: boolean }) { return ${root}; }`);
+			expect(api.root, root).toBe("other");
+		}
+	});
 
-  it("takes a class and a style, through a component root too", () => {
-    const source = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
+	it("takes a class and a style, through a component root too", () => {
+		const source = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
 function Outer() { return <Child />; }
 export function A() { const tone = "red"; return <div><Child class="x" style={{ color: tone }} /><Outer class={["y", { z: tone === "red" }]} /></div>; }`;
-    expect(codes(run(source).diagnostics)).toEqual([]);
-  });
+		expect(codes(run(source).diagnostics)).toEqual([]);
+	});
 
-  // What every tag takes falls through to a `<component is>` root, and every listener; a name
-  // only some tags take is "not yet", not dropped (ADR-0122).
-  const DYNAMIC = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
+	// What every tag takes falls through to a `<component is>` root, and every listener; a name
+	// only some tags take is "not yet", not dropped (ADR-0122).
+	const DYNAMIC = `function Child({ href }: { href?: string }) { return <component is={href ? "a" : "button"} href={href} />; }
 function Outer() { return <Child />; }
 `;
 
-  it("passes it what every tag takes, through a component root too", () => {
-    const source = `${DYNAMIC}export function A() { return <div><Child id="x" class="c" aria-label="Go" data-x="1" onClick={() => {}} onFocus={() => {}} /><Outer id="y" aria-label="y" data-x="2" style="color: red" onClick={() => {}} /></div>; }`;
-    const { diagnostics, module } = run(source);
-    expect(codes(diagnostics)).toEqual([]);
-    const passed = componentNode(module!.components.find((each) => each.name === "A")!.render);
-    expect(passed.attributes.map((each) => each.kind)).toEqual([
-      "Static",
-      "Class",
-      "Static",
-      "Static",
-      "Event",
-      "Event",
-    ]);
-  });
+	it("passes it what every tag takes, through a component root too", () => {
+		const source = `${DYNAMIC}export function A() { return <div><Child id="x" class="c" aria-label="Go" data-x="1" onClick={() => {}} onFocus={() => {}} /><Outer id="y" aria-label="y" data-x="2" style="color: red" onClick={() => {}} /></div>; }`;
+		const { diagnostics, module } = run(source);
+		expect(codes(diagnostics)).toEqual([]);
+		const passed = componentNode(module!.components.find((each) => each.name === "A")!.render);
+		expect(passed.attributes.map((each) => each.kind)).toEqual([
+			"Static",
+			"Class",
+			"Static",
+			"Static",
+			"Event",
+			"Event",
+		]);
+	});
 
-  it("reports a name only some tags take, naming those that don't, through a component root too (UF1002)", () => {
-    const source = `${DYNAMIC}export function A() { return <div><Child disabled={true} /><Outer download="x" /></div>; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF1002 disabled", "UF1002 download"]);
-    expect(diagnostics[0]!.message).toBe(
-      "`disabled` falls through to Child's `<component is>` root only where every tag takes it, and <a> doesn't.",
-    );
-    expect(diagnostics[0]!.help).toContain("Declare it as a prop of Child");
-    expect(diagnostics[1]!.message).toContain("and <button> doesn't");
-  });
+	it("reports a name only some tags take, naming those that don't, through a component root too (UF1002)", () => {
+		const source = `${DYNAMIC}export function A() { return <div><Child disabled={true} /><Outer download="x" /></div>; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual(["UF1002 disabled", "UF1002 download"]);
+		expect(diagnostics[0]!.message).toBe(
+			"`disabled` falls through to Child's `<component is>` root only where every tag takes it, and <a> doesn't.",
+		);
+		expect(diagnostics[0]!.help).toContain("Declare it as a prop of Child");
+		expect(diagnostics[1]!.message).toContain("and <button> doesn't");
+	});
 
-  it("reports a name no tag takes as UF3035, naming every tag", () => {
-    const source = `${DYNAMIC}export function A() { return <div><Child colspan="2" /><Outer titl="x" /></div>; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF3035 colspan", "UF3035 titl"]);
-    expect(diagnostics[0]!.message).toContain("no attribute of <a> or <button>");
-    // The name it may mean is one every tag takes.
-    expect(diagnostics[1]!.message).toContain("Did you mean `title`?");
-  });
+	it("reports a name no tag takes as UF3035, naming every tag", () => {
+		const source = `${DYNAMIC}export function A() { return <div><Child colspan="2" /><Outer titl="x" /></div>; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual(["UF3035 colspan", "UF3035 titl"]);
+		expect(diagnostics[0]!.message).toContain("no attribute of <a> or <button>");
+		// The name it may mean is one every tag takes.
+		expect(diagnostics[1]!.message).toContain("Did you mean `title`?");
+	});
 
-  it("reports a listener option, as on an element root (UF1002)", () => {
-    const source = `${DYNAMIC}export function A() { return <div><Child onClickOnce={() => {}} /></div>; }`;
-    expect(codes(run(source).diagnostics)).toEqual(["UF1002"]);
-  });
+	it("reports a listener option, as on an element root (UF1002)", () => {
+		const source = `${DYNAMIC}export function A() { return <div><Child onClickOnce={() => {}} /></div>; }`;
+		expect(codes(run(source).diagnostics)).toEqual(["UF1002"]);
+	});
 
-  it("checks what falls through as each tag's own, and reports a problem once", () => {
-    // `<a type>` takes a MIME type and `<button type>` a keyword: only the later tag's check
-    // finds it, and an ARIA value both find is reported once.
-    const source = `${DYNAMIC}export function A() { return <div><Child type="nope" /><Child aria-pressed="maybe" /></div>; }`;
-    const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF3008 type", "UF3008 aria-pressed"]);
-  });
-  it("holds the element that renders in a ref typed as the tags' union, in any order", () => {
-    for (const type of [
-      "HTMLAnchorElement | HTMLButtonElement",
-      "HTMLButtonElement | HTMLAnchorElement",
-    ]) {
-      const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef<${type}>(); const b = useTemplateRef<${type}>(); return <div><Child ref={a} /><Outer ref={b} /></div>; }`;
-      expect(codes(run(source).diagnostics), type).toEqual([]);
-    }
-    expect(
-      apiOf(`${DYNAMIC}export function Child2() { return <Outer />; }`, "Outer").refTags,
-    ).toEqual(["a", "button"]);
-  });
+	it("checks what falls through as each tag's own, and reports a problem once", () => {
+		// `<a type>` takes a MIME type and `<button type>` a keyword: only the later tag's check
+		// finds it, and an ARIA value both find is reported once.
+		const source = `${DYNAMIC}export function A() { return <div><Child type="nope" /><Child aria-pressed="maybe" /></div>; }`;
+		const { diagnostics } = run(source);
+		expect(problems(source, diagnostics)).toEqual(["UF3008 type", "UF3008 aria-pressed"]);
+	});
+	it("holds the element that renders in a ref typed as the tags' union, in any order", () => {
+		for (const type of [
+			"HTMLAnchorElement | HTMLButtonElement",
+			"HTMLButtonElement | HTMLAnchorElement",
+		]) {
+			const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef<${type}>(); const b = useTemplateRef<${type}>(); return <div><Child ref={a} /><Outer ref={b} /></div>; }`;
+			expect(codes(run(source).diagnostics), type).toEqual([]);
+		}
+		expect(
+			apiOf(`${DYNAMIC}export function Child2() { return <Outer />; }`, "Outer").refTags,
+		).toEqual(["a", "button"]);
+	});
 
-  it("reports a ref typed as one tag, a supertype or nothing, naming the union (UF3046)", () => {
-    for (const type of [
-      "<HTMLButtonElement>",
-      "<HTMLElement>",
-      "<HTMLAnchorElement | HTMLButtonElement | HTMLDivElement>",
-      "<HTMLAnchorElement | HTMLAnchorElement>",
-      "",
-    ]) {
-      const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef${type}(); return <div><Outer ref={a} /></div>; }`;
-      const { diagnostics } = run(source);
-      expect(problems(source, diagnostics), type).toEqual(["UF3046 ref={a}"]);
-      expect(diagnostics[0]!.message).toContain("`HTMLAnchorElement | HTMLButtonElement`");
-      expect(diagnostics[0]!.message).toContain(
-        "a supertype such as `HTMLElement` is not accepted",
-      );
-      expect(diagnostics[0]!.help).toBe(
-        "Type it as the elements the root may render: `useTemplateRef<HTMLAnchorElement | HTMLButtonElement>()`.",
-      );
-    }
-  });
+	it("reports a ref typed as one tag, a supertype or nothing, naming the union (UF3046)", () => {
+		for (const type of [
+			"<HTMLButtonElement>",
+			"<HTMLElement>",
+			"<HTMLAnchorElement | HTMLButtonElement | HTMLDivElement>",
+			"<HTMLAnchorElement | HTMLAnchorElement>",
+			"",
+		]) {
+			const source = `${API}${DYNAMIC}export function A() { const a = useTemplateRef${type}(); return <div><Outer ref={a} /></div>; }`;
+			const { diagnostics } = run(source);
+			expect(problems(source, diagnostics), type).toEqual(["UF3046 ref={a}"]);
+			expect(diagnostics[0]!.message).toContain("`HTMLAnchorElement | HTMLButtonElement`");
+			expect(diagnostics[0]!.message).toContain(
+				"a supertype such as `HTMLElement` is not accepted",
+			);
+			expect(diagnostics[0]!.help).toBe(
+				"Type it as the elements the root may render: `useTemplateRef<HTMLAnchorElement | HTMLButtonElement>()`.",
+			);
+		}
+	});
 
-  it("types a ref as one interface where the tags share it", () => {
-    const source = `${API}function Heading({ tag }: { tag: "h2" | "h3" }) { return <component is={tag}>x</component>; }
+	it("types a ref as one interface where the tags share it", () => {
+		const source = `${API}function Heading({ tag }: { tag: "h2" | "h3" }) { return <component is={tag}>x</component>; }
 export function A() { const a = useTemplateRef<HTMLHeadingElement>(); return <div><Heading tag="h2" ref={a} /></div>; }`;
-    expect(codes(run(source).diagnostics)).toEqual([]);
-  });
+		expect(codes(run(source).diagnostics)).toEqual([]);
+	});
 
-  it("holds no element where the component exposes functions", () => {
-    const api = apiOf(
-      `${API}export function Child() { function focus() {} defineExpose({ focus }); return <component is="a" />; }`,
-    );
-    expect(api.refTags).toBeUndefined();
-  });
+	it("holds no element where the component exposes functions", () => {
+		const api = apiOf(
+			`${API}export function Child() { function focus() {} defineExpose({ focus }); return <component is="a" />; }`,
+		);
+		expect(api.refTags).toBeUndefined();
+	});
 
-  it("takes what falls through on the element that spreads the rest, with inheritAttrs off", () => {
-    const source = `${API}function Child({ href, ...rest }: { href?: string }) {
+	it("takes what falls through on the element that spreads the rest, with inheritAttrs off", () => {
+		const source = `${API}function Child({ href, ...rest }: { href?: string }) {
   defineOptions({ inheritAttrs: false });
   return <component is={href ? "a" : "button"} href={href}><img alt="" {...rest} /></component>;
 }
 export function A() { return <div><Child id="x" onLoad={() => {}} /></div>; }`;
-    const result = run(source);
-    expect(codes(result.diagnostics)).toEqual([]);
-    const api = result.api!.components.find((each) => each.name === "Child")!;
-    expect(api.fallthroughTag).toBe("img");
-    expect(api.rootTags).toEqual(["a", "button"]);
-  });
+		const result = run(source);
+		expect(codes(result.diagnostics)).toEqual([]);
+		const api = result.api!.components.find((each) => each.name === "Child")!;
+		expect(api.fallthroughTag).toBe("img");
+		expect(api.rootTags).toEqual(["a", "button"]);
+	});
 
-  it("still reports UF3045 for a root over components, a fragment, a conditional and a list", () => {
-    for (const root of [
-      "<component is={on ? B : C} />",
-      "<><p /><p /></>",
-      "<>{on ? <p /> : <span />}</>",
-      "<>{[1, 2].map((n) => <p key={n}>{n}</p>)}</>",
-    ]) {
-      const source = `function B() { return <p />; }
+	it("still reports UF3045 for a root over components, a fragment, a conditional and a list", () => {
+		for (const root of [
+			"<component is={on ? B : C} />",
+			"<><p /><p /></>",
+			"<>{on ? <p /> : <span />}</>",
+			"<>{[1, 2].map((n) => <p key={n}>{n}</p>)}</>",
+		]) {
+			const source = `function B() { return <p />; }
 function C() { return <p />; }
 function Child({ on }: { on: boolean }) { return ${root}; }
 export function A() { return <div><Child on={true} class="x" /></div>; }`;
-      expect(problems(source, run(source).diagnostics), root).toEqual(["UF3045 class"]);
-    }
-  });
+			expect(problems(source, run(source).diagnostics), root).toEqual(["UF3045 class"]);
+		}
+	});
 
-  it("says why where the API can't list the tags of `is`", () => {
-    const source = `${API}function Child() { const tag = ref<"a" | "button">("a"); return <component is={tag.value} />; }
+	it("says why where the API can't list the tags of `is`", () => {
+		const source = `${API}function Child() { const tag = ref<"a" | "button">("a"); return <component is={tag.value} />; }
 export function A() { return <div><Child class="x" /></div>; }`;
-    const { diagnostics } = run(source);
-    expect(codes(diagnostics)).toEqual(["UF3045"]);
-    expect(diagnostics[0]!.message).toContain("can't list the tags of");
-    expect(diagnostics[0]!.help).toContain('is={href ? "a" : "button"}');
-  });
+		const { diagnostics } = run(source);
+		expect(codes(diagnostics)).toEqual(["UF3045"]);
+		expect(diagnostics[0]!.message).toContain("can't list the tags of");
+		expect(diagnostics[0]!.help).toContain('is={href ? "a" : "button"}');
+	});
 
-  it("places every tag where the component sits (UF3003)", () => {
-    const source = `function Child({ on }: { on: boolean }) { return <component is={on ? "div" : "li"}>x</component>; }
+	it("places every tag where the component sits (UF3003)", () => {
+		const source = `function Child({ on }: { on: boolean }) { return <component is={on ? "div" : "li"}>x</component>; }
 export function A() { return <p><Child on={true} /></p>; }`;
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Child", "UF3003 Child"]);
-  });
+		expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Child", "UF3003 Child"]);
+	});
 });

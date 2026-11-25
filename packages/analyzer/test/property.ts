@@ -13,27 +13,27 @@ export const LOCAL_RUNS = 500;
 
 /** Whether `CI` is set to anything but `0` or `false`, as CI providers set it. */
 export function isCI(env: Env): boolean {
-  const value = env.CI?.trim();
-  return Boolean(value) && value !== "0" && value !== "false";
+	const value = env.CI?.trim();
+	return Boolean(value) && value !== "0" && value !== "false";
 }
 
 /** One run of a property test: the seed it draws with, and how many of `full` it takes. */
 export interface PropertyRun {
-  readonly seed: number;
-  readonly size: number;
-  readonly full: number;
+	readonly seed: number;
+	readonly size: number;
+	readonly full: number;
 }
 
 /** A positive whole number from a variable, or `undefined` when it is unset. */
 function count(env: Env, name: string, minimum: number): number | undefined {
-  const value = env[name]?.trim();
-  if (!value) return undefined;
-  if (!/^\d+$/.test(value) || Number(value) < minimum || Number(value) > 0xffff_ffff) {
-    throw new Error(
-      `${name} must be a whole number from ${minimum} to 4294967295, not "${value}".`,
-    );
-  }
-  return Number(value);
+	const value = env[name]?.trim();
+	if (!value) return undefined;
+	if (!/^\d+$/.test(value) || Number(value) < minimum || Number(value) > 0xffff_ffff) {
+		throw new Error(
+			`${name} must be a whole number from ${minimum} to 4294967295, not "${value}".`,
+		);
+	}
+	return Number(value);
 }
 
 /** A random seed, for a local run that takes a sample. */
@@ -45,10 +45,10 @@ const fresh = (): number => crypto.getRandomValues(new Uint32Array(1))[0]!;
  * repeat runs cover different samples.
  */
 export function propertyRun(full: number, seed: number, env: Env = process.env): PropertyRun {
-  const runs = count(env, "UF_PROPERTY_RUNS", 1);
-  const replay = count(env, "UF_PROPERTY_SEED", 0);
-  const size = Math.min(full, runs ?? (isCI(env) ? full : LOCAL_RUNS));
-  return { seed: replay ?? (size === full ? seed : fresh()), size, full };
+	const runs = count(env, "UF_PROPERTY_RUNS", 1);
+	const replay = count(env, "UF_PROPERTY_SEED", 0);
+	const size = Math.min(full, runs ?? (isCI(env) ? full : LOCAL_RUNS));
+	return { seed: replay ?? (size === full ? seed : fresh()), size, full };
 }
 
 /**
@@ -56,21 +56,21 @@ export function propertyRun(full: number, seed: number, env: Env = process.env):
  * otherwise a seeded sample from all of it, not a prefix, still in the list's order.
  */
 export function sampleOf<T>(items: readonly T[], run: PropertyRun): T[] {
-  if (items.length !== run.full) {
-    throw new Error(`The run is for ${run.full} items, not ${items.length}.`);
-  }
-  if (run.size >= items.length) return [...items];
-  // A partial Fisher–Yates shuffle of the indices: the first `size` are the sample.
-  const next = random(run.seed);
-  const indices = items.map((_, index) => index);
-  for (let index = 0; index < run.size; index++) {
-    const other = index + Math.floor(next() * (indices.length - index));
-    [indices[index], indices[other]] = [indices[other]!, indices[index]!];
-  }
-  return indices
-    .slice(0, run.size)
-    .toSorted((a, b) => a - b)
-    .map((index) => items[index]!);
+	if (items.length !== run.full) {
+		throw new Error(`The run is for ${run.full} items, not ${items.length}.`);
+	}
+	if (run.size >= items.length) return [...items];
+	// A partial Fisher–Yates shuffle of the indices: the first `size` are the sample.
+	const next = random(run.seed);
+	const indices = items.map((_, index) => index);
+	for (let index = 0; index < run.size; index++) {
+		const other = index + Math.floor(next() * (indices.length - index));
+		[indices[index], indices[other]] = [indices[other]!, indices[index]!];
+	}
+	return indices
+		.slice(0, run.size)
+		.toSorted((a, b) => a - b)
+		.map((index) => items[index]!);
 }
 
 /**
@@ -82,19 +82,19 @@ export function sampleOf<T>(items: readonly T[], run: PropertyRun): T[] {
  * runs at any size.
  */
 export function scaledBound(bound: number, run: PropertyRun): number {
-  if (run.size >= run.full) return bound;
-  const least = (bound * run.size) / run.full - 2 * Math.sqrt(run.size);
-  return Math.max(-1, Math.ceil(least) - 1);
+	if (run.size >= run.full) return bound;
+	const least = (bound * run.size) / run.full - 2 * Math.sqrt(run.size);
+	return Math.max(-1, Math.ceil(least) - 1);
 }
 
 /** Runs a property test's body, and names the run that replays it when the body fails. */
 export function replayable(run: PropertyRun, body: (run: PropertyRun) => void): void {
-  try {
-    body(run);
-  } catch (error) {
-    if (error instanceof Error) {
-      error.message += `\n\nProperty run: seed ${run.seed}, ${run.size} of ${run.full} samples. Replay it with UF_PROPERTY_SEED=${run.seed} UF_PROPERTY_RUNS=${run.size}.`;
-    }
-    throw error;
-  }
+	try {
+		body(run);
+	} catch (error) {
+		if (error instanceof Error) {
+			error.message += `\n\nProperty run: seed ${run.seed}, ${run.size} of ${run.full} samples. Replay it with UF_PROPERTY_SEED=${run.seed} UF_PROPERTY_RUNS=${run.size}.`;
+		}
+		throw error;
+	}
 }

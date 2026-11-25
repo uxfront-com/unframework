@@ -7,10 +7,10 @@ import { expect } from "vitest";
 import Layout from "./Layout.uf.tsx";
 
 describeTargets("composables/use-media-query", () => {
-  it("reads each query once mounted", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(Layout, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("status")).toHaveTextContent("Wide layout");
-    await expect.element(view.getByText("Not a tiny screen")).toBeVisible();
-  });
+	it("reads each query once mounted", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(Layout, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("status")).toHaveTextContent("Wide layout");
+		await expect.element(view.getByText("Not a tiny screen")).toBeVisible();
+	});
 });

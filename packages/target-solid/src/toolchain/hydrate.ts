@@ -9,11 +9,11 @@ import { asComponent } from "./component.ts";
 
 /** What Solid's hydration script (`generateHydrationScript`) puts on the page. */
 interface HydrationGlobal {
-  events: unknown[];
-  completed: WeakSet<Node>;
-  r: Record<string, unknown>;
-  fe(): void;
-  done?: boolean;
+	events: unknown[];
+	completed: WeakSet<Node>;
+	r: Record<string, unknown>;
+	fe(): void;
+	done?: boolean;
 }
 
 /**
@@ -27,31 +27,31 @@ interface HydrationGlobal {
  * adapter's does.
  */
 export const hydrate: HydrateAdapter = async (component, container, html, options) => {
-  const solidComponent = asComponent(component);
-  const listeners = listenerProps(options.on);
-  const props = reactiveProps({ ...options.props, ...listeners });
-  const page = globalThis as { _$HY?: HydrationGlobal };
-  page._$HY = { events: [], completed: new WeakSet(), r: {}, fe() {} };
-  sharedConfig.done = false;
-  container.innerHTML = html;
-  let dispose: () => void;
-  try {
-    dispose = hydrateRoot(() => createComponent(solidComponent, props.value), container);
-  } finally {
-    // Hydration is over: the events Solid replays and the nodes it completed are not kept.
-    page._$HY.done = true;
-    sharedConfig.done = true;
-  }
-  const settle = () => new Promise<void>((resolve) => queueMicrotask(resolve));
-  await settle();
-  return {
-    settle,
-    async rerender(next) {
-      props.assign({ ...next, ...listeners });
-      await settle();
-    },
-    unmount: async () => dispose(),
-    // Solid throws for what it cannot hydrate, and checks nothing else.
-    takeMismatches: () => [],
-  };
+	const solidComponent = asComponent(component);
+	const listeners = listenerProps(options.on);
+	const props = reactiveProps({ ...options.props, ...listeners });
+	const page = globalThis as { _$HY?: HydrationGlobal };
+	page._$HY = { events: [], completed: new WeakSet(), r: {}, fe() {} };
+	sharedConfig.done = false;
+	container.innerHTML = html;
+	let dispose: () => void;
+	try {
+		dispose = hydrateRoot(() => createComponent(solidComponent, props.value), container);
+	} finally {
+		// Hydration is over: the events Solid replays and the nodes it completed are not kept.
+		page._$HY.done = true;
+		sharedConfig.done = true;
+	}
+	const settle = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+	await settle();
+	return {
+		settle,
+		async rerender(next) {
+			props.assign({ ...next, ...listeners });
+			await settle();
+		},
+		unmount: async () => dispose(),
+		// Solid throws for what it cannot hydrate, and checks nothing else.
+		takeMismatches: () => [],
+	};
 };

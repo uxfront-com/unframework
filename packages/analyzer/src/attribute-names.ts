@@ -5,20 +5,20 @@
 
 import type { DiagnosticCode, Fix } from "@unframework.dev/diagnostics";
 import {
-  ARIA_ATTRIBUTES,
-  DOCUMENT_ATTRIBUTES,
-  DOM_EVENTS,
-  ELEMENT_ATTRIBUTES,
-  GLOBAL_ATTRIBUTES,
-  isHtmlAttribute,
-  isSvgAttribute,
-  SVG_ELEMENT_ATTRIBUTES,
-  SVG_GLOBAL_ATTRIBUTES,
-  TEMPLATE_SYNTAX_ATTRIBUTES,
-  undeclaredAttribute,
-  UNRENDERED_ATTRIBUTES,
-  UNSUPPORTED_EVENTS,
-  WINDOW_EVENTS,
+	ARIA_ATTRIBUTES,
+	DOCUMENT_ATTRIBUTES,
+	DOM_EVENTS,
+	ELEMENT_ATTRIBUTES,
+	GLOBAL_ATTRIBUTES,
+	isHtmlAttribute,
+	isSvgAttribute,
+	SVG_ELEMENT_ATTRIBUTES,
+	SVG_GLOBAL_ATTRIBUTES,
+	TEMPLATE_SYNTAX_ATTRIBUTES,
+	undeclaredAttribute,
+	UNRENDERED_ATTRIBUTES,
+	UNSUPPORTED_EVENTS,
+	WINDOW_EVENTS,
 } from "@unframework.dev/ir";
 import type { Namespace } from "@unframework.dev/ir";
 
@@ -26,10 +26,10 @@ const words = (text: string): ReadonlySet<string> => new Set(text.trim().split(/
 
 /** A problem with one attribute: the diagnostic to report on its name. */
 export interface Problem {
-  code: DiagnosticCode;
-  message: string;
-  help?: string;
-  fixes?: Fix[];
+	code: DiagnosticCode;
+	message: string;
+	help?: string;
+	fixes?: Fix[];
 }
 
 /**
@@ -38,15 +38,15 @@ export interface Problem {
  * and an object would answer `constructor` or `__proto__` from its prototype.
  */
 export const ALIASES: ReadonlyMap<string, string> = new Map([
-  ["acceptcharset", "accept-charset"],
-  ["classname", "class"],
-  ["htmlfor", "for"],
-  ["httpequiv", "http-equiv"],
+	["acceptcharset", "accept-charset"],
+	["classname", "class"],
+	["htmlfor", "for"],
+	["httpequiv", "http-equiv"],
 ]);
 
 /** Whether a name is an event's, of any target an element, the window or HTML knows (ADR-0047). */
 function isEventName(name: string): boolean {
-  return DOM_EVENTS.has(name) || WINDOW_EVENTS.has(name) || UNSUPPORTED_EVENTS.has(name);
+	return DOM_EVENTS.has(name) || WINDOW_EVENTS.has(name) || UNSUPPORTED_EVENTS.has(name);
 }
 
 /**
@@ -54,40 +54,40 @@ function isEventName(name: string): boolean {
  * attributes, or the framework adds them itself.
  */
 const FRAMEWORK_PROPS: ReadonlyMap<string, string> = new Map(
-  Object.entries({
-    children:
-      "`children` is a framework prop, not an attribute: React renders it as the content and Solid fails to set it. Write the content as JSX children.",
-    classlist: "`classList` is Solid's prop, not an attribute. Use `class`.",
-    dangerouslysetinnerhtml:
-      "`dangerouslySetInnerHTML` is React's prop, not an attribute. Write the content as JSX children, or markup as `innerHTML={markup}`.",
-    innertext:
-      "`innerText` is a DOM property, not an attribute. Write the content as JSX children.",
-    outerhtml: "`outerHTML` is a DOM property, not an attribute. Write the element as JSX.",
-    suppresscontenteditablewarning:
-      "`suppressContentEditableWarning` is React's prop, not an attribute.",
-    suppresshydrationwarning: "`suppressHydrationWarning` is React's prop, not an attribute.",
-    textcontent:
-      "`textContent` is a DOM property, not an attribute. Write the content as JSX children.",
-  }),
+	Object.entries({
+		children:
+			"`children` is a framework prop, not an attribute: React renders it as the content and Solid fails to set it. Write the content as JSX children.",
+		classlist: "`classList` is Solid's prop, not an attribute. Use `class`.",
+		dangerouslysetinnerhtml:
+			"`dangerouslySetInnerHTML` is React's prop, not an attribute. Write the content as JSX children, or markup as `innerHTML={markup}`.",
+		innertext:
+			"`innerText` is a DOM property, not an attribute. Write the content as JSX children.",
+		outerhtml: "`outerHTML` is a DOM property, not an attribute. Write the element as JSX.",
+		suppresscontenteditablewarning:
+			"`suppressContentEditableWarning` is React's prop, not an attribute.",
+		suppresshydrationwarning: "`suppressHydrationWarning` is React's prop, not an attribute.",
+		textcontent:
+			"`textContent` is a DOM property, not an attribute. Write the content as JSX children.",
+	}),
 );
 
 /** What brings an attribute the targets cannot render alike yet, as its diagnostic's help. */
 const LATER: ReadonlyMap<string, string> = new Map([
-  ["autofocus", "Focus the element from `onMounted`, through a template ref."],
-  ["is", "Custom elements are not supported yet."],
-  [
-    "slot",
-    "A component's slots are filled with a slot object: `<Card>{{ title: () => <h2>Notes</h2> }}</Card>`.",
-  ],
+	["autofocus", "Focus the element from `onMounted`, through a template ref."],
+	["is", "Custom elements are not supported yet."],
+	[
+		"slot",
+		"A component's slots are filled with a slot object: `<Card>{{ title: () => <h2>Notes</h2> }}</Card>`.",
+	],
 ]);
 
 /** The SVG attribute names a case-insensitive spelling stands for, on an element. */
 function svgNames(tag: string): ReadonlyMap<string, string> {
-  const names = new Map<string, string>();
-  for (const name of [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])]) {
-    names.set(name.toLowerCase(), name);
-  }
-  return names;
+	const names = new Map<string, string>();
+	for (const name of [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])]) {
+		names.set(name.toLowerCase(), name);
+	}
+	return names;
 }
 
 /**
@@ -97,27 +97,27 @@ function svgNames(tag: string): ReadonlyMap<string, string> {
  * `data-*` and the aliases read as on HTML.
  */
 export function canonicalName(tag: string, namespace: Namespace, authored: string): string {
-  if (namespace === "svg") {
-    if (isSvgAttribute(tag, authored)) return authored;
-    if (authored === "xlink:href" || authored === "xlinkHref") return "href";
-    const kebab = authored.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-    if (kebab !== authored && isSvgAttribute(tag, kebab)) return kebab;
-    const svg = svgNames(tag).get(authored.toLowerCase());
-    if (svg) return svg;
-  }
-  if (authored === "xlink:href") return "href";
-  const lower = authored.toLowerCase();
-  const alias = ALIASES.get(lower);
-  if (alias) return alias;
-  if (/^aria[a-z]/.test(lower) && ARIA_ATTRIBUTES.has(`aria-${lower.slice(4)}`)) {
-    return `aria-${lower.slice(4)}`;
-  }
-  return lower;
+	if (namespace === "svg") {
+		if (isSvgAttribute(tag, authored)) return authored;
+		if (authored === "xlink:href" || authored === "xlinkHref") return "href";
+		const kebab = authored.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+		if (kebab !== authored && isSvgAttribute(tag, kebab)) return kebab;
+		const svg = svgNames(tag).get(authored.toLowerCase());
+		if (svg) return svg;
+	}
+	if (authored === "xlink:href") return "href";
+	const lower = authored.toLowerCase();
+	const alias = ALIASES.get(lower);
+	if (alias) return alias;
+	if (/^aria[a-z]/.test(lower) && ARIA_ATTRIBUTES.has(`aria-${lower.slice(4)}`)) {
+		return `aria-${lower.slice(4)}`;
+	}
+	return lower;
 }
 
 /** Whether a name is an attribute of an element in its namespace. */
 export function isAttributeOf(tag: string, namespace: Namespace, name: string): boolean {
-  return namespace === "svg" ? isSvgAttribute(tag, name) : isHtmlAttribute(tag, name);
+	return namespace === "svg" ? isSvgAttribute(tag, name) : isHtmlAttribute(tag, name);
 }
 
 /**
@@ -125,13 +125,13 @@ export function isAttributeOf(tag: string, namespace: Namespace, name: string): 
  * attribute may mean (UF3035). One whose name alone is a problem (`autofocus`, `slot`) is none.
  */
 export function attributesOf(tag: string, namespace: Namespace): string[] {
-  const names =
-    namespace === "svg"
-      ? [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])]
-      : [...GLOBAL_ATTRIBUTES, ...(ELEMENT_ATTRIBUTES.get(tag) ?? [])];
-  return [...names, ...ARIA_ATTRIBUTES].filter(
-    (name) => isAttributeOf(tag, namespace, name) && !nameProblem(tag, namespace, name, name),
-  );
+	const names =
+		namespace === "svg"
+			? [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])]
+			: [...GLOBAL_ATTRIBUTES, ...(ELEMENT_ATTRIBUTES.get(tag) ?? [])];
+	return [...names, ...ARIA_ATTRIBUTES].filter(
+		(name) => isAttributeOf(tag, namespace, name) && !nameProblem(tag, namespace, name, name),
+	);
 }
 
 /**
@@ -142,110 +142,110 @@ export function attributesOf(tag: string, namespace: Namespace): string[] {
  * lowered before the names are checked (`./listeners.ts`); a spread's keys reach this.
  */
 export function nameProblem(
-  tag: string,
-  namespace: Namespace,
-  authored: string,
-  name: string,
+	tag: string,
+	namespace: Namespace,
+	authored: string,
+	name: string,
 ): Problem | undefined {
-  const lower = name.toLowerCase();
-  if (lower === "ref") {
-    return reservedSpreadKey(
-      `A spread's \`${authored}\` key is not rendered: a template ref is attached by the element's own \`ref={input}\`.`,
-    );
-  }
-  if (lower.startsWith("v-")) {
-    return unsupported(`The \`${authored}\` directive is not supported yet.`);
-  }
-  if (lower.startsWith("on") && (/^on[A-Z]/.test(authored) || isEventName(lower.slice(2)))) {
-    return reservedSpreadKey(
-      `A spread's \`${authored}\` key is a listener, and a spread renders attributes: an element's own listener is written on it, \`onClick={save}\`.`,
-    );
-  }
-  // An element's own `innerHTML` is lowered apart (`./raw-html.ts`): only a spread's key gets here.
-  if (lower === "innerhtml") {
-    return unsupported(
-      `A spread's \`${authored}\` key is not rendered: an element's markup is set by its own \`innerHTML={markup}\` (ADR-0097).`,
-    );
-  }
-  if (/^default(value|checked|selected)$/.test(lower)) {
-    const advice = modelAdvice(tag);
-    return unsupported(
-      `\`${authored}\` is React's name for a form control's initial state.${advice ? ` ${advice}` : ""}`,
-    );
-  }
-  if (lower === "defaultmuted") {
-    return unsupported(
-      `\`${authored}\` is the DOM property of the \`muted\` attribute. ${MUTED_REASON}`,
-    );
-  }
-  // `xlink:href` is `href`, written the old way (UF3004 below).
-  if (lower === "xmlns" || (/^(xmlns|xml|xlink):/.test(authored) && authored !== "xlink:href")) {
-    return {
-      code: "UF3005",
-      message: `\`${authored}\` is XML's: every target writes SVG's namespace itself, and the HTML parser and the clients disagree about namespaced attributes.`,
-      help: "Remove it.",
-    };
-  }
-  // What the targets render differently (`@unframework.dev/ir`'s portability facts), which
-  // `checkInvariants` also rejects in a plugin's IR.
-  const unrendered = UNRENDERED_ATTRIBUTES.get(name);
-  if (unrendered) {
-    return unsupported(`\`${authored}\` is not supported yet: ${unrendered}`, LATER.get(name));
-  }
-  const syntax = TEMPLATE_SYNTAX_ATTRIBUTES.get(name);
-  if (syntax) return { code: "UF3005", message: syntax, help: LATER.get(name) };
-  const reserved = reservedProblem(authored, lower);
-  if (reserved) return { code: "UF3005", message: reserved };
-  // HTML has no `value` on these: their value is their content, or their selected options'.
-  if (
-    namespace === "html" &&
-    name === "value" &&
-    (tag === "output" || tag === "select" || tag === "textarea")
-  ) {
-    return formState(tag, name);
-  }
-  if (!isAttributeOf(tag, namespace, name)) return unknownProblem(tag, namespace, authored, name);
-  const undeclared = undeclaredAttribute(tag, namespace, name);
-  if (undeclared) {
-    return unsupported(`\`${name}\` is not supported yet: ${undeclared}. It lands when they do.`);
-  }
-  if (DOCUMENT_ATTRIBUTES.has(name)) {
-    return {
-      code: "UF3008",
-      message: `\`${name}\` holds an HTML document, scripts included, which the compiler cannot analyse.`,
-      help: "Load the document from a URL with `src`, or write its markup in the component.",
-    };
-  }
-  return undefined;
+	const lower = name.toLowerCase();
+	if (lower === "ref") {
+		return reservedSpreadKey(
+			`A spread's \`${authored}\` key is not rendered: a template ref is attached by the element's own \`ref={input}\`.`,
+		);
+	}
+	if (lower.startsWith("v-")) {
+		return unsupported(`The \`${authored}\` directive is not supported yet.`);
+	}
+	if (lower.startsWith("on") && (/^on[A-Z]/.test(authored) || isEventName(lower.slice(2)))) {
+		return reservedSpreadKey(
+			`A spread's \`${authored}\` key is a listener, and a spread renders attributes: an element's own listener is written on it, \`onClick={save}\`.`,
+		);
+	}
+	// An element's own `innerHTML` is lowered apart (`./raw-html.ts`): only a spread's key gets here.
+	if (lower === "innerhtml") {
+		return unsupported(
+			`A spread's \`${authored}\` key is not rendered: an element's markup is set by its own \`innerHTML={markup}\` (ADR-0097).`,
+		);
+	}
+	if (/^default(value|checked|selected)$/.test(lower)) {
+		const advice = modelAdvice(tag);
+		return unsupported(
+			`\`${authored}\` is React's name for a form control's initial state.${advice ? ` ${advice}` : ""}`,
+		);
+	}
+	if (lower === "defaultmuted") {
+		return unsupported(
+			`\`${authored}\` is the DOM property of the \`muted\` attribute. ${MUTED_REASON}`,
+		);
+	}
+	// `xlink:href` is `href`, written the old way (UF3004 below).
+	if (lower === "xmlns" || (/^(xmlns|xml|xlink):/.test(authored) && authored !== "xlink:href")) {
+		return {
+			code: "UF3005",
+			message: `\`${authored}\` is XML's: every target writes SVG's namespace itself, and the HTML parser and the clients disagree about namespaced attributes.`,
+			help: "Remove it.",
+		};
+	}
+	// What the targets render differently (`@unframework.dev/ir`'s portability facts), which
+	// `checkInvariants` also rejects in a plugin's IR.
+	const unrendered = UNRENDERED_ATTRIBUTES.get(name);
+	if (unrendered) {
+		return unsupported(`\`${authored}\` is not supported yet: ${unrendered}`, LATER.get(name));
+	}
+	const syntax = TEMPLATE_SYNTAX_ATTRIBUTES.get(name);
+	if (syntax) return { code: "UF3005", message: syntax, help: LATER.get(name) };
+	const reserved = reservedProblem(authored, lower);
+	if (reserved) return { code: "UF3005", message: reserved };
+	// HTML has no `value` on these: their value is their content, or their selected options'.
+	if (
+		namespace === "html" &&
+		name === "value" &&
+		(tag === "output" || tag === "select" || tag === "textarea")
+	) {
+		return formState(tag, name);
+	}
+	if (!isAttributeOf(tag, namespace, name)) return unknownProblem(tag, namespace, authored, name);
+	const undeclared = undeclaredAttribute(tag, namespace, name);
+	if (undeclared) {
+		return unsupported(`\`${name}\` is not supported yet: ${undeclared}. It lands when they do.`);
+	}
+	if (DOCUMENT_ATTRIBUTES.has(name)) {
+		return {
+			code: "UF3008",
+			message: `\`${name}\` holds an HTML document, scripts included, which the compiler cannot analyse.`,
+			help: "Load the document from a URL with `src`, or write its markup in the component.",
+		};
+	}
+	return undefined;
 }
 
 /** Why a name belongs to a framework, or `undefined`. */
 function reservedProblem(authored: string, name: string): string | undefined {
-  const prop = FRAMEWORK_PROPS.get(name);
-  if (prop) return prop;
-  if (/^(bind|bindon|on|ref|let)-/.test(name)) {
-    return `Angular reads \`${authored}\` as template syntax (a binding, a listener or a reference), not as an attribute.`;
-  }
-  if (name === "i18n" || name.startsWith("i18n-")) {
-    return `Angular's compiler consumes \`${authored}\` for translations, so it never reaches the DOM.`;
-  }
-  if (/^_?ng/.test(name)) {
-    return `Angular reserves \`${authored}\`: names starting with \`ng\` are its directives and its own attributes.`;
-  }
-  if (name === "nonce") {
-    return "`nonce` authorises scripts and styles under a Content Security Policy, which components do not render, and browsers hide its value from the DOM.";
-  }
-  if (name === "data-hk")
-    return "`data-hk` is the hydration key Solid adds to server-rendered elements.";
-  for (const [prefix, owner] of [
-    ["data-astro-", "Astro adds `data-astro-*` attributes for its scoped styles and tools."],
-    ["data-qwik-", "Qwik adds `data-qwik-*` attributes itself."],
-    ["data-v-", "Vue's scoped styles use `data-v-*` attributes."],
-    ["data-uf-", "the compiler's own scope attributes are `data-uf-*`."],
-  ] as const) {
-    if (name.startsWith(prefix)) return `\`${authored}\` is reserved: ${owner}`;
-  }
-  return undefined;
+	const prop = FRAMEWORK_PROPS.get(name);
+	if (prop) return prop;
+	if (/^(bind|bindon|on|ref|let)-/.test(name)) {
+		return `Angular reads \`${authored}\` as template syntax (a binding, a listener or a reference), not as an attribute.`;
+	}
+	if (name === "i18n" || name.startsWith("i18n-")) {
+		return `Angular's compiler consumes \`${authored}\` for translations, so it never reaches the DOM.`;
+	}
+	if (/^_?ng/.test(name)) {
+		return `Angular reserves \`${authored}\`: names starting with \`ng\` are its directives and its own attributes.`;
+	}
+	if (name === "nonce") {
+		return "`nonce` authorises scripts and styles under a Content Security Policy, which components do not render, and browsers hide its value from the DOM.";
+	}
+	if (name === "data-hk")
+		return "`data-hk` is the hydration key Solid adds to server-rendered elements.";
+	for (const [prefix, owner] of [
+		["data-astro-", "Astro adds `data-astro-*` attributes for its scoped styles and tools."],
+		["data-qwik-", "Qwik adds `data-qwik-*` attributes itself."],
+		["data-v-", "Vue's scoped styles use `data-v-*` attributes."],
+		["data-uf-", "the compiler's own scope attributes are `data-uf-*`."],
+	] as const) {
+		if (name.startsWith(prefix)) return `\`${authored}\` is reserved: ${owner}`;
+	}
+	return undefined;
 }
 
 /**
@@ -255,10 +255,10 @@ function reservedProblem(authored: string, name: string): string | undefined {
  * ARIA or `data-*` name, `key`, a listener and a template ref are judged elsewhere: true.
  */
 export function takesByName(tag: string, authored: string): boolean {
-  const name = canonicalName(tag, "html", authored);
-  if (name === "key" || name.startsWith("aria-") || name.startsWith("data-")) return true;
-  const problem = nameProblem(tag, "html", authored, name);
-  return !(problem?.code === "UF3006" && !isAttributeOf(tag, "html", name));
+	const name = canonicalName(tag, "html", authored);
+	if (name === "key" || name.startsWith("aria-") || name.startsWith("data-")) return true;
+	const problem = nameProblem(tag, "html", authored, name);
+	return !(problem?.code === "UF3006" && !isAttributeOf(tag, "html", name));
 }
 
 /**
@@ -266,57 +266,57 @@ export function takesByName(tag: string, authored: string): boolean {
  * once for them all: "`colspan` is not an attribute of <a> or <button>."
  */
 export function unknownOnEvery(tags: readonly string[], authored: string): Problem {
-  const [first = "div"] = tags;
-  const name = canonicalName(first, "html", authored);
-  const problem = unknownProblem(first, "html", authored, name);
-  return {
-    ...problem,
-    message: `\`${authored}\` is not an attribute of ${list(
-      tags.map((tag) => `<${tag}>`),
-      "or",
-    )}.`,
-  };
+	const [first = "div"] = tags;
+	const name = canonicalName(first, "html", authored);
+	const problem = unknownProblem(first, "html", authored, name);
+	return {
+		...problem,
+		message: `\`${authored}\` is not an attribute of ${list(
+			tags.map((tag) => `<${tag}>`),
+			"or",
+		)}.`,
+	};
 }
 
 /** The problem with a name that is not an attribute of the element. */
 function unknownProblem(
-  tag: string,
-  namespace: Namespace,
-  authored: string,
-  name: string,
+	tag: string,
+	namespace: Namespace,
+	authored: string,
+	name: string,
 ): Problem {
-  if (name.startsWith("aria-")) {
-    return { code: "UF3006", message: `\`${authored}\` is not an ARIA attribute.` };
-  }
-  if (name.startsWith("data-")) {
-    return {
-      code: "UF3006",
-      message: `\`${authored}\` is not a valid \`data-*\` attribute name.`,
-      help: "A data attribute is `data-` followed by letters, digits, `-`, `_` or `.`.",
-    };
-  }
-  if (namespace === "svg") {
-    const owners = [...SVG_ELEMENT_ATTRIBUTES]
-      .filter(([, attributes]) => attributes.has(name))
-      .map(([element]) => element);
-    return {
-      code: "UF3006",
-      message: `\`${authored}\` is not an attribute of the SVG <${tag}>.`,
-      help: owners.length
-        ? `\`${name}\` is an attribute of ${list(owners.map((owner) => `<${owner}>`))}.`
-        : "Use one of the element's SVG attributes, in SVG's own case, or a `data-*` attribute for your own data.",
-    };
-  }
-  const owners = [...ELEMENT_ATTRIBUTES]
-    .filter(([, attributes]) => attributes.has(name))
-    .map(([element]) => element);
-  return {
-    code: "UF3006",
-    message: `\`${authored}\` is not an attribute of <${tag}>.`,
-    help: owners.length
-      ? `\`${name}\` is an attribute of ${list(owners.map((owner) => `<${owner}>`))}.`
-      : "Use one of the element's HTML attributes, or a `data-*` attribute for your own data.",
-  };
+	if (name.startsWith("aria-")) {
+		return { code: "UF3006", message: `\`${authored}\` is not an ARIA attribute.` };
+	}
+	if (name.startsWith("data-")) {
+		return {
+			code: "UF3006",
+			message: `\`${authored}\` is not a valid \`data-*\` attribute name.`,
+			help: "A data attribute is `data-` followed by letters, digits, `-`, `_` or `.`.",
+		};
+	}
+	if (namespace === "svg") {
+		const owners = [...SVG_ELEMENT_ATTRIBUTES]
+			.filter(([, attributes]) => attributes.has(name))
+			.map(([element]) => element);
+		return {
+			code: "UF3006",
+			message: `\`${authored}\` is not an attribute of the SVG <${tag}>.`,
+			help: owners.length
+				? `\`${name}\` is an attribute of ${list(owners.map((owner) => `<${owner}>`))}.`
+				: "Use one of the element's SVG attributes, in SVG's own case, or a `data-*` attribute for your own data.",
+		};
+	}
+	const owners = [...ELEMENT_ATTRIBUTES]
+		.filter(([, attributes]) => attributes.has(name))
+		.map(([element]) => element);
+	return {
+		code: "UF3006",
+		message: `\`${authored}\` is not an attribute of <${tag}>.`,
+		help: owners.length
+			? `\`${name}\` is an attribute of ${list(owners.map((owner) => `<${owner}>`))}.`
+			: "Use one of the element's HTML attributes, or a `data-*` attribute for your own data.",
+	};
 }
 
 /**
@@ -324,10 +324,10 @@ function unknownProblem(
  * element. `inputBinds` says whether it binds an <input> of the element's type.
  */
 export function formState(tag: string, name: string, inputBinds?: boolean): Problem {
-  const advice = modelAdvice(tag, inputBinds);
-  return unsupported(
-    `Form state (\`${name}\` on <${tag}>) is not supported as an attribute: the targets set it as a DOM property or as an attribute, so they render it differently.${advice ? ` ${advice}` : ""}`,
-  );
+	const advice = modelAdvice(tag, inputBinds);
+	return unsupported(
+		`Form state (\`${name}\` on <${tag}>) is not supported as an attribute: the targets set it as a DOM property or as an attribute, so they render it differently.${advice ? ` ${advice}` : ""}`,
+	);
 }
 
 /**
@@ -336,20 +336,20 @@ export function formState(tag: string, name: string, inputBinds?: boolean): Prob
  * where the type is not read). Elsewhere `v-model` is UF3042, so there is none.
  */
 function modelAdvice(tag: string, inputBinds?: boolean): string | undefined {
-  switch (tag) {
-    case "textarea":
-    case "select":
-      return "Bind the control's state with `v-model`.";
-    case "option":
-      return "Bind the <select>'s state with `v-model`.";
-    case "input":
-      if (inputBinds === undefined) {
-        return "On a text, number, checkbox or radio input, bind the control's state with `v-model`.";
-      }
-      return inputBinds ? "Bind the control's state with `v-model`." : undefined;
-    default:
-      return undefined;
-  }
+	switch (tag) {
+		case "textarea":
+		case "select":
+			return "Bind the control's state with `v-model`.";
+		case "option":
+			return "Bind the <select>'s state with `v-model`.";
+		case "input":
+			if (inputBinds === undefined) {
+				return "On a text, number, checkbox or radio input, bind the control's state with `v-model`.";
+			}
+			return inputBinds ? "Bind the control's state with `v-model`." : undefined;
+		default:
+			return undefined;
+	}
 }
 
 /**
@@ -357,10 +357,10 @@ function modelAdvice(tag: string, inputBinds?: boolean): string | undefined {
  * bring it; it needs each target to render the attribute, which none of them can be told yet.
  */
 export const MUTED_REASON =
-  "React and Vue set `muted` as the media element's property, so the server's markup has the attribute and the client's DOM does not.";
+	"React and Vue set `muted` as the media element's property, so the server's markup has the attribute and the client's DOM does not.";
 
 export function unsupported(message: string, help?: string): Problem {
-  return { code: "UF1002", message, ...(help ? { help } : {}) };
+	return { code: "UF1002", message, ...(help ? { help } : {}) };
 }
 
 /**
@@ -368,18 +368,18 @@ export function unsupported(message: string, help?: string): Problem {
  * have their own channel, and a spread renders attributes only.
  */
 export function reservedSpreadKey(message: string): Problem {
-  return {
-    code: "UF3049",
-    message,
-    help: "Leave the key out of the spread's type, and write it on the element itself.",
-  };
+	return {
+		code: "UF3049",
+		message,
+		help: "Leave the key out of the spread's type, and write it on the element itself.",
+	};
 }
 
 /** `a`, `a and b`, `a, b and c` (or `or`, for alternatives). */
 export function list(items: readonly string[], conjunction: "and" | "or" = "and"): string {
-  return items.length < 2
-    ? (items[0] ?? "")
-    : `${items.slice(0, -1).join(", ")} ${conjunction} ${items.at(-1)}`;
+	return items.length < 2
+		? (items[0] ?? "")
+		: `${items.slice(0, -1).join(", ")} ${conjunction} ${items.at(-1)}`;
 }
 
 /**
@@ -397,55 +397,55 @@ export const STRING_GLOBAL_ATTRIBUTES: ReadonlySet<string> = words(`
 
 /** As `STRING_GLOBAL_ATTRIBUTES`, each element's own (React's aliases resolved). */
 export const STRING_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map(
-  Object.entries({
-    a: "href hreflang media ping referrerpolicy rel target type",
-    area: "alt coords href hreflang media referrerpolicy rel shape target",
-    audio: "controlslist crossorigin mediagroup preload src",
-    base: "href target",
-    blockquote: "cite",
-    button: "form formaction formenctype formmethod formtarget name type",
-    del: "cite datetime",
-    details: "name",
-    embed: "src type",
-    fieldset: "form name",
-    form: "accept-charset action autocomplete enctype method name target",
-    html: "manifest",
-    iframe: "allow loading name referrerpolicy sandbox scrolling src srcdoc",
-    img: "alt crossorigin decoding fetchpriority loading referrerpolicy sizes src srcset usemap",
-    input:
-      "accept alt crossorigin form formaction formenctype formmethod formtarget list name pattern src",
-    ins: "cite datetime",
-    keygen: "challenge form keyparams keytype name",
-    label: "for form",
-    link: "as charset crossorigin href hreflang integrity media referrerpolicy rel sizes type",
-    map: "name",
-    menu: "type",
-    meta: "charset content http-equiv name",
-    meter: "form",
-    object: "classid data form name type usemap wmode",
-    ol: "type",
-    optgroup: "label",
-    option: "label",
-    output: "for form name",
-    param: "name",
-    q: "cite",
-    script: "charset crossorigin integrity nonce referrerpolicy src type",
-    select: "autocomplete form name",
-    source: "media sizes src srcset type",
-    style: "media nonce type",
-    table: "summary",
-    td: "abbr align headers scope valign",
-    textarea: "autocomplete dirname form name wrap",
-    th: "abbr align headers scope",
-    time: "datetime",
-    track: "kind label src srclang",
-    video: "controlslist crossorigin mediagroup poster preload src",
-  }).map(([tag, names]) => [tag, words(names)]),
+	Object.entries({
+		a: "href hreflang media ping referrerpolicy rel target type",
+		area: "alt coords href hreflang media referrerpolicy rel shape target",
+		audio: "controlslist crossorigin mediagroup preload src",
+		base: "href target",
+		blockquote: "cite",
+		button: "form formaction formenctype formmethod formtarget name type",
+		del: "cite datetime",
+		details: "name",
+		embed: "src type",
+		fieldset: "form name",
+		form: "accept-charset action autocomplete enctype method name target",
+		html: "manifest",
+		iframe: "allow loading name referrerpolicy sandbox scrolling src srcdoc",
+		img: "alt crossorigin decoding fetchpriority loading referrerpolicy sizes src srcset usemap",
+		input:
+			"accept alt crossorigin form formaction formenctype formmethod formtarget list name pattern src",
+		ins: "cite datetime",
+		keygen: "challenge form keyparams keytype name",
+		label: "for form",
+		link: "as charset crossorigin href hreflang integrity media referrerpolicy rel sizes type",
+		map: "name",
+		menu: "type",
+		meta: "charset content http-equiv name",
+		meter: "form",
+		object: "classid data form name type usemap wmode",
+		ol: "type",
+		optgroup: "label",
+		option: "label",
+		output: "for form name",
+		param: "name",
+		q: "cite",
+		script: "charset crossorigin integrity nonce referrerpolicy src type",
+		select: "autocomplete form name",
+		source: "media sizes src srcset type",
+		style: "media nonce type",
+		table: "summary",
+		td: "abbr align headers scope valign",
+		textarea: "autocomplete dirname form name wrap",
+		th: "abbr align headers scope",
+		time: "datetime",
+		track: "kind label src srclang",
+		video: "controlslist crossorigin mediagroup poster preload src",
+	}).map(([tag, names]) => [tag, words(names)]),
 );
 
 /** Whether the authoring types declare an HTML attribute of an element as a string only. */
 export function isStringOnlyAttribute(tag: string, name: string): boolean {
-  return STRING_GLOBAL_ATTRIBUTES.has(name) || (STRING_ATTRIBUTES.get(tag)?.has(name) ?? false);
+	return STRING_GLOBAL_ATTRIBUTES.has(name) || (STRING_ATTRIBUTES.get(tag)?.has(name) ?? false);
 }
 
 /**
@@ -455,13 +455,13 @@ export function isStringOnlyAttribute(tag: string, name: string): boolean {
  * them from those types.
  */
 const TARGET_STRING_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map(
-  Object.entries({
-    a: "download",
-    area: "download ping",
-    button: "command commandfor popovertarget value",
-    form: "rel",
-    input: "dirname popovertarget",
-  }).map(([tag, names]) => [tag, words(names)]),
+	Object.entries({
+		a: "download",
+		area: "download ping",
+		button: "command commandfor popovertarget value",
+		form: "rel",
+		input: "dirname popovertarget",
+	}).map(([tag, names]) => [tag, words(names)]),
 );
 
 /**
@@ -479,6 +479,6 @@ const SVG_STRING_ATTRIBUTES: ReadonlySet<string> = words(`
 
 /** Whether a typed target other than the authoring types declares an attribute as a string only. */
 export function isTargetStringAttribute(tag: string, namespace: Namespace, name: string): boolean {
-  if (namespace === "svg") return SVG_STRING_ATTRIBUTES.has(name);
-  return TARGET_STRING_ATTRIBUTES.get(tag)?.has(name) ?? false;
+	if (namespace === "svg") return SVG_STRING_ATTRIBUTES.has(name);
+	return TARGET_STRING_ATTRIBUTES.get(tag)?.has(name) ?? false;
 }

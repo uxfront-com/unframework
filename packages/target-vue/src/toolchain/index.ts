@@ -2,9 +2,9 @@ import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 
 import type { Toolchain } from "@unframework.dev/codegen";
 import {
-  lintWithEslint,
-  lintWithOxlint,
-  mergeLintResults,
+	lintWithEslint,
+	lintWithOxlint,
+	mergeLintResults,
 } from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
@@ -17,42 +17,42 @@ import { typecheck } from "./typecheck.ts";
  * `vue/server-renderer` adapters.
  */
 export const toolchain: Toolchain = {
-  name: "vue",
-  async vite(mode): Promise<UserConfig> {
-    // Loaded on demand: reading `client` or `server` should not load the Vite plugin.
-    const { default: vue } = await import("@vitejs/plugin-vue");
-    return {
-      // By default plugin-vue turns static asset URLs in templates into imports (under a dev
-      // server `src="/a.png"` renders as `/@fs/a.png`), which no other target does.
-      plugins: [vue({ template: { transformAssetUrls: false }, script: { fs: projectFs } })],
-      resolve: { dedupe: ["vue"] },
-      // The dependency scanner never sees compiled output, and plugin-vue adds nothing to the
-      // optimizer: without this, the first run discovers `vue` late and reloads mid-test.
-      ...(mode === "ssr" ? {} : { optimizeDeps: { include: ["vue"] } }),
-      // A hydrate project renders in its browser server's SSR environment, which inlines every
-      // dependency (ADR-0095): Vue's server renderer is CommonJS, and runs only from Node.
-      ...(mode === "hydrate" ? { environments: { ssr: { resolve: { external: ["vue"] } } } } : {}),
-    };
-  },
-  client: "@unframework.dev/target-vue/toolchain/client",
-  server: "@unframework.dev/target-vue/toolchain/server",
-  hydrate: "@unframework.dev/target-vue/toolchain/hydrate",
-  frameworkCompile,
-  frameworkEmit,
-  typecheck,
-  // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
-  // ESLint reads only the `.vue` files: a `.ts` module beside them, a shared module (ADR-0070)
-  // or a composable (ADR-0069), is oxlint's alone, which runs the baseline over it.
-  lint: async (files, context) =>
-    mergeLintResults(
-      await Promise.all([
-        lintWithOxlint(files, context),
-        lintWithEslint(
-          files.filter((file) => file.endsWith(".vue")),
-          context,
-        ),
-      ]),
-    ),
+	name: "vue",
+	async vite(mode): Promise<UserConfig> {
+		// Loaded on demand: reading `client` or `server` should not load the Vite plugin.
+		const { default: vue } = await import("@vitejs/plugin-vue");
+		return {
+			// By default plugin-vue turns static asset URLs in templates into imports (under a dev
+			// server `src="/a.png"` renders as `/@fs/a.png`), which no other target does.
+			plugins: [vue({ template: { transformAssetUrls: false }, script: { fs: projectFs } })],
+			resolve: { dedupe: ["vue"] },
+			// The dependency scanner never sees compiled output, and plugin-vue adds nothing to the
+			// optimizer: without this, the first run discovers `vue` late and reloads mid-test.
+			...(mode === "ssr" ? {} : { optimizeDeps: { include: ["vue"] } }),
+			// A hydrate project renders in its browser server's SSR environment, which inlines every
+			// dependency (ADR-0095): Vue's server renderer is CommonJS, and runs only from Node.
+			...(mode === "hydrate" ? { environments: { ssr: { resolve: { external: ["vue"] } } } } : {}),
+		};
+	},
+	client: "@unframework.dev/target-vue/toolchain/client",
+	server: "@unframework.dev/target-vue/toolchain/server",
+	hydrate: "@unframework.dev/target-vue/toolchain/hydrate",
+	frameworkCompile,
+	frameworkEmit,
+	typecheck,
+	// L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
+	// ESLint reads only the `.vue` files: a `.ts` module beside them, a shared module (ADR-0070)
+	// or a composable (ADR-0069), is oxlint's alone, which runs the baseline over it.
+	lint: async (files, context) =>
+		mergeLintResults(
+			await Promise.all([
+				lintWithOxlint(files, context),
+				lintWithEslint(
+					files.filter((file) => file.endsWith(".vue")),
+					context,
+				),
+			]),
+		),
 };
 
 export default toolchain;
@@ -64,7 +64,7 @@ export default toolchain;
  * imported props type fails to compile.
  */
 const projectFs = {
-  fileExists: (path: string): boolean => existsSync(path) && statSync(path).isFile(),
-  readFile: (path: string): string | undefined => readFileSync(path, "utf8"),
-  realpath: (path: string): string => realpathSync(path),
+	fileExists: (path: string): boolean => existsSync(path) && statSync(path).isFile(),
+	readFile: (path: string): string | undefined => readFileSync(path, "utf8"),
+	realpath: (path: string): string => realpathSync(path),
 };

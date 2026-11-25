@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button, {
-  type ButtonProps,
-  type ButtonSize,
+	type ButtonProps,
+	type ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/vue/Button.vue";
 
 // @uf-expect TS2322 Button.type:ButtonProps
@@ -11,5 +11,5 @@ const size: ButtonSize = "huge";
 </script>
 
 <template>
-  <Button :label="props.label" :data-size="size" />
+	<Button :label="props.label" :data-size="size" />
 </template>

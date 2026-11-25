@@ -30,11 +30,11 @@ React's output for the Counter (Appendix A), with the class names unchanged:
 
 ```tsx
 <div className="counter" data-uf-c3a1>
-  <output data-uf-c3a1>{count}</output>
-  {doubled > 10 ? <span data-uf-c3a1>Big</span> : null}
-  <button type="button" onClick={increment} data-uf-c3a1>
-    +{step}
-  </button>
+	<output data-uf-c3a1>{count}</output>
+	{doubled > 10 ? <span data-uf-c3a1>Big</span> : null}
+	<button type="button" onClick={increment} data-uf-c3a1>
+		+{step}
+	</button>
 </div>
 ```
 

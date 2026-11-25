@@ -5,13 +5,13 @@ import { Showcase } from "./Showcase.tsx";
 
 const root = document.getElementById("app");
 if (root) {
-  render(
-    () => (
-      <>
-        <Hello />
-        <Showcase />
-      </>
-    ),
-    root,
-  );
+	render(
+		() => (
+			<>
+				<Hello />
+				<Showcase />
+			</>
+		),
+		root,
+	);
 }

@@ -20,23 +20,23 @@ import { findInstalled, resolveInstalled, resolveToolBin } from "./resolve.ts";
 
 /** Where a lint runner finds its configuration. */
 export interface LintOptions {
-  /**
-   * The linter's configuration file. By default, the toolchain directory's own:
-   * `output.oxlintrc.json` for oxlint, `eslint.config.js` for ESLint.
-   */
-  config?: string;
+	/**
+	 * The linter's configuration file. By default, the toolchain directory's own:
+	 * `output.oxlintrc.json` for oxlint, `eslint.config.js` for ESLint.
+	 */
+	config?: string;
 }
 
 /** How {@link lintWithEslint} runs. */
 export interface EslintOptions extends LintOptions {
-  /**
-   * The tsconfig whose compiler options type the files, for type-aware rules. The run writes a
-   * temporary tsconfig into `<toolchainDir>/.uf-tmp/` that extends it and lists exactly the
-   * files, as a checker's run does (L4), and gives it to the parser as
-   * `parserOptions.project`: typescript-eslint's, which the configuration names. Without it,
-   * rules get no types, and a type-aware rule fails its run.
-   */
-  tsconfig?: string;
+	/**
+	 * The tsconfig whose compiler options type the files, for type-aware rules. The run writes a
+	 * temporary tsconfig into `<toolchainDir>/.uf-tmp/` that extends it and lists exactly the
+	 * files, as a checker's run does (L4), and gives it to the parser as
+	 * `parserOptions.project`: typescript-eslint's, which the configuration names. Without it,
+	 * rules get no types, and a type-aware rule fails its run.
+	 */
+	tsconfig?: string;
 }
 
 /** A rule's code as oxlint prints it: `eslint(no-debugger)`, `react(jsx-key)`. */
@@ -47,18 +47,18 @@ const JS_PLUGIN_FAILURE = /^Error running JS plugin\b/;
 
 /** One problem in oxlint's JSON report (`--format=json`). */
 interface OxlintDiagnostic {
-  message: string;
-  /** Absent for a syntax error and for an unused disable directive. */
-  code?: string;
-  help?: string;
-  filename: string;
-  labels?: { span: { line: number; column: number } }[];
+	message: string;
+	/** Absent for a syntax error and for an unused disable directive. */
+	code?: string;
+	help?: string;
+	filename: string;
+	labels?: { span: { line: number; column: number } }[];
 }
 
 /** oxlint's JSON report. */
 interface OxlintReport {
-  diagnostics: OxlintDiagnostic[];
-  number_of_files: number;
+	diagnostics: OxlintDiagnostic[];
+	number_of_files: number;
 }
 
 /**
@@ -76,107 +76,107 @@ interface OxlintReport {
  * with a code that disagrees with the report.
  */
 export async function lintWithOxlint(
-  files: readonly string[],
-  context: ToolchainContext,
-  options: LintOptions = {},
+	files: readonly string[],
+	context: ToolchainContext,
+	options: LintOptions = {},
 ): Promise<Map<string, ToolchainMessage[]>> {
-  assertFilesToCheck(files, "lint");
-  const config = configFile(context, options, "output.oxlintrc.json", "oxlint");
-  const bin = resolveToolBin(context.toolchainDir, "oxlint", "oxlint");
-  // One real path per file, so a file given twice (once through a symlink) is counted once:
-  // the count of files oxlint linted is checked against it.
-  const paths = [...new Set(files.map((file) => realpathSync(file)))];
-  const run = await execute(
-    process.execPath,
-    [
-      bin,
-      `--config=${config}`,
-      "--disable-nested-config",
-      "--format=json",
-      "--deny-warnings",
-      "--report-unused-disable-directives-severity=error",
-      ...paths,
-    ],
-    realpathSync(context.toolchainDir),
-  );
-  const report = readOxlintReport(run);
-  if (report.number_of_files !== paths.length) {
-    throw checkerFailed(
-      "oxlint",
-      run,
-      `it linted ${report.number_of_files} of the ${paths.length} files it was given, so it skipped some.`,
-    );
-  }
-  if (report.diagnostics.some((problem) => JS_PLUGIN_FAILURE.test(problem.message))) {
-    throw checkerFailed("oxlint", run, "a JS plugin failed, so its rules did not run.");
-  }
-  // With --deny-warnings, oxlint exits with 1 exactly when it reports a problem.
-  if (run.code !== (report.diagnostics.length > 0 ? 1 : 0)) {
-    throw checkerFailed(
-      "oxlint",
-      run,
-      `its exit code disagrees with the ${report.diagnostics.length} problem(s) it reported.`,
-    );
-  }
-  const diagnostics = diagnosticsByFile(files, config);
-  for (const problem of report.diagnostics)
-    diagnostics.add(problem.filename, oxlintMessage(problem));
-  return sortMessages(diagnostics.results);
+	assertFilesToCheck(files, "lint");
+	const config = configFile(context, options, "output.oxlintrc.json", "oxlint");
+	const bin = resolveToolBin(context.toolchainDir, "oxlint", "oxlint");
+	// One real path per file, so a file given twice (once through a symlink) is counted once:
+	// the count of files oxlint linted is checked against it.
+	const paths = [...new Set(files.map((file) => realpathSync(file)))];
+	const run = await execute(
+		process.execPath,
+		[
+			bin,
+			`--config=${config}`,
+			"--disable-nested-config",
+			"--format=json",
+			"--deny-warnings",
+			"--report-unused-disable-directives-severity=error",
+			...paths,
+		],
+		realpathSync(context.toolchainDir),
+	);
+	const report = readOxlintReport(run);
+	if (report.number_of_files !== paths.length) {
+		throw checkerFailed(
+			"oxlint",
+			run,
+			`it linted ${report.number_of_files} of the ${paths.length} files it was given, so it skipped some.`,
+		);
+	}
+	if (report.diagnostics.some((problem) => JS_PLUGIN_FAILURE.test(problem.message))) {
+		throw checkerFailed("oxlint", run, "a JS plugin failed, so its rules did not run.");
+	}
+	// With --deny-warnings, oxlint exits with 1 exactly when it reports a problem.
+	if (run.code !== (report.diagnostics.length > 0 ? 1 : 0)) {
+		throw checkerFailed(
+			"oxlint",
+			run,
+			`its exit code disagrees with the ${report.diagnostics.length} problem(s) it reported.`,
+		);
+	}
+	const diagnostics = diagnosticsByFile(files, config);
+	for (const problem of report.diagnostics)
+		diagnostics.add(problem.filename, oxlintMessage(problem));
+	return sortMessages(diagnostics.results);
 }
 
 /** Reads oxlint's report, rejecting a run that did not end with one. */
 function readOxlintReport(run: ProcessRun): OxlintReport {
-  if (run.signal) throw checkerFailed("oxlint", run, "it did not finish.");
-  // A run prints its report to stdout and nothing else. A configuration oxlint cannot read, or
-  // a path it cannot find, is plain text instead.
-  if (run.stderr.trim() !== "") throw checkerFailed("oxlint", run, "it wrote to stderr.");
-  let report: unknown;
-  try {
-    report = JSON.parse(run.stdout);
-  } catch {
-    throw checkerFailed("oxlint", run, "it printed output this toolchain cannot read.");
-  }
-  if (!isOxlintReport(report)) {
-    throw checkerFailed("oxlint", run, "its report does not have the shape this toolchain reads.");
-  }
-  return report;
+	if (run.signal) throw checkerFailed("oxlint", run, "it did not finish.");
+	// A run prints its report to stdout and nothing else. A configuration oxlint cannot read, or
+	// a path it cannot find, is plain text instead.
+	if (run.stderr.trim() !== "") throw checkerFailed("oxlint", run, "it wrote to stderr.");
+	let report: unknown;
+	try {
+		report = JSON.parse(run.stdout);
+	} catch {
+		throw checkerFailed("oxlint", run, "it printed output this toolchain cannot read.");
+	}
+	if (!isOxlintReport(report)) {
+		throw checkerFailed("oxlint", run, "its report does not have the shape this toolchain reads.");
+	}
+	return report;
 }
 
 function isOxlintReport(value: unknown): value is OxlintReport {
-  if (typeof value !== "object" || value === null) return false;
-  const { diagnostics, number_of_files: count } = value as Partial<OxlintReport>;
-  return (
-    typeof count === "number" &&
-    Array.isArray(diagnostics) &&
-    diagnostics.every(
-      (problem: Partial<OxlintDiagnostic>) =>
-        typeof problem.message === "string" && typeof problem.filename === "string",
-    )
-  );
+	if (typeof value !== "object" || value === null) return false;
+	const { diagnostics, number_of_files: count } = value as Partial<OxlintReport>;
+	return (
+		typeof count === "number" &&
+		Array.isArray(diagnostics) &&
+		diagnostics.every(
+			(problem: Partial<OxlintDiagnostic>) =>
+				typeof problem.message === "string" && typeof problem.filename === "string",
+		)
+	);
 }
 
 function oxlintMessage(problem: OxlintDiagnostic): ToolchainMessage {
-  const span = problem.labels?.[0]?.span;
-  const code = problem.code === undefined ? undefined : ruleName(problem.code);
-  return {
-    message: withHelp(problem.message, problem.help),
-    ...(span ? { line: span.line, column: span.column } : {}),
-    ...(code === undefined ? {} : { code }),
-  };
+	const span = problem.labels?.[0]?.span;
+	const code = problem.code === undefined ? undefined : ruleName(problem.code);
+	return {
+		message: withHelp(problem.message, problem.help),
+		...(span ? { line: span.line, column: span.column } : {}),
+		...(code === undefined ? {} : { code }),
+	};
 }
 
 /** `eslint(no-debugger)` as `no-debugger`, `react(jsx-key)` as `react/jsx-key`: config names. */
 function ruleName(code: string): string {
-  const match = OXLINT_CODE.exec(code);
-  if (!match) return code;
-  const [, plugin = "", rule = ""] = match;
-  return plugin === "eslint" ? rule : `${plugin}/${rule}`;
+	const match = OXLINT_CODE.exec(code);
+	if (!match) return code;
+	const [, plugin = "", rule = ""] = match;
+	return plugin === "eslint" ? rule : `${plugin}/${rule}`;
 }
 
 /** A problem's message and oxlint's advice on it, as one text. */
 function withHelp(message: string, help: string | undefined): string {
-  if (!help) return message;
-  return `${/[.?!]$/.test(message) ? message : `${message}.`} ${help}`;
+	if (!help) return message;
+	return `${/[.?!]$/.test(message) ? message : `${message}.`} ${help}`;
 }
 
 /**
@@ -215,20 +215,20 @@ process.stdout.write(
 
 /** One message in ESLint's results. */
 interface EslintMessage {
-  /** Absent (null) for a parsing error and for ESLint's own notices. */
-  ruleId: string | null;
-  severity: 1 | 2;
-  message: string;
-  line?: number;
-  column?: number;
-  fatal?: boolean;
+	/** Absent (null) for a parsing error and for ESLint's own notices. */
+	ruleId: string | null;
+	severity: 1 | 2;
+	message: string;
+	line?: number;
+	column?: number;
+	fatal?: boolean;
 }
 
 /** ESLint's results for one file. */
 interface EslintResult {
-  filePath: string;
-  messages: EslintMessage[];
-  suppressedMessages: EslintMessage[];
+	filePath: string;
+	messages: EslintMessage[];
+	suppressedMessages: EslintMessage[];
 }
 
 /** ESLint's notice for a file it was given and did not lint. */
@@ -252,70 +252,70 @@ const IGNORED = /^File ignored\b/;
  * error.
  */
 export async function lintWithEslint(
-  files: readonly string[],
-  context: ToolchainContext,
-  options: EslintOptions = {},
+	files: readonly string[],
+	context: ToolchainContext,
+	options: EslintOptions = {},
 ): Promise<Map<string, ToolchainMessage[]>> {
-  assertFilesToCheck(files, "lint");
-  const config = configFile(context, options, "eslint.config.js", "ESLint");
-  const base = options.tsconfig === undefined ? undefined : resolve(options.tsconfig);
-  if (base !== undefined && !existsSync(base)) {
-    throw new Error(`${base} does not exist: type-aware rules read the files' types through it.`);
-  }
-  const eslint = resolveEslint(context.toolchainDir);
-  // Real paths: ESLint lints nothing outside its base path, and a path through a symlink (macOS
-  // reaches its temporary directory through one) is outside the real one.
-  const paths = [...new Set(files.map((file) => realpathSync(file)))];
-  const cwd = realpathSync(context.toolchainDir);
-  const typed = base === undefined ? undefined : await writeProject(cwd, base, paths);
-  let run: ProcessRun;
-  try {
-    const request = {
-      eslint: pathToFileURL(eslint).href,
-      config: realpathSync(config),
-      overrideConfig: {
-        linterOptions: { noInlineConfig: true },
-        ...(typed === undefined ? {} : { languageOptions: { parserOptions: typed.parserOptions } }),
-      },
-      cwd: commonDirectory(paths),
-      files: paths,
-    };
-    // The request goes on standard input: it lists every file, and as one argument it would pass
-    // Linux's limit of 128 KiB on a large corpus (`spawn E2BIG`).
-    run = await execute(
-      process.execPath,
-      ["--input-type=module", "--eval", ESLINT_RUN],
-      cwd,
-      JSON.stringify(request),
-    );
-  } finally {
-    if (typed !== undefined) await rm(typed.directory, { recursive: true, force: true });
-  }
-  const results = readEslintResults(run);
-  const diagnostics = diagnosticsByFile(files, config);
-  for (const { filePath, messages, suppressedMessages } of results) {
-    for (const message of messages) {
-      if (message.ruleId === null && !message.fatal && IGNORED.test(message.message)) {
-        throw checkerFailed("ESLint", run, `it skipped ${filePath}: ${message.message}`);
-      }
-      diagnostics.add(filePath, eslintMessage(message));
-    }
-    for (const message of suppressedMessages) {
-      diagnostics.add(filePath, eslintMessage(message, "suppressed"));
-    }
-  }
-  const linted = new Set(results.map((result) => result.filePath));
-  const skipped = paths.filter((path) => !linted.has(path));
-  if (skipped.length > 0) {
-    throw checkerFailed("ESLint", run, `it returned no results for ${skipped.join(", ")}.`);
-  }
-  return sortMessages(diagnostics.results);
+	assertFilesToCheck(files, "lint");
+	const config = configFile(context, options, "eslint.config.js", "ESLint");
+	const base = options.tsconfig === undefined ? undefined : resolve(options.tsconfig);
+	if (base !== undefined && !existsSync(base)) {
+		throw new Error(`${base} does not exist: type-aware rules read the files' types through it.`);
+	}
+	const eslint = resolveEslint(context.toolchainDir);
+	// Real paths: ESLint lints nothing outside its base path, and a path through a symlink (macOS
+	// reaches its temporary directory through one) is outside the real one.
+	const paths = [...new Set(files.map((file) => realpathSync(file)))];
+	const cwd = realpathSync(context.toolchainDir);
+	const typed = base === undefined ? undefined : await writeProject(cwd, base, paths);
+	let run: ProcessRun;
+	try {
+		const request = {
+			eslint: pathToFileURL(eslint).href,
+			config: realpathSync(config),
+			overrideConfig: {
+				linterOptions: { noInlineConfig: true },
+				...(typed === undefined ? {} : { languageOptions: { parserOptions: typed.parserOptions } }),
+			},
+			cwd: commonDirectory(paths),
+			files: paths,
+		};
+		// The request goes on standard input: it lists every file, and as one argument it would pass
+		// Linux's limit of 128 KiB on a large corpus (`spawn E2BIG`).
+		run = await execute(
+			process.execPath,
+			["--input-type=module", "--eval", ESLINT_RUN],
+			cwd,
+			JSON.stringify(request),
+		);
+	} finally {
+		if (typed !== undefined) await rm(typed.directory, { recursive: true, force: true });
+	}
+	const results = readEslintResults(run);
+	const diagnostics = diagnosticsByFile(files, config);
+	for (const { filePath, messages, suppressedMessages } of results) {
+		for (const message of messages) {
+			if (message.ruleId === null && !message.fatal && IGNORED.test(message.message)) {
+				throw checkerFailed("ESLint", run, `it skipped ${filePath}: ${message.message}`);
+			}
+			diagnostics.add(filePath, eslintMessage(message));
+		}
+		for (const message of suppressedMessages) {
+			diagnostics.add(filePath, eslintMessage(message, "suppressed"));
+		}
+	}
+	const linted = new Set(results.map((result) => result.filePath));
+	const skipped = paths.filter((path) => !linted.has(path));
+	if (skipped.length > 0) {
+		throw checkerFailed("ESLint", run, `it returned no results for ${skipped.join(", ")}.`);
+	}
+	return sortMessages(diagnostics.results);
 }
 
 /** The temporary tsconfig a typed run reads, and the parser options that name it. */
 interface TypedProject {
-  directory: string;
-  parserOptions: { project: string; tsconfigRootDir: string };
+	directory: string;
+	parserOptions: { project: string; tsconfigRootDir: string };
 }
 
 /**
@@ -324,87 +324,87 @@ interface TypedProject {
  * lint with one toolchain at once.
  */
 async function writeProject(
-  toolchainDir: string,
-  base: string,
-  files: readonly string[],
+	toolchainDir: string,
+	base: string,
+	files: readonly string[],
 ): Promise<TypedProject> {
-  await mkdir(join(toolchainDir, ".uf-tmp"), { recursive: true });
-  const directory = await mkdtemp(join(toolchainDir, ".uf-tmp", "lint-"));
-  const project = join(directory, "tsconfig.json");
-  // `include: []` drops the base's globs, so the program holds the files and what they import.
-  const tsconfig = { extends: realpathSync(base), include: [], files };
-  try {
-    await writeFile(project, `${JSON.stringify(tsconfig, null, 2)}\n`);
-  } catch (error) {
-    await rm(directory, { recursive: true, force: true });
-    throw error;
-  }
-  return { directory, parserOptions: { project, tsconfigRootDir: directory } };
+	await mkdir(join(toolchainDir, ".uf-tmp"), { recursive: true });
+	const directory = await mkdtemp(join(toolchainDir, ".uf-tmp", "lint-"));
+	const project = join(directory, "tsconfig.json");
+	// `include: []` drops the base's globs, so the program holds the files and what they import.
+	const tsconfig = { extends: realpathSync(base), include: [], files };
+	try {
+		await writeFile(project, `${JSON.stringify(tsconfig, null, 2)}\n`);
+	} catch (error) {
+		await rm(directory, { recursive: true, force: true });
+		throw error;
+	}
+	return { directory, parserOptions: { project, tsconfigRootDir: directory } };
 }
 
 /** The entry of ESLint 9 or later, as installed for the toolchain directory. */
 function resolveEslint(toolchainDir: string): string {
-  const installed = findInstalled(toolchainDir, "eslint");
-  if (!installed) {
-    throw new Error(
-      `eslint is not installed in ${toolchainDir}: the toolchain directory must provide it ` +
-        `(in this repo, tests/toolchains/<target> lists it as a devDependency).`,
-    );
-  }
-  const { manifestPath, manifest } = installed;
-  // The flat configuration and the API options this runner passes arrived with ESLint 9.
-  const major = Number(manifest.version?.split(".")[0]);
-  if (!(major >= 9)) {
-    throw new Error(
-      `Expected ESLint 9 or later for ${toolchainDir}, found ${manifest.version ?? "no version"} at ${dirname(manifestPath)}.`,
-    );
-  }
-  const entry = resolveInstalled(toolchainDir, "eslint");
-  if (!entry) throw new Error(`eslint at ${dirname(manifestPath)} has no entry point.`);
-  return entry;
+	const installed = findInstalled(toolchainDir, "eslint");
+	if (!installed) {
+		throw new Error(
+			`eslint is not installed in ${toolchainDir}: the toolchain directory must provide it ` +
+				`(in this repo, tests/toolchains/<target> lists it as a devDependency).`,
+		);
+	}
+	const { manifestPath, manifest } = installed;
+	// The flat configuration and the API options this runner passes arrived with ESLint 9.
+	const major = Number(manifest.version?.split(".")[0]);
+	if (!(major >= 9)) {
+		throw new Error(
+			`Expected ESLint 9 or later for ${toolchainDir}, found ${manifest.version ?? "no version"} at ${dirname(manifestPath)}.`,
+		);
+	}
+	const entry = resolveInstalled(toolchainDir, "eslint");
+	if (!entry) throw new Error(`eslint at ${dirname(manifestPath)} has no entry point.`);
+	return entry;
 }
 
 /** Reads ESLint's results, rejecting a run that did not end with them. */
 function readEslintResults(run: ProcessRun): EslintResult[] {
-  if (run.signal) throw checkerFailed("ESLint", run, "it did not finish.");
-  // A configuration or a plugin that fails to load throws: the run ends with its stack.
-  if (run.code !== 0) throw checkerFailed("ESLint", run, "it could not lint the files.");
-  if (run.stderr.trim() !== "") throw checkerFailed("ESLint", run, "it wrote to stderr.");
-  let results: unknown;
-  try {
-    results = JSON.parse(run.stdout);
-  } catch {
-    throw checkerFailed("ESLint", run, "it printed output this toolchain cannot read.");
-  }
-  if (!Array.isArray(results) || !results.every(isEslintResult)) {
-    throw checkerFailed("ESLint", run, "its results do not have the shape this toolchain reads.");
-  }
-  return results;
+	if (run.signal) throw checkerFailed("ESLint", run, "it did not finish.");
+	// A configuration or a plugin that fails to load throws: the run ends with its stack.
+	if (run.code !== 0) throw checkerFailed("ESLint", run, "it could not lint the files.");
+	if (run.stderr.trim() !== "") throw checkerFailed("ESLint", run, "it wrote to stderr.");
+	let results: unknown;
+	try {
+		results = JSON.parse(run.stdout);
+	} catch {
+		throw checkerFailed("ESLint", run, "it printed output this toolchain cannot read.");
+	}
+	if (!Array.isArray(results) || !results.every(isEslintResult)) {
+		throw checkerFailed("ESLint", run, "its results do not have the shape this toolchain reads.");
+	}
+	return results;
 }
 
 function isEslintResult(value: unknown): value is EslintResult {
-  if (typeof value !== "object" || value === null) return false;
-  const { filePath, messages, suppressedMessages } = value as Partial<EslintResult>;
-  return (
-    typeof filePath === "string" &&
-    Array.isArray(messages) &&
-    Array.isArray(suppressedMessages) &&
-    [...messages, ...suppressedMessages].every(
-      (message: Partial<EslintMessage>) =>
-        typeof message.message === "string" &&
-        (typeof message.ruleId === "string" || message.ruleId === null),
-    )
-  );
+	if (typeof value !== "object" || value === null) return false;
+	const { filePath, messages, suppressedMessages } = value as Partial<EslintResult>;
+	return (
+		typeof filePath === "string" &&
+		Array.isArray(messages) &&
+		Array.isArray(suppressedMessages) &&
+		[...messages, ...suppressedMessages].every(
+			(message: Partial<EslintMessage>) =>
+				typeof message.message === "string" &&
+				(typeof message.ruleId === "string" || message.ruleId === null),
+		)
+	);
 }
 
 function eslintMessage(message: EslintMessage, kind?: "suppressed"): ToolchainMessage {
-  const prefix = kind === "suppressed" ? "suppressed: " : message.severity === 1 ? "warning: " : "";
-  return {
-    message: `${prefix}${message.message}`,
-    ...(message.line === undefined ? {} : { line: message.line }),
-    ...(message.column === undefined ? {} : { column: message.column }),
-    ...(message.ruleId === null ? {} : { code: message.ruleId }),
-  };
+	const prefix = kind === "suppressed" ? "suppressed: " : message.severity === 1 ? "warning: " : "";
+	return {
+		message: `${prefix}${message.message}`,
+		...(message.line === undefined ? {} : { line: message.line }),
+		...(message.column === undefined ? {} : { column: message.column }),
+		...(message.ruleId === null ? {} : { code: message.ruleId }),
+	};
 }
 
 /**
@@ -412,41 +412,41 @@ function eslintMessage(message: EslintMessage, kind?: "suppressed"): ToolchainMe
  * language): one entry per path, with every run's messages, in a stable order.
  */
 export function mergeLintResults(
-  results: readonly ReadonlyMap<string, readonly ToolchainMessage[]>[],
+	results: readonly ReadonlyMap<string, readonly ToolchainMessage[]>[],
 ): Map<string, ToolchainMessage[]> {
-  const merged = new Map<string, ToolchainMessage[]>();
-  for (const result of results) {
-    for (const [path, messages] of result) {
-      merged.set(path, [...(merged.get(path) ?? []), ...messages]);
-    }
-  }
-  return sortMessages(merged);
+	const merged = new Map<string, ToolchainMessage[]>();
+	for (const result of results) {
+		for (const [path, messages] of result) {
+			merged.set(path, [...(merged.get(path) ?? []), ...messages]);
+		}
+	}
+	return sortMessages(merged);
 }
 
 /** The configuration a runner uses, which must exist: a linter without one checks nothing. */
 function configFile(
-  context: ToolchainContext,
-  options: LintOptions,
-  name: string,
-  tool: string,
+	context: ToolchainContext,
+	options: LintOptions,
+	name: string,
+	tool: string,
 ): string {
-  const config = resolve(options.config ?? join(context.toolchainDir, name));
-  if (!existsSync(config)) {
-    throw new Error(`${config} does not exist: ${tool} lints with the toolchain's configuration.`);
-  }
-  return config;
+	const config = resolve(options.config ?? join(context.toolchainDir, name));
+	if (!existsSync(config)) {
+		throw new Error(`${config} does not exist: ${tool} lints with the toolchain's configuration.`);
+	}
+	return config;
 }
 
 /** The deepest directory that holds every path. */
 function commonDirectory(paths: readonly string[]): string {
-  const [first = [], ...rest] = paths.map((path) => dirname(path).split(sep));
-  let length = first.length;
-  for (const parts of rest) {
-    let shared = 0;
-    while (shared < length && parts[shared] === first[shared]) shared++;
-    length = shared;
-  }
-  return first.slice(0, length).join(sep) || sep;
+	const [first = [], ...rest] = paths.map((path) => dirname(path).split(sep));
+	let length = first.length;
+	for (const parts of rest) {
+		let shared = 0;
+		while (shared < length && parts[shared] === first[shared]) shared++;
+		length = shared;
+	}
+	return first.slice(0, length).join(sep) || sep;
 }
 
 /**
@@ -454,20 +454,20 @@ function commonDirectory(paths: readonly string[]): string {
  * threads (oxlint) or its rules' order, and the results must not.
  */
 function sortMessages(results: Map<string, ToolchainMessage[]>): Map<string, ToolchainMessage[]> {
-  for (const [path, messages] of results) results.set(path, messages.toSorted(compareMessages));
-  return results;
+	for (const [path, messages] of results) results.set(path, messages.toSorted(compareMessages));
+	return results;
 }
 
 function compareMessages(a: ToolchainMessage, b: ToolchainMessage): number {
-  return (
-    (a.line ?? 0) - (b.line ?? 0) ||
-    (a.column ?? 0) - (b.column ?? 0) ||
-    compareText(a.code ?? "", b.code ?? "") ||
-    compareText(a.message, b.message)
-  );
+	return (
+		(a.line ?? 0) - (b.line ?? 0) ||
+		(a.column ?? 0) - (b.column ?? 0) ||
+		compareText(a.code ?? "", b.code ?? "") ||
+		compareText(a.message, b.message)
+	);
 }
 
 /** Code-unit order: unlike `localeCompare`, the same on every machine. */
 function compareText(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
+	return a < b ? -1 : a > b ? 1 : 0;
 }

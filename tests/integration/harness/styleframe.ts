@@ -23,10 +23,10 @@ export const STYLEFRAME_DECLARATIONS: string = join(ROOT, "styleframe.d.ts");
  * extractor reads only `className`: `_padding:lg`, `_border-radius:[4px]`.
  */
 export function sourceUtilities(content: string, file: string): string[] {
-  if (!file.endsWith(".uf.tsx")) return [];
-  return [...content.matchAll(/\bclass="([^"]*)"/g)].flatMap(([, value]) =>
-    value!.split(/\s+/).filter((name) => name.startsWith("_")),
-  );
+	if (!file.endsWith(".uf.tsx")) return [];
+	return [...content.matchAll(/\bclass="([^"]*)"/g)].flatMap(([, value]) =>
+		value!.split(/\s+/).filter((name) => name.startsWith("_")),
+	);
 }
 
 /**
@@ -38,18 +38,18 @@ export function sourceUtilities(content: string, file: string): string[] {
  * declarations into the working directory (`styleframe.d.ts` holds them).
  */
 export async function styleframePlugin(config: string = STYLEFRAME_CONFIG): Promise<Plugin[]> {
-  const { default: styleframe } = await import("styleframe/plugin/vite");
-  return [
-    styleframe({
-      entry: config,
-      silent: true,
-      minify: false,
-      dts: { enabled: false },
-      // No `*.styleframe.ts` extends the configuration: only the root is searched.
-      include: [join(ROOT, "*.styleframe.ts")],
-      scanner: { content: [join(ROOT, "cases/**/*.uf.tsx")], extractors: [sourceUtilities] },
-    }),
-  ].flat();
+	const { default: styleframe } = await import("styleframe/plugin/vite");
+	return [
+		styleframe({
+			entry: config,
+			silent: true,
+			minify: false,
+			dts: { enabled: false },
+			// No `*.styleframe.ts` extends the configuration: only the root is searched.
+			include: [join(ROOT, "*.styleframe.ts")],
+			scanner: { content: [join(ROOT, "cases/**/*.uf.tsx")], extractors: [sourceUtilities] },
+		}),
+	].flat();
 }
 
 /**
@@ -58,15 +58,15 @@ export async function styleframePlugin(config: string = STYLEFRAME_CONFIG): Prom
  * a `*.styleframe.ts` file reads and which would make every checker resolve `@styleframe/core`.
  */
 export async function styleframeDeclarations(config: string = STYLEFRAME_CONFIG): Promise<string> {
-  const [{ loadModule }, { transpile }] = await Promise.all([
-    import("styleframe/loader"),
-    import("styleframe/transpiler"),
-  ]);
-  const { instance } = await loadModule(config);
-  const { files } = await transpile(instance, { type: "dts" });
-  const shims = files.find((file) => file.name === "shims.d.ts");
-  if (!shims) throw new Error("Styleframe's transpiler wrote no shims.d.ts.");
-  return shims.content
-    .replace(/^\s*import type \{ Styleframe \} from "@styleframe\/core";\n\n?/m, "")
-    .replace(/^\s*export function styleframe\(\): Styleframe;\n\n?/m, "");
+	const [{ loadModule }, { transpile }] = await Promise.all([
+		import("styleframe/loader"),
+		import("styleframe/transpiler"),
+	]);
+	const { instance } = await loadModule(config);
+	const { files } = await transpile(instance, { type: "dts" });
+	const shims = files.find((file) => file.name === "shims.d.ts");
+	if (!shims) throw new Error("Styleframe's transpiler wrote no shims.d.ts.");
+	return shims.content
+		.replace(/^\s*import type \{ Styleframe \} from "@styleframe\/core";\n\n?/m, "")
+		.replace(/^\s*export function styleframe\(\): Styleframe;\n\n?/m, "");
 }

@@ -9,8 +9,8 @@ import target from "./src/index.ts";
 import { toolchain } from "./src/toolchain/index.ts";
 
 const context = {
-  root: fileURLToPath(new URL(".", import.meta.url)),
-  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/solid", import.meta.url)),
+	root: fileURLToPath(new URL(".", import.meta.url)),
+	toolchainDir: fileURLToPath(new URL("../../tests/toolchains/solid", import.meta.url)),
 };
 
 /**
@@ -18,23 +18,23 @@ const context = {
  * the toolchain's own Vite configuration and mount adapter (test/render-parity.browser.test.ts).
  */
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          environment: "node",
-          include: ["test/**/*.test.ts"],
-          exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
-        },
-      },
-      browserProject({
-        provider: playwright(),
-        vite: await toolchain.vite("browser", context),
-        modules: { target, extension: ".tsx", formatted: true },
-      }),
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					environment: "node",
+					include: ["test/**/*.test.ts"],
+					exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
+				},
+			},
+			browserProject({
+				provider: playwright(),
+				vite: await toolchain.vite("browser", context),
+				modules: { target, extension: ".tsx", formatted: true },
+			}),
+		],
+	},
 });
 
 export default config;

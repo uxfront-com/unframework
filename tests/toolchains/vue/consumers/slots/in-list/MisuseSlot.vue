@@ -3,8 +3,8 @@ import Steps from "../../../../../integration/cases/slots/in-list/__output__/vue
 </script>
 
 <template>
-  <Steps :steps="['Boil']">
-    <!-- @uf-expect TS2493 Steps.slot:marker -->
-    <template #marker="props">Content</template>
-  </Steps>
+	<Steps :steps="['Boil']">
+		<!-- @uf-expect TS2493 Steps.slot:marker -->
+		<template #marker="props">Content</template>
+	</Steps>
 </template>

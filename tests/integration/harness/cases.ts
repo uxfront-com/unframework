@@ -16,20 +16,20 @@ import { REFERENCE } from "./targets.ts";
  * oracle when absent, as `compile()`'s default.
  */
 export interface CorpusCaseConfig extends CaseConfig {
-  typeOracle?: "tsgo";
+	typeOracle?: "tsgo";
 }
 
 /** One input of a case the compiler compiles: a `.uf.tsx` component, or a `.uf.ts` composable. */
 export interface CaseSource {
-  /** The `.uf.tsx` or `.uf.ts` file (absolute). */
-  source: string;
-  /** Its file name relative to the cases directory, as the compiler sees it. */
-  filename: string;
-  /**
-   * Its IR snapshot, relative to `__output__/`: `ir.json` for the main source, and
-   * `ir.<Stem>.json` for each other (ADR-0057), `ir.useToggle.json` for `useToggle.uf.ts`.
-   */
-  ir: string;
+	/** The `.uf.tsx` or `.uf.ts` file (absolute). */
+	source: string;
+	/** Its file name relative to the cases directory, as the compiler sees it. */
+	filename: string;
+	/**
+	 * Its IR snapshot, relative to `__output__/`: `ir.json` for the main source, and
+	 * `ir.<Stem>.json` for each other (ADR-0057), `ir.useToggle.json` for `useToggle.uf.ts`.
+	 */
+	ir: string;
 }
 
 /**
@@ -37,108 +37,108 @@ export interface CaseSource {
  * each source that imports it copies it unchanged into the output tree, at its own file name.
  */
 export interface CaseModule {
-  /** The `.ts` file (absolute). */
-  source: string;
-  /** Its file name relative to the cases directory. */
-  filename: string;
+	/** The `.ts` file (absolute). */
+	source: string;
+	/** Its file name relative to the cases directory. */
+	filename: string;
 }
 
 /** One case of the corpus. */
 export interface CaseInfo {
-  /** `area/name`, relative to the cases directory. */
-  id: string;
-  /** The case directory (absolute). */
-  dir: string;
-  /** The main `.uf.tsx` input (absolute): what the spec and the SSR scenarios render. */
-  source: string;
-  /** The main input's file name relative to the cases directory, as the compiler sees it. */
-  filename: string;
-  /**
-   * Every input, sorted by file name: the main `.uf.tsx`, its children or harness parents
-   * (ADR-0057), and the `.uf.ts` composables (ADR-0069). Each compiles to every target.
-   */
-  sources: CaseSource[];
-  /** The case's `.ts` modules but its spec, sorted by file name (ADR-0070). */
-  modules: CaseModule[];
-  /** The browser spec, absent for diagnostics cases. */
-  spec: string | undefined;
-  config: CorpusCaseConfig;
+	/** `area/name`, relative to the cases directory. */
+	id: string;
+	/** The case directory (absolute). */
+	dir: string;
+	/** The main `.uf.tsx` input (absolute): what the spec and the SSR scenarios render. */
+	source: string;
+	/** The main input's file name relative to the cases directory, as the compiler sees it. */
+	filename: string;
+	/**
+	 * Every input, sorted by file name: the main `.uf.tsx`, its children or harness parents
+	 * (ADR-0057), and the `.uf.ts` composables (ADR-0069). Each compiles to every target.
+	 */
+	sources: CaseSource[];
+	/** The case's `.ts` modules but its spec, sorted by file name (ADR-0070). */
+	modules: CaseModule[];
+	/** The browser spec, absent for diagnostics cases. */
+	spec: string | undefined;
+	config: CorpusCaseConfig;
 }
 
 const CASE_KEYS = new Set([
-  "description",
-  "main",
-  "ssr",
-  "ssrThrows",
-  "axe",
-  "requires",
-  "reference",
-  "colorScheme",
-  "typeOracle",
+	"description",
+	"main",
+	"ssr",
+	"ssrThrows",
+	"axe",
+	"requires",
+	"reference",
+	"colorScheme",
+	"typeOracle",
 ]);
 
 /** Every case, sorted by id. Throws on a malformed case, so a broken corpus is loud. */
 export function listCases(casesDir: string = CASES_DIR): CaseInfo[] {
-  const cases: CaseInfo[] = [];
-  for (const area of sortedDirectories(casesDir)) {
-    for (const name of sortedDirectories(join(casesDir, area))) {
-      const id = `${area}/${name}`;
-      if (!KEBAB_CASE.test(area) || !KEBAB_CASE.test(name)) {
-        throw new Error(
-          `Case ${id}: an area and a case name are kebab-case, such as basics/hello.`,
-        );
-      }
-      cases.push(readCase(casesDir, id));
-    }
-  }
-  if (!cases.length) throw new Error(`No cases under ${casesDir}.`);
-  return cases;
+	const cases: CaseInfo[] = [];
+	for (const area of sortedDirectories(casesDir)) {
+		for (const name of sortedDirectories(join(casesDir, area))) {
+			const id = `${area}/${name}`;
+			if (!KEBAB_CASE.test(area) || !KEBAB_CASE.test(name)) {
+				throw new Error(
+					`Case ${id}: an area and a case name are kebab-case, such as basics/hello.`,
+				);
+			}
+			cases.push(readCase(casesDir, id));
+		}
+	}
+	if (!cases.length) throw new Error(`No cases under ${casesDir}.`);
+	return cases;
 }
 
 /** Each case's `case.json`, by id: what the harness provides to every project. */
 export function caseConfigs(cases: readonly CaseInfo[]): Record<string, CaseConfig> {
-  return Object.fromEntries(cases.map((info) => [info.id, info.config]));
+	return Object.fromEntries(cases.map((info) => [info.id, info.config]));
 }
 
 function readCase(casesDir: string, id: string): CaseInfo {
-  const dir = join(casesDir, id);
-  const files = readdirSync(dir).toSorted();
-  // The main input is a component: a case still needs one (ADR-0069).
-  const inputs = files.filter((file) => file.endsWith(".uf.tsx"));
-  if (!inputs.length) throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
-  const specs = files.filter((file) => file.endsWith(".test.ts"));
-  if (specs.length > 1) throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
-  const modules = files.filter(
-    (file) => file.endsWith(".ts") && !file.endsWith(".test.ts") && !file.endsWith(".uf.ts"),
-  );
-  const config = readConfig(id, join(dir, "case.json"));
-  const main = mainSource(id, inputs, config.main);
-  const sources = files
-    .filter((file) => file.endsWith(".uf.tsx") || file.endsWith(".uf.ts"))
-    .map((input) => ({
-      source: join(dir, input),
-      filename: `${id}/${input}`,
-      ir: input === main ? "ir.json" : `ir.${input.replace(/\.uf\.tsx?$/, "")}.json`,
-    }));
-  // `Toggle.uf.tsx` and `Toggle.uf.ts` would write one snapshot.
-  for (const [index, source] of sources.entries()) {
-    const other = sources.findIndex((each) => each.ir === source.ir);
-    if (other !== index) {
-      throw new Error(
-        `Case ${id}: ${basename(sources[other]!.source)} and ${basename(source.source)} both snapshot their IR as ${source.ir}: rename one.`,
-      );
-    }
-  }
-  return {
-    id,
-    dir,
-    source: join(dir, main),
-    filename: `${id}/${main}`,
-    sources,
-    modules: modules.map((file) => ({ source: join(dir, file), filename: `${id}/${file}` })),
-    spec: specs[0] && join(dir, specs[0]),
-    config,
-  };
+	const dir = join(casesDir, id);
+	const files = readdirSync(dir).toSorted();
+	// The main input is a component: a case still needs one (ADR-0069).
+	const inputs = files.filter((file) => file.endsWith(".uf.tsx"));
+	if (!inputs.length) throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
+	const specs = files.filter((file) => file.endsWith(".test.ts"));
+	if (specs.length > 1) throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
+	const modules = files.filter(
+		(file) => file.endsWith(".ts") && !file.endsWith(".test.ts") && !file.endsWith(".uf.ts"),
+	);
+	const config = readConfig(id, join(dir, "case.json"));
+	const main = mainSource(id, inputs, config.main);
+	const sources = files
+		.filter((file) => file.endsWith(".uf.tsx") || file.endsWith(".uf.ts"))
+		.map((input) => ({
+			source: join(dir, input),
+			filename: `${id}/${input}`,
+			ir: input === main ? "ir.json" : `ir.${input.replace(/\.uf\.tsx?$/, "")}.json`,
+		}));
+	// `Toggle.uf.tsx` and `Toggle.uf.ts` would write one snapshot.
+	for (const [index, source] of sources.entries()) {
+		const other = sources.findIndex((each) => each.ir === source.ir);
+		if (other !== index) {
+			throw new Error(
+				`Case ${id}: ${basename(sources[other]!.source)} and ${basename(source.source)} both snapshot their IR as ${source.ir}: rename one.`,
+			);
+		}
+	}
+	return {
+		id,
+		dir,
+		source: join(dir, main),
+		filename: `${id}/${main}`,
+		sources,
+		modules: modules.map((file) => ({ source: join(dir, file), filename: `${id}/${file}` })),
+		spec: specs[0] && join(dir, specs[0]),
+		config,
+	};
 }
 
 /**
@@ -147,121 +147,121 @@ function readCase(casesDir: string, id: string): CaseInfo {
  * side, and the corpus already holds cases named unlike their component.
  */
 function mainSource(id: string, inputs: readonly string[], main: string | undefined): string {
-  if (main === undefined) {
-    if (inputs.length === 1) return inputs[0]!;
-    throw new Error(
-      `Case ${id} holds ${inputs.join(", ")}: name the one the spec mounts in case.json, "main": "${inputs[0]}".`,
-    );
-  }
-  if (!inputs.includes(main)) {
-    throw new Error(
-      `Case ${id}: case.json's "main" names ${JSON.stringify(main)}, which is not one of its inputs (${inputs.join(", ")}).`,
-    );
-  }
-  return main;
+	if (main === undefined) {
+		if (inputs.length === 1) return inputs[0]!;
+		throw new Error(
+			`Case ${id} holds ${inputs.join(", ")}: name the one the spec mounts in case.json, "main": "${inputs[0]}".`,
+		);
+	}
+	if (!inputs.includes(main)) {
+		throw new Error(
+			`Case ${id}: case.json's "main" names ${JSON.stringify(main)}, which is not one of its inputs (${inputs.join(", ")}).`,
+		);
+	}
+	return main;
 }
 
 function readConfig(id: string, file: string): CorpusCaseConfig {
-  if (!existsSync(file)) return {};
-  const config = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
-  const problems: string[] = [];
-  for (const key of Object.keys(config)) {
-    if (!CASE_KEYS.has(key)) problems.push(`unknown key "${key}"`);
-  }
-  if (config.description !== undefined && typeof config.description !== "string") {
-    problems.push(`"description" must be a string`);
-  }
-  if (config.main !== undefined && typeof config.main !== "string") {
-    problems.push(`"main" must be the file name of one of the case's .uf.tsx inputs`);
-  }
-  // The target that writes the case's expectations in the reference's place (ADR-0057): the
-  // compile project checks why, against the capability cells.
-  if (
-    config.reference !== undefined &&
-    (typeof config.reference !== "string" ||
-      config.reference === REFERENCE ||
-      !(TARGET_NAMES as readonly string[]).includes(config.reference))
-  ) {
-    problems.push(
-      `"reference" must name a target other than ${REFERENCE}: ${TARGET_NAMES.filter((name) => name !== REFERENCE).join(", ")}`,
-    );
-  }
-  // Why every test of the case requires a capability (`CaseConfig.requires`, ADR-0050).
-  if (
-    config.requires !== undefined &&
-    (typeof config.requires !== "string" || !config.requires.trim())
-  ) {
-    problems.push(`"requires" must be a sentence saying why every test requires a capability`);
-  }
-  // The scheme the browser projects emulate (`CaseConfig.colorScheme`, ADR-0061).
-  if (
-    config.colorScheme !== undefined &&
-    !(COLOR_SCHEMES as readonly unknown[]).includes(config.colorScheme)
-  ) {
-    problems.push(`"colorScheme" must be one of ${COLOR_SCHEMES.map((s) => `"${s}"`).join(", ")}`);
-  }
-  if (
-    config.axe !== undefined &&
-    (!Array.isArray(config.axe) || config.axe.some((rule) => typeof rule !== "string"))
-  ) {
-    problems.push(`"axe" must be a list of axe rule ids`);
-  }
-  // Props the server render throws with, which L14 checks (`CaseConfig.ssrThrows`, ADR-0078).
-  if (config.ssrThrows !== undefined) {
-    const props = (config.ssrThrows as { props?: unknown } | null)?.props;
-    if (
-      typeof config.ssrThrows !== "object" ||
-      config.ssrThrows === null ||
-      Array.isArray(config.ssrThrows) ||
-      typeof props !== "object" ||
-      props === null ||
-      Array.isArray(props)
-    ) {
-      problems.push(
-        `"ssrThrows" must be { "props": {…} }, the props the server render throws with`,
-      );
-    }
-  }
-  if (config.ssr !== undefined) {
-    if (typeof config.ssr !== "object" || config.ssr === null || Array.isArray(config.ssr)) {
-      problems.push(`"ssr" must map scenario names to { "props": {…} }`);
-    } else {
-      for (const [scenario, value] of Object.entries(config.ssr)) {
-        if (!KEBAB_CASE.test(scenario))
-          problems.push(`SSR scenario "${scenario}", which is not kebab-case`);
-        const props = (value as { props?: unknown } | null)?.props;
-        if (
-          typeof value !== "object" ||
-          value === null ||
-          (props !== undefined && (typeof props !== "object" || props === null))
-        ) {
-          problems.push(`SSR scenario "${scenario}" must be { "props": {…} }`);
-        }
-      }
-    }
-  }
-  if (config.typeOracle !== undefined && config.typeOracle !== "tsgo") {
-    problems.push(`"typeOracle" must be "tsgo", or absent for the syntactic oracle`);
-  }
-  if (problems.length) throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
-  return config as CorpusCaseConfig;
+	if (!existsSync(file)) return {};
+	const config = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+	const problems: string[] = [];
+	for (const key of Object.keys(config)) {
+		if (!CASE_KEYS.has(key)) problems.push(`unknown key "${key}"`);
+	}
+	if (config.description !== undefined && typeof config.description !== "string") {
+		problems.push(`"description" must be a string`);
+	}
+	if (config.main !== undefined && typeof config.main !== "string") {
+		problems.push(`"main" must be the file name of one of the case's .uf.tsx inputs`);
+	}
+	// The target that writes the case's expectations in the reference's place (ADR-0057): the
+	// compile project checks why, against the capability cells.
+	if (
+		config.reference !== undefined &&
+		(typeof config.reference !== "string" ||
+			config.reference === REFERENCE ||
+			!(TARGET_NAMES as readonly string[]).includes(config.reference))
+	) {
+		problems.push(
+			`"reference" must name a target other than ${REFERENCE}: ${TARGET_NAMES.filter((name) => name !== REFERENCE).join(", ")}`,
+		);
+	}
+	// Why every test of the case requires a capability (`CaseConfig.requires`, ADR-0050).
+	if (
+		config.requires !== undefined &&
+		(typeof config.requires !== "string" || !config.requires.trim())
+	) {
+		problems.push(`"requires" must be a sentence saying why every test requires a capability`);
+	}
+	// The scheme the browser projects emulate (`CaseConfig.colorScheme`, ADR-0061).
+	if (
+		config.colorScheme !== undefined &&
+		!(COLOR_SCHEMES as readonly unknown[]).includes(config.colorScheme)
+	) {
+		problems.push(`"colorScheme" must be one of ${COLOR_SCHEMES.map((s) => `"${s}"`).join(", ")}`);
+	}
+	if (
+		config.axe !== undefined &&
+		(!Array.isArray(config.axe) || config.axe.some((rule) => typeof rule !== "string"))
+	) {
+		problems.push(`"axe" must be a list of axe rule ids`);
+	}
+	// Props the server render throws with, which L14 checks (`CaseConfig.ssrThrows`, ADR-0078).
+	if (config.ssrThrows !== undefined) {
+		const props = (config.ssrThrows as { props?: unknown } | null)?.props;
+		if (
+			typeof config.ssrThrows !== "object" ||
+			config.ssrThrows === null ||
+			Array.isArray(config.ssrThrows) ||
+			typeof props !== "object" ||
+			props === null ||
+			Array.isArray(props)
+		) {
+			problems.push(
+				`"ssrThrows" must be { "props": {…} }, the props the server render throws with`,
+			);
+		}
+	}
+	if (config.ssr !== undefined) {
+		if (typeof config.ssr !== "object" || config.ssr === null || Array.isArray(config.ssr)) {
+			problems.push(`"ssr" must map scenario names to { "props": {…} }`);
+		} else {
+			for (const [scenario, value] of Object.entries(config.ssr)) {
+				if (!KEBAB_CASE.test(scenario))
+					problems.push(`SSR scenario "${scenario}", which is not kebab-case`);
+				const props = (value as { props?: unknown } | null)?.props;
+				if (
+					typeof value !== "object" ||
+					value === null ||
+					(props !== undefined && (typeof props !== "object" || props === null))
+				) {
+					problems.push(`SSR scenario "${scenario}" must be { "props": {…} }`);
+				}
+			}
+		}
+	}
+	if (config.typeOracle !== undefined && config.typeOracle !== "tsgo") {
+		problems.push(`"typeOracle" must be "tsgo", or absent for the syntactic oracle`);
+	}
+	if (problems.length) throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
+	return config as CorpusCaseConfig;
 }
 
 /** The diagnostics a case expects (`__expected__/diagnostics.json`), or `undefined` if missing. */
 export function expectedDiagnostics(info: CaseInfo): ExpectedDiagnostic[] | undefined {
-  const file = join(info.dir, "__expected__", "diagnostics.json");
-  if (!existsSync(file)) return undefined;
-  return JSON.parse(readFileSync(file, "utf8")) as ExpectedDiagnostic[];
+	const file = join(info.dir, "__expected__", "diagnostics.json");
+	if (!existsSync(file)) return undefined;
+	return JSON.parse(readFileSync(file, "utf8")) as ExpectedDiagnostic[];
 }
 
 /** The fields of a JSON diagnostic the harness reads; the file holds the full form. */
 export interface ExpectedDiagnostic {
-  code: string;
-  severity: "error" | "warning" | "info";
-  message: string;
-  target?: string;
-  /** The fixes L1 applies, which the L1-fix-no-op canary corrupts. */
-  fixes?: readonly unknown[];
+	code: string;
+	severity: "error" | "warning" | "info";
+	message: string;
+	target?: string;
+	/** The fixes L1 applies, which the L1-fix-no-op canary corrupts. */
+	fixes?: readonly unknown[];
 }
 
 /**
@@ -270,17 +270,17 @@ export interface ExpectedDiagnostic {
  * the compile project must write it first (`pnpm test:update`).
  */
 export function expectsErrors(info: CaseInfo, target?: string): boolean {
-  const diagnostics = expectedDiagnostics(info);
-  if (!diagnostics) {
-    throw new Error(
-      `Missing artefact ${info.id}/__expected__/diagnostics.json. Run \`pnpm test:update\` to write it.`,
-    );
-  }
-  return diagnostics.some(
-    (diagnostic) =>
-      diagnostic.severity === "error" &&
-      (diagnostic.target === undefined || diagnostic.target === target),
-  );
+	const diagnostics = expectedDiagnostics(info);
+	if (!diagnostics) {
+		throw new Error(
+			`Missing artefact ${info.id}/__expected__/diagnostics.json. Run \`pnpm test:update\` to write it.`,
+		);
+	}
+	return diagnostics.some(
+		(diagnostic) =>
+			diagnostic.severity === "error" &&
+			(diagnostic.target === undefined || diagnostic.target === target),
+	);
 }
 
 /**
@@ -288,11 +288,11 @@ export function expectsErrors(info: CaseInfo, target?: string): boolean {
  * sure the case has no output, and fails the case's own test otherwise.
  */
 export function errorState(info: CaseInfo, target?: string): boolean | Error {
-  try {
-    return expectsErrors(info, target);
-  } catch (error) {
-    return error instanceof Error ? error : new Error(String(error));
-  }
+	try {
+		return expectsErrors(info, target);
+	} catch (error) {
+		return error instanceof Error ? error : new Error(String(error));
+	}
 }
 
 /**
@@ -301,73 +301,73 @@ export function errorState(info: CaseInfo, target?: string): boolean | Error {
  * string literal, because then the case's expectations cannot be told from stale ones.
  */
 export function parityScenarios(info: CaseInfo): string[] {
-  if (!info.spec) return [];
-  const source = readFileSync(info.spec, "utf8");
-  const calls = source.match(/\bexpectParity\s*\(/g)?.length ?? 0;
-  const names = [...source.matchAll(/\bexpectParity\s*\(\s*(["'`])([^"'`$\\\n]*)\1/g)].map(
-    (match) => match[2]!,
-  );
-  if (names.length !== calls) {
-    throw new Error(
-      `Case ${info.id}: ${basename(info.spec)} calls expectParity without naming the scenario in a string literal. The harness reads the names from the spec to tell the case's expectations from stale ones: write expectParity("initial").`,
-    );
-  }
-  // expectParity refuses these too, but only once the browser runs the spec; here the compile
-  // project names the case.
-  const malformed = names.filter((name) => !KEBAB_CASE.test(name));
-  if (malformed.length) {
-    throw new Error(
-      `Case ${info.id}: ${basename(info.spec)} names scenario(s) that are not kebab-case: ${malformed.map((name) => JSON.stringify(name)).join(", ")}.`,
-    );
-  }
-  // A name names one scenario: two checks of one name would settle the same trace (and DOM)
-  // twice, maybe once with steps and once without.
-  const repeated = [...new Set(names.filter((name, index) => names.indexOf(name) !== index))];
-  if (repeated.length) {
-    throw new Error(
-      `Case ${info.id}: ${basename(info.spec)} checks scenario(s) under a name twice: ${repeated.map((name) => JSON.stringify(name)).join(", ")}. Each scenario is unique in its case.`,
-    );
-  }
-  return [...new Set(names)].toSorted();
+	if (!info.spec) return [];
+	const source = readFileSync(info.spec, "utf8");
+	const calls = source.match(/\bexpectParity\s*\(/g)?.length ?? 0;
+	const names = [...source.matchAll(/\bexpectParity\s*\(\s*(["'`])([^"'`$\\\n]*)\1/g)].map(
+		(match) => match[2]!,
+	);
+	if (names.length !== calls) {
+		throw new Error(
+			`Case ${info.id}: ${basename(info.spec)} calls expectParity without naming the scenario in a string literal. The harness reads the names from the spec to tell the case's expectations from stale ones: write expectParity("initial").`,
+		);
+	}
+	// expectParity refuses these too, but only once the browser runs the spec; here the compile
+	// project names the case.
+	const malformed = names.filter((name) => !KEBAB_CASE.test(name));
+	if (malformed.length) {
+		throw new Error(
+			`Case ${info.id}: ${basename(info.spec)} names scenario(s) that are not kebab-case: ${malformed.map((name) => JSON.stringify(name)).join(", ")}.`,
+		);
+	}
+	// A name names one scenario: two checks of one name would settle the same trace (and DOM)
+	// twice, maybe once with steps and once without.
+	const repeated = [...new Set(names.filter((name, index) => names.indexOf(name) !== index))];
+	if (repeated.length) {
+		throw new Error(
+			`Case ${info.id}: ${basename(info.spec)} checks scenario(s) under a name twice: ${repeated.map((name) => JSON.stringify(name)).join(", ")}. Each scenario is unique in its case.`,
+		);
+	}
+	return [...new Set(names)].toSorted();
 }
 
 /** One test of a spec, as its source reads. */
 export interface SpecTest {
-  name: string;
-  /**
-   * The capabilities it declares it requires (`it(name, { requires: ["interactivity"] }, fn)`),
-   * in order: none when it declares none.
-   */
-  requires: string[];
-  /** Whether it checks a scenario before its first action (`view.user.…`), if it acts at all. */
-  checksFirst: boolean;
-  /** Whether it acts through `view.user`. */
-  acts: boolean;
-  /** Whether it wraps a step in `view.expectThrown`, which records L14 (ADR-0078). */
-  throws: boolean;
-  /** Whether it rerenders (`view.rerender(…)`). */
-  rerenders: boolean;
-  /**
-   * The first assertion after its first `expectParity`, as written (`expect.element(`,
-   * `expect.poll(` or `expect(`), or none.
-   */
-  firstAssertion: string | undefined;
-  /**
-   * The steps it takes (an action, a rerender or a clock tick of a mounted view) that an
-   * assertion comes after, or the test ends after, before any `expectParity` compares them:
-   * the first of each run of such steps, with what came next.
-   */
-  uncompared: UncomparedStep[];
+	name: string;
+	/**
+	 * The capabilities it declares it requires (`it(name, { requires: ["interactivity"] }, fn)`),
+	 * in order: none when it declares none.
+	 */
+	requires: string[];
+	/** Whether it checks a scenario before its first action (`view.user.…`), if it acts at all. */
+	checksFirst: boolean;
+	/** Whether it acts through `view.user`. */
+	acts: boolean;
+	/** Whether it wraps a step in `view.expectThrown`, which records L14 (ADR-0078). */
+	throws: boolean;
+	/** Whether it rerenders (`view.rerender(…)`). */
+	rerenders: boolean;
+	/**
+	 * The first assertion after its first `expectParity`, as written (`expect.element(`,
+	 * `expect.poll(` or `expect(`), or none.
+	 */
+	firstAssertion: string | undefined;
+	/**
+	 * The steps it takes (an action, a rerender or a clock tick of a mounted view) that an
+	 * assertion comes after, or the test ends after, before any `expectParity` compares them:
+	 * the first of each run of such steps, with what came next.
+	 */
+	uncompared: UncomparedStep[];
 }
 
 /** A step a test takes that no `expectParity` compares before an assertion or the test's end. */
 export interface UncomparedStep {
-  /** The step's line in the spec, from 1. */
-  line: number;
-  /** The step, as written (`view.user.type(`). */
-  step: string;
-  /** The assertion that came before any `expectParity`, as written, or none at the test's end. */
-  next: string | undefined;
+	/** The step's line in the spec, from 1. */
+	line: number;
+	/** The step, as written (`view.user.type(`). */
+	step: string;
+	/** The assertion that came before any `expectParity`, as written, or none at the test's end. */
+	next: string | undefined;
 }
 
 /** A test call with a string literal name: `it("…",` or `test("…",`. */
@@ -375,7 +375,7 @@ const TEST_CALL = /\b(?:it|test)\s*\(\s*(["'`])((?:(?!\1)[^\\\n])*)\1\s*,/g;
 
 /** An action a spec takes through `view.user`, called on anything else. */
 const DIRECT_ACTION =
-  /\.(?:click|dblClick|tripleClick|fill|type|clear|hover|unhover|selectOptions|wheel|focus|keyboard|tab)\s*\(/g;
+	/\.(?:click|dblClick|tripleClick|fill|type|clear|hover|unhover|selectOptions|wheel|focus|keyboard|tab)\s*\(/g;
 
 /** The wrapper around a step that throws (`view.expectThrown(() => view.user.click(…))`). */
 const THROWN_STEP = /\.expectThrown\s*\(/g;
@@ -388,18 +388,18 @@ const THROWN_STEP_CALL = /\.expectThrown\s*\(/;
  * on purpose and leaves no trace to compare (L14, ADR-0078), so it is no step here.
  */
 function withoutThrownSteps(code: string): string {
-  let result = code;
-  for (const match of code.matchAll(THROWN_STEP)) {
-    let depth = 1;
-    let end = match.index + match[0].length;
-    for (; end < code.length && depth > 0; end += 1) {
-      if (code[end] === "(") depth += 1;
-      else if (code[end] === ")") depth -= 1;
-    }
-    const start = match.index + match[0].length;
-    result = `${result.slice(0, start)}${code.slice(start, end - 1).replace(/[^\n]/g, " ")}${result.slice(end - 1)}`;
-  }
-  return result;
+	let result = code;
+	for (const match of code.matchAll(THROWN_STEP)) {
+		let depth = 1;
+		let end = match.index + match[0].length;
+		for (; end < code.length && depth > 0; end += 1) {
+			if (code[end] === "(") depth += 1;
+			else if (code[end] === ")") depth -= 1;
+		}
+		const start = match.index + match[0].length;
+		result = `${result.slice(0, start)}${code.slice(start, end - 1).replace(/[^\n]/g, " ")}${result.slice(end - 1)}`;
+	}
+	return result;
 }
 
 /** An action through `view.user`. */
@@ -417,7 +417,7 @@ const ASSERTION = /\bexpect\b(?:\s*\.\s*[A-Za-z]+)?\s*\(/;
  * (after which a tick is no step: the view records none) and a mount (a new view).
  */
 const EVENTS =
-  /\.user\.[A-Za-z]+\s*\(|\.rerender\s*\(|\.clock\.tick\s*\(|\.expectParity\s*\(|\bexpect\b(?:\s*\.\s*[A-Za-z]+)?\s*\(|\.unmount\s*\(|\bmount(?:Scenario)?\s*\(/g;
+	/\.user\.[A-Za-z]+\s*\(|\.rerender\s*\(|\.clock\.tick\s*\(|\.expectParity\s*\(|\bexpect\b(?:\s*\.\s*[A-Za-z]+)?\s*\(|\.unmount\s*\(|\bmount(?:Scenario)?\s*\(/g;
 
 /**
  * The tests of a spec, read from its source as `parityScenarios` reads the scenarios: each
@@ -428,45 +428,45 @@ const EVENTS =
  * it.
  */
 export function specTests(source: string): SpecTest[] {
-  const code = withoutThrownSteps(withoutComments(source));
-  const calls = [...code.matchAll(TEST_CALL)];
-  return calls.map((call, index) => {
-    const start = call.index + call[0].length;
-    const body = code.slice(start, calls[index + 1]?.index ?? code.length);
-    const fn = body.search(/=>|\bfunction\b/);
-    const header = fn === -1 ? body : body.slice(0, fn);
-    const parity = body.search(/\.expectParity\s*\(/);
-    const action = body.search(ACTION);
-    const assertion =
-      parity === -1 ? undefined : ASSERTION.exec(body.slice(parity))?.[0].replace(/\s+/g, "");
-    return {
-      name: call[2]!,
-      requires: declaredRequires(call[2]!, header),
-      checksFirst: parity !== -1 && (action === -1 || parity < action),
-      acts: action !== -1,
-      throws: THROWN_STEP_CALL.test(body),
-      rerenders: RERENDER.test(body),
-      firstAssertion: assertion,
-      uncompared: uncomparedSteps(code, start, body),
-    };
-  });
+	const code = withoutThrownSteps(withoutComments(source));
+	const calls = [...code.matchAll(TEST_CALL)];
+	return calls.map((call, index) => {
+		const start = call.index + call[0].length;
+		const body = code.slice(start, calls[index + 1]?.index ?? code.length);
+		const fn = body.search(/=>|\bfunction\b/);
+		const header = fn === -1 ? body : body.slice(0, fn);
+		const parity = body.search(/\.expectParity\s*\(/);
+		const action = body.search(ACTION);
+		const assertion =
+			parity === -1 ? undefined : ASSERTION.exec(body.slice(parity))?.[0].replace(/\s+/g, "");
+		return {
+			name: call[2]!,
+			requires: declaredRequires(call[2]!, header),
+			checksFirst: parity !== -1 && (action === -1 || parity < action),
+			acts: action !== -1,
+			throws: THROWN_STEP_CALL.test(body),
+			rerenders: RERENDER.test(body),
+			firstAssertion: assertion,
+			uncompared: uncomparedSteps(code, start, body),
+		};
+	});
 }
 
 /** The capability names a test's options declare in `requires`, which must be string literals. */
 function declaredRequires(name: string, header: string): string[] {
-  if (!/\brequires\s*:/.test(header)) return [];
-  const list = /\brequires\s*:\s*\[([^\]]*)\]/.exec(header)?.[1];
-  const items = list
-    ?.split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const names = items?.flatMap((item) => /^(["'])([a-z][a-z0-9-]*)\1$/.exec(item)?.[2] ?? []);
-  if (!items || !names || names.length !== items.length) {
-    throw new Error(
-      `The test ${JSON.stringify(name)} declares requires that is not an array of capability names in string literals: write requires: ["interactivity"]. The harness reads which tests run on a target from it.`,
-    );
-  }
-  return names;
+	if (!/\brequires\s*:/.test(header)) return [];
+	const list = /\brequires\s*:\s*\[([^\]]*)\]/.exec(header)?.[1];
+	const items = list
+		?.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean);
+	const names = items?.flatMap((item) => /^(["'])([a-z][a-z0-9-]*)\1$/.exec(item)?.[2] ?? []);
+	if (!items || !names || names.length !== items.length) {
+		throw new Error(
+			`The test ${JSON.stringify(name)} declares requires that is not an array of capability names in string literals: write requires: ["interactivity"]. The harness reads which tests run on a target from it.`,
+		);
+	}
+	return names;
 }
 
 /**
@@ -474,29 +474,29 @@ function declaredRequires(name: string, header: string): string[] {
  * `expectParity` compares them: the first step of each such run.
  */
 function uncomparedSteps(code: string, start: number, body: string): UncomparedStep[] {
-  const found: UncomparedStep[] = [];
-  let pending: { index: number; text: string } | undefined;
-  let unmounted = false;
-  const report = (next: string | undefined) => {
-    if (!pending) return;
-    found.push({
-      line: code.slice(0, start + pending.index).split("\n").length,
-      step: `view${pending.text}`,
-      next,
-    });
-    pending = undefined;
-  };
-  for (const match of body.matchAll(EVENTS)) {
-    const text = match[0].replace(/\s+/g, "");
-    if (text.startsWith(".expectParity")) pending = undefined;
-    else if (text.startsWith(".unmount")) unmounted = true;
-    else if (/^\.?mount/.test(text)) unmounted = false;
-    else if (text.startsWith("expect")) report(text);
-    // A tick once the view is unmounted records no step: there is nothing to compare.
-    else if (!(text.startsWith(".clock") && unmounted)) pending ??= { index: match.index, text };
-  }
-  report(undefined);
-  return found;
+	const found: UncomparedStep[] = [];
+	let pending: { index: number; text: string } | undefined;
+	let unmounted = false;
+	const report = (next: string | undefined) => {
+		if (!pending) return;
+		found.push({
+			line: code.slice(0, start + pending.index).split("\n").length,
+			step: `view${pending.text}`,
+			next,
+		});
+		pending = undefined;
+	};
+	for (const match of body.matchAll(EVENTS)) {
+		const text = match[0].replace(/\s+/g, "");
+		if (text.startsWith(".expectParity")) pending = undefined;
+		else if (text.startsWith(".unmount")) unmounted = true;
+		else if (/^\.?mount/.test(text)) unmounted = false;
+		else if (text.startsWith("expect")) report(text);
+		// A tick once the view is unmounted records no step: there is nothing to compare.
+		else if (!(text.startsWith(".clock") && unmounted)) pending ??= { index: match.index, text };
+	}
+	report(undefined);
+	return found;
 }
 
 /**
@@ -505,9 +505,9 @@ function uncomparedSteps(code: string, start: number, body: string): UncomparedS
  * URL) is kept: a comment starts a line or follows whitespace.
  */
 function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\/|(?<=^|\s)\/\/[^\n]*/g, (comment) =>
-    comment.replace(/[^\n]/g, " "),
-  );
+	return source.replace(/\/\*[\s\S]*?\*\/|(?<=^|\s)\/\/[^\n]*/g, (comment) =>
+		comment.replace(/[^\n]/g, " "),
+	);
 }
 
 /**
@@ -536,73 +536,73 @@ function withoutComments(source: string): string {
  *   a case whose every test requires `interactivity` still checks Astro's server render.
  */
 export function specProblems(info: CaseInfo): string[] {
-  if (!info.spec) return [];
-  const source = readFileSync(info.spec, "utf8");
-  const file = `${info.id}/${basename(info.spec)}`;
-  const problems: string[] = [];
-  const tests = specTests(source);
-  const names = tests.map((test) => test.name);
-  for (const name of new Set(names.filter((each, index) => names.indexOf(each) !== index))) {
-    problems.push(
-      `${file}: two tests are named ${JSON.stringify(name)}; each test's name is its own.`,
-    );
-  }
-  if (/\bfrom\s+["']vitest\/browser["']|\bimport\s*\(\s*["']vitest\/browser["']/.test(source)) {
-    problems.push(
-      `${file}: imports from vitest/browser. A spec acts through view.user and queries through the view, so every action settles and is recorded in the trace.`,
-    );
-  }
-  for (const match of source.matchAll(DIRECT_ACTION)) {
-    const before = source.slice(0, match.index);
-    if (/\.user\s*$/.test(before)) continue;
-    const action = match[0].slice(1).replace(/\s*\($/, "");
-    problems.push(
-      `${file}:${before.split("\n").length}: calls ${action}() directly. Act through view.user (view.user.${action}(…)): it runs the action through the target's adapter, settles, and records a step of the trace.`,
-    );
-  }
-  const code = withoutComments(source);
-  const first = code.search(TEST_CALL);
-  const prelude = first === -1 ? code : code.slice(0, first);
-  if (ACTION.test(prelude) || RERENDER.test(prelude)) {
-    problems.push(
-      `${file}: acts or rerenders outside a test. Each test takes its own steps in its own body, where the harness reads which tests act and rerender.`,
-    );
-  }
-  for (const test of tests) {
-    for (const { line, step, next } of test.uncompared) {
-      problems.push(
-        next === undefined
-          ? `${file}:${line}: ${JSON.stringify(test.name)} ends with ${step}…) uncompared. Call expectParity("<scenario>") after the test's last step: it compares the steps' trace (L9).`
-          : `${file}:${line}: ${JSON.stringify(test.name)} asserts (${next}…)) after ${step}…) before an expectParity compares the step. Call expectParity("<scenario>") right after the step, then assert: a step whose handler is missing must fail L9, which compares its trace, before an assertion can abort the test.`,
-      );
-    }
-  }
-  for (const test of tests) {
-    if (test.requires.length || test.firstAssertion === undefined) continue;
-    if (test.firstAssertion === "expect.element(" || test.firstAssertion === "expect.poll(") {
-      continue;
-    }
-    problems.push(
-      `${file}: ${JSON.stringify(test.name)} requires nothing, and its first assertion after its expectParity is ${test.firstAssertion}…). Assert first through a locator (await expect.element(view.getBy…)…): on a render of nothing it then fails as a query that finds nothing, on every target, a static one included.`,
-    );
-  }
-  if (tests.length && !tests.some((test) => test.checksFirst)) {
-    problems.push(
-      `${file}: no test checks a scenario before it acts. One test at least calls expectParity before any view.user action, so a static target and the canaries reach the case.`,
-    );
-  }
-  const unrequired = tests.filter((test) => !test.requires.length);
-  if (tests.length && !unrequired.length && info.config.requires === undefined) {
-    problems.push(
-      `${file}: every test requires a capability. Say why in case.json's "requires" note (the case's client code changes what it mounts), or check the initial render in a test that requires nothing.`,
-    );
-  }
-  if (info.config.requires !== undefined && unrequired.length) {
-    problems.push(
-      `${file}: case.json's "requires" note says every test requires a capability, but ${unrequired.map((test) => JSON.stringify(test.name)).join(", ")} requires none.`,
-    );
-  }
-  return problems;
+	if (!info.spec) return [];
+	const source = readFileSync(info.spec, "utf8");
+	const file = `${info.id}/${basename(info.spec)}`;
+	const problems: string[] = [];
+	const tests = specTests(source);
+	const names = tests.map((test) => test.name);
+	for (const name of new Set(names.filter((each, index) => names.indexOf(each) !== index))) {
+		problems.push(
+			`${file}: two tests are named ${JSON.stringify(name)}; each test's name is its own.`,
+		);
+	}
+	if (/\bfrom\s+["']vitest\/browser["']|\bimport\s*\(\s*["']vitest\/browser["']/.test(source)) {
+		problems.push(
+			`${file}: imports from vitest/browser. A spec acts through view.user and queries through the view, so every action settles and is recorded in the trace.`,
+		);
+	}
+	for (const match of source.matchAll(DIRECT_ACTION)) {
+		const before = source.slice(0, match.index);
+		if (/\.user\s*$/.test(before)) continue;
+		const action = match[0].slice(1).replace(/\s*\($/, "");
+		problems.push(
+			`${file}:${before.split("\n").length}: calls ${action}() directly. Act through view.user (view.user.${action}(…)): it runs the action through the target's adapter, settles, and records a step of the trace.`,
+		);
+	}
+	const code = withoutComments(source);
+	const first = code.search(TEST_CALL);
+	const prelude = first === -1 ? code : code.slice(0, first);
+	if (ACTION.test(prelude) || RERENDER.test(prelude)) {
+		problems.push(
+			`${file}: acts or rerenders outside a test. Each test takes its own steps in its own body, where the harness reads which tests act and rerender.`,
+		);
+	}
+	for (const test of tests) {
+		for (const { line, step, next } of test.uncompared) {
+			problems.push(
+				next === undefined
+					? `${file}:${line}: ${JSON.stringify(test.name)} ends with ${step}…) uncompared. Call expectParity("<scenario>") after the test's last step: it compares the steps' trace (L9).`
+					: `${file}:${line}: ${JSON.stringify(test.name)} asserts (${next}…)) after ${step}…) before an expectParity compares the step. Call expectParity("<scenario>") right after the step, then assert: a step whose handler is missing must fail L9, which compares its trace, before an assertion can abort the test.`,
+			);
+		}
+	}
+	for (const test of tests) {
+		if (test.requires.length || test.firstAssertion === undefined) continue;
+		if (test.firstAssertion === "expect.element(" || test.firstAssertion === "expect.poll(") {
+			continue;
+		}
+		problems.push(
+			`${file}: ${JSON.stringify(test.name)} requires nothing, and its first assertion after its expectParity is ${test.firstAssertion}…). Assert first through a locator (await expect.element(view.getBy…)…): on a render of nothing it then fails as a query that finds nothing, on every target, a static one included.`,
+		);
+	}
+	if (tests.length && !tests.some((test) => test.checksFirst)) {
+		problems.push(
+			`${file}: no test checks a scenario before it acts. One test at least calls expectParity before any view.user action, so a static target and the canaries reach the case.`,
+		);
+	}
+	const unrequired = tests.filter((test) => !test.requires.length);
+	if (tests.length && !unrequired.length && info.config.requires === undefined) {
+		problems.push(
+			`${file}: every test requires a capability. Say why in case.json's "requires" note (the case's client code changes what it mounts), or check the initial render in a test that requires nothing.`,
+		);
+	}
+	if (info.config.requires !== undefined && unrequired.length) {
+		problems.push(
+			`${file}: case.json's "requires" note says every test requires a capability, but ${unrequired.map((test) => JSON.stringify(test.name)).join(", ")} requires none.`,
+		);
+	}
+	return problems;
 }
 
 /**
@@ -612,21 +612,21 @@ export function specProblems(info: CaseInfo): string[] {
  * browser run decides must exist, or not, ADR-0050), the geometry and the Linux screenshot.
  */
 export function sharedArtefacts(info: CaseInfo): Set<string> {
-  const owned = new Set(["__expected__/diagnostics.json"]);
-  // A case whose diagnostics.json is missing fails L1 and keeps what it may own.
-  if (errorState(info) !== true) {
-    for (const scenario of Object.keys(ssrScenarios(info.config))) {
-      owned.add(`__expected__/ssr.${scenario}.html`);
-    }
-  }
-  for (const name of parityScenarios(info)) {
-    owned.add(`__expected__/dom.${name}.html`);
-    owned.add(`__expected__/aria.${name}.yaml`);
-    owned.add(`__expected__/trace.${name}.json`);
-    owned.add(`__expected__/geometry.${name}.json`);
-    owned.add(`__screenshots__/${name}-chromium-linux.png`);
-  }
-  return owned;
+	const owned = new Set(["__expected__/diagnostics.json"]);
+	// A case whose diagnostics.json is missing fails L1 and keeps what it may own.
+	if (errorState(info) !== true) {
+		for (const scenario of Object.keys(ssrScenarios(info.config))) {
+			owned.add(`__expected__/ssr.${scenario}.html`);
+		}
+	}
+	for (const name of parityScenarios(info)) {
+		owned.add(`__expected__/dom.${name}.html`);
+		owned.add(`__expected__/aria.${name}.yaml`);
+		owned.add(`__expected__/trace.${name}.json`);
+		owned.add(`__expected__/geometry.${name}.json`);
+		owned.add(`__screenshots__/${name}-chromium-linux.png`);
+	}
+	return owned;
 }
 
 /**
@@ -635,17 +635,17 @@ export function sharedArtefacts(info: CaseInfo): Set<string> {
  * read them as the contract. Relative to the case directory, sorted.
  */
 export function staleArtefacts(info: CaseInfo): string[] {
-  const owned = sharedArtefacts(info);
-  return ["__expected__", "__screenshots__"]
-    .flatMap((directory) => {
-      const path = join(info.dir, directory);
-      if (!existsSync(path)) return [];
-      return (readdirSync(path, { recursive: true }) as string[])
-        .filter((entry) => !basename(entry).startsWith(".") && statSync(join(path, entry)).isFile())
-        .map((entry) => `${directory}/${entry.split(sep).join("/")}`);
-    })
-    .filter((file) => !owned.has(file))
-    .toSorted();
+	const owned = sharedArtefacts(info);
+	return ["__expected__", "__screenshots__"]
+		.flatMap((directory) => {
+			const path = join(info.dir, directory);
+			if (!existsSync(path)) return [];
+			return (readdirSync(path, { recursive: true }) as string[])
+				.filter((entry) => !basename(entry).startsWith(".") && statSync(join(path, entry)).isFile())
+				.map((entry) => `${directory}/${entry.split(sep).join("/")}`);
+		})
+		.filter((file) => !owned.has(file))
+		.toSorted();
 }
 
 /**
@@ -653,22 +653,22 @@ export function staleArtefacts(info: CaseInfo): string[] {
  * empty: what `pnpm test:update` does with them. Returns what it deleted.
  */
 export function removeStaleArtefacts(info: CaseInfo): string[] {
-  const stale = staleArtefacts(info);
-  for (const file of stale) {
-    rmSync(join(info.dir, file));
-    for (
-      let directory = dirname(join(info.dir, file));
-      directory !== info.dir && !readdirSync(directory).length;
-      directory = dirname(directory)
-    ) {
-      rmdirSync(directory);
-    }
-  }
-  return stale;
+	const stale = staleArtefacts(info);
+	for (const file of stale) {
+		rmSync(join(info.dir, file));
+		for (
+			let directory = dirname(join(info.dir, file));
+			directory !== info.dir && !readdirSync(directory).length;
+			directory = dirname(directory)
+		) {
+			rmdirSync(directory);
+		}
+	}
+	return stale;
 }
 
 function sortedDirectories(directory: string): string[] {
-  return readdirSync(directory)
-    .filter((entry) => !entry.startsWith(".") && statSync(join(directory, entry)).isDirectory())
-    .sort();
+	return readdirSync(directory)
+		.filter((entry) => !entry.startsWith(".") && statSync(join(directory, entry)).isDirectory())
+		.sort();
 }

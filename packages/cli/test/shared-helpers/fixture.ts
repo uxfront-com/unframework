@@ -11,8 +11,8 @@ import { expect } from "vitest";
 import { project, run, tree } from "../helpers.ts";
 
 const COMPONENT = (
-  name: string,
-  mark: string,
+	name: string,
+	mark: string,
 ) => `import { Transition, ref } from "@uxfront/unframework";
 
 import { vMark } from "../mark.uf.ts";
@@ -38,7 +38,7 @@ export default function ${name}(props: { tone: string; active: boolean }) {
 
 /** The fixture's sources, under `src/`, in two directories, written as a team would. */
 export const FIXTURE: Readonly<Record<string, string>> = {
-  "src/mark.uf.ts": `import { defineDirective } from "@uxfront/unframework";
+	"src/mark.uf.ts": `import { defineDirective } from "@uxfront/unframework";
 
 export const vMark = defineDirective<string>({
   mounted(el, value) {
@@ -46,37 +46,37 @@ export const vMark = defineDirective<string>({
   },
 });
 `,
-  "src/cards/Card.uf.tsx": COMPONENT("Card", "card"),
-  "src/badges/Badge.uf.tsx": COMPONENT("Badge", "badge"),
+	"src/cards/Card.uf.tsx": COMPONENT("Card", "card"),
+	"src/badges/Badge.uf.tsx": COMPONENT("Badge", "badge"),
 };
 
 /** The fixture with a config that builds `target` (a selector, `solid@2`) into `dist/`. */
 export function fixtureFor(target: string): Readonly<Record<string, string>> {
-  return {
-    ...FIXTURE,
-    "unframework.config.mjs": `export default { targets: [${JSON.stringify(target)}] };\n`,
-  };
+	return {
+		...FIXTURE,
+		"unframework.config.mjs": `export default { targets: [${JSON.stringify(target)}] };\n`,
+	};
 }
 
 /** Builds the fixture for `target` and gives the tree it wrote, `dist/<directory>`, without maps. */
 export async function buildFixture(
-  target: string,
-  directory: string = target,
+	target: string,
+	directory: string = target,
 ): Promise<Record<string, string>> {
-  const root = project(fixtureFor(target));
-  const { code, stderr } = await run(root, "build");
-  expect(stderr.match(/^error\b.*$/gm) ?? [], stderr).toEqual([]);
-  expect(code, stderr).toBe(0);
-  const written = tree(join(root, "dist", directory));
-  return Object.fromEntries(Object.entries(written).filter(([path]) => !path.endsWith(".map")));
+	const root = project(fixtureFor(target));
+	const { code, stderr } = await run(root, "build");
+	expect(stderr.match(/^error\b.*$/gm) ?? [], stderr).toEqual([]);
+	expect(code, stderr).toBe(0);
+	const written = tree(join(root, "dist", directory));
+	return Object.fromEntries(Object.entries(written).filter(([path]) => !path.endsWith(".map")));
 }
 
 /** Whether a file declares `name` at its top level or indented, as the shared check reads it. */
 export function declares(contents: string, name: string): boolean {
-  return new RegExp(
-    `^\\s*(export )?(declare )?(async )?(function|const|let|class) ${name}\\b`,
-    "m",
-  ).test(contents);
+	return new RegExp(
+		`^\\s*(export )?(declare )?(async )?(function|const|let|class) ${name}\\b`,
+		"m",
+	).test(contents);
 }
 
 /**
@@ -84,15 +84,15 @@ export function declares(contents: string, name: string): boolean {
  * `inline` itself.
  */
 export function expectInline(
-  written: Readonly<Record<string, string>>,
-  components: readonly string[],
-  inline: readonly string[],
+	written: Readonly<Record<string, string>>,
+	components: readonly string[],
+	inline: readonly string[],
 ): void {
-  expect(Object.keys(written).filter((path) => path.includes("_unframework"))).toEqual([]);
-  for (const component of components) {
-    expect(written[component], component).toBeDefined();
-    for (const name of inline) {
-      expect(declares(written[component]!, name), `${component} declares ${name}`).toBe(true);
-    }
-  }
+	expect(Object.keys(written).filter((path) => path.includes("_unframework"))).toEqual([]);
+	for (const component of components) {
+		expect(written[component], component).toBeDefined();
+		for (const name of inline) {
+			expect(declares(written[component]!, name), `${component} declares ${name}`).toBe(true);
+		}
+	}
 }

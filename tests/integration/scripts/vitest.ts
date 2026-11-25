@@ -11,24 +11,24 @@ const VITEST = join(dirname(require.resolve("vitest/package.json")), "vitest.mjs
 
 /** Runs `vitest run <args>` in the integration package and returns its exit status. */
 export function runVitest(
-  args: readonly string[],
-  env: NodeJS.ProcessEnv,
-  stdio: StdioOptions = "inherit",
+	args: readonly string[],
+	env: NodeJS.ProcessEnv,
+	stdio: StdioOptions = "inherit",
 ): { status: number; stdout: string } {
-  const result = spawnSync(process.execPath, [VITEST, "run", ...args], {
-    cwd: ROOT,
-    env,
-    stdio,
-    encoding: "utf8",
-    maxBuffer: 256 * 1024 * 1024,
-  });
-  if (result.error) throw result.error;
-  // A signal (no status) is a failure too.
-  return { status: result.status ?? 1, stdout: `${result.stdout ?? ""}${result.stderr ?? ""}` };
+	const result = spawnSync(process.execPath, [VITEST, "run", ...args], {
+		cwd: ROOT,
+		env,
+		stdio,
+		encoding: "utf8",
+		maxBuffer: 256 * 1024 * 1024,
+	});
+	if (result.error) throw result.error;
+	// A signal (no status) is a failure too.
+	return { status: result.status ?? 1, stdout: `${result.stdout ?? ""}${result.stderr ?? ""}` };
 }
 
 /** Whether `CI` is set (and not "0" or "false"). */
 export function isCI(env: NodeJS.ProcessEnv): boolean {
-  const value = env.CI?.trim();
-  return Boolean(value) && value !== "0" && value !== "false";
+	const value = env.CI?.trim();
+	return Boolean(value) && value !== "0" && value !== "false";
 }

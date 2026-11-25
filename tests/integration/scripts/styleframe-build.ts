@@ -11,24 +11,24 @@ import { styleframePlugin } from "../harness/styleframe.ts";
 
 const [command, config] = process.argv.slice(2);
 if (command !== "build" || !config) {
-  console.error("usage: node scripts/styleframe-build.ts build <styleframe.config.ts>");
-  process.exit(2);
+	console.error("usage: node scripts/styleframe-build.ts build <styleframe.config.ts>");
+	process.exit(2);
 }
 
 const ENTRY = "\0uf-styleframe-build";
 
 /** A module that imports both of Styleframe's virtual modules, as a styled output does. */
 const entry: Plugin = {
-  name: "uf-styleframe-build",
-  resolveId: (id) => (id === ENTRY ? id : null),
-  load: (id) =>
-    id === ENTRY ? 'import "virtual:styleframe.css";\nexport * from "virtual:styleframe";\n' : null,
+	name: "uf-styleframe-build",
+	resolveId: (id) => (id === ENTRY ? id : null),
+	load: (id) =>
+		id === ENTRY ? 'import "virtual:styleframe.css";\nexport * from "virtual:styleframe";\n' : null,
 };
 
 await build({
-  root: ROOT,
-  configFile: false,
-  logLevel: "silent",
-  plugins: [...(await styleframePlugin(config)), entry],
-  build: { write: false, rolldownOptions: { input: ENTRY } },
+	root: ROOT,
+	configFile: false,
+	logLevel: "silent",
+	plugins: [...(await styleframePlugin(config)), entry],
+	build: { write: false, rolldownOptions: { input: ENTRY } },
 });

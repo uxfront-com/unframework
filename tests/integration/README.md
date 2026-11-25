@@ -177,19 +177,19 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
    import Counter from "./Counter.uf.tsx";
 
    describeTargets("state/counter", () => {
-     it("renders the initial count", async () => {
-       const view = await mountScenario(Counter, "initial"); // case.json's ssr.initial.props
-       await view.expectParity("initial");
-       await expect.element(view.getByRole("status")).toHaveTextContent("2");
-     });
+   	it("renders the initial count", async () => {
+   		const view = await mountScenario(Counter, "initial"); // case.json's ssr.initial.props
+   		await view.expectParity("initial");
+   		await expect.element(view.getByRole("status")).toHaveTextContent("2");
+   	});
 
-     it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
-       const view = await mountScenario(Counter, "initial");
-       await view.user.click(view.getByRole("button", { name: "+3" }));
-       await view.expectParity("after-increment");
-       await expect.element(view.getByRole("status")).toHaveTextContent("5");
-       expect(view.emitted("change")).toEqual([[5]]);
-     });
+   	it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
+   		const view = await mountScenario(Counter, "initial");
+   		await view.user.click(view.getByRole("button", { name: "+3" }));
+   		await view.expectParity("after-increment");
+   		await expect.element(view.getByRole("status")).toHaveTextContent("5");
+   		expect(view.emitted("change")).toEqual([[5]]);
+   	});
    });
    ```
 

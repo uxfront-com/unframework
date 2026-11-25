@@ -10,7 +10,7 @@ import type { UnframeworkOptions } from "./plugin.ts";
  * the framework's plugins. With no `target`, the framework's plugin decides it (ADR-0075).
  */
 export default function unframework(options?: UnframeworkOptions): Plugin[] {
-  return unframeworkUnplugin.vite(options);
+	return unframeworkUnplugin.vite(options);
 }
 
 export type { CompileEvent, UnframeworkApi, UnframeworkOptions } from "./plugin.ts";

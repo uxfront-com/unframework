@@ -41,21 +41,21 @@ const BUTTON_CSS = `.button {
 `;
 
 const TSCONFIG = `${JSON.stringify(
-  {
-    compilerOptions: {
-      module: "esnext",
-      moduleResolution: "bundler",
-      strict: true,
-      noEmit: true,
-      allowImportingTsExtensions: true,
-      jsx: "preserve",
-      jsxImportSource: AUTHORING_PACKAGE,
-    },
-    include: ["**/*.uf.tsx", "**/*.uf.ts"],
-    exclude: ["dist"],
-  },
-  null,
-  2,
+	{
+		compilerOptions: {
+			module: "esnext",
+			moduleResolution: "bundler",
+			strict: true,
+			noEmit: true,
+			allowImportingTsExtensions: true,
+			jsx: "preserve",
+			jsxImportSource: AUTHORING_PACKAGE,
+		},
+		include: ["**/*.uf.tsx", "**/*.uf.ts"],
+		exclude: ["dist"],
+	},
+	null,
+	2,
 )}
 `;
 
@@ -73,11 +73,11 @@ code, so read https://unframework.dev/docs before you change one.
 `;
 
 const FILES: readonly (readonly [path: string, contents: string])[] = [
-  ["unframework.config.ts", CONFIG],
-  ["src/Button.uf.tsx", BUTTON],
-  ["src/Button.css", BUTTON_CSS],
-  ["tsconfig.uf.json", TSCONFIG],
-  ["AGENTS.md", AGENTS],
+	["unframework.config.ts", CONFIG],
+	["src/Button.uf.tsx", BUTTON],
+	["src/Button.css", BUTTON_CSS],
+	["tsconfig.uf.json", TSCONFIG],
+	["AGENTS.md", AGENTS],
 ];
 
 // `loadConfig` takes the `.ts` file first, so writing one beside these would silently replace a
@@ -85,40 +85,40 @@ const FILES: readonly (readonly [path: string, contents: string])[] = [
 const OTHER_CONFIGS = ["unframework.config.mts", "unframework.config.js", "unframework.config.mjs"];
 
 export const run: RunCommand = async (args, io) => {
-  const { values } = parseArgs({ args, options: { force: { type: "boolean", default: false } } });
-  const root = io.cwd;
-  // `lstat`, so a dangling symlink counts as a file in the way.
-  const found = (path: string): Stats | undefined =>
-    lstatSync(join(root, path), { throwIfNoEntry: false });
+	const { values } = parseArgs({ args, options: { force: { type: "boolean", default: false } } });
+	const root = io.cwd;
+	// `lstat`, so a dangling symlink counts as a file in the way.
+	const found = (path: string): Stats | undefined =>
+		lstatSync(join(root, path), { throwIfNoEntry: false });
 
-  // Everything that can refuse comes before the first write, so a refusal writes nothing. `--force`
-  // treats each kind of file differently, so the message says what it would do with each.
-  const paths = FILES.map(([path]) => path);
-  const directories = paths.filter((path) => found(path)?.isDirectory());
-  const files = paths.filter((path) => found(path) && !directories.includes(path));
-  const configs = OTHER_CONFIGS.filter((path) => found(path));
-  const taken = [...directories, ...files, ...configs].toSorted();
-  const noDirectory = `--force can't replace a directory, so remove ${directories.join(", ")} first.`;
-  const kept = `${configs.join(", ")}, but unframework.config.ts takes precedence.`;
-  if (taken.length > 0 && !values.force) {
-    const lines = [`In the way: ${taken.join(", ")}.`];
-    if (files.length > 0) lines.push(`--force overwrites ${files.join(", ")}.`);
-    if (configs.length > 0) lines.push(`--force keeps ${kept}`);
-    if (directories.length > 0) lines.push(noDirectory);
-    throw new Error(lines.join(" "));
-  }
-  if (directories.length > 0) throw new Error(noDirectory);
-  for (const path of new Set(paths.map(dirname))) {
-    mkdirSync(join(root, path), { recursive: true });
-  }
+	// Everything that can refuse comes before the first write, so a refusal writes nothing. `--force`
+	// treats each kind of file differently, so the message says what it would do with each.
+	const paths = FILES.map(([path]) => path);
+	const directories = paths.filter((path) => found(path)?.isDirectory());
+	const files = paths.filter((path) => found(path) && !directories.includes(path));
+	const configs = OTHER_CONFIGS.filter((path) => found(path));
+	const taken = [...directories, ...files, ...configs].toSorted();
+	const noDirectory = `--force can't replace a directory, so remove ${directories.join(", ")} first.`;
+	const kept = `${configs.join(", ")}, but unframework.config.ts takes precedence.`;
+	if (taken.length > 0 && !values.force) {
+		const lines = [`In the way: ${taken.join(", ")}.`];
+		if (files.length > 0) lines.push(`--force overwrites ${files.join(", ")}.`);
+		if (configs.length > 0) lines.push(`--force keeps ${kept}`);
+		if (directories.length > 0) lines.push(noDirectory);
+		throw new Error(lines.join(" "));
+	}
+	if (directories.length > 0) throw new Error(noDirectory);
+	for (const path of new Set(paths.map(dirname))) {
+		mkdirSync(join(root, path), { recursive: true });
+	}
 
-  for (const [path, contents] of FILES) {
-    // A file's own symlink is replaced, so this can't overwrite what it points at. A symlinked `src`
-    // is followed, as `check` and `build` follow it.
-    rmSync(join(root, path), { force: true });
-    writeFileSync(join(root, path), contents);
-    io.stdout(`Wrote ${path}\n`);
-  }
-  if (configs.length > 0) io.stderr(`Kept ${kept}\n`);
-  return 0;
+	for (const [path, contents] of FILES) {
+		// A file's own symlink is replaced, so this can't overwrite what it points at. A symlinked `src`
+		// is followed, as `check` and `build` follow it.
+		rmSync(join(root, path), { force: true });
+		writeFileSync(join(root, path), contents);
+		io.stdout(`Wrote ${path}\n`);
+	}
+	if (configs.length > 0) io.stderr(`Kept ${kept}\n`);
+	return 0;
 };

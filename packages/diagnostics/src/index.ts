@@ -1,11 +1,11 @@
 export type {
-  Diagnostic,
-  DiagnosticCode,
-  Fix,
-  RelatedInformation,
-  Severity,
-  Span,
-  TextEdit,
+	Diagnostic,
+	DiagnosticCode,
+	Fix,
+	RelatedInformation,
+	Severity,
+	Span,
+	TextEdit,
 } from "./types.ts";
 export { AUTHORING_PACKAGE } from "./authoring-package.ts";
 export { BANDS, catalogue, docsUrl, lookup } from "./catalogue.ts";
@@ -20,15 +20,15 @@ export { toJsonDiagnostics } from "./json.ts";
 export type { JsonDiagnostic } from "./json.ts";
 export { toSarif } from "./sarif.ts";
 export type {
-  SarifArtifactLocation,
-  SarifDriver,
-  SarifLevel,
-  SarifLocation,
-  SarifLog,
-  SarifOptions,
-  SarifRegion,
-  SarifResult,
-  SarifRule,
-  SarifRun,
+	SarifArtifactLocation,
+	SarifDriver,
+	SarifLevel,
+	SarifLocation,
+	SarifLog,
+	SarifOptions,
+	SarifRegion,
+	SarifResult,
+	SarifRule,
+	SarifRun,
 } from "./sarif.ts";
 export { applyEdits, applyFixes } from "./fixes.ts";

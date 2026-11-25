@@ -8,34 +8,34 @@ import type { TreeParent } from "../tree.ts";
  * and the serialiser's form state (`uf:*`) are not in the list and always stay.
  */
 export const FRAMEWORK_ATTRIBUTES: readonly { framework: NormalizeTarget; pattern: RegExp }[] = [
-  // Emulated view encapsulation, on the host and on each element of a styled component.
-  { framework: "angular", pattern: /^_nghost-/ },
-  { framework: "angular", pattern: /^_ngcontent-/ },
-  // Dev-mode input reflection (provideNgReflectAttributes).
-  { framework: "angular", pattern: /^ng-reflect-/ },
-  // bootstrapApplication's root markers, and hydration data (provideClientHydration).
-  { framework: "angular", pattern: /^ng-version$/ },
-  { framework: "angular", pattern: /^ng-server-context$/ },
-  { framework: "angular", pattern: /^ngh$/ },
-  // Qwik 2: q:key, q:p, q:container…; event and data attributes q-e:click, q-d:…, q-w:…, and
-  // their passive scopes q-ep:wheel, q-dp:…, q-wp:… (a `passive:wheel` listener's); and the
-  // bare `:` (Q_PROPS_SEPARATOR) on every server-rendered element.
-  { framework: "qwik", pattern: /^q:/ },
-  { framework: "qwik", pattern: /^q-[a-z]p?:/ },
-  { framework: "qwik", pattern: /^:$/ },
-  // The listener options its loader reads at dispatch, which the output writes as attributes
-  // (`preventdefault:submit`, `stoppropagation:click`, `capture:click`): how Qwik runs an event's
-  // handlers, which the other targets keep in their listeners (ADR-0047). Its `passive:` never
-  // renders: it selects the passive scope of the handler instead.
-  { framework: "qwik", pattern: /^(?:preventdefault|stoppropagation|capture):/ },
-  // Qwik 1 listeners.
-  { framework: "qwik", pattern: /^on(?:-document|-window)?:/ },
-  // Hydration keys: Solid 1's `data-hk`, Solid 2's `_hk`.
-  { framework: "solid", pattern: /^data-hk$/ },
-  { framework: "solid2", pattern: /^_hk$/ },
-  // Scoped-style hashes, and the dev toolbar's source annotations.
-  { framework: "astro", pattern: /^data-astro-cid-/ },
-  { framework: "astro", pattern: /^data-astro-source-/ },
+	// Emulated view encapsulation, on the host and on each element of a styled component.
+	{ framework: "angular", pattern: /^_nghost-/ },
+	{ framework: "angular", pattern: /^_ngcontent-/ },
+	// Dev-mode input reflection (provideNgReflectAttributes).
+	{ framework: "angular", pattern: /^ng-reflect-/ },
+	// bootstrapApplication's root markers, and hydration data (provideClientHydration).
+	{ framework: "angular", pattern: /^ng-version$/ },
+	{ framework: "angular", pattern: /^ng-server-context$/ },
+	{ framework: "angular", pattern: /^ngh$/ },
+	// Qwik 2: q:key, q:p, q:container…; event and data attributes q-e:click, q-d:…, q-w:…, and
+	// their passive scopes q-ep:wheel, q-dp:…, q-wp:… (a `passive:wheel` listener's); and the
+	// bare `:` (Q_PROPS_SEPARATOR) on every server-rendered element.
+	{ framework: "qwik", pattern: /^q:/ },
+	{ framework: "qwik", pattern: /^q-[a-z]p?:/ },
+	{ framework: "qwik", pattern: /^:$/ },
+	// The listener options its loader reads at dispatch, which the output writes as attributes
+	// (`preventdefault:submit`, `stoppropagation:click`, `capture:click`): how Qwik runs an event's
+	// handlers, which the other targets keep in their listeners (ADR-0047). Its `passive:` never
+	// renders: it selects the passive scope of the handler instead.
+	{ framework: "qwik", pattern: /^(?:preventdefault|stoppropagation|capture):/ },
+	// Qwik 1 listeners.
+	{ framework: "qwik", pattern: /^on(?:-document|-window)?:/ },
+	// Hydration keys: Solid 1's `data-hk`, Solid 2's `_hk`.
+	{ framework: "solid", pattern: /^data-hk$/ },
+	{ framework: "solid2", pattern: /^_hk$/ },
+	// Scoped-style hashes, and the dev toolbar's source annotations.
+	{ framework: "astro", pattern: /^data-astro-cid-/ },
+	{ framework: "astro", pattern: /^data-astro-source-/ },
 ];
 
 /**
@@ -43,9 +43,9 @@ export const FRAMEWORK_ATTRIBUTES: readonly { framework: NormalizeTarget; patter
  * same name in another target's output is not noise: it is an attribute that target rendered.
  */
 export function isFrameworkAttribute(name: string, target: NormalizeTarget): boolean {
-  return FRAMEWORK_ATTRIBUTES.some(
-    ({ framework, pattern }) => framework === target && pattern.test(name),
-  );
+	return FRAMEWORK_ATTRIBUTES.some(
+		({ framework, pattern }) => framework === target && pattern.test(name),
+	);
 }
 
 /**
@@ -54,10 +54,10 @@ export function isFrameworkAttribute(name: string, target: NormalizeTarget): boo
  * reference's output is never normalised by another framework's rules.
  */
 export function removeFrameworkAttributes(root: TreeParent, target?: NormalizeTarget): void {
-  if (target === undefined) return;
-  forEachElement(root, (element) => {
-    element.attrs = element.attrs.filter(
-      (attribute) => !isFrameworkAttribute(attributeName(attribute), target),
-    );
-  });
+	if (target === undefined) return;
+	forEachElement(root, (element) => {
+		element.attrs = element.attrs.filter(
+			(attribute) => !isFrameworkAttribute(attributeName(attribute), target),
+		);
+	});
 }

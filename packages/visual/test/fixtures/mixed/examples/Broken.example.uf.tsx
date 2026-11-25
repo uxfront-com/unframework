@@ -2,6 +2,6 @@
 import { onMounted } from "unframework";
 
 export default function Broken() {
-  onMounted(() => {});
-  return <p>Broken</p>;
+	onMounted(() => {});
+	return <p>Broken</p>;
 }

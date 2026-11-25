@@ -15,14 +15,14 @@ import { M1_SHAPES, M2_FIXTURES } from "./lint-probes.ts";
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
 const context: ToolchainContext = {
-  toolchainDir: join(repo, "tests/toolchains/svelte"),
-  root: packageDir,
+	toolchainDir: join(repo, "tests/toolchains/svelte"),
+	root: packageDir,
 };
 
 /** Every committed Svelte golden output of the corpus. */
 const goldens = globSync("tests/integration/cases/**/__output__/svelte/**/*.svelte", { cwd: repo })
-  .toSorted()
-  .map((file) => join(repo, file));
+	.toSorted()
+	.map((file) => join(repo, file));
 
 mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
 const scratch = mkdtempSync(join(packageDir, ".uf-tmp", "lint-"));
@@ -31,137 +31,137 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 let directories = 0;
 /** Writes files into a directory of their own and returns their paths, in order. */
 function write(files: Record<string, string>): string[] {
-  const directory = join(scratch, String(directories++));
-  mkdirSync(directory);
-  return Object.entries(files).map(([name, contents]) => {
-    const path = join(directory, name);
-    writeFileSync(path, contents);
-    return path;
-  });
+	const directory = join(scratch, String(directories++));
+	mkdirSync(directory);
+	return Object.entries(files).map(([name, contents]) => {
+		const path = join(directory, name);
+		writeFileSync(path, contents);
+		return path;
+	});
 }
 
 /** The codes of every message on one component, sorted. */
 async function lintCodes(contents: string): Promise<string[]> {
-  const [path] = write({ "Probe.svelte": contents });
-  const messages = (await toolchain.lint([path!], context)).get(path!) ?? [];
-  return messages.map((message) => message.code ?? message.message).toSorted();
+	const [path] = write({ "Probe.svelte": contents });
+	const messages = (await toolchain.lint([path!], context)).get(path!) ?? [];
+	return messages.map((message) => message.code ?? message.message).toSorted();
 }
 
 const SCRIPT = "  let { items, label }: { items: string[]; label: string } = $props();\n";
 
 /** A runes component with `markup`, whose props are `items` and `label`. */
 const component = (markup: string, script = SCRIPT, lang = ' lang="ts"') =>
-  `<svelte:options runes={true} />\n\n<script${lang}>\n${script}</script>\n\n${markup}\n`;
+	`<svelte:options runes={true} />\n\n<script${lang}>\n${script}</script>\n\n${markup}\n`;
 
 describe("svelte lint (L5)", { timeout: 60_000 }, () => {
-  // It checks every committed golden output, so its time grows with the corpus.
-  it("accepts every committed golden output, with no message", async () => {
-    expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
-      expect.arrayContaining(["Hello.svelte", "ProfileCard.svelte"]),
-    );
-    const results = await toolchain.lint(goldens, context);
-    expect(Object.fromEntries(results)).toEqual(
-      Object.fromEntries(goldens.map((file) => [file, []])),
-    );
-  }, 60_000);
+	// It checks every committed golden output, so its time grows with the corpus.
+	it("accepts every committed golden output, with no message", async () => {
+		expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
+			expect.arrayContaining(["Hello.svelte", "ProfileCard.svelte"]),
+		);
+		const results = await toolchain.lint(goldens, context);
+		expect(Object.fromEntries(results)).toEqual(
+			Object.fromEntries(goldens.map((file) => [file, []])),
+		);
+	}, 60_000);
 
-  it("accepts the shapes M1 emits", async () => {
-    const files = write(M1_SHAPES);
-    const results = await toolchain.lint(files, context);
-    expect(Object.fromEntries(results)).toEqual(
-      Object.fromEntries(files.map((file) => [file, []])),
-    );
-  });
+	it("accepts the shapes M1 emits", async () => {
+		const files = write(M1_SHAPES);
+		const results = await toolchain.lint(files, context);
+		expect(Object.fromEntries(results)).toEqual(
+			Object.fromEntries(files.map((file) => [file, []])),
+		);
+	});
 
-  // ADR-0045 to ADR-0049: runes, watchers through `$effect.pre`, callback props, attachments.
-  // The fixtures are what the emitter prints (emit.test.ts pins them).
-  it("accepts the shapes M2 emits", async () => {
-    const files = M2_FIXTURES.map((name) => join(packageDir, "test/fixtures", name));
-    const results = await toolchain.lint(files, context);
-    expect(Object.fromEntries(results)).toEqual(
-      Object.fromEntries(files.map((file) => [file, []])),
-    );
-  });
+	// ADR-0045 to ADR-0049: runes, watchers through `$effect.pre`, callback props, attachments.
+	// The fixtures are what the emitter prints (emit.test.ts pins them).
+	it("accepts the shapes M2 emits", async () => {
+		const files = M2_FIXTURES.map((name) => join(packageDir, "test/fixtures", name));
+		const results = await toolchain.lint(files, context);
+		expect(Object.fromEntries(results)).toEqual(
+			Object.fromEntries(files.map((file) => [file, []])),
+		);
+	});
 
-  it.each([
-    {
-      what: "a list without a key",
-      markup: "{#each items as item}<p>{item}{label}</p>{/each}",
-      rule: "svelte/require-each-key",
-    },
-    {
-      what: "a script in another language",
-      markup: "<p>{label}{items.length}</p>",
-      lang: "",
-      rule: "svelte/block-lang",
-    },
-    {
-      what: "a statement no output has a reason to hold",
-      markup: "<p>{label}{items.length}</p>",
-      script: `${SCRIPT}  debugger;\n`,
-      rule: "no-debugger",
-    },
-    // UF3028 rejects such a mutation through a template ref: render it from state.
-    {
-      what: "a template ref's text replaced",
-      markup: "<p bind:this={box}>{label}{items.length}</p>",
-      script: `${SCRIPT}  let box: HTMLParagraphElement | null = null;\n  export function clear() {\n    if (box) box.textContent = "";\n  }\n`,
-      rule: "svelte/no-dom-manipulating",
-    },
-  ])("rejects $what ($rule)", async ({ markup, script, lang, rule }) => {
-    const contents =
-      lang === undefined
-        ? component(markup, script)
-        : component(markup, "  let { items, label } = $props();\n", lang);
-    expect(await lintCodes(contents)).toEqual([rule]);
-  });
+	it.each([
+		{
+			what: "a list without a key",
+			markup: "{#each items as item}<p>{item}{label}</p>{/each}",
+			rule: "svelte/require-each-key",
+		},
+		{
+			what: "a script in another language",
+			markup: "<p>{label}{items.length}</p>",
+			lang: "",
+			rule: "svelte/block-lang",
+		},
+		{
+			what: "a statement no output has a reason to hold",
+			markup: "<p>{label}{items.length}</p>",
+			script: `${SCRIPT}  debugger;\n`,
+			rule: "no-debugger",
+		},
+		// UF3028 rejects such a mutation through a template ref: render it from state.
+		{
+			what: "a template ref's text replaced",
+			markup: "<p bind:this={box}>{label}{items.length}</p>",
+			script: `${SCRIPT}  let box: HTMLParagraphElement | null = null;\n  export function clear() {\n    if (box) box.textContent = "";\n  }\n`,
+			rule: "svelte/no-dom-manipulating",
+		},
+	])("rejects $what ($rule)", async ({ markup, script, lang, rule }) => {
+		const contents =
+			lang === undefined
+				? component(markup, script)
+				: component(markup, "  let { items, label } = $props();\n", lang);
+		expect(await lintCodes(contents)).toEqual([rule]);
+	});
 
-  it("is not silenced by a comment in the markup", async () => {
-    // ESLint's `noInlineConfig` does not reach eslint-plugin-svelte's own
-    // `<!-- eslint-disable -->`.
-    const markup = "<!-- eslint-disable -->\n{#each items as item}<p>{item}{label}</p>{/each}";
-    expect(await lintCodes(component(markup))).toEqual(["svelte/require-each-key"]);
-  });
+	it("is not silenced by a comment in the markup", async () => {
+		// ESLint's `noInlineConfig` does not reach eslint-plugin-svelte's own
+		// `<!-- eslint-disable -->`.
+		const markup = "<!-- eslint-disable -->\n{#each items as item}<p>{item}{label}</p>{/each}";
+		expect(await lintCodes(component(markup))).toEqual(["svelte/require-each-key"]);
+	});
 
-  it.each([
-    // The printer's spelling of whitespace Svelte would otherwise trim (ADR-0026).
-    { what: "whitespace as a string-literal mustache", markup: '<p>{label}{" "}<b>!</b></p>' },
-    { what: "a link to a path", markup: '<a href="/about">{label}</a>' },
-    // `svelte/no-at-html-tags` is off: `innerHTML` in the source is the author's choice, which the
-    // analyser reports (UF3051, ADR-0097).
-    { what: "raw HTML", markup: "<p>{@html label}{items.length}</p>" },
-    {
-      what: "a prop the component never reads",
-      markup: "<p>{label}</p>",
-      script: "  let { label }: { items?: string[]; label: string } = $props();\n",
-    },
-    // `svelte/prefer-svelte-reactivity` is off: a handler's own `Map`, which the client subset
-    // allows to fill (UF2004), is the author's.
-    {
-      what: "a handler that fills a Map of its own",
-      markup: '<p>{label}</p><button type="button" onclick={count}>{items.length}</button>',
-      script: `${SCRIPT}  function count() {\n    const tally = new Map<string, number>();\n    for (const item of items) tally.set(item, (tally.get(item) ?? 0) + 1);\n    return tally.size;\n  }\n`,
-    },
-    // `svelte/prefer-writable-derived` is off: the author chose `watchEffect` over `computed`,
-    // and an effect runs in the browser only, where a derived value renders on the server too.
-    {
-      what: "a watchEffect that writes one state",
-      markup: "<p>{label}{total}</p>",
-      script: `${SCRIPT}  let total = $state(0);\n\n  $effect(() => {\n    total = items.length * 2;\n  });\n`,
-    },
-  ])("accepts $what", async ({ markup, script }) => {
-    const reads = script === undefined ? `${markup}\n<i>{items.length}</i>` : markup;
-    expect(await lintCodes(component(reads, script))).toEqual([]);
-  });
+	it.each([
+		// The printer's spelling of whitespace Svelte would otherwise trim (ADR-0026).
+		{ what: "whitespace as a string-literal mustache", markup: '<p>{label}{" "}<b>!</b></p>' },
+		{ what: "a link to a path", markup: '<a href="/about">{label}</a>' },
+		// `svelte/no-at-html-tags` is off: `innerHTML` in the source is the author's choice, which the
+		// analyser reports (UF3051, ADR-0097).
+		{ what: "raw HTML", markup: "<p>{@html label}{items.length}</p>" },
+		{
+			what: "a prop the component never reads",
+			markup: "<p>{label}</p>",
+			script: "  let { label }: { items?: string[]; label: string } = $props();\n",
+		},
+		// `svelte/prefer-svelte-reactivity` is off: a handler's own `Map`, which the client subset
+		// allows to fill (UF2004), is the author's.
+		{
+			what: "a handler that fills a Map of its own",
+			markup: '<p>{label}</p><button type="button" onclick={count}>{items.length}</button>',
+			script: `${SCRIPT}  function count() {\n    const tally = new Map<string, number>();\n    for (const item of items) tally.set(item, (tally.get(item) ?? 0) + 1);\n    return tally.size;\n  }\n`,
+		},
+		// `svelte/prefer-writable-derived` is off: the author chose `watchEffect` over `computed`,
+		// and an effect runs in the browser only, where a derived value renders on the server too.
+		{
+			what: "a watchEffect that writes one state",
+			markup: "<p>{label}{total}</p>",
+			script: `${SCRIPT}  let total = $state(0);\n\n  $effect(() => {\n    total = items.length * 2;\n  });\n`,
+		},
+	])("accepts $what", async ({ markup, script }) => {
+		const reads = script === undefined ? `${markup}\n<i>{items.length}</i>` : markup;
+		expect(await lintCodes(component(reads, script))).toEqual([]);
+	});
 
-  it("refuses to run without its configuration, or over a file it cannot lint", async () => {
-    const [probe, notes] = write({
-      "Probe.svelte": component("<p>{label}{items.length}</p>"),
-      "notes.txt": "Hi\n",
-    });
-    await expect(
-      toolchain.lint([probe!], { toolchainDir: scratch, root: packageDir }),
-    ).rejects.toThrow(/does not exist/);
-    await expect(toolchain.lint([probe!, notes!], context)).rejects.toThrow(/skipped/);
-  });
+	it("refuses to run without its configuration, or over a file it cannot lint", async () => {
+		const [probe, notes] = write({
+			"Probe.svelte": component("<p>{label}{items.length}</p>"),
+			"notes.txt": "Hi\n",
+		});
+		await expect(
+			toolchain.lint([probe!], { toolchainDir: scratch, root: packageDir }),
+		).rejects.toThrow(/does not exist/);
+		await expect(toolchain.lint([probe!, notes!], context)).rejects.toThrow(/skipped/);
+	});
 });

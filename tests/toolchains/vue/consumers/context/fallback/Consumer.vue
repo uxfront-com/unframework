@@ -4,7 +4,7 @@ import LocaleProvider from "../../../../../integration/cases/context/fallback/__
 </script>
 
 <template>
-  <LocaleProvider locale="pt">
-    <Greeting name="Inês" />
-  </LocaleProvider>
+	<LocaleProvider locale="pt">
+		<Greeting name="Inês" />
+	</LocaleProvider>
 </template>

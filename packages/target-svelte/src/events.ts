@@ -15,104 +15,104 @@ import type { ElementNode, EventAttribute } from "@unframework.dev/ir";
  * (L4). test/events.test.ts reads them back from `svelte/elements`.
  */
 export const SVELTE_EVENT_INTERFACES: ReadonlyMap<string, string | undefined> = new Map(
-  Object.entries({
-    abort: "Event",
-    animationcancel: undefined,
-    animationend: "AnimationEvent",
-    animationiteration: "AnimationEvent",
-    animationstart: "AnimationEvent",
-    auxclick: "MouseEvent",
-    beforeinput: "InputEvent",
-    beforetoggle: "ToggleEvent",
-    blur: "FocusEvent",
-    cancel: "Event",
-    canplay: "Event",
-    canplaythrough: "Event",
-    change: "Event",
-    click: "MouseEvent",
-    close: "Event",
-    command: undefined,
-    compositionend: "CompositionEvent",
-    compositionstart: "CompositionEvent",
-    compositionupdate: "CompositionEvent",
-    contextmenu: "MouseEvent",
-    copy: "ClipboardEvent",
-    cut: "ClipboardEvent",
-    dblclick: "MouseEvent",
-    drag: "DragEvent",
-    dragend: "DragEvent",
-    dragenter: "DragEvent",
-    dragleave: "DragEvent",
-    dragover: "DragEvent",
-    dragstart: "DragEvent",
-    drop: "DragEvent",
-    durationchange: "Event",
-    emptied: "Event",
-    encrypted: "Event",
-    ended: "Event",
-    error: "Event",
-    focus: "FocusEvent",
-    focusin: "FocusEvent",
-    focusout: "FocusEvent",
-    formdata: "FormDataEvent",
-    fullscreenchange: "Event",
-    fullscreenerror: "Event",
-    gotpointercapture: "PointerEvent",
-    input: "Event",
-    invalid: "Event",
-    keydown: "KeyboardEvent",
-    keypress: "KeyboardEvent",
-    keyup: "KeyboardEvent",
-    load: "Event",
-    loadeddata: "Event",
-    loadedmetadata: "Event",
-    loadstart: "Event",
-    lostpointercapture: "PointerEvent",
-    mousedown: "MouseEvent",
-    mouseenter: "MouseEvent",
-    mouseleave: "MouseEvent",
-    mousemove: "MouseEvent",
-    mouseout: "MouseEvent",
-    mouseover: "MouseEvent",
-    mouseup: "MouseEvent",
-    paste: "ClipboardEvent",
-    pause: "Event",
-    play: "Event",
-    playing: "Event",
-    pointercancel: "PointerEvent",
-    pointerdown: "PointerEvent",
-    pointerenter: "PointerEvent",
-    pointerleave: "PointerEvent",
-    pointermove: "PointerEvent",
-    pointerout: "PointerEvent",
-    pointerover: "PointerEvent",
-    pointerup: "PointerEvent",
-    progress: "Event",
-    ratechange: "Event",
-    reset: "Event",
-    scroll: "UIEvent",
-    scrollend: "UIEvent",
-    securitypolicyviolation: undefined,
-    seeked: "Event",
-    seeking: "Event",
-    select: "Event",
-    stalled: "Event",
-    submit: "SubmitEvent",
-    suspend: "Event",
-    timeupdate: "Event",
-    toggle: "ToggleEvent",
-    touchcancel: "TouchEvent",
-    touchend: "TouchEvent",
-    touchmove: "TouchEvent",
-    touchstart: "TouchEvent",
-    transitioncancel: "TransitionEvent",
-    transitionend: "TransitionEvent",
-    transitionrun: "TransitionEvent",
-    transitionstart: "TransitionEvent",
-    volumechange: "Event",
-    waiting: "Event",
-    wheel: "WheelEvent",
-  }),
+	Object.entries({
+		abort: "Event",
+		animationcancel: undefined,
+		animationend: "AnimationEvent",
+		animationiteration: "AnimationEvent",
+		animationstart: "AnimationEvent",
+		auxclick: "MouseEvent",
+		beforeinput: "InputEvent",
+		beforetoggle: "ToggleEvent",
+		blur: "FocusEvent",
+		cancel: "Event",
+		canplay: "Event",
+		canplaythrough: "Event",
+		change: "Event",
+		click: "MouseEvent",
+		close: "Event",
+		command: undefined,
+		compositionend: "CompositionEvent",
+		compositionstart: "CompositionEvent",
+		compositionupdate: "CompositionEvent",
+		contextmenu: "MouseEvent",
+		copy: "ClipboardEvent",
+		cut: "ClipboardEvent",
+		dblclick: "MouseEvent",
+		drag: "DragEvent",
+		dragend: "DragEvent",
+		dragenter: "DragEvent",
+		dragleave: "DragEvent",
+		dragover: "DragEvent",
+		dragstart: "DragEvent",
+		drop: "DragEvent",
+		durationchange: "Event",
+		emptied: "Event",
+		encrypted: "Event",
+		ended: "Event",
+		error: "Event",
+		focus: "FocusEvent",
+		focusin: "FocusEvent",
+		focusout: "FocusEvent",
+		formdata: "FormDataEvent",
+		fullscreenchange: "Event",
+		fullscreenerror: "Event",
+		gotpointercapture: "PointerEvent",
+		input: "Event",
+		invalid: "Event",
+		keydown: "KeyboardEvent",
+		keypress: "KeyboardEvent",
+		keyup: "KeyboardEvent",
+		load: "Event",
+		loadeddata: "Event",
+		loadedmetadata: "Event",
+		loadstart: "Event",
+		lostpointercapture: "PointerEvent",
+		mousedown: "MouseEvent",
+		mouseenter: "MouseEvent",
+		mouseleave: "MouseEvent",
+		mousemove: "MouseEvent",
+		mouseout: "MouseEvent",
+		mouseover: "MouseEvent",
+		mouseup: "MouseEvent",
+		paste: "ClipboardEvent",
+		pause: "Event",
+		play: "Event",
+		playing: "Event",
+		pointercancel: "PointerEvent",
+		pointerdown: "PointerEvent",
+		pointerenter: "PointerEvent",
+		pointerleave: "PointerEvent",
+		pointermove: "PointerEvent",
+		pointerout: "PointerEvent",
+		pointerover: "PointerEvent",
+		pointerup: "PointerEvent",
+		progress: "Event",
+		ratechange: "Event",
+		reset: "Event",
+		scroll: "UIEvent",
+		scrollend: "UIEvent",
+		securitypolicyviolation: undefined,
+		seeked: "Event",
+		seeking: "Event",
+		select: "Event",
+		stalled: "Event",
+		submit: "SubmitEvent",
+		suspend: "Event",
+		timeupdate: "Event",
+		toggle: "ToggleEvent",
+		touchcancel: "TouchEvent",
+		touchend: "TouchEvent",
+		touchmove: "TouchEvent",
+		touchstart: "TouchEvent",
+		transitioncancel: "TransitionEvent",
+		transitionend: "TransitionEvent",
+		transitionrun: "TransitionEvent",
+		transitionstart: "TransitionEvent",
+		volumechange: "Event",
+		waiting: "Event",
+		wheel: "WheelEvent",
+	}),
 );
 
 /**
@@ -131,25 +131,25 @@ const SVELTE_PASSIVE_EVENTS: ReadonlySet<string> = new Set(["touchstart", "touch
  * through `on`, so the two run in the order the source writes them.
  */
 export function isAttached(attribute: EventAttribute, element: ElementNode): boolean {
-  if (needsAttachment(attribute)) return true;
-  if (attribute.capture) return false;
-  return element.attributes.some(
-    (other) =>
-      other !== attribute &&
-      other.kind === "Event" &&
-      other.event === attribute.event &&
-      !other.capture &&
-      needsAttachment(other),
-  );
+	if (needsAttachment(attribute)) return true;
+	if (attribute.capture) return false;
+	return element.attributes.some(
+		(other) =>
+			other !== attribute &&
+			other.kind === "Event" &&
+			other.event === attribute.event &&
+			!other.capture &&
+			needsAttachment(other),
+	);
 }
 
 function needsAttachment(attribute: EventAttribute): boolean {
-  return (
-    attribute.once === true ||
-    attribute.passive === true ||
-    SVELTE_EVENT_INTERFACES.get(attribute.event) === undefined ||
-    (SVELTE_PASSIVE_EVENTS.has(attribute.event) && !attribute.capture)
-  );
+	return (
+		attribute.once === true ||
+		attribute.passive === true ||
+		SVELTE_EVENT_INTERFACES.get(attribute.event) === undefined ||
+		(SVELTE_PASSIVE_EVENTS.has(attribute.event) && !attribute.capture)
+	);
 }
 
 /**
@@ -157,9 +157,9 @@ function needsAttachment(attribute: EventAttribute): boolean {
  * for an attribute, and lib.dom's (`HTMLElementEventMap`, which `on` reads) for an attachment.
  */
 export function handlerInterface(attribute: EventAttribute, element: ElementNode): string {
-  const dom = DOM_EVENTS.get(attribute.event) ?? "Event";
-  if (isAttached(attribute, element)) return dom;
-  return SVELTE_EVENT_INTERFACES.get(attribute.event) ?? dom;
+	const dom = DOM_EVENTS.get(attribute.event) ?? "Event";
+	if (isAttached(attribute, element)) return dom;
+	return SVELTE_EVENT_INTERFACES.get(attribute.event) ?? dom;
 }
 
 /**
@@ -167,14 +167,14 @@ export function handlerInterface(attribute: EventAttribute, element: ElementNode
  * handler's parameter must accept to take each of them.
  */
 export function commonInterface(names: Iterable<string>): string {
-  let common: string | undefined;
-  for (const name of names) {
-    if (common === undefined) common = name;
-    else {
-      while (common !== "Event" && !extendsEventInterface(name, common)) {
-        common = EVENT_INTERFACES.get(common) ?? "Event";
-      }
-    }
-  }
-  return common ?? "Event";
+	let common: string | undefined;
+	for (const name of names) {
+		if (common === undefined) common = name;
+		else {
+			while (common !== "Event" && !extendsEventInterface(name, common)) {
+				common = EVENT_INTERFACES.get(common) ?? "Event";
+			}
+		}
+	}
+	return common ?? "Event";
 }

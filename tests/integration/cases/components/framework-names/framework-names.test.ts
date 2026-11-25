@@ -7,11 +7,11 @@ import { expect } from "vitest";
 import Wizard from "./Wizard.uf.tsx";
 
 describeTargets("components/framework-names", () => {
-  it("renders the children", async () => {
-    const view = await mount(Wizard);
-    await view.expectParity("initial");
-    await expect.element(view.getByText("Step: details")).toBeVisible();
-    await expect.element(view.getByText("Plain child")).toBeVisible();
-    await expect.element(view.getByText("Level 0")).toBeVisible();
-  });
+	it("renders the children", async () => {
+		const view = await mount(Wizard);
+		await view.expectParity("initial");
+		await expect.element(view.getByText("Step: details")).toBeVisible();
+		await expect.element(view.getByText("Plain child")).toBeVisible();
+		await expect.element(view.getByText("Level 0")).toBeVisible();
+	});
 });

@@ -3,6 +3,6 @@ import Badge from "../../../../../integration/cases/context/static/__output__/vu
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Badge.prop:text -->
-  <Badge :text="1" />
+	<!-- @uf-expect TS2322 Badge.prop:text -->
+	<Badge :text="1" />
 </template>

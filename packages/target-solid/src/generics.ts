@@ -6,17 +6,17 @@
 import { codeNames, js, typeNames } from "@unframework.dev/codegen";
 import type { Placeholders } from "@unframework.dev/codegen";
 import type {
-  BindingId,
-  ConstItem,
-  FunctionItem,
-  Span,
-  TypeDeclaration,
-  TypeParameter,
-  UfComponent,
+	BindingId,
+	ConstItem,
+	FunctionItem,
+	Span,
+	TypeDeclaration,
+	TypeParameter,
+	UfComponent,
 } from "@unframework.dev/ir";
 
 type TypeParameterDeclaration = NonNullable<
-  ReturnType<typeof js.functionDeclaration>["typeParameters"]
+	ReturnType<typeof js.functionDeclaration>["typeParameters"]
 >;
 
 /**
@@ -24,33 +24,33 @@ type TypeParameterDeclaration = NonNullable<
  * them, or `null` for a component that is not generic.
  */
 export function typeParameterDeclaration(
-  component: UfComponent,
-  placeholders: Placeholders,
+	component: UfComponent,
+	placeholders: Placeholders,
 ): TypeParameterDeclaration | null {
-  if (!component.typeParameters?.length) return null;
-  return {
-    type: "TSTypeParameterDeclaration",
-    params: component.typeParameters.map((parameter) => ({
-      type: "TSTypeParameter",
-      name: js.bindingIdentifier(parameter.name),
-      constraint: parameter.constraint ? placeholders.type(parameter.constraint.code) : null,
-      default: parameter.default ? placeholders.type(parameter.default.code) : null,
-      in: false,
-      out: false,
-      const: false,
-      start: 0,
-      end: 0,
-    })),
-    start: 0,
-    end: 0,
-  };
+	if (!component.typeParameters?.length) return null;
+	return {
+		type: "TSTypeParameterDeclaration",
+		params: component.typeParameters.map((parameter) => ({
+			type: "TSTypeParameter",
+			name: js.bindingIdentifier(parameter.name),
+			constraint: parameter.constraint ? placeholders.type(parameter.constraint.code) : null,
+			default: parameter.default ? placeholders.type(parameter.default.code) : null,
+			in: false,
+			out: false,
+			const: false,
+			start: 0,
+			end: 0,
+		})),
+		start: 0,
+		end: 0,
+	};
 }
 
 /** An interface the output declares beside the props type, and how the props parameter names it. */
 export interface GeneratedInterface {
-  declaration: TypeDeclaration;
-  /** `PickerSlots<T>`, or the bare name when its members read no type parameter. */
-  reference: string;
+	declaration: TypeDeclaration;
+	/** `PickerSlots<T>`, or the bare name when its members read no type parameter. */
+	reference: string;
 }
 
 /**
@@ -58,40 +58,40 @@ export interface GeneratedInterface {
  * read, in their declared order: `export interface PickerSlots<T> { item?: …; }`.
  */
 export function generatedInterface(
-  component: UfComponent,
-  name: string,
-  members: readonly string[],
-  span: Span,
+	component: UfComponent,
+	name: string,
+	members: readonly string[],
+	span: Span,
 ): GeneratedInterface {
-  const read = typeNames(`{\n${members.join("\n")}\n}`);
-  // A parameter's constraint or default may name another (`T extends U, U extends V`), which the
-  // interface then declares too, and so on until no name is added.
-  for (let added = true; added;) {
-    added = false;
-    for (const parameter of component.typeParameters ?? []) {
-      if (!read.has(parameter.name)) continue;
-      for (const text of [parameter.constraint, parameter.default]) {
-        if (!text) continue;
-        for (const each of typeNames(text)) {
-          if (read.has(each)) continue;
-          read.add(each);
-          added = true;
-        }
-      }
-    }
-  }
-  const parameters = (component.typeParameters ?? []).filter((each) => read.has(each.name));
-  const declared = parameters.length ? `<${parameters.map(parameterText).join(", ")}>` : "";
-  const applied = parameters.length ? `<${parameters.map((each) => each.name).join(", ")}>` : "";
-  return {
-    declaration: {
-      name,
-      exported: true,
-      code: `interface ${name}${declared} {\n${members.join("\n")}\n}`,
-      span,
-    },
-    reference: `${name}${applied}`,
-  };
+	const read = typeNames(`{\n${members.join("\n")}\n}`);
+	// A parameter's constraint or default may name another (`T extends U, U extends V`), which the
+	// interface then declares too, and so on until no name is added.
+	for (let added = true; added;) {
+		added = false;
+		for (const parameter of component.typeParameters ?? []) {
+			if (!read.has(parameter.name)) continue;
+			for (const text of [parameter.constraint, parameter.default]) {
+				if (!text) continue;
+				for (const each of typeNames(text)) {
+					if (read.has(each)) continue;
+					read.add(each);
+					added = true;
+				}
+			}
+		}
+	}
+	const parameters = (component.typeParameters ?? []).filter((each) => read.has(each.name));
+	const declared = parameters.length ? `<${parameters.map(parameterText).join(", ")}>` : "";
+	const applied = parameters.length ? `<${parameters.map((each) => each.name).join(", ")}>` : "";
+	return {
+		declaration: {
+			name,
+			exported: true,
+			code: `interface ${name}${declared} {\n${members.join("\n")}\n}`,
+			span,
+		},
+		reference: `${name}${applied}`,
+	};
 }
 
 /**
@@ -99,10 +99,10 @@ export function generatedInterface(
  * component's type parameters (`defineModel<T>`), or none.
  */
 export function genericModelType(component: UfComponent, binding: BindingId): string | undefined {
-  const model = component.setup.find((item) => item.kind === "Model" && item.binding === binding);
-  if (model?.kind !== "Model" || !model.type) return undefined;
-  const read = typeNames(model.type);
-  return component.typeParameters?.some(({ name }) => read.has(name)) ? model.type.code : undefined;
+	const model = component.setup.find((item) => item.kind === "Model" && item.binding === binding);
+	if (model?.kind !== "Model" || !model.type) return undefined;
+	const read = typeNames(model.type);
+	return component.typeParameters?.some(({ name }) => read.has(name)) ? model.type.code : undefined;
 }
 
 /**
@@ -111,29 +111,29 @@ export function genericModelType(component: UfComponent, binding: BindingId): st
  * where `T` is in scope, never hoisted to the module.
  */
 export function namesTypeParameter(
-  component: UfComponent,
-  item: ConstItem | FunctionItem,
+	component: UfComponent,
+	item: ConstItem | FunctionItem,
 ): boolean {
-  if (!component.typeParameters?.length) return false;
-  const names = new Set<string>();
-  const add = (found: Iterable<string>) => {
-    for (const name of found) names.add(name);
-  };
-  if (item.kind === "Const") {
-    if (item.type) add(typeNames(item.type));
-    add(codeNames(item.value.code));
-  } else {
-    const fn = item.function;
-    for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
-    if (fn.returnType) add(typeNames(fn.returnType));
-    add(codeNames(fn.body.code, fn.expression ? "expression" : "statements"));
-  }
-  return component.typeParameters.some(({ name }) => names.has(name));
+	if (!component.typeParameters?.length) return false;
+	const names = new Set<string>();
+	const add = (found: Iterable<string>) => {
+		for (const name of found) names.add(name);
+	};
+	if (item.kind === "Const") {
+		if (item.type) add(typeNames(item.type));
+		add(codeNames(item.value.code));
+	} else {
+		const fn = item.function;
+		for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
+		if (fn.returnType) add(typeNames(fn.returnType));
+		add(codeNames(fn.body.code, fn.expression ? "expression" : "statements"));
+	}
+	return component.typeParameters.some(({ name }) => names.has(name));
 }
 
 /** `T extends Item = Item`, as written. */
 function parameterText(parameter: TypeParameter): string {
-  const constraint = parameter.constraint ? ` extends ${parameter.constraint.code}` : "";
-  const fallback = parameter.default ? ` = ${parameter.default.code}` : "";
-  return `${parameter.name}${constraint}${fallback}`;
+	const constraint = parameter.constraint ? ` extends ${parameter.constraint.code}` : "";
+	const fallback = parameter.default ? ` = ${parameter.default.code}` : "";
+	return `${parameter.name}${constraint}${fallback}`;
 }

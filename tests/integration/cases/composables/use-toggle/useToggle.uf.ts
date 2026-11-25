@@ -3,15 +3,15 @@
 import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
-  const on = ref(initial);
+	const on = ref(initial);
 
-  function toggle() {
-    on.value = !on.value;
-  }
+	function toggle() {
+		on.value = !on.value;
+	}
 
-  function close() {
-    on.value = false;
-  }
+	function close() {
+		on.value = false;
+	}
 
-  return { on, toggle, close };
+	return { on, toggle, close };
 }

@@ -8,8 +8,8 @@ import { renderToString as renderApp } from "vue/server-renderer";
  * root props. Vue's output is the component's HTML alone, with no container to strip.
  */
 export const renderToString: SsrRenderer = async (component, { props }) => {
-  const app = createSSRApp(component as Component, props ? { ...props } : null);
-  return renderApp(app);
+	const app = createSSRApp(component as Component, props ? { ...props } : null);
+	return renderApp(app);
 };
 
 /**
@@ -18,6 +18,6 @@ export const renderToString: SsrRenderer = async (component, { props }) => {
  * it, are the same on both sides.
  */
 export const renderForHydration: HydrationRenderer = async (component, { props }) => {
-  const app = createSSRApp({ render: () => h(component as Component, { ...props }) });
-  return renderApp(app);
+	const app = createSSRApp({ render: () => h(component as Component, { ...props }) });
+	return renderApp(app);
 };

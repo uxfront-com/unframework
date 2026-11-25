@@ -21,19 +21,19 @@ import type { OutputFile } from "./target.ts";
  * (`style={{ color: "red", marginTop: gap }}`), as it would code written from scratch.
  */
 export const OUTPUT_FORMAT: FormatConfig = {
-  printWidth: 100,
-  tabWidth: 2,
-  useTabs: false,
-  semi: true,
-  singleQuote: false,
-  jsxSingleQuote: false,
-  trailingComma: "all",
-  bracketSpacing: true,
-  objectWrap: "collapse",
-  arrowParens: "always",
-  endOfLine: "lf",
-  embeddedLanguageFormatting: "off",
-  insertFinalNewline: true,
+	printWidth: 100,
+	tabWidth: 2,
+	useTabs: false,
+	semi: true,
+	singleQuote: false,
+	jsxSingleQuote: false,
+	trailingComma: "all",
+	bracketSpacing: true,
+	objectWrap: "collapse",
+	arrowParens: "always",
+	endOfLine: "lf",
+	embeddedLanguageFormatting: "off",
+	insertFinalNewline: true,
 };
 
 /** Extensions oxfmt formats whole: code only. */
@@ -44,14 +44,14 @@ const FORMATTED = /\.[cm]?[jt]sx?$/;
  * printer's layout, for the reason above (and risk R14), except for their TypeScript blocks.
  */
 export function isFormatted(path: string): boolean {
-  return FORMATTED.test(path);
+	return FORMATTED.test(path);
 }
 
 /** The result of formatting one file. */
 export interface FormatOutcome {
-  file: OutputFile;
-  /** oxfmt's error, when the printed code did not parse: a compiler bug. */
-  error?: string;
+	file: OutputFile;
+	/** oxfmt's error, when the printed code did not parse: a compiler bug. */
+	error?: string;
 }
 
 /**
@@ -63,22 +63,22 @@ export interface FormatOutcome {
  * author's text with its selectors rewritten (ADR-0063). Idempotent, and never throws.
  */
 export async function formatOutput(file: OutputFile): Promise<FormatOutcome> {
-  if (file.path.endsWith(".css")) return { file };
-  try {
-    if (isFormatted(file.path)) {
-      const result = await format(file.path, file.contents, OUTPUT_FORMAT);
-      if (result.errors.length) return { file, error: formatErrors(result.errors) };
-      return { file: { ...file, contents: result.code } };
-    }
-    const contents = await formatBlocks(file.path, file.contents);
-    return { file: { ...file, contents: `${contents.trimEnd()}\n` } };
-  } catch (error) {
-    return { file, error: error instanceof Error ? error.message : String(error) };
-  }
+	if (file.path.endsWith(".css")) return { file };
+	try {
+		if (isFormatted(file.path)) {
+			const result = await format(file.path, file.contents, OUTPUT_FORMAT);
+			if (result.errors.length) return { file, error: formatErrors(result.errors) };
+			return { file: { ...file, contents: result.code } };
+		}
+		const contents = await formatBlocks(file.path, file.contents);
+		return { file: { ...file, contents: `${contents.trimEnd()}\n` } };
+	} catch (error) {
+		return { file, error: error instanceof Error ? error.message : String(error) };
+	}
 }
 
 function formatErrors(errors: readonly { message: string }[]): string {
-  return errors.map((error) => error.message).join("\n");
+	return errors.map((error) => error.message).join("\n");
 }
 
 /**
@@ -90,7 +90,7 @@ function formatErrors(errors: readonly { message: string }[]): string {
  * Array<string>"`, ADR-0068), which ends no tag.
  */
 const SCRIPT_BLOCK =
-  /^<script\b(?:[^>"']|"[^"]*"|'[^']*')*?\blang="ts"(?:[^>"']|"[^"]*"|'[^']*')*>/gm;
+	/^<script\b(?:[^>"']|"[^"]*"|'[^']*')*?\blang="ts"(?:[^>"']|"[^"]*"|'[^']*')*>/gm;
 const SCRIPT_END = /<\/script/i;
 
 /** Astro's frontmatter fence: `---` alone on a line. */
@@ -98,17 +98,17 @@ const FENCE = /^---$/m;
 
 /** Formats the TypeScript blocks of a markup file, leaving everything else as it is. */
 async function formatBlocks(path: string, contents: string): Promise<string> {
-  // A script block's code starts on a line of its own, and a frontmatter's already does.
-  const astro = path.endsWith(".astro");
-  const indent = path.endsWith(".svelte") ? "  " : "";
-  let result = "";
-  let last = 0;
-  for (const { start, end } of codeBlocks(path, contents)) {
-    const code = await formatCode(contents.slice(start, end), indent);
-    result += `${contents.slice(last, start)}${astro ? "" : "\n"}${code}`;
-    last = end;
-  }
-  return result + contents.slice(last);
+	// A script block's code starts on a line of its own, and a frontmatter's already does.
+	const astro = path.endsWith(".astro");
+	const indent = path.endsWith(".svelte") ? "  " : "";
+	let result = "";
+	let last = 0;
+	for (const { start, end } of codeBlocks(path, contents)) {
+		const code = await formatCode(contents.slice(start, end), indent);
+		result += `${contents.slice(last, start)}${astro ? "" : "\n"}${code}`;
+		last = end;
+	}
+	return result + contents.slice(last);
 }
 
 /**
@@ -117,25 +117,25 @@ async function formatBlocks(path: string, contents: string): Promise<string> {
  * on a block with no end.
  */
 export function codeBlocks(path: string, contents: string): Span[] {
-  if (path.endsWith(".astro")) {
-    if (!contents.startsWith("---\n")) return [];
-    const close = FENCE.exec(contents.slice(4));
-    if (!close) throw new Error("The frontmatter has no closing `---`.");
-    return [{ start: 4, end: 4 + close.index }];
-  }
-  if (!path.endsWith(".svelte") && !path.endsWith(".vue")) return [];
-  const blocks: Span[] = [];
-  let last = 0;
-  for (const open of contents.matchAll(SCRIPT_BLOCK)) {
-    // A line of a block's own code that looks like an opening tag is code.
-    if (open.index < last) continue;
-    const start = open.index + open[0].length;
-    const close = SCRIPT_END.exec(contents.slice(start));
-    if (!close) throw new Error("A <script> block has no closing tag.");
-    last = start + close.index;
-    blocks.push({ start, end: last });
-  }
-  return blocks;
+	if (path.endsWith(".astro")) {
+		if (!contents.startsWith("---\n")) return [];
+		const close = FENCE.exec(contents.slice(4));
+		if (!close) throw new Error("The frontmatter has no closing `---`.");
+		return [{ start: 4, end: 4 + close.index }];
+	}
+	if (!path.endsWith(".svelte") && !path.endsWith(".vue")) return [];
+	const blocks: Span[] = [];
+	let last = 0;
+	for (const open of contents.matchAll(SCRIPT_BLOCK)) {
+		// A line of a block's own code that looks like an opening tag is code.
+		if (open.index < last) continue;
+		const start = open.index + open[0].length;
+		const close = SCRIPT_END.exec(contents.slice(start));
+		if (!close) throw new Error("A <script> block has no closing tag.");
+		last = start + close.index;
+		blocks.push({ start, end: last });
+	}
+	return blocks;
 }
 
 /**
@@ -144,42 +144,42 @@ export function codeBlocks(path: string, contents: string): Span[] {
  * change. Ends in a newline unless the code is empty.
  */
 async function formatCode(code: string, indent: string): Promise<string> {
-  const config = { ...OUTPUT_FORMAT, printWidth: OUTPUT_FORMAT.printWidth! - indent.length };
-  const result = await format("block.ts", code, config);
-  if (result.errors.length) throw new Error(formatErrors(result.errors));
-  if (!indent) return result.code;
-  const literals = multilineLiterals(result.code);
-  let offset = 0;
-  return result.code
-    .split("\n")
-    .map((line) => {
-      const start = offset;
-      offset += line.length + 1;
-      const inside = literals.some((range) => range.start < start && start < range.end);
-      return line && !inside ? indent + line : line;
-    })
-    .join("\n");
+	const config = { ...OUTPUT_FORMAT, printWidth: OUTPUT_FORMAT.printWidth! - indent.length };
+	const result = await format("block.ts", code, config);
+	if (result.errors.length) throw new Error(formatErrors(result.errors));
+	if (!indent) return result.code;
+	const literals = multilineLiterals(result.code);
+	let offset = 0;
+	return result.code
+		.split("\n")
+		.map((line) => {
+			const start = offset;
+			offset += line.length + 1;
+			const inside = literals.some((range) => range.start < start && start < range.end);
+			return line && !inside ? indent + line : line;
+		})
+		.join("\n");
 }
 
 /** The spans of the literals in code that run over more than one line. */
 function multilineLiterals(code: string): { start: number; end: number }[] {
-  const parsed = parseModule("block.ts", code);
-  if (parsed.errors.length) throw new Error(parsed.errors[0]!.message);
-  const ranges: { start: number; end: number }[] = [];
-  const visit = (node: unknown): void => {
-    if (Array.isArray(node)) {
-      for (const item of node) visit(item);
-      return;
-    }
-    if (typeof node !== "object" || node === null) return;
-    const { type, start, end } = node as AST.Span & { type?: unknown };
-    const literal =
-      type === "TemplateLiteral" ||
-      type === "TSTemplateLiteralType" ||
-      (type === "Literal" && typeof (node as AST.StringLiteral).value === "string");
-    if (literal && code.slice(start, end).includes("\n")) ranges.push({ start, end });
-    for (const value of Object.values(node)) if (typeof value === "object") visit(value);
-  };
-  visit(parsed.program);
-  return ranges;
+	const parsed = parseModule("block.ts", code);
+	if (parsed.errors.length) throw new Error(parsed.errors[0]!.message);
+	const ranges: { start: number; end: number }[] = [];
+	const visit = (node: unknown): void => {
+		if (Array.isArray(node)) {
+			for (const item of node) visit(item);
+			return;
+		}
+		if (typeof node !== "object" || node === null) return;
+		const { type, start, end } = node as AST.Span & { type?: unknown };
+		const literal =
+			type === "TemplateLiteral" ||
+			type === "TSTemplateLiteralType" ||
+			(type === "Literal" && typeof (node as AST.StringLiteral).value === "string");
+		if (literal && code.slice(start, end).includes("\n")) ranges.push({ start, end });
+		for (const value of Object.values(node)) if (typeof value === "object") visit(value);
+	};
+	visit(parsed.program);
+	return ranges;
 }

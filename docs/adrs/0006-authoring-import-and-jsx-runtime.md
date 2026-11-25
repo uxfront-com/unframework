@@ -32,10 +32,10 @@ import { computed, defineEmits, ref } from "unframework";
 
 ```jsonc
 {
-  "compilerOptions": {
-    "jsx": "preserve",
-    "jsxImportSource": "unframework",
-  },
+	"compilerOptions": {
+		"jsx": "preserve",
+		"jsxImportSource": "unframework",
+	},
 }
 ```
 

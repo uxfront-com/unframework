@@ -18,31 +18,31 @@
 // - an injection key is a `createContextId`, `provide` `useContextProvider`, and `inject`
 //   `useContext` with its fallback.
 import {
-  bindingOf,
-  expressionCode,
-  js,
-  jsxBranch,
-  jsxChildren,
-  jsxSlotProps,
+	bindingOf,
+	expressionCode,
+	js,
+	jsxBranch,
+	jsxChildren,
+	jsxSlotProps,
 } from "@unframework.dev/codegen";
 import type { JsxContext } from "@unframework.dev/codegen";
 import { codeOf, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
-  Binding,
-  BindingId,
-  BoundAttribute,
-  ElementNode,
-  Expression,
-  FragmentNode,
-  Handler,
-  ModelAttribute,
-  ModelItem,
-  RenderNode,
-  SlotFill,
-  SlotOutletNode,
-  Span,
-  UfComponent,
-  UfModule,
+	Binding,
+	BindingId,
+	BoundAttribute,
+	ElementNode,
+	Expression,
+	FragmentNode,
+	Handler,
+	ModelAttribute,
+	ModelItem,
+	RenderNode,
+	SlotFill,
+	SlotOutletNode,
+	Span,
+	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { qwikEventProp } from "./events.ts";
@@ -60,111 +60,111 @@ type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
 
 /** A model the component declares (ADR-0054), and the names its output gives it. */
 export interface ModelPlan {
-  item: ModelItem;
-  binding: Binding;
-  /** The prop's name: the model's, `value`. */
-  name: string;
-  /** The destructured prop: its name, or `valueProp` where the source takes it. */
-  prop: string;
-  /** The change callback's prop, `onValueChange$`, and its destructured local. */
-  callbackProp: string;
-  callback: string;
-  /** The signal that holds the value while the consumer binds none. */
-  local: string;
-  /** The `$()` setter a write calls. */
-  setter: string;
-  /** Whether client code writes it: the setter and the callback are declared only then. */
-  written: boolean;
+	item: ModelItem;
+	binding: Binding;
+	/** The prop's name: the model's, `value`. */
+	name: string;
+	/** The destructured prop: its name, or `valueProp` where the source takes it. */
+	prop: string;
+	/** The change callback's prop, `onValueChange$`, and its destructured local. */
+	callbackProp: string;
+	callback: string;
+	/** The signal that holds the value while the consumer binds none. */
+	local: string;
+	/** The `$()` setter a write calls. */
+	setter: string;
+	/** Whether client code writes it: the setter and the callback are declared only then. */
+	written: boolean;
 }
 
 /** What a component's composition adds to its props and names. */
 export interface CompositionPlan {
-  /** Each slot rendered as a QRL render prop, by its name: the destructured `title$`. */
-  readonly slots: ReadonlyMap<string, string>;
-  /** Each model, by its binding. */
-  readonly models: ReadonlyMap<BindingId, ModelPlan>;
-  /**
-   * The `class` and `style` props a consumer's attributes fall through as, which the node that
-   * spreads the rest merges (`target`, ./fallthrough.ts).
-   */
-  readonly fallthrough?: { className: string; style: string; target: Span };
-  /** The `ref` prop that `defineExpose` fills. */
-  readonly expose?: { ref: string };
-  /** What the component takes apart from its declared props (ADR-0118, ./fallthrough.ts). */
-  readonly passed?: Passed;
+	/** Each slot rendered as a QRL render prop, by its name: the destructured `title$`. */
+	readonly slots: ReadonlyMap<string, string>;
+	/** Each model, by its binding. */
+	readonly models: ReadonlyMap<BindingId, ModelPlan>;
+	/**
+	 * The `class` and `style` props a consumer's attributes fall through as, which the node that
+	 * spreads the rest merges (`target`, ./fallthrough.ts).
+	 */
+	readonly fallthrough?: { className: string; style: string; target: Span };
+	/** The `ref` prop that `defineExpose` fills. */
+	readonly expose?: { ref: string };
+	/** What the component takes apart from its declared props (ADR-0118, ./fallthrough.ts). */
+	readonly passed?: Passed;
 }
 
 /** Plans a component's composition: see {@link CompositionPlan}. */
 export function planComposition(
-  component: UfComponent,
-  module: UfModule,
-  names: OutputNames,
+	component: UfComponent,
+	module: UfModule,
+	names: OutputNames,
 ): CompositionPlan {
-  // Each prop's local: destructured, or read from the props object in the object form.
-  const props =
-    component.propsParameter?.form === "object" ? component.propsParameter.name : undefined;
-  const local = (prop: string, name = prop) =>
-    props === undefined ? names.fresh(name) : `${props}.${prop}`;
-  const slots = new Map<string, string>();
-  for (const slot of renderedSlots(component)) {
-    // Qwik's lint takes a call of Qwik City's `action$` or `loader$` names for a loader
-    // (`qwik/loader-location`): such a slot's local takes another name.
-    const name = LOADER_NAMES.has(slotProp(slot)) ? `${slot}Slot$` : slotProp(slot);
-    slots.set(slot, local(slotProp(slot), name));
-  }
-  const written = new Set<BindingId>();
-  for (const { code, context } of codeOf(component)) {
-    if (context !== "client") continue;
-    for (const reference of code.refs)
-      if (reference.kind === "Write") written.add(reference.binding);
-  }
-  // A model a `v-model` binds, on an element or a child, is written there too.
-  walk(component.render, {
-    enter(node) {
-      if (!("attributes" in node)) return;
-      for (const attribute of node.attributes) {
-        if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") continue;
-        for (const reference of attribute.value.refs) {
-          if (reference.kind === "Binding") written.add(reference.binding);
-        }
-      }
-    },
-  });
-  const models = new Map<BindingId, ModelPlan>();
-  for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
-    const binding = bindingOf(component, item.binding);
-    const taken = names.imports.scope.has(item.name);
-    const callbackProp = modelCallback(item.name);
-    models.set(item.binding, {
-      item,
-      binding,
-      name: item.name,
-      prop: local(item.name, taken ? `${item.name}Prop` : item.name),
-      callbackProp,
-      callback: local(callbackProp),
-      local: names.fresh(`${binding.name}Local`),
-      setter: names.fresh(`set${capitalized(binding.name)}`),
-      written: written.has(item.binding),
-    });
-  }
-  const passed = new Passed(component, module, declaredProps(component), (name) =>
-    names.fresh(name),
-  );
-  // A root `<component is>` over tags takes the consumer's `class` and `style` alone, with no
-  // rest (ADR-0119).
-  const target = passed.target ?? classAndStyleRoot(component, module)?.span;
-  return {
-    slots,
-    models,
-    ...(target
-      ? {
-          fallthrough: { className: local("class", "className"), style: local("style"), target },
-        }
-      : {}),
-    ...(component.exposes ? { expose: { ref: local("ref") } } : {}),
-    ...(passed.target || passed.rootRef ? { passed } : {}),
-  };
+	// Each prop's local: destructured, or read from the props object in the object form.
+	const props =
+		component.propsParameter?.form === "object" ? component.propsParameter.name : undefined;
+	const local = (prop: string, name = prop) =>
+		props === undefined ? names.fresh(name) : `${props}.${prop}`;
+	const slots = new Map<string, string>();
+	for (const slot of renderedSlots(component)) {
+		// Qwik's lint takes a call of Qwik City's `action$` or `loader$` names for a loader
+		// (`qwik/loader-location`): such a slot's local takes another name.
+		const name = LOADER_NAMES.has(slotProp(slot)) ? `${slot}Slot$` : slotProp(slot);
+		slots.set(slot, local(slotProp(slot), name));
+	}
+	const written = new Set<BindingId>();
+	for (const { code, context } of codeOf(component)) {
+		if (context !== "client") continue;
+		for (const reference of code.refs)
+			if (reference.kind === "Write") written.add(reference.binding);
+	}
+	// A model a `v-model` binds, on an element or a child, is written there too.
+	walk(component.render, {
+		enter(node) {
+			if (!("attributes" in node)) return;
+			for (const attribute of node.attributes) {
+				if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") continue;
+				for (const reference of attribute.value.refs) {
+					if (reference.kind === "Binding") written.add(reference.binding);
+				}
+			}
+		},
+	});
+	const models = new Map<BindingId, ModelPlan>();
+	for (const item of component.setup) {
+		if (item.kind !== "Model") continue;
+		const binding = bindingOf(component, item.binding);
+		const taken = names.imports.scope.has(item.name);
+		const callbackProp = modelCallback(item.name);
+		models.set(item.binding, {
+			item,
+			binding,
+			name: item.name,
+			prop: local(item.name, taken ? `${item.name}Prop` : item.name),
+			callbackProp,
+			callback: local(callbackProp),
+			local: names.fresh(`${binding.name}Local`),
+			setter: names.fresh(`set${capitalized(binding.name)}`),
+			written: written.has(item.binding),
+		});
+	}
+	const passed = new Passed(component, module, declaredProps(component), (name) =>
+		names.fresh(name),
+	);
+	// A root `<component is>` over tags takes the consumer's `class` and `style` alone, with no
+	// rest (ADR-0119).
+	const target = passed.target ?? classAndStyleRoot(component, module)?.span;
+	return {
+		slots,
+		models,
+		...(target
+			? {
+					fallthrough: { className: local("class", "className"), style: local("style"), target },
+				}
+			: {}),
+		...(component.exposes ? { expose: { ref: local("ref") } } : {}),
+		...(passed.target || passed.rootRef ? { passed } : {}),
+	};
 }
 
 /**
@@ -173,40 +173,40 @@ export function planComposition(
  * through. None of them falls through (ADR-0118).
  */
 export function declaredProps(component: UfComponent): Set<string> {
-  const declared = new Set(component.props.map((prop) => prop.name));
-  for (const event of component.emits?.events ?? []) declared.add(qwikEventProp(event.name));
-  for (const item of component.setup) {
-    if (item.kind !== "Model") continue;
-    declared.add(item.name);
-    declared.add(modelCallback(item.name));
-  }
-  for (const slot of component.slots?.slots ?? []) {
-    if (isRenderProp(component, slot.name)) declared.add(slotProp(slot.name));
-  }
-  declared.add("class");
-  declared.add("style");
-  if (component.exposes) declared.add("ref");
-  return declared;
+	const declared = new Set(component.props.map((prop) => prop.name));
+	for (const event of component.emits?.events ?? []) declared.add(qwikEventProp(event.name));
+	for (const item of component.setup) {
+		if (item.kind !== "Model") continue;
+		declared.add(item.name);
+		declared.add(modelCallback(item.name));
+	}
+	for (const slot of component.slots?.slots ?? []) {
+		if (isRenderProp(component, slot.name)) declared.add(slotProp(slot.name));
+	}
+	declared.add("class");
+	declared.add("style");
+	if (component.exposes) declared.add("ref");
+	return declared;
 }
 
 /** The names `qwik/loader-location` takes for Qwik City's loaders and actions. */
 const LOADER_NAMES: ReadonlySet<string> = new Set([
-  "loader$",
-  "routeLoader$",
-  "routeAction$",
-  "routeHandler$",
-  "action$",
-  "globalAction$",
+	"loader$",
+	"routeLoader$",
+	"routeAction$",
+	"routeHandler$",
+	"action$",
+	"globalAction$",
 ]);
 
 /** The QRL prop of a slot rendered as a render prop: `title$`, `item$`. */
 export function slotProp(slot: string): string {
-  return `${slot}$`;
+	return `${slot}$`;
 }
 
 /** The change callback of a model, by ADR-0012's names: `onValueChange$`. */
 export function modelCallback(model: string): string {
-  return qwikEventProp(`${model}Change`);
+	return qwikEventProp(`${model}Change`);
 }
 
 /**
@@ -214,8 +214,8 @@ export function modelCallback(model: string): string {
  * which `<Slot />` projects.
  */
 export function isRenderProp(component: UfComponent, slot: string): boolean {
-  if (slot !== "default") return true;
-  return component.slots?.slots.some((each) => each.name === slot && each.props) ?? false;
+	if (slot !== "default") return true;
+	return component.slots?.slots.some((each) => each.name === slot && each.props) ?? false;
 }
 
 /**
@@ -223,23 +223,23 @@ export function isRenderProp(component: UfComponent, slot: string): boolean {
  * or a forwarded fill, then a presence test.
  */
 function renderedSlots(component: UfComponent): string[] {
-  const found: string[] = [];
-  const add = (slot: string) => {
-    if (isRenderProp(component, slot) && !found.includes(slot)) found.push(slot);
-  };
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "SlotOutlet") add(node.slot);
-      if (node.kind !== "Component" && node.kind !== "Dynamic") return;
-      for (const fill of node.kind === "Component" ? node.fills : (node.fills ?? [])) {
-        if (fill.forward !== undefined) add(fill.forward);
-      }
-    },
-  });
-  for (const { expression } of expressionsOf(component)) {
-    for (const reference of expression.refs) if (reference.kind === "Slot") add(reference.slot);
-  }
-  return found;
+	const found: string[] = [];
+	const add = (slot: string) => {
+		if (isRenderProp(component, slot) && !found.includes(slot)) found.push(slot);
+	};
+	walk(component.render, {
+		enter(node) {
+			if (node.kind === "SlotOutlet") add(node.slot);
+			if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+			for (const fill of node.kind === "Component" ? node.fills : (node.fills ?? [])) {
+				if (fill.forward !== undefined) add(fill.forward);
+			}
+		},
+	});
+	for (const { expression } of expressionsOf(component)) {
+		for (const reference of expression.refs) if (reference.kind === "Slot") add(reference.slot);
+	}
+	return found;
 }
 
 /**
@@ -248,31 +248,31 @@ function renderedSlots(component: UfComponent): string[] {
  * `{title$?.() ?? fallback}` with a fallback.
  */
 export function slotOutlet(
-  node: SlotOutletNode,
-  context: JsxContext,
-  plan: CompositionPlan,
-  slotComponent: () => string,
+	node: SlotOutletNode,
+	context: JsxContext,
+	plan: CompositionPlan,
+	slotComponent: () => string,
 ): AstExpression {
-  const local = plan.slots.get(node.slot);
-  if (local === undefined) {
-    return js.jsxElement(slotComponent(), [], jsxChildren(node.fallback, context));
-  }
-  const props = jsxSlotProps(node, context);
-  const args = props ? [props] : [];
-  if (!node.fallback.length) {
-    return optionalCall(local, args);
-  }
-  // `title$?.() ?? fallback`, not a ternary: Qwik's lint takes a call of a `$` name as a loader
-  // (`qwik/loader-location`). A filled slot's call is a promise, never nullish.
-  return js.logicalExpression("??", optionalCall(local, args), jsxBranch(node.fallback, context));
+	const local = plan.slots.get(node.slot);
+	if (local === undefined) {
+		return js.jsxElement(slotComponent(), [], jsxChildren(node.fallback, context));
+	}
+	const props = jsxSlotProps(node, context);
+	const args = props ? [props] : [];
+	if (!node.fallback.length) {
+		return optionalCall(local, args);
+	}
+	// `title$?.() ?? fallback`, not a ternary: Qwik's lint takes a call of a `$` name as a loader
+	// (`qwik/loader-location`). A filled slot's call is a promise, never nullish.
+	return js.logicalExpression("??", optionalCall(local, args), jsxBranch(node.fallback, context));
 }
 
 /** `name?.(args)`. */
 function optionalCall(
-  name: string,
-  args: Parameters<typeof js.callExpression>[1],
+	name: string,
+	args: Parameters<typeof js.callExpression>[1],
 ): ReturnType<typeof js.chainExpression> {
-  return js.chainExpression({ ...js.callExpression(js.identifier(name), args), optional: true });
+	return js.chainExpression({ ...js.callExpression(js.identifier(name), args), optional: true });
 }
 
 /**
@@ -281,35 +281,35 @@ function optionalCall(
  * makes the arrow a QRL, as it makes a listener's.
  */
 export function fillAttribute(
-  fill: SlotFill,
-  context: JsxContext,
-  plan: CompositionPlan,
-  locals: RenderLocals,
+	fill: SlotFill,
+	context: JsxContext,
+	plan: CompositionPlan,
+	locals: RenderLocals,
 ): JsxAttribute[] {
-  const name = slotProp(fill.slot);
-  if (fill.forward !== undefined) {
-    // Forwarding the default slot needs its presence, an error on Qwik
-    // (`default-slot-presence`): the output passes nothing.
-    const local = plan.slots.get(fill.forward);
-    return local === undefined
-      ? []
-      : [js.jsxAttribute(name, js.jsxExpressionContainer(js.identifier(local)))];
-  }
-  locals.enter(true);
-  const body = jsxBranch(fill.children, context);
-  const parameter = fill.parameter && (fill.parameter.name ?? fill.parameter.pattern!.code);
-  const arrow = js.arrowFunction(
-    parameter === undefined ? [] : [context.placeholders.parameter(parameter)],
-    body,
-  );
-  return [
-    js.jsxAttribute(name, js.jsxExpressionContainer(withLocals(arrow, locals.leave(), context))),
-  ];
+	const name = slotProp(fill.slot);
+	if (fill.forward !== undefined) {
+		// Forwarding the default slot needs its presence, an error on Qwik
+		// (`default-slot-presence`): the output passes nothing.
+		const local = plan.slots.get(fill.forward);
+		return local === undefined
+			? []
+			: [js.jsxAttribute(name, js.jsxExpressionContainer(js.identifier(local)))];
+	}
+	locals.enter(true);
+	const body = jsxBranch(fill.children, context);
+	const parameter = fill.parameter && (fill.parameter.name ?? fill.parameter.pattern!.code);
+	const arrow = js.arrowFunction(
+		parameter === undefined ? [] : [context.placeholders.parameter(parameter)],
+		body,
+	);
+	return [
+		js.jsxAttribute(name, js.jsxExpressionContainer(withLocals(arrow, locals.leave(), context))),
+	];
 }
 
 /** `value` → `Value`. */
 export function capitalized(name: string): string {
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+	return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
 /**
@@ -318,16 +318,16 @@ export function capitalized(name: string): string {
  * moved to module scope is called from an arrow, which takes the event's payload.
  */
 export function componentHandler(
-  handler: Handler,
-  context: JsxContext,
-  plan: SetupPlan,
+	handler: Handler,
+	context: JsxContext,
+	plan: SetupPlan,
 ): AstExpression {
-  if (handler.kind === "Inline") {
-    return context.placeholders.expression(printFunction(plan, handler.function, "client").text);
-  }
-  const fn = plan.functions.get(handler.binding)!;
-  if (fn.form !== "module") return js.identifier(fn.qrl);
-  return context.placeholders.expression(`(...payload) => ${fn.binding.name}(...payload)`);
+	if (handler.kind === "Inline") {
+		return context.placeholders.expression(printFunction(plan, handler.function, "client").text);
+	}
+	const fn = plan.functions.get(handler.binding)!;
+	if (fn.form !== "module") return js.identifier(fn.qrl);
+	return context.placeholders.expression(`(...payload) => ${fn.binding.name}(...payload)`);
 }
 
 /**
@@ -335,12 +335,12 @@ export function componentHandler(
  * model's setter, or an arrow that writes its state, `(value) => (cups.value = value)`.
  */
 export function modelWriter(value: Expression, plan: SetupPlan): string {
-  const reference = value.refs.find((each) => each.kind === "Binding");
-  const binding = reference && bindingOf(plan.component, reference.binding);
-  const model = binding && plan.composition.models.get(binding.id);
-  if (model) return model.setter;
-  const parameter = binding?.name === "value" ? "next" : "value";
-  return `(${parameter}) => (${value.code} = ${parameter})`;
+	const reference = value.refs.find((each) => each.kind === "Binding");
+	const binding = reference && bindingOf(plan.component, reference.binding);
+	const model = binding && plan.composition.models.get(binding.id);
+	if (model) return model.setter;
+	const parameter = binding?.name === "value" ? "next" : "value";
+	return `(${parameter}) => (${value.code} = ${parameter})`;
 }
 
 /**
@@ -348,60 +348,60 @@ export function modelWriter(value: Expression, plan: SetupPlan): string {
  * `<component is>` renders, and the values form controls read in render.
  */
 export class RenderLocals {
-  readonly #plan: SetupPlan;
-  readonly #declared = new Map<string, string>();
-  readonly statements: string[] = [];
-  /** The callbacks being printed (a list's, a fill's), innermost last, with what they declare. */
-  readonly #scopes: {
-    statements: string[];
-    fill: boolean;
-    functions: Map<string, string>;
-  }[] = [];
+	readonly #plan: SetupPlan;
+	readonly #declared = new Map<string, string>();
+	readonly statements: string[] = [];
+	/** The callbacks being printed (a list's, a fill's), innermost last, with what they declare. */
+	readonly #scopes: {
+		statements: string[];
+		fill: boolean;
+		functions: Map<string, string>;
+	}[] = [];
 
-  constructor(plan: SetupPlan) {
-    this.#plan = plan;
-  }
+	constructor(plan: SetupPlan) {
+		this.#plan = plan;
+	}
 
-  /** `const Tag = …;`, under a fresh name: in the innermost callback where `local`. */
-  declare(base: string, code: string, local = false): string {
-    const name = this.#plan.names.fresh(base);
-    const scope = local ? this.#scopes.at(-1) : undefined;
-    (scope?.statements ?? this.statements).push(`const ${name} = ${code};`);
-    return name;
-  }
+	/** `const Tag = …;`, under a fresh name: in the innermost callback where `local`. */
+	declare(base: string, code: string, local = false): string {
+		const name = this.#plan.names.fresh(base);
+		const scope = local ? this.#scopes.at(-1) : undefined;
+		(scope?.statements ?? this.statements).push(`const ${name} = ${code};`);
+		return name;
+	}
 
-  /** A read of a model's value in render, declared once: `const currentName = name.value;`. */
-  current(read: string, base: string): string {
-    let name = this.#declared.get(read);
-    if (name === undefined) {
-      name = this.declare(`current${capitalized(base)}`, read);
-      this.#declared.set(read, name);
-    }
-    return name;
-  }
+	/** A read of a model's value in render, declared once: `const currentName = name.value;`. */
+	current(read: string, base: string): string {
+		let name = this.#declared.get(read);
+		if (name === undefined) {
+			name = this.declare(`current${capitalized(base)}`, read);
+			this.#declared.set(read, name);
+		}
+		return name;
+	}
 
-  /** Starts printing a callback: a list's, or a fill's (a `$` scope). */
-  enter(fill: boolean): void {
-    this.#scopes.push({ statements: [], fill, functions: new Map() });
-  }
+	/** Starts printing a callback: a list's, or a fill's (a `$` scope). */
+	enter(fill: boolean): void {
+		this.#scopes.push({ statements: [], fill, functions: new Map() });
+	}
 
-  /** Ends the callback {@link enter} started: what it declares, its functions first. */
-  leave(): string[] {
-    const scope = this.#scopes.pop()!;
-    return [...scope.functions.values(), ...scope.statements];
-  }
+	/** Ends the callback {@link enter} started: what it declares, its functions first. */
+	leave(): string[] {
+		const scope = this.#scopes.pop()!;
+		return [...scope.functions.values(), ...scope.statements];
+	}
 
-  /** Whether a fill's callback is being printed: its code runs as a `$` scope. */
-  get inFill(): boolean {
-    return this.#scopes.some((scope) => scope.fill);
-  }
+	/** Whether a fill's callback is being printed: its code runs as a `$` scope. */
+	get inFill(): boolean {
+		return this.#scopes.some((scope) => scope.fill);
+	}
 
-  /** Declares a setup function in the innermost fill's callback, once. */
-  declareInFill(name: string, declaration: () => string): void {
-    const fill = this.#scopes.findLast((scope) => scope.fill);
-    if (!fill || fill.functions.has(name)) return;
-    fill.functions.set(name, declaration());
-  }
+	/** Declares a setup function in the innermost fill's callback, once. */
+	declareInFill(name: string, declaration: () => string): void {
+		const fill = this.#scopes.findLast((scope) => scope.fill);
+		if (!fill || fill.functions.has(name)) return;
+		fill.functions.set(name, declaration());
+	}
 }
 
 /**
@@ -409,25 +409,25 @@ export class RenderLocals {
  * `(item) => { const Tag = item.tag; return <Tag />; }`.
  */
 export function withLocals(
-  arrow: ReturnType<typeof js.arrowFunction>,
-  statements: readonly string[],
-  context: JsxContext,
+	arrow: ReturnType<typeof js.arrowFunction>,
+	statements: readonly string[],
+	context: JsxContext,
 ): ReturnType<typeof js.arrowFunction> {
-  const { body } = arrow;
-  if (!statements.length || body.type === "BlockStatement") return arrow;
-  return js.arrowFunction(arrow.params, [
-    context.placeholders.statements(`${statements.join("\n")}\n`),
-    js.returnStatement(body),
-  ]);
+	const { body } = arrow;
+	if (!statements.length || body.type === "BlockStatement") return arrow;
+	return js.arrowFunction(arrow.params, [
+		context.placeholders.statements(`${statements.join("\n")}\n`),
+		js.returnStatement(body),
+	]);
 }
 
 /** Whether an expression reads a binding only a callback of the render declares. */
 export function readsRenderLocal(expression: Expression, component: UfComponent): boolean {
-  return expression.refs.some(
-    (reference) =>
-      reference.kind === "Binding" &&
-      ["loopVar", "slotScope"].includes(bindingOf(component, reference.binding).kind),
-  );
+	return expression.refs.some(
+		(reference) =>
+			reference.kind === "Binding" &&
+			["loopVar", "slotScope"].includes(bindingOf(component, reference.binding).kind),
+	);
 }
 
 /**
@@ -435,25 +435,25 @@ export function readsRenderLocal(expression: Expression, component: UfComponent)
  * fill a `$` scope, which declares a copy of each setup function it calls, as a listener does.
  */
 export function fillExpressions(component: UfComponent): Set<Expression> {
-  const found = new Set<Expression>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind !== "Component" && node.kind !== "Dynamic") return;
-      for (const fill of node.kind === "Component" ? node.fills : (node.fills ?? [])) {
-        if (fill.forward !== undefined || (fill.slot === "default" && !fill.parameter)) continue;
-        const render: FragmentNode = { kind: "Fragment", children: fill.children, span: fill.span };
-        for (const { expression } of expressionsOf({
-          ...component,
-          props: [],
-          setup: [],
-          render,
-        })) {
-          found.add(expression);
-        }
-      }
-    },
-  });
-  return found;
+	const found = new Set<Expression>();
+	walk(component.render, {
+		enter(node) {
+			if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+			for (const fill of node.kind === "Component" ? node.fills : (node.fills ?? [])) {
+				if (fill.forward !== undefined || (fill.slot === "default" && !fill.parameter)) continue;
+				const render: FragmentNode = { kind: "Fragment", children: fill.children, span: fill.span };
+				for (const { expression } of expressionsOf({
+					...component,
+					props: [],
+					setup: [],
+					render,
+				})) {
+					found.add(expression);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /**
@@ -470,75 +470,75 @@ export function fillExpressions(component: UfComponent): Set<Expression> {
  * element's is there (`Listeners.explicit`).
  */
 export function modelAttribute(
-  attribute: ModelAttribute,
-  element: ElementNode,
-  context: JsxContext,
-  plan: SetupPlan,
-  locals: RenderLocals,
-  explicit: boolean,
+	attribute: ModelAttribute,
+	element: ElementNode,
+	context: JsxContext,
+	plan: SetupPlan,
+	locals: RenderLocals,
+	explicit: boolean,
 ): JsxAttribute[] {
-  const read = expressionCode(attribute.value, context);
-  const current = locals.current(read, modelBindingName(attribute.value, plan));
-  const { event, handler } = modelListener(attribute, element, context, plan);
-  // An element that listens to the event itself runs the model's handler first in its own prop
-  // (./listeners.ts), as Vue's directive listens before the element's listeners: two props of
-  // one name fail type-checking (TS17001).
-  const listens = element.attributes.some(
-    (other) => other.kind === "Event" && other.event === event,
-  );
-  // On the element that spreads the props' rest, the consumer's listener of the event runs after
-  // the model's handler (./fallthrough.ts).
-  const passed = listens ? undefined : plan.composition.passed?.listener(element, event);
-  const qrl = (code: string) => `${plan.names.core("$")}(${code})`;
-  const listener = listens
-    ? []
-    : [
-        js.jsxAttribute(
-          qwikEventProp(event),
-          js.jsxExpressionContainer(
-            context.placeholders.expression(
-              passed !== undefined
-                ? `[${qrl(handler)}, ${passed}]`
-                : explicit
-                  ? qrl(handler)
-                  : handler,
-            ),
-          ),
-        ),
-      ];
-  const prop = (name: string, code: string) =>
-    js.jsxAttribute(name, js.jsxExpressionContainer(context.placeholders.expression(code)));
-  switch (attribute.control) {
-    case "text":
-    case "number":
-    case "textarea": {
-      const options = modelTextOptions(attribute);
-      if (!options) return [prop("value", current), ...listener];
-      const modelText = plan.names.once("modelText");
-      const ref = controlRef(element, plan, locals, modelBindingName(attribute.value, plan));
-      return [
-        ...(ref.attribute
-          ? [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(ref.name)))]
-          : []),
-        prop("value", `${modelText}.shown(${ref.name}.value, ${current}, ${options})`),
-        ...listener,
-      ];
-    }
-    case "checkbox":
-      return [prop("checked", current), ...listener];
-    case "checkbox-group":
-      return [
-        prop("checked", `${current}.includes(${controlValue(element, context)})`),
-        ...listener,
-      ];
-    case "radio":
-      return [prop("checked", `${current} === ${controlValue(element, context)}`), ...listener];
-    case "select":
-    case "select-multiple":
-      return listener;
-    default:
-      return unreachable(attribute.control);
-  }
+	const read = expressionCode(attribute.value, context);
+	const current = locals.current(read, modelBindingName(attribute.value, plan));
+	const { event, handler } = modelListener(attribute, element, context, plan);
+	// An element that listens to the event itself runs the model's handler first in its own prop
+	// (./listeners.ts), as Vue's directive listens before the element's listeners: two props of
+	// one name fail type-checking (TS17001).
+	const listens = element.attributes.some(
+		(other) => other.kind === "Event" && other.event === event,
+	);
+	// On the element that spreads the props' rest, the consumer's listener of the event runs after
+	// the model's handler (./fallthrough.ts).
+	const passed = listens ? undefined : plan.composition.passed?.listener(element, event);
+	const qrl = (code: string) => `${plan.names.core("$")}(${code})`;
+	const listener = listens
+		? []
+		: [
+				js.jsxAttribute(
+					qwikEventProp(event),
+					js.jsxExpressionContainer(
+						context.placeholders.expression(
+							passed !== undefined
+								? `[${qrl(handler)}, ${passed}]`
+								: explicit
+									? qrl(handler)
+									: handler,
+						),
+					),
+				),
+			];
+	const prop = (name: string, code: string) =>
+		js.jsxAttribute(name, js.jsxExpressionContainer(context.placeholders.expression(code)));
+	switch (attribute.control) {
+		case "text":
+		case "number":
+		case "textarea": {
+			const options = modelTextOptions(attribute);
+			if (!options) return [prop("value", current), ...listener];
+			const modelText = plan.names.once("modelText");
+			const ref = controlRef(element, plan, locals, modelBindingName(attribute.value, plan));
+			return [
+				...(ref.attribute
+					? [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(ref.name)))]
+					: []),
+				prop("value", `${modelText}.shown(${ref.name}.value, ${current}, ${options})`),
+				...listener,
+			];
+		}
+		case "checkbox":
+			return [prop("checked", current), ...listener];
+		case "checkbox-group":
+			return [
+				prop("checked", `${current}.includes(${controlValue(element, context)})`),
+				...listener,
+			];
+		case "radio":
+			return [prop("checked", `${current} === ${controlValue(element, context)}`), ...listener];
+		case "select":
+		case "select-multiple":
+			return listener;
+		default:
+			return unreachable(attribute.control);
+	}
 }
 
 /**
@@ -546,63 +546,63 @@ export function modelAttribute(
  * handler, which takes the control as Qwik's element argument (see {@link modelAttribute}).
  */
 export function modelListener(
-  attribute: ModelAttribute,
-  element: ElementNode,
-  context: JsxContext,
-  plan: SetupPlan,
+	attribute: ModelAttribute,
+	element: ElementNode,
+	context: JsxContext,
+	plan: SetupPlan,
 ): { event: string; handler: string } {
-  const write = (value: string) => modelWrite(attribute.value, value, plan);
-  // A model or state of a generic component's type parameter takes the control's value as its
-  // type (src/generics.ts).
-  const reference = attribute.value.refs.find((each) => each.kind === "Binding");
-  const generic = reference && genericModelType(plan.component, reference.binding);
-  const typed = (value: string) => (generic ? `${value} as ${generic}` : value);
-  const listener = (event: string, value: string, parameters = "_, element") => ({
-    event,
-    handler: `(${parameters}) => ${write(value)}`,
-  });
-  switch (attribute.control) {
-    case "text":
-    case "number":
-    case "textarea": {
-      const event = attribute.lazy ? "change" : "input";
-      const options = modelTextOptions(attribute);
-      return options
-        ? listener(event, typed(`${plan.names.once("modelText")}.read(element, ${options})`))
-        : listener(event, typed("element.value"));
-    }
-    case "checkbox":
-      return listener("change", "element.checked");
-    case "checkbox-group": {
-      const read = expressionCode(attribute.value, context);
-      const value = controlValue(element, context);
-      return listener("change", `${plan.names.once("toggle")}(${read}, ${value}, element.checked)`);
-    }
-    case "radio":
-      return listener("change", controlValue(element, context), "");
-    case "select":
-      return listener("change", typed("element.value"));
-    case "select-multiple":
-      return listener("change", typed(`${plan.names.once("selectedValues")}(element)`));
-    default:
-      return unreachable(attribute.control);
-  }
+	const write = (value: string) => modelWrite(attribute.value, value, plan);
+	// A model or state of a generic component's type parameter takes the control's value as its
+	// type (src/generics.ts).
+	const reference = attribute.value.refs.find((each) => each.kind === "Binding");
+	const generic = reference && genericModelType(plan.component, reference.binding);
+	const typed = (value: string) => (generic ? `${value} as ${generic}` : value);
+	const listener = (event: string, value: string, parameters = "_, element") => ({
+		event,
+		handler: `(${parameters}) => ${write(value)}`,
+	});
+	switch (attribute.control) {
+		case "text":
+		case "number":
+		case "textarea": {
+			const event = attribute.lazy ? "change" : "input";
+			const options = modelTextOptions(attribute);
+			return options
+				? listener(event, typed(`${plan.names.once("modelText")}.read(element, ${options})`))
+				: listener(event, typed("element.value"));
+		}
+		case "checkbox":
+			return listener("change", "element.checked");
+		case "checkbox-group": {
+			const read = expressionCode(attribute.value, context);
+			const value = controlValue(element, context);
+			return listener("change", `${plan.names.once("toggle")}(${read}, ${value}, element.checked)`);
+		}
+		case "radio":
+			return listener("change", controlValue(element, context), "");
+		case "select":
+			return listener("change", typed("element.value"));
+		case "select-multiple":
+			return listener("change", typed(`${plan.names.once("selectedValues")}(element)`));
+		default:
+			return unreachable(attribute.control);
+	}
 }
 
 /** A text control's `modelText` options, from its modifiers and its type, or none. */
 function modelTextOptions(attribute: ModelAttribute): string | undefined {
-  const modifiers = [
-    ...(attribute.trim ? ["trim: true"] : []),
-    ...(attribute.lazy ? ["lazy: true"] : []),
-    ...(attribute.number || attribute.control === "number" ? ["number: true"] : []),
-  ];
-  return modifiers.length ? `{ ${modifiers.join(", ")} }` : undefined;
+	const modifiers = [
+		...(attribute.trim ? ["trim: true"] : []),
+		...(attribute.lazy ? ["lazy: true"] : []),
+		...(attribute.number || attribute.control === "number" ? ["number: true"] : []),
+	];
+	return modifiers.length ? `{ ${modifiers.join(", ")} }` : undefined;
 }
 
 /** The name of the state or the model a `v-model` binds: `name` in `name.value`. */
 function modelBindingName(value: Expression, plan: SetupPlan): string {
-  const reference = value.refs.find((each) => each.kind === "Binding");
-  return reference ? bindingOf(plan.component, reference.binding).name : "value";
+	const reference = value.refs.find((each) => each.kind === "Binding");
+	return reference ? bindingOf(plan.component, reference.binding).name : "value";
 }
 
 /**
@@ -610,41 +610,41 @@ function modelBindingName(value: Expression, plan: SetupPlan): string {
  * component declares for it, `nameInput`.
  */
 function controlRef(
-  element: ElementNode,
-  plan: SetupPlan,
-  locals: RenderLocals,
-  base: string,
+	element: ElementNode,
+	plan: SetupPlan,
+	locals: RenderLocals,
+	base: string,
 ): { name: string; attribute: boolean } {
-  const own = element.attributes.find((attribute) => attribute.kind === "Ref");
-  if (own?.kind === "Ref")
-    return { name: bindingOf(plan.component, own.binding).name, attribute: false };
-  const textarea = element.tag === "textarea";
-  const name = locals.declare(
-    `${base}${textarea ? "Textarea" : "Input"}`,
-    `${plan.names.core("useSignal")}<${textarea ? "HTMLTextAreaElement" : "HTMLInputElement"}>()`,
-  );
-  return { name, attribute: true };
+	const own = element.attributes.find((attribute) => attribute.kind === "Ref");
+	if (own?.kind === "Ref")
+		return { name: bindingOf(plan.component, own.binding).name, attribute: false };
+	const textarea = element.tag === "textarea";
+	const name = locals.declare(
+		`${base}${textarea ? "Textarea" : "Input"}`,
+		`${plan.names.core("useSignal")}<${textarea ? "HTMLTextAreaElement" : "HTMLInputElement"}>()`,
+	);
+	return { name, attribute: true };
 }
 
 /** A write of a `v-model`'s value: the model's setter, or the state's `.value`. */
 function modelWrite(value: Expression, written: string, plan: SetupPlan): string {
-  const reference = value.refs.find((each) => each.kind === "Binding");
-  const model = reference && plan.composition.models.get(reference.binding);
-  return model ? `${model.setter}(${written})` : `(${value.code} = ${written})`;
+	const reference = value.refs.find((each) => each.kind === "Binding");
+	const model = reference && plan.composition.models.get(reference.binding);
+	return model ? `${model.setter}(${written})` : `(${value.code} = ${written})`;
 }
 
 /** The value a checkbox or a radio stands for: its `value` attribute, as written. */
 export function controlValue(element: ElementNode, context: JsxContext): string {
-  for (const attribute of element.attributes) {
-    if (attribute.kind === "Static" && attribute.name === "value" && attribute.value !== true) {
-      return JSON.stringify(attribute.value);
-    }
-    if (attribute.kind === "Bound" && attribute.name === "value") {
-      return expressionCode(attribute.value, context);
-    }
-  }
-  // Without a `value`, a checkbox stands for "on", as the DOM's does.
-  return JSON.stringify("on");
+	for (const attribute of element.attributes) {
+		if (attribute.kind === "Static" && attribute.name === "value" && attribute.value !== true) {
+			return JSON.stringify(attribute.value);
+		}
+		if (attribute.kind === "Bound" && attribute.name === "value") {
+			return expressionCode(attribute.value, context);
+		}
+	}
+	// Without a `value`, a checkbox stands for "on", as the DOM's does.
+	return JSON.stringify("on");
 }
 
 /**
@@ -652,50 +652,50 @@ export function controlValue(element: ElementNode, context: JsxContext): string 
  * model holds its value (`selected={size.value === "m"}`), so the server renders it selected too.
  */
 export function modelOptions(root: RenderNode | FragmentNode): Map<ElementNode, ModelAttribute> {
-  const found = new Map<ElementNode, ModelAttribute>();
-  walk(root, {
-    enter(node) {
-      if (node.kind !== "Element" || node.tag !== "select") return;
-      const model = node.attributes.find(
-        (attribute): attribute is ModelAttribute => attribute.kind === "Model",
-      );
-      if (!model) return;
-      walk(node, {
-        enter(inner) {
-          if (inner.kind === "Element" && inner.tag === "option") found.set(inner, model);
-        },
-      });
-    },
-  });
-  return found;
+	const found = new Map<ElementNode, ModelAttribute>();
+	walk(root, {
+		enter(node) {
+			if (node.kind !== "Element" || node.tag !== "select") return;
+			const model = node.attributes.find(
+				(attribute): attribute is ModelAttribute => attribute.kind === "Model",
+			);
+			if (!model) return;
+			walk(node, {
+				enter(inner) {
+					if (inner.kind === "Element" && inner.tag === "option") found.set(inner, model);
+				},
+			});
+		},
+	});
+	return found;
 }
 
 /** The `selected` of an option a `v-model`'s select holds (see {@link modelOptions}). */
 export function optionSelected(
-  option: ElementNode,
-  model: ModelAttribute,
-  context: JsxContext,
-  plan: SetupPlan,
-  locals: RenderLocals,
+	option: ElementNode,
+	model: ModelAttribute,
+	context: JsxContext,
+	plan: SetupPlan,
+	locals: RenderLocals,
 ): JsxAttribute {
-  const read = locals.current(
-    expressionCode(model.value, context),
-    modelBindingName(model.value, plan),
-  );
-  const value = controlValue(option, context);
-  const selected =
-    model.control === "select-multiple" ? `${read}.includes(${value})` : `${read} === ${value}`;
-  return js.jsxAttribute(
-    "selected",
-    js.jsxExpressionContainer(context.placeholders.expression(selected)),
-  );
+	const read = locals.current(
+		expressionCode(model.value, context),
+		modelBindingName(model.value, plan),
+	);
+	const value = controlValue(option, context);
+	const selected =
+		model.control === "select-multiple" ? `${read}.includes(${value})` : `${read} === ${value}`;
+	return js.jsxAttribute(
+		"selected",
+		js.jsxExpressionContainer(context.placeholders.expression(selected)),
+	);
 }
 
 /** The authoring types of a ref a key may hold, and the Qwik signal each is. */
 const REF_SIGNALS: readonly (readonly [string, string])[] = [
-  ["Ref", "Signal"],
-  ["ComputedRef", "ReadonlySignal"],
-  ["ModelRef", "ReadonlySignal"],
+	["Ref", "Signal"],
+	["ComputedRef", "ReadonlySignal"],
+	["ModelRef", "ReadonlySignal"],
 ];
 
 /**
@@ -703,14 +703,14 @@ const REF_SIGNALS: readonly (readonly [string, string])[] = [
  * Qwik's signal, which is provided itself.
  */
 export function keyType(type: string, names: OutputNames): string {
-  let written = type;
-  for (const [name, signal] of REF_SIGNALS) {
-    const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
-    if (reference.test(written)) {
-      written = written.replace(reference, names.core(signal, { type: true }));
-    }
-  }
-  return written;
+	let written = type;
+	for (const [name, signal] of REF_SIGNALS) {
+		const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
+		if (reference.test(written)) {
+			written = written.replace(reference, names.core(signal, { type: true }));
+		}
+	}
+	return written;
 }
 
 /**
@@ -720,74 +720,74 @@ export function keyType(type: string, names: OutputNames): string {
  * else (a conditional), which then shows unselected.
  */
 export function textOptionSelected(
-  option: ElementNode,
-  model: ModelAttribute,
-  context: JsxContext,
-  plan: SetupPlan,
-  locals: RenderLocals,
+	option: ElementNode,
+	model: ModelAttribute,
+	context: JsxContext,
+	plan: SetupPlan,
+	locals: RenderLocals,
 ): BoundAttribute | undefined {
-  const read = locals.current(
-    expressionCode(model.value, context),
-    modelBindingName(model.value, plan),
-  );
-  const [prefix, suffix] =
-    model.control === "select-multiple" ? [`${read}.includes(`, ")"] : [`${read} === `, ""];
-  const at = option.span;
-  const parts: (string | Expression)[] = [];
-  for (const child of optionSource(option)) {
-    if (child.kind === "Text") parts.push(child.value);
-    else if (child.kind === "Interpolation") parts.push(child.value);
-    else return undefined;
-  }
-  let compared: string;
-  if (parts.every((part) => typeof part === "string")) {
-    compared = JSON.stringify(optionText(parts.join("")));
-  } else {
-    // The text the option renders, read as the DOM reads an option's value.
-    const template = parts
-      .map((part) =>
-        typeof part === "string"
-          ? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
-          : // A nullish value renders nothing, as in Vue's text. TypeScript rejects `?? ""` after
-            // an expression it knows never is, or always is (./values.ts).
-            textPart(part, context),
-      )
-      .join("");
-    compared = `\`${template}\`.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")`;
-  }
-  const code = `${prefix}${compared}${suffix}`;
-  return {
-    kind: "Bound",
-    name: "selected",
-    value: { code, refs: [], span: { start: at.start, end: at.start + code.length } },
-    span: at,
-  };
+	const read = locals.current(
+		expressionCode(model.value, context),
+		modelBindingName(model.value, plan),
+	);
+	const [prefix, suffix] =
+		model.control === "select-multiple" ? [`${read}.includes(`, ")"] : [`${read} === `, ""];
+	const at = option.span;
+	const parts: (string | Expression)[] = [];
+	for (const child of optionSource(option)) {
+		if (child.kind === "Text") parts.push(child.value);
+		else if (child.kind === "Interpolation") parts.push(child.value);
+		else return undefined;
+	}
+	let compared: string;
+	if (parts.every((part) => typeof part === "string")) {
+		compared = JSON.stringify(optionText(parts.join("")));
+	} else {
+		// The text the option renders, read as the DOM reads an option's value.
+		const template = parts
+			.map((part) =>
+				typeof part === "string"
+					? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
+					: // A nullish value renders nothing, as in Vue's text. TypeScript rejects `?? ""` after
+						// an expression it knows never is, or always is (./values.ts).
+						textPart(part, context),
+			)
+			.join("");
+		compared = `\`${template}\`.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")`;
+	}
+	const code = `${prefix}${compared}${suffix}`;
+	return {
+		kind: "Bound",
+		name: "selected",
+		value: { code, refs: [], span: { start: at.start, end: at.start + code.length } },
+		span: at,
+	};
 }
 
 /** An interpolation as a template literal's part: its text, or none where it is nullish. */
 function textPart(part: Expression, context: JsxContext): string {
-  const code = expressionCode(part, context);
-  const nullish = nullishness(part);
-  switch (nullish) {
-    case "never":
-      return `\${${code}}`;
-    case "sometimes":
-      return `\${${nullishOperand(code)} ?? ""}`;
-    case "always":
-      // TypeScript reads `a ?? null` as always nullish, though `a` may not be: `join` renders a
-      // nullish value as no text, with no `??` (TS2871).
-      return isAlwaysNullish(part) ? "" : `\${[${code}].join("")}`;
-    default:
-      return unreachable(nullish);
-  }
+	const code = expressionCode(part, context);
+	const nullish = nullishness(part);
+	switch (nullish) {
+		case "never":
+			return `\${${code}}`;
+		case "sometimes":
+			return `\${${nullishOperand(code)} ?? ""}`;
+		case "always":
+			// TypeScript reads `a ?? null` as always nullish, though `a` may not be: `join` renders a
+			// nullish value as no text, with no `??` (TS2871).
+			return isAlwaysNullish(part) ? "" : `\${[${code}].join("")}`;
+		default:
+			return unreachable(nullish);
+	}
 }
 
 /** Code as the left operand of `??`: in parentheses unless it is a name or a member. */
 function nullishOperand(code: string): string {
-  return /^[\w$]+(?:(?:\?\.|\.)[\w$]+)*$/.test(code) ? code : `(${code})`;
+	return /^[\w$]+(?:(?:\?\.|\.)[\w$]+)*$/.test(code) ? code : `(${code})`;
 }
 
 /** An option's value from its text, as the DOM reads it: ASCII whitespace collapsed and stripped. */
 function optionText(text: string): string {
-  return text.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "");
+	return text.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "");
 }

@@ -8,24 +8,24 @@ const caption = (value: number): string => `${value} of ${LIMITS.max}`;
 const START = LIMITS.min + 2;
 
 export default function Stepper() {
-  const value = ref(START);
+	const value = ref(START);
 
-  function add(step: number) {
-    value.value = Math.min(LIMITS.max, value.value + step);
-  }
+	function add(step: number) {
+		value.value = Math.min(LIMITS.max, value.value + step);
+	}
 
-  return (
-    <section class="stepper" aria-label="Stepper">
-      <p role="status">{caption(value.value)}</p>
-      <ul>
-        {STEPS.map((step) => (
-          <li key={step}>
-            <button type="button" onClick={() => add(step)}>
-              Add {step}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+	return (
+		<section class="stepper" aria-label="Stepper">
+			<p role="status">{caption(value.value)}</p>
+			<ul>
+				{STEPS.map((step) => (
+					<li key={step}>
+						<button type="button" onClick={() => add(step)}>
+							Add {step}
+						</button>
+					</li>
+				))}
+			</ul>
+		</section>
+	);
 }

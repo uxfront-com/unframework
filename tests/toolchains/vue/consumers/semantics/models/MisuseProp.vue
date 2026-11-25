@@ -3,6 +3,6 @@ import Disclosure from "../../../../../integration/cases/semantics/models/__outp
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Disclosure.prop:title -->
-  <Disclosure :title="1" />
+	<!-- @uf-expect TS2322 Disclosure.prop:title -->
+	<Disclosure :title="1" />
 </template>

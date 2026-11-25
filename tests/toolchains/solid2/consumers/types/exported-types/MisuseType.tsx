@@ -1,6 +1,6 @@
 import Button, {
-  type ButtonProps,
-  type ButtonSize,
+	type ButtonProps,
+	type ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/solid2/Button";
 
 // @uf-expect TS2322 Button.type:ButtonProps
@@ -9,5 +9,5 @@ const props: ButtonProps = { label: "Save", tone: "danger" };
 const size: ButtonSize = "huge";
 
 export function MisuseType() {
-  return <Button label={props.label} data-size={size} />;
+	return <Button label={props.label} data-size={size} />;
 }

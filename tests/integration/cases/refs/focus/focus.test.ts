@@ -7,29 +7,29 @@ import { expect } from "vitest";
 import SearchToggle from "./SearchToggle.uf.tsx";
 
 describeTargets("refs/focus", () => {
-  it("renders the button and the field", async () => {
-    const view = await mountScenario(SearchToggle, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("button", { name: "Search" })).toBeVisible();
-    await expect.element(view.getByRole("textbox", { name: "Search the docs" })).toBeVisible();
-  });
+	it("renders the button and the field", async () => {
+		const view = await mountScenario(SearchToggle, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("button", { name: "Search" })).toBeVisible();
+		await expect.element(view.getByRole("textbox", { name: "Search the docs" })).toBeVisible();
+	});
 
-  it("focuses the field from the button", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(SearchToggle, "initial");
-    await view.user.click(view.getByRole("button", { name: "Search" }));
-    await view.expectParity("field-focused");
-    await expect.element(view.getByRole("textbox", { name: "Search the docs" })).toHaveFocus();
-  });
+	it("focuses the field from the button", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(SearchToggle, "initial");
+		await view.user.click(view.getByRole("button", { name: "Search" }));
+		await view.expectParity("field-focused");
+		await expect.element(view.getByRole("textbox", { name: "Search the docs" })).toHaveFocus();
+	});
 
-  it("returns focus to the button with Escape", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(SearchToggle, "initial");
-    await view.user.click(view.getByRole("button", { name: "Search" }));
-    await view.user.keyboard("refs");
-    await view.user.keyboard("{Escape}");
-    await view.expectParity("focus-returned");
-    await expect.element(view.getByRole("button", { name: "Search" })).toHaveFocus();
-    await expect
-      .element(view.getByRole("textbox", { name: "Search the docs" }))
-      .toHaveValue("refs");
-  });
+	it("returns focus to the button with Escape", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(SearchToggle, "initial");
+		await view.user.click(view.getByRole("button", { name: "Search" }));
+		await view.user.keyboard("refs");
+		await view.user.keyboard("{Escape}");
+		await view.expectParity("focus-returned");
+		await expect.element(view.getByRole("button", { name: "Search" })).toHaveFocus();
+		await expect
+			.element(view.getByRole("textbox", { name: "Search the docs" }))
+			.toHaveValue("refs");
+	});
 });

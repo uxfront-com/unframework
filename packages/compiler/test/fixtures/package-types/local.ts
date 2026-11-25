@@ -1,3 +1,3 @@
 export interface LocalProps {
-  label: string;
+	label: string;
 }

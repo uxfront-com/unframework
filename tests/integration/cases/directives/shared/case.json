@@ -1,8 +1,8 @@
 {
-  "description": "One directive from a `.uf.ts` module, applied by two components a parent renders: its `mounted` writes a marker attribute, which the server's HTML never holds and the DOM holds once each is mounted.",
-  "main": "Labels.uf.tsx",
-  "requires": "Every render of the case holds what the directive's `mounted` writes, which a static target never runs: the server render checks the static targets, without it.",
-  "ssr": {
-    "initial": {}
-  }
+	"description": "One directive from a `.uf.ts` module, applied by two components a parent renders: its `mounted` writes a marker attribute, which the server's HTML never holds and the DOM holds once each is mounted.",
+	"main": "Labels.uf.tsx",
+	"requires": "Every render of the case holds what the directive's `mounted` writes, which a static target never runs: the server render checks the static targets, without it.",
+	"ssr": {
+		"initial": {}
+	}
 }

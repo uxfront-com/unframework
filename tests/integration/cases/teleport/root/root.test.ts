@@ -10,12 +10,12 @@ import { expect } from "vitest";
 import Page from "./Page.uf.tsx";
 
 describeTargets("teleport/root", () => {
-  it("styles the teleported element as the child alone", { requires: ["teleport"] }, async () => {
-    const view = await mountScenario(Page, "default");
-    await view.expectParity("default");
-    await expect.element(view.getByRole("alert")).toHaveTextContent("Draft saved");
-    const toast = document.querySelector<HTMLElement>("body > .toast")!;
-    expect(getComputedStyle(toast).borderTopWidth).toBe("2px");
-    expect(getComputedStyle(toast).color).not.toBe("rgb(160, 0, 0)");
-  });
+	it("styles the teleported element as the child alone", { requires: ["teleport"] }, async () => {
+		const view = await mountScenario(Page, "default");
+		await view.expectParity("default");
+		await expect.element(view.getByRole("alert")).toHaveTextContent("Draft saved");
+		const toast = document.querySelector<HTMLElement>("body > .toast")!;
+		expect(getComputedStyle(toast).borderTopWidth).toBe("2px");
+		expect(getComputedStyle(toast).color).not.toBe("rgb(160, 0, 0)");
+	});
 });

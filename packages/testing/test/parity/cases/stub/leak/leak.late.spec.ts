@@ -10,19 +10,19 @@ import "../../../dom-target.ts";
 
 /** A toast in `body` that nothing removes. */
 const leaking: StubComponent = {
-  html: "<p>In place</p>",
-  setup() {
-    if (document.querySelector("body > .toast")) return;
-    const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.textContent = "Saved";
-    document.body.append(toast);
-  },
+	html: "<p>In place</p>",
+	setup() {
+		if (document.querySelector("body > .toast")) return;
+		const toast = document.createElement("div");
+		toast.className = "toast";
+		toast.textContent = "Saved";
+		document.body.append(toast);
+	},
 };
 
 describeTargets("stub/leak", () => {
-  it("leaves a toast in body", async () => {
-    const view = await mount(leaking);
-    expect(view.html()).toContain("Saved");
-  });
+	it("leaves a toast in body", async () => {
+		const view = await mount(leaking);
+		expect(view.html()).toContain("Saved");
+	});
 });

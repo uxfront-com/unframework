@@ -6,12 +6,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import { vueEventInterface } from "../src/listeners.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import {
-  emitFormatted,
-  goldenFiles,
-  lower,
-  removeScratch,
-  toolchainDir,
-  writeScratch,
+	emitFormatted,
+	goldenFiles,
+	lower,
+	removeScratch,
+	toolchainDir,
+	writeScratch,
 } from "./helpers.ts";
 import { M2_SHAPES } from "./lint-probes.ts";
 
@@ -27,217 +27,217 @@ const checker = { timeout: 60_000 };
 afterAll(removeScratch);
 
 describe("vue typecheck", () => {
-  it(
-    "exports every type the module exports from its main output, one a local component declares too",
-    checker,
-    async () => {
-      // ADR-0068: `Tone` is declared in Badge's output, which only Badge reaches, and a consumer
-      // imports it from the module's main output.
-      const module = lower(
-        [
-          'export type Tone = "info" | "danger";',
-          "function Badge({ tone }: { tone: Tone }) {",
-          "  return <span class={tone}>{tone}</span>;",
-          "}",
-          "export default function Pair() {",
-          '  return <p><Badge tone="info" /></p>;',
-          "}",
-        ].join("\n"),
-        "Pair.uf.tsx",
-      );
-      const outputs = Object.fromEntries(
-        (await emitFormatted(module)).map((file) => [file.path, file.contents]),
-      );
-      expect(outputs["Pair.vue"]).toContain('export type { Tone } from "./Badge.vue";');
-      const paths = writeScratch({
-        ...outputs,
-        "Use.vue": [
-          '<script setup lang="ts">',
-          'import Pair, { type Tone } from "./Pair.vue";',
-          "",
-          'const tone: Tone = "danger";',
-          "</script>",
-          "",
-          "<template>",
-          '  <Pair :data-tone="tone" />',
-          "</template>",
-          "",
-        ].join("\n"),
-      });
-      const results = await toolchain.typecheck(Object.values(paths), context);
-      for (const path of Object.values(paths)) expect(results.get(path), path).toEqual([]);
-    },
-  );
+	it(
+		"exports every type the module exports from its main output, one a local component declares too",
+		checker,
+		async () => {
+			// ADR-0068: `Tone` is declared in Badge's output, which only Badge reaches, and a consumer
+			// imports it from the module's main output.
+			const module = lower(
+				[
+					'export type Tone = "info" | "danger";',
+					"function Badge({ tone }: { tone: Tone }) {",
+					"  return <span class={tone}>{tone}</span>;",
+					"}",
+					"export default function Pair() {",
+					'  return <p><Badge tone="info" /></p>;',
+					"}",
+				].join("\n"),
+				"Pair.uf.tsx",
+			);
+			const outputs = Object.fromEntries(
+				(await emitFormatted(module)).map((file) => [file.path, file.contents]),
+			);
+			expect(outputs["Pair.vue"]).toContain('export type { Tone } from "./Badge.vue";');
+			const paths = writeScratch({
+				...outputs,
+				"Use.vue": [
+					'<script setup lang="ts">',
+					'import Pair, { type Tone } from "./Pair.vue";',
+					"",
+					'const tone: Tone = "danger";',
+					"</script>",
+					"",
+					"<template>",
+					'  <Pair :data-tone="tone" />',
+					"</template>",
+					"",
+				].join("\n"),
+			});
+			const results = await toolchain.typecheck(Object.values(paths), context);
+			for (const path of Object.values(paths)) expect(results.get(path), path).toEqual([]);
+		},
+	);
 
-  it("checks the corpus and an injected error in one run, by file", checker, async () => {
-    const golden = goldenFiles();
-    expect(golden.length).toBeGreaterThan(0);
-    const { "Child.vue": child, "Broken.vue": broken } = writeScratch({
-      "Child.vue": "<template>\n  <p>Child</p>\n</template>\n",
-      "Broken.vue": [
-        '<script setup lang="ts">',
-        'import Child from "./Child.vue";',
-        "",
-        'const count: number = "one";',
-        "</script>",
-        "",
-        "<template>",
-        "  <p>{{ greet(count) }}</p>",
-        '  <Child unknown-prop="1" />',
-        "</template>",
-        "",
-      ].join("\n"),
-    });
+	it("checks the corpus and an injected error in one run, by file", checker, async () => {
+		const golden = goldenFiles();
+		expect(golden.length).toBeGreaterThan(0);
+		const { "Child.vue": child, "Broken.vue": broken } = writeScratch({
+			"Child.vue": "<template>\n  <p>Child</p>\n</template>\n",
+			"Broken.vue": [
+				'<script setup lang="ts">',
+				'import Child from "./Child.vue";',
+				"",
+				'const count: number = "one";',
+				"</script>",
+				"",
+				"<template>",
+				"  <p>{{ greet(count) }}</p>",
+				'  <Child unknown-prop="1" />',
+				"</template>",
+				"",
+			].join("\n"),
+		});
 
-    const clean = [...golden, child!, ENVIRONMENT, STYLEFRAME, FIXTURE_ENGINE];
-    const results = await toolchain.typecheck([...clean, broken!], context);
+		const clean = [...golden, child!, ENVIRONMENT, STYLEFRAME, FIXTURE_ENGINE];
+		const results = await toolchain.typecheck([...clean, broken!], context);
 
-    expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());
-    for (const path of clean) expect(results.get(path), path).toEqual([]);
-    expect(results.get(broken!)).toEqual([
-      {
-        message: "Type 'string' is not assignable to type 'number'.",
-        line: 4,
-        column: 7,
-        code: "TS2322",
-      },
-      {
-        message: expect.stringMatching(/^Property 'greet' does not exist on type/),
-        line: 8,
-        column: 9,
-        code: "TS2339",
-      },
-      // Only an error under the toolchain tsconfig's strictTemplates, so it proves the
-      // temporary tsconfig extends it.
-      {
-        message: expect.stringContaining("'unknownProp' does not exist"),
-        line: 9,
-        column: 10,
-        code: "TS2353",
-      },
-    ]);
-  });
+		expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());
+		for (const path of clean) expect(results.get(path), path).toEqual([]);
+		expect(results.get(broken!)).toEqual([
+			{
+				message: "Type 'string' is not assignable to type 'number'.",
+				line: 4,
+				column: 7,
+				code: "TS2322",
+			},
+			{
+				message: expect.stringMatching(/^Property 'greet' does not exist on type/),
+				line: 8,
+				column: 9,
+				code: "TS2339",
+			},
+			// Only an error under the toolchain tsconfig's strictTemplates, so it proves the
+			// temporary tsconfig extends it.
+			{
+				message: expect.stringContaining("'unknownProp' does not exist"),
+				line: 9,
+				column: 10,
+				code: "TS2353",
+			},
+		]);
+	});
 
-  it(
-    "type-checks the shapes M2 emits (lint-probes.ts) under strictTemplates",
-    checker,
-    async () => {
-      const files = writeScratch(M2_SHAPES);
-      const results = await toolchain.typecheck(Object.values(files), context);
-      for (const [name, path] of Object.entries(files)) expect(results.get(path), name).toEqual([]);
-    },
-  );
+	it(
+		"type-checks the shapes M2 emits (lint-probes.ts) under strictTemplates",
+		checker,
+		async () => {
+			const files = writeScratch(M2_SHAPES);
+			const results = await toolchain.typecheck(Object.values(files), context);
+			for (const [name, path] of Object.entries(files)) expect(results.get(path), name).toEqual([]);
+		},
+	);
 
-  // A handler the template cannot hold moves to the script, its event parameter typed with the
-  // interface Vue's element types give the event (`vueEventInterface`): `@vue/runtime-dom` types
-  // `error` as a plain `Event`, where lib.dom has `ErrorEvent`.
-  it(
-    "takes a handler typed as Vue types its event, and refuses lib.dom's where they differ",
-    checker,
-    async () => {
-      const handler = (type: string) =>
-        [
-          '<script setup lang="ts">',
-          "const failures: string[] = [];",
-          "",
-          `function onError(event: ${type}) {`,
-          "  failures.push(event.type);",
-          "}",
-          "</script>",
-          "",
-          "<template>",
-          '  <img src="/missing.png" alt="" @error="onError" />',
-          "</template>",
-          "",
-        ].join("\n");
-      const { "Vue.vue": vue, "Dom.vue": dom } = writeScratch({
-        "Vue.vue": handler(vueEventInterface("error")),
-        "Dom.vue": handler("ErrorEvent"),
-      });
-      const results = await toolchain.typecheck([vue!, dom!], context);
-      expect(results.get(vue!)).toEqual([]);
-      expect(results.get(dom!)).toEqual([
-        expect.objectContaining({
-          code: "TS2345",
-          message: expect.stringContaining(
-            "Type '(event: ErrorEvent) => void' is not assignable to type '(payload: Event) => void'.",
-          ),
-        }),
-      ]);
-    },
-  );
+	// A handler the template cannot hold moves to the script, its event parameter typed with the
+	// interface Vue's element types give the event (`vueEventInterface`): `@vue/runtime-dom` types
+	// `error` as a plain `Event`, where lib.dom has `ErrorEvent`.
+	it(
+		"takes a handler typed as Vue types its event, and refuses lib.dom's where they differ",
+		checker,
+		async () => {
+			const handler = (type: string) =>
+				[
+					'<script setup lang="ts">',
+					"const failures: string[] = [];",
+					"",
+					`function onError(event: ${type}) {`,
+					"  failures.push(event.type);",
+					"}",
+					"</script>",
+					"",
+					"<template>",
+					'  <img src="/missing.png" alt="" @error="onError" />',
+					"</template>",
+					"",
+				].join("\n");
+			const { "Vue.vue": vue, "Dom.vue": dom } = writeScratch({
+				"Vue.vue": handler(vueEventInterface("error")),
+				"Dom.vue": handler("ErrorEvent"),
+			});
+			const results = await toolchain.typecheck([vue!, dom!], context);
+			expect(results.get(vue!)).toEqual([]);
+			expect(results.get(dom!)).toEqual([
+				expect.objectContaining({
+					code: "TS2345",
+					message: expect.stringContaining(
+						"Type '(event: ErrorEvent) => void' is not assignable to type '(payload: Event) => void'.",
+					),
+				}),
+			]);
+		},
+	);
 
-  it("reports an error in a file a checked file imports, under that file", checker, async () => {
-    const { "Uses.vue": uses, "helper.ts": helper } = writeScratch({
-      "helper.ts": 'export const count: number = "one";\n',
-      "Uses.vue": [
-        '<script setup lang="ts">',
-        'import { count } from "./helper";',
-        "</script>",
-        "",
-        "<template>",
-        "  <p>{{ count }}</p>",
-        "</template>",
-        "",
-      ].join("\n"),
-    });
-    const results = await toolchain.typecheck([uses!], context);
-    expect(results.get(uses!)).toEqual([]);
-    const others = [...results.keys()].filter((key) => key !== uses);
-    expect(others.map((key) => realpathSync(key))).toEqual([realpathSync(helper!)]);
-    expect(results.get(others[0]!)).toEqual([
-      {
-        message: "Type 'string' is not assignable to type 'number'.",
-        line: 1,
-        column: 14,
-        code: "TS2322",
-      },
-    ]);
-  });
+	it("reports an error in a file a checked file imports, under that file", checker, async () => {
+		const { "Uses.vue": uses, "helper.ts": helper } = writeScratch({
+			"helper.ts": 'export const count: number = "one";\n',
+			"Uses.vue": [
+				'<script setup lang="ts">',
+				'import { count } from "./helper";',
+				"</script>",
+				"",
+				"<template>",
+				"  <p>{{ count }}</p>",
+				"</template>",
+				"",
+			].join("\n"),
+		});
+		const results = await toolchain.typecheck([uses!], context);
+		expect(results.get(uses!)).toEqual([]);
+		const others = [...results.keys()].filter((key) => key !== uses);
+		expect(others.map((key) => realpathSync(key))).toEqual([realpathSync(helper!)]);
+		expect(results.get(others[0]!)).toEqual([
+			{
+				message: "Type 'string' is not assignable to type 'number'.",
+				line: 1,
+				column: 14,
+				code: "TS2322",
+			},
+		]);
+	});
 
-  it("reports a broken toolchain tsconfig, and errors without a file, too", checker, async () => {
-    // Inside the real toolchain directory, so vue-tsc resolves from it.
-    const broken = join(toolchainDir, ".uf-tmp", `broken-toolchain-${process.pid}`);
-    mkdirSync(broken, { recursive: true });
-    try {
-      const config = {
-        extends: "../../tsconfig.json",
-        // An option vue-tsc does not know, and no standard library: global types go missing.
-        compilerOptions: { notAnOption: true, lib: [], noLib: true },
-      };
-      writeFileSync(join(broken, "tsconfig.json"), JSON.stringify(config));
-      const [golden] = goldenFiles();
-      const results = await toolchain.typecheck([golden!], { toolchainDir: broken, root: broken });
-      const own = join(realpathSync(broken), "tsconfig.json");
-      const [run, ...rest] = [...results.keys()].filter((key) => key !== golden && key !== own);
-      expect(rest).toEqual([]);
-      expect(results.get(golden!)).toEqual([]);
-      expect(results.get(own)).toEqual([
-        expect.objectContaining({
-          message: "Unknown compiler option 'notAnOption'.",
-          code: "TS5023",
-        }),
-      ]);
-      expect(run).toMatch(/\/\.uf-tmp\/typecheck-[^/]+\/tsconfig\.json$/);
-      expect(results.get(run!)).toContainEqual({
-        message: "Cannot find global type 'Array'.",
-        code: "TS2318",
-      });
-    } finally {
-      rmSync(broken, { recursive: true, force: true });
-    }
-  });
+	it("reports a broken toolchain tsconfig, and errors without a file, too", checker, async () => {
+		// Inside the real toolchain directory, so vue-tsc resolves from it.
+		const broken = join(toolchainDir, ".uf-tmp", `broken-toolchain-${process.pid}`);
+		mkdirSync(broken, { recursive: true });
+		try {
+			const config = {
+				extends: "../../tsconfig.json",
+				// An option vue-tsc does not know, and no standard library: global types go missing.
+				compilerOptions: { notAnOption: true, lib: [], noLib: true },
+			};
+			writeFileSync(join(broken, "tsconfig.json"), JSON.stringify(config));
+			const [golden] = goldenFiles();
+			const results = await toolchain.typecheck([golden!], { toolchainDir: broken, root: broken });
+			const own = join(realpathSync(broken), "tsconfig.json");
+			const [run, ...rest] = [...results.keys()].filter((key) => key !== golden && key !== own);
+			expect(rest).toEqual([]);
+			expect(results.get(golden!)).toEqual([]);
+			expect(results.get(own)).toEqual([
+				expect.objectContaining({
+					message: "Unknown compiler option 'notAnOption'.",
+					code: "TS5023",
+				}),
+			]);
+			expect(run).toMatch(/\/\.uf-tmp\/typecheck-[^/]+\/tsconfig\.json$/);
+			expect(results.get(run!)).toContainEqual({
+				message: "Cannot find global type 'Array'.",
+				code: "TS2318",
+			});
+		} finally {
+			rmSync(broken, { recursive: true, force: true });
+		}
+	});
 
-  it("rejects when a listed file does not exist", async () => {
-    const missing = join(toolchainDir, ".uf-tmp", "Missing.vue");
-    await expect(toolchain.typecheck([missing], context)).rejects.toThrow(
-      `typecheck received files that do not exist:\n${missing}`,
-    );
-  });
+	it("rejects when a listed file does not exist", async () => {
+		const missing = join(toolchainDir, ".uf-tmp", "Missing.vue");
+		await expect(toolchain.typecheck([missing], context)).rejects.toThrow(
+			`typecheck received files that do not exist:\n${missing}`,
+		);
+	});
 
-  it("rejects a check over no files, before starting anything", async () => {
-    await expect(
-      toolchain.typecheck([], { toolchainDir: "/nonexistent", root: "/nonexistent" }),
-    ).rejects.toThrow("typecheck received no files: a check over nothing proves nothing.");
-  });
+	it("rejects a check over no files, before starting anything", async () => {
+		await expect(
+			toolchain.typecheck([], { toolchainDir: "/nonexistent", root: "/nonexistent" }),
+		).rejects.toThrow("typecheck received no files: a check over nothing proves nothing.");
+	});
 });

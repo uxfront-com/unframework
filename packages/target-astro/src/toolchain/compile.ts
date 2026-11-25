@@ -5,15 +5,15 @@ import { basename, dirname, isAbsolute, posix, relative, sep } from "node:path";
 
 import type { DiagnosticMessage, TransformOptions } from "@astrojs/compiler-rs";
 import type {
-  FrameworkCompileResult,
-  ToolchainContext,
-  ToolchainFile,
-  ToolchainMessage,
+	FrameworkCompileResult,
+	ToolchainContext,
+	ToolchainFile,
+	ToolchainMessage,
 } from "@unframework.dev/codegen";
 import {
-  assertFilesToCompile,
-  compileScriptModules,
-  resolveInstalled,
+	assertFilesToCompile,
+	compileScriptModules,
+	resolveInstalled,
 } from "@unframework.dev/codegen/toolchain-node";
 
 const COMPILER = "@astrojs/compiler-rs";
@@ -34,30 +34,30 @@ const COMPILER = "@astrojs/compiler-rs";
  * Rejects when the compiler is not the version the project's `astro` depends on.
  */
 export async function astroFrameworkCompile(
-  files: readonly ToolchainFile[],
-  context: ToolchainContext,
+	files: readonly ToolchainFile[],
+	context: ToolchainContext,
 ): Promise<Map<string, FrameworkCompileResult>> {
-  assertFilesToCompile(files);
-  assertCompilerMatchesAstro(context.root);
-  const { transform } = await import("@astrojs/compiler-rs");
-  const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
-  for (const file of files.filter((each) => !each.path.endsWith(".ts"))) {
-    const result: FrameworkCompileResult = { errors: [], warnings: [] };
-    try {
-      const output = transform(file.contents, transformOptions(file.path, context.root));
-      for (const diagnostic of output.diagnostics) {
-        (diagnostic.severity === "error" ? result.errors : result.warnings).push(
-          fromDiagnostic(diagnostic),
-        );
-      }
-      for (const message of output.styleError) result.errors.push({ message });
-    } catch (error) {
-      // The compiler reports bad input as diagnostics; a throw is a compiler failure on this file.
-      result.errors.push({ message: `${COMPILER} failed: ${String(error)}` });
-    }
-    results.set(file.path, result);
-  }
-  return results;
+	assertFilesToCompile(files);
+	assertCompilerMatchesAstro(context.root);
+	const { transform } = await import("@astrojs/compiler-rs");
+	const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
+	for (const file of files.filter((each) => !each.path.endsWith(".ts"))) {
+		const result: FrameworkCompileResult = { errors: [], warnings: [] };
+		try {
+			const output = transform(file.contents, transformOptions(file.path, context.root));
+			for (const diagnostic of output.diagnostics) {
+				(diagnostic.severity === "error" ? result.errors : result.warnings).push(
+					fromDiagnostic(diagnostic),
+				);
+			}
+			for (const message of output.styleError) result.errors.push({ message });
+		} catch (error) {
+			// The compiler reports bad input as diagnostics; a throw is a compiler failure on this file.
+			result.errors.push({ message: `${COMPILER} failed: ${String(error)}` });
+		}
+		results.set(file.path, result);
+	}
+	return results;
 }
 
 /**
@@ -66,60 +66,60 @@ export async function astroFrameworkCompile(
  * for the bundler's TypeScript transform.
  */
 export async function astroFrameworkEmit(
-  files: readonly ToolchainFile[],
-  context: ToolchainContext,
+	files: readonly ToolchainFile[],
+	context: ToolchainContext,
 ): Promise<Map<string, ToolchainFile[]>> {
-  assertFilesToCompile(files);
-  const { transform } = await import("@astrojs/compiler-rs");
-  return new Map(
-    files.map((file) => {
-      const contents = file.path.endsWith(".ts")
-        ? file.contents
-        : transform(file.contents, emitOptions(file.path, context.root)).code;
-      return [file.path, [{ path: file.path, contents }]] as const;
-    }),
-  );
+	assertFilesToCompile(files);
+	const { transform } = await import("@astrojs/compiler-rs");
+	return new Map(
+		files.map((file) => {
+			const contents = file.path.endsWith(".ts")
+				? file.contents
+				: transform(file.contents, emitOptions(file.path, context.root)).code;
+			return [file.path, [{ path: file.path, contents }]] as const;
+		}),
+	);
 }
 
 function emitOptions(filename: string, root: string): TransformOptions {
-  const { sourcemap: _sourcemap, ...options } = transformOptions(filename, root);
-  const name = `/${basename(filename)}`;
-  return { ...options, filename: name, normalizedFilename: name };
+	const { sourcemap: _sourcemap, ...options } = transformOptions(filename, root);
+	const name = `/${basename(filename)}`;
+	return { ...options, filename: name, normalizedFilename: name };
 }
 
 function transformOptions(filename: string, root: string): TransformOptions {
-  return {
-    compact: "jsx",
-    filename,
-    normalizedFilename: normalizeFilename(filename, root),
-    sourcemap: "both",
-    internalURL: "astro/compiler-runtime",
-    scopedStyleStrategy: "attribute",
-    resultScopedSlot: true,
-    transitionsAnimationURL: "astro/components/viewtransitions.css",
-    annotateSourceFile: false,
-    // Astro always passes one, which selects the compiler's code path for resolved imports.
-    // The output is never run here, so resolving against the file's directory is enough.
-    resolvePath: (specifier) =>
-      specifier.startsWith(".") ? posix.join(toPosix(dirname(filename)), specifier) : specifier,
-  };
+	return {
+		compact: "jsx",
+		filename,
+		normalizedFilename: normalizeFilename(filename, root),
+		sourcemap: "both",
+		internalURL: "astro/compiler-runtime",
+		scopedStyleStrategy: "attribute",
+		resultScopedSlot: true,
+		transitionsAnimationURL: "astro/components/viewtransitions.css",
+		annotateSourceFile: false,
+		// Astro always passes one, which selects the compiler's code path for resolved imports.
+		// The output is never run here, so resolving against the file's directory is enough.
+		resolvePath: (specifier) =>
+			specifier.startsWith(".") ? posix.join(toPosix(dirname(filename)), specifier) : specifier,
+	};
 }
 
 /** Astro's `normalizeFilename`: root-relative with a leading `/`, which seeds the scope hash. */
 function normalizeFilename(filename: string, root: string): string {
-  const path = relative(root, filename);
-  return path.startsWith("..") || isAbsolute(path) ? toPosix(filename) : `/${toPosix(path)}`;
+	const path = relative(root, filename);
+	return path.startsWith("..") || isAbsolute(path) ? toPosix(filename) : `/${toPosix(path)}`;
 }
 
 const toPosix = (path: string) => path.split(sep).join("/");
 
 /** compiler-rs lines are 1-based and columns 0-based; toolchain messages are 1-based. */
 function fromDiagnostic(diagnostic: DiagnosticMessage): ToolchainMessage {
-  const label = diagnostic.labels[0];
-  return {
-    message: diagnostic.hint ? `${diagnostic.text} (${diagnostic.hint})` : diagnostic.text,
-    ...(label ? { line: label.line, column: label.column + 1 } : {}),
-  };
+	const label = diagnostic.labels[0];
+	return {
+		message: diagnostic.hint ? `${diagnostic.text} (${diagnostic.hint})` : diagnostic.text,
+		...(label ? { line: label.line, column: label.column + 1 } : {}),
+	};
 }
 
 /**
@@ -127,18 +127,18 @@ function fromDiagnostic(diagnostic: DiagnosticMessage): ToolchainMessage {
  * `astro` compiles with would check different code. Throws when they differ.
  */
 export function assertCompilerMatchesAstro(root: string): void {
-  const astroManifest = resolveInstalled(root, "astro/package.json");
-  if (!astroManifest) throw new Error(`L3 (astro): astro is not installed in ${root}.`);
-  const theirs = versionOf(createRequire(astroManifest));
-  const ours = versionOf(createRequire(import.meta.url));
-  if (theirs !== ours) {
-    throw new Error(
-      `L3 (astro): astro compiles with ${COMPILER}@${theirs}, but the toolchain checks with ${ours}. Pin them to the same version.`,
-    );
-  }
+	const astroManifest = resolveInstalled(root, "astro/package.json");
+	if (!astroManifest) throw new Error(`L3 (astro): astro is not installed in ${root}.`);
+	const theirs = versionOf(createRequire(astroManifest));
+	const ours = versionOf(createRequire(import.meta.url));
+	if (theirs !== ours) {
+		throw new Error(
+			`L3 (astro): astro compiles with ${COMPILER}@${theirs}, but the toolchain checks with ${ours}. Pin them to the same version.`,
+		);
+	}
 }
 
 function versionOf(require: NodeJS.Require): string {
-  const manifest = JSON.parse(readFileSync(require.resolve(`${COMPILER}/package.json`), "utf8"));
-  return (manifest as { version: string }).version;
+	const manifest = JSON.parse(readFileSync(require.resolve(`${COMPILER}/package.json`), "utf8"));
+	return (manifest as { version: string }).version;
 }

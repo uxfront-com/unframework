@@ -7,10 +7,10 @@ import { render } from "svelte/server";
  * `head` holds what it puts in `<svelte:head>`, which belongs to the document.
  */
 export const renderToString: SsrRenderer = async (component, { props }) => {
-  const { body } = await render(component as Component<Record<string, unknown>>, {
-    props: { ...props },
-  });
-  return body;
+	const { body } = await render(component as Component<Record<string, unknown>>, {
+		props: { ...props },
+	});
+	return body;
 };
 
 /**

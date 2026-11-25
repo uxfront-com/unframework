@@ -6,11 +6,11 @@ import { expect } from "vitest";
 import Greeting from "./Greeting.uf.tsx";
 
 describeTargets("slots/default", () => {
-  it("renders the children in the panel", async () => {
-    const view = await mountScenario(Greeting, "ada");
-    await view.expectParity("ada");
-    await expect.element(view.getByRole("region", { name: "Welcome" })).toBeVisible();
-    await expect.element(view.getByText("Hello, Ada!")).toBeVisible();
-    await expect.element(view.getByText("Your children render in the panel.")).toBeVisible();
-  });
+	it("renders the children in the panel", async () => {
+		const view = await mountScenario(Greeting, "ada");
+		await view.expectParity("ada");
+		await expect.element(view.getByRole("region", { name: "Welcome" })).toBeVisible();
+		await expect.element(view.getByText("Hello, Ada!")).toBeVisible();
+		await expect.element(view.getByText("Your children render in the panel.")).toBeVisible();
+	});
 });

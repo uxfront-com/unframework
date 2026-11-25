@@ -3,11 +3,11 @@ import Picker from "../../../../../integration/cases/generics/scoped-slot/__outp
 const fruits = [{ name: "Apple", count: 3 }];
 
 export function MisuseSlot() {
-  return (
-    <Picker
-      items={fruits}
-      // @uf-expect TS2339 Picker.slot:item
-      item={({ item }) => item.weight}
-    />
-  );
+	return (
+		<Picker
+			items={fruits}
+			// @uf-expect TS2339 Picker.slot:item
+			item={({ item }) => item.weight}
+		/>
+	);
 }

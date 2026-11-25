@@ -3,5 +3,5 @@ import Section from "../../../../../integration/cases/dynamic/tags/__output__/vu
 </script>
 
 <template>
-  <Section title="Introduction" />
+	<Section title="Introduction" />
 </template>

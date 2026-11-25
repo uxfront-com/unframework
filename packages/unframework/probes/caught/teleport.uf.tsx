@@ -2,10 +2,10 @@
 import { Teleport } from "@uxfront/unframework";
 
 export function NumberTarget() {
-  return (
-    // @ts-expect-error TS2322 `to` is a CSS selector, a string
-    <Teleport to={1}>
-      <div />
-    </Teleport>
-  );
+	return (
+		// @ts-expect-error TS2322 `to` is a CSS selector, a string
+		<Teleport to={1}>
+			<div />
+		</Teleport>
+	);
 }

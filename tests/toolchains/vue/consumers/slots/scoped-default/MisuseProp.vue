@@ -3,6 +3,6 @@ import Names from "../../../../../integration/cases/slots/scoped-default/__outpu
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Names.prop:names -->
-  <Names names="Ada" />
+	<!-- @uf-expect TS2322 Names.prop:names -->
+	<Names names="Ada" />
 </template>

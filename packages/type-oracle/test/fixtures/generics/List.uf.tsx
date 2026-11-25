@@ -3,8 +3,8 @@
 import type { Boxed, ListProps, Pair, Tree } from "./types.ts";
 
 interface Option {
-  id: string;
-  name: string;
+	id: string;
+	name: string;
 }
 
 type Kind<T> = T extends string ? "text" : "other";
@@ -12,41 +12,41 @@ type Kind<T> = T extends string ? "text" : "other";
 type Flags = { [K in "bold" | "italic"]?: string };
 
 export function Strings(props: ListProps<string>) {
-  return props;
+	return props;
 }
 
 export function Objects(props: ListProps<Option>) {
-  return props;
+	return props;
 }
 
 export function List<T>(props: ListProps<T>) {
-  return props;
+	return props;
 }
 
 export function Defaulted(props: Pair<number>) {
-  return props;
+	return props;
 }
 
 export function Explicit(props: Pair<number, string>) {
-  return props;
+	return props;
 }
 
 export function Recursive(props: Tree<string>) {
-  return props;
+	return props;
 }
 
 export function Based(props: Boxed<number>) {
-  return props;
+	return props;
 }
 
 export function Picked(props: Pick<ListProps<number>, "items">) {
-  return props;
+	return props;
 }
 
 export function Conditional(props: { kind: Kind<string> }) {
-  return props;
+	return props;
 }
 
 export function Mapped(props: Flags) {
-  return props;
+	return props;
 }

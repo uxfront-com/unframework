@@ -39,10 +39,10 @@ const CSS = `.fe-chip {
  * reads; the stylesheet keeps its own id, which ends in `.css`, so Vite's CSS pipeline handles it.
  */
 export function fixtureEnginePlugin(): Plugin {
-  return {
-    name: "fixture-engine",
-    enforce: "pre",
-    resolveId: (id) => (id === MODULE ? `\0${MODULE}` : id === STYLESHEET ? STYLESHEET : null),
-    load: (id) => (id === `\0${MODULE}` ? CODE : id === STYLESHEET ? CSS : null),
-  };
+	return {
+		name: "fixture-engine",
+		enforce: "pre",
+		resolveId: (id) => (id === MODULE ? `\0${MODULE}` : id === STYLESHEET ? STYLESHEET : null),
+		load: (id) => (id === `\0${MODULE}` ? CODE : id === STYLESHEET ? CSS : null),
+	};
 }

@@ -17,10 +17,10 @@ export function greeting(tone) {
 
 /** The plugin, with the module's id under Rollup's `\0` prefix, which no other plugin reads. */
 export function ufFixturePlugin(): Plugin {
-  return {
-    name: "uf-fixture",
-    enforce: "pre",
-    resolveId: (id) => (id === MODULE ? `\0${MODULE}` : null),
-    load: (id) => (id === `\0${MODULE}` ? CODE : null),
-  };
+	return {
+		name: "uf-fixture",
+		enforce: "pre",
+		resolveId: (id) => (id === MODULE ? `\0${MODULE}` : null),
+		load: (id) => (id === `\0${MODULE}` ? CODE : null),
+	};
 }

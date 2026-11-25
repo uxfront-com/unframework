@@ -3,5 +3,5 @@ import { UNITS } from "./units";
 import type { Unit } from "./units";
 
 export function formatDistance(value: number, unit: Unit): string {
-  return `${value} ${UNITS[unit]}`;
+	return `${value} ${UNITS[unit]}`;
 }

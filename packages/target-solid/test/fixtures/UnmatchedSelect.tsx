@@ -1,32 +1,32 @@
 import { type ComponentProps, type JSX, createEffect, createSignal, onCleanup } from "solid-js";
 
 export default function UnmatchedSelect(
-  props: Omit<ComponentProps<"form">, "style"> & { style?: JSX.CSSProperties },
+	props: Omit<ComponentProps<"form">, "style"> & { style?: JSX.CSSProperties },
 ) {
-  const [size, setSize] = createSignal("xl");
+	const [size, setSize] = createSignal("xl");
 
-  return (
-    <form {...props}>
-      <select
-        aria-label="Size"
-        onChange={(event) => setSize(event.currentTarget.value)}
-        ref={(select) => selectOptions(select, size)}
-      >
-        <option value="s" selected={size() === "s"}>
-          S
-        </option>
-        <option value="m" selected={size() === "m"}>
-          M
-        </option>
-      </select>
-      <button type="button" onClick={() => setSize("m")}>
-        M
-      </button>
-      <button type="button" onClick={() => setSize("xs")}>
-        XS
-      </button>
-    </form>
-  );
+	return (
+		<form {...props}>
+			<select
+				aria-label="Size"
+				onChange={(event) => setSize(event.currentTarget.value)}
+				ref={(select) => selectOptions(select, size)}
+			>
+				<option value="s" selected={size() === "s"}>
+					S
+				</option>
+				<option value="m" selected={size() === "m"}>
+					M
+				</option>
+			</select>
+			<button type="button" onClick={() => setSize("m")}>
+				M
+			</button>
+			<button type="button" onClick={() => setSize("xs")}>
+				XS
+			</button>
+		</form>
+	);
 }
 
 /**
@@ -34,19 +34,19 @@ export default function UnmatchedSelect(
  * where none holds it: as the value changes, and as options come and go.
  */
 function selectOptions(select: HTMLSelectElement, value: () => unknown): void {
-  const choose = () => {
-    const current = value();
-    if (!Array.isArray(current)) {
-      // `selectedIndex` -1 where no option holds it: unselecting each one selects the first.
-      select.selectedIndex = [...select.options].findIndex(
-        (option) => option.value === String(current),
-      );
-      return;
-    }
-    for (const option of select.options) option.selected = current.includes(option.value);
-  };
-  createEffect(choose);
-  const observer = new MutationObserver(choose);
-  observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
-  onCleanup(() => observer.disconnect());
+	const choose = () => {
+		const current = value();
+		if (!Array.isArray(current)) {
+			// `selectedIndex` -1 where no option holds it: unselecting each one selects the first.
+			select.selectedIndex = [...select.options].findIndex(
+				(option) => option.value === String(current),
+			);
+			return;
+		}
+		for (const option of select.options) option.selected = current.includes(option.value);
+	};
+	createEffect(choose);
+	const observer = new MutationObserver(choose);
+	observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
+	onCleanup(() => observer.disconnect());
 }

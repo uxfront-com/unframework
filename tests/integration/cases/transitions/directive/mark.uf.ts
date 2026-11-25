@@ -2,7 +2,7 @@
 import { defineDirective } from "@uxfront/unframework";
 
 export const vMark = defineDirective<string>({
-  unmounted(el) {
-    document.dispatchEvent(new CustomEvent("mark-unmounted", { detail: el }));
-  },
+	unmounted(el) {
+		document.dispatchEvent(new CustomEvent("mark-unmounted", { detail: el }));
+	},
 });

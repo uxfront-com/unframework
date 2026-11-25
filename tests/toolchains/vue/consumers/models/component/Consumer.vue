@@ -7,5 +7,5 @@ const cups = ref(2);
 </script>
 
 <template>
-  <Stepper v-model:value="cups" label="Cups" />
+	<Stepper v-model:value="cups" label="Cups" />
 </template>

@@ -15,111 +15,111 @@ import { pixelAt } from "./png.ts";
 const fixture = (name: string) => fileURLToPath(new URL(`fixtures/${name}`, import.meta.url));
 
 describe("runVisual", () => {
-  it("reports a difference", { timeout: 180_000 }, async () => {
-    const root = fixture("differs");
-    let printed = "";
-    const result = await runVisual({ root, env: {}, stdout: (text) => void (printed += text) });
+	it("reports a difference", { timeout: 180_000 }, async () => {
+		const root = fixture("differs");
+		let printed = "";
+		const result = await runVisual({ root, env: {}, stdout: (text) => void (printed += text) });
 
-    expect(result.exitCode).toBe(1);
-    const report = JSON.parse(readFileSync(result.reportPath!, "utf8")) as VisualReport;
-    expect(report).toEqual(result.report);
-    expect(report.passed).toBe(false);
-    const [box] = report.examples;
-    expect(box?.id).toBe("examples/Box");
-    const react = box!.cells.find((cell) => cell.target === "react")!;
-    const vue = box!.cells.find((cell) => cell.target === "vue")!;
-    expect(vue).toMatchObject({ role: "reference", status: "passed" });
-    expect(react).toMatchObject({
-      role: "follower",
-      status: "failed",
-      outcome: "geometry-mismatch",
-    });
-    expect(react.diffPixels).toBeGreaterThan(0);
-    expect(react.geometry).toContainEqual(
-      expect.objectContaining({
-        property: "background-color",
-        expected: "rgb(37, 99, 235)",
-        actual: "rgb(220, 38, 38)",
-      }),
-    );
-    const out = join(root, ".unframework", "visual");
-    for (const image of ["capture", "reference", "actual", "diff", "geometry"] as const) {
-      expect(react.images[image], image).toBeDefined();
-      expect(existsSync(join(out, react.images[image]!)), image).toBe(true);
-    }
-    expect(react.images.diff).toBe("examples/Box/react/diff.png");
-    // The page beside the report, which names its images by the same relative paths.
-    const html = readFileSync(join(out, "report.html"), "utf8");
-    expect(html).toBe(renderReport(report));
-    expect(html).toContain('src="examples/Box/react/diff.png"');
-    expect(printed).toContain("✗ examples/Box: failed on react (geometry-mismatch)");
-    // The page's path follows the report's, so a CI log names both.
-    const path = (file: string) => relative(process.cwd(), join(out, file));
-    expect(printed).toContain(`report: ${path("report.json")}\npage: ${path("report.html")}\n`);
-  });
+		expect(result.exitCode).toBe(1);
+		const report = JSON.parse(readFileSync(result.reportPath!, "utf8")) as VisualReport;
+		expect(report).toEqual(result.report);
+		expect(report.passed).toBe(false);
+		const [box] = report.examples;
+		expect(box?.id).toBe("examples/Box");
+		const react = box!.cells.find((cell) => cell.target === "react")!;
+		const vue = box!.cells.find((cell) => cell.target === "vue")!;
+		expect(vue).toMatchObject({ role: "reference", status: "passed" });
+		expect(react).toMatchObject({
+			role: "follower",
+			status: "failed",
+			outcome: "geometry-mismatch",
+		});
+		expect(react.diffPixels).toBeGreaterThan(0);
+		expect(react.geometry).toContainEqual(
+			expect.objectContaining({
+				property: "background-color",
+				expected: "rgb(37, 99, 235)",
+				actual: "rgb(220, 38, 38)",
+			}),
+		);
+		const out = join(root, ".unframework", "visual");
+		for (const image of ["capture", "reference", "actual", "diff", "geometry"] as const) {
+			expect(react.images[image], image).toBeDefined();
+			expect(existsSync(join(out, react.images[image]!)), image).toBe(true);
+		}
+		expect(react.images.diff).toBe("examples/Box/react/diff.png");
+		// The page beside the report, which names its images by the same relative paths.
+		const html = readFileSync(join(out, "report.html"), "utf8");
+		expect(html).toBe(renderReport(report));
+		expect(html).toContain('src="examples/Box/react/diff.png"');
+		expect(printed).toContain("✗ examples/Box: failed on react (geometry-mismatch)");
+		// The page's path follows the report's, so a CI log names both.
+		const path = (file: string) => relative(process.cwd(), join(out, file));
+		expect(printed).toContain(`report: ${path("report.json")}\npage: ${path("report.html")}\n`);
+	});
 
-  it(
-    "fails an example whose test fails after its capture, and one that doesn't compile, alone",
-    {
-      timeout: 180_000,
-    },
-    async () => {
-      const root = fixture("mixed");
-      let printed = "";
-      const result = await runVisual({ root, env: {}, stdout: (text) => void (printed += text) });
+	it(
+		"fails an example whose test fails after its capture, and one that doesn't compile, alone",
+		{
+			timeout: 180_000,
+		},
+		async () => {
+			const root = fixture("mixed");
+			let printed = "";
+			const result = await runVisual({ root, env: {}, stdout: (text) => void (printed += text) });
 
-      expect(result.exitCode).toBe(1);
-      const cells = Object.fromEntries(
-        result.report!.examples.map((example) => [example.id, example.cells]),
-      );
-      // The good example passes on both targets, and its captures show it: the page's white
-      // background in the corner, not the dark backdrop of Vite's error overlay.
-      expect(cells["examples/Good"]!.map((cell) => cell.status)).toEqual(["passed", "passed"]);
-      const out = join(root, ".unframework", "visual");
-      for (const cell of cells["examples/Good"]!) {
-        const capture = readFileSync(join(out, cell.images.capture!));
-        expect(pixelAt(capture, 0, 0), cell.target).toEqual([255, 255, 255, 255]);
-      }
-      // Its console error fails the test after a capture that matched (L13).
-      for (const cell of cells["examples/Noisy"]!) {
-        expect(cell, cell.target).toMatchObject({ status: "failed", outcome: "test-failed" });
-        expect(cell.message, cell.target).toContain("L13");
-      }
-      // The broken one fails on both, with the compile error.
-      for (const cell of cells["examples/Broken"]!) {
-        expect(cell, cell.target).toMatchObject({ status: "failed", outcome: "not-captured" });
-        expect(cell.message, cell.target).toMatch(/^UF1002: /);
-      }
-      expect(printed).toContain("✓ examples/Good: passed on 2 targets");
-      expect(printed).toContain(
-        "✗ examples/Noisy: failed on react (test-failed), vue (test-failed)",
-      );
-    },
-  );
+			expect(result.exitCode).toBe(1);
+			const cells = Object.fromEntries(
+				result.report!.examples.map((example) => [example.id, example.cells]),
+			);
+			// The good example passes on both targets, and its captures show it: the page's white
+			// background in the corner, not the dark backdrop of Vite's error overlay.
+			expect(cells["examples/Good"]!.map((cell) => cell.status)).toEqual(["passed", "passed"]);
+			const out = join(root, ".unframework", "visual");
+			for (const cell of cells["examples/Good"]!) {
+				const capture = readFileSync(join(out, cell.images.capture!));
+				expect(pixelAt(capture, 0, 0), cell.target).toEqual([255, 255, 255, 255]);
+			}
+			// Its console error fails the test after a capture that matched (L13).
+			for (const cell of cells["examples/Noisy"]!) {
+				expect(cell, cell.target).toMatchObject({ status: "failed", outcome: "test-failed" });
+				expect(cell.message, cell.target).toContain("L13");
+			}
+			// The broken one fails on both, with the compile error.
+			for (const cell of cells["examples/Broken"]!) {
+				expect(cell, cell.target).toMatchObject({ status: "failed", outcome: "not-captured" });
+				expect(cell.message, cell.target).toMatch(/^UF1002: /);
+			}
+			expect(printed).toContain("✓ examples/Good: passed on 2 targets");
+			expect(printed).toContain(
+				"✗ examples/Noisy: failed on react (test-failed), vue (test-failed)",
+			);
+		},
+	);
 
-  it(
-    "runs an example with a metadata comment as it runs one without, and reads none of it",
-    { timeout: 240_000 },
-    async () => {
-      const run = async (name: string) => {
-        const root = fixture(name);
-        const result = await runVisual({ root, env: {}, stdout: () => undefined });
-        const report = JSON.parse(readFileSync(result.reportPath!, "utf8")) as VisualReport;
-        const baselines = discoverExamples({ root }).map((example) =>
-          Object.values(exampleBaselines(example)).map((path) => relative(root, path)),
-        );
-        return { result, report, baselines };
-      };
-      // `metadata`'s example has a description, `@category`, `@title` and `@order two`.
-      const commented = await run("metadata");
-      const plain = await run("metadata-plain");
-      expect(commented.result.exitCode).toBe(0);
-      expect(plain.result.exitCode).toBe(0);
-      expect(commented.report.examples.map((each) => each.id)).toEqual(["examples/Badge"]);
-      expect(commented.report).toEqual(plain.report);
-      expect(commented.baselines).toEqual(plain.baselines);
-      // `visual` never reads the comment, so the malformed `@order` is no UF7012 here.
-      expect(commented.result.diagnostics).toEqual([]);
-    },
-  );
+	it(
+		"runs an example with a metadata comment as it runs one without, and reads none of it",
+		{ timeout: 240_000 },
+		async () => {
+			const run = async (name: string) => {
+				const root = fixture(name);
+				const result = await runVisual({ root, env: {}, stdout: () => undefined });
+				const report = JSON.parse(readFileSync(result.reportPath!, "utf8")) as VisualReport;
+				const baselines = discoverExamples({ root }).map((example) =>
+					Object.values(exampleBaselines(example)).map((path) => relative(root, path)),
+				);
+				return { result, report, baselines };
+			};
+			// `metadata`'s example has a description, `@category`, `@title` and `@order two`.
+			const commented = await run("metadata");
+			const plain = await run("metadata-plain");
+			expect(commented.result.exitCode).toBe(0);
+			expect(plain.result.exitCode).toBe(0);
+			expect(commented.report.examples.map((each) => each.id)).toEqual(["examples/Badge"]);
+			expect(commented.report).toEqual(plain.report);
+			expect(commented.baselines).toEqual(plain.baselines);
+			// `visual` never reads the comment, so the malformed `@order` is no UF7012 here.
+			expect(commented.result.diagnostics).toEqual([]);
+		},
+	);
 });

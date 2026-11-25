@@ -59,8 +59,8 @@ let ready: Promise<void> | undefined;
  * only the first file's.
  */
 export async function prepareSpecFile(colorScheme: ColorScheme): Promise<void> {
-  await checkEnvironment(colorScheme);
-  await installDeterminism();
+	await checkEnvironment(colorScheme);
+	await installDeterminism();
 }
 
 /**
@@ -68,8 +68,8 @@ export async function prepareSpecFile(colorScheme: ColorScheme): Promise<void> {
  * a failure fails every test that depends on it.
  */
 export function installDeterminism(): Promise<void> {
-  ready ??= install();
-  return ready;
+	ready ??= install();
+	return ready;
 }
 
 /** How long the startup check waits for the case's colour scheme to reach the page (ADR-0081). */
@@ -86,53 +86,53 @@ const COLOR_SCHEME_POLL_MS = 50;
  * come from the context's options, which apply before the page loads, so they are read once.
  */
 export async function checkEnvironment(colorScheme: ColorScheme): Promise<void> {
-  const environment: Record<string, boolean> = {
-    "devicePixelRatio: 1": window.devicePixelRatio === 1,
-    "prefers-reduced-motion: reduce": matchMedia("(prefers-reduced-motion: reduce)").matches,
-    [`prefers-color-scheme: ${colorScheme}`]: await matchesWithin(
-      `(prefers-color-scheme: ${colorScheme})`,
-      COLOR_SCHEME_WAIT_MS,
-    ),
-    "forced-colors: none": matchMedia("(forced-colors: none)").matches,
-  };
-  const wrong = Object.keys(environment).filter((name) => !environment[name]);
-  if (wrong.length) {
-    throw new Error(
-      `Visual determinism: the browser context does not satisfy ${wrong.join(", ")}. The project must set the provider's contextOptions (see the screenshot ADR), and the setup file emulate the case's colour scheme (ADR-0061).`,
-    );
-  }
+	const environment: Record<string, boolean> = {
+		"devicePixelRatio: 1": window.devicePixelRatio === 1,
+		"prefers-reduced-motion: reduce": matchMedia("(prefers-reduced-motion: reduce)").matches,
+		[`prefers-color-scheme: ${colorScheme}`]: await matchesWithin(
+			`(prefers-color-scheme: ${colorScheme})`,
+			COLOR_SCHEME_WAIT_MS,
+		),
+		"forced-colors: none": matchMedia("(forced-colors: none)").matches,
+	};
+	const wrong = Object.keys(environment).filter((name) => !environment[name]);
+	if (wrong.length) {
+		throw new Error(
+			`Visual determinism: the browser context does not satisfy ${wrong.join(", ")}. The project must set the provider's contextOptions (see the screenshot ADR), and the setup file emulate the case's colour scheme (ADR-0061).`,
+		);
+	}
 }
 
 /** Whether the page matches `query`, read until it does or `timeout` milliseconds pass. */
 async function matchesWithin(query: string, timeout: number): Promise<boolean> {
-  const deadline = Date.now() + timeout;
-  while (!matchMedia(query).matches) {
-    if (Date.now() >= deadline) return false;
-    await new Promise((resolve) => setTimeout(resolve, COLOR_SCHEME_POLL_MS));
-  }
-  return true;
+	const deadline = Date.now() + timeout;
+	while (!matchMedia(query).matches) {
+		if (Date.now() >= deadline) return false;
+		await new Promise((resolve) => setTimeout(resolve, COLOR_SCHEME_POLL_MS));
+	}
+	return true;
 }
 
 async function install(): Promise<void> {
-  const style = document.createElement("style");
-  style.setAttribute("data-uf-determinism", "");
-  style.textContent = RESET;
-  document.head.append(style);
-  const faces = [
-    new FontFace(FONT_FAMILY, `url(${regular}) format("woff2")`, { weight: "400" }),
-    new FontFace(FONT_FAMILY, `url(${bold}) format("woff2")`, { weight: "700" }),
-  ];
-  for (const face of faces) {
-    document.fonts.add(face);
-    await face.load();
-  }
-  await document.fonts.ready;
-  const failed = faces.filter((face) => face.status !== "loaded");
-  if (failed.length) {
-    throw new Error(
-      `Visual determinism: ${failed.map((face) => `${face.family} ${face.weight}`).join(", ")} did not load.`,
-    );
-  }
+	const style = document.createElement("style");
+	style.setAttribute("data-uf-determinism", "");
+	style.textContent = RESET;
+	document.head.append(style);
+	const faces = [
+		new FontFace(FONT_FAMILY, `url(${regular}) format("woff2")`, { weight: "400" }),
+		new FontFace(FONT_FAMILY, `url(${bold}) format("woff2")`, { weight: "700" }),
+	];
+	for (const face of faces) {
+		document.fonts.add(face);
+		await face.load();
+	}
+	await document.fonts.ready;
+	const failed = faces.filter((face) => face.status !== "loaded");
+	if (failed.length) {
+		throw new Error(
+			`Visual determinism: ${failed.map((face) => `${face.family} ${face.weight}`).join(", ")} did not load.`,
+		);
+	}
 }
 
 /** How long a settle waits for the page's running animations to end (ADR-0100). */
@@ -146,33 +146,33 @@ export const ANIMATION_WAIT_MS = 2000;
  * settle, as a page that never quiets does: never a retry.
  */
 export async function settleAnimations(): Promise<void> {
-  const deadline = performance.now() + ANIMATION_WAIT_MS;
-  for (;;) {
-    const running = document
-      .getAnimations()
-      .filter((animation) => animation.playState === "running" || animation.pending);
-    if (!running.length) return;
-    const left = deadline - performance.now();
-    if (left <= 0) {
-      throw new Error(
-        `Visual determinism: the page did not settle: ${running.map(describeAnimation).join(", ")} still ran after ${ANIMATION_WAIT_MS} ms. A transition or an animation a spec gives a duration ends within it.`,
-      );
-    }
-    await Promise.race([
-      Promise.allSettled(running.map((animation) => animation.finished)),
-      new Promise((resolve) => setTimeout(resolve, left)),
-    ]);
-  }
+	const deadline = performance.now() + ANIMATION_WAIT_MS;
+	for (;;) {
+		const running = document
+			.getAnimations()
+			.filter((animation) => animation.playState === "running" || animation.pending);
+		if (!running.length) return;
+		const left = deadline - performance.now();
+		if (left <= 0) {
+			throw new Error(
+				`Visual determinism: the page did not settle: ${running.map(describeAnimation).join(", ")} still ran after ${ANIMATION_WAIT_MS} ms. A transition or an animation a spec gives a duration ends within it.`,
+			);
+		}
+		await Promise.race([
+			Promise.allSettled(running.map((animation) => animation.finished)),
+			new Promise((resolve) => setTimeout(resolve, left)),
+		]);
+	}
 }
 
 /** An animation, for a settle's error: what runs, and on which element. */
 function describeAnimation(animation: Animation): string {
-  const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
-  const on = target ? ` on <${target.tagName.toLowerCase()}>` : "";
-  if (animation instanceof CSSTransition)
-    return `a transition of ${animation.transitionProperty}${on}`;
-  if (animation instanceof CSSAnimation) return `the animation ${animation.animationName}${on}`;
-  return `a Web Animation${on}`;
+	const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
+	const on = target ? ` on <${target.tagName.toLowerCase()}>` : "";
+	if (animation instanceof CSSTransition)
+		return `a transition of ${animation.transitionProperty}${on}`;
+	if (animation instanceof CSSAnimation) return `the animation ${animation.animationName}${on}`;
+	return `a Web Animation${on}`;
 }
 
 /**
@@ -180,11 +180,11 @@ function describeAnimation(animation: Animation): string {
  * animations and two frames.
  */
 export async function settleFrame(targetSettle?: () => Promise<void>): Promise<void> {
-  await installDeterminism();
-  await targetSettle?.();
-  await settleAnimations();
-  await document.fonts.ready;
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
+	await installDeterminism();
+	await targetSettle?.();
+	await settleAnimations();
+	await document.fonts.ready;
+	await new Promise<void>((resolve) => {
+		requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+	});
 }

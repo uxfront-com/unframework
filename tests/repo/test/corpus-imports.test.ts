@@ -22,29 +22,29 @@ const DESIGN_SYSTEM_SPEC = "tests/e2e/design-system/test/counter/probe.test.ts";
 
 /** Specifiers the rule refuses: a subpath, another package, the harness's or a package's code. */
 const REFUSED: readonly string[] = [
-  "@unframework.dev/testing/harness",
-  "@unframework.dev/testing/setup",
-  "@unframework.dev/testing/node",
-  "@unframework.dev/compiler",
-  "@unframework.dev/ir",
-  "@unframework.dev/testingx",
-  "@unframework.dev/testing-harness",
-  "../../../harness/cases.ts",
-  "../../../scripts/run.ts",
-  "./../../../harness/cases.ts",
-  "../../../../integration/harness/cases.ts",
-  "../../../../../tests/integration/harness/cases.ts",
-  "../../../../../packages/testing/src/layers.ts",
+	"@unframework.dev/testing/harness",
+	"@unframework.dev/testing/setup",
+	"@unframework.dev/testing/node",
+	"@unframework.dev/compiler",
+	"@unframework.dev/ir",
+	"@unframework.dev/testingx",
+	"@unframework.dev/testing-harness",
+	"../../../harness/cases.ts",
+	"../../../scripts/run.ts",
+	"./../../../harness/cases.ts",
+	"../../../../integration/harness/cases.ts",
+	"../../../../../tests/integration/harness/cases.ts",
+	"../../../../../packages/testing/src/layers.ts",
 ];
 
 /** Specifiers it lets through: the public API, the authoring stubs, a case's own sources. */
 const ALLOWED: readonly string[] = [
-  "@unframework.dev/testing",
-  "@uxfront/unframework",
-  "vitest",
-  "./Counter.uf.tsx",
-  "../../props/primitives/Primitives.uf.tsx",
-  "./harness-parent.uf.tsx",
+	"@unframework.dev/testing",
+	"@uxfront/unframework",
+	"vitest",
+	"./Counter.uf.tsx",
+	"../../props/primitives/Primitives.uf.tsx",
+	"./harness-parent.uf.tsx",
 ];
 
 const project = mkdtempSync(join(tmpdir(), "uf-corpus-imports-"));
@@ -52,47 +52,47 @@ afterAll(() => rmSync(project, { recursive: true, force: true }));
 
 /** The specifiers oxlint reports `no-restricted-imports` for, one import per line of the spec. */
 function refusedBy(specifiers: readonly string[], spec: string = SPEC): string[] {
-  const override = config.overrides?.find((entry) => entry.files.includes(CASES));
-  if (!override) throw new Error(`oxlint.config.ts has no override for ${CASES}.`);
-  writeFileSync(
-    join(project, ".oxlintrc.json"),
-    JSON.stringify({ overrides: [{ files: override.files, rules: override.rules }] }),
-  );
-  mkdirSync(join(project, spec, ".."), { recursive: true });
-  writeFileSync(
-    join(project, spec),
-    specifiers.map((specifier) => `import ${JSON.stringify(specifier)};\n`).join(""),
-  );
-  const run = spawnSync(
-    join(root, "node_modules/.bin/oxlint"),
-    ["-c", ".oxlintrc.json", "--format", "json", spec],
-    { cwd: project, encoding: "utf8" },
-  );
-  const report = JSON.parse(run.stdout) as {
-    diagnostics: { code: string; labels: { span: { line: number } }[] }[];
-  };
-  return report.diagnostics
-    .filter((diagnostic) => diagnostic.code === "eslint(no-restricted-imports)")
-    .map((diagnostic) => specifiers[diagnostic.labels[0]!.span.line - 1]!)
-    .toSorted();
+	const override = config.overrides?.find((entry) => entry.files.includes(CASES));
+	if (!override) throw new Error(`oxlint.config.ts has no override for ${CASES}.`);
+	writeFileSync(
+		join(project, ".oxlintrc.json"),
+		JSON.stringify({ overrides: [{ files: override.files, rules: override.rules }] }),
+	);
+	mkdirSync(join(project, spec, ".."), { recursive: true });
+	writeFileSync(
+		join(project, spec),
+		specifiers.map((specifier) => `import ${JSON.stringify(specifier)};\n`).join(""),
+	);
+	const run = spawnSync(
+		join(root, "node_modules/.bin/oxlint"),
+		["-c", ".oxlintrc.json", "--format", "json", spec],
+		{ cwd: project, encoding: "utf8" },
+	);
+	const report = JSON.parse(run.stdout) as {
+		diagnostics: { code: string; labels: { span: { line: number } }[] }[];
+	};
+	return report.diagnostics
+		.filter((diagnostic) => diagnostic.code === "eslint(no-restricted-imports)")
+		.map((diagnostic) => specifiers[diagnostic.labels[0]!.span.line - 1]!)
+		.toSorted();
 }
 
 describe("the corpus's import rule", () => {
-  it("refuses every import outside the public API", () => {
-    expect(refusedBy(REFUSED)).toEqual([...REFUSED].toSorted());
-  });
+	it("refuses every import outside the public API", () => {
+		expect(refusedBy(REFUSED)).toEqual([...REFUSED].toSorted());
+	});
 
-  it("lets the public API and a case's own sources through", () => {
-    expect(refusedBy(ALLOWED)).toEqual([]);
-  });
+	it("lets the public API and a case's own sources through", () => {
+		expect(refusedBy(ALLOWED)).toEqual([]);
+	});
 
-  it("holds the sample design system's tests to the same API", () => {
-    expect(refusedBy(REFUSED, DESIGN_SYSTEM_SPEC)).toEqual([...REFUSED].toSorted());
-    expect(
-      refusedBy(
-        ["@unframework.dev/testing", "vitest", "../../src/Counter.uf.tsx"],
-        DESIGN_SYSTEM_SPEC,
-      ),
-    ).toEqual([]);
-  });
+	it("holds the sample design system's tests to the same API", () => {
+		expect(refusedBy(REFUSED, DESIGN_SYSTEM_SPEC)).toEqual([...REFUSED].toSorted());
+		expect(
+			refusedBy(
+				["@unframework.dev/testing", "vitest", "../../src/Counter.uf.tsx"],
+				DESIGN_SYSTEM_SPEC,
+			),
+		).toEqual([]);
+	});
 });

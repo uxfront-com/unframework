@@ -20,67 +20,67 @@ const SOLID_DEPENDENCIES = ["seroval", "seroval-plugins"];
 
 /** The part of @solidjs/vite-plugin this toolchain calls. */
 type SolidPlugin = (options: {
-  ssr?: boolean;
-  refresh?: boolean;
-  solid?: { hydratable?: boolean; validate?: boolean };
+	ssr?: boolean;
+	refresh?: boolean;
+	solid?: { hydratable?: boolean; validate?: boolean };
 }) => PluginOption;
 
 /** @solidjs/vite-plugin, from the toolchain directory. */
 async function loadPlugin(context: ToolchainContext): Promise<SolidPlugin> {
-  const require = createRequire(join(context.toolchainDir, "package.json"));
-  const entry = require.resolve("@solidjs/vite-plugin");
-  return ((await import(pathToFileURL(entry).href)) as { default: SolidPlugin }).default;
+	const require = createRequire(join(context.toolchainDir, "package.json"));
+	const entry = require.resolve("@solidjs/vite-plugin");
+	return ((await import(pathToFileURL(entry).href)) as { default: SolidPlugin }).default;
 }
 
 /** The Solid 2 toolchain. */
 export const toolchain: Toolchain = {
-  name: "solid2",
-  client: "@unframework.dev/target-solid2/toolchain/client",
-  server: "@unframework.dev/target-solid2/toolchain/server",
-  hydrate: "@unframework.dev/target-solid2/toolchain/hydrate",
+	name: "solid2",
+	client: "@unframework.dev/target-solid2/toolchain/client",
+	server: "@unframework.dev/target-solid2/toolchain/server",
+	hydrate: "@unframework.dev/target-solid2/toolchain/hydrate",
 
-  async vite(mode, context): Promise<UserConfig> {
-    // Loaded here, not at the top: the harness imports every toolchain to build its config.
-    const solid = await loadPlugin(context);
-    return {
-      plugins: [
-        solid({
-          // As on Solid 1: server output is hydratable, and in a hydrate project (L12, ADR-0095)
-          // the client's too, so `hydrate` finds the server's nodes; a browser project keeps the
-          // plain DOM compile.
-          ssr: mode !== "browser",
-          // Under Vitest the plugin compiles nothing hydratable whatever `ssr` says, so it is said
-          // again for the compiler. Its template validation is L3's (`frameworkCompile`), where a
-          // template a browser would parse otherwise is an error: here, as Solid 1's compiler only
-          // warned, it would stop the render before L6 and the browser layers judge what it shows.
-          solid: { hydratable: mode !== "browser", validate: false },
-          // solid-refresh would wrap the code under test in HMR proxies.
-          refresh: false,
-        }),
-        // Every import of Solid 2, from an output, an adapter or Solid itself, resolves in the
-        // toolchain directory (ADR-0102).
-        resolveSolid(context.toolchainDir),
-        undedupeSolid(),
-      ],
-      // Served through Vite's pipeline, so their imports resolve through `resolveSolid` too: on
-      // the server as well, where Vite would load an external package with Node, from the
-      // importer's own `node_modules`.
-      resolve: { noExternal: [...SOLID_PACKAGES] },
-      ...(mode === "ssr"
-        ? {}
-        : { optimizeDeps: { exclude: [...SOLID_PACKAGES, ...SOLID_DEPENDENCIES] } }),
-    };
-  },
+	async vite(mode, context): Promise<UserConfig> {
+		// Loaded here, not at the top: the harness imports every toolchain to build its config.
+		const solid = await loadPlugin(context);
+		return {
+			plugins: [
+				solid({
+					// As on Solid 1: server output is hydratable, and in a hydrate project (L12, ADR-0095)
+					// the client's too, so `hydrate` finds the server's nodes; a browser project keeps the
+					// plain DOM compile.
+					ssr: mode !== "browser",
+					// Under Vitest the plugin compiles nothing hydratable whatever `ssr` says, so it is said
+					// again for the compiler. Its template validation is L3's (`frameworkCompile`), where a
+					// template a browser would parse otherwise is an error: here, as Solid 1's compiler only
+					// warned, it would stop the render before L6 and the browser layers judge what it shows.
+					solid: { hydratable: mode !== "browser", validate: false },
+					// solid-refresh would wrap the code under test in HMR proxies.
+					refresh: false,
+				}),
+				// Every import of Solid 2, from an output, an adapter or Solid itself, resolves in the
+				// toolchain directory (ADR-0102).
+				resolveSolid(context.toolchainDir),
+				undedupeSolid(),
+			],
+			// Served through Vite's pipeline, so their imports resolve through `resolveSolid` too: on
+			// the server as well, where Vite would load an external package with Node, from the
+			// importer's own `node_modules`.
+			resolve: { noExternal: [...SOLID_PACKAGES] },
+			...(mode === "ssr"
+				? {}
+				: { optimizeDeps: { exclude: [...SOLID_PACKAGES, ...SOLID_DEPENDENCIES] } }),
+		};
+	},
 
-  frameworkCompile: (files, context) => compileWithSolid(files, context),
+	frameworkCompile: (files, context) => compileWithSolid(files, context),
 
-  frameworkEmit: (files, context) => emitWithSolid(files, context),
+	frameworkEmit: (files, context) => emitWithSolid(files, context),
 
-  typecheck: (files, context) => typecheckWithTsgo(files, context),
+	typecheck: (files, context) => typecheckWithTsgo(files, context),
 
-  // L5: oxlint, with the shared baseline and eslint-plugin-solid's v2 rules as a JS plugin
-  // (ADR-0042, ADR-0102).
-  lint: (files, context) => lintWithOxlint(files, context),
+	// L5: oxlint, with the shared baseline and eslint-plugin-solid's v2 rules as a JS plugin
+	// (ADR-0042, ADR-0102).
+	lint: (files, context) => lintWithOxlint(files, context),
 };
 
 export default toolchain;

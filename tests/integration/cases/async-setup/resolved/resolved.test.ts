@@ -6,17 +6,17 @@ import { expect } from "vitest";
 import Profile from "./Profile.uf.tsx";
 
 describeTargets("async-setup/resolved", () => {
-  it("renders what the setup awaited", async () => {
-    const view = await mountScenario(Profile, "ada");
-    await view.expectParity("ada");
-    await expect.element(view.getByRole("paragraph")).toHaveTextContent("User ada Visits: 3");
-    await expect.element(view.getByRole("button")).toHaveTextContent("Visits: 3");
-  });
+	it("renders what the setup awaited", async () => {
+		const view = await mountScenario(Profile, "ada");
+		await view.expectParity("ada");
+		await expect.element(view.getByRole("paragraph")).toHaveTextContent("User ada Visits: 3");
+		await expect.element(view.getByRole("button")).toHaveTextContent("Visits: 3");
+	});
 
-  it("counts from the awaited value", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(Profile, "ada");
-    await view.user.click(view.getByRole("button", { name: "Visits: 3" }));
-    await view.expectParity("after-click");
-    await expect.element(view.getByRole("button")).toHaveTextContent("Visits: 4");
-  });
+	it("counts from the awaited value", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(Profile, "ada");
+		await view.user.click(view.getByRole("button", { name: "Visits: 3" }));
+		await view.expectParity("after-click");
+		await expect.element(view.getByRole("button")).toHaveTextContent("Visits: 4");
+	});
 });

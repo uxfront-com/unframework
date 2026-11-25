@@ -20,27 +20,27 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Emits every component of a source into a directory of its own and renders its default one. */
 async function render(source: string): Promise<string> {
-  const module = lower(source);
-  const dir = join(scratch, randomUUID());
-  mkdirSync(dir);
-  const reported: unknown[] = [];
-  for (const component of module.components) {
-    const files = target.emit(component, {
-      module,
-      options: undefined,
-      report: (diagnostic) => void reported.push(diagnostic),
-    });
-    for (const file of files) {
-      const formatted = await formatOutput(file);
-      writeFileSync(join(dir, formatted.file.path), formatted.file.contents);
-    }
-  }
-  expect(reported).toEqual([]);
-  const main = module.components.find((component) =>
-    module.exports.some((entry) => entry.kind === "default" && entry.local === component.name),
-  )!;
-  const loaded: { default: unknown } = await import(join(dir, `${main.name}.tsx`));
-  return renderToString(loaded.default, {});
+	const module = lower(source);
+	const dir = join(scratch, randomUUID());
+	mkdirSync(dir);
+	const reported: unknown[] = [];
+	for (const component of module.components) {
+		const files = target.emit(component, {
+			module,
+			options: undefined,
+			report: (diagnostic) => void reported.push(diagnostic),
+		});
+		for (const file of files) {
+			const formatted = await formatOutput(file);
+			writeFileSync(join(dir, formatted.file.path), formatted.file.contents);
+		}
+	}
+	expect(reported).toEqual([]);
+	const main = module.components.find((component) =>
+		module.exports.some((entry) => entry.kind === "default" && entry.local === component.name),
+	)!;
+	const loaded: { default: unknown } = await import(join(dir, `${main.name}.tsx`));
+	return renderToString(loaded.default, {});
 }
 
 const base = `function Base({ text }: { text: string }) {
@@ -48,8 +48,8 @@ const base = `function Base({ text }: { text: string }) {
 }`;
 
 describe("a root component with the component's own template ref, on Qwik's server", () => {
-  it("renders, without a consumer's ref", async () => {
-    const html = await render(`import { onMounted, useTemplateRef } from "@uxfront/unframework";
+	it("renders, without a consumer's ref", async () => {
+		const html = await render(`import { onMounted, useTemplateRef } from "@uxfront/unframework";
 
 export default function Page() {
   return <div><Primary text="go" /></div>;
@@ -62,12 +62,12 @@ function Primary({ text }: { text: string }) {
 }
 
 ${base}`);
-    expect(html).toMatch(/<button [^>]*type="button"[^>]*>go<\/button>/);
-  });
+		expect(html).toMatch(/<button [^>]*type="button"[^>]*>go<\/button>/);
+	});
 
-  it("renders with a consumer's ref, which the root component takes", async () => {
-    const html =
-      await render(`import { onMounted, ref, useTemplateRef } from "@uxfront/unframework";
+	it("renders with a consumer's ref, which the root component takes", async () => {
+		const html =
+			await render(`import { onMounted, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Page() {
   const save = useTemplateRef<HTMLButtonElement>();
@@ -83,6 +83,6 @@ function Primary({ text }: { text: string }) {
 }
 
 ${base}`);
-    expect(html).toMatch(/<button [^>]*id="save"[^>]*>go<\/button>/);
-  });
+		expect(html).toMatch(/<button [^>]*id="save"[^>]*>go<\/button>/);
+	});
 });

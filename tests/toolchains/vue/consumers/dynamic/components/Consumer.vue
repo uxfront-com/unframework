@@ -5,7 +5,7 @@ import Tag from "../../../../../integration/cases/dynamic/components/__output__/
 </script>
 
 <template>
-  <Tag label="Sale" />
-  <Chip label="New" />
-  <Card label="Old" />
+	<Tag label="Sale" />
+	<Chip label="New" />
+	<Card label="Old" />
 </template>

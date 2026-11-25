@@ -1,7 +1,7 @@
 {
-  "description": "lifecycle/click-outside written with a directive from a `.uf.ts` module: `vClickOutside` on the menu, which is always rendered, calls the component's `close` when a click lands outside it, and its listener goes once the component unmounts.",
-  "main": "ProfileMenu.uf.tsx",
-  "ssr": {
-    "initial": {}
-  }
+	"description": "lifecycle/click-outside written with a directive from a `.uf.ts` module: `vClickOutside` on the menu, which is always rendered, calls the component's `close` when a click lands outside it, and its listener goes once the component unmounts.",
+	"main": "ProfileMenu.uf.tsx",
+	"ssr": {
+		"initial": {}
+	}
 }

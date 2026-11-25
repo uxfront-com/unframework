@@ -7,6 +7,6 @@ const open = ref("yes");
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Disclosure.model:open -->
-  <Disclosure v-model:open="open" title="Shipping" />
+	<!-- @uf-expect TS2322 Disclosure.model:open -->
+	<Disclosure v-model:open="open" title="Shipping" />
 </template>

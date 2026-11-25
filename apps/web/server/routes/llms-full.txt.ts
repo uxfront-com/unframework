@@ -13,12 +13,12 @@ import { rawMarkdown, type DocsPage } from "../utils/raw-markdown";
  * prerendered ones.
  */
 export default defineEventHandler(async (event) => {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
-  const pages = (await queryCollection(event, "docs" as never).all()) as DocsPage[];
-  const documents = await Promise.all(
-    pages.filter((page) => !isNavigationPath(page.path)).map((page) => rawMarkdown(page)),
-  );
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
+	const pages = (await queryCollection(event, "docs" as never).all()) as DocsPage[];
+	const documents = await Promise.all(
+		pages.filter((page) => !isNavigationPath(page.path)).map((page) => rawMarkdown(page)),
+	);
 
-  setHeader(event, "Content-Type", "text/plain; charset=utf-8");
-  return documents.join("\n\n");
+	setHeader(event, "Content-Type", "text/plain; charset=utf-8");
+	return documents.join("\n\n");
 });
