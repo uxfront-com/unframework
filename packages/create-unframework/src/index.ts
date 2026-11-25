@@ -39,9 +39,12 @@ const PROCESS_IO: Io = {
  */
 function projectBin(project: string): string | undefined {
 	const manifest = join(project, "node_modules", PACKAGE, "package.json");
-	if (!existsSync(manifest)) return undefined;
+	if (!existsSync(manifest)) {
+		return undefined;
+	}
 	// Whatever is installed under the name may not have this bin, like a release from before it.
-	const bin: unknown = JSON.parse(readFileSync(manifest, "utf8")).bin?.unframework;
+	const parsed = JSON.parse(readFileSync(manifest, "utf8")) as { bin?: { unframework?: unknown } };
+	const bin = parsed.bin?.unframework;
 	return typeof bin === "string" ? join(dirname(manifest), bin) : undefined;
 }
 
@@ -62,17 +65,21 @@ function create(dir: string, io: Io): number {
 		return 1;
 	}
 	const init = spawnSync(process.execPath, [bin, "init"], { cwd: project, encoding: "utf8" });
-	if (init.error) throw init.error;
+	if (init.error) {
+		throw init.error;
+	}
 	io.stdout(init.stdout);
 	io.stderr(init.stderr);
 	return init.status ?? 2;
 }
 
-function directoryOf(argv: readonly string[]): string {
+function directoryOf(argv: ReadonlyArray<string>): string {
 	const { positionals } = parseArgs({ args: [...argv], allowPositionals: true });
 	const [dir] = positionals;
 	// An empty name, like an unset shell variable, would resolve to the working directory.
-	if (!dir || positionals.length > 1) throw new Error("It takes one directory.");
+	if (!dir || positionals.length > 1) {
+		throw new Error("It takes one directory.");
+	}
 	return dir;
 }
 
@@ -84,7 +91,7 @@ const messageOf = (error: unknown): string =>
  * 1 when the project needs its dependencies installed before `init` can run, and 2 for a usage
  * error, a refusal or a failure. It never throws.
  */
-export function main(argv: readonly string[], io: Io = PROCESS_IO): number {
+export function main(argv: ReadonlyArray<string>, io: Io = PROCESS_IO): number {
 	if (argv.includes("--help") || argv.includes("-h")) {
 		io.stdout(USAGE);
 		return 0;

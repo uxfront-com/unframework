@@ -7,7 +7,8 @@ import type { Readable } from "node:stream";
 import { pathToFileURL } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 
-import { rebuildWatcher, type Watcher } from "./edit.ts";
+import { rebuildWatcher } from "./edit.ts";
+import type { Watcher } from "./edit.ts";
 import { HOST } from "./ports.ts";
 
 interface StartedServer {
@@ -105,7 +106,9 @@ export function spawnNgServe(
 		} catch (error) {
 			// A group that holds only a zombie answers EPERM on macOS: it's as gone as an empty one.
 			const { code } = error as NodeJS.ErrnoException;
-			if (code !== "ESRCH" && code !== "EPERM") throw error;
+			if (code !== "ESRCH" && code !== "EPERM") {
+				throw error;
+			}
 		}
 	};
 	// A worker that exits before its teardown still takes the server with it. One killed by a signal
@@ -113,7 +116,9 @@ export function spawnNgServe(
 	const killGroup = (): void => signal("SIGKILL");
 	process.once("exit", killGroup);
 	// Every pipe closes once the whole group has gone, so nothing it printed is lost.
-	const closed = new Promise<void>((done) => child.once("close", () => done()));
+	const closed = new Promise<void>((done) => {
+		child.once("close", () => done());
+	});
 
 	const stop = async (): Promise<void> => {
 		signal("SIGTERM");
@@ -127,7 +132,7 @@ export function spawnNgServe(
 
 	return new Promise((resolve, reject) => {
 		let started = false;
-		const output: string[] = [];
+		const output: Array<string> = [];
 		const onExit = (code: number | null): void => fail(`exited with ${code}`);
 		const fail = (reason: string): void => {
 			clearTimeout(timer);
@@ -141,7 +146,9 @@ export function spawnNgServe(
 		for (const stream of [child.stdout, child.stderr]) {
 			// These also keep the pipes drained for as long as the server runs.
 			createInterface({ input: stream }).on("line", (raw) => {
-				if (started) return;
+				if (started) {
+					return;
+				}
 				// Under `FORCE_COLOR`, a colour code splits the URL before its port.
 				const line = stripVTControlCharacters(raw);
 				output.push(line);
@@ -176,7 +183,11 @@ async function startAngular(copy: string): Promise<StartedServer> {
 
 /** Starts the dev server of one app's mode, from its working copy. */
 export function startDevServer(app: string, mode: string, copy: string): Promise<StartedServer> {
-	if (app === "astro") return startAstro(copy, mode);
-	if (app === "angular") return startAngular(copy);
+	if (app === "astro") {
+		return startAstro(copy, mode);
+	}
+	if (app === "angular") {
+		return startAngular(copy);
+	}
 	return startVite(copy, mode);
 }

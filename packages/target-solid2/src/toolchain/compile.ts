@@ -48,7 +48,7 @@ export async function loadCompiler(context: ToolchainContext): Promise<SolidComp
  * since the compiler refuses the file. It prints nothing, so it has no warnings.
  */
 export async function compileWithSolid(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 	context: ToolchainContext,
 ): Promise<Map<string, FrameworkCompileResult>> {
 	assertFilesToCompile(files);
@@ -61,13 +61,13 @@ export async function compileWithSolid(
  * the DOM, then the types stripped, as Vite's own transform does after the plugin.
  */
 export async function emitWithSolid(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 	context: ToolchainContext,
-): Promise<Map<string, ToolchainFile[]>> {
+): Promise<Map<string, Array<ToolchainFile>>> {
 	assertFilesToCompile(files);
 	const compiler = await loadCompiler(context);
 	const { transformWithOxc } = await import("vite");
-	const emitted = new Map<string, ToolchainFile[]>();
+	const emitted = new Map<string, Array<ToolchainFile>>();
 	for (const file of files) {
 		const { code } = compiler.transform(file.contents, {
 			filename: file.path,
@@ -103,7 +103,9 @@ function compileFile(compiler: SolidCompiler, file: ToolchainFile): FrameworkCom
  * which becomes the message's position.
  */
 function fromCompilerError(error: unknown): ToolchainMessage {
-	if (!(error instanceof Error)) return { message: String(error) };
+	if (!(error instanceof Error)) {
+		return { message: String(error) };
+	}
 	const [first = error.message, ...rest] = error.message.split("\n");
 	const at = /\s\((\d+):(\d+)\)$/.exec(first);
 	const message = [at ? first.slice(0, at.index) : first, ...rest].join("\n").trim();

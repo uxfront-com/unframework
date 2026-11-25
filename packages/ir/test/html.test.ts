@@ -74,7 +74,9 @@ describe("the HTML vocabulary", () => {
 		}
 		expect([...TRUE_VALUED_ATTRIBUTES].filter((name) => !isHtmlAttribute("div", name))).toEqual([]);
 		for (const [tag, attributes] of NUMERIC_ATTRIBUTES) {
-			for (const name of attributes.keys()) expect(isHtmlAttribute(tag, name)).toBe(true);
+			for (const name of attributes.keys()) {
+				expect(isHtmlAttribute(tag, name)).toBe(true);
+			}
 		}
 	});
 
@@ -96,7 +98,9 @@ describe("the HTML vocabulary", () => {
 		const stringTyped = new Set(["li value", "meter value", "progress max", "progress value"]);
 		for (const [tag, attributes] of NUMERIC_ATTRIBUTES) {
 			for (const name of attributes.keys()) {
-				if (stringTyped.has(`${tag} ${name}`) || ["height", "width"].includes(name)) continue;
+				if (stringTyped.has(`${tag} ${name}`) || ["height", "width"].includes(name)) {
+					continue;
+				}
 				expect(isNumberTypedAttribute(tag, name), `${tag} ${name}`).toBe(true);
 			}
 		}
@@ -203,16 +207,18 @@ function random(seed: number): () => number {
 }
 
 /** `scheme:x` with case changes and the characters URL parsers strip or keep put around it. */
-function spellings(scheme: string, count: number): string[] {
+function spellings(scheme: string, count: number): Array<string> {
 	const next = random(scheme.length);
 	const noise = ["\t", "\n", "\r", " ", "\u0000", "\u0001", "\u001F", "\u00A0", "x", "-", ":", "/"];
 	const pick = () => noise[Math.floor(next() * noise.length)]!;
-	const samples: string[] = [];
+	const samples: Array<string> = [];
 	for (let index = 0; index < count; index++) {
 		let url = next() < 0.5 ? pick() + pick() : "";
 		for (const character of `${scheme}:`) {
 			url += next() < 0.5 ? character.toUpperCase() : character;
-			if (next() < 0.15) url += pick();
+			if (next() < 0.15) {
+				url += pick();
+			}
 		}
 		samples.push(`${url}alert(1)`);
 	}
@@ -220,7 +226,7 @@ function spellings(scheme: string, count: number): string[] {
 }
 
 describe("URLs", () => {
-	const urls = [...spellings("javascript", 5_000), ...spellings("data", 5_000)];
+	const urls = [...spellings("javascript", 5000), ...spellings("data", 5000)];
 	// What the browser reads, with Node's WHATWG URL parser, which follows the same standard. A
 	// URL it cannot parse (`//javascript:x` has a port that is not a number) loads nothing.
 	const base = "https://base.invalid/";

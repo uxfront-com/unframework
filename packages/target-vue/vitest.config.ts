@@ -10,7 +10,7 @@ import { toolchain } from "./src/toolchain/index.ts";
 import { behaviourModules } from "./test/behaviour-modules.ts";
 
 const context = {
-	root: fileURLToPath(new URL(".", import.meta.url)),
+	root: import.meta.dirname,
 	toolchainDir: fileURLToPath(new URL("../../tests/toolchains/vue", import.meta.url)),
 };
 

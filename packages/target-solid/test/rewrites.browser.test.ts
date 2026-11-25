@@ -64,7 +64,7 @@ it("sets the attributes it spreads, as Solid's types lack them, and updates them
 // conditionals and lists included.
 it("updates the branches that narrow, as their references come and go", async () => {
 	document.body.append(container);
-	const logged: unknown[][] = [];
+	const logged: Array<Array<unknown>> = [];
 	vi.spyOn(console, "warn").mockImplementation((...args) => void logged.push(args));
 	vi.spyOn(console, "error").mockImplementation((...args) => void logged.push(args));
 	const ada = {
@@ -182,7 +182,8 @@ it("updates the branches that narrow, as their references come and go", async ()
 // replaced by a copy and when the list reorders, and reads the latest item and index.
 it("keeps a keyed row's element across copies and reorders, and renders a duplicate key's rows", async () => {
 	document.body.append(container);
-	const rows = (...entries: [number, string][]) => entries.map(([id, label]) => ({ id, label }));
+	const rows = (...entries: Array<[number, string]>) =>
+		entries.map(([id, label]) => ({ id, label }));
 	const mounted = await mount(await fixture("KeyedRows"), container, {
 		props: { rows: rows([1, "Ada"], [2, "Grace"], [3, "Alan"]) },
 	});

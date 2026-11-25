@@ -138,7 +138,7 @@ export interface Canary {
 	 * The targets it corrupts, when not every one: a corruption of one framework's own code. The
 	 * runner runs only these targets' projects, and the verdict judges only these.
 	 */
-	targets?: readonly TargetName[];
+	targets?: ReadonlyArray<TargetName>;
 	/**
 	 * Leaves the golden guard on. Every other canary turns it off: it changes the output on
 	 * purpose, and the guard would fail every module before the canary's layer could.
@@ -167,13 +167,13 @@ export interface Canary {
 	 * (L1). No compiler hook reaches the fixes, so the harness corrupts them; a case with compile
 	 * errors has them too. Only the compile project.
 	 */
-	fixes?(diagnostics: readonly Diagnostic[], source: string, target: string): Diagnostic[];
+	fixes?(diagnostics: ReadonlyArray<Diagnostic>, source: string, target: string): Array<Diagnostic>;
 	/**
 	 * Corrupts a target's output files after the compiler built their source maps (L14). The
 	 * `output` hook runs before a map exists, so the harness corrupts the result. Only the compile
 	 * project.
 	 */
-	map?(files: readonly OutputFile[]): OutputFile[];
+	map?(files: ReadonlyArray<OutputFile>): Array<OutputFile>;
 	/**
 	 * The map a module the `ssr` and `browser` projects serve is given on top of its own (L14): a
 	 * Vite plugin that runs after every other gives back the module's code with one more line break
@@ -198,7 +198,14 @@ export interface Canary {
 }
 
 /** The targets that hydrate (ADR-0095): Qwik resumes instead, and Astro runs nothing in a page. */
-const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "solid2", "angular"];
+const HYDRATING: ReadonlyArray<TargetName> = [
+	"react",
+	"vue",
+	"svelte",
+	"solid",
+	"solid2",
+	"angular",
+];
 
 /**
  * The L12 sub-checks that catch a client render's text that differs from the server's, on each
@@ -283,7 +290,7 @@ let compiles = 0;
 const ACTION_EVENTS = ["click", "pointerover", "keydown", "input", "focusin", "wheel"];
 
 /** Every canary: at least one per live layer, and one per sub-check a sibling could hide. */
-export const CANARIES: readonly Canary[] = [
+export const CANARIES: ReadonlyArray<Canary> = [
 	{
 		id: "L1-diagnostic-added",
 		layer: "L1",
@@ -327,7 +334,9 @@ export const CANARIES: readonly Canary[] = [
 					(diagnostic.target === undefined || diagnostic.target === target) &&
 					diagnostic.fixes?.length,
 			);
-			if (first === -1) throw new Error(`${MARKER} L1: no diagnostic has a fix to corrupt.`);
+			if (first === -1) {
+				throw new Error(`${MARKER} L1: no diagnostic has a fix to corrupt.`);
+			}
 			return diagnostics.map((diagnostic, index) =>
 				index === first
 					? {
@@ -546,7 +555,7 @@ export const CANARIES: readonly Canary[] = [
 					contents: injectScript(
 						file,
 						target,
-						`const ufCanaryGuard_${file.path.replace(/\W/g, "_")} = "${MARKER}";`,
+						`const ufCanaryGuard_${file.path.replaceAll(/\W/g, "_")} = "${MARKER}";`,
 						"module",
 					),
 				})),
@@ -613,7 +622,9 @@ export const CANARIES: readonly Canary[] = [
 			name: "uf-canary-L9-unwired",
 			ir: (module) => {
 				const copy = structuredClone(module);
-				for (const { render } of copy.components) unwire(render);
+				for (const { render } of copy.components) {
+					unwire(render);
+				}
 				return copy;
 			},
 		}),
@@ -725,7 +736,9 @@ export const CANARIES: readonly Canary[] = [
 			name: "uf-canary-L12-unwired",
 			ir: (module) => {
 				const copy = structuredClone(module);
-				for (const { render } of copy.components) unwire(render);
+				for (const { render } of copy.components) {
+					unwire(render);
+				}
 				return copy;
 			},
 		}),
@@ -858,9 +871,13 @@ export const CANARIES: readonly Canary[] = [
 		plugin: () => ({
 			name: "uf-canary-L15-slow",
 			ir(module) {
-				if (!module.file.startsWith(`${SLOW_CASE}/`)) return;
+				if (!module.file.startsWith(`${SLOW_CASE}/`)) {
+					return;
+				}
 				const end = performance.now() + 500;
-				while (performance.now() < end);
+				while (performance.now() < end) {
+					// Busy-waits, so this case compiles slowly.
+				}
 			},
 		}),
 	},
@@ -870,14 +887,18 @@ export const CANARIES: readonly Canary[] = [
 type DecodedLines = ReturnType<typeof decodedMappings>;
 
 /** One map changed, so that L14 finds a segment whose text differs (`L14-map-shifted`). */
-function shiftSegment(files: readonly OutputFile[]): OutputFile[] {
+function shiftSegment(files: ReadonlyArray<OutputFile>): Array<OutputFile> {
 	const code = files.filter(({ path, map }) => map && !path.endsWith(".css"));
 	for (const file of code) {
 		const mappings = shiftedMappings(file);
-		if (mappings) return replaceMappings(files, file, mappings);
+		if (mappings) {
+			return replaceMappings(files, file, mappings);
+		}
 	}
 	const first = code[0];
-	if (!first) throw new Error(`${MARKER} L14: no output has a map to corrupt.`);
+	if (!first) {
+		throw new Error(`${MARKER} L14: no output has a map to corrupt.`);
+	}
 	return replaceMappings(files, first, withWrongSegment(first));
 }
 
@@ -892,10 +913,14 @@ function shiftedMappings(file: OutputFile): DecodedLines | undefined {
 	const source = map.sourcesContent[0]!.split("\n");
 	for (const [line, segments] of lines.entries()) {
 		for (const [index, segment] of segments.entries()) {
-			if (segment.length !== 4) continue;
+			if (segment.length !== 4) {
+				continue;
+			}
 			const [column, sourceIndex, fromLine, fromColumn] = segment;
 			const token = sourceTokenAt(source[fromLine]!, fromColumn);
-			if (output[line]!.slice(column + 1, column + 1 + token.length) === token) continue;
+			if (output[line]!.slice(column + 1, column + 1 + token.length) === token) {
+				continue;
+			}
 			segments[index] = [column + 1, sourceIndex, fromLine, fromColumn];
 			return lines;
 		}
@@ -913,7 +938,9 @@ function withWrongSegment(file: OutputFile): DecodedLines {
 	for (const [fromLine, text] of map.sourcesContent[0]!.split("\n").entries()) {
 		for (const { index: fromColumn } of text.matchAll(/\S/g)) {
 			const token = sourceTokenAt(text, fromColumn);
-			if (output[line]!.slice(column, column + token.length) === token) continue;
+			if (output[line]!.slice(column, column + token.length) === token) {
+				continue;
+			}
 			lines[line]!.push([column, 0, fromLine, fromColumn]);
 			lines[line]!.sort((a, b) => a[0] - b[0]);
 			return lines;
@@ -923,10 +950,10 @@ function withWrongSegment(file: OutputFile): DecodedLines {
 }
 
 function replaceMappings(
-	files: readonly OutputFile[],
+	files: ReadonlyArray<OutputFile>,
 	file: OutputFile,
 	mappings: DecodedLines,
-): OutputFile[] {
+): Array<OutputFile> {
 	const encoded = encodedMappings(new TraceMap({ ...file.map!, mappings }));
 	return files.map((each) =>
 		each === file ? { ...each, map: { ...each.map!, mappings: encoded } } : each,
@@ -946,13 +973,17 @@ function withThrowingLeaf(file: OutputFile, leaf: string, statement: string): st
 	const fail = (): never => {
 		throw new Error(`${MARKER} ${file.path} (qwik) has no component$ body that returns.`);
 	};
-	if (body === undefined) return fail();
+	if (body === undefined) {
+		return fail();
+	}
 	for (
 		let close = contents.indexOf("}", body);
 		close !== -1;
 		close = contents.indexOf("}", close + 1)
 	) {
-		if (!/^\s*\)/.test(contents.slice(close + 1))) continue;
+		if (!/^\s*\)/.test(contents.slice(close + 1))) {
+			continue;
+		}
 		let statements: ParsedStatements["statements"];
 		try {
 			({ statements } = parseStatementsSource(contents.slice(body, close)));
@@ -960,7 +991,9 @@ function withThrowingLeaf(file: OutputFile, leaf: string, statement: string): st
 			continue;
 		}
 		const last = statements.at(-1);
-		if (last?.type !== "ReturnStatement" || !last.argument) return fail();
+		if (last?.type !== "ReturnStatement" || !last.argument) {
+			return fail();
+		}
 		const start = body + last.argument.start;
 		const end = body + last.argument.end;
 		const returned = contents.slice(start, end);
@@ -1018,11 +1051,13 @@ export function canaryServePlugin(
 	id: string | null,
 	target: string,
 	casesDir: string,
-	cases: readonly CaseInfo[],
+	cases: ReadonlyArray<CaseInfo>,
 ): Plugin | undefined {
 	const canary = id ? findCanary(id) : undefined;
 	const servedMap = canary?.servedMap;
-	if (!canary || !servedMap || !corrupts(canary, target)) return undefined;
+	if (!canary || !servedMap || !corrupts(canary, target)) {
+		return undefined;
+	}
 	const byId = new Map(cases.map((info) => [info.id, info]));
 	const corrupted = new Map<string, boolean>();
 	const applies = (caseId: string): boolean => {
@@ -1039,10 +1074,14 @@ export function canaryServePlugin(
 		name: `uf-canary-${canary.id}`,
 		enforce: "post",
 		transform(code, moduleId) {
-			if (STYLE_REQUEST.test(moduleId)) return undefined;
+			if (STYLE_REQUEST.test(moduleId)) {
+				return undefined;
+			}
 			const file = moduleId.replace(/[?#].*$/, "");
 			const [area, name, ...rest] = relative(casesDir, file).split(sep);
-			if (area === ".." || !rest.length || !applies(`${area}/${name}`)) return undefined;
+			if (area === ".." || !rest.length || !applies(`${area}/${name}`)) {
+				return undefined;
+			}
 			// One more line break at the end: Vite keeps the load's map when the transforms give back
 			// the code they were given, and nothing else changes a Qwik segment that imports nothing.
 			const served = `${code}\n`;
@@ -1063,10 +1102,10 @@ export function findCanary(id: string): Canary {
 }
 
 /** The kinds of project that verify a canary: the ones its evidence names, cells or loads. */
-export function canaryProjects(canary: Canary): ProjectKind[] {
+export function canaryProjects(canary: Canary): Array<ProjectKind> {
 	return [
 		...new Set([...Object.keys(canary.evidence), ...Object.keys(canary.loadEvidence ?? {})]),
-	] as ProjectKind[];
+	] as Array<ProjectKind>;
 }
 
 /**
@@ -1079,19 +1118,29 @@ export function canaryPlugins(
 	id: string | null,
 	target?: string,
 	references: Readonly<Record<string, string>> = {},
-): CompilerPlugin[] {
-	if (!id) return [];
+): Array<CompilerPlugin> {
+	if (!id) {
+		return [];
+	}
 	const canary = findCanary(id);
-	if (!canary.plugin) return [];
-	if (target !== undefined && !corrupts(canary, target)) return [];
+	if (!canary.plugin) {
+		return [];
+	}
+	if (target !== undefined && !corrupts(canary, target)) {
+		return [];
+	}
 	const plugin = canary.sheets ? canary.plugin() : keepingSheets(canary.plugin());
-	if (!canary.followersOnly) return [plugin];
+	if (!canary.followersOnly) {
+		return [plugin];
+	}
 	if (target === undefined) {
 		throw new Error(
 			`The ${id} canary spares the reference target, so it needs the project's target.`,
 		);
 	}
-	if (target === REFERENCE) return [];
+	if (target === REFERENCE) {
+		return [];
+	}
 	const spared = Object.keys(references).filter((caseId) => references[caseId] === target);
 	return [sparing(plugin, spared)];
 }
@@ -1103,12 +1152,16 @@ export function canaryPlugins(
  * uncorrupted. The sheet follows the hook's files as `compile()` emitted it.
  */
 function keepingSheets(plugin: CompilerPlugin): CompilerPlugin {
-	if (!plugin.output) return plugin;
+	if (!plugin.output) {
+		return plugin;
+	}
 	return {
 		...plugin,
 		output: (files, context) => {
 			const sheets = files.filter(({ path }) => path.endsWith(".css"));
-			if (!sheets.length) return plugin.output!(files, context);
+			if (!sheets.length) {
+				return plugin.output!(files, context);
+			}
 			const own = files.filter(({ path }) => !path.endsWith(".css"));
 			const result = plugin.output!(own, context);
 			return result ? [...result, ...sheets] : undefined;
@@ -1117,11 +1170,15 @@ function keepingSheets(plugin: CompilerPlugin): CompilerPlugin {
 }
 
 /** A plugin that leaves the modules of some cases, by id, as they are. */
-function sparing(plugin: CompilerPlugin, cases: readonly string[]): CompilerPlugin {
-	if (!cases.length) return plugin;
+function sparing(plugin: CompilerPlugin, cases: ReadonlyArray<string>): CompilerPlugin {
+	if (!cases.length) {
+		return plugin;
+	}
 	const spared = (module: UfModule) =>
 		cases.some((id) =>
-			new RegExp(`(?:^|/)${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/[^/]+$`).test(module.file),
+			new RegExp(`(?:^|/)${id.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}/[^/]+$`).test(
+				module.file,
+			),
 		);
 	return {
 		name: plugin.name,
@@ -1130,7 +1187,7 @@ function sparing(plugin: CompilerPlugin, cases: readonly string[]): CompilerPlug
 			: {}),
 		...(plugin.output
 			? {
-					output: (files: readonly OutputFile[], context: OutputHookContext) =>
+					output: (files: ReadonlyArray<OutputFile>, context: OutputHookContext) =>
 						spared(context.module) ? undefined : plugin.output!(files, context),
 				}
 			: {}),
@@ -1139,7 +1196,7 @@ function sparing(plugin: CompilerPlugin, cases: readonly string[]): CompilerPlug
 
 /** Whether a canary corrupts a target: every one, unless it names its targets. */
 export function corrupts(canary: Canary, target: string): boolean {
-	return !canary.targets || (canary.targets as readonly string[]).includes(target);
+	return !canary.targets || (canary.targets as ReadonlyArray<string>).includes(target);
 }
 
 /** A case's source as the compile project compiles it: corrupted by a source canary. */
@@ -1157,15 +1214,20 @@ export function canaryFixes(
 	info: CanaryCase,
 	target: string,
 	source: string,
-	diagnostics: readonly Diagnostic[],
-): readonly Diagnostic[] {
+	diagnostics: ReadonlyArray<Diagnostic>,
+): ReadonlyArray<Diagnostic> {
 	const canary = id ? findCanary(id) : undefined;
-	if (!canary?.fixes || (canary.appliesTo && !canary.appliesTo(info, target))) return diagnostics;
+	if (!canary?.fixes || (canary.appliesTo && !canary.appliesTo(info, target))) {
+		return diagnostics;
+	}
 	return canary.fixes(diagnostics, source, target);
 }
 
 /** A target's output files as the compile project's map check reads them: under a map canary. */
-export function canaryMaps(id: string | null, files: readonly OutputFile[]): readonly OutputFile[] {
+export function canaryMaps(
+	id: string | null,
+	files: ReadonlyArray<OutputFile>,
+): ReadonlyArray<OutputFile> {
 	const canary = id ? findCanary(id) : undefined;
 	return canary?.map ? canary.map(files) : files;
 }
@@ -1230,7 +1292,9 @@ function supports(target: string, capability: string): boolean {
 	const cells: Readonly<Record<string, { support: string } | undefined>> =
 		targets[target]?.capabilities ?? {};
 	const cell = Object.hasOwn(cells, capability) ? cells[capability] : undefined;
-	if (!cell) throw new Error(`${MARKER} "${capability}" is not a capability of ${target}.`);
+	if (!cell) {
+		throw new Error(`${MARKER} "${capability}" is not a capability of ${target}.`);
+	}
 	return cell.support !== "unsupported";
 }
 
@@ -1244,8 +1308,8 @@ function hasListener(element: ElementNode): boolean {
 }
 
 /** Every element of a render tree, through branches and lists. */
-function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[] {
-	return nodes.flatMap((node): ElementNode[] => {
+function elementsOf(nodes: ReadonlyArray<RenderNode | FragmentNode>): Array<ElementNode> {
+	return nodes.flatMap((node): Array<ElementNode> => {
 		switch (node.kind) {
 			case "Element":
 				return [node, ...elementsOf(node.children)];
@@ -1295,19 +1359,27 @@ export function dropFirstRule(file: OutputFile): string {
 			return close === -1 ? text.length : close + 1;
 		}
 		const quote = text[at];
-		if (quote !== '"' && quote !== "'") return at;
+		if (quote !== '"' && quote !== "'") {
+			return at;
+		}
 		let end = at + 1;
-		for (; end < text.length && text[end] !== quote; end++) if (text[end] === "\\") end++;
+		for (; end < text.length && text[end] !== quote; end++) {
+			if (text[end] === "\\") {
+				end++;
+			}
+		}
 		return end;
 	};
 	/** The open blocks: whether each is a `@keyframes` block. */
-	const blocks: boolean[] = [];
+	const blocks: Array<boolean> = [];
 	/** Where the current statement's prelude starts, past whitespace and comments. */
 	let start: number | undefined;
 	for (let at = 0; at < text.length; at++) {
 		const skipped = skip(at);
 		if (skipped !== at) {
-			if (start === undefined && !text.startsWith("/*", at)) start = at;
+			if (start === undefined && !text.startsWith("/*", at)) {
+				start = at;
+			}
 			at = skipped;
 			continue;
 		}
@@ -1319,8 +1391,11 @@ export function dropFirstRule(file: OutputFile): string {
 				let end = at + 1;
 				for (; end < text.length && depth > 0; end++) {
 					end = skip(end);
-					if (text[end] === "{") depth++;
-					else if (text[end] === "}") depth--;
+					if (text[end] === "{") {
+						depth++;
+					} else if (text[end] === "}") {
+						depth--;
+					}
 				}
 				// From the start of its line, and up to the next line that holds anything.
 				const line = text.lastIndexOf("\n", start! - 1) + 1;
@@ -1330,7 +1405,9 @@ export function dropFirstRule(file: OutputFile): string {
 			blocks.push(/^@(?:-[a-z]+-)?keyframes\b/i.test(prelude));
 			start = undefined;
 		} else if (char === "}" || char === ";") {
-			if (char === "}") blocks.pop();
+			if (char === "}") {
+				blocks.pop();
+			}
 			start = undefined;
 		} else if (start === undefined && !/\s/.test(char)) {
 			start = at;
@@ -1349,7 +1426,9 @@ export function skippedByCapability(cell: string): boolean {
 function frameworkRule(target: string): FrameworkRule {
 	const rules: Readonly<Record<string, FrameworkRule | undefined>> = FRAMEWORK_RULES;
 	const rule = rules[target];
-	if (!rule) throw new Error(`${MARKER} L5: no framework rule for the ${target} target.`);
+	if (!rule) {
+		throw new Error(`${MARKER} L5: no framework rule for the ${target} target.`);
+	}
 	return rule;
 }
 
@@ -1382,7 +1461,7 @@ function markText(render: ElementNode | FragmentNode): boolean {
 	const always =
 		render.kind === "Element"
 			? [render]
-			: render.children.flatMap((node): ElementNode[] =>
+			: render.children.flatMap((node): Array<ElementNode> =>
 					node.kind === "Element"
 						? [node]
 						: // A root component's fills render in it (ADR-0054).
@@ -1496,11 +1575,17 @@ function textHolder(element: ElementNode, parent: Namespace): ElementNode | unde
 			: !isVoidElement(element.tag) &&
 				!UNINTERPOLATED_ELEMENTS.has(element.tag) &&
 				!PERMITTED_CHILDREN.has(element.tag);
-	if (holds) return element;
+	if (holds) {
+		return element;
+	}
 	for (const child of element.children) {
-		if (child.kind !== "Element") continue;
+		if (child.kind !== "Element") {
+			continue;
+		}
 		const holder = textHolder(child, namespace);
-		if (holder) return holder;
+		if (holder) {
+			return holder;
+		}
 	}
 	return undefined;
 }
@@ -1526,19 +1611,21 @@ function appendMarker(element: ElementNode | DynamicNode): void {
 function mapRoots(module: UfModule, change: (root: ElementNode) => void): UfModule {
 	const copy = structuredClone(module);
 	for (const { render } of copy.components) {
-		for (const root of rootElements(render)) change(root);
+		for (const root of rootElements(render)) {
+			change(root);
+		}
 	}
 	return copy;
 }
 
 /** A component's root elements: the root, or the elements among a root fragment's roots. */
-function rootElements(render: ElementNode | FragmentNode): ElementNode[] {
+function rootElements(render: ElementNode | FragmentNode): Array<ElementNode> {
 	return render.kind === "Element" ? [render] : topElements(render.children);
 }
 
 /** The elements among some roots, through branches and list bodies. */
-function topElements(nodes: readonly RenderNode[]): ElementNode[] {
-	return nodes.flatMap((node): ElementNode[] => {
+function topElements(nodes: ReadonlyArray<RenderNode>): Array<ElementNode> {
+	return nodes.flatMap((node): Array<ElementNode> => {
 		switch (node.kind) {
 			case "Element":
 				return [node];
@@ -1568,7 +1655,7 @@ function topElements(nodes: readonly RenderNode[]): ElementNode[] {
  * name, or a spread's key (a spread left without keys goes), since the IR sets a name once.
  */
 function setAttribute(element: ElementNode, attribute: StaticAttribute): void {
-	element.attributes = element.attributes.flatMap((existing): Attribute[] => {
+	element.attributes = element.attributes.flatMap((existing): Array<Attribute> => {
 		if (existing.kind === "Spread") {
 			const keys = existing.keys.filter((key) => key.name !== attribute.name);
 			return keys.length ? [{ ...existing, keys }] : [];
@@ -1621,15 +1708,21 @@ function unreachable(value: never): never {
 export function mismatchClosingTag(file: OutputFile): string {
 	const { path, contents } = file;
 	const range = templateRange(path, contents);
-	if (!range) throw new Error(`${MARKER} L3: ${path} has no template to find a closing tag in.`);
+	if (!range) {
+		throw new Error(`${MARKER} L3: ${path} has no template to find a closing tag in.`);
+	}
 	let last: RegExpExecArray | undefined;
 	const closing = /<\/([A-Za-z][A-Za-z0-9-]*)\s*>/g;
 	closing.lastIndex = range.start;
 	for (let match = closing.exec(contents); match; match = closing.exec(contents)) {
-		if (match.index + match[0].length > range.end) break;
+		if (match.index + match[0].length > range.end) {
+			break;
+		}
 		last = match;
 	}
-	if (!last) throw new Error(`${MARKER} L3: ${path} has no closing tag to mismatch.`);
+	if (!last) {
+		throw new Error(`${MARKER} L3: ${path} has no closing tag to mismatch.`);
+	}
 	const replacement = last[1] === "span" ? "div" : "span";
 	return `${contents.slice(0, last.index)}</${replacement}>${contents.slice(last.index + last[0].length)}`;
 }
@@ -1656,14 +1749,20 @@ function widenProps(file: OutputFile, target: string): string {
 		case "solid":
 		case "solid2": {
 			const open = componentParameters(contents);
-			if (open === undefined) return contents;
+			if (open === undefined) {
+				return contents;
+			}
 			const close = matchingBracket(contents, open, "(", ")");
-			if (close === undefined) return contents;
+			if (close === undefined) {
+				return contents;
+			}
 			// The parameter: a destructuring pattern or a name, then its annotation.
 			const pattern =
 				contents[open + 1] === "{" ? matchingBracket(contents, open + 1, "{", "}") : open;
 			const colon = pattern === undefined ? -1 : contents.indexOf(":", pattern + 1);
-			if (colon === -1 || colon > close) return contents;
+			if (colon === -1 || colon > close) {
+				return contents;
+			}
 			return `${contents.slice(0, colon)}: any${contents.slice(close)}`;
 		}
 		case "qwik":
@@ -1718,7 +1817,9 @@ function widenProps(file: OutputFile, target: string): string {
  */
 function withoutTypedFallthrough(file: OutputFile): string {
 	const contents = file.contents.replaceAll('v-bind="$attrs"', 'v-bind="{ ...$attrs }"');
-	if (/\bdefineOptions\(\{[^}]*\binheritAttrs: false\b/.test(contents)) return contents;
+	if (/\bdefineOptions\(\{[^}]*\binheritAttrs: false\b/.test(contents)) {
+		return contents;
+	}
 	// The script declares its options once: a second `defineOptions` is a compile error.
 	return (
 		insertAfter(contents, /\bdefineOptions\(\{ /, "inheritAttrs: false, ") ??
@@ -1735,7 +1836,7 @@ function withoutTypedFallthrough(file: OutputFile): string {
  */
 export function anyExportedTypes(contents: string): string {
 	const reExported = new Set<string>();
-	contents = contents.replace(
+	contents = contents.replaceAll(
 		/\bexport\s+type\s*\{([^}]*)\}\s*from\s*(["'])[^"']*\2;?/g,
 		(_, names: string) =>
 			names
@@ -1755,27 +1856,35 @@ export function anyExportedTypes(contents: string): string {
 	);
 	// A type import of a name the module re-exported now declares it twice (TS2440): the
 	// declaration replaces the import, and an import left with no name goes.
-	contents = contents.replace(
+	contents = contents.replaceAll(
 		/^(\s*)import\s+type\s*\{([^}]*)\}\s*from\s*(["'][^"']*["']);?[ \t]*\n?/gm,
 		(whole, indent: string, names: string, from: string) => {
 			const kept = names
 				.split(",")
 				.map((name) => name.trim())
 				.filter((name) => name && !reExported.has(name.split(/\s+as\s+/).at(-1)!));
-			if (kept.length === names.split(",").filter((name) => name.trim()).length) return whole;
+			if (kept.length === names.split(",").filter((name) => name.trim()).length) {
+				return whole;
+			}
 			return kept.length ? `${indent}import type { ${kept.join(", ")} } from ${from};\n` : "";
 		},
 	);
 	let result = "";
 	let from = 0;
 	for (const match of contents.matchAll(/\bexport\s+(interface|type)\s+([A-Za-z_$][\w$]*)/g)) {
-		if (match.index < from) continue;
+		if (match.index < from) {
+			continue;
+		}
 		let index = match.index + match[0].length;
-		while (/\s/.test(contents[index] ?? "")) index += 1;
+		while (/\s/.test(contents[index] ?? "")) {
+			index += 1;
+		}
 		let parameters = "";
 		if (contents[index] === "<") {
 			const close = matchingBracket(contents, index, "<", ">");
-			if (close === undefined) continue;
+			if (close === undefined) {
+				continue;
+			}
 			parameters = contents.slice(index, close + 1);
 			index = close + 1;
 		}
@@ -1783,7 +1892,9 @@ export function anyExportedTypes(contents: string): string {
 			match[1] === "interface"
 				? interfaceEnd(contents, index)
 				: statementEnd(contents, contents.indexOf("=", index));
-		if (end === undefined) continue;
+		if (end === undefined) {
+			continue;
+		}
 		result += `${contents.slice(from, match.index)}export type ${match[2]}${parameters} = any;`;
 		from = end + 1;
 	}
@@ -1798,13 +1909,17 @@ function interfaceEnd(contents: string, from: number): number | undefined {
 
 /** The index of the `;` that ends a type alias whose `=` is at `from`, outside any bracket. */
 function statementEnd(contents: string, from: number): number | undefined {
-	if (from === -1) return undefined;
+	if (from === -1) {
+		return undefined;
+	}
 	let depth = 0;
 	for (let index = from + 1; index < contents.length; index += 1) {
 		const char = contents[index]!;
 		if (char === '"' || char === "'" || char === "`") {
 			const end = endOfString(contents, index);
-			if (end === undefined) return undefined;
+			if (end === undefined) {
+				return undefined;
+			}
 			index = end;
 		} else if ("{([<".includes(char)) {
 			depth += 1;
@@ -1823,9 +1938,13 @@ function anyTypeArguments(contents: string, opening: RegExp, type = "any"): stri
 	let from = 0;
 	for (const match of contents.matchAll(opening)) {
 		const open = match.index + match[0].length - 1;
-		if (open < from) continue;
+		if (open < from) {
+			continue;
+		}
 		const close = matchingBracket(contents, open, "<", ">");
-		if (close === undefined) continue;
+		if (close === undefined) {
+			continue;
+		}
 		result += `${contents.slice(from, open + 1)}${type}`;
 		from = close;
 	}
@@ -1854,7 +1973,9 @@ export function addRootAttribute(file: OutputFile, attribute: string): string {
 		while (match && match.index < range.end && /^<[A-Z]/.test(match[0])) {
 			match = element.exec(contents);
 		}
-		if (!match || match.index >= range.end) match = first;
+		if (!match || match.index >= range.end) {
+			match = first;
+		}
 	}
 	if (!match || match.index >= range.end) {
 		throw new Error(`${MARKER} ${path} has no root element to add an attribute to.`);
@@ -1873,13 +1994,17 @@ function templateRange(path: string, contents: string): { start: number; end: nu
 	const end = contents.length;
 	if (path.endsWith(".tsx")) {
 		const body = componentBodyStart(contents);
-		if (body === undefined) return undefined;
+		if (body === undefined) {
+			return undefined;
+		}
 		// The component's own `return` gives JSX; a nested function's (`return new Promise<string>`)
 		// must not be taken for it, or its type argument would be taken for the root element.
 		const returned = /\breturn\s*(?:\(\s*)?(?=<[A-Za-z>])/g;
 		returned.lastIndex = body;
 		const start = endOf(returned.exec(contents));
-		if (start === undefined) return undefined;
+		if (start === undefined) {
+			return undefined;
+		}
 		// An inline component the output declares after its own, Solid's keyed list (ADR-0096),
 		// holds JSX that is no template's: the range ends where it starts. The output hook sees the
 		// code before oxfmt, so indentation can't tell where the component ends.
@@ -1889,7 +2014,9 @@ function templateRange(path: string, contents: string): { start: number; end: nu
 	}
 	if (path.endsWith(".ts")) {
 		const start = endOf(/\btemplate:\s*`/.exec(contents));
-		if (start === undefined) return undefined;
+		if (start === undefined) {
+			return undefined;
+		}
 		const close = endOfString(contents, start - 1);
 		return close === undefined ? undefined : { start, end: close };
 	}
@@ -1904,7 +2031,9 @@ function templateRange(path: string, contents: string): { start: number; end: nu
 		return { start: last ? last.index + last[0].length : 0, end };
 	}
 	if (path.endsWith(".astro")) {
-		if (!contents.startsWith("---\n")) return { start: 0, end };
+		if (!contents.startsWith("---\n")) {
+			return { start: 0, end };
+		}
 		const start = endOf(/\n---\n/.exec(contents));
 		return start === undefined ? undefined : { start, end };
 	}
@@ -1930,26 +2059,30 @@ export function injectScript(
 	const fail = (shape: string): never => {
 		throw new Error(`${MARKER} ${path} (${target}) has no ${shape} to inject into.`);
 	};
-	if (path.endsWith(".vue"))
+	if (path.endsWith(".vue")) {
 		return intoScriptBlock(
 			contents,
 			statement,
 			/<script\b[^>]*\bsetup\b[^>]*>/,
 			'<script setup lang="ts">',
 		);
-	if (path.endsWith(".svelte"))
+	}
+	if (path.endsWith(".svelte")) {
 		return intoScriptBlock(
 			contents,
 			statement,
 			/<script\b(?![^>]*\bmodule\b)[^>]*>/,
 			'<script lang="ts">',
 		);
+	}
 	if (path.endsWith(".astro")) {
 		return contents.startsWith("---\n")
 			? `---\n${statement}\n${contents.slice(4)}`
 			: `---\n${statement}\n---\n${contents}`;
 	}
-	if (where === "module") return `${contents.trimEnd()}\n\nexport ${statement}\n`;
+	if (where === "module") {
+		return `${contents.trimEnd()}\n\nexport ${statement}\n`;
+	}
 	if (target === "angular") {
 		// The component's class, after its decorator: a directive the file declares before it (a
 		// listener's option, the scope directive of ADR-0063) has a class of its own.
@@ -1959,7 +2092,9 @@ export function injectScript(
 		// The constructor runs once per render: an existing one's body gets the statement first,
 		// before the effects and hooks it registers (M2's outputs have one).
 		const existing = insertAfter(component, /\bconstructor\s*\([^)]*\)\s*\{/, `\n    ${statement}`);
-		if (existing !== undefined) return `${before}${existing}`;
+		if (existing !== undefined) {
+			return `${before}${existing}`;
+		}
 		// The class's members follow: a constructor before them still runs once per render.
 		const start = classBodyStart(component);
 		return start === undefined
@@ -1977,7 +2112,7 @@ export function injectScript(
  * A Qwik output whose value import from `@qwik.dev/core` also names `names`: each one it lacks
  * is added to it, so the canary's code can call it.
  */
-export function withQwikImports(file: OutputFile, names: readonly string[]): string {
+export function withQwikImports(file: OutputFile, names: ReadonlyArray<string>): string {
 	const { path, contents } = file;
 	const declaration = /^import \{([^}]*)\} from "@qwik\.dev\/core";$/m.exec(contents);
 	if (!declaration) {
@@ -2006,27 +2141,41 @@ function componentBodyStart(contents: string): number | undefined {
 		let index = qwik.index + qwik[0].length;
 		if (contents[index] === "<") {
 			const close = matchingBracket(contents, index, "<", ">");
-			if (close === undefined) return undefined;
+			if (close === undefined) {
+				return undefined;
+			}
 			index = close + 1;
 		}
 		const call = /^\s*\(\s*/.exec(contents.slice(index));
-		if (!call) return undefined;
+		if (!call) {
+			return undefined;
+		}
 		index += call[0].length;
 		// A generic component's arrow takes its type parameters first (ADR-0068).
 		if (contents[index] === "<") {
 			const parameters = matchingBracket(contents, index, "<", ">");
-			if (parameters === undefined || contents[parameters + 1] !== "(") return undefined;
+			if (parameters === undefined || contents[parameters + 1] !== "(") {
+				return undefined;
+			}
 			index = parameters + 1;
 		}
-		if (contents[index] !== "(") return undefined;
+		if (contents[index] !== "(") {
+			return undefined;
+		}
 		const close = matchingBracket(contents, index, "(", ")");
-		if (close === undefined) return undefined;
+		if (close === undefined) {
+			return undefined;
+		}
 		return endAt(contents, close + 1, /^\s*=>\s*\{/);
 	}
 	const open = componentParameters(contents);
-	if (open === undefined) return undefined;
+	if (open === undefined) {
+		return undefined;
+	}
 	const close = matchingBracket(contents, open, "(", ")");
-	if (close === undefined) return undefined;
+	if (close === undefined) {
+		return undefined;
+	}
 	return endAt(contents, close + 1, /^[^{]*\{/);
 }
 
@@ -2037,11 +2186,15 @@ function componentBodyStart(contents: string): number | undefined {
  */
 function classBodyStart(contents: string): number | undefined {
 	const declaration = /export\s+(?:default\s+)?class\s+[\w$]+\s*/.exec(contents);
-	if (!declaration) return undefined;
+	if (!declaration) {
+		return undefined;
+	}
 	let index = declaration.index + declaration[0].length;
 	if (contents[index] === "<") {
 		const parameters = matchingBracket(contents, index, "<", ">");
-		if (parameters === undefined) return undefined;
+		if (parameters === undefined) {
+			return undefined;
+		}
 		index = parameters + 1;
 	}
 	return endAt(contents, index, /^[^{]*\{/);
@@ -2053,7 +2206,9 @@ function classBodyStart(contents: string): number | undefined {
  */
 function componentParameters(contents: string): number | undefined {
 	const component = /\bfunction\s+([A-Z][\w$]*)\s*(?=[<(])/.exec(contents);
-	if (!component) return undefined;
+	if (!component) {
+		return undefined;
+	}
 	// React's async component (ADR-0101) renders its template in `<Name>Resolved`, which the
 	// exported one renders under `<Suspense>`: that function's parameters are the template's.
 	const name = component[1]!;
@@ -2062,10 +2217,14 @@ function componentParameters(contents: string): number | undefined {
 	);
 	const own = resolved && contents.includes(`<${name}Resolved `) ? resolved : component;
 	const index = own.index + own[0].length;
-	if (contents[index] !== "<") return index;
+	if (contents[index] !== "<") {
+		return index;
+	}
 	// A constraint may hold brackets of its own.
 	const parameters = matchingBracket(contents, index, "<", ">");
-	if (parameters === undefined) return undefined;
+	if (parameters === undefined) {
+		return undefined;
+	}
 	const open = endAt(contents, parameters + 1, /^\s*/)!;
 	return contents[open] === "(" ? open : undefined;
 }
@@ -2081,14 +2240,20 @@ function anyGenericArrowProps(contents: string): string {
 	let from = 0;
 	for (const call of contents.matchAll(/\bcomponent\$\(\s*</g)) {
 		const parameters = matchingBracket(contents, call.index + call[0].length - 1, "<", ">");
-		if (parameters === undefined || contents[parameters + 1] !== "(") continue;
+		if (parameters === undefined || contents[parameters + 1] !== "(") {
+			continue;
+		}
 		const open = parameters + 1;
 		const close = matchingBracket(contents, open, "(", ")");
-		if (close === undefined) continue;
+		if (close === undefined) {
+			continue;
+		}
 		const pattern =
 			contents[open + 1] === "{" ? matchingBracket(contents, open + 1, "{", "}") : open;
 		const colon = pattern === undefined ? -1 : contents.indexOf(":", pattern + 1);
-		if (colon === -1 || colon > close) continue;
+		if (colon === -1 || colon > close) {
+			continue;
+		}
 		result += `${contents.slice(from, colon)}: any`;
 		from = close;
 	}
@@ -2116,13 +2281,17 @@ function matchingBracket(
 		const char = contents[index]!;
 		if (char === '"' || char === "'" || char === "`") {
 			const end = endOfString(contents, index);
-			if (end === undefined) return undefined;
+			if (end === undefined) {
+				return undefined;
+			}
 			index = end;
 		} else if (char === opening) {
 			depth += 1;
 		} else if (char === closing && !(char === ">" && contents[index - 1] === "=")) {
 			depth -= 1;
-			if (depth === 0) return index;
+			if (depth === 0) {
+				return index;
+			}
 		}
 	}
 	return undefined;
@@ -2132,8 +2301,11 @@ function matchingBracket(
 function endOfString(contents: string, open: number): number | undefined {
 	const quote = contents[open]!;
 	for (let index = open + 1; index < contents.length; index += 1) {
-		if (contents[index] === "\\") index += 1;
-		else if (contents[index] === quote) return index;
+		if (contents[index] === "\\") {
+			index += 1;
+		} else if (contents[index] === quote) {
+			return index;
+		}
 	}
 	return undefined;
 }
@@ -2152,11 +2324,13 @@ function intoScriptBlock(
 
 function insertAfter(contents: string, pattern: RegExp, text: string): string | undefined {
 	const match = pattern.exec(contents);
-	if (!match) return undefined;
+	if (!match) {
+		return undefined;
+	}
 	const end = match.index + match[0].length;
 	return `${contents.slice(0, end)}${text}${contents.slice(end)}`;
 }
 
 function escapeRegExp(text: string): string {
-	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	return text.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }

@@ -75,7 +75,7 @@ export function lowerList(
 		const nullable = outsideKinds.every((kind) => kind === "null" || kind === "undefined");
 		// `source?.map(…)`, and a chain a `?.` in the source ends, render nothing for a nullish
 		// source, as `(source ?? []).map(…)` does.
-		const fixes: Fix[] =
+		const fixes: Array<Fix> =
 			(optional || checked.shortCircuits) && nullable && token
 				? [
 						{
@@ -193,11 +193,13 @@ export function lowerList(
 		return undefined;
 	}
 	// The loop variables: in scope in the key and the body.
-	const variables: LoopVariable[] = [];
+	const variables: Array<LoopVariable> = [];
 	if (valid) {
 		for (const [position, parameter] of parameters.entries()) {
 			const identifier = parameter as AST.BindingIdentifier;
-			if (shadowing(identifier, render)) valid = false;
+			if (shadowing(identifier, render)) {
+				valid = false;
+			}
 			const binding = createBinding(identifier.name, "loopVar", {
 				start: identifier.start,
 				end: identifier.start + identifier.name.length,
@@ -237,7 +239,9 @@ export function lowerList(
 	) {
 		return undefined;
 	}
-	if (!key || !valid || reporter.hasErrorsSince(mark)) return undefined;
+	if (!key || !valid || reporter.hasErrorsSince(mark)) {
+		return undefined;
+	}
 	const [item, index] = variables;
 	return createFor(list.expression, item!.id, key, lowered.element, span(call), index?.id);
 }
@@ -248,7 +252,9 @@ function bodyOf(callback: AST.ArrowFunctionExpression): AST.JSXElement | undefin
 	if (body.type === "BlockStatement") {
 		const statements = body.body.filter((statement) => statement.type !== "EmptyStatement");
 		const only = statements.length === 1 ? statements[0] : undefined;
-		if (only?.type !== "ReturnStatement" || !only.argument) return undefined;
+		if (only?.type !== "ReturnStatement" || !only.argument) {
+			return undefined;
+		}
 		body = only.argument;
 	}
 	return body.type === "JSXElement" ? body : undefined;
@@ -263,10 +269,8 @@ function bodyProblem(callback: AST.ArrowFunctionExpression): { message: string; 
 	const { body } = callback;
 	const returned =
 		body.type === "BlockStatement"
-			? (
-					body.body.find((statement) => statement.type === "ReturnStatement") as
-						| AST.ReturnStatement
-						| undefined
+			? body.body.find(
+					(statement): statement is AST.ReturnStatement => statement.type === "ReturnStatement",
 				)?.argument
 			: body;
 	if (returned?.type === "JSXFragment") {
@@ -312,7 +316,7 @@ function lowerKey(
 	attribute: AST.JSXAttribute | undefined,
 	body: AST.JSXElement,
 	callback: AST.ArrowFunctionExpression,
-	variables: readonly LoopVariable[],
+	variables: ReadonlyArray<LoopVariable>,
 	render: RenderContext,
 ) {
 	const { reporter } = render;
@@ -401,13 +405,15 @@ function indexKeyFix(
 	render: RenderContext,
 ): Fix {
 	const { source } = render;
-	const [item, existing] = callback.params as AST.BindingIdentifier[];
+	const [item, existing] = callback.params as Array<AST.BindingIdentifier>;
 	const component = source.slice(render.component.start, render.component.end);
 	let name = existing?.name;
 	const edits: Fix["edits"] = [];
 	if (!name) {
 		name = "index";
-		for (let suffix = 2; !free(name, component, render); suffix++) name = `index${suffix}`;
+		for (let suffix = 2; !free(name, component, render); suffix++) {
+			name = `index${suffix}`;
+		}
 		const parenthesised = source[callback.start] === "(";
 		edits.push(
 			parenthesised

@@ -115,43 +115,45 @@ const codeReferenceKinds = {
  * Every kind of render node. The coverage gate requires a corpus case for each. A root
  * `Fragment` is not a render node; the `fragment` capability covers it.
  */
-export const RENDER_NODE_KINDS: readonly RenderNode["kind"][] = Object.keys(
+export const RENDER_NODE_KINDS: ReadonlyArray<RenderNode["kind"]> = Object.keys(
 	renderNodeKinds,
-) as RenderNode["kind"][];
+) as Array<RenderNode["kind"]>;
 
 /**
  * Every kind of attribute, an element's or a component's. The coverage gate requires a corpus case
  * for each.
  */
-export const ATTRIBUTE_KINDS: readonly AnyAttribute["kind"][] = Object.keys(
+export const ATTRIBUTE_KINDS: ReadonlyArray<AnyAttribute["kind"]> = Object.keys(
 	attributeKinds,
-) as AnyAttribute["kind"][];
+) as Array<AnyAttribute["kind"]>;
 
 /** Every kind of binding. The coverage gate requires a corpus case for each. */
-export const BINDING_KINDS: readonly BindingKind[] = Object.keys(bindingKinds) as BindingKind[];
+export const BINDING_KINDS: ReadonlyArray<BindingKind> = Object.keys(
+	bindingKinds,
+) as Array<BindingKind>;
 
 /** Every kind of setup item. The coverage gate requires a corpus case for each. */
-export const SETUP_ITEM_KINDS: readonly SetupItem["kind"][] = Object.keys(
+export const SETUP_ITEM_KINDS: ReadonlyArray<SetupItem["kind"]> = Object.keys(
 	setupItemKinds,
-) as SetupItem["kind"][];
+) as Array<SetupItem["kind"]>;
 
 /** Every kind of event handler. The coverage gate requires a corpus case for each. */
-export const HANDLER_KINDS: readonly Handler["kind"][] = Object.keys(
-	handlerKinds,
-) as Handler["kind"][];
+export const HANDLER_KINDS: ReadonlyArray<Handler["kind"]> = Object.keys(handlerKinds) as Array<
+	Handler["kind"]
+>;
 
 /** Every kind of watch source. The coverage gate requires a corpus case for each. */
-export const WATCH_SOURCE_KINDS: readonly WatchSource["kind"][] = Object.keys(
+export const WATCH_SOURCE_KINDS: ReadonlyArray<WatchSource["kind"]> = Object.keys(
 	watchSourceKinds,
-) as WatchSource["kind"][];
+) as Array<WatchSource["kind"]>;
 
 /**
  * Every kind of reference in setup code, and in render expressions, whose kinds are among them.
  * The coverage gate requires a corpus case for each.
  */
-export const CODE_REFERENCE_KINDS: readonly CodeReference["kind"][] = Object.keys(
+export const CODE_REFERENCE_KINDS: ReadonlyArray<CodeReference["kind"]> = Object.keys(
 	codeReferenceKinds,
-) as CodeReference["kind"][];
+) as Array<CodeReference["kind"]>;
 
 /** A node {@link walk} visits: a render node, or a component's root fragment. */
 export type VisitedNode = RenderNode | FragmentNode;
@@ -173,7 +175,7 @@ export interface Visitor {
  * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', a `Teleport`'s
  * or a `Transition`'s content, and nothing for text.
  */
-export function childrenOf(node: VisitedNode): readonly RenderNode[] {
+export function childrenOf(node: VisitedNode): ReadonlyArray<RenderNode> {
 	switch (node.kind) {
 		case "Element":
 		case "Fragment":
@@ -200,8 +202,12 @@ export function childrenOf(node: VisitedNode): readonly RenderNode[] {
 
 /** Walks a render tree depth-first, in document order. */
 export function walk(node: VisitedNode, visitor: Visitor, parent?: VisitedNode): void {
-	if (visitor.enter?.(node, parent) === false) return;
-	for (const child of childrenOf(node)) walk(child, visitor, node);
+	if (visitor.enter?.(node, parent) === false) {
+		return;
+	}
+	for (const child of childrenOf(node)) {
+		walk(child, visitor, node);
+	}
 	visitor.leave?.(node, parent);
 }
 
@@ -232,29 +238,43 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
 		codeReferenceKinds: new Set(),
 	};
 	const setup = (owner: UfComponent | UfComposable) => {
-		for (const binding of owner.bindings) features.bindingKinds.add(binding.kind);
+		for (const binding of owner.bindings) {
+			features.bindingKinds.add(binding.kind);
+		}
 		for (const item of owner.setup) {
 			features.setupItemKinds.add(item.kind);
 			if (item.kind === "Watch") {
-				for (const source of item.sources) features.watchSourceKinds.add(source.kind);
+				for (const source of item.sources) {
+					features.watchSourceKinds.add(source.kind);
+				}
 			}
 		}
 		for (const { code } of codeOf(owner)) {
-			for (const ref of code.refs) features.codeReferenceKinds.add(ref.kind);
+			for (const ref of code.refs) {
+				features.codeReferenceKinds.add(ref.kind);
+			}
 		}
 	};
-	for (const composable of module.composables ?? []) setup(composable);
+	for (const composable of module.composables ?? []) {
+		setup(composable);
+	}
 	for (const directive of module.directives ?? []) {
-		for (const binding of directive.bindings) features.bindingKinds.add(binding.kind);
+		for (const binding of directive.bindings) {
+			features.bindingKinds.add(binding.kind);
+		}
 		for (const hook of directive.hooks) {
-			for (const ref of hook.body.refs) features.codeReferenceKinds.add(ref.kind);
+			for (const ref of hook.body.refs) {
+				features.codeReferenceKinds.add(ref.kind);
+			}
 		}
 	}
 	for (const component of module.components) {
 		setup(component);
 		walk(component.render, {
 			enter(node) {
-				if (node.kind === "Fragment") return;
+				if (node.kind === "Fragment") {
+					return;
+				}
 				features.nodeKinds.add(node.kind);
 				for (const attribute of attributesOf(node)) {
 					features.attributeKinds.add(attribute.kind);
@@ -265,14 +285,16 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
 			},
 		});
 		for (const { expression } of expressionsOf(component)) {
-			for (const ref of expression.refs) features.codeReferenceKinds.add(ref.kind);
+			for (const ref of expression.refs) {
+				features.codeReferenceKinds.add(ref.kind);
+			}
 		}
 	}
 	return features;
 }
 
 /** The attributes of a node: an element's, a component's or a `Dynamic` node's, or none. */
-function attributesOf(node: VisitedNode): readonly AnyAttribute[] {
+function attributesOf(node: VisitedNode): ReadonlyArray<AnyAttribute> {
 	switch (node.kind) {
 		case "Element":
 		case "Component":
@@ -307,24 +329,30 @@ export interface LocatedExpression {
  * `base` prefixes each path, such as `/components/0`. Setup code and handlers are
  * {@link codeOf}'s: a template reads only these (ADR-0045).
  */
-export function expressionsOf(component: UfComponent, base = ""): LocatedExpression[] {
-	const found: LocatedExpression[] = [];
+export function expressionsOf(component: UfComponent, base = ""): Array<LocatedExpression> {
+	const found: Array<LocatedExpression> = [];
 	const add = (expression: Expression, path: string) => found.push({ expression, path });
 	for (const [index, prop] of component.props.entries()) {
-		if (prop.default) add(prop.default, `${base}/props/${index}/default`);
+		if (prop.default) {
+			add(prop.default, `${base}/props/${index}/default`);
+		}
 	}
 	for (const [index, item] of component.setup.entries()) {
-		if (item.kind === "Model" && item.default) add(item.default, `${base}/setup/${index}/default`);
+		if (item.kind === "Model" && item.default) {
+			add(item.default, `${base}/setup/${index}/default`);
+		}
 	}
-	const attributes = (node: { attributes: readonly AnyAttribute[] }, path: string) => {
+	const attributes = (node: { attributes: ReadonlyArray<AnyAttribute> }, path: string) => {
 		for (const [index, attribute] of node.attributes.entries()) {
 			attributeExpressions(attribute, `${path}/attributes/${index}`, add);
 		}
 	};
-	const fills = (list: readonly SlotFill[], path: string) => {
+	const fills = (list: ReadonlyArray<SlotFill>, path: string) => {
 		for (const [index, fill] of list.entries()) {
 			const at = `${path}/${index}`;
-			if (fill.parameter?.default) add(fill.parameter.default, `${at}/parameter/default`);
+			if (fill.parameter?.default) {
+				add(fill.parameter.default, `${at}/parameter/default`);
+			}
 			for (const [child, nested] of fill.children.entries()) {
 				visit(nested, `${at}/children/${child}`);
 			}
@@ -343,7 +371,9 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
 				fills(node.fills, `${path}/fills`);
 				return;
 			case "SlotOutlet":
-				if (node.props) add(node.props, `${path}/props`);
+				if (node.props) {
+					add(node.props, `${path}/props`);
+				}
 				for (const [index, child] of node.fallback.entries()) {
 					visit(child, `${path}/fallback/${index}`);
 				}
@@ -369,7 +399,9 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
 			case "If":
 				for (const [index, branch] of node.branches.entries()) {
 					const at = `${path}/branches/${index}`;
-					if (branch.condition) add(branch.condition, `${at}/condition`);
+					if (branch.condition) {
+						add(branch.condition, `${at}/condition`);
+					}
 					for (const [child, nested] of branch.children.entries()) {
 						visit(nested, `${at}/children/${child}`);
 					}
@@ -410,8 +442,11 @@ function attributeExpressions(
 		case "Class":
 			for (const [index, item] of attribute.items.entries()) {
 				const at = `${path}/items/${index}`;
-				if (item.kind === "Toggle") add(item.condition, `${at}/condition`);
-				else if (item.kind === "Dynamic") add(item.value, `${at}/value`);
+				if (item.kind === "Toggle") {
+					add(item.condition, `${at}/condition`);
+				} else if (item.kind === "Dynamic") {
+					add(item.value, `${at}/value`);
+				}
 			}
 			return;
 		case "Style":
@@ -420,7 +455,9 @@ function attributeExpressions(
 					add(declaration.value, `${path}/declarations/${index}/value`);
 				}
 			}
-			if (attribute.value) add(attribute.value, `${path}/value`);
+			if (attribute.value) {
+				add(attribute.value, `${path}/value`);
+			}
 			return;
 		case "Event":
 		case "Ref":
@@ -468,7 +505,10 @@ export interface LocatedFunction {
  * A setup function's body is client code: what a template or a getter may call of it, its
  * summary says (`summarize`).
  */
-export function functionsOf(component: UfComponent | UfComposable, base = ""): LocatedFunction[] {
+export function functionsOf(
+	component: UfComponent | UfComposable,
+	base = "",
+): Array<LocatedFunction> {
 	return partsOf(component, base).flatMap((part) => ("function" in part ? [part] : []));
 }
 
@@ -485,8 +525,8 @@ interface LocatedValue {
 function partsOf(
 	component: UfComponent | UfComposable,
 	base: string,
-): (LocatedValue | LocatedFunction)[] {
-	const parts: (LocatedValue | LocatedFunction)[] = [];
+): Array<LocatedValue | LocatedFunction> {
+	const parts: Array<LocatedValue | LocatedFunction> = [];
 	const add = (
 		fn: FunctionCode,
 		path: string,
@@ -498,7 +538,9 @@ function partsOf(
 		switch (item.kind) {
 			case "State":
 			case "Variable":
-				if (item.initial) parts.push({ value: item.initial, path: `${path}/initial` });
+				if (item.initial) {
+					parts.push({ value: item.initial, path: `${path}/initial` });
+				}
 				break;
 			case "Await":
 			case "Const":
@@ -528,17 +570,22 @@ function partsOf(
 				parts.push({ value: item.value, path: `${path}/value` });
 				break;
 			case "Inject":
-				if (item.fallback) parts.push({ value: item.fallback, path: `${path}/fallback` });
+				if (item.fallback) {
+					parts.push({ value: item.fallback, path: `${path}/fallback` });
+				}
 				break;
 			case "Use":
 				// A value is evaluated once, a getter read reactively, a callback called from client
 				// code (ADR-0069).
 				for (const [position, argument] of item.arguments.entries()) {
 					const at = `${path}/arguments/${position}`;
-					if (argument.kind === "Value") parts.push({ value: argument.value, path: `${at}/value` });
-					else if (argument.kind === "Getter")
+					if (argument.kind === "Value") {
+						parts.push({ value: argument.value, path: `${at}/value` });
+					} else if (argument.kind === "Getter") {
 						add(argument.getter, `${at}/getter`, "pure", "getter");
-					else add(argument.callback, `${at}/callback`, "client", "function");
+					} else {
+						add(argument.callback, `${at}/callback`, "client", "function");
+					}
 				}
 				break;
 			// A development-only block runs where the setup does, as a value is read (ADR-0117).
@@ -553,7 +600,9 @@ function partsOf(
 				unreachable(item);
 		}
 	}
-	if (!("render" in component)) return parts;
+	if (!("render" in component)) {
+		return parts;
+	}
 	walkHandlers(component.render, `${base}/render`, (attribute, path) => {
 		if (attribute.handler.kind === "Inline") {
 			add(attribute.handler.function, `${path}/handler/function`, "client", "handler");
@@ -571,14 +620,14 @@ function walkHandlers(
 	path: string,
 	visit: (attribute: EventAttribute | ListenerAttribute, path: string) => void,
 ): void {
-	const attributes = (list: readonly AnyAttribute[]) => {
+	const attributes = (list: ReadonlyArray<AnyAttribute>) => {
 		for (const [index, attribute] of list.entries()) {
 			if (attribute.kind === "Event" || attribute.kind === "Listener") {
 				visit(attribute, `${path}/attributes/${index}`);
 			}
 		}
 	};
-	const fills = (list: readonly SlotFill[]) => {
+	const fills = (list: ReadonlyArray<SlotFill>) => {
 		for (const [index, fill] of list.entries()) {
 			for (const [child, nested] of fill.children.entries()) {
 				walkHandlers(nested, `${path}/fills/${index}/children/${child}`, visit);
@@ -647,9 +696,11 @@ export interface LocatedCode {
  * ({@link functionsOf}), and after each body the conditions of its `preventDefault()` and
  * `stopPropagation()` calls, which repeat a part of it. `base` prefixes each path.
  */
-export function codeOf(component: UfComponent | UfComposable, base = ""): LocatedCode[] {
-	return partsOf(component, base).flatMap((part): LocatedCode[] => {
-		if ("value" in part) return [{ code: part.value, path: part.path, context: "pure" }];
+export function codeOf(component: UfComponent | UfComposable, base = ""): Array<LocatedCode> {
+	return partsOf(component, base).flatMap((part): Array<LocatedCode> => {
+		if ("value" in part) {
+			return [{ code: part.value, path: part.path, context: "pure" }];
+		}
 		const { function: fn, path, context } = part;
 		return [
 			{ code: fn.body, path: `${path}/body`, context },
@@ -684,8 +735,8 @@ type AddSpan = (span: Span, path: string) => void;
  * another file, so they have none. What points into the source (diagnostics, a plugin's module)
  * is checked span by span with it.
  */
-export function spansOf(module: UfModule): LocatedSpan[] {
-	const found: LocatedSpan[] = [];
+export function spansOf(module: UfModule): Array<LocatedSpan> {
+	const found: Array<LocatedSpan> = [];
 	const at: AddSpan = (span, path) => found.push({ span, path });
 	const add: AddSpan = (span, path) => at(span, `${path}/span`);
 	for (const [index, component] of module.components.entries()) {
@@ -718,12 +769,16 @@ export function spansOf(module: UfModule): LocatedSpan[] {
 			add(slots.type.span, `${base}/slots/type`);
 			for (const [slot, declaration] of slots.slots.entries()) {
 				const path = `${base}/slots/slots/${slot}`;
-				if (declaration.props) add(declaration.props.span, `${path}/props`);
+				if (declaration.props) {
+					add(declaration.props.span, `${path}/props`);
+				}
 				add(declaration.span, path);
 			}
 			add(slots.span, `${base}/slots`);
 		}
-		if (component.exposes) add(component.exposes.span, `${base}/exposes`);
+		if (component.exposes) {
+			add(component.exposes.span, `${base}/exposes`);
+		}
 		setupSpans(component, base, add);
 		walkSpans(component.render, `${base}/render`, add);
 		for (const located of expressionsOf(component, base)) {
@@ -748,7 +803,9 @@ export function spansOf(module: UfModule): LocatedSpan[] {
 			add(span, `${base}/returns/${member}`);
 		}
 	}
-	for (const [index, entry] of module.exports.entries()) add(entry.span, `/exports/${index}`);
+	for (const [index, entry] of module.exports.entries()) {
+		add(entry.span, `/exports/${index}`);
+	}
 	for (const [index, declaration] of module.types.entries()) {
 		add(declaration.span, `/types/${index}`);
 	}
@@ -786,14 +843,18 @@ export function spansOf(module: UfModule): LocatedSpan[] {
 	}
 	for (const [index, constant] of (module.constants ?? []).entries()) {
 		const path = `/constants/${index}`;
-		if (constant.type) add(constant.type.span, `${path}/type`);
+		if (constant.type) {
+			add(constant.type.span, `${path}/type`);
+		}
 		codeSpans(constant.value, `${path}/value`, at);
 		add(constant.span, path);
 	}
 	for (const [index, directive] of (module.directives ?? []).entries()) {
 		const path = `/directives/${index}`;
 		add(directive.value.span, `${path}/value`);
-		if (directive.element) add(directive.element.span, `${path}/element`);
+		if (directive.element) {
+			add(directive.element.span, `${path}/element`);
+		}
 		for (const [hook, { body, span }] of directive.hooks.entries()) {
 			codeSpans(body, `${path}/hooks/${hook}/body`, at);
 			add(span, `${path}/hooks/${hook}`);
@@ -808,14 +869,18 @@ export function spansOf(module: UfModule): LocatedSpan[] {
 
 /** The spans of a component's or a composable's type parameters. */
 function typeParameterSpans(
-	parameters: readonly TypeParameter[] | undefined,
+	parameters: ReadonlyArray<TypeParameter> | undefined,
 	base: string,
 	add: AddSpan,
 ): void {
 	for (const [index, parameter] of (parameters ?? []).entries()) {
 		const path = `${base}/typeParameters/${index}`;
-		if (parameter.constraint) add(parameter.constraint.span, `${path}/constraint`);
-		if (parameter.default) add(parameter.default.span, `${path}/default`);
+		if (parameter.constraint) {
+			add(parameter.constraint.span, `${path}/constraint`);
+		}
+		if (parameter.default) {
+			add(parameter.default.span, `${path}/default`);
+		}
 		add(parameter.span, path);
 	}
 }
@@ -830,7 +895,9 @@ function setupSpans(owner: UfComponent | UfComposable, base: string, add: AddSpa
 	}
 	for (const [position, item] of owner.setup.entries()) {
 		const path = `${base}/setup/${position}`;
-		if ("type" in item && item.type) add(item.type.span, `${path}/type`);
+		if ("type" in item && item.type) {
+			add(item.type.span, `${path}/type`);
+		}
 		if (item.kind === "Watch") {
 			for (const [source, { span }] of item.sources.entries()) {
 				add(span, `${path}/sources/${source}`);
@@ -858,13 +925,17 @@ function ownerCodeSpans(
 	for (const located of functionsOf(owner, base)) {
 		functionSpans(located.function, located.path, add);
 	}
-	for (const located of codeOf(owner, base)) codeSpans(located.code, located.path, at);
+	for (const located of codeOf(owner, base)) {
+		codeSpans(located.code, located.path, at);
+	}
 }
 
 /** The spans of an expression and of its references. */
 function expressionSpans(value: Expression, path: string, add: AddSpan): void {
 	add(value.span, path);
-	for (const [index, ref] of value.refs.entries()) add(ref.span, `${path}/refs/${index}`);
+	for (const [index, ref] of value.refs.entries()) {
+		add(ref.span, `${path}/refs/${index}`);
+	}
 }
 
 /** The spans of a piece of code and of its references, a write's and an emit's parts included. */
@@ -875,7 +946,9 @@ function codeSpans(code: Code, path: string, at: AddSpan): void {
 		at(ref.span, `${pointer}/span`);
 		if (ref.kind === "Write") {
 			at(ref.target, `${pointer}/target`);
-			if (ref.value) at(ref.value, `${pointer}/value`);
+			if (ref.value) {
+				at(ref.value, `${pointer}/value`);
+			}
 		} else if (ref.kind === "Emit") {
 			for (const [argument, span] of ref.arguments.entries()) {
 				at(span, `${pointer}/arguments/${argument}`);
@@ -892,7 +965,9 @@ function functionSpans(fn: FunctionCode, path: string, add: AddSpan): void {
 	for (const [index, parameter] of fn.parameters.entries()) {
 		parameterSpans(parameter, `${path}/parameters/${index}`, add);
 	}
-	if (fn.returnType) add(fn.returnType.span, `${path}/returnType`);
+	if (fn.returnType) {
+		add(fn.returnType.span, `${path}/returnType`);
+	}
 	for (const [index, control] of (fn.eventControls ?? []).entries()) {
 		add(control.span, `${path}/eventControls/${index}`);
 	}
@@ -904,9 +979,15 @@ function functionSpans(fn: FunctionCode, path: string, add: AddSpan): void {
  * references, and itself.
  */
 function parameterSpans(parameter: Parameter, at: string, add: AddSpan): void {
-	if (parameter.pattern) add(parameter.pattern.span, `${at}/pattern`);
-	if (parameter.type) add(parameter.type.span, `${at}/type`);
-	if (parameter.default) expressionSpans(parameter.default, `${at}/default`, add);
+	if (parameter.pattern) {
+		add(parameter.pattern.span, `${at}/pattern`);
+	}
+	if (parameter.type) {
+		add(parameter.type.span, `${at}/type`);
+	}
+	if (parameter.default) {
+		expressionSpans(parameter.default, `${at}/default`, add);
+	}
 	add(parameter.span, at);
 }
 
@@ -935,7 +1016,9 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
 			}
 			return;
 		case "Spread":
-			for (const [item, { span }] of attribute.keys.entries()) add(span, `${at}/keys/${item}`);
+			for (const [item, { span }] of attribute.keys.entries()) {
+				add(span, `${at}/keys/${item}`);
+			}
 			return;
 		case "Event":
 		case "Listener":
@@ -950,14 +1033,18 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
  * The spans of fills: each fill, its parameter (a default's expression is
  * {@link expressionsOf}'s) and its children.
  */
-function fillSpans(fills: readonly SlotFill[], path: string, add: AddSpan): void {
+function fillSpans(fills: ReadonlyArray<SlotFill>, path: string, add: AddSpan): void {
 	for (const [index, fill] of fills.entries()) {
 		const at = `${path}/${index}`;
 		add(fill.span, at);
 		if (fill.parameter) {
 			const { parameter } = fill;
-			if (parameter.pattern) add(parameter.pattern.span, `${at}/parameter/pattern`);
-			if (parameter.type) add(parameter.type.span, `${at}/parameter/type`);
+			if (parameter.pattern) {
+				add(parameter.pattern.span, `${at}/parameter/pattern`);
+			}
+			if (parameter.type) {
+				add(parameter.type.span, `${at}/parameter/type`);
+			}
 			add(parameter.span, `${at}/parameter`);
 		}
 		for (const [child, nested] of fill.children.entries()) {

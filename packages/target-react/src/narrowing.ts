@@ -28,8 +28,10 @@ export function assertedPaths(
 	reference: BindingReference,
 	binding: Binding,
 	start: number = reference.span.start,
-): NarrowedPath[] {
-	if (!reference.narrowed || plan.narrowedReads.has(start)) return [];
+): Array<NarrowedPath> {
+	if (!reference.narrowed || plan.narrowedReads.has(start)) {
+		return [];
+	}
 	switch (binding.kind) {
 		case "derived":
 			return plan.derived.get(binding.id)?.current
@@ -77,7 +79,7 @@ export function assertedPaths(
  */
 export function assertedCode(
 	code: Code,
-	asserts: (reference: BindingReference) => readonly NarrowedPath[],
+	asserts: (reference: BindingReference) => ReadonlyArray<NarrowedPath>,
 ): { code: Code; original: (position: number) => number } {
 	const at = code.refs
 		.flatMap((reference) =>
@@ -88,7 +90,9 @@ export function assertedCode(
 				: [],
 		)
 		.toSorted((a, b) => a - b);
-	if (at.length === 0) return { code, original: (position) => position };
+	if (at.length === 0) {
+		return { code, original: (position) => position };
+	}
 	const offset = code.span.start;
 	let text = "";
 	let from = 0;
@@ -117,7 +121,7 @@ export function assertedCode(
 }
 
 /** The spans of a reference, its own first. */
-function spansOf(reference: CodeReference): Span[] {
+function spansOf(reference: CodeReference): Array<Span> {
 	switch (reference.kind) {
 		case "Binding":
 			return [reference.span, ...(reference.narrowed ?? []).map(({ span }) => span)];

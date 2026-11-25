@@ -19,7 +19,9 @@ import {
 
 let corpus: string | undefined;
 afterEach(() => {
-	if (corpus) rmSync(corpus, { recursive: true, force: true });
+	if (corpus) {
+		rmSync(corpus, { recursive: true, force: true });
+	}
 	corpus = undefined;
 });
 
@@ -34,7 +36,7 @@ function makeCorpus(files: Record<string, string>): string {
 }
 
 const input = "export default function Card() {\n  return <p>Card</p>;\n}\n";
-const spec = (...names: string[]) =>
+const spec = (...names: Array<string>) =>
 	names.map((name) => `await view.expectParity(${name});`).join("\n");
 
 describe("listCases", () => {

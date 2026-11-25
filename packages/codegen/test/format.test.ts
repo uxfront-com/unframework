@@ -5,7 +5,9 @@ import { formatOutput } from "../src/index.ts";
 /** Formats a file, failing on a format error, and checks that formatting again changes nothing. */
 async function formatted(path: string, contents: string): Promise<string> {
 	const once = await formatOutput({ path, contents });
-	if (once.error) throw new Error(once.error);
+	if (once.error) {
+		throw new Error(once.error);
+	}
 	const twice = await formatOutput(once.file);
 	expect(twice.error).toBeUndefined();
 	expect(twice.file.contents).toBe(once.file.contents);
@@ -122,7 +124,7 @@ describe("formatOutput on script blocks", () => {
 	it("ends a block at its first `</script`, and keeps `<\\/script` in a string as written", async () => {
 		const contents = [
 			'<script setup lang="ts">',
-			"const {label='<\\/script>'}=defineProps<{label?: string}>()",
+			String.raw`const {label='<\/script>'}=defineProps<{label?: string}>()`,
 			"</script>",
 			"",
 			"<template>",
@@ -131,7 +133,7 @@ describe("formatOutput on script blocks", () => {
 		].join("\n");
 		const result = await formatted("A.vue", contents);
 		expect(result).toContain(
-			'const { label = "<\\/script>" } = defineProps<{ label?: string }>();',
+			String.raw`const { label = "<\/script>" } = defineProps<{ label?: string }>();`,
 		);
 		expect(result.match(/<\/script/g)).toHaveLength(1);
 	});

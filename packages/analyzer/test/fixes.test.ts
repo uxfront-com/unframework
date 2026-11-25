@@ -66,8 +66,8 @@ describe("fixes that meet", () => {
 		["<p>{(count + 0x10)?.toFixed()}</p>", "<p>{(count + 16).toFixed()}</p>"],
 		// Literal spellings in one expression.
 		[
-			'<p>{"\\u{1F600}" + 0b1 + items.reverse()}</p>',
-			'<p>{"\\uD83D\\uDE00" + 1 + items.toReversed()}</p>',
+			String.raw`<p>{"\u{1F600}" + 0b1 + items.reverse()}</p>`,
+			String.raw`<p>{"\uD83D\uDE00" + 1 + items.toReversed()}</p>`,
 		],
 		// A block-bodied arrow around expressions with fixes of their own.
 		[
@@ -164,12 +164,12 @@ const CHILDREN = [
 	"text",
 	" ",
 	'{" "}',
-	'{"\\n"}',
+	String.raw`{"\n"}`,
 	"{label}",
 	"{label ?? count}",
 	"{items.sort().join()}",
 	"{0x1F + count}",
-	'{"\\u{41}" + label}',
+	String.raw`{"\u{41}" + label}`,
 	"{on && <b>x</b>}",
 	"{on && null}",
 	"{maybe || <b>y</b>}",
@@ -228,7 +228,7 @@ describe("random mixes of fixable pieces", () => {
 		(seed) =>
 			replayable(propertyRun(2000, seed), (run) => {
 				const next = random(run.seed);
-				const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
+				const pick = <T>(items: ReadonlyArray<T>) => items[Math.floor(next() * items.length)]!;
 				let checked = 0;
 				for (let sample = 0; sample < run.size; sample++) {
 					const attributes = Array.from({ length: Math.floor(next() * 4) }, () => pick(ATTRIBUTES));
@@ -236,7 +236,9 @@ describe("random mixes of fixable pieces", () => {
 					const tag = pick(["p", "div", "a", "svg", "pre", "select", "table", "ul", "button"]);
 					const jsx = `<${tag} ${attributes.join(" ")}>${children.join("")}</${tag}>`;
 					const { source, diagnostics } = component(jsx, { props: PROPS });
-					if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+					if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) {
+						continue;
+					}
 					applyAndRecheck(source, diagnostics);
 					checked++;
 				}
@@ -279,7 +281,7 @@ describe("random mixes of fixable pieces in a setup's component", () => {
 		(seed) =>
 			replayable(propertyRun(1000, seed), (run) => {
 				const next = random(run.seed);
-				const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
+				const pick = <T>(items: ReadonlyArray<T>) => items[Math.floor(next() * items.length)]!;
 				let checked = 0;
 				for (let sample = 0; sample < run.size; sample++) {
 					const attributes = Array.from({ length: Math.floor(next() * 4) }, () =>
@@ -295,7 +297,9 @@ describe("random mixes of fixable pieces in a setup's component", () => {
 						before: API,
 						setup: SETUP,
 					});
-					if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+					if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) {
+						continue;
+					}
 					applyAndRecheck(source, diagnostics);
 					checked++;
 				}

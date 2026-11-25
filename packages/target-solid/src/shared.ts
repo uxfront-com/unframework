@@ -32,7 +32,7 @@ interface SharedHelper {
  * → `export function cx(`.
  */
 function exported(code: string, name: string): string {
-	return code.replace(new RegExp(`^function ${name}\\b`, "gm"), `export function ${name}`);
+	return code.replaceAll(new RegExp(`^function ${name}\\b`, "gm"), `export function ${name}`);
 }
 
 const solid = (imports: ImportSet) => (name: string) => imports.add("solid-js", name);

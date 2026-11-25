@@ -43,11 +43,16 @@ describe("solid composable cases", () => {
 		});
 		const paths = written.map(({ path }) => path);
 		const compiled = await toolchain.frameworkCompile(written, context);
-		for (const path of paths)
+		for (const path of paths) {
 			expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
+		}
 		const checked = await toolchain.typecheck(paths, context);
-		for (const path of paths) expect(checked.get(path) ?? [], path).toEqual([]);
+		for (const path of paths) {
+			expect(checked.get(path) ?? [], path).toEqual([]);
+		}
 		const linted = await toolchain.lint(paths, context);
-		for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+		for (const [path, messages] of linted) {
+			expect(messages, path).toEqual([]);
+		}
 	});
 });

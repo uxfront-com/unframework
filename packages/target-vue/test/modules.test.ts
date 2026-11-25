@@ -11,7 +11,7 @@ import { removeScratch, toolchainDir, writeScratch } from "./helpers.ts";
 afterAll(removeScratch);
 
 /** vue-tsc's messages on a tree of outputs, by file name, empty when it checks clean. */
-async function typecheck(outputs: Record<string, string>): Promise<Record<string, string[]>> {
+async function typecheck(outputs: Record<string, string>): Promise<Record<string, Array<string>>> {
 	const paths = writeScratch(outputs);
 	const checked = await toolchain.typecheck(Object.values(paths), {
 		toolchainDir,
@@ -26,7 +26,7 @@ async function typecheck(outputs: Record<string, string>): Promise<Record<string
 }
 
 /** Every file of a tree checks clean. */
-function clean(outputs: Record<string, string>): Record<string, string[]> {
+function clean(outputs: Record<string, string>): Record<string, Array<string>> {
 	return Object.fromEntries(Object.keys(outputs).map((name) => [name, []]));
 }
 

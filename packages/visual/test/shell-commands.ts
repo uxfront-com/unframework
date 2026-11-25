@@ -19,7 +19,7 @@ declare module "vitest/browser" {
 		 * Writes a fixture's shell page to `.output/shell/<name>.html`, with a frame per target (all
 		 * seven unless `targets` names some) on a stub that answers every render, and returns the page.
 		 */
-		ufShellFixture(name: ShellFixture, targets?: string[]): Promise<{ html: string }>;
+		ufShellFixture(name: ShellFixture, targets?: Array<string>): Promise<{ html: string }>;
 		/** Emulates the system's colour scheme, as `prefers-color-scheme` reads it. */
 		ufShellColorScheme(scheme: "light" | "dark"): Promise<void>;
 	}

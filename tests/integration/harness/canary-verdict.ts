@@ -22,15 +22,15 @@ export interface CanaryRun {
 	/** Each project's own cells (its parity matrix's `byProject`): project → case → target → layer. */
 	projects: PartialMatrix["byProject"] | undefined;
 	/** The specs it could not load. */
-	loadFailures?: readonly LoadFailure[] | undefined;
+	loadFailures?: ReadonlyArray<LoadFailure> | undefined;
 }
 
 /** Whether a canary was caught, every reason it was not, and what was not judged and why. */
 export interface CanaryVerdict {
 	caught: boolean;
-	problems: string[];
+	problems: Array<string>;
 	/** The targets the canary corrupts but applies to no case of, which prove nothing. */
-	notes: string[];
+	notes: Array<string>;
 }
 
 /** The project of a kind that verifies a target: `compile`, `bench`, or `<kind>:<target>`. */
@@ -42,12 +42,14 @@ export function projectOf(kind: ProjectKind, target: string): string {
 export function judgeCanary(
 	canary: Canary,
 	run: CanaryRun,
-	targets: readonly string[],
-	cases: readonly CanaryCase[],
+	targets: ReadonlyArray<string>,
+	cases: ReadonlyArray<CanaryCase>,
 ): CanaryVerdict {
-	const problems: string[] = [];
-	const notes: string[] = [];
-	if (run.status === 0) problems.push("the run passed");
+	const problems: Array<string> = [];
+	const notes: Array<string> = [];
+	if (run.status === 0) {
+		problems.push("the run passed");
+	}
 	const { projects } = run;
 	if (!projects) {
 		problems.push("the run wrote no parity matrix");
@@ -61,14 +63,20 @@ export function judgeCanary(
 		canary.followersOnly ? targets.filter((target) => target !== REFERENCE) : targets
 	).filter((target) => {
 		// A canary of one framework's own code corrupts no other target, and runs no other's projects.
-		if (!corrupts(canary, target)) return false;
+		if (!corrupts(canary, target)) {
+			return false;
+		}
 		// A target where the canary applies to no case (Astro, for a canary of the cases whose
 		// tests act) has nothing to prove: no case is corrupted there.
-		if (!canary.appliesTo || cases.some((info) => canary.appliesTo!(info, target))) return true;
+		if (!canary.appliesTo || cases.some((info) => canary.appliesTo!(info, target))) {
+			return true;
+		}
 		notes.push(`${target}: not judged, the canary applies to none of its cases`);
 		return false;
 	});
-	if (!corrupted.length) problems.push("the run covered no target the canary corrupts");
+	if (!corrupted.length) {
+		problems.push("the run covered no target the canary corrupts");
+	}
 	for (const target of corrupted) {
 		/** The kinds of project that had a case to judge on this target. */
 		const judged = new Set<ProjectKind>();
@@ -81,7 +89,9 @@ export function judgeCanary(
 				);
 				// A spec the project serves a stand-in loads whatever the canary did to the component,
 				// which never loads (ADR-0068): like a quarantined cell, it proves nothing.
-				if (!failure && info.standIn?.(target)) continue;
+				if (!failure && info.standIn?.(target)) {
+					continue;
+				}
 				judged.add(kind);
 				if (!failure) {
 					// A spec that loaded records cells in its project, a skip by capability included; with
@@ -146,10 +156,12 @@ function missingEvidence(
 	checks: Readonly<Record<string, Evidence>>,
 	target: string,
 	message: string,
-): string[] {
+): Array<string> {
 	return Object.entries(checks).flatMap(([check, evidence]) => {
 		const pattern = typeof evidence === "function" ? evidence(target) : evidence;
-		if (pattern.test(message)) return [];
+		if (pattern.test(message)) {
+			return [];
+		}
 		return [
 			`${where}: failed, but not in the ${kind} ${check} check (${pattern}): ${summarise(message)}`,
 		];
@@ -165,14 +177,22 @@ function missingEvidence(
  * load is judged where any test would have run.
  */
 function verifies(canary: Canary, kind: ProjectKind, info: CanaryCase, target: string): boolean {
-	if (canary.appliesTo && !canary.appliesTo(info, target)) return false;
+	if (canary.appliesTo && !canary.appliesTo(info, target)) {
+		return false;
+	}
 	// A canary that spares the reference spares a case's own reference (ADR-0057).
-	if (canary.followersOnly && target === info.reference) return false;
+	if (canary.followersOnly && target === info.reference) {
+		return false;
+	}
 	if (kind === "compile" && (canary.source !== undefined || canary.fixes !== undefined)) {
 		return true;
 	}
-	if (!info.hasOutput(target)) return false;
-	if (kind !== "browser") return true;
+	if (!info.hasOutput(target)) {
+		return false;
+	}
+	if (kind !== "browser") {
+		return true;
+	}
 	return info.spec !== undefined && (kind in (canary.loadEvidence ?? {}) || info.runs(target));
 }
 

@@ -29,7 +29,7 @@ import {
 afterAll(removeScratch);
 
 const read = (path: string) => ({ path, contents: readFileSync(path, "utf8") });
-const codes = (messages: readonly { code?: string }[]) =>
+const codes = (messages: ReadonlyArray<{ code?: string }>) =>
 	messages.map((message) => message.code ?? "(no code)");
 
 describe("the toolchain", () => {
@@ -50,8 +50,9 @@ describe("frameworkCompile (L3)", () => {
 		expect(goldens.length).toBeGreaterThan(0);
 		const results = await toolchain.frameworkCompile(goldens.map(read), context);
 		expect([...results.keys()].toSorted()).toEqual(goldens.toSorted());
-		for (const [path, result] of results)
+		for (const [path, result] of results) {
 			expect(result, path).toEqual({ errors: [], warnings: [] });
+		}
 	}, 60_000);
 
 	it("reports a mismatched closing tag as NG5002 on its file only", async () => {
@@ -92,7 +93,9 @@ describe("frameworkCompile (L3)", () => {
 			],
 			warnings: [],
 		});
-		for (const golden of goldens) expect(results.get(golden)!.errors, golden).toEqual([]);
+		for (const golden of goldens) {
+			expect(results.get(golden)!.errors, golden).toEqual([]);
+		}
 	});
 
 	// ngtsc silently skips template type-checking for a file whose directory TypeScript believes
@@ -147,7 +150,9 @@ describe("typecheck (L4)", () => {
 	it("type-checks every committed golden output clean in one run", async () => {
 		const results = await toolchain.typecheck(goldens, context);
 		expect([...results.keys()].toSorted()).toEqual(goldens.toSorted());
-		for (const [path, messages] of results) expect(messages, path).toEqual([]);
+		for (const [path, messages] of results) {
+			expect(messages, path).toEqual([]);
+		}
 	});
 
 	it("reports a type error against the file that has it", async () => {
@@ -163,7 +168,9 @@ describe("typecheck (L4)", () => {
 				code: "TS2322",
 			},
 		]);
-		for (const golden of goldens) expect(results.get(golden), golden).toEqual([]);
+		for (const golden of goldens) {
+			expect(results.get(golden), golden).toEqual([]);
+		}
 	});
 
 	// The toolchain's tsconfig makes every extended template diagnostic an error.
@@ -298,7 +305,7 @@ describe("vite", () => {
 
 	it("compiles with ngtsc ahead of Analog, and links the pre-bundled runtime", async () => {
 		const config = await toolchain.vite("browser", context);
-		const names = (config.plugins as { name: string }[]).map((plugin) => plugin.name);
+		const names = (config.plugins as Array<{ name: string }>).map((plugin) => plugin.name);
 		expect(names[0]).toBe("unframework:angular-ngtsc");
 		expect(names).toContain("@analogjs/vite-plugin-angular");
 		expect(config.optimizeDeps?.include).toEqual([
@@ -306,7 +313,7 @@ describe("vite", () => {
 			"@angular/common",
 			"@angular/platform-browser",
 		]);
-		const optimizer = config.optimizeDeps?.rolldownOptions?.plugins as { name: string }[];
+		const optimizer = config.optimizeDeps?.rolldownOptions?.plugins as Array<{ name: string }>;
 		expect(optimizer.map((plugin) => plugin.name)).toEqual(["unframework:angular-linker"]);
 		expect(config.resolve?.dedupe).toContain("@angular/core");
 	});
@@ -314,10 +321,10 @@ describe("vite", () => {
 	// Rendering with them is tested in server.test.ts, on this configuration.
 	it("inlines Angular's packages into the SSR module graph, and links them there", async () => {
 		const config = await toolchain.vite("ssr", context);
-		const names = (config.plugins as { name: string }[]).map((plugin) => plugin.name);
+		const names = (config.plugins as Array<{ name: string }>).map((plugin) => plugin.name);
 		expect(names[0]).toBe("unframework:angular-ngtsc");
 		expect(names.at(-1)).toBe("unframework:angular-ssr-linker");
-		const [angular, ...others] = (config.ssr?.noExternal ?? []) as RegExp[];
+		const [angular, ...others] = (config.ssr?.noExternal ?? []) as Array<RegExp>;
 		expect(others).toEqual([]);
 		// Vite matches the specifier, Vitest the resolved path.
 		for (const id of [
@@ -342,7 +349,7 @@ describe("vite", () => {
 	it("compiles TypeScript by file name with Analog, whatever the directories are called", async () => {
 		const config = await toolchain.vite("browser", context);
 		const plugin = config.plugins
-			?.flat(2)
+			?.flat(2 /* a plugin array, and the array inside it */)
 			.find(
 				(entry): entry is Plugin =>
 					typeof entry === "object" &&
@@ -384,9 +391,9 @@ describe("the toolchain's tsconfig", () => {
 		expect(options.extendedDiagnostics).toEqual({ defaultCategory: "error" });
 		expect(extendedDiagnostics).toEqual({ defaultCategory: "warning" });
 		const base = options.pathsBasePath as string;
-		const resolved = (options.paths as Record<string, string[]>)["@angular/*"]!.map((target) =>
+		const resolved = (options.paths as Record<string, Array<string>>)["@angular/*"]!.map((target) =>
 			resolve(base, target),
 		);
-		expect(resolved).toEqual((paths as Record<string, string[]>)["@angular/*"]);
+		expect(resolved).toEqual((paths as Record<string, Array<string>>)["@angular/*"]);
 	});
 });

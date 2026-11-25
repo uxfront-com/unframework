@@ -14,7 +14,7 @@ export interface JsonDiagnostic {
 	url: string;
 	help?: string;
 	target?: string;
-	related?: { start: Position; end: Position; message: string }[];
+	related?: Array<{ start: Position; end: Position; message: string }>;
 	fixes?: Diagnostic["fixes"];
 }
 
@@ -24,9 +24,9 @@ export interface JsonDiagnostic {
  * a wrong position.
  */
 export function toJsonDiagnostics(
-	diagnostics: readonly Diagnostic[],
+	diagnostics: ReadonlyArray<Diagnostic>,
 	sources: ReadonlyMap<string, string>,
-): JsonDiagnostic[] {
+): Array<JsonDiagnostic> {
 	const position = strictPositions(sources, "toJsonDiagnostics");
 	return diagnostics.map((diagnostic) => {
 		const file = diagnostic.file;
@@ -39,8 +39,12 @@ export function toJsonDiagnostics(
 			end: position(file, diagnostic.span.end),
 			url: docsUrl(diagnostic.code),
 		};
-		if (diagnostic.help) json.help = diagnostic.help;
-		if (diagnostic.target) json.target = diagnostic.target;
+		if (diagnostic.help) {
+			json.help = diagnostic.help;
+		}
+		if (diagnostic.target) {
+			json.target = diagnostic.target;
+		}
 		if (diagnostic.related) {
 			json.related = diagnostic.related.map((related) => ({
 				start: position(file, related.span.start),
@@ -48,7 +52,9 @@ export function toJsonDiagnostics(
 				message: related.message,
 			}));
 		}
-		if (diagnostic.fixes) json.fixes = diagnostic.fixes;
+		if (diagnostic.fixes) {
+			json.fixes = diagnostic.fixes;
+		}
 		return json;
 	});
 }

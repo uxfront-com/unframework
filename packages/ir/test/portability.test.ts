@@ -239,17 +239,17 @@ describe("angularRespellsRegex", () => {
 		'/"x"/',
 		"/'/",
 		"/a  b/",
-		"/a\\ b/",
+		String.raw`/a\ b/`,
 		"/[(]/",
 		"/x{{/",
 		"/<b>/",
-		"/^\\//",
+		String.raw`/^\//`,
 		"/a\tb/",
 	])("reads %s as respelled", (raw) => {
 		expect(angularRespellsRegex(raw)).toBe(true);
 	});
 
-	it.each(["/ab/", "/a b/g", "/(a)|[b]/", "/\\d{2}/", "/(?<x>a)/"])(
+	it.each(["/ab/", "/a b/g", "/(a)|[b]/", String.raw`/\d{2}/`, "/(?<x>a)/"])(
 		"reads %s as written",
 		(raw) => {
 			expect(angularRespellsRegex(raw)).toBe(false);
@@ -259,7 +259,9 @@ describe("angularRespellsRegex", () => {
 
 describe("CONTEXTUAL_ROOT_ELEMENTS", () => {
 	it("names HTML elements, each tied to its parent by HTML or ARIA (ADR-0056)", () => {
-		for (const tag of CONTEXTUAL_ROOT_ELEMENTS) expect(HTML_ELEMENTS.has(tag), tag).toBe(true);
+		for (const tag of CONTEXTUAL_ROOT_ELEMENTS) {
+			expect(HTML_ELEMENTS.has(tag), tag).toBe(true);
+		}
 		expect(CONTEXTUAL_ROOT_ELEMENTS.size).toBe(16);
 	});
 });

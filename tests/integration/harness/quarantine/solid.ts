@@ -2,7 +2,7 @@
 // entries whose target is "solid" belong here, so each target lane edits its own file.
 import type { QuarantineEntry } from "@unframework.dev/testing/node";
 
-export const QUARANTINE: readonly QuarantineEntry[] = [
+export const QUARANTINE: ReadonlyArray<QuarantineEntry> = [
 	{
 		case: "directives/fill-props",
 		target: "solid",

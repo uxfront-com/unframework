@@ -13,15 +13,15 @@ export type ExpressionComment = ParsedModule["comments"][number];
 export interface ParsedExpression {
 	expression: AST.Expression;
 	/** The comments inside the code, in source order. */
-	comments: ExpressionComment[];
+	comments: Array<ExpressionComment>;
 }
 
 /** Statements parsed on their own: offsets are relative to their code. */
 export interface ParsedStatements {
 	/** The statements, in order: a block body (`{ … }`) is one block statement. */
-	statements: (AST.Statement | AST.Directive)[];
+	statements: Array<AST.Statement | AST.Directive>;
 	/** The comments inside the code, in source order. */
-	comments: ExpressionComment[];
+	comments: Array<ExpressionComment>;
 }
 
 /**
@@ -100,7 +100,7 @@ export function parseStatementsSource(code: string): ParsedStatements {
 export function parseCodeSource(
 	code: string,
 	kind: CodeKind,
-): { root: AST.Expression | ParsedStatements["statements"]; comments: ExpressionComment[] } {
+): { root: AST.Expression | ParsedStatements["statements"]; comments: Array<ExpressionComment> } {
 	if (kind === "expression") {
 		const { expression, comments: found } = parseExpressionSource(code);
 		return { root: expression, comments: found };
@@ -109,7 +109,7 @@ export function parseCodeSource(
 	return { root: statements, comments: found };
 }
 
-function comments(parsed: ParsedModule, offset: number): ExpressionComment[] {
+function comments(parsed: ParsedModule, offset: number): Array<ExpressionComment> {
 	return parsed.comments.map((comment) => ({
 		...comment,
 		start: comment.start - offset,
@@ -144,12 +144,18 @@ export function isNode(value: unknown): value is Node {
 /** Calls `visit` on every node of an AST, depth-first, parents before their children. */
 export function visitNodes(root: unknown, visit: (node: Node) => void): void {
 	if (Array.isArray(root)) {
-		for (const item of root) visitNodes(item, visit);
+		for (const item of root) {
+			visitNodes(item, visit);
+		}
 		return;
 	}
-	if (!isNode(root)) return;
+	if (!isNode(root)) {
+		return;
+	}
 	visit(root);
 	for (const [key, value] of Object.entries(root)) {
-		if (key !== "type" && key !== "parent" && typeof value === "object") visitNodes(value, visit);
+		if (key !== "type" && key !== "parent" && typeof value === "object") {
+			visitNodes(value, visit);
+		}
 	}
 }

@@ -91,7 +91,7 @@ function cells(
 }
 
 /** Several kinds' cells, as one run's `byProject`. */
-function merged(...sets: readonly Projects[]): Projects {
+function merged(...sets: ReadonlyArray<Projects>): Projects {
 	const projects: Projects = {};
 	for (const set of sets) {
 		for (const [project, byCase] of Object.entries(set)) {

@@ -59,7 +59,9 @@ export function reactDialect(
 			const { name, value } = attribute;
 			if (typeof value === "string" && name === "class") {
 				const reads = spreadClassReads(element, context);
-				if (reads.length) return [className([js.stringLiteral(value), ...reads], names)];
+				if (reads.length) {
+					return [className([js.stringLiteral(value), ...reads], names)];
+				}
 			}
 			// @types/react types these as `number`, so a string fails L4; the invariants keep their
 			// static values canonical numbers, which print as written (`tabIndex={0}`).
@@ -123,7 +125,9 @@ export function reactDialect(
 			}
 			const object = styleObject(attribute, context, "camel");
 			// A consumer's declarations win over the root's own (ADR-0054).
-			if (fallthrough) object.properties.push(js.spreadElement(js.identifier(own!)));
+			if (fallthrough) {
+				object.properties.push(js.spreadElement(js.identifier(own!)));
+			}
 			// React's `CSSProperties` declares no custom properties, so an object holding one is
 			// typed as its own (tsgo rejects the literal otherwise).
 			const custom = attribute.declarations.some(({ property }) => property.startsWith("--"));
@@ -227,7 +231,7 @@ export function reactDialect(
 		scopeRootAttributes: (element, context) => composer.scopeRootAttributes(element, context),
 	};
 	/** A root's own `ref` joined with its consumer's, which holds the root too (ADR-0118). */
-	const rooted = <T extends JsxAttributeItem>(items: T[], element: ElementNode) =>
+	const rooted = <T extends JsxAttributeItem>(items: Array<T>, element: ElementNode) =>
 		items.map((item) => composer.rootRef(item, element));
 	return dialect;
 }
@@ -260,8 +264,8 @@ function prop(
  * adjacent toggles as one object, `{ active, "is-busy": busy }`, in shorthand where the
  * condition is a variable of the toggle's own name.
  */
-function classParts(attribute: ClassAttribute, context: JsxContext): Expression[] {
-	const parts: Expression[] = [];
+function classParts(attribute: ClassAttribute, context: JsxContext): Array<Expression> {
+	const parts: Array<Expression> = [];
 	let toggles: ObjectExpression | undefined;
 	for (const item of attribute.items) {
 		if (item.kind !== "Toggle") {
@@ -276,8 +280,11 @@ function classParts(attribute: ClassAttribute, context: JsxContext): Expression[
 		const entry = shorthand
 			? js.property(item.name, js.identifier(item.name), { shorthand: true })
 			: js.property(item.name, jsxExpression(item.condition, context));
-		if (toggles) toggles.properties.push(entry);
-		else parts.push((toggles = js.objectExpression([entry])));
+		if (toggles) {
+			toggles.properties.push(entry);
+		} else {
+			parts.push((toggles = js.objectExpression([entry])));
+		}
 	}
 	return parts;
 }
@@ -287,7 +294,7 @@ function classParts(attribute: ClassAttribute, context: JsxContext): Expression[
  * the static names, the dynamic parts, the toggles' objects and the spreads' classes (the
  * `class-binding` capability, emulated: ADR-0038).
  */
-function className(parts: Expression[], names: ReactNames): JsxAttribute {
+function className(parts: Array<Expression>, names: ReactNames): JsxAttribute {
 	names.cx ??= names.imports.claim("cx");
 	return js.jsxAttribute(
 		"className",

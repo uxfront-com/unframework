@@ -9,7 +9,7 @@ import { mount } from "../src/toolchain/client.ts";
 
 /** A fixture's components, compiled by the optimizer (a computed path: not this tsconfig's). */
 const load = async (name: string): Promise<Readonly<Record<string, unknown>>> =>
-	import(`./fixtures/${name}.tsx`);
+	import(`./fixtures/${name}.tsx`) as Promise<{ default: unknown }>;
 const fixtures = await load("NullProps");
 
 let mounted: MountedComponent | undefined;

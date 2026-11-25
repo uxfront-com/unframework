@@ -67,14 +67,18 @@ function reads(plan: Plan): ReadonlySet<string> {
  * member read that changes nothing goes, and the parts that do run in their order.
  */
 function effectsOf(node: Node, code: string, members: ReadonlySet<string>): string {
-	if (!hasEffects(node, members)) return "";
+	if (!hasEffects(node, members)) {
+		return "";
+	}
 	const text = (part: unknown) => code.slice((part as Node).start, (part as Node).end);
 	const of = (part: unknown) => effectsOf(part as Node, code, members);
-	const all = (parts: readonly unknown[]) => parts.map(of).filter(Boolean).join("\n");
+	const all = (parts: ReadonlyArray<unknown>) => parts.map(of).filter(Boolean).join("\n");
 	switch (node.type) {
 		case "LogicalExpression": {
 			const right = of(node.right);
-			if (right === "") return of(node.left);
+			if (right === "") {
+				return of(node.left);
+			}
 			const left = text(node.left);
 			const test =
 				node.operator === "&&" ? left : node.operator === "||" ? `!(${left})` : `(${left}) == null`;
@@ -84,14 +88,20 @@ function effectsOf(node: Node, code: string, members: ReadonlySet<string>): stri
 			const consequent = of(node.consequent);
 			const alternate = of(node.alternate);
 			const test = text(node.test);
-			if (consequent === "" && alternate === "") return of(node.test);
-			if (alternate === "") return `if (${test}) ${branch(consequent)}`;
-			if (consequent === "") return `if (!(${test})) ${branch(alternate)}`;
+			if (consequent === "" && alternate === "") {
+				return of(node.test);
+			}
+			if (alternate === "") {
+				return `if (${test}) ${branch(consequent)}`;
+			}
+			if (consequent === "") {
+				return `if (!(${test})) ${branch(alternate)}`;
+			}
 			// A consequent that is an `if` of its own is braced: the `else` would be its.
 			return `if (${test}) ${branch(consequent, true)} else ${branch(alternate)}`;
 		}
 		case "SequenceExpression":
-			return all(node.expressions as Node[]);
+			return all(node.expressions as Array<Node>);
 		case "BinaryExpression":
 			return all([node.left, node.right]);
 		case "UnaryExpression":
@@ -99,14 +109,14 @@ function effectsOf(node: Node, code: string, members: ReadonlySet<string>): stri
 		case "MemberExpression":
 			return all(node.computed ? [node.object, node.property] : [node.object]);
 		case "TemplateLiteral":
-			return all(node.expressions as Node[]);
+			return all(node.expressions as Array<Node>);
 		case "ArrayExpression":
-			return all((node.elements as (Node | null)[]).filter((element) => element !== null));
+			return all((node.elements as Array<Node | null>).filter((element) => element !== null));
 		case "SpreadElement":
 			return of(node.argument);
 		case "ObjectExpression":
 			return all(
-				(node.properties as Node[]).flatMap((property) =>
+				(node.properties as Array<Node>).flatMap((property) =>
 					property.type === "SpreadElement"
 						? [property]
 						: property.computed
@@ -178,18 +188,26 @@ export function hasReturn(fn: FunctionCode): boolean {
 function ownReturns(code: string, valued: boolean): boolean {
 	let found = false;
 	const visit = (value: unknown): void => {
-		if (found) return;
-		if (Array.isArray(value)) {
-			for (const item of value) visit(item);
+		if (found) {
 			return;
 		}
-		if (!isNode(value) || FUNCTIONS.has(value.type)) return;
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				visit(item);
+			}
+			return;
+		}
+		if (!isNode(value) || FUNCTIONS.has(value.type)) {
+			return;
+		}
 		if (value.type === "ReturnStatement" && (!valued || value.argument !== null)) {
 			found = true;
 			return;
 		}
 		for (const [key, child] of Object.entries(value)) {
-			if (key !== "type" && typeof child === "object") visit(child);
+			if (key !== "type" && typeof child === "object") {
+				visit(child);
+			}
 		}
 	};
 	visit(parseStatementsSource(code).statements);
@@ -207,17 +225,23 @@ function withoutValues(code: string, plan: Plan): string {
 	const members = reads(plan);
 	const { statements } = parseStatementsSource(code);
 	const last = statements.at(-1) as unknown as Node | undefined;
-	const edits: { start: number; end: number; text: string }[] = [];
+	const edits: Array<{ start: number; end: number; text: string }> = [];
 	/** Visits a statement; `listed` when it stands in a list of statements, not alone. */
 	const visit = (value: unknown, listed: boolean): void => {
 		if (Array.isArray(value)) {
-			for (const item of value) visit(item, listed);
+			for (const item of value) {
+				visit(item, listed);
+			}
 			return;
 		}
-		if (!isNode(value) || FUNCTIONS.has(value.type)) return;
+		if (!isNode(value) || FUNCTIONS.has(value.type)) {
+			return;
+		}
 		if (value.type === "ReturnStatement") {
 			const argument = value.argument as Node | null;
-			if (argument === null) return;
+			if (argument === null) {
+				return;
+			}
 			const runs = effectsOf(argument, code, members);
 			const replaced = value === last ? runs : runs === "" ? "return;" : `${runs}\nreturn;`;
 			edits.push({
@@ -228,7 +252,9 @@ function withoutValues(code: string, plan: Plan): string {
 			return;
 		}
 		for (const [key, child] of Object.entries(value)) {
-			if (key === "type" || typeof child !== "object") continue;
+			if (key === "type" || typeof child !== "object") {
+				continue;
+			}
 			// A block's and a case's statements are lists; an `if`'s branch or a loop's body stands alone.
 			visit(child, Array.isArray(child));
 		}
@@ -248,12 +274,18 @@ function withoutValues(code: string, plan: Plan): string {
 function hasEffects(node: Node, members: ReadonlySet<string>): boolean {
 	let found = false;
 	const visit = (value: unknown): void => {
-		if (found) return;
-		if (Array.isArray(value)) {
-			for (const item of value) visit(item);
+		if (found) {
 			return;
 		}
-		if (!isNode(value) || FUNCTIONS.has(value.type)) return;
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				visit(item);
+			}
+			return;
+		}
+		if (!isNode(value) || FUNCTIONS.has(value.type)) {
+			return;
+		}
 		if (
 			(EFFECTS.has(value.type) && !isRead(value, members)) ||
 			(value.type === "UnaryExpression" && value.operator === "delete")
@@ -262,7 +294,9 @@ function hasEffects(node: Node, members: ReadonlySet<string>): boolean {
 			return;
 		}
 		for (const [key, child] of Object.entries(value)) {
-			if (key !== "type" && typeof child === "object") visit(child);
+			if (key !== "type" && typeof child === "object") {
+				visit(child);
+			}
 		}
 	};
 	visit(node);
@@ -274,17 +308,23 @@ function hasEffects(node: Node, members: ReadonlySet<string>): boolean {
  * composable's returned ref through its holder, `this.toggle_1.on()`.
  */
 function isRead(node: Node, members: ReadonlySet<string>): boolean {
-	if (node.type !== "CallExpression" || (node.arguments as unknown[]).length > 0) return false;
+	if (node.type !== "CallExpression" || (node.arguments as Array<unknown>).length > 0) {
+		return false;
+	}
 	const path = memberPath(node.callee as Node);
 	return path !== undefined && members.has(path);
 }
 
 /** `this.count` as `count`, `this.toggle_1.on` as `toggle_1.on`, or `undefined`. */
 function memberPath(node: Node): string | undefined {
-	if (node.type !== "MemberExpression" || node.computed) return undefined;
+	if (node.type !== "MemberExpression" || node.computed) {
+		return undefined;
+	}
 	const object = node.object as Node;
 	const name = (node.property as Node).name as string;
-	if (object.type === "ThisExpression") return name;
+	if (object.type === "ThisExpression") {
+		return name;
+	}
 	const holder = memberPath(object);
 	return holder === undefined || holder.includes(".") ? undefined : `${holder}.${name}`;
 }

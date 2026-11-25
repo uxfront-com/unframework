@@ -27,10 +27,10 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
 	const listeners = listenerProps(options.on);
 	const element = (props: Readonly<Record<string, unknown>>) =>
 		createElement(type, { ...props, ...listeners });
-	const mismatches: string[] = [];
+	const mismatches: Array<string> = [];
 	container.innerHTML = html;
 	const { error } = console;
-	console.error = (...args: unknown[]) => {
+	console.error = (...args: Array<unknown>) => {
 		if (typeof args[0] === "string" && ATTRIBUTE_MISMATCH.test(args[0])) {
 			mismatches.push(`${args[0].split("\n")[0]}\n${args.slice(2).map(String).join("")}`.trim());
 		}
@@ -52,7 +52,9 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
 		async settle() {
 			await act(async () => {});
 			// What the scheduler queued outside `act` runs in a task of its own (a MessageChannel).
-			await new Promise<void>((resolve) => setTimeout(resolve, 0));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
 		},
 		async rerender(props) {
 			await act(async () => root.render(element(props)));

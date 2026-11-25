@@ -35,8 +35,8 @@ const types = readFileSync(
 );
 
 /** react-dom's registrations: each React prop and the DOM events it listens to. */
-function registrations(): Map<string, string[]> {
-	const found = new Map<string, string[]>();
+function registrations(): Map<string, Array<string>> {
+	const found = new Map<string, Array<string>>();
 	const simple = /simpleEventPluginEvents =\s*"([^"]+)"\.split/.exec(reactDom)![1]!.split(" ");
 	simple.push(
 		...[...reactDom.matchAll(/simpleEventPluginEvents\.push\("(\w+)"\)/g)].map((m) => m[1]!),
@@ -55,7 +55,9 @@ function registrations(): Map<string, string[]> {
 		/registerSimpleEvent\(\s*("?\w+"?),\s*"(\w+)"\)/g,
 	)) {
 		const event = dom!.startsWith('"') ? dom!.slice(1, -1) : constants.get(dom!);
-		if (event) found.set(prop!, [event]);
+		if (event) {
+			found.set(prop!, [event]);
+		}
 	}
 	for (const [, prop, dependencies] of reactDom.matchAll(
 		/register(?:TwoPhase|Direct)Event\(\s*"(\w+)",\s*(\[[^\]]*\]|"[^"]*"\.split\(\s*" "\s*\))/g,
@@ -112,7 +114,9 @@ describe("react events", () => {
 			["pointerleave", "pointerout"],
 		]);
 		for (const [event, entry] of REACT_EVENTS) {
-			if (!entry) continue;
+			if (!entry) {
+				continue;
+			}
 			const events = registered.get(entry.prop);
 			expect(events, `${event} → ${entry.prop}`).toBeDefined();
 			expect(events, `${event} → ${entry.prop}`).toContain(synthesised.get(event) ?? event);
@@ -127,17 +131,23 @@ describe("react events", () => {
 			),
 		);
 		for (const [event, entry] of REACT_EVENTS) {
-			if (entry) continue;
+			if (entry) {
+				continue;
+			}
 			// Either react-dom has no prop for it, @types/react declares none, or the prop is another
 			// event's (`onSelect`, `onBeforeInput` are synthesised; `focusin` is `onFocus`).
 			const prop = props.get(event);
-			if (prop) expect(declared(prop) && prop.toLowerCase() === `on${event}`, event).toBe(false);
+			if (prop) {
+				expect(declared(prop) && prop.toLowerCase() === `on${event}`, event).toBe(false);
+			}
 		}
 	});
 
 	it("declares every prop, and its capture prop where it has one, as @types/react does", () => {
 		for (const [event, entry] of REACT_EVENTS) {
-			if (!entry) continue;
+			if (!entry) {
+				continue;
+			}
 			const on = entry.element
 				? entry.element[0]!.toUpperCase() + entry.element.slice(1)
 				: undefined;

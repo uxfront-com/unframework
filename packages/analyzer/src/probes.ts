@@ -31,7 +31,11 @@ export function probe(render: RenderContext): RenderContext {
 }
 
 /** Reports what each later candidate's check found that the first one's did not. */
-export function merge(render: RenderContext, mark: number, probes: readonly RenderContext[]): void {
+export function merge(
+	render: RenderContext,
+	mark: number,
+	probes: ReadonlyArray<RenderContext>,
+): void {
 	const seen = new Set(
 		render.reporter.diagnostics
 			.slice(mark)
@@ -40,7 +44,9 @@ export function merge(render: RenderContext, mark: number, probes: readonly Rend
 	for (const each of probes) {
 		for (const diagnostic of each.reporter.diagnostics) {
 			const key = `${diagnostic.code} ${diagnostic.span.start} ${diagnostic.message}`;
-			if (seen.has(key)) continue;
+			if (seen.has(key)) {
+				continue;
+			}
 			seen.add(key);
 			render.reporter.diagnostics.push(diagnostic);
 		}

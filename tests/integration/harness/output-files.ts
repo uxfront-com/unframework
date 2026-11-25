@@ -15,7 +15,7 @@ import { caseOracle, caseResolver } from "./sources.ts";
 import { toolchainFiles } from "./toolchain-results.ts";
 
 /** A case's committed output files for a target, without its scoped sheets (`toolchainFiles`). */
-export function committedOutputFiles(info: CaseInfo, target: string): string[] {
+export function committedOutputFiles(info: CaseInfo, target: string): Array<string> {
 	const directory = join(info.dir, "__output__", target);
 	return toolchainFiles(existsSync(directory) ? listFiles(directory) : []);
 }
@@ -27,16 +27,18 @@ export function committedOutputFiles(info: CaseInfo, target: string): string[] {
  * sheet from the disk (Angular's `styleUrl`).
  */
 export async function outputFiles(
-	cases: readonly CaseInfo[],
+	cases: ReadonlyArray<CaseInfo>,
 	target: string,
 	casesDir: string,
 	canary: string | null,
-): Promise<Map<string, string[]>> {
-	const files = new Map<string, string[]>();
+): Promise<Map<string, Array<string>>> {
+	const files = new Map<string, Array<string>>();
 	// A case whose expected diagnostics are missing fails its own test; check what it has.
 	const checked = cases.filter((info) => errorState(info, target) !== true);
 	if (!canary) {
-		for (const info of checked) files.set(info.id, committedOutputFiles(info, target));
+		for (const info of checked) {
+			files.set(info.id, committedOutputFiles(info, target));
+		}
 		return files;
 	}
 	// Each target's project writes its own tree: the projects run in parallel.
@@ -74,8 +76,8 @@ export async function outputFiles(
 	return files;
 }
 
-function listFiles(directory: string): string[] {
-	return (readdirSync(directory, { recursive: true }) as string[])
+function listFiles(directory: string): Array<string> {
+	return (readdirSync(directory, { recursive: true }) as Array<string>)
 		.map((entry) => join(directory, entry))
 		.filter((path) => statSync(path).isFile())
 		.sort();

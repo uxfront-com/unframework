@@ -21,7 +21,7 @@ export const casesDir: string = join(integrationDir, "cases");
 export const toolchainDir: string = join(repoRoot, "tests/toolchains/svelte");
 
 /** Every file under a directory, recursively, as absolute paths. */
-function filesUnder(directory: string): string[] {
+function filesUnder(directory: string): Array<string> {
 	return readdirSync(directory, { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile())
 		.map((entry) => join(entry.parentPath, entry.name))
@@ -29,7 +29,7 @@ function filesUnder(directory: string): string[] {
 }
 
 /** The committed Svelte golden outputs of the integration corpus. */
-export function goldenFiles(): string[] {
+export function goldenFiles(): Array<string> {
 	return filesUnder(casesDir).filter((path) => /\/__output__\/svelte\/[^/]+\.svelte$/.test(path));
 }
 
@@ -38,7 +38,7 @@ export function goldenFiles(): string[] {
  * `compile()` copies into the output tree (ADR-0070), whose types an output imports (ADR-0067).
  */
 export function sharedModules(outputDir: string): Record<string, string> {
-	let names: string[];
+	let names: Array<string>;
 	try {
 		names = readdirSync(outputDir).filter((name) => name.endsWith(".ts"));
 	} catch {
@@ -55,7 +55,7 @@ export function sharedModules(outputDir: string): Record<string, string> {
  */
 function hasErrors(caseDir: string): boolean {
 	const path = join(caseDir, "__expected__/diagnostics.json");
-	let diagnostics: { severity: string; target?: string }[];
+	let diagnostics: Array<{ severity: string; target?: string }>;
 	try {
 		diagnostics = JSON.parse(readFileSync(path, "utf8")) as typeof diagnostics;
 	} catch {
@@ -75,12 +75,12 @@ const readModule = (file: string) => JSON.parse(readFileSync(file, "utf8")) as U
  * compiler emits a Svelte output for. `module` is the main source's; `modules` holds every
  * source's (ADR-0057), the main one first, whose outputs import each other.
  */
-export function corpus(): {
+export function corpus(): Array<{
 	name: string;
 	module: UfModule;
-	modules: UfModule[];
+	modules: Array<UfModule>;
 	outputDir: string;
-}[] {
+}> {
 	return filesUnder(casesDir)
 		.filter((path) => path.endsWith("/__output__/ir.json") && !hasErrors(join(path, "../..")))
 		.map((path) => {
@@ -99,12 +99,14 @@ export function corpus(): {
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */
-export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
+export async function emitFormatted(module: UfModule): Promise<Array<OutputFile>> {
 	const files = module.components.flatMap((component) => target.emit(component, context(module)));
 	return Promise.all(
 		files.map(async (file) => {
 			const outcome = await formatOutput(file);
-			if (outcome.error) throw new Error(`${file.path} does not format: ${outcome.error}`);
+			if (outcome.error) {
+				throw new Error(`${file.path} does not format: ${outcome.error}`);
+			}
 			return outcome.file;
 		}),
 	);
@@ -122,11 +124,15 @@ export async function emitSource(
 	if (!module || diagnostics.length) {
 		throw new Error(`the source does not analyse: ${diagnostics.map((d) => d.message).join("; ")}`);
 	}
-	if (module.components.length !== 1) throw new Error("the source has more than one component");
+	if (module.components.length !== 1) {
+		throw new Error("the source has more than one component");
+	}
 	const files = format
 		? await emitFormatted(module)
 		: target.emit(module.components[0]!, context(module));
-	if (files.length !== 1) throw new Error(`expected one file, got ${files.length}`);
+	if (files.length !== 1) {
+		throw new Error(`expected one file, got ${files.length}`);
+	}
 	return files[0]!;
 }
 
@@ -144,7 +150,9 @@ export async function compileSources(
 	const files: Record<string, string> = {};
 	for (const [filename, source] of Object.entries(sources)) {
 		// A plain `.ts` module is read through the resolver, and copied by each source that reaches it.
-		if (!/\.uf\.tsx?$/.test(filename)) continue;
+		if (!/\.uf\.tsx?$/.test(filename)) {
+			continue;
+		}
 		const { diagnostics, outputs } = await compile(source, {
 			filename,
 			targets: [target],
@@ -152,9 +160,12 @@ export async function compileSources(
 			typeOracle,
 		});
 		const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-		if (errors.length)
+		if (errors.length) {
 			throw new Error(`${filename}: ${errors.map((each) => each.message).join("; ")}`);
-		for (const file of outputs["svelte"] ?? []) files[file.path] = file.contents;
+		}
+		for (const file of outputs["svelte"] ?? []) {
+			files[file.path] = file.contents;
+		}
 	}
 	return files;
 }
@@ -170,7 +181,7 @@ function context(module: UfModule): EmitContext {
 	};
 }
 
-const scratch: string[] = [];
+const scratch: Array<string> = [];
 
 /**
  * A fresh directory inside this package (gitignored `.uf-tmp/`), so files written there resolve
@@ -185,7 +196,9 @@ export function scratchDir(parent: string = packageDir): string {
 
 /** Deletes every scratch directory this test file created. */
 export function removeScratch(): void {
-	for (const directory of scratch.splice(0)) rmSync(directory, { recursive: true, force: true });
+	for (const directory of scratch.splice(0)) {
+		rmSync(directory, { recursive: true, force: true });
+	}
 }
 
 /**

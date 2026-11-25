@@ -142,23 +142,23 @@ export function span(start: number, end: number): Span {
  * value imports and constants, and a `.uf.ts` module's composables, each set only when not empty.
  */
 export interface ModuleOptions {
-	typeImports?: TypeImport[];
-	typeExports?: TypeExport[];
-	moduleImports?: SharedModuleImport[];
-	constants?: ModuleConstant[];
-	composables?: UfComposable[];
-	directives?: UfDirective[];
+	typeImports?: Array<TypeImport>;
+	typeExports?: Array<TypeExport>;
+	moduleImports?: Array<SharedModuleImport>;
+	constants?: Array<ModuleConstant>;
+	composables?: Array<UfComposable>;
+	directives?: Array<UfDirective>;
 }
 
 /** Builds a module: without imports, injection keys or pass-through imports unless given. */
 export function createModule(
 	file: string,
-	components: UfComponent[] = [],
-	exports: UfExport[] = [],
-	types: TypeDeclaration[] = [],
-	imports: ModuleImport[] = [],
-	keys: InjectionKeyDeclaration[] = [],
-	passThroughImports: PassThroughImport[] = [],
+	components: Array<UfComponent> = [],
+	exports: Array<UfExport> = [],
+	types: Array<TypeDeclaration> = [],
+	imports: Array<ModuleImport> = [],
+	keys: Array<InjectionKeyDeclaration> = [],
+	passThroughImports: Array<PassThroughImport> = [],
 	options: ModuleOptions = {},
 ): UfModule {
 	const { typeImports, typeExports, moduleImports, constants, composables, directives } = options;
@@ -181,7 +181,11 @@ export function createModule(
 }
 
 /** Builds `import type { … } from "…"` (ADR-0067). */
-export function createTypeImport(specifier: string, names: NamedImport[], at: Span): TypeImport {
+export function createTypeImport(
+	specifier: string,
+	names: Array<NamedImport>,
+	at: Span,
+): TypeImport {
 	return { specifier, names, span: at };
 }
 
@@ -193,7 +197,7 @@ export function createNamedImport(imported: string, local: string, at: Span): Na
 /** Builds `export type { … } from "…"` (ADR-0068). */
 export function createTypeReExport(
 	specifier: string,
-	names: TypeExportName[],
+	names: Array<TypeExportName>,
 	at: Span,
 ): TypeReExport {
 	return { kind: "ReExport", specifier, names, span: at };
@@ -213,7 +217,7 @@ export function createDeclaredTypeExport(name: string, code: string, at: Span): 
 export function createSharedModuleImport(
 	specifier: string,
 	file: string,
-	names: NamedImport[],
+	names: Array<NamedImport>,
 	at: Span,
 ): SharedModuleImport {
 	return { specifier, file, names, span: at };
@@ -234,15 +238,15 @@ export function createModuleConstant(
 export interface DirectiveOptions {
 	exported?: boolean;
 	element?: TypeText;
-	bindings?: Binding[];
-	types?: string[];
+	bindings?: Array<Binding>;
+	types?: Array<string>;
 }
 
 /** Builds a directive (ADR-0099): not exported, on an `HTMLElement`, reading nothing of its module unless given. */
 export function createDirective(
 	name: string,
 	value: TypeText,
-	hooks: DirectiveHook[],
+	hooks: Array<DirectiveHook>,
 	at: Span,
 	options: DirectiveOptions = {},
 ): UfDirective {
@@ -261,7 +265,7 @@ export function createDirective(
 /** Builds a directive's hook (ADR-0099). */
 export function createDirectiveHook(
 	name: DirectiveHook["name"],
-	parameters: string[],
+	parameters: Array<string>,
 	body: Code,
 	at: Span,
 	isAsync = false,
@@ -271,11 +275,11 @@ export function createDirectiveHook(
 
 /** What a composable declares besides its name and parameters: each set only when given. */
 export interface ComposableOptions {
-	typeParameters?: TypeParameter[];
-	types?: string[];
-	bindings?: Binding[];
-	setup?: SetupItem[];
-	returns?: ReturnedMember[];
+	typeParameters?: Array<TypeParameter>;
+	types?: Array<string>;
+	bindings?: Array<Binding>;
+	setup?: Array<SetupItem>;
+	returns?: Array<ReturnedMember>;
 }
 
 /**
@@ -285,7 +289,7 @@ export interface ComposableOptions {
 export function createComposable(
 	name: string,
 	at: Span,
-	parameters: ComposableParameter[] = [],
+	parameters: Array<ComposableParameter> = [],
 	options: ComposableOptions = {},
 ): UfComposable {
 	const { typeParameters } = options;
@@ -341,7 +345,7 @@ export function createDeclaredBy(file: string, declaration: string, at: Span): D
 /** Builds an import every output keeps as written: no names for the side-effect import. */
 export function createPassThroughImport(
 	specifier: PassThroughImport["specifier"],
-	names: PassThroughName[],
+	names: Array<PassThroughName>,
 	at: Span,
 ): PassThroughImport {
 	return { specifier, names, span: at };
@@ -357,7 +361,7 @@ export function createModuleImport(
 	specifier: string,
 	file: string,
 	api: ModuleApi,
-	names: ImportedName[],
+	names: Array<ImportedName>,
 	at: Span,
 ): ModuleImport {
 	return { specifier, file, api, names, span: at };
@@ -399,11 +403,11 @@ export function createTypeDeclaration(
  * their scope id (ADR-0063): each set only when given.
  */
 export interface ComponentOptions {
-	typeParameters?: TypeParameter[];
+	typeParameters?: Array<TypeParameter>;
 	slots?: Slots;
 	exposes?: Exposes;
 	inheritAttrs?: false;
-	styles?: { sheets: StyleSheet[]; scopeId: string };
+	styles?: { sheets: Array<StyleSheet>; scopeId: string };
 }
 
 /** Builds a component: without props, types, bindings, setup, events or slots unless given. */
@@ -411,11 +415,11 @@ export function createComponent(
 	name: string,
 	render: ElementNode | FragmentNode,
 	at: Span,
-	props: Prop[] = [],
+	props: Array<Prop> = [],
 	propsParameter?: PropsParameter,
-	types: string[] = [],
-	bindings: Binding[] = [],
-	setup: SetupItem[] = [],
+	types: Array<string> = [],
+	bindings: Array<Binding> = [],
+	setup: Array<SetupItem> = [],
 	emits?: Emits,
 	options: ComponentOptions = {},
 ): UfComponent {
@@ -447,7 +451,7 @@ export function createStyleSheet(specifier: string, source: string, at: Span): S
 export function createSlots(
 	binding: BindingId,
 	type: TypeText,
-	slots: SlotDeclaration[],
+	slots: Array<SlotDeclaration>,
 	at: Span,
 ): Slots {
 	return { binding, type, slots, span: at };
@@ -462,7 +466,7 @@ export function createSlotDeclaration(
 	optional: boolean,
 	at: Span,
 	props?: TypeText,
-	references: string[] = [],
+	references: Array<string> = [],
 ): SlotDeclaration {
 	return {
 		name,
@@ -474,7 +478,7 @@ export function createSlotDeclaration(
 }
 
 /** Builds what a component exposes with `defineExpose`. */
-export function createExposes(functions: BindingId[], at: Span): Exposes {
+export function createExposes(functions: Array<BindingId>, at: Span): Exposes {
 	return { functions, span: at };
 }
 
@@ -525,7 +529,7 @@ export function bindingId(name: string, offset: number): BindingId {
 }
 
 /** Builds an expression. */
-export function createExpression(code: string, at: Span, refs: Reference[] = []): Expression {
+export function createExpression(code: string, at: Span, refs: Array<Reference> = []): Expression {
 	return { code, span: at, refs };
 }
 
@@ -538,7 +542,7 @@ export function createBindingReference(
 	at: Span,
 	shorthand = false,
 	call = false,
-	narrowed: NarrowedPath[] = [],
+	narrowed: Array<NarrowedPath> = [],
 ): BindingReference {
 	return {
 		kind: "Binding",
@@ -571,7 +575,7 @@ export function createGlobalReference(name: string, at: Span): GlobalReference {
 }
 
 /** Builds setup code: an expression or a function's body, with its references in source order. */
-export function createCode(code: string, at: Span, refs: CodeReference[] = []): Code {
+export function createCode(code: string, at: Span, refs: Array<CodeReference> = []): Code {
 	return { code, span: at, refs };
 }
 
@@ -587,7 +591,7 @@ export function createWriteReference(
 	target: Span,
 	value?: Span,
 	arrowBody = false,
-	narrowed: NarrowedPath[] = [],
+	narrowed: Array<NarrowedPath> = [],
 ): WriteReference {
 	return {
 		kind: "Write",
@@ -606,7 +610,7 @@ export function createEmitReference(
 	binding: BindingId,
 	event: string,
 	at: Span,
-	args: Span[] = [],
+	args: Array<Span> = [],
 ): EmitReference {
 	return { kind: "Emit", binding, event, span: at, arguments: args };
 }
@@ -649,12 +653,12 @@ export interface FunctionOptions {
 	returnType?: TypeText;
 	/** The body is an arrow's expression rather than a block. */
 	expression?: boolean;
-	eventControls?: EventControl[];
+	eventControls?: Array<EventControl>;
 }
 
 /** Builds a function the source writes: a setup function, a handler, a callback or a getter. */
 export function createFunctionCode(
-	parameters: Parameter[],
+	parameters: Array<Parameter>,
 	body: Code,
 	at: Span,
 	options: FunctionOptions = {},
@@ -700,7 +704,11 @@ export function createParameter(
 }
 
 /** Builds a parameter's destructuring pattern, with the names it binds in order. */
-export function createParameterPattern(code: string, names: string[], at: Span): ParameterPattern {
+export function createParameterPattern(
+	code: string,
+	names: Array<string>,
+	at: Span,
+): ParameterPattern {
 	return { code, names, span: at };
 }
 
@@ -801,7 +809,7 @@ export interface WatchOptions {
 
 /** Builds `watch(source, callback, options)`. */
 export function createWatchItem(
-	sources: WatchSource[],
+	sources: Array<WatchSource>,
 	callback: FunctionCode,
 	at: Span,
 	options: WatchOptions = {},
@@ -885,8 +893,8 @@ export function createInjectItem(
 /** Builds `const { on, toggle } = useToggle(…)` (ADR-0069). */
 export function createUseItem(
 	composable: string,
-	args: UseArgument[],
-	members: UsedMember[],
+	args: Array<UseArgument>,
+	members: Array<UsedMember>,
 	at: Span,
 	hasEffects = false,
 ): UseItem {
@@ -924,7 +932,7 @@ export function createUsedMember(member: string, binding: BindingId, at: Span): 
 export function createEmits(
 	binding: BindingId,
 	type: TypeText,
-	events: EventDeclaration[],
+	events: Array<EventDeclaration>,
 	at: Span,
 ): Emits {
 	return { binding, type, events, span: at };
@@ -933,7 +941,7 @@ export function createEmits(
 /** Builds an event a component declares, with its payload's members. */
 export function createEventDeclaration(
 	name: string,
-	parameters: EventParameter[],
+	parameters: Array<EventParameter>,
 	at: Span,
 ): EventDeclaration {
 	return { name, parameters, span: at };
@@ -997,8 +1005,8 @@ export function createRefAttribute(binding: BindingId, at: Span): RefAttribute {
 /** Builds an element. */
 export function createElement(
 	tag: string,
-	attributes: Attribute[],
-	children: RenderNode[],
+	attributes: Array<Attribute>,
+	children: Array<RenderNode>,
 	at: Span,
 ): ElementNode {
 	return { kind: "Element", tag, attributes, children, span: at };
@@ -1015,14 +1023,14 @@ export function createInterpolation(value: Expression, at: Span): InterpolationN
 }
 
 /** Builds a conditional. */
-export function createIf(branches: IfBranch[], at: Span): IfNode {
+export function createIf(branches: Array<IfBranch>, at: Span): IfNode {
 	return { kind: "If", branches, span: at };
 }
 
 /** Builds a branch of a conditional: `condition` is `undefined` for the final else. */
 export function createBranch(
 	condition: Expression | undefined,
-	children: RenderNode[],
+	children: Array<RenderNode>,
 	at: Span,
 ): IfBranch {
 	return { ...(condition ? { condition } : {}), children, span: at };
@@ -1031,8 +1039,8 @@ export function createBranch(
 /** Builds a component element. */
 export function createComponentNode(
 	component: string,
-	attributes: ComponentAttribute[],
-	fills: SlotFill[],
+	attributes: Array<ComponentAttribute>,
+	fills: Array<SlotFill>,
 	at: Span,
 ): ComponentNode {
 	return { kind: "Component", component, attributes, fills, span: at };
@@ -1041,7 +1049,7 @@ export function createComponentNode(
 /** Builds a slot outlet: `props` for a scoped slot. */
 export function createSlotOutlet(
 	slot: string,
-	fallback: RenderNode[],
+	fallback: Array<RenderNode>,
 	at: Span,
 	props?: Expression,
 ): SlotOutletNode {
@@ -1051,12 +1059,12 @@ export function createSlotOutlet(
 /** Builds `<component is>`: `fills` for component candidates only, `only` for tag ones (ADR-0119). */
 export function createDynamicNode(
 	is: Expression,
-	candidates: DynamicCandidate[],
-	attributes: (Attribute | ComponentAttribute)[],
-	children: RenderNode[],
+	candidates: Array<DynamicCandidate>,
+	attributes: Array<Attribute | ComponentAttribute>,
+	children: Array<RenderNode>,
 	at: Span,
-	fills?: SlotFill[],
-	only?: DynamicOnly[],
+	fills?: Array<SlotFill>,
+	only?: Array<DynamicOnly>,
 ): DynamicNode {
 	return {
 		kind: "Dynamic",
@@ -1071,7 +1079,11 @@ export function createDynamicNode(
 }
 
 /** Builds `<Teleport to>` (ADR-0098). */
-export function createTeleportNode(to: string, children: RenderNode[], at: Span): TeleportNode {
+export function createTeleportNode(
+	to: string,
+	children: Array<RenderNode>,
+	at: Span,
+): TeleportNode {
 	return { kind: "Teleport", to, children, span: at };
 }
 
@@ -1079,7 +1091,7 @@ export function createTeleportNode(to: string, children: RenderNode[], at: Span)
 export function createTransitionNode(
 	name: string,
 	appear: boolean,
-	children: RenderNode[],
+	children: Array<RenderNode>,
 	at: Span,
 ): TransitionNode {
 	return { kind: "Transition", name, ...(appear && { appear: true as const }), children, span: at };
@@ -1094,7 +1106,7 @@ export interface SlotFillOptions {
 /** Builds what fills a child's slot: `forward` names the parent's slot it passes on. */
 export function createSlotFill(
 	slot: string,
-	children: RenderNode[],
+	children: Array<RenderNode>,
 	at: Span,
 	options: SlotFillOptions = {},
 ): SlotFill {
@@ -1129,7 +1141,7 @@ export function createFor(
 }
 
 /** Builds a root fragment. */
-export function createFragment(children: RenderNode[], at: Span): FragmentNode {
+export function createFragment(children: Array<RenderNode>, at: Span): FragmentNode {
 	return { kind: "Fragment", children, span: at };
 }
 
@@ -1162,7 +1174,7 @@ export function createRawHtmlAttribute(value: Expression, at: Span): RawHtmlAttr
 }
 
 /** Builds a `class` from its parts. */
-export function createClassAttribute(items: ClassItem[], at: Span): ClassAttribute {
+export function createClassAttribute(items: Array<ClassItem>, at: Span): ClassAttribute {
 	return { kind: "Class", items, span: at };
 }
 
@@ -1183,7 +1195,7 @@ export function createDynamicClass(value: Expression, at: Span, collection = fal
 
 /** Builds a `style` from its declarations, or bound to one value with none. */
 export function createStyleAttribute(
-	declarations: StyleDeclaration[],
+	declarations: Array<StyleDeclaration>,
 	at: Span,
 	value?: Expression,
 ): StyleAttribute {
@@ -1203,7 +1215,7 @@ export function createBoundStyle(property: string, value: Expression, at: Span):
 /** Builds a spread of an object with known keys, which may be nullish where it is spread. */
 export function createSpreadAttribute(
 	value: Expression,
-	keys: SpreadKey[],
+	keys: Array<SpreadKey>,
 	nullish: boolean,
 	at: Span,
 ): SpreadAttribute {

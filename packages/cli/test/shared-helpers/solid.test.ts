@@ -29,7 +29,9 @@ describe("shared helper modules: Solid", () => {
 		expect(declares(mark, "queueHook")).toBe(false);
 		// A helper module imports only its framework, and nothing else of ours (A2).
 		for (const [path, contents] of Object.entries(written)) {
-			if (!path.startsWith("_unframework/")) continue;
+			if (!path.startsWith("_unframework/")) {
+				continue;
+			}
 			for (const [, specifier] of contents.matchAll(/from "([^"]+)"/g)) {
 				expect(specifier, path).toMatch(/^(?:solid-js|solid-js\/web)$/);
 			}

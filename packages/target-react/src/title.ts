@@ -24,12 +24,17 @@ type JsExpression = Exclude<TextPart, string>;
  * ADR-0032); the target throws on one rather than drop it (a target that throws is reported by
  * the compiler).
  */
-export function titleChildren(children: readonly RenderNode[], context: JsxContext): RenderNode[] {
+export function titleChildren(
+	children: ReadonlyArray<RenderNode>,
+	context: JsxContext,
+): Array<RenderNode> {
 	const [only] = children;
 	if (!only || children.length > 1 || only.kind === "Element" || only.kind === "For") {
 		return joined(children, context);
 	}
-	if (only.kind !== "If") return [only];
+	if (only.kind !== "If") {
+		return [only];
+	}
 	const branches = only.branches.map((branch) => ({
 		...branch,
 		children: titleChildren(branch.children, context),
@@ -42,12 +47,16 @@ export function titleChildren(children: readonly RenderNode[], context: JsxConte
  * interpolation of one string expression. Its code is printed here, each part's spelled by the
  * context, so the expression holds no reference for a rewrite to spell again.
  */
-function joined(children: readonly RenderNode[], context: JsxContext): RenderNode[] {
-	if (children.length === 0) return [];
+function joined(children: ReadonlyArray<RenderNode>, context: JsxContext): Array<RenderNode> {
+	if (children.length === 0) {
+		return [];
+	}
 	const span = { start: children[0]!.span.start, end: children.at(-1)!.span.end };
 	const placeholders = new Placeholders();
 	const parts = template(children, context, placeholders);
-	if (typeof parts === "string") return parts ? [{ kind: "Text", value: parts, span }] : [];
+	if (typeof parts === "string") {
+		return parts ? [{ kind: "Text", value: parts, span }] : [];
+	}
 	const code = placeholders.print(() => printExpression(parts));
 	return [{ kind: "Interpolation", value: { code, span, refs: [] }, span }];
 }
@@ -57,17 +66,21 @@ function joined(children: readonly RenderNode[], context: JsxContext): RenderNod
  * alone; or, when nothing in them renders a value, their text.
  */
 function template(
-	nodes: readonly RenderNode[],
+	nodes: ReadonlyArray<RenderNode>,
 	context: JsxContext,
 	placeholders: Placeholders,
 ): JsExpression | string {
-	const parts: TextPart[] = [];
+	const parts: Array<TextPart> = [];
 	for (const node of nodes) {
 		const value = node.kind === "Text" ? node.value : part(node, context, placeholders);
-		if (value !== undefined) parts.push(value);
+		if (value !== undefined) {
+			parts.push(value);
+		}
 	}
 	const [only] = parts;
-	if (parts.length === 1 && typeof only !== "string") return only!;
+	if (parts.length === 1 && typeof only !== "string") {
+		return only!;
+	}
 	return textTemplate(parts);
 }
 
@@ -113,7 +126,9 @@ function interpolationText(
 	placeholders: Placeholders,
 ): JsExpression | undefined {
 	const code = expressionCode(value, context);
-	if (isTextProp(value, context.component)) return placeholders.expression(code);
+	if (isTextProp(value, context.component)) {
+		return placeholders.expression(code);
+	}
 	return nullishText(code, placeholders);
 }
 
@@ -138,7 +153,7 @@ function conditional(node: IfNode, context: JsxContext, placeholders: Placeholde
 
 /** What a branch renders, as one string expression. */
 function branchText(
-	children: readonly RenderNode[],
+	children: ReadonlyArray<RenderNode>,
 	context: JsxContext,
 	placeholders: Placeholders,
 ): JsExpression {
@@ -153,9 +168,15 @@ function branchText(
  */
 function isTextProp(value: Expression, component: UfComponent): boolean {
 	const [only] = value.refs;
-	if (value.refs.length !== 1 || only?.kind !== "Binding") return false;
-	if (only.span.start !== value.span.start || only.span.end !== value.span.end) return false;
+	if (value.refs.length !== 1 || only?.kind !== "Binding") {
+		return false;
+	}
+	if (only.span.start !== value.span.start || only.span.end !== value.span.end) {
+		return false;
+	}
 	const prop = component.props.find((candidate) => candidate.binding === only.binding);
-	if (!prop || !["string", "number"].includes(prop.type.code)) return false;
+	if (!prop || !["string", "number"].includes(prop.type.code)) {
+		return false;
+	}
 	return !prop.optional || prop.default !== undefined;
 }

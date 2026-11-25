@@ -63,12 +63,12 @@ interface Handler {
 
 /** What a group lowers to: the controls its `sync$` runs, its `$` handler, the element's markers. */
 interface Lowered {
-	syncs: SyncBatch[];
+	syncs: Array<SyncBatch>;
 	handler?: Handler;
 	/** `preventdefault:submit`, `stoppropagation:click`: the loader's markers. */
-	markers: string[];
+	markers: Array<string>;
 	/** Every control of the group, with the listener that makes it. */
-	controls: { listener: EventAttribute; lifted: LiftedControl }[];
+	controls: Array<{ listener: EventAttribute; lifted: LiftedControl }>;
 	/** The type of the group's event, as its listeners take it. */
 	eventType: string;
 }
@@ -83,16 +83,16 @@ interface Member {
 	/** The setup function it names: how a call spells it, and the parameters it takes. */
 	named?: {
 		name: string;
-		takes: readonly Parameter[];
+		takes: ReadonlyArray<Parameter>;
 		/** A module-level function, called synchronously. */
 		module: boolean;
 		/** Whether nothing is left of it (its body was only controls). */
 		empty: boolean;
 	};
-	controls: LiftedControl[];
+	controls: Array<LiftedControl>;
 	/** The markers of its controls, and the controls that run in a `sync$`. */
-	markers: string[];
-	syncs: LiftedControl[];
+	markers: Array<string>;
+	syncs: Array<LiftedControl>;
 }
 
 /** The listeners of a component, printed per element and event at the first of them. */
@@ -101,7 +101,7 @@ export class Listeners {
 	/** The elements and events already printed. */
 	readonly #printed = new Set<EventAttribute>();
 	/** The `once` listeners' WeakSets, declared after the component. */
-	readonly helpers: string[] = [];
+	readonly helpers: Array<string> = [];
 	/**
 	 * The listeners and models in a fill and in a list, whose `$` handler is written `$(…)` in
 	 * place: Qwik's optimizer (2.1.0-rc.11, with core 2.0.0-rc.5) hoists the capture of an arrow
@@ -121,26 +121,38 @@ export class Listeners {
 	reprint(node: DynamicNode): void {
 		walk(node, {
 			enter: (inner) => {
-				if (inner.kind !== "Element" && inner.kind !== "Dynamic") return;
+				if (inner.kind !== "Element" && inner.kind !== "Dynamic") {
+					return;
+				}
 				for (const attribute of inner.attributes) {
-					if (attribute.kind === "Event") this.#printed.delete(attribute);
+					if (attribute.kind === "Event") {
+						this.#printed.delete(attribute);
+					}
 				}
 			},
 		});
 	}
 
 	/** The JSX attributes of `attribute`'s event on `element`, at its first listener; `[]` after. */
-	attributes(attribute: EventAttribute, element: ElementNode, context: JsxContext): JsxAttribute[] {
+	attributes(
+		attribute: EventAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<JsxAttribute> {
 		const listeners = element.attributes.filter(
 			(other): other is EventAttribute => other.kind === "Event" && other.event === attribute.event,
 		);
 		const [first] = listeners;
-		if (first !== attribute || this.#printed.has(first)) return [];
+		if (first !== attribute || this.#printed.has(first)) {
+			return [];
+		}
 		this.#printed.add(first);
 		// A `v-model` of the event runs first, as Vue's directive listens before the element's
 		// listeners (./composition.ts `modelAttribute`).
 		const model = element.attributes.flatMap((other) => {
-			if (other.kind !== "Model") return [];
+			if (other.kind !== "Model") {
+				return [];
+			}
 			const found = modelListener(other, element, context, this.#plan);
 			return found.event === attribute.event ? [found.handler] : [];
 		})[0];
@@ -174,26 +186,28 @@ export class Listeners {
 
 	#event(
 		event: string,
-		listeners: readonly EventAttribute[],
+		listeners: ReadonlyArray<EventAttribute>,
 		context: JsxContext,
 		explicit: boolean,
 		component: boolean,
 		model?: string,
 		passed?: string,
 		typed = false,
-	): JsxAttribute[] {
+	): Array<JsxAttribute> {
 		const plan = this.#plan;
 		const groups = [
 			...new Set(listeners.map((listener) => plan.listeners.groups.get(listener)!)),
 		].toSorted((a, b) => (a.scope === b.scope ? 0 : a.scope === "element" ? -1 : 1));
 		const window = groups.some((group) => group.scope === "window");
-		const attributes: JsxAttribute[] = [];
+		const attributes: Array<JsxAttribute> = [];
 		if (!window && listeners.some((listener) => listener.capture)) {
 			attributes.push(js.jsxAttribute(`capture:${event}`));
 		}
 		const passive =
 			listeners.some((listener) => listener.passive) && !plan.listeners.mixedPassive.has(event);
-		if (passive) attributes.push(js.jsxAttribute(`passive:${event}`));
+		if (passive) {
+			attributes.push(js.jsxAttribute(`passive:${event}`));
+		}
 		const lowered = new Map(
 			groups.map((group) => [
 				group.scope,
@@ -201,7 +215,9 @@ export class Listeners {
 			]),
 		);
 		const markers = [...lowered.values()].flatMap((each) => each.markers);
-		for (const marker of new Set(markers)) attributes.push(js.jsxAttribute(marker));
+		for (const marker of new Set(markers)) {
+			attributes.push(js.jsxAttribute(marker));
+		}
 		for (const scope of ["element", "window"] as const) {
 			const found = lowered.get(scope);
 			// A `$` handler beside a `sync$` runs after it, in the dispatch: from Qwik 2.0.0-rc.5 a
@@ -224,7 +240,9 @@ export class Listeners {
 					? [{ code: () => passed, inline: false }]
 					: []),
 			];
-			if (!entries.length) continue;
+			if (!entries.length) {
+				continue;
+			}
 			const value =
 				entries.length === 1
 					? context.placeholders.expression(
@@ -274,11 +292,13 @@ export class Listeners {
 		const usesElement = readsName(body, element);
 		const usesEvent = readsName(body, eventName);
 		const parameters = (typed: boolean) => {
-			const list: string[] = [];
+			const list: Array<string> = [];
 			if (usesEvent || usesElement) {
 				list.push(`${usesEvent ? eventName : "_"}${typed ? `: ${eventType}` : ""}`);
 			}
-			if (usesElement) list.push(`${element}${typed ? ": Element" : ""}`);
+			if (usesElement) {
+				list.push(`${element}${typed ? ": Element" : ""}`);
+			}
 			return list.join(", ");
 		};
 		return {
@@ -322,13 +342,15 @@ export class Listeners {
 			({ control }) =>
 				!(listener.passive && !options.passive && control.method === "preventDefault"),
 		);
-		const markers: string[] = [];
-		const syncs: LiftedControl[] = [];
+		const markers: Array<string> = [];
+		const syncs: Array<LiftedControl> = [];
 		for (const lifted of controls) {
 			const always = !lifted.tests.length && lifted.control.condition === undefined;
 			if (always && options.markers && group.scope === "element") {
 				const marker = `${lifted.control.method === "preventDefault" ? "preventdefault" : "stoppropagation"}:${listener.event}`;
-				if (!markers.includes(marker)) markers.push(marker);
+				if (!markers.includes(marker)) {
+					markers.push(marker);
+				}
 			} else {
 				syncs.push(lifted);
 			}
@@ -344,7 +366,7 @@ export class Listeners {
 		const eventParameter = fn.parameters.find((parameter) => parameter.event !== undefined);
 		const eventName = eventParameter?.name ?? localName("event", fn, plan);
 		const element = plan.names.once("element");
-		const guards: string[] = [];
+		const guards: Array<string> = [];
 		if (group.scope === "window") {
 			guards.push(`if (!${element}.contains(${eventName}.target as Node)) return;`);
 		}
@@ -352,17 +374,23 @@ export class Listeners {
 			const set = this.#onceSet(listener);
 			guards.push(`if (${set}.has(${element})) return;`, `${set}.add(${element});`);
 			for (const marker of member.markers) {
-				if (!kept.has(marker)) guards.push(`${element}.removeAttribute("${marker}");`);
+				if (!kept.has(marker)) {
+					guards.push(`${element}.removeAttribute("${marker}");`);
+				}
 			}
 		}
 		const guarded = guards.length > 0;
 		if (named) {
-			if (named.empty && !(once && member.markers.length)) return undefined;
+			if (named.empty && !(once && member.markers.length)) {
+				return undefined;
+			}
 			// A module-level function is a handler through its own QRL, which the optimizer makes a
 			// segment that imports it: a plain function would not serialise with the page.
 			const reference = named.module ? `${plan.names.core("$")}(${named.name})` : named.name;
 			const inPlace = group.synchronous && !named.module && !named.empty;
-			if (!guarded && !inPlace) return { code: () => reference, inline: false };
+			if (!guarded && !inPlace) {
+				return { code: () => reference, inline: false };
+			}
 			const args = named.takes.map((parameter) =>
 				parameter.name === element ? element : eventName,
 			);
@@ -377,10 +405,13 @@ export class Listeners {
 				guards.some((guard) => readsName(guard, element)) || readsName(statements, element);
 			const eventType = eventParameter?.type?.code ?? eventParameter?.event ?? "Event";
 			const parameters = (typed: boolean) => {
-				const list: string[] = [];
-				if (usesEvent || usesElement)
+				const list: Array<string> = [];
+				if (usesEvent || usesElement) {
 					list.push(`${usesEvent ? eventName : "_"}${typed ? `: ${eventType}` : ""}`);
-				if (usesElement) list.push(`${element}${typed ? ": Element" : ""}`);
+				}
+				if (usesElement) {
+					list.push(`${element}${typed ? ": Element" : ""}`);
+				}
 				return list.join(", ");
 			};
 			return {
@@ -389,7 +420,9 @@ export class Listeners {
 				inline: true,
 			};
 		}
-		if (split.empty && !(guarded && once && member.markers.length)) return undefined;
+		if (split.empty && !(guarded && once && member.markers.length)) {
+			return undefined;
+		}
 		return {
 			code: (typed) => this.#inline(fn, split, guards, eventName, typed, group.synchronous),
 			inline: true,
@@ -449,7 +482,9 @@ export class Listeners {
 		if (statements && own !== eventName && readsName(statements, own)) {
 			statements = `const ${own} = ${eventName};\n${statements}`;
 		}
-		if (!listener.once) return statementCount(statements) > 1 ? `{\n${statements}\n}` : statements;
+		if (!listener.once) {
+			return statementCount(statements) > 1 ? `{\n${statements}\n}` : statements;
+		}
 		const set = this.#onceSet(listener);
 		const removals = member.markers
 			.filter((marker) => !kept.has(marker))
@@ -465,12 +500,12 @@ export class Listeners {
 	 */
 	#guarded(statements: string): string {
 		const { root } = parseCodeSource(`{\n${statements}\n}`, "statements");
-		const [block] = root as { type: string; body: GuardNode[] }[];
+		const [block] = root as Array<{ type: string; body: Array<GuardNode> }>;
 		const body = block!.body;
 		const offset = 2;
 		const text = (node: { start: number; end: number }) =>
 			statements.slice(node.start - offset, node.end - offset);
-		const guards: string[] = [];
+		const guards: Array<string> = [];
 		let index = 0;
 		for (; index < body.length; index++) {
 			const statement = body[index]!;
@@ -481,7 +516,9 @@ export class Listeners {
 					(statement.consequent!.type === "BlockStatement" &&
 						statement.consequent!.body!.length === 1 &&
 						statement.consequent!.body![0]!.type === "ReturnStatement"));
-			if (!exit) break;
+			if (!exit) {
+				break;
+			}
 			const returned =
 				statement.consequent!.type === "ReturnStatement"
 					? statement.consequent!
@@ -524,7 +561,7 @@ export class Listeners {
 	#inline(
 		fn: FunctionCode,
 		split: SplitHandler,
-		guards: readonly string[],
+		guards: ReadonlyArray<string>,
 		eventName: string,
 		typed: boolean,
 		synchronous: boolean,
@@ -562,7 +599,7 @@ export class Listeners {
 			readsName(statements, name) || guards.some((guard) => readsName(guard, name));
 		const needsElement = reads(element);
 		const needsEvent = needsElement || reads(eventName);
-		const parameters: Parameter[] = [];
+		const parameters: Array<Parameter> = [];
 		const at = { start: 0, end: 0 };
 		const own = fn.parameters[0];
 		const type = (code: string | undefined) =>
@@ -576,7 +613,9 @@ export class Listeners {
 				...type(eventType),
 			});
 		}
-		if (needsElement) parameters.push({ name: element, span: at, ...type("Element") });
+		if (needsElement) {
+			parameters.push({ name: element, span: at, ...type("Element") });
+		}
 		const async = fn.async === true || settled.async;
 		// A listener that another listener of the dispatch may follow: an async body goes on by
 		// itself, as it does on the source's semantics, and the handler returns after its synchronous
@@ -599,8 +638,12 @@ export class Listeners {
 			parameters,
 			...(async ? { async: true as const } : {}),
 		};
-		if (guards.length || settled.kind === "statements") delete printed.expression;
-		if (!guards.length) return functionSource(printed, statements);
+		if (guards.length || settled.kind === "statements") {
+			delete printed.expression;
+		}
+		if (!guards.length) {
+			return functionSource(printed, statements);
+		}
 		return functionSource(printed, `{\n${[...guards, statements].filter(Boolean).join("\n")}\n}`);
 	}
 }
@@ -618,30 +661,42 @@ interface GuardNode {
 	test?: GuardNode;
 	consequent?: GuardNode;
 	alternate?: GuardNode | null;
-	body?: GuardNode[];
+	body?: Array<GuardNode>;
 	argument?: GuardNode | null;
 }
 
 /** Whether statements return, outside the functions in them. */
 function returnsEarly(statements: string): boolean {
-	if (!/(?<![\w$.])return\b/.test(statements)) return false;
+	if (!/(?<![\w$.])return\b/.test(statements)) {
+		return false;
+	}
 	const { root } = parseCodeSource(`{\n${statements}\n}`, "statements");
 	let found = false;
 	const visit = (node: unknown): void => {
-		if (found || !node || typeof node !== "object") return;
+		if (found || !node || typeof node !== "object") {
+			return;
+		}
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
 		const typed = node as { type?: unknown };
-		if (typeof typed.type !== "string") return;
+		if (typeof typed.type !== "string") {
+			return;
+		}
 		if (typed.type === "ReturnStatement") {
 			found = true;
 			return;
 		}
-		if (/Function/.test(typed.type)) return;
+		if (/Function/.test(typed.type)) {
+			return;
+		}
 		for (const [key, value] of Object.entries(typed)) {
-			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+			if (key !== "type" && key !== "parent" && typeof value === "object") {
+				visit(value);
+			}
 		}
 	};
 	visit(root);
@@ -662,7 +717,7 @@ interface ValueNode {
 	right?: ValueNode;
 	consequent?: ValueNode;
 	alternate?: ValueNode;
-	expressions?: ValueNode[];
+	expressions?: Array<ValueNode>;
 }
 
 function valueNodeIsCall(node: ValueNode): boolean {
@@ -685,23 +740,33 @@ function valueNodeIsCall(node: ValueNode): boolean {
 
 /** Whether statements await, outside the functions in them. */
 function awaitsIn(statements: string): boolean {
-	if (!/\bawait\b/.test(statements)) return false;
+	if (!/\bawait\b/.test(statements)) {
+		return false;
+	}
 	const { root } = parseCodeSource(`{\n${statements}\n}`, "statements");
 	let found = false;
 	const visit = (node: unknown): void => {
-		if (found || !node || typeof node !== "object") return;
+		if (found || !node || typeof node !== "object") {
+			return;
+		}
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
 		const typed = node as { type?: unknown; await?: unknown };
-		if (typeof typed.type !== "string" || /Function/.test(typed.type)) return;
+		if (typeof typed.type !== "string" || /Function/.test(typed.type)) {
+			return;
+		}
 		if (typed.type === "AwaitExpression" || (typed.type === "ForOfStatement" && typed.await)) {
 			found = true;
 			return;
 		}
 		for (const [key, value] of Object.entries(typed)) {
-			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+			if (key !== "type" && key !== "parent" && typeof value === "object") {
+				visit(value);
+			}
 		}
 	};
 	visit(root);
@@ -710,26 +775,32 @@ function awaitsIn(statements: string): boolean {
 
 /** How many statements code is, at its top level. */
 function statementCount(statements: string): number {
-	if (!statements.trim()) return 0;
+	if (!statements.trim()) {
+		return 0;
+	}
 	const { root } = parseCodeSource(`{\n${statements}\n}`, "statements");
-	const [block] = root as { body: unknown[] }[];
+	const [block] = root as Array<{ body: Array<unknown> }>;
 	return block!.body.length;
 }
 
 /** The event parameter a merged group's handler takes: its first listener's name for it. */
-function commonEventName(members: readonly Member[], plan: SetupPlan): string {
+function commonEventName(members: ReadonlyArray<Member>, plan: SetupPlan): string {
 	for (const { fn } of members) {
 		const name = fn.parameters.find((parameter) => parameter.event !== undefined)?.name;
-		if (name !== undefined) return name;
+		if (name !== undefined) {
+			return name;
+		}
 	}
 	return localName("event", members[0]!.fn, plan);
 }
 
 /** The DOM interface of a merged group's event: its listeners' annotation, or the event's own. */
-function groupEventType(members: readonly Member[]): string {
+function groupEventType(members: ReadonlyArray<Member>): string {
 	for (const { fn } of members) {
 		const parameter = fn.parameters.find((candidate) => candidate.event !== undefined);
-		if (parameter) return parameter.type?.code ?? parameter.event ?? "Event";
+		if (parameter) {
+			return parameter.type?.code ?? parameter.event ?? "Event";
+		}
 	}
 	return "Event";
 }

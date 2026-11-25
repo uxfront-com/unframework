@@ -25,7 +25,9 @@ export interface FunctionTextOptions {
  */
 export function parameterText(parameter: Parameter): string {
 	const binding = parameter.name ?? parameter.pattern?.code;
-	if (binding === undefined) throw new Error("A parameter has neither a name nor a pattern.");
+	if (binding === undefined) {
+		throw new Error("A parameter has neither a name nor a pattern.");
+	}
 	return [
 		parameter.rest ? "..." : "",
 		binding,
@@ -111,7 +113,9 @@ export function handlerText(
 	switch (handler.kind) {
 		case "Function": {
 			const binding = bindingOf(component, handler.binding);
-			if (!rules) return binding.name;
+			if (!rules) {
+				return binding.name;
+			}
 			const reference = { kind: "Binding" as const, binding: handler.binding, span: handler.span };
 			return rules.binding(reference, binding, binding.name, site);
 		}

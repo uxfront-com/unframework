@@ -13,11 +13,17 @@ import Panel from "./Panel.uf.tsx";
  * Reads, once a frame until `stop`, the transition's classes of each element `selector` matches
  * in `root`, as `text: classes`, and returns each reading that differs from the one before.
  */
-function everyFrame(root: Element, selector: string, prefix: string): { stop: () => string[] } {
-	const frames: string[] = [];
+function everyFrame(
+	root: Element,
+	selector: string,
+	prefix: string,
+): { stop: () => Array<string> } {
+	const frames: Array<string> = [];
 	let running = true;
 	const read = () => {
-		if (!running) return;
+		if (!running) {
+			return;
+		}
 		const elements = [...root.querySelectorAll(selector)];
 		frames.push(
 			elements

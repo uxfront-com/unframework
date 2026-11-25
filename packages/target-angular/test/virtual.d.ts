@@ -8,6 +8,6 @@ declare module "virtual:uf-angular/*" {
 declare module "virtual:uf-angular-events/*" {
 	import type { MountEvent } from "@unframework.dev/codegen";
 
-	const events: MountEvent[];
+	const events: Array<MountEvent>;
 	export default events;
 }

@@ -17,7 +17,7 @@ import {
 import { REPO_ROOT, ROOT } from "./paths.ts";
 
 /** A file for each entry of the list. */
-const ON_THE_LIST: readonly (readonly [string, string])[] = [
+const ON_THE_LIST: ReadonlyArray<readonly [string, string]> = [
 	[".github/workflows/ci.yml", ".github/workflows/ci.yml"],
 	[".github/actions/setup/**", ".github/actions/setup/action.yml"],
 	["tests/integration/harness/**", "tests/integration/harness/guard.ts"],
@@ -53,7 +53,7 @@ function runScript(input: string): { status: number | null; stdout: string } {
 }
 
 /** PR #147's files: the docs pages, an ADR, the plan and a README under a listed package. */
-const PR_147: readonly string[] = [
+const PR_147: ReadonlyArray<string> = [
 	"apps/web/content/docs/4.tooling/3.bundler-plugin.md",
 	"apps/web/content/docs/4.tooling/4.packaging.md",
 	"docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md",
@@ -62,7 +62,7 @@ const PR_147: readonly string[] = [
 ];
 
 /** The changes that are documentation alone: neither the canaries nor the tests run. */
-const DOCS_ONLY: readonly (readonly [string, readonly string[]])[] = [
+const DOCS_ONLY: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [
 	["PR #147's files", PR_147],
 	["a README under a listed package", ["packages/testing/README.md"]],
 	["the harness's README", ["tests/integration/README.md"]],
@@ -86,7 +86,7 @@ describe("the canary path filter", () => {
 		expect(runScript("")).toMatchObject({ status: 0, stdout: "canaries=false\ntests=true\n" });
 	});
 
-	it.each<readonly [string, boolean, boolean, readonly string[]]>([
+	it.each<readonly [string, boolean, boolean, ReadonlyArray<string>]>([
 		...DOCS_ONLY.map(([name, files]) => [name, false, false, files] as const),
 		[
 			"the diagnostics page, which tests/repo compares with the catalogue",
@@ -128,8 +128,12 @@ describe("the canary path filter", () => {
 	// The canaries job keeps its own gate (ADR-0073), so it must sit inside the tests' gate: a
 	// docs path added to CANARY_PATHS fails here.
 	it("never runs the canaries without the tests", () => {
-		for (const [glob, file] of ON_THE_LIST) expect(runsTests([file]), glob).toBe(true);
-		for (const [name, files] of DOCS_ONLY) expect(runsCanaries(files), name).toBe(false);
+		for (const [glob, file] of ON_THE_LIST) {
+			expect(runsTests([file]), glob).toBe(true);
+		}
+		for (const [name, files] of DOCS_ONLY) {
+			expect(runsCanaries(files), name).toBe(false);
+		}
 	});
 
 	it("never lets Markdown run the canaries, even under a listed path", () => {
@@ -145,20 +149,24 @@ describe("the canary path filter", () => {
 	it("lists every page a test reads in TESTED_DOCS", () => {
 		const tested = TESTED_DOCS.map(globToRegExp);
 		const named = new Set<string>();
-		const unlisted: string[] = [];
+		const unlisted: Array<string> = [];
 		const files = globSync("**/*.test.ts", {
 			cwd: REPO_ROOT,
 			exclude: ["**/node_modules", "**/.git", "packages/compiler-v1"],
 		});
 		expect(files.length).toBeGreaterThan(0);
 		for (const file of files) {
-			if (file === join("tests", "integration", "harness", "canary-paths.unit.test.ts")) continue;
+			if (file === join("tests", "integration", "harness", "canary-paths.unit.test.ts")) {
+				continue;
+			}
 			const text = readFileSync(join(REPO_ROOT, file), "utf8");
 			for (const [, path] of text.matchAll(
 				/["'`]((?:apps\/web\/content|tests\/integration\/cases)\/[^"'`\s]*\.md)["'`]/g,
 			)) {
 				named.add(path!);
-				if (!tested.some((pattern) => pattern.test(path!))) unlisted.push(`${file}: ${path!}`);
+				if (!tested.some((pattern) => pattern.test(path!))) {
+					unlisted.push(`${file}: ${path!}`);
+				}
 			}
 		}
 		// The two pages tests/repo reads, so the search finds what it looks for.

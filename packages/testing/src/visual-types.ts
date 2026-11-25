@@ -35,7 +35,7 @@ export type GeometryBox = [x: number, y: number, width: number, height: number];
  * no box).
  */
 export interface GeometryNode {
-	box?: GeometryBox | GeometryBox[];
+	box?: GeometryBox | Array<GeometryBox>;
 	style?: Record<string, string>;
 }
 
@@ -59,7 +59,7 @@ export interface CaptureRequest {
 	 * The serialised locator of each element the view teleported (ADR-0098): the screenshot clips
 	 * the union of their boxes and the container's.
 	 */
-	teleported?: readonly { selector: string; locator: string }[];
+	teleported?: ReadonlyArray<{ selector: string; locator: string }>;
 	case: string;
 	/** The scenario, such as `"initial"`. */
 	name: string;
@@ -118,11 +118,11 @@ export interface CaptureResult {
 	outcome: CaptureOutcome;
 	message: string;
 	diffPixels?: number;
-	attachments: CaptureAttachment[];
+	attachments: Array<CaptureAttachment>;
 	/** `reference-not-run`: the reference's browser project, which did not finish the case. */
 	referenceProject?: string;
 	/** A failed comparison: the geometry and computed-style deltas, which may be none. */
-	deltas?: GeometryDelta[];
+	deltas?: Array<GeometryDelta>;
 	/** Where the capture was written, when its location keeps every capture (ADR-0087). */
 	capture?: string;
 }

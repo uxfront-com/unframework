@@ -1,6 +1,5 @@
-import Palette, {
-	type Tone,
-} from "../../../../../integration/cases/types/shared-type/__output__/solid2/Palette";
+import Palette from "../../../../../integration/cases/types/shared-type/__output__/solid2/Palette";
+import type { Tone } from "../../../../../integration/cases/types/shared-type/__output__/solid2/Palette";
 
 const tone: Tone = "accent";
 

@@ -79,11 +79,13 @@ export function budgetProblems(
 	target: TargetName,
 	time: number,
 	size: OutputSize,
-): string[] {
+): Array<string> {
 	const limit = budget?.sizes[target];
-	if (!budget || !limit) return ["No budget for this cell. Run `pnpm test:budgets:update`."];
+	if (!budget || !limit) {
+		return ["No budget for this cell. Run `pnpm test:budgets:update`."];
+	}
 	const update = "Run `pnpm test:budgets:update` if the change is intended.";
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	if (time > budget.time * TIME_MARGIN) {
 		problems.push(
 			`compile time ${time.toFixed(2)} × ${CALIBRATION} is above ${TIME_MARGIN} × its budget of ${budget.time}. ${update}`,
@@ -103,11 +105,13 @@ export function budgetProblems(
  * What `budgets.json` holds that no cell reads: a case the corpus has left or that has output on
  * no target, and a target of a case that has no output there.
  */
-export function staleBudgets(budgets: Budgets, cases: readonly CaseInfo[]): string[] {
+export function staleBudgets(budgets: Budgets, cases: ReadonlyArray<CaseInfo>): Array<string> {
 	const known = new Map(cases.map((info) => [info.id, info]));
 	return Object.entries(budgets.cases).flatMap(([id, budget]) => {
 		const info = known.get(id);
-		if (!info) return [id];
+		if (!info) {
+			return [id];
+		}
 		return Object.keys(budget.sizes)
 			.filter((target) => errorState(info, target) !== false)
 			.map((target) => `${id} › ${target}`);
@@ -115,7 +119,7 @@ export function staleBudgets(budgets: Budgets, cases: readonly CaseInfo[]): stri
 }
 
 /** The cases a budget can judge: a case with output on no target has no cell to fail. */
-export function budgetedCases(cases: readonly CaseInfo[]): CaseInfo[] {
+export function budgetedCases(cases: ReadonlyArray<CaseInfo>): Array<CaseInfo> {
 	return cases.filter((info) => TARGET_NAMES.some((target) => errorState(info, target) === false));
 }
 
@@ -126,9 +130,9 @@ export function budgetedCases(cases: readonly CaseInfo[]): CaseInfo[] {
  * compile of all, so one run alone is noisy, and the run's first would still be warming up.
  */
 export async function measureTimes(
-	cases: readonly CaseInfo[],
+	cases: ReadonlyArray<CaseInfo>,
 	casesDir: string,
-	plugins: () => readonly CompilerPlugin[] = () => [],
+	plugins: () => ReadonlyArray<CompilerPlugin> = () => [],
 ): Promise<Map<string, number>> {
 	const bench = new Bench({
 		iterations: ITERATIONS,
@@ -140,7 +144,9 @@ export async function measureTimes(
 		now: cpuTime,
 	});
 	const calibration = cases.find((info) => info.id === CALIBRATION);
-	if (!calibration) throw new Error(`The corpus has no ${CALIBRATION}, which every time divides.`);
+	if (!calibration) {
+		throw new Error(`The corpus has no ${CALIBRATION}, which every time divides.`);
+	}
 	const measured = cases.filter((info) => info !== calibration);
 	const before = (id: string) => `${CALIBRATION} before ${id}`;
 	for (const info of measured) {
@@ -150,7 +156,9 @@ export async function measureTimes(
 	await bench.run();
 	const median = (name: string): number => {
 		const result = bench.getTask(name)?.result;
-		if (result?.state !== "completed") throw new Error(`The compile "${name}" did not complete.`);
+		if (result?.state !== "completed") {
+			throw new Error(`The compile "${name}" did not complete.`);
+		}
 		return result.latency.p50;
 	};
 	const calibrations = measured.map((info) => median(before(info.id))).toSorted((a, b) => a - b);
@@ -177,7 +185,7 @@ export function cpuTime(): number {
 function compileCase(
 	info: CaseInfo,
 	casesDir: string,
-	plugins: () => readonly CompilerPlugin[],
+	plugins: () => ReadonlyArray<CompilerPlugin>,
 ): () => Promise<void> {
 	const sources = info.sources.map((source) => ({
 		source,
@@ -209,12 +217,12 @@ function compileCase(
 export async function measureSize(
 	toolchain: Toolchain,
 	target: string,
-	files: readonly string[],
+	files: ReadonlyArray<string>,
 ): Promise<OutputSize> {
 	if (!files.length) {
 		throw new Error(`There's no ${target} output to measure. Run \`pnpm test:update\`.`);
 	}
-	const contents: ToolchainFile[] = files.map((path) => ({
+	const contents: Array<ToolchainFile> = files.map((path) => ({
 		path,
 		contents: readFileSync(path, "utf8"),
 	}));
@@ -240,23 +248,29 @@ const moduleKey = (path: string) => path.replace(/\.[cm]?[jt]sx?$/, "");
  * stylesheet, rejects: the bundle would be missing what the module needs.
  */
 export async function bundleSize(
-	lists: readonly (readonly ToolchainFile[])[],
+	lists: ReadonlyArray<ReadonlyArray<ToolchainFile>>,
 ): Promise<OutputSize> {
 	const modules = new Map(lists.flat().map((module) => [moduleKey(module.path), module] as const));
 	const memory: Plugin = {
 		name: "uf-budgets:memory",
 		resolveId(source, importer) {
-			if (!importer && modules.has(moduleKey(source))) return moduleKey(source);
+			if (!importer && modules.has(moduleKey(source))) {
+				return moduleKey(source);
+			}
 			if (!/^\.\.?\//.test(source) || /\.css(?:\?|$)/.test(source)) {
 				return { id: source, external: true };
 			}
 			const key = moduleKey(posix.join(dirname(importer ?? ""), source));
-			if (modules.has(key)) return key;
+			if (modules.has(key)) {
+				return key;
+			}
 			throw new Error(`${importer ?? ""} imports ${source}, which no module of the case provides.`);
 		},
 		load(id) {
 			const module = modules.get(id);
-			if (!module) return undefined;
+			if (!module) {
+				return undefined;
+			}
 			const moduleType = /\.[jt]sx$/.test(module.path) ? "tsx" : "ts";
 			return { code: module.contents, moduleType };
 		},
@@ -299,7 +313,9 @@ async function update(): Promise<void> {
 	for (const target of TARGET_NAMES) {
 		const toolchain = await loadToolchain(target);
 		for (const info of cases) {
-			if (errorState(info, target) !== false) continue;
+			if (errorState(info, target) !== false) {
+				continue;
+			}
 			const files = committedOutputFiles(info, target);
 			budgets.cases[info.id]!.sizes[target] = await measureSize(toolchain, target, files);
 		}
@@ -327,4 +343,6 @@ async function main(): Promise<number> {
 	return 0;
 }
 
-if (import.meta.main) process.exitCode = await main();
+if (import.meta.main) {
+	process.exitCode = await main();
+}

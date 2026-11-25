@@ -23,7 +23,7 @@ export type ProjectPlugins = NonNullable<ToolchainContext["plugins"]>;
  * caches, its Vitest options, and the preview's refusal to load a Vite config of its own or to
  * listen beyond this machine (ADR-0088).
  */
-export const OWNED_KEYS: readonly string[] = [
+export const OWNED_KEYS: ReadonlyArray<string> = [
 	"root",
 	"base",
 	"cacheDir",
@@ -36,14 +36,14 @@ export const OWNED_KEYS: readonly string[] = [
  * The `server` keys every server sets for itself: the preview listens on `127.0.0.1` alone, and an
  * HMR server of its own (`server.hmr`) would open a WebSocket server that listens beyond it.
  */
-export const OWNED_SERVER_KEYS: readonly string[] = ["host", "port", "strictPort", "hmr"];
+export const OWNED_SERVER_KEYS: ReadonlyArray<string> = ["host", "port", "strictPort", "hmr"];
 
 /** Where every message about the field points. */
 const FIELD = "vite in unframework.config.ts";
 
 /** The project's config for one server: its plugins, flattened, and every other key. */
 interface ServerConfig {
-	plugins: Plugin[];
+	plugins: Array<Plugin>;
 	rest: Record<string, unknown>;
 }
 
@@ -54,7 +54,9 @@ interface ServerConfig {
  * says why.
  */
 async function serverConfig(vite: ProjectVite, context: ViteContext): Promise<ServerConfig> {
-	if (!vite) return { plugins: [], rest: {} };
+	if (!vite) {
+		return { plugins: [], rest: {} };
+	}
 	let made: unknown;
 	try {
 		made = await vite(context);
@@ -105,7 +107,10 @@ export async function withProjectVite<T extends object>(
 	const project = await serverConfig(vite, context);
 	const own = (config as { plugins?: unknown }).plugins;
 	const merged = mergeConfig(config as Record<string, unknown>, project.rest);
-	return { ...merged, plugins: [...project.plugins, ...(Array.isArray(own) ? own : [])] } as T;
+	return {
+		...merged,
+		plugins: [...project.plugins, ...(Array.isArray(own) ? (own as Array<unknown>) : [])],
+	} as T;
 }
 
 /**
@@ -118,14 +123,16 @@ export function projectPlugins(vite: ProjectVite, context: ViteContext): Project
 }
 
 /** A plugin option in any shape Vite's `plugins` takes, flattened: read as `unknown`, since the project's code gives it. */
-async function flattenPlugins(option: unknown): Promise<Plugin[]> {
+async function flattenPlugins(option: unknown): Promise<Array<Plugin>> {
 	let value: unknown;
 	try {
 		value = await option;
 	} catch (error) {
 		throw failed("gave a promise that rejected", error);
 	}
-	if (value === false || value === null || value === undefined) return [];
+	if (value === false || value === null || value === undefined) {
+		return [];
+	}
 	if (Array.isArray(value)) {
 		return (await Promise.all(value.map((each: unknown) => flattenPlugins(each)))).flat();
 	}
@@ -155,8 +162,12 @@ function describeValue(value: unknown): string {
 		case "string":
 			return JSON.stringify(value);
 		case "object":
-			if (value === null) return "null";
-			if (Array.isArray(value)) return "a list";
+			if (value === null) {
+				return "null";
+			}
+			if (Array.isArray(value)) {
+				return "a list";
+			}
 			return "name" in value ? "an object whose name is no string" : "an object without a name";
 		case "function":
 			return "a function";
@@ -186,7 +197,7 @@ export const PASS_THROUGH_DECLARATIONS: string = [
  * `dist` alone. It is written only when it differs, through a rename, so runs that share a root
  * never read half of it.
  */
-export function passThroughDeclarations(root: string): string[] {
+export function passThroughDeclarations(root: string): Array<string> {
 	const file = join(root, "node_modules", ".cache", "unframework", "pass-through.d.ts");
 	let current: string | undefined;
 	try {

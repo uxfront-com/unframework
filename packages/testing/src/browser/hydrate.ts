@@ -30,11 +30,11 @@ import { teleportedBy } from "./teleports.ts";
 
 /** Whether this project hydrates (`test.provide.ufHydrate`). */
 export function isHydrateProject(): boolean {
-	return (inject("ufHydrate") as boolean | undefined) === true;
+	return inject("ufHydrate") === true;
 }
 
 /** The attributes whose values are ids, or lists of ids, that the `ids` sub-check reads. */
-export const ID_ATTRIBUTES: readonly string[] = [
+export const ID_ATTRIBUTES: ReadonlyArray<string> = [
 	"id",
 	"for",
 	"headers",
@@ -55,20 +55,24 @@ export const ID_ATTRIBUTES: readonly string[] = [
  * A `<script>`'s are left out: a framework's hydration data (Angular's `ng-state`) is one its
  * adapter takes out of the page as it hydrates.
  */
-export function idsOf(root: ParentNode): string[] {
-	const ids: string[] = [];
+export function idsOf(root: ParentNode): Array<string> {
+	const ids: Array<string> = [];
 	for (const element of root.querySelectorAll("*")) {
-		if (element.localName === "script") continue;
+		if (element.localName === "script") {
+			continue;
+		}
 		for (const name of ID_ATTRIBUTES) {
 			const value = element.getAttribute(name);
-			if (value !== null) ids.push(`${name}="${value}"`);
+			if (value !== null) {
+				ids.push(`${name}="${value}"`);
+			}
 		}
 	}
 	return ids;
 }
 
 /** The ids of server HTML, read as the page parses it. */
-export function idsOfHtml(html: string): string[] {
+export function idsOfHtml(html: string): Array<string> {
 	const template = document.createElement("template");
 	template.innerHTML = html;
 	return idsOf(template.content);
@@ -76,8 +80,8 @@ export function idsOfHtml(html: string): string[] {
 
 /** Why two lists of ids differ, or nothing when they are the same. */
 export function compareIds(
-	server: readonly string[],
-	hydrated: readonly string[],
+	server: ReadonlyArray<string>,
+	hydrated: ReadonlyArray<string>,
 ): string | undefined {
 	if (server.length === hydrated.length && server.every((id, index) => id === hydrated[index])) {
 		return undefined;
@@ -93,7 +97,9 @@ export function compareIds(
 /** Records an L12 failure on the current test, naming its sub-check. */
 export function failHydration(target: string, subCheck: string, message: string): void {
 	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-	if (!test) throw new Error(`${subCheck}: ${message}`);
+	if (!test) {
+		throw new Error(`${subCheck}: ${message}`);
+	}
 	const harness = inject("ufHarness");
 	recordLayer(
 		test,
@@ -132,7 +138,9 @@ export async function hydrateInto(
 	const props = { ...options.props };
 	assertSerialisableProps(props, "A hydrate project renders the server HTML in Node (L12)");
 	const rendered = await commands.ufHydrationRender({ case: caseId, props });
-	if (rendered.console.length) captureExternalConsole(rendered.console);
+	if (rendered.console.length) {
+		captureExternalConsole(rendered.console);
+	}
 	const main = (await importModule(rendered.module)) as { default?: unknown };
 	if (main.default !== component) {
 		throw new Error(
@@ -155,6 +163,7 @@ export async function hydrateInto(
  * rewrites a dynamic `import()` of a computed URL to add `?import`, which the page loads as a
  * module of its own.
  */
+// oxlint-disable-next-line typescript/no-implied-eval -- an import() of a computed URL that Vite does not rewrite
 const importModule = new Function("url", "return import(url);") as (
 	url: string,
 ) => Promise<unknown>;
@@ -175,8 +184,8 @@ export async function clientRender(
 	mount: MountAdapter,
 	component: unknown,
 	props: Readonly<Record<string, unknown>> | undefined,
-	events: readonly MountEvent[],
-	normalize: (root: HTMLElement, teleported: readonly Element[]) => string,
+	events: ReadonlyArray<MountEvent>,
+	normalize: (root: HTMLElement, teleported: ReadonlyArray<Element>) => string,
 ): Promise<string> {
 	// What it teleports is its own, not the hydrated view's (ADR-0098).
 	const owner = {};
@@ -195,7 +204,9 @@ export async function clientRender(
 			for (let round = 0; round < CLIENT_SETTLE_ROUNDS; round += 1) {
 				await settleFrame(() => instance.settle());
 				const html = normalize(root, teleportedBy(owner));
-				if (html === previous) return html;
+				if (html === previous) {
+					return html;
+				}
 				previous = html;
 			}
 			throw new Error(
@@ -218,6 +229,8 @@ export async function clientRender(
 
 /** Why the hydrated root and the client render differ, or nothing when they agree. */
 export function compareClientRender(hydrated: string, client: string): string | undefined {
-	if (hydrated === client) return undefined;
+	if (hydrated === client) {
+		return undefined;
+	}
 	return `the hydrated DOM is not the client render's (expected: the client render, actual: the hydrated root):\n${diffLines(client, hydrated)}`;
 }

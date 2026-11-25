@@ -85,31 +85,33 @@ describe("escapes", () => {
 			'"\\u007d\\u007d" + `\\u007d\\u007d\\u007d`',
 		);
 		expect(separateClosingBraces("`${a}}`")).toBe("`${a}\\u007d`");
-		expect(separateClosingBraces("/}}/.test(a)")).toBe("/}\\}/.test(a)");
+		expect(separateClosingBraces("/}}/.test(a)")).toBe(String.raw`/}\}/.test(a)`);
 		expect(separateClosingBraces("a /* }} */")).toBe("a /* } } */");
-		expect(separateClosingBraces('"\\}}"')).toBe('"\\u007d\\u007d"');
+		expect(separateClosingBraces(String.raw`"\}}"`)).toBe(String.raw`"\u007d\u007d"`);
 		expect(separateClosingBraces('"}" + "}"')).toBe('"}" + "}"');
 	});
 
 	it("writes strings with only the escapes every expression language reads", () => {
-		expect(quoteString("a\nb\tc\\d\"e'f", '"')).toBe('"a\\nb\\tc\\\\d\\"e\'f"');
-		expect(quoteString("a'b", "'")).toBe("'a\\'b'");
+		expect(quoteString("a\nb\tc\\d\"e'f", '"')).toBe(String.raw`"a\nb\tc\\d\"e'f"`);
+		expect(quoteString("a'b", "'")).toBe(String.raw`'a\'b'`);
 		expect(quoteString("\b\0 \u{1f600}\ud800", '"')).toBe(
 			'"\\u0008\\u0000\\u2028\u{1f600}\\ud800"',
 		);
-		expect(quoteString("{x}", '"', (c) => (c === "{" ? "\\u007b" : undefined))).toBe('"\\u007bx}"');
+		expect(quoteString("{x}", '"', (c) => (c === "{" ? String.raw`\u007b` : undefined))).toBe(
+			String.raw`"\u007bx}"`,
+		);
 		expect(quasiText("a`b${c}$d")).toBe("a\\`b\\${c}$d");
 	});
 });
 
 describe("Vue expression code", () => {
 	it("keeps `}}` and character references out of an interpolation", () => {
-		expect(vueInterpolationCode('a && "&amp;}}"')).toBe('a && "&amp;amp;\\u007d\\u007d"');
+		expect(vueInterpolationCode('a && "&amp;}}"')).toBe(String.raw`a && "&amp;amp;\u007d\u007d"`);
 	});
 
 	it("writes double-quoted strings in single quotes in an attribute, as Vue templates do", () => {
-		expect(vueAttributeCode('a + "b" + "it\'s" + "\\"q\\""')).toBe(
-			"a + 'b' + 'it\\'s' + '&quot;q&quot;'",
+		expect(vueAttributeCode(String.raw`a + "b" + "it's" + "\"q\""`)).toBe(
+			String.raw`a + 'b' + 'it\'s' + '&quot;q&quot;'`,
 		);
 		expect(vueAttributeCode("a ? `x${b}` : '&lt'")).toBe("a ? `x${b}` : '&amp;lt'");
 	});
@@ -125,8 +127,8 @@ describe("Vue expression code", () => {
 describe("Angular expression code", () => {
 	it("re-prints literals with the escapes Angular's lexer reads", () => {
 		// Angular reads `"\x41"` as `"x41"`, and condenses runs of spaces in an interpolation.
-		expect(angularCode('"\\x41" + "a  b" + "<b>{x}</b>&"', "interpolation")).toBe(
-			'"A" + "a\\u0020\\u0020b" + "\\u003cb\\u003e\\u007bx\\u007d\\u003c/b\\u003e\\u0026"',
+		expect(angularCode(String.raw`"\x41" + "a  b" + "<b>{x}</b>&"`, "interpolation")).toBe(
+			String.raw`"A" + "a\u0020\u0020b" + "\u003cb\u003e\u007bx\u007d\u003c/b\u003e\u0026"`,
 		);
 		expect(angularCode("0x10 + 1_000 + .5 + 5. + 1e3", "block")).toBe("16 + 1_000 + .5 + 5. + 1e3");
 		expect(angularCode("a /* b */ + c", "block")).toBe("a   + c");
@@ -138,14 +140,14 @@ describe("Angular expression code", () => {
 
 	it("writes a listener's template statement as an attribute's, its statements apart", () => {
 		expect(angularCode('save($event); note(`${n} "x" & y`)', "event")).toBe(
-			"save($event); note(n + ' &quot;x&quot; \\u0026 y')",
+			String.raw`save($event); note(n + ' &quot;x&quot; \u0026 y')`,
 		);
 		expect(withoutTemplateLiterals("a(`${b}c`); d()", "statements")).toBe('a(b + "c"); d()');
 	});
 
 	it("keeps `}}` and tags out of an interpolation, and leaves block parameters undecoded", () => {
 		expect(angularCode("f({ a: { b: 1 }}) && a<b && /<b>}}/.test(c)", "interpolation")).toBe(
-			"f({ a: { b: 1 } }) && a< b && /\\x3cb>}\\}/.test(c)",
+			String.raw`f({ a: { b: 1 } }) && a< b && /\x3cb>}\}/.test(c)`,
 		);
 		expect(angularCode("a && b<c", "block")).toBe("a && b<c");
 	});
@@ -154,29 +156,35 @@ describe("Angular expression code", () => {
 	// outside quotes, which they track in a regular expression too; its whitespace processing
 	// condenses runs and turns U+E500 into a space there.
 	it("writes escapes in a regular expression for what Angular's template reads in it", () => {
-		expect(angularCode("/'\"`;/.test(s)", "block")).toBe("/\\x27\\x22\\x60\\x3b/.test(s)");
-		expect(angularCode("s.split(/[;)(]/)", "block")).toBe("s.split(/[\\x3b\\x29\\x28]/)");
+		expect(angularCode("/'\"`;/.test(s)", "block")).toBe(String.raw`/\x27\x22\x60\x3b/.test(s)`);
+		expect(angularCode("s.split(/[;)(]/)", "block")).toBe(String.raw`s.split(/[\x3b\x29\x28]/)`);
 		// A group's parentheses balance; an escaped one, a bracket or a `/` is an escape, since the
 		// raw text angular-eslint lints doubles its backslash, which then escapes only itself.
-		expect(angularCode("/(a)\\)\\[\\]/.test(s)", "block")).toBe("/(a)\\x29\\x5b\\x5d/.test(s)");
+		expect(angularCode(String.raw`/(a)\)\[\]/.test(s)`, "block")).toBe(
+			String.raw`/(a)\x29\x5b\x5d/.test(s)`,
+		);
 		expect(angularCode("/a  b c\ue500/.test(s)", "interpolation")).toBe(
-			"/a\\x20\\x20b c\\ue500/.test(s)",
+			String.raw`/a\x20\x20b c\ue500/.test(s)`,
 		);
 		// Every `/` of a body that would write `//`, which Angular reads as a comment.
-		expect(angularCode("/^\\//.test(s)", "attribute")).toBe("/^\\x2f/.test(s)");
-		expect(angularCode("/\\/a[/]\\//.test(s)", "block")).toBe("/\\x2fa[/]\\x2f/.test(s)");
-		expect(angularCode("/a[//]/.test(s)", "block")).toBe("/a[\\x2f\\x2f]/.test(s)");
-		expect(angularCode("/\\/a\\/b/.test(s)", "block")).toBe("/\\x2fa\\x2fb/.test(s)");
+		expect(angularCode(String.raw`/^\//.test(s)`, "attribute")).toBe(String.raw`/^\x2f/.test(s)`);
+		expect(angularCode(String.raw`/\/a[/]\//.test(s)`, "block")).toBe(
+			String.raw`/\x2fa[/]\x2f/.test(s)`,
+		);
+		expect(angularCode("/a[//]/.test(s)", "block")).toBe(String.raw`/a[\x2f\x2f]/.test(s)`);
+		expect(angularCode(String.raw`/\/a\/b/.test(s)`, "block")).toBe(
+			String.raw`/\x2fa\x2fb/.test(s)`,
+		);
 		expect(angularCode("/a//2", "block")).toBe("/a/ /2");
 	});
 
 	// Angular's template lexer opens a tag at `<` before a letter or `!`, in an interpolation too.
 	it("writes a regular expression's `<` so that no interpolation opens a tag", () => {
-		expect(angularCode("/a<b/.test(s)", "interpolation")).toBe("/a\\x3cb/.test(s)");
+		expect(angularCode("/a<b/.test(s)", "interpolation")).toBe(String.raw`/a\x3cb/.test(s)`);
 		expect(angularCode("/a<b/.test(s)", "block")).toBe("/a<b/.test(s)");
 		// A group's name and a lookbehind have no escape: a reference, once every `&` is one.
-		expect(angularCode("s && /(?<x>a)\\k<x>(?<!b)/.test(s)", "interpolation")).toBe(
-			"s &amp;&amp; /(?&lt;x>a)\\k&lt;x>(?&lt;!b)/.test(s)",
+		expect(angularCode(String.raw`s && /(?<x>a)\k<x>(?<!b)/.test(s)`, "interpolation")).toBe(
+			String.raw`s &amp;&amp; /(?&lt;x>a)\k&lt;x>(?&lt;!b)/.test(s)`,
 		);
 		expect(angularCode("a</b/.test(s)", "interpolation")).toBe("a< /b/.test(s)");
 	});
@@ -185,7 +193,7 @@ describe("Angular expression code", () => {
 	// where a `\'` reads as an escaped backslash and a closing quote, and Angular's search for a
 	// comment (`//`) ends a string at any quote of its kind: no backslash ever comes before a quote.
 	it("writes a string in the quote its value does not hold, or its own quote as an escape", () => {
-		expect(angularCode('"a\\"b" + "c//d"', "interpolation")).toBe(`'a"b' + "c//d"`);
+		expect(angularCode(String.raw`"a\"b" + "c//d"`, "interpolation")).toBe(`'a"b' + "c//d"`);
 		expect(angularCode('s ? "Saved" : "Don\'t"', "attribute")).toBe(
 			"s ? 'Saved' : &quot;Don't&quot;",
 		);
@@ -193,9 +201,9 @@ describe("Angular expression code", () => {
 		expect(angularCode('`Results for "${s}"`', "interpolation")).toBe(`'Results for "' + s + '"'`);
 		expect(angularCode(`s === 'say "hi"'`, "block")).toBe(`s === 'say "hi"'`);
 		expect(angularCode(`"it's \\"x\\" // y"`, "interpolation")).toBe(
-			'"it\'s \\u0022x\\u0022 // y"',
+			String.raw`"it's \u0022x\u0022 // y"`,
 		);
-		expect(angularCode(`"it's \\"x\\""`, "attribute")).toBe("'it\\u0027s &quot;x&quot;'");
+		expect(angularCode(`"it's \\"x\\""`, "attribute")).toBe(String.raw`'it\u0027s &quot;x&quot;'`);
 	});
 
 	// Angular's lexer takes every `.` after a number into it, and reads `?.` as optional chaining.
@@ -227,13 +235,13 @@ describe("Angular expression code", () => {
 
 	// An attribute value's lexer reads `{{` as an interpolation, and decodes its text as one.
 	it("keeps `{{` out of a regular expression", () => {
-		expect(angularCode("/a{{b/.test(s)", "attribute")).toBe("/a\\x7b{b/.test(s)");
-		expect(angularCode("/\\{{2}/.test(s)", "block")).toBe("/\\x7b{2}/.test(s)");
+		expect(angularCode("/a{{b/.test(s)", "attribute")).toBe(String.raw`/a\x7b{b/.test(s)`);
+		expect(angularCode(String.raw`/\{{2}/.test(s)`, "block")).toBe(String.raw`/\x7b{2}/.test(s)`);
 	});
 
 	it("writes U+E500 in a literal as an escape, which Angular's whitespace processing keeps", () => {
-		expect(angularCode('s + "x\\ue500"', "interpolation")).toBe('s + "x\\ue500"');
-		expect(angularCode('s + "x\ue500"', "attribute")).toBe("s + 'x\\ue500'");
+		expect(angularCode(String.raw`s + "x\ue500"`, "interpolation")).toBe(String.raw`s + "x\ue500"`);
+		expect(angularCode('s + "x\ue500"', "attribute")).toBe(String.raw`s + 'x\ue500'`);
 	});
 
 	// Angular's expression lexer reads only ASCII whitespace and the no-break space.

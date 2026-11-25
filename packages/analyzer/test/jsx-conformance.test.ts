@@ -27,14 +27,14 @@ type Reading = string | null;
 const FAILS = null;
 
 /** JSX for each sample, in one array, so each implementation runs once per batch. */
-function module(samples: readonly string[], kind: "text" | "attribute"): string {
+function module(samples: ReadonlyArray<string>, kind: "text" | "attribute"): string {
 	const elements = samples.map((raw) =>
 		kind === "text" ? `<p>${raw}</p>` : `<p title="${raw}" />`,
 	);
 	return `x = [\n${elements.join(",\n")}\n];`;
 }
 
-function babel(samples: readonly string[], kind: "text" | "attribute"): Reading[] {
+function babel(samples: ReadonlyArray<string>, kind: "text" | "attribute"): Array<Reading> {
 	try {
 		const file = parseSync(module(samples, kind), {
 			configFile: false,
@@ -58,20 +58,25 @@ function babel(samples: readonly string[], kind: "text" | "attribute"): Reading[
 		});
 	} catch (error) {
 		// Babel fails on a reference past U+10FFFF: find the samples it fails on one by one.
-		if (!(error instanceof RangeError)) throw error;
+		if (!(error instanceof RangeError)) {
+			throw error;
+		}
 		return samples.length === 1 ? [FAILS] : samples.flatMap((sample) => babel([sample], kind));
 	}
 }
 
 /** Runs compiled `x = [h("p", props, ...children), …]` and reads each element's text. */
-function evaluate(code: string, kind: "text" | "attribute"): Reading[] {
-	const h = (_tag: string, props: { title?: string } | null, ...children: string[]) =>
+function evaluate(code: string, kind: "text" | "attribute"): Array<Reading> {
+	const h = (_tag: string, props: { title?: string } | null, ...children: Array<string>) =>
 		kind === "text" ? children.join("") : props!.title!;
-	// oxlint-disable-next-line typescript/no-implied-eval -- runs the transform's output, which is what is compared
-	return new Function("h", `let x; ${code}; return x;`)(h) as Reading[];
+	// oxlint-disable-next-line typescript/no-implied-eval, typescript/no-unsafe-call -- runs the transform's output, which is what is compared
+	return new Function("h", `let x; ${code}; return x;`)(h) as Array<Reading>;
 }
 
-async function oxc(samples: readonly string[], kind: "text" | "attribute"): Promise<Reading[]> {
+async function oxc(
+	samples: ReadonlyArray<string>,
+	kind: "text" | "attribute",
+): Promise<Array<Reading>> {
 	const { code } = await transformWithOxc(module(samples, kind), "samples.jsx", {
 		lang: "jsx",
 		jsx: { runtime: "classic", pragma: "h" },
@@ -79,7 +84,10 @@ async function oxc(samples: readonly string[], kind: "text" | "attribute"): Prom
 	return evaluate(code, kind);
 }
 
-async function esbuild(samples: readonly string[], kind: "text" | "attribute"): Promise<Reading[]> {
+async function esbuild(
+	samples: ReadonlyArray<string>,
+	kind: "text" | "attribute",
+): Promise<Array<Reading>> {
 	const { code } = await transformWithEsbuild(module(samples, kind), "samples.jsx", {
 		loader: "jsx",
 		jsxFactory: "h",
@@ -89,9 +97,9 @@ async function esbuild(samples: readonly string[], kind: "text" | "attribute"): 
 
 /** Every implementation's reading of each sample. */
 async function readings(
-	samples: readonly string[],
+	samples: ReadonlyArray<string>,
 	kind: "text" | "attribute",
-): Promise<{ babel: Reading; oxc: Reading; esbuild: Reading }[]> {
+): Promise<Array<{ babel: Reading; oxc: Reading; esbuild: Reading }>> {
 	const [fromBabel, fromOxc, fromEsbuild] = [
 		babel(samples, kind),
 		await oxc(samples, kind),
@@ -184,11 +192,11 @@ function asCharacters(raw: string): string {
  * line break. Checks that it reads the text as it reads `comparable` (the same text with `!`
  * there, which the implementations are compared on instead), and reports every such character.
  */
-function asCharacterMismatches(raw: string, comparable: string): string[] {
+function asCharacterMismatches(raw: string, comparable: string): Array<string> {
 	const reading = readJsxText(raw);
 	const shape = ({ divergences, kept }: JsxReading) =>
 		JSON.stringify({ divergences, kept: kept.map(({ start, end }) => [start, end]) });
-	const mismatches: string[] = [];
+	const mismatches: Array<string> = [];
 	if (shape(reading) !== shape(readJsxText(comparable))) {
 		mismatches.push(`${JSON.stringify(raw)}: read unlike ${JSON.stringify(comparable)}`);
 	}
@@ -210,17 +218,19 @@ function asCharacterMismatches(raw: string, comparable: string): string[] {
  * counts what was checked into `tally`.
  */
 async function conformance(
-	samples: readonly string[],
+	samples: ReadonlyArray<string>,
 	kind: "text" | "attribute",
 	tally: Tally = { agreed: 0, reported: 0, fixed: 0 },
-): Promise<string[]> {
-	const mismatches: string[] = [];
+): Promise<Array<string>> {
+	const mismatches: Array<string> = [];
 	const raws =
 		kind === "attribute"
 			? samples
 			: samples.map((sample) => {
 					const comparable = asCharacters(sample);
-					if (comparable !== sample) mismatches.push(...asCharacterMismatches(sample, comparable));
+					if (comparable !== sample) {
+						mismatches.push(...asCharacterMismatches(sample, comparable));
+					}
 					return comparable;
 				});
 	const read = kind === "text" ? readJsxText : readJsxAttribute;
@@ -244,10 +254,15 @@ async function conformance(
 			mismatches.push(`${label}: read ${JSON.stringify(reading.value)}`);
 			return;
 		}
-		if (agree) tally.agreed++;
-		else tally.reported++;
+		if (agree) {
+			tally.agreed++;
+		} else {
+			tally.reported++;
+		}
 		const fix = fixes[index];
-		if (agree || fix === undefined) return;
+		if (agree || fix === undefined) {
+			return;
+		}
 		tally.fixed++;
 		if (read(fix).divergences.length) {
 			mismatches.push(`${label}: fixed to ${JSON.stringify(fix)}, still reported`);

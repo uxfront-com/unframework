@@ -29,7 +29,7 @@ import type { KindFamily } from "./coverage-exemptions.ts";
 /** One family of IR kinds the gate requires a case for: its record and its features' set. */
 interface KindRecord {
 	family: KindFamily;
-	kinds: readonly string[];
+	kinds: ReadonlyArray<string>;
 	features: keyof ModuleFeatures;
 }
 
@@ -38,7 +38,7 @@ interface KindRecord {
  * `collectFeatures` collects. A root fragment is no render node: the `fragment` capability
  * covers it.
  */
-export const KIND_RECORDS: readonly KindRecord[] = [
+export const KIND_RECORDS: ReadonlyArray<KindRecord> = [
 	{ family: "node", kinds: RENDER_NODE_KINDS, features: "nodeKinds" },
 	{ family: "attribute", kinds: ATTRIBUTE_KINDS, features: "attributeKinds" },
 	{ family: "binding", kinds: BINDING_KINDS, features: "bindingKinds" },
@@ -55,18 +55,26 @@ export type CoveredCompile = Pick<CompileResult, "ir" | "diagnostics" | "outputs
  * Every problem of the coverage gate over the corpus's compiles (each case compiled to every
  * target, without a canary, so it measures the corpus).
  */
-export function coverageProblems(results: readonly CoveredCompile[]): string[] {
-	const features: ModuleFeatures[] = [];
+export function coverageProblems(results: ReadonlyArray<CoveredCompile>): Array<string> {
+	const features: Array<ModuleFeatures> = [];
 	const codes = new Set<string>();
 	const cells = new Set<string>();
 	for (const result of results) {
-		for (const diagnostic of result.diagnostics) codes.add(diagnostic.code);
-		if (!result.ir) continue;
+		for (const diagnostic of result.diagnostics) {
+			codes.add(diagnostic.code);
+		}
+		if (!result.ir) {
+			continue;
+		}
 		features.push(collectFeatures(result.ir));
 		const capabilities = [...requiredCapabilities(result.ir).keys()];
 		for (const target of TARGET_NAMES) {
-			if (hasErrors(result.diagnostics, target) || !result.outputs[target]?.length) continue;
-			for (const capability of capabilities) cells.add(`${target}:${capability}`);
+			if (hasErrors(result.diagnostics, target) || !result.outputs[target]?.length) {
+				continue;
+			}
+			for (const capability of capabilities) {
+				cells.add(`${target}:${capability}`);
+			}
 		}
 	}
 	return [...kindProblems(features), ...capabilityProblems(cells), ...codeProblems(codes)];
@@ -77,12 +85,12 @@ export function coverageProblems(results: readonly CoveredCompile[]): string[] {
  * exemptions that name no kind of their family.
  */
 export function kindProblems(
-	features: readonly ModuleFeatures[],
+	features: ReadonlyArray<ModuleFeatures>,
 	exemptions: Readonly<
 		Partial<Record<KindFamily, Readonly<Record<string, string>>>>
 	> = EXEMPT_KINDS,
-): string[] {
-	const problems: string[] = [];
+): Array<string> {
+	const problems: Array<string> = [];
 	for (const record of KIND_RECORDS) {
 		const used = new Set<string>(features.flatMap((each) => [...each[record.features]]));
 		const exempt = exemptions[record.family] ?? {};
@@ -110,10 +118,10 @@ export function kindProblems(
  * excuses a capability on every target, or on the targets it names (ADR-0057's lanes: a cell a
  * case covers on one target and a lane has still to emit on another).
  */
-function capabilityProblems(cells: ReadonlySet<string>): string[] {
-	const problems: string[] = [];
-	const names: readonly string[] = CAPABILITY_NAMES;
-	const targets: readonly string[] = TARGET_NAMES;
+function capabilityProblems(cells: ReadonlySet<string>): Array<string> {
+	const problems: Array<string> = [];
+	const names: ReadonlyArray<string> = CAPABILITY_NAMES;
+	const targets: ReadonlyArray<string> = TARGET_NAMES;
 	for (const [capability, reason] of Object.entries(EXEMPT_CAPABILITIES)) {
 		if (!names.includes(capability)) {
 			problems.push(
@@ -149,21 +157,25 @@ function capabilityProblems(cells: ReadonlySet<string>): string[] {
 }
 
 /** The catalogued codes no case triggers and no exemption excuses. */
-function codeProblems(codes: ReadonlySet<string>): string[] {
-	const problems: string[] = [];
+function codeProblems(codes: ReadonlySet<string>): Array<string> {
+	const problems: Array<string> = [];
 	const catalogued: ReadonlyMap<string, unknown> = catalogue;
 	for (const code of Object.keys(EXEMPT_CODES)) {
-		if (!catalogued.has(code)) problems.push(`The exemption for ${code} names no catalogued code.`);
+		if (!catalogued.has(code)) {
+			problems.push(`The exemption for ${code} names no catalogued code.`);
+		}
 	}
 	for (const code of catalogue.keys()) {
 		const covered = codes.has(code);
 		const exempt = EXEMPT_CODES[code];
-		if (covered && exempt)
+		if (covered && exempt) {
 			problems.push(`A case triggers ${code} now: remove its coverage exemption.`);
-		else if (!covered && !exempt) problems.push(`No case triggers ${code}.`);
+		} else if (!covered && !exempt) {
+			problems.push(`No case triggers ${code}.`);
+		}
 	}
 	return problems;
 }
 
-const hasErrors = (diagnostics: readonly Diagnostic[], target: string) =>
+const hasErrors = (diagnostics: ReadonlyArray<Diagnostic>, target: string) =>
 	forTarget(diagnostics, target).some((diagnostic) => diagnostic.severity === "error");

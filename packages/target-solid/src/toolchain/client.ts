@@ -22,7 +22,10 @@ export const mount: MountAdapter = async (component, container, options) => {
 	const dispose = render(() => createComponent(solidComponent, props.value), container);
 	// Solid applies updates synchronously; one microtask lets work that the component queued on
 	// a promise run before the test reads the DOM.
-	const settle = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+	const settle = () =>
+		new Promise<void>((resolve) => {
+			queueMicrotask(resolve);
+		});
 	return {
 		settle,
 		async rerender(next) {
@@ -52,13 +55,19 @@ export function reactiveProps(initial: Record<string, unknown>): {
 		}
 		return signal;
 	};
-	const [keys, setKeys] = createSignal<readonly string[]>([], {
+	const [keys, setKeys] = createSignal<ReadonlyArray<string>>([], {
 		equals: (a, b) => a.length === b.length && a.every((key, index) => key === b[index]),
 	});
 	const assign = (next: Record<string, unknown>) =>
 		batch(() => {
-			for (const key of values.keys()) if (!Object.hasOwn(next, key)) entry(key)[1](undefined);
-			for (const [key, value] of Object.entries(next)) entry(key)[1](value);
+			for (const key of values.keys()) {
+				if (!Object.hasOwn(next, key)) {
+					entry(key)[1](undefined);
+				}
+			}
+			for (const [key, value] of Object.entries(next)) {
+				entry(key)[1](value);
+			}
 			setKeys(Object.keys(next));
 		});
 	assign(initial);

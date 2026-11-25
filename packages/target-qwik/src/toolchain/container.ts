@@ -35,7 +35,7 @@ export function componentHtml(render: string): string {
 	}
 	return inner
 		.slice(0, end)
-		.replace(SCRIPT, (script, attributes: string, body: string) =>
+		.replaceAll(SCRIPT, (script, attributes: string, body: string) =>
 			isInlineRegistration(attributes, body) ? "" : script,
 		);
 }

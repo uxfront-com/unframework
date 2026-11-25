@@ -70,11 +70,13 @@ const names = (ids: Iterable<string>) =>
 	[...ids].map((id) => id.slice(0, id.lastIndexOf("@"))).toSorted();
 
 /** Every element of a render tree, in document order. */
-function elements(component: UfComponent): ElementNode[] {
-	const found: ElementNode[] = [];
+function elements(component: UfComponent): Array<ElementNode> {
+	const found: Array<ElementNode> = [];
 	walk(component.render, {
 		enter(node) {
-			if (node.kind === "Element") found.push(node);
+			if (node.kind === "Element") {
+				found.push(node);
+			}
 		},
 	});
 	return found;
@@ -93,7 +95,9 @@ describe("requiredCapabilities over setup code and listeners", () => {
 		let list: ForNode | undefined;
 		walk(component.render, {
 			enter(node) {
-				if (node.kind === "For") list = node;
+				if (node.kind === "For") {
+					list = node;
+				}
 			},
 		});
 		expect([...requiredCapabilities(createModule("Counter.uf.tsx", [component]))]).toEqual([
@@ -174,7 +178,9 @@ describe("referencedBindings over setup code and listeners", () => {
 		let list: ForNode | undefined;
 		walk(counter().render, {
 			enter(node) {
-				if (node.kind === "For") list = node;
+				if (node.kind === "For") {
+					list = node;
+				}
 			},
 		});
 		expect(names(referencedBindings(list!))).toEqual(["item", "items", "select"]);
@@ -343,8 +349,12 @@ describe("sourceNames over setup code", () => {
 
 /** An AST's shape: its nodes without their positions, to compare code that differs in layout. */
 function shape(node: unknown): unknown {
-	if (Array.isArray(node)) return node.map(shape);
-	if (typeof node !== "object" || node === null) return node;
+	if (Array.isArray(node)) {
+		return node.map(shape);
+	}
+	if (typeof node !== "object" || node === null) {
+		return node;
+	}
 	return Object.fromEntries(
 		Object.entries(node)
 			.filter(([key]) => key !== "start" && key !== "end" && key !== "range")
@@ -396,7 +406,9 @@ describe("functionText", () => {
 
 	it("prints parameters exactly as written: rest, optional, patterns, types and defaults", () => {
 		const label = counter().setup[7]!;
-		if (label.kind !== "Function") throw new Error("The counter's eighth item is `label`.");
+		if (label.kind !== "Function") {
+			throw new Error("The counter's eighth item is `label`.");
+		}
 		expect(label.function.parameters.map(parameterText)).toEqual(
 			label.function.parameters.map(({ span }) => sourceAt(span)),
 		);
@@ -411,7 +423,9 @@ describe("functionText", () => {
 	it("rewrites the body for its site, and writes declarations and arrows on request", () => {
 		const component = counter();
 		const increment = component.setup[6]!;
-		if (increment.kind !== "Function") throw new Error("The counter's seventh item is a function.");
+		if (increment.kind !== "Function") {
+			throw new Error("The counter's seventh item is a function.");
+		}
 		const angular: RewriteRules = {
 			binding: (_, binding, written, site) =>
 				site === "client" && binding.kind !== "prop" ? `this.${binding.name}()` : written,
@@ -438,7 +452,9 @@ describe("functionText", () => {
 	it("parenthesises an arrow's object literal or sequence body, and returns a declaration's", () => {
 		const component = counter();
 		const unmounted = component.setup[13]!;
-		if (unmounted.kind !== "Lifecycle") throw new Error("The counter's last item is a hook.");
+		if (unmounted.kind !== "Lifecycle") {
+			throw new Error("The counter's last item is a hook.");
+		}
 		const fn = unmounted.callback;
 		const object = { ...fn, body: { ...fn.body, code: "{ ...timer }", refs: [] } };
 		const sequence = { ...fn, body: { ...fn.body, code: "a, b", refs: [] } };
@@ -554,7 +570,7 @@ describe("liveTypes", () => {
 		),
 	);
 	const module = createModule("List.uf.tsx", [component], [], declarations);
-	const names = (found: { name: string }[]) => found.map(({ name }) => name);
+	const names = (found: Array<{ name: string }>) => found.map(({ name }) => name);
 
 	it("keeps what the template, the live setup and the exports reach, without client code", () => {
 		expect(names(liveTypes(component, module, { client: false }))).toEqual([

@@ -336,7 +336,7 @@ describe("solid2 narrowed reads (src/asserted.ts, ADR-0046)", () => {
 });
 
 /** The lines of `source`, joined: a function's expected output. */
-const lines = (...source: string[]) => source.join("\n");
+const lines = (...source: Array<string>) => source.join("\n");
 
 describe("solid2 untrack (src/untracked.ts)", () => {
 	it("says untracked an arrow a setup function hands to a function, never one a handler or a callback does", async () => {
@@ -823,6 +823,8 @@ describe("solid2 nextTick and names the output takes", () => {
 			probe("defineEmits", "  const emit = defineEmits<{ done: [] }>();\n  void emit;", "<p>x</p>"),
 		).catch(() => undefined);
 		// The analyser may reject an unused `emit`; when it lowers one, nothing reads the props.
-		if (silent) expect(silent).toContain("(_props: ProbeEvents)");
+		if (silent) {
+			expect(silent).toContain("(_props: ProbeEvents)");
+		}
 	});
 });

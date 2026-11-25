@@ -16,13 +16,13 @@ import { mount } from "../src/toolchain/client.ts";
 interface BadgeProps {
 	label: string;
 	tone?: "info" | "warn";
-	items?: string[];
+	items?: Array<string>;
 	count?: number;
 }
 
 /** `<For>` and `<Show>` in the forms the badge renders, as its compiled JSX would pick them. */
 const Rows: Component<{
-	each: readonly string[];
+	each: ReadonlyArray<string>;
 	children: (item: string, index: Accessor<number>) => JSX.Element;
 }> = For;
 const Branch: Component<{ when: boolean; children: JSX.Element }> = Show;
@@ -46,8 +46,11 @@ function Badge(rawProps: BadgeProps): JSX.Element {
 	createRenderEffect(
 		() => props.count,
 		(count) => {
-			if (count === undefined) p.removeAttribute("data-count");
-			else p.setAttribute("data-count", String(count));
+			if (count === undefined) {
+				p.removeAttribute("data-count");
+			} else {
+				p.setAttribute("data-count", String(count));
+			}
 		},
 	);
 	insert(p, () => props.label);
@@ -95,7 +98,7 @@ function read(container: HTMLElement) {
 	};
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

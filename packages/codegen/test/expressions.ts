@@ -22,16 +22,27 @@ export type ReferenceTarget = [text: string, target: Binding | "Global"];
  * `text:`), as a binding reference (a shorthand one between `{`/`,` and `,`/`}`) or a
  * reference to the global `text`.
  */
-export function expressionAt(offset: number, code: string, ...refs: ReferenceTarget[]): Expression {
+export function expressionAt(
+	offset: number,
+	code: string,
+	...refs: Array<ReferenceTarget>
+): Expression {
 	let from = 0;
 	const references = refs.map(([text, target]): Reference => {
-		const variable = new RegExp(`(?<![.\\w$])${text.replace(".", "\\.")}(?![\\w$]|\\s*:)`, "g");
+		const variable = new RegExp(
+			`(?<![.\\w$])${text.replace(".", String.raw`\.`)}(?![\\w$]|\\s*:)`,
+			"g",
+		);
 		variable.lastIndex = from;
 		const start = variable.exec(code)?.index;
-		if (start === undefined) throw new Error(`No ${text} in ${code} after ${from}`);
+		if (start === undefined) {
+			throw new Error(`No ${text} in ${code} after ${from}`);
+		}
 		from = start + text.length;
 		const at = span(offset + start, offset + start + text.length);
-		if (target === "Global") return createGlobalReference(text, at);
+		if (target === "Global") {
+			return createGlobalReference(text, at);
+		}
 		const shorthand =
 			/(?:[^$]\{|,)\s*$/.test(code.slice(0, start)) && /^\s*[,}]/.test(code.slice(from));
 		return createBindingReference(target.id, at, shorthand);
@@ -57,26 +68,33 @@ export type CodeTarget =
 			value?: string;
 			arrowBody?: boolean;
 	  }
-	| { emit: string; binding: Binding; event: string; arguments?: string[] };
+	| { emit: string; binding: Binding; event: string; arguments?: Array<string> };
 
 /**
  * Setup code at `offset` whose references are found in its code, in order: each target takes the
  * next occurrence of its text, after the previous reference, or inside the previous write's value
  * or emit's arguments, where the references that follow a write or an emit start (ADR-0045).
  */
-export function codeAt(offset: number, code: string, ...targets: CodeTarget[]): Code {
+export function codeAt(offset: number, code: string, ...targets: Array<CodeTarget>): Code {
 	let from = 0;
 	const at = (start: number, text: string) => span(offset + start, offset + start + text.length);
 	const variable = (text: string): number => {
-		const pattern = new RegExp(`(?<![.\\w$])${text.replace(/\./g, "\\.")}(?![\\w$]|\\s*:)`, "g");
+		const pattern = new RegExp(
+			`(?<![.\\w$])${text.replaceAll(".", String.raw`\.`)}(?![\\w$]|\\s*:)`,
+			"g",
+		);
 		pattern.lastIndex = from;
 		const start = pattern.exec(code)?.index;
-		if (start === undefined) throw new Error(`No ${text} in ${code} after ${from}`);
+		if (start === undefined) {
+			throw new Error(`No ${text} in ${code} after ${from}`);
+		}
 		return start;
 	};
 	const text = (written: string): number => {
 		const start = code.indexOf(written, from);
-		if (start === -1) throw new Error(`No ${written} in ${code} after ${from}`);
+		if (start === -1) {
+			throw new Error(`No ${written} in ${code} after ${from}`);
+		}
 		return start;
 	};
 	const refs = targets.map((target): CodeReference => {
@@ -84,7 +102,9 @@ export function codeAt(offset: number, code: string, ...targets: CodeTarget[]): 
 			const [name, binding] = target;
 			const start = variable(name);
 			from = start + name.length;
-			if (binding === "Global") return createGlobalReference(name, at(start, name));
+			if (binding === "Global") {
+				return createGlobalReference(name, at(start, name));
+			}
 			const shorthand =
 				innermostBracket(code.slice(0, start)) === "{" &&
 				/(?:\{|,)\s*$/.test(code.slice(0, start)) &&
@@ -138,10 +158,13 @@ export function codeAt(offset: number, code: string, ...targets: CodeTarget[]): 
 
 /** The innermost bracket left open in code (strings aside, which the tests' code avoids). */
 function innermostBracket(code: string): string | undefined {
-	const open: string[] = [];
+	const open: Array<string> = [];
 	for (const character of code) {
-		if ("{[(".includes(character)) open.push(character);
-		else if ("}])".includes(character)) open.pop();
+		if ("{[(".includes(character)) {
+			open.push(character);
+		} else if ("}])".includes(character)) {
+			open.pop();
+		}
 	}
 	return open.at(-1);
 }

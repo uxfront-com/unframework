@@ -27,7 +27,9 @@ export function devTest(
 	scope: DevScope,
 ): AST.IdentifierReference | undefined {
 	const { test } = node;
-	if (node.alternate || test.type !== "Identifier") return undefined;
+	if (node.alternate || test.type !== "Identifier") {
+		return undefined;
+	}
 	return isDevIdentifier(test, scope) ? test : undefined;
 }
 
@@ -63,20 +65,24 @@ const CHECK_NAMES: ReadonlyMap<string, string> = new Map([
  * named `ngDevMode` itself, among the names its class declares.
  */
 export function reportDevShadows(
-	fn: AST.Node & { start: number; end: number; params: readonly AST.Node[] },
-	props: readonly { name: string; span: { start: number; end: number } }[],
+	fn: AST.Node & { start: number; end: number; params: ReadonlyArray<AST.Node> },
+	props: ReadonlyArray<{ name: string; span: { start: number; end: number } }>,
 	scope: DevScope,
 	reporter: Reporter,
 ): void {
 	let reads = false;
 	visit(fn, (node) => {
-		if (reads) return false;
+		if (reads) {
+			return false;
+		}
 		if (node.type === "Identifier" && scope.scopes.isReference(node)) {
 			reads = isDevIdentifier(node as AST.IdentifierReference, scope);
 		}
 		return !reads;
 	});
-	if (!reads) return;
+	if (!reads) {
+		return;
+	}
 	const [parameter] = fn.params;
 	const inProps = (node: { start: number }) =>
 		parameter !== undefined && node.start >= parameter.start && node.start < parameter.end;
@@ -85,7 +91,7 @@ export function reportDevShadows(
 			.declarationsOf(name)
 			.filter((node) => node.start >= fn.start && node.end <= fn.end)
 			.filter((node) => name === "process" || !inProps(node));
-		const at: { start: number; end: number }[] = [...declared];
+		const at: Array<{ start: number; end: number }> = [...declared];
 		if (!declared.length && name === "process") {
 			at.push(...props.filter((prop) => prop.name === name).map((prop) => prop.span));
 		}

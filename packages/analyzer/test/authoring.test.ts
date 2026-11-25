@@ -13,14 +13,18 @@ function packageExports(): { values: Set<string>; types: Set<string> } {
 	const values = new Set<string>();
 	const types = new Set<string>();
 	for (const statement of parseModule(file, source).program.body) {
-		if (statement.type !== "ExportNamedDeclaration") continue;
+		if (statement.type !== "ExportNamedDeclaration") {
+			continue;
+		}
 		const { declaration } = statement;
 		if (declaration?.type === "FunctionDeclaration" || declaration?.type === "TSDeclareFunction") {
 			values.add(declaration.id!.name);
 		} else if (declaration?.type === "VariableDeclaration") {
 			// `isDev`, a constant (ADR-0117).
 			for (const declarator of declaration.declarations) {
-				if (declarator.id.type === "Identifier") values.add(declarator.id.name);
+				if (declarator.id.type === "Identifier") {
+					values.add(declarator.id.name);
+				}
 			}
 		} else if (
 			declaration?.type === "TSInterfaceDeclaration" ||
@@ -28,7 +32,9 @@ function packageExports(): { values: Set<string>; types: Set<string> } {
 		) {
 			types.add(declaration.id.name);
 		} else if (!declaration) {
-			for (const specifier of statement.specifiers) types.add(exportName(specifier.exported));
+			for (const specifier of statement.specifiers) {
+				types.add(exportName(specifier.exported));
+			}
 		}
 	}
 	return { values, types };

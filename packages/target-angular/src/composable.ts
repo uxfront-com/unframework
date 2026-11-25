@@ -77,7 +77,7 @@ interface ComposableContext {
 	/** The function's own locals: none its code reads or declares, nor Angular's imports. */
 	locals: Pick<NameScope, "claim">;
 	/** The names the function's code reads or declares, and those it claimed so far. */
-	taken: string[];
+	taken: Array<string>;
 	/** `isPlatformBrowser(inject(PLATFORM_ID))`'s local, declared once where code needs it. */
 	browser(): string;
 }
@@ -86,14 +86,14 @@ interface ComposableContext {
  * `use-toggle.ts`: `export function useToggle(initial: boolean) { …; return { on:
  * on.asReadonly(), toggle }; }`, its setup in source order, its parameters as written.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
 	const { module } = context;
 	const owner = assertedSetup(setupOwner(composable));
 	const source = sourceNames(owner, module);
 	const imports = new ImportSet(new NameScope([...source]));
 	const core = (name: string) => imports.add("@angular/core", name);
 	const kinds = new Map(owner.bindings.map((binding) => [binding.id, binding.kind]));
-	const head: string[] = [];
+	const head: Array<string> = [];
 	let nextTick: string | undefined;
 	let browser: string | undefined;
 	const taken = [...source, ...ANGULAR_IMPORTS, "Object"];
@@ -189,7 +189,7 @@ function addParameterTypeImports(
 	imports: ImportSet,
 	module: EmitContext["module"],
 ): void {
-	const texts: TypeText[] = [
+	const texts: Array<TypeText> = [
 		...composable.parameters.map(({ type }) => type),
 		...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
 			[constraint, fallback].filter((type): type is TypeText => type !== undefined),
@@ -198,7 +198,9 @@ function addParameterTypeImports(
 	const read = new Set(texts.flatMap((type) => [...typeNames(type)]));
 	for (const entry of module.typeImports ?? []) {
 		for (const name of entry.names) {
-			if (!read.has(name.local)) continue;
+			if (!read.has(name.local)) {
+				continue;
+			}
 			imports.add(typeSpecifier(entry.specifier, module, kebabCase), name.imported, {
 				type: true,
 				local: name.local,
@@ -299,7 +301,7 @@ function watcherCode(item: WatchItem, context: ComposableContext): string {
 				return unreachable(source);
 		}
 	});
-	const lines: string[] = [];
+	const lines: Array<string> = [];
 	const hint = item.array ? "values" : sources[0]!.hint;
 	const signal = locals.claim(`current${pascalCase(hint)}`);
 	if (item.array) {
@@ -320,8 +322,12 @@ function watcherCode(item: WatchItem, context: ComposableContext): string {
 	// The value the callback last saw, for its previous one, and whether the effect ran before.
 	const last = readsPrevious ? locals.claim(`last${pascalCase(hint)}`) : undefined;
 	const watching = !item.immediate || readsPrevious ? locals.claim("watching") : undefined;
-	if (last !== undefined) lines.push(`let ${last}!: ReturnType<typeof ${signal}>;`);
-	if (watching !== undefined) lines.push(`let ${watching} = false;`);
+	if (last !== undefined) {
+		lines.push(`let ${last}!: ReturnType<typeof ${signal}>;`);
+	}
+	if (watching !== undefined) {
+		lines.push(`let ${watching} = false;`);
+	}
 	const inner = new NameScope([...context.taken, ...callbackNames(item.callback, owner)]);
 	const value = inner.claim(item.array ? "current" : "value");
 	// The read subscribes the effect; the callback and the previous value may not need its value.
@@ -343,9 +349,15 @@ function watcherCode(item: WatchItem, context: ComposableContext): string {
 			`const ${parameterBinding(previousParameter)}${annotation(previousParameter)} = ${defaulted(previousParameter, previous)};`,
 		);
 	}
-	if (item.immediate && watching !== undefined) body.push(`${watching} = true;`);
-	if (last !== undefined) body.push(`${last} = ${value};`);
-	if (item.immediate) body.push(`if (!${context.browser()}) return;`);
+	if (item.immediate && watching !== undefined) {
+		body.push(`${watching} = true;`);
+	}
+	if (last !== undefined) {
+		body.push(`${last} = ${value};`);
+	}
+	if (item.immediate) {
+		body.push(`if (!${context.browser()}) return;`);
+	}
 	const callback = item.callback.expression
 		? `${item.callback.async ? "async " : ""}() => ${arrowBody(rewriteCode(item.callback.body, owner, rules, "client"))}`
 		: `${item.callback.async ? "async " : ""}() => {\n${functionBodyText(item.callback, owner, rules, "client")}\n}`;
@@ -361,7 +373,7 @@ function arrowBody(code: string): string {
 }
 
 /** The names a callback declares and reads, which the effect's own locals leave alone. */
-function callbackNames(fn: FunctionCode, owner: UfComponent): string[] {
+function callbackNames(fn: FunctionCode, owner: UfComponent): Array<string> {
 	return [
 		...codeNames(fn.body.code, codeKind(fn.body, owner)),
 		...fn.parameters.flatMap((parameter) =>
@@ -373,6 +385,8 @@ function callbackNames(fn: FunctionCode, owner: UfComponent): string[] {
 /** The binding a composable declares under `id`. */
 function bindingOf(owner: UfComponent, id: string): Binding {
 	const binding = owner.bindings.find((each) => each.id === id);
-	if (!binding) throw new Error(`Composable ${owner.name} declares no binding ${id}.`);
+	if (!binding) {
+		throw new Error(`Composable ${owner.name} declares no binding ${id}.`);
+	}
 	return binding;
 }

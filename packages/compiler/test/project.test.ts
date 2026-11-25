@@ -45,8 +45,11 @@ function memoryProject(initial: Record<string, string>) {
 	const typeOracle = createSyntacticOracle({ root: "/project", readFile });
 	const project = createProject({ root: "/project", readFile, typeOracle, targets: ["vue"] });
 	const write = (path: string, text: string | undefined) => {
-		if (text === undefined) files.delete(`/project/${path}`);
-		else files.set(`/project/${path}`, text);
+		if (text === undefined) {
+			files.delete(`/project/${path}`);
+		} else {
+			files.set(`/project/${path}`, text);
+		}
 	};
 	return { project, write };
 }
@@ -426,7 +429,9 @@ describe("updates", () => {
 			root: "/project",
 			targets: ["vue"],
 			readFile: (path) => {
-				if (locked && path === "/project/Child.uf.tsx") return Promise.reject(new Error("EACCES"));
+				if (locked && path === "/project/Child.uf.tsx") {
+					return Promise.reject(new Error("EACCES"));
+				}
 				return Promise.resolve(files.get(path));
 			},
 		});
@@ -471,7 +476,9 @@ describe("updates", () => {
 			root: "/project",
 			targets: ["vue"],
 			readFile: (path) => {
-				if (locked && path === "/project/tone.ts") return Promise.reject(new Error("EACCES"));
+				if (locked && path === "/project/tone.ts") {
+					return Promise.reject(new Error("EACCES"));
+				}
 				return Promise.resolve(files.get(path));
 			},
 		});
@@ -695,9 +702,13 @@ describe("a child's own children (ADR-0118)", () => {
 		]);
 		// Base reads once the second resolve has started, while the first is reading Wrap's children.
 		let open!: () => void;
-		const gate = new Promise<void>((resolve) => (open = resolve));
+		const gate = new Promise<void>((resolve) => {
+			open = resolve;
+		});
 		let reached!: () => void;
-		const reading = new Promise<void>((resolve) => (reached = resolve));
+		const reading = new Promise<void>((resolve) => {
+			reached = resolve;
+		});
 		const readFile = async (path: string) => {
 			if (path.endsWith("/Base.uf.tsx")) {
 				reached();
@@ -722,10 +733,14 @@ describe("a child's own children (ADR-0118)", () => {
 		]);
 		// Held reads only once the gate opens, so its resolve keeps the session open meanwhile.
 		let open!: () => void;
-		const gate = new Promise<void>((resolve) => (open = resolve));
+		const gate = new Promise<void>((resolve) => {
+			open = resolve;
+		});
 		let reached!: () => void;
-		const reading = new Promise<void>((resolve) => (reached = resolve));
-		const reads: string[] = [];
+		const reading = new Promise<void>((resolve) => {
+			reached = resolve;
+		});
+		const reads: Array<string> = [];
 		let failing = true;
 		const readFile = async (path: string) => {
 			reads.push(path);
@@ -761,7 +776,7 @@ describe("a child's own children (ADR-0118)", () => {
 
 	it("cuts a cycle where the graph says, however concurrent compiles reach it (P8)", async () => {
 		// C1 ↔ C3, C3 → C4 → C3 and C0 ↔ C2 are cycles; Page sits outside them, and passes each a `title`.
-		const component = (name: string, imports: string[], root: string) =>
+		const component = (name: string, imports: Array<string>, root: string) =>
 			`${imports.map((each) => `import ${each} from "./${each}.uf.tsx";\n`).join("")}export default function ${name}() {\n  return ${root};\n}\n`;
 		const initial = {
 			"C0.uf.tsx": component("C0", ["C2"], "<C2 />"),
@@ -781,16 +796,21 @@ describe("a child's own children (ADR-0118)", () => {
 		// A seeded generator, so each run's read delays differ and the test is the same each time.
 		let seed = 7;
 		const delay = () => {
-			seed = (seed * 1103515245 + 12345) % 2147483648;
-			return new Promise((resolve) => setTimeout(resolve, seed % 7));
+			seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+			return new Promise((resolve) => {
+				setTimeout(resolve, seed % 7);
+			});
 		};
-		const codes = (result: { diagnostics: readonly { code: string; span: { start: number } }[] }) =>
-			result.diagnostics.map((each) => `${each.code}@${each.span.start}`);
+		const codes = (result: {
+			diagnostics: ReadonlyArray<{ code: string; span: { start: number } }>;
+		}) => result.diagnostics.map((each) => `${each.code}@${each.span.start}`);
 		const fresh = (delayed: boolean) =>
 			createProject({
 				root: "/project",
 				readFile: async (path) => {
-					if (delayed) await delay();
+					if (delayed) {
+						await delay();
+					}
 					return files.get(path);
 				},
 				targets: [],

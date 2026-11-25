@@ -17,7 +17,7 @@ export interface PackagePeer {
 /** What one target's packager works on. */
 export interface PackagerInput {
 	/** The target's files as `compile()` gave them, so with no map (ADR-0077). */
-	files: readonly OutputFile[];
+	files: ReadonlyArray<OutputFile>;
 	/** The directory to fill, which becomes `package/<target>`. */
 	out: string;
 	/** A scratch directory inside the project, from which the framework resolves. */
@@ -29,9 +29,9 @@ export interface PackagerInput {
 /** One target's line in the registry (ADR-0077). */
 export interface Packager {
 	/** The framework, an optional peer of the package, or its packages where there are several. */
-	peer: PackagePeer | readonly PackagePeer[];
+	peer: PackagePeer | ReadonlyArray<PackagePeer>;
 	/** What must resolve from `package.resolveFrom`, checked before anything is written (UF7008). */
-	needs: readonly string[];
+	needs: ReadonlyArray<string>;
 	/**
 	 * The package whose types a declaration's inferred types come from, which must be in the project.
 	 * tsgo and vue-tsc write declarations with `--noCheck`, so without it a return type is `any`,
@@ -49,7 +49,7 @@ export interface Packager {
  * error (TS2882) in a consumer with `skipLibCheck` off, since nothing declares a sheet's module there.
  */
 export const dropSideEffectImports = (code: string): string =>
-	code.replace(/^import "[^"]+";\n/gm, "");
+	code.replaceAll(/^import "[^"]+";\n/gm, "");
 
 /** {@link dropSideEffectImports} over every declaration a tool wrote to a directory. */
 export async function dropDeclarationSideEffects(directory: string): Promise<void> {
@@ -64,7 +64,9 @@ export const KEEP_IMPORTS: object = {
 	name: "unframework:keep-imports",
 	enforce: "pre",
 	resolveId(id: string, importer: string | undefined) {
-		if (importer === undefined) return null;
+		if (importer === undefined) {
+			return null;
+		}
 		const local = id.startsWith(".") || isAbsolute(id) || id.startsWith("\0");
 		return local ? null : { id, external: true };
 	},
@@ -97,16 +99,19 @@ export const sanitizeBelow =
 	(scratch: string): ((name: string) => string) =>
 	(name) =>
 		name.startsWith(scratch)
-			? scratch + name.slice(scratch.length).replace(UNSAFE_IN_A_NAME, "_")
-			: name.replace(UNSAFE_IN_A_NAME, "_");
+			? scratch + name.slice(scratch.length).replaceAll(UNSAFE_IN_A_NAME, "_")
+			: name.replaceAll(UNSAFE_IN_A_NAME, "_");
 
 /** The script a package's manifest names for the first of these binaries it has. */
-export async function binOf(manifest: string, ...names: readonly string[]): Promise<string> {
-	const { name: owner, bin }: { name: string; bin: Readonly<Record<string, string>> } = JSON.parse(
-		await readFile(manifest, "utf8"),
-	);
+export async function binOf(manifest: string, ...names: ReadonlyArray<string>): Promise<string> {
+	const { name: owner, bin } = JSON.parse(await readFile(manifest, "utf8")) as {
+		name: string;
+		bin: Readonly<Record<string, string>>;
+	};
 	const script = names.map((name) => bin[name]).find((path) => path !== undefined);
-	if (script === undefined) throw new Error(`${owner} has no ${names.join(" or ")} binary.`);
+	if (script === undefined) {
+		throw new Error(`${owner} has no ${names.join(" or ")} binary.`);
+	}
 	return join(dirname(manifest), script);
 }
 
@@ -120,21 +125,26 @@ export const tscOf = (manifest: string): Promise<string> => binOf(manifest, "tsc
  */
 export async function runScript(
 	script: string,
-	args: readonly string[],
+	args: ReadonlyArray<string>,
 	cwd: string,
 	errors: "stdout" | "stderr" = "stdout",
 ): Promise<string> {
 	const { stderr } = await promisify(execFile)(process.execPath, [script, ...args], {
 		cwd,
 		maxBuffer: 2 ** 28,
-	}).catch((error: { stdout?: string; stderr?: string; message: string }) => {
-		const printed = errors === "stderr" ? error.stderr : error.stdout || error.stderr;
-		throw new Error(printed || error.message);
+	}).catch((error: unknown) => {
+		// execFile rejects with an Error that carries the child's output.
+		const failed = error as Error & { stdout?: string; stderr?: string };
+		const printed = errors === "stderr" ? failed.stderr : failed.stdout || failed.stderr;
+		throw new Error(printed || failed.message);
 	});
 	return stderr;
 }
 
-export async function writeFiles(directory: string, files: readonly OutputFile[]): Promise<void> {
+export async function writeFiles(
+	directory: string,
+	files: ReadonlyArray<OutputFile>,
+): Promise<void> {
 	for (const file of files) {
 		const path = join(directory, file.path);
 		await mkdir(dirname(path), { recursive: true });

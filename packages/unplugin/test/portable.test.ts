@@ -25,9 +25,11 @@ vi.mock("@unframework.dev/compiler", async (importActual) => {
 			const created = actual.createProject(options);
 			return {
 				...created,
-				update: (files: readonly string[]) => {
+				update: (files: ReadonlyArray<string>) => {
 					update.calls++;
-					if (update.fails) return Promise.reject(new Error("The update failed."));
+					if (update.fails) {
+						return Promise.reject(new Error("The update failed."));
+					}
 					return created.update(files);
 				},
 			};
@@ -71,9 +73,9 @@ const rawPlugins = (
 /** What the generic hooks record on the context of a bundler with no resolver. */
 const createContext = () => {
 	const context = {
-		warnings: [] as string[],
-		errors: [] as string[],
-		watched: [] as string[],
+		warnings: [] as Array<string>,
+		errors: [] as Array<string>,
+		watched: [] as Array<string>,
 		warn: (message: unknown) => void context.warnings.push(String(message)),
 		error: (message: unknown) => void context.errors.push(String(message)),
 		addWatchFile: (file: string) => void context.watched.push(file),
@@ -82,8 +84,8 @@ const createContext = () => {
 };
 
 /** Calls a hook of the generic plugin the way unplugin does, `this` included. */
-const call = (hook: unknown, context: object, ...args: unknown[]): Promise<unknown> => {
-	const { handler } = hook as { handler: (this: object, ...args: unknown[]) => unknown };
+const call = (hook: unknown, context: object, ...args: Array<unknown>): Promise<unknown> => {
+	const { handler } = hook as { handler: (this: object, ...args: Array<unknown>) => unknown };
 	return Promise.resolve(handler.call(context, ...args));
 };
 
@@ -113,7 +115,7 @@ describe("the bundler entries", () => {
 				default: `./dist/${bundler}.js`,
 			});
 			const entry = (await import(`../src/${bundler}.ts`)) as {
-				default: (options: UnframeworkOptions) => object | object[];
+				default: (options: UnframeworkOptions) => object | Array<object>;
 			};
 			// Each of unplugin's factories has source of its own, which names its bundler. `./vite` wraps
 			// its factory to document it and to type its result.
@@ -137,13 +139,13 @@ describe("the root", () => {
 
 	it("is webpack's compiler.context", async () => {
 		const [pre] = rawPlugins({ target: "vue" }, moved);
-		pre.webpack!({ context: project.root } as never);
+		pre.webpack!({ context: project.root });
 		expect(await resolveId(pre, rootRelative)).toBe(`${file("Hello.uf.tsx")}.vue`);
 	});
 
 	it("is Rspack's compiler.context", async () => {
 		const [pre] = rawPlugins({ target: "vue" }, moved);
-		pre.rspack!({ context: project.root } as never);
+		pre.rspack!({ context: project.root });
 		expect(await resolveId(pre, rootRelative)).toBe(`${file("Hello.uf.tsx")}.vue`);
 	});
 
@@ -434,7 +436,7 @@ describe("watchChange", () => {
 			await client.pluginContainer.load(`${path}.vue`);
 			edit(path);
 			await client.pluginContainer.watchChange(path, { event: "update" });
-			await server.server.environments.ssr!.pluginContainer.watchChange(path, { event: "update" });
+			await server.server.environments.ssr.pluginContainer.watchChange(path, { event: "update" });
 			await vi.waitFor(() => expect(compiles).toBe(2));
 			expect(codeOf(await client.pluginContainer.load(`${path}.vue`))).toContain("Hello, edit!");
 			expect(compiles).toBe(2);

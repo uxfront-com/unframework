@@ -23,7 +23,7 @@ export interface CheckerRun {
 }
 
 /** Rejects a framework compile (L3) over no files: a check over nothing proves nothing. */
-export function assertFilesToCompile(files: readonly ToolchainFile[]): void {
+export function assertFilesToCompile(files: ReadonlyArray<ToolchainFile>): void {
 	if (files.length === 0) {
 		throw new Error("frameworkCompile received no files: a check over nothing proves nothing.");
 	}
@@ -36,7 +36,7 @@ export function assertFilesToCompile(files: readonly ToolchainFile[]): void {
  * `gate` names the check in the error.
  */
 export function assertFilesToCheck(
-	files: readonly string[],
+	files: ReadonlyArray<string>,
 	gate: "typecheck" | "lint" = "typecheck",
 ): void {
 	if (files.length === 0) {
@@ -63,8 +63,8 @@ export function assertFilesToCheck(
 export async function runChecker(
 	toolchainDir: string,
 	bin: string,
-	files: readonly string[],
-	args: (tsconfig: string) => string[],
+	files: ReadonlyArray<string>,
+	args: (tsconfig: string) => Array<string>,
 ): Promise<CheckerRun> {
 	assertFilesToCheck(files);
 	const base = join(toolchainDir, "tsconfig.json");
@@ -98,7 +98,7 @@ export type ProcessRun = Pick<CheckerRun, "code" | "signal" | "stdout" | "stderr
  */
 export function execute(
 	command: string,
-	args: string[],
+	args: Array<string>,
 	cwd: string,
 	input?: string,
 ): Promise<ProcessRun> {
@@ -135,7 +135,7 @@ export interface DiagnosticsByFile {
 	 */
 	add(path: string | undefined, message: ToolchainMessage): void;
 	/** Every diagnostic recorded so far, by absolute path. */
-	readonly results: Map<string, ToolchainMessage[]>;
+	readonly results: Map<string, Array<ToolchainMessage>>;
 }
 
 /**
@@ -152,16 +152,22 @@ export interface DiagnosticsByFile {
  * checker with a broken configuration checks without what it could not read (an option, the
  * standard library) or skips the semantic check, so the files themselves can look clean.
  */
-export function diagnosticsByFile(files: readonly string[], tsconfig: string): DiagnosticsByFile {
+export function diagnosticsByFile(
+	files: ReadonlyArray<string>,
+	tsconfig: string,
+): DiagnosticsByFile {
 	const keyOf = pathKeys(files);
-	const results = new Map<string, ToolchainMessage[]>(files.map((file) => [file, []]));
+	const results = new Map<string, Array<ToolchainMessage>>(files.map((file) => [file, []]));
 	return {
 		results,
 		add(path, message) {
 			const key = path === undefined ? tsconfig : keyOf(resolve(path));
 			const list = results.get(key);
-			if (list) list.push(message);
-			else results.set(key, [message]);
+			if (list) {
+				list.push(message);
+			} else {
+				results.set(key, [message]);
+			}
 		},
 	};
 }
@@ -170,11 +176,13 @@ export function diagnosticsByFile(files: readonly string[], tsconfig: string): D
  * Maps the paths a checker prints back to the caller's own spelling of each file, also when
  * the checker resolved a symlink on the way. A path no file matches is returned as it is.
  */
-function pathKeys(files: readonly string[]): (path: string) => string {
+function pathKeys(files: ReadonlyArray<string>): (path: string) => string {
 	const keys = new Map<string, string>();
 	for (const file of files) {
 		keys.set(resolve(file), file);
-		if (existsSync(file)) keys.set(realpathSync(file), file);
+		if (existsSync(file)) {
+			keys.set(realpathSync(file), file);
+		}
 	}
 	return (path) =>
 		keys.get(path) ?? (existsSync(path) ? keys.get(realpathSync(path)) : undefined) ?? path;

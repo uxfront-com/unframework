@@ -3,7 +3,6 @@
 // out of the default run (`harnessProjects`), since twenty iterations per case would slow every
 // `pnpm test`. A canary's fresh compile is what's measured under one, and a canary of some cases
 // measures only those, beside the case every time is a ratio of.
-import type { TargetName } from "@unframework.dev/compiler";
 import { checkLayers, NO_OUTPUT_SKIP } from "@unframework.dev/testing/node";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 
@@ -56,7 +55,9 @@ async function measureTarget(target: string): Promise<void> {
 			sizes.set(cell(info.id, target), await size.catch(asError));
 		}
 	} catch (error) {
-		for (const info of owed) sizes.set(cell(info.id, target), asError(error));
+		for (const info of owed) {
+			sizes.set(cell(info.id, target), asError(error));
+		}
 	}
 }
 
@@ -71,7 +72,9 @@ beforeAll(async () => {
 					canaryPlugins(harness.canary),
 				)
 			: new Map();
-		for (const target of targets) await measureTarget(target);
+		for (const target of targets) {
+			await measureTarget(target);
+		}
 	} catch (error) {
 		failure = asError(error);
 	}
@@ -82,23 +85,33 @@ describe("bench", () => {
 		for (const target of targets) {
 			it(cell(info.id, target), async ({ task }) => {
 				const errors = errorState(info, target);
-				if (errors instanceof Error) throw errors;
+				if (errors instanceof Error) {
+					throw errors;
+				}
 				await checkLayers(
 					task,
 					{ case: info.id, target, quarantine: harness.quarantine },
 					{
 						L15: () => {
-							if (errors) return { skip: NO_OUTPUT_SKIP };
-							if (failure) throw failure;
+							if (errors) {
+								return { skip: NO_OUTPUT_SKIP };
+							}
+							if (failure) {
+								throw failure;
+							}
 							const size = sizes.get(cell(info.id, target));
-							if (size instanceof Error) throw size;
+							if (size instanceof Error) {
+								throw size;
+							}
 							const problems = budgetProblems(
 								budgets.cases[info.id],
-								target as TargetName,
+								target,
 								times.get(info.id) ?? 0,
 								size!,
 							);
-							if (problems.length) throw new Error(problems.join("\n"));
+							if (problems.length) {
+								throw new Error(problems.join("\n"));
+							}
 							return undefined;
 						},
 					},
@@ -108,7 +121,9 @@ describe("bench", () => {
 	}
 
 	it("holds a budget for no case or target that has no cell", () => {
-		if (failure) throw failure;
+		if (failure) {
+			throw failure;
+		}
 		const stale = staleBudgets(budgets, budgetedCases(corpus));
 		expect(stale, "Stale budgets: run `pnpm test:budgets:update`.").toEqual([]);
 	});

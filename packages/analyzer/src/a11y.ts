@@ -15,14 +15,16 @@ export type A11yValue = string | true | null;
 /** A role schema: an element, and the attributes (with their values, where set) it needs. */
 interface Schema {
 	readonly name: string;
-	readonly attributes?: readonly { readonly name: string; readonly value?: string }[];
+	readonly attributes?: ReadonlyArray<{ readonly name: string; readonly value?: string }>;
 }
 
 /** Reads `input[list,type=email]` as a schema. */
 function schema(text: string): Schema {
 	const match = /^([a-z0-9]+)(?:\[(.*)\])?$/.exec(text)!;
 	const [, name, list] = match;
-	if (list === undefined) return { name: name! };
+	if (list === undefined) {
+		return { name: name! };
+	}
 	return {
 		name: name!,
 		attributes: list.split(",").map((item) => {
@@ -32,11 +34,11 @@ function schema(text: string): Schema {
 	};
 }
 
-const schemas = (text: string): readonly Schema[] => text.trim().split(/\s+/).map(schema);
+const schemas = (text: string): ReadonlyArray<Schema> => text.trim().split(/\s+/).map(schema);
 const words = (text: string): ReadonlySet<string> => new Set(text.trim().split(/\s+/));
 
 /** Svelte's `interactive_element_role_schemas`: elements whose roles are all interactive. */
-export const INTERACTIVE_ROLE_SCHEMAS: readonly Schema[] = schemas(`
+export const INTERACTIVE_ROLE_SCHEMAS: ReadonlyArray<Schema> = schemas(`
   input[type=button] input[type=image] input[type=reset] input[type=submit] button td
   input[type=checkbox] th th[scope=col] th[scope=colgroup] input[list,type=email]
   input[list,type=search] input[list,type=tel] input[list,type=text] input[list,type=url]
@@ -47,7 +49,7 @@ export const INTERACTIVE_ROLE_SCHEMAS: readonly Schema[] = schemas(`
 `);
 
 /** Svelte's `non_interactive_element_role_schemas`: elements whose roles are all non-interactive. */
-export const NON_INTERACTIVE_ROLE_SCHEMAS: readonly Schema[] = schemas(`
+export const NON_INTERACTIVE_ROLE_SCHEMAS: ReadonlyArray<Schema> = schemas(`
   article header blockquote caption code aside aside[aria-label] aside[aria-labelledby] footer dd
   del html em figure form[aria-label] form[aria-labelledby] form[name] details fieldset optgroup
   address h1 h2 h3 h4 h5 h6 img[alt] img[alt] ins menu ol ul li main mark math meter nav p
@@ -56,7 +58,7 @@ export const NON_INTERACTIVE_ROLE_SCHEMAS: readonly Schema[] = schemas(`
 `);
 
 /** Svelte's `interactive_element_ax_object_schemas`: elements axobject-query calls widgets. */
-export const INTERACTIVE_AX_SCHEMAS: readonly Schema[] = schemas(`
+export const INTERACTIVE_AX_SCHEMAS: ReadonlyArray<Schema> = schemas(`
   audio button canvas td input[type=checkbox] input[type=color] th select input[type=date]
   input[type=datetime] summary embed input input[type=time] a[href] option datalist menuitem
   input[type=radio] th[scope=row] input[type=search] input[type=range] input[type=number] textarea
@@ -64,7 +66,7 @@ export const INTERACTIVE_AX_SCHEMAS: readonly Schema[] = schemas(`
 `);
 
 /** Svelte's `non_interactive_element_ax_object_schemas`: elements of structure or windows. */
-export const NON_INTERACTIVE_AX_SCHEMAS: readonly Schema[] = schemas(`
+export const NON_INTERACTIVE_AX_SCHEMAS: ReadonlyArray<Schema> = schemas(`
   abbr article blockquote caption dfn dd dl dt details dir figcaption figure footer form h1 h2 h3
   h4 h5 h6 img[usemap] img label legend br li ul ol main mark marquee menu meter nav p pre progress
   tr ruby table time
@@ -133,9 +135,11 @@ export function handlerProblems(
 	tag: string,
 	attributes: ReadonlyMap<string, A11yValue>,
 	handlers: ReadonlySet<string>,
-): A11yProblem[] {
-	const problems: A11yProblem[] = [];
-	if (!handlers.size) return problems;
+): Array<A11yProblem> {
+	const problems: Array<A11yProblem> = [];
+	if (!handlers.size) {
+		return problems;
+	}
 	const interactivity = elementInteractivity(tag, attributes);
 	const interactive = interactivity === "interactive";
 	const nonInteractive = interactivity === "non-interactive";
@@ -247,12 +251,20 @@ function elementInteractivity(
 	tag: string,
 	attributes: ReadonlyMap<string, A11yValue>,
 ): Interactivity {
-	const matches = (list: readonly Schema[]) =>
+	const matches = (list: ReadonlyArray<Schema>) =>
 		list.some((item) => matchSchema(item, tag, attributes));
-	if (matches(INTERACTIVE_ROLE_SCHEMAS)) return "interactive";
-	if (tag !== "header" && matches(NON_INTERACTIVE_ROLE_SCHEMAS)) return "non-interactive";
-	if (matches(INTERACTIVE_AX_SCHEMAS)) return "interactive";
-	if (matches(NON_INTERACTIVE_AX_SCHEMAS)) return "non-interactive";
+	if (matches(INTERACTIVE_ROLE_SCHEMAS)) {
+		return "interactive";
+	}
+	if (tag !== "header" && matches(NON_INTERACTIVE_ROLE_SCHEMAS)) {
+		return "non-interactive";
+	}
+	if (matches(INTERACTIVE_AX_SCHEMAS)) {
+		return "interactive";
+	}
+	if (matches(NON_INTERACTIVE_AX_SCHEMAS)) {
+		return "non-interactive";
+	}
 	return "static";
 }
 
@@ -262,24 +274,34 @@ function matchSchema(
 	tag: string,
 	attributes: ReadonlyMap<string, A11yValue>,
 ): boolean {
-	if (item.name !== tag) return false;
+	if (item.name !== tag) {
+		return false;
+	}
 	return (item.attributes ?? []).every(({ name, value }) => {
-		if (!attributes.has(name)) return false;
+		if (!attributes.has(name)) {
+			return false;
+		}
 		return !value || value === staticText(attributes.get(name));
 	});
 }
 
 /** Svelte's `is_hidden_from_screen_reader`. */
 function hiddenFromScreenReader(tag: string, attributes: ReadonlyMap<string, A11yValue>): boolean {
-	if (tag === "input" && attributes.get("type") === "hidden") return true;
-	if (!attributes.has("aria-hidden")) return false;
+	if (tag === "input" && attributes.get("type") === "hidden") {
+		return true;
+	}
+	if (!attributes.has("aria-hidden")) {
+		return false;
+	}
 	const value = attributes.get("aria-hidden") ?? null;
 	return value === null || value === true || value === "true";
 }
 
 /** Svelte's `has_disabled_attribute`. */
 function disabled(attributes: ReadonlyMap<string, A11yValue>): boolean {
-	if (attributes.get("disabled")) return true;
+	if (attributes.get("disabled")) {
+		return true;
+	}
 	return attributes.get("aria-disabled") === "true";
 }
 

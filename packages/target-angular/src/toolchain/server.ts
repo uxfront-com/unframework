@@ -6,8 +6,8 @@ import {
 	createApplication,
 	provideClientHydration,
 	withNoIncrementalHydration,
-	type BootstrapContext,
 } from "@angular/platform-browser";
+import type { BootstrapContext } from "@angular/platform-browser";
 import { provideServerRendering, renderApplication } from "@angular/platform-server";
 import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
 
@@ -72,7 +72,9 @@ async function render(
 				context,
 			);
 			const ref = createComponent(type, { environmentInjector: app.injector });
-			for (const [name, value] of Object.entries(options.props ?? {})) ref.setInput(name, value);
+			for (const [name, value] of Object.entries(options.props ?? {})) {
+				ref.setInput(name, value);
+			}
 			app.attachView(ref.hostView);
 			app.injector.get(DOCUMENT).body.appendChild(ref.location.nativeElement as Node);
 			return app;
@@ -81,6 +83,8 @@ async function render(
 		{ document: DOCUMENT_HTML, url: "http://localhost/", allowedHosts: ["localhost"] },
 	);
 	const body = /<body[^>]*>([\s\S]*)<\/body>/.exec(html);
-	if (!body) throw new Error(`Angular rendered a document without a <body>: ${html}`);
+	if (!body) {
+		throw new Error(`Angular rendered a document without a <body>: ${html}`);
+	}
 	return body[1]!;
 }

@@ -15,14 +15,18 @@ const API =
 /** The first component node of a component's render tree, depth first. */
 function componentNode(render: unknown): ComponentNode {
 	const found = find(render, (node) => node.kind === "Component");
-	if (!found) throw new Error("no component node");
+	if (!found) {
+		throw new Error("no component node");
+	}
 	return found as ComponentNode;
 }
 
 /** The first slot outlet of a render tree. */
 function outlet(render: unknown): SlotOutletNode {
 	const found = find(render, (node) => node.kind === "SlotOutlet");
-	if (!found) throw new Error("no slot outlet");
+	if (!found) {
+		throw new Error("no slot outlet");
+	}
 	return found as SlotOutletNode;
 }
 
@@ -30,11 +34,17 @@ function find(
 	value: unknown,
 	test: (node: { kind?: string }) => boolean,
 ): { kind?: string } | undefined {
-	if (!value || typeof value !== "object") return undefined;
-	if (!Array.isArray(value) && test(value as { kind?: string })) return value as { kind?: string };
+	if (!value || typeof value !== "object") {
+		return undefined;
+	}
+	if (!Array.isArray(value) && test(value)) {
+		return value;
+	}
 	for (const item of Object.values(value)) {
 		const found = find(item, test);
-		if (found) return found;
+		if (found) {
+			return found;
+		}
 	}
 	return undefined;
 }
@@ -264,7 +274,7 @@ export function Outer() {
 		const { module, diagnostics } = run(source);
 		expect(diagnostics).toEqual([]);
 		const render = module!.components[1]!.render;
-		const [first, second] = (render as { children: ComponentNode[] }).children;
+		const [first, second] = (render as { children: Array<ComponentNode> }).children;
 		expect(first!.fills.map(({ slot, forward }) => [slot, forward])).toEqual([
 			["default", "default"],
 			["hint", "hint"],

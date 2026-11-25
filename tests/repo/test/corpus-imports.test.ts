@@ -21,7 +21,7 @@ const SPEC = "tests/integration/cases/state/counter/probe.test.ts";
 const DESIGN_SYSTEM_SPEC = "tests/e2e/design-system/test/counter/probe.test.ts";
 
 /** Specifiers the rule refuses: a subpath, another package, the harness's or a package's code. */
-const REFUSED: readonly string[] = [
+const REFUSED: ReadonlyArray<string> = [
 	"@unframework.dev/testing/harness",
 	"@unframework.dev/testing/setup",
 	"@unframework.dev/testing/node",
@@ -38,7 +38,7 @@ const REFUSED: readonly string[] = [
 ];
 
 /** Specifiers it lets through: the public API, the authoring stubs, a case's own sources. */
-const ALLOWED: readonly string[] = [
+const ALLOWED: ReadonlyArray<string> = [
 	"@unframework.dev/testing",
 	"@uxfront/unframework",
 	"vitest",
@@ -51,9 +51,11 @@ const project = mkdtempSync(join(tmpdir(), "uf-corpus-imports-"));
 afterAll(() => rmSync(project, { recursive: true, force: true }));
 
 /** The specifiers oxlint reports `no-restricted-imports` for, one import per line of the spec. */
-function refusedBy(specifiers: readonly string[], spec: string = SPEC): string[] {
+function refusedBy(specifiers: ReadonlyArray<string>, spec: string = SPEC): Array<string> {
 	const override = config.overrides?.find((entry) => entry.files.includes(CASES));
-	if (!override) throw new Error(`oxlint.config.ts has no override for ${CASES}.`);
+	if (!override) {
+		throw new Error(`oxlint.config.ts has no override for ${CASES}.`);
+	}
 	writeFileSync(
 		join(project, ".oxlintrc.json"),
 		JSON.stringify({ overrides: [{ files: override.files, rules: override.rules }] }),
@@ -69,7 +71,7 @@ function refusedBy(specifiers: readonly string[], spec: string = SPEC): string[]
 		{ cwd: project, encoding: "utf8" },
 	);
 	const report = JSON.parse(run.stdout) as {
-		diagnostics: { code: string; labels: { span: { line: number } }[] }[];
+		diagnostics: Array<{ code: string; labels: Array<{ span: { line: number } }> }>;
 	};
 	return report.diagnostics
 		.filter((diagnostic) => diagnostic.code === "eslint(no-restricted-imports)")

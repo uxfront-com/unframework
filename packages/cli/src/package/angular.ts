@@ -21,11 +21,13 @@ const ALIAS = /^export \{ ([\w$]+) as ([\w$]+) \};$/gm;
  * The barrel and the slot directives of the components it exports. A consumer imports the directive
  * that fills a named slot, and the format's one entry point is all a consumer can reach.
  */
-function entryPoint(files: readonly OutputFile[]): string {
+function entryPoint(files: ReadonlyArray<OutputFile>): string {
 	const barrel = files.find(({ path }) => path === "index.ts")?.contents ?? "";
 	const directives = files.flatMap(({ path, contents }) => {
 		const specifier = JSON.stringify(`./${path.replace(/\.ts$/, "")}`);
-		if (!barrel.includes(specifier)) return [];
+		if (!barrel.includes(specifier)) {
+			return [];
+		}
 		const aliases = new Map(
 			[...contents.matchAll(ALIAS)].map(([, local, name]) => [local, name] as const),
 		);
@@ -38,7 +40,9 @@ function entryPoint(files: readonly OutputFile[]): string {
 
 /** The format's own paths under `./angular`, each condition in the order ng-packagr wrote it. */
 function prefixed(exports: SubpathExports): SubpathExports {
-	if (typeof exports === "string") return exports.replace(/^\.\//, "./angular/");
+	if (typeof exports === "string") {
+		return exports.replace(/^\.\//, "./angular/");
+	}
 	return Object.fromEntries(
 		Object.entries(exports).map(([condition, path]) => [condition, prefixed(path)]),
 	);
@@ -58,7 +62,9 @@ export const angular: Packager = {
 			exports?: Record<string, SubpathExports>;
 		};
 		const entry = exports?.["."];
-		if (entry === undefined) throw new Error('ng-packagr wrote no exports["."].');
+		if (entry === undefined) {
+			throw new Error('ng-packagr wrote no exports["."].');
+		}
 		return prefixed(entry);
 	},
 	run: async ({ files, out, work, resolve }) => {
@@ -96,10 +102,15 @@ export const angular: Packager = {
 			["-p", "ng-package.json", "-c", "tsconfig.json"],
 			work,
 			"stderr",
-		).catch((error: Error) => {
+		).catch((error: unknown) => {
 			// Its spinner's lines, which say nothing about the failure. With colour on, each starts with
 			// a control code, so those go first.
-			throw new Error(stripVTControlCharacters(error.message).replace(/^[-✖✔] .*\n/gm, ""));
+			throw new Error(
+				stripVTControlCharacters(String(error instanceof Error ? error.message : error)).replaceAll(
+					/^[-✖✔] .*\n/gm,
+					"",
+				),
+			);
 		});
 		// ng-packagr always writes maps, and a package ships none (ADR-0077).
 		for await (const file of glob("**/*.map", { cwd: out })) {

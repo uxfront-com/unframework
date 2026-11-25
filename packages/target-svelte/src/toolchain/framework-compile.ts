@@ -27,7 +27,7 @@ let compiler: Promise<SvelteCompiler> | undefined;
  * the transform alone checks it.
  */
 export async function frameworkCompile(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
 	assertFilesToCompile(files);
 	// Loaded on first use, so importing the toolchain stays cheap.
@@ -50,11 +50,11 @@ export async function frameworkCompile(
  * as it is, for the bundler's TypeScript transform.
  */
 export async function frameworkEmit(
-	files: readonly ToolchainFile[],
-): Promise<Map<string, ToolchainFile[]>> {
+	files: ReadonlyArray<ToolchainFile>,
+): Promise<Map<string, Array<ToolchainFile>>> {
 	assertFilesToCompile(files);
 	const svelte = await (compiler ??= import("svelte/compiler"));
-	const emitted = new Map<string, ToolchainFile[]>();
+	const emitted = new Map<string, Array<ToolchainFile>>();
 	for (const file of files) {
 		let contents = file.contents;
 		if (file.path.endsWith(".svelte.ts")) {
@@ -81,7 +81,9 @@ async function compileRunesModule(
 	file: ToolchainFile,
 ): Promise<FrameworkCompileResult> {
 	const { code, result } = await transformScriptModule(file);
-	if (code === undefined) return result;
+	if (code === undefined) {
+		return result;
+	}
 	const warnings = new Map<string, ToolchainMessage>();
 	for (const generate of ["client", "server"] as const) {
 		try {
@@ -103,7 +105,7 @@ async function compileRunesModule(
 function compileComponent(svelte: SvelteCompiler, file: ToolchainFile): FrameworkCompileResult {
 	const { compile } = svelte;
 	const options = componentOptions(svelte.parse, file.contents);
-	const errors: ToolchainMessage[] = [];
+	const errors: Array<ToolchainMessage> = [];
 	const warnings = new Map<string, ToolchainMessage>();
 	for (const generate of ["client", "server"] as const) {
 		let result: ReturnType<SvelteCompiler["compile"]>;

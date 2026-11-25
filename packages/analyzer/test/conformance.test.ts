@@ -33,7 +33,7 @@ const vue = vueRequire("@vue/compiler-dom") as VueCompilerDom;
 const { isHTMLTag } = vueRequire("@vue/shared") as { isHTMLTag: (tag: string) => boolean };
 
 /** The ancestors an element needs to be where HTML allows it. */
-const CONTEXT: Readonly<Record<string, readonly string[]>> = {
+const CONTEXT: Readonly<Record<string, ReadonlyArray<string>>> = {
 	caption: ["table"],
 	colgroup: ["table"],
 	thead: ["table"],
@@ -55,17 +55,23 @@ const CONTEXT: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** A nesting, outermost first, as a template (Svelte, Vue) or JSX: the two read alike. */
-function markup(tags: readonly string[]): string {
+function markup(tags: ReadonlyArray<string>): string {
 	const [tag, ...inner] = tags;
-	if (!tag) return "";
-	if (isVoidElement(tag) && !inner.length) return `<${tag} />`;
+	if (!tag) {
+		return "";
+	}
+	if (isVoidElement(tag) && !inner.length) {
+		return `<${tag} />`;
+	}
 	return `<${tag}>${markup(inner)}</${tag}>`;
 }
 
 /** The same nesting as HTML source, where a void element has no end tag. */
-function html(tags: readonly string[]): string {
+function html(tags: ReadonlyArray<string>): string {
 	const [tag, ...inner] = tags;
-	if (!tag) return "";
+	if (!tag) {
+		return "";
+	}
 	return isVoidElement(tag) ? `<${tag}>${html(inner)}` : `<${tag}>${html(inner)}</${tag}>`;
 }
 
@@ -73,15 +79,17 @@ function html(tags: readonly string[]): string {
  * Whether the HTML parser, parsing the nesting in a `<body>`, builds any other tree than the
  * chain of elements it describes: an element moved, dropped, added or closed early.
  */
-function parserRepairs(tags: readonly string[]): boolean {
+function parserRepairs(tags: ReadonlyArray<string>): boolean {
 	const body = defaultTreeAdapter.createElement("body", spec.NS.HTML, []);
 	return !isChain(parseFragment(body, html(tags), {}), tags);
 }
 
 /** Whether a node's subtree is exactly one element per tag, each the only child of the last. */
-function isChain(node: DefaultTreeAdapterTypes.ParentNode, tags: readonly string[]): boolean {
+function isChain(node: DefaultTreeAdapterTypes.ParentNode, tags: ReadonlyArray<string>): boolean {
 	const [tag, ...inner] = tags;
-	if (tag === undefined) return node.childNodes.length === 0;
+	if (tag === undefined) {
+		return node.childNodes.length === 0;
+	}
 	const [child] = node.childNodes;
 	return (
 		node.childNodes.length === 1 &&
@@ -93,7 +101,9 @@ function isChain(node: DefaultTreeAdapterTypes.ParentNode, tags: readonly string
 }
 
 /** The elements of a parsed fragment, in document order. */
-function elementsOf(node: DefaultTreeAdapterTypes.ParentNode): DefaultTreeAdapterTypes.Element[] {
+function elementsOf(
+	node: DefaultTreeAdapterTypes.ParentNode,
+): Array<DefaultTreeAdapterTypes.Element> {
 	return node.childNodes.flatMap((child) =>
 		"tagName" in child ? [child, ...elementsOf(child)] : [],
 	);
@@ -104,7 +114,7 @@ function parseBody(source: string): DefaultTreeAdapterTypes.DocumentFragment {
 }
 
 /** Whether Svelte fails to compile the nesting, or warns that the browser will repair it. */
-function svelteRejects(tags: readonly string[]): boolean {
+function svelteRejects(tags: ReadonlyArray<string>): boolean {
 	try {
 		const { warnings } = compileSvelte(markup(tags), { generate: "server" });
 		return warnings.some((warning) => warning.code === "node_invalid_placement_ssr");
@@ -113,7 +123,7 @@ function svelteRejects(tags: readonly string[]): boolean {
 	}
 }
 
-function vueReports(tags: readonly string[]): boolean {
+function vueReports(tags: ReadonlyArray<string>): boolean {
 	let reported = false;
 	vue.compile(markup(tags), {
 		onWarn: () => (reported = true),
@@ -122,7 +132,7 @@ function vueReports(tags: readonly string[]): boolean {
 	return reported;
 }
 
-function analyzerRejects(tags: readonly string[]): boolean {
+function analyzerRejects(tags: ReadonlyArray<string>): boolean {
 	return run(`export function A() { return ${markup(tags)}; }`).diagnostics.length > 0;
 }
 
@@ -211,7 +221,7 @@ describe("the nesting rules", () => {
 	});
 
 	it("reject every parent and child the parser, Svelte or Vue repairs or reports", () => {
-		const missed: string[] = [];
+		const missed: Array<string> = [];
 		const flagged = { parser: 0, svelte: 0, vue: 0 };
 		for (const parent of elements) {
 			for (const child of elements) {
@@ -221,9 +231,15 @@ describe("the nesting rules", () => {
 					svelteRejects(tags) && "Svelte",
 					vueReports(tags) && "Vue",
 				].filter((tool) => tool !== false);
-				if (tools.includes("the parser")) flagged.parser++;
-				if (tools.includes("Svelte")) flagged.svelte++;
-				if (tools.includes("Vue")) flagged.vue++;
+				if (tools.includes("the parser")) {
+					flagged.parser++;
+				}
+				if (tools.includes("Svelte")) {
+					flagged.svelte++;
+				}
+				if (tools.includes("Vue")) {
+					flagged.vue++;
+				}
 				if (tools.length && !analyzerRejects(tags)) {
 					missed.push(`${html(tags)} (${tools.join(", ")})`);
 				}

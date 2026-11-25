@@ -34,13 +34,13 @@ let compiled = 0;
 async function render(
 	suite: ParitySuite,
 	{ format, inline }: Setup,
-): Promise<{ html: string; logged: string[] }> {
+): Promise<{ html: string; logged: Array<string> }> {
 	const [file] = await emitParity(target, suite, { format });
 	const id = `render-parity-${compiled++}`;
 	const { descriptor, errors } = parse(file!.contents, { filename: file!.path });
 	expect(errors).toEqual([]);
-	const logged: string[] = [];
-	const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+	const logged: Array<string> = [];
+	const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
 	const onWarn = (warning: { message: string }) => void logged.push(warning.message);
 	const spies = [
 		vi.spyOn(console, "error").mockImplementation(capture),
@@ -89,7 +89,9 @@ async function render(
 		const { default: component } = await importScratch<{ default: unknown }>(`${id}.ts`, code);
 		return { html: await renderToString(component, { props: parityProps(suite) }), logged };
 	} finally {
-		for (const spy of spies) spy.mockRestore();
+		for (const spy of spies) {
+			spy.mockRestore();
+		}
 	}
 }
 

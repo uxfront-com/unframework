@@ -12,7 +12,7 @@ import { visit } from "./ast.ts";
 export const INDENT = "  ";
 
 /** The ranges of the string and template literals in code, or `undefined` when it does not parse. */
-function literalRanges(code: string): { start: number; end: number }[] | undefined {
+function literalRanges(code: string): Array<{ start: number; end: number }> | undefined {
 	let root: unknown;
 	try {
 		root = parseStatementsSource(code).statements;
@@ -23,21 +23,25 @@ function literalRanges(code: string): { start: number; end: number }[] | undefin
 			return undefined;
 		}
 	}
-	const ranges: { start: number; end: number }[] = [];
+	const ranges: Array<{ start: number; end: number }> = [];
 	visit(root, (node) => {
 		const literal =
 			node.type === "TemplateLiteral" ||
 			node.type === "TSTemplateLiteralType" ||
 			(node.type === "Literal" && typeof node["value"] === "string");
-		if (literal) ranges.push({ start: node.start, end: node.end });
+		if (literal) {
+			ranges.push({ start: node.start, end: node.end });
+		}
 	});
 	return ranges;
 }
 
 /** Each line of code, with whether it starts inside a literal (its text must not move). */
-function linesOf(code: string): { text: string; fixed: boolean }[] | undefined {
+function linesOf(code: string): Array<{ text: string; fixed: boolean }> | undefined {
 	const literals = literalRanges(code);
-	if (!literals) return undefined;
+	if (!literals) {
+		return undefined;
+	}
 	let offset = 0;
 	return code.split("\n").map((text) => {
 		const start = offset;
@@ -71,7 +75,7 @@ export function reindent(code: string, pad: string): string {
 }
 
 /** A block the target writes: its opening line, its statements one level in, and its closing. */
-export function block(open: string, statements: readonly string[], close: string): string {
+export function block(open: string, statements: ReadonlyArray<string>, close: string): string {
 	return [open, ...statements.map((statement) => reindent(statement, INDENT)), close].join("\n");
 }
 
@@ -82,5 +86,5 @@ export function block(open: string, statements: readonly string[], close: string
  * it (UF1002); the target escapes it anyway, as a guard, as Vue's does.
  */
 export function escapeScriptEnd(code: string): string {
-	return code.replace(/<\/(script)/gi, "<\\/$1");
+	return code.replaceAll(/<\/(script)/gi, String.raw`<\/$1`);
 }

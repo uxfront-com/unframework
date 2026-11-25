@@ -17,8 +17,8 @@ describe("shared helper modules: Qwik", () => {
 		for (const component of ["cards/Card.tsx", "badges/Badge.tsx"]) {
 			const contents = written[component]!;
 			// An import that oxfmt wraps over several lines reads as one.
-			const imports = contents.replace(/\{[^}]*\}/g, (names) =>
-				names.replace(/\s+/g, " ").replace(/,? \}$/, " }"),
+			const imports = contents.replaceAll(/\{[^}]*\}/g, (names) =>
+				names.replaceAll(/\s+/g, " ").replace(/,? \}$/, " }"),
 			);
 			expect(imports, component).toContain(
 				'import { queueHook } from "../_unframework/queueHook";',
@@ -38,7 +38,9 @@ describe("shared helper modules: Qwik", () => {
 		}
 		// A helper module imports only its framework.
 		for (const [path, contents] of Object.entries(written)) {
-			if (!path.startsWith("_unframework/")) continue;
+			if (!path.startsWith("_unframework/")) {
+				continue;
+			}
 			for (const [, specifier] of contents.matchAll(/from "([^"]+)"/g)) {
 				expect(specifier, path).toMatch(/^@qwik\.dev\/core(?:\/build)?$/);
 			}

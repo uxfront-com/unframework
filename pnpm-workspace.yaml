@@ -75,7 +75,7 @@ minimumReleaseAgeExclude:
   - "@uxfront/layer-ui@0.1.11"
   - "@uxfront/oxfmt-config@0.1.1"
   - "@uxfront/oxfmt-config@0.2.0"
-  - "@uxfront/oxlint-config@0.1.1"
+  - "@uxfront/oxlint-config@0.2.0"
   - "@uxfront/scene@0.5.1"
   - "@uxfront/ui@0.9.1"
   - "@vitest/mocker@5.0.3"
@@ -174,8 +174,8 @@ catalog:
   oxc-parser: 0.152.0
   oxc-resolver: 11.24.2
   oxfmt: 0.71.0
-  oxlint: 1.86.0
-  oxlint-tsgolint: 7.0.2003
+  oxlint: 1.94.0
+  oxlint-tsgolint: 7.0.2008
   parse5: ^8.0.1
   pixelmatch: ^8.0.0
   playwright: 1.63.0

@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { applyAndRecheck, problems, setupOf } from "./helpers.ts";
 
 /** The problems of a component with the API imported, the setup and the template. */
-function problemsOf(setup: string, jsx = "<p />"): string[] {
+function problemsOf(setup: string, jsx = "<p />"): Array<string> {
 	const { source, diagnostics } = setupOf(setup, jsx);
 	return problems(source, diagnostics);
 }
@@ -353,7 +353,9 @@ describe("self-triggering effects (UF2027)", () => {
 			"<p>{items.value.join()}{checks.value}</p>",
 		);
 		const effect = module?.components[0]?.setup.find((item) => item.kind === "WatchEffect");
-		if (effect?.kind !== "WatchEffect") throw new Error("the component has an effect");
+		if (effect?.kind !== "WatchEffect") {
+			throw new Error("the component has an effect");
+		}
 		expect(
 			effect.effect.body.refs.flatMap((ref) =>
 				ref.kind === "Binding"

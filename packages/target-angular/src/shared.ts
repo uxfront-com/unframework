@@ -43,7 +43,7 @@ function sibling(imports: ImportSet, name: string): string {
 }
 
 /** The helpers each shared helper's module imports. */
-const DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
+const DEPENDENCIES: Readonly<Record<string, ReadonlyArray<string>>> = {
 	modelText: ["looseToNumber"],
 	writeModelText: ["looseToNumber"],
 	Fallthrough: ["Listeners"],
@@ -96,7 +96,7 @@ const SHARED_HELPERS: Readonly<Record<string, ModuleCode>> = {
 };
 
 /** The names of the helpers Angular shares by a fixed name. */
-export const SHARED_HELPER_NAMES: readonly string[] = Object.keys(SHARED_HELPERS);
+export const SHARED_HELPER_NAMES: ReadonlyArray<string> = Object.keys(SHARED_HELPERS);
 
 /** The text of a module: its imports, then its code. */
 function moduleText(code: ModuleCode): string {
@@ -150,7 +150,9 @@ export function importShared(
 ): void {
 	const put = (name: string, contents?: string): string => {
 		const module = MODULE_OF[name] ?? name;
-		for (const dependency of DEPENDENCIES[module] ?? []) put(dependency);
+		for (const dependency of DEPENDENCIES[module] ?? []) {
+			put(dependency);
+		}
 		// Angular's outputs import a sibling by its name, without the extension (`./card-icon`).
 		return helper(`${module}.ts`, contents ?? sharedModule(module), from).replace(/\.ts$/, "");
 	};

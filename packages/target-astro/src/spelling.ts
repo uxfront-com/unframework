@@ -41,9 +41,13 @@ export interface Spelling {
  * component and its consumers compute the same name from its API.
  */
 export function renderPropName(slot: string, taken: ReadonlySet<string>): string {
-	if (slot !== "class" && slot !== "style") return slot;
+	if (slot !== "class" && slot !== "style") {
+		return slot;
+	}
 	let name = `${slot}Slot`;
-	for (let index = 2; taken.has(name); index++) name = `${slot}Slot${index}`;
+	for (let index = 2; taken.has(name); index++) {
+		name = `${slot}Slot${index}`;
+	}
 	return name;
 }
 

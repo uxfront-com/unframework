@@ -17,9 +17,9 @@ interface SolidCompiler {
  * instead, which also serves its SSR (ADR-0102).
  */
 async function solidCompiler({ resolve }: PackagerInput): Promise<object> {
-	const compiler: SolidCompiler = await import(
+	const compiler = (await import(
 		/* @vite-ignore */ pathToFileURL(resolve(COMPILER)).href
-	);
+	)) as SolidCompiler;
 	return {
 		name: "unframework:solid2-compiler",
 		renderChunk: async (code: string, chunk: { fileName: string }) =>

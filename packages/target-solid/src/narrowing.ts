@@ -54,7 +54,7 @@ type Parsed = ReturnType<typeof parseExpression>;
 export interface ReferencePath {
 	binding: BindingId;
 	/** The properties read through the binding, in order: none for the binding itself. */
-	keys: readonly string[];
+	keys: ReadonlyArray<string>;
 }
 
 /** Whether two paths are the same reference. */
@@ -79,8 +79,12 @@ function pathAt(node: Parsed, expression: Expression | Code): ReferencePath | un
 	if (reference) {
 		return reference.kind === "Binding" ? { binding: reference.binding, keys: [] } : undefined;
 	}
-	if (node.type === "ChainExpression") return pathAt(node.expression, expression);
-	if (node.type !== "MemberExpression") return undefined;
+	if (node.type === "ChainExpression") {
+		return pathAt(node.expression, expression);
+	}
+	if (node.type !== "MemberExpression") {
+		return undefined;
+	}
 	const key = !node.computed ? (node.property as { name: string }).name : literalKey(node.property);
 	const object = key === undefined ? undefined : pathAt(node.object, expression);
 	return object && { binding: object.binding, keys: [...object.keys, key!] };
@@ -125,14 +129,18 @@ interface Read {
  * method's callee reads its object (`label.trim()` reads `label`): a value taken without its
  * object would be called without its `this`.
  */
-function readsOf(expression: Expression | Code): Read[] {
-	const found: Read[] = [];
+function readsOf(expression: Expression | Code): Array<Read> {
+	const found: Array<Read> = [];
 	const visit = (node: unknown, callee: boolean): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item, false);
+			for (const item of node) {
+				visit(item, false);
+			}
 			return;
 		}
-		if (!isNode(node)) return;
+		if (!isNode(node)) {
+			return;
+		}
 		const parsed = node as Parsed;
 		const path = pathAt(parsed, expression);
 		if (path && !(callee && path.keys.length)) {
@@ -159,8 +167,8 @@ function readsOf(expression: Expression | Code): Read[] {
  * the expression body of each inline handler: a handler that reads what a test narrows is one
  * call (UF3029), whose arguments read it through the branch's accessor.
  */
-function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
-	const found: (Expression | Code)[] = [];
+function expressionsIn(nodes: ReadonlyArray<RenderNode>): Array<Expression | Code> {
+	const found: Array<Expression | Code> = [];
 	const visit = (node: RenderNode): void => {
 		switch (node.kind) {
 			case "Element":
@@ -176,13 +184,18 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
 							break;
 						case "Class":
 							for (const item of attribute.items) {
-								if (item.kind === "Toggle") found.push(item.condition);
-								else if (item.kind === "Dynamic") found.push(item.value);
+								if (item.kind === "Toggle") {
+									found.push(item.condition);
+								} else if (item.kind === "Dynamic") {
+									found.push(item.value);
+								}
 							}
 							break;
 						case "Style":
 							for (const declaration of attribute.declarations) {
-								if (declaration.kind !== "Static") found.push(declaration.value);
+								if (declaration.kind !== "Static") {
+									found.push(declaration.value);
+								}
 							}
 							break;
 						case "Event":
@@ -209,7 +222,9 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
 				return;
 			case "If":
 				for (const branch of node.branches) {
-					if (branch.condition) found.push(branch.condition);
+					if (branch.condition) {
+						found.push(branch.condition);
+					}
 					branch.children.forEach(visit);
 				}
 				return;
@@ -247,32 +262,38 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
  * the branch reads no binding its tests read.
  */
 export function carriedPaths(
-	children: readonly RenderNode[],
-	tests: readonly Expression[],
+	children: ReadonlyArray<RenderNode>,
+	tests: ReadonlyArray<Expression>,
 	holds: boolean,
-	enclosing: readonly ReferencePath[],
+	enclosing: ReadonlyArray<ReferencePath>,
 	types: BindingTypes,
-): ReferencePath[] {
+): Array<ReferencePath> {
 	const read = union(
 		...tests.map((test, index) =>
 			outcome(parseExpression(test.code), test, holds && index === tests.length - 1),
 		),
 	);
 	const narrowing = union(...tests.map((test) => narrowingReads(test)));
-	const carried: ReferencePath[] = [];
+	const carried: Array<ReferencePath> = [];
 	for (const expression of expressionsIn(children)) {
 		for (const { path } of readsOf(expression)) {
 			const longest = longestPrefix(path, read);
 			const around = longestPrefix(path, enclosing);
-			if (!longest || (around && around.keys.length > longest.keys.length)) continue;
+			if (!longest || (around && around.keys.length > longest.keys.length)) {
+				continue;
+			}
 			// A path whose read no test narrows (`results().length > 0`), through it or a path it
 			// is read through, reads as everywhere else.
 			const narrowed = narrowing.some(
 				(entry) =>
 					(isPrefix(entry, longest) || isPrefix(longest, entry)) && types.narrowable(entry),
 			);
-			if (!narrowed) continue;
-			if (!carried.some((entry) => samePath(entry, longest))) carried.push(longest);
+			if (!narrowed) {
+				continue;
+			}
+			if (!carried.some((entry) => samePath(entry, longest))) {
+				carried.push(longest);
+			}
 		}
 	}
 	return carried;
@@ -285,22 +306,29 @@ export function carriedPaths(
  * `instanceof`'s left, `in`'s right, or a call's argument (a type guard). A comparison
  * (`results.length > 0`, `total > 2`) or arithmetic narrows nothing.
  */
-function narrowingReads(test: Expression): ReferencePath[] {
-	const found: ReferencePath[] = [];
+function narrowingReads(test: Expression): Array<ReferencePath> {
+	const found: Array<ReferencePath> = [];
 	const add = (node: Parsed): void => {
 		const path = pathAt(node, test);
-		if (path) found.push(...prefixes(path, path.keys.length));
+		if (path) {
+			found.push(...prefixes(path, path.keys.length));
+		}
 	};
 	const compared = (node: Parsed): void => {
 		const inner = unwrapped(node);
-		if (inner.type === "UnaryExpression" && inner.operator === "typeof") add(inner.argument);
-		else add(inner);
+		if (inner.type === "UnaryExpression" && inner.operator === "typeof") {
+			add(inner.argument);
+		} else {
+			add(inner);
+		}
 	};
 	const truthy = (node: Parsed): void => {
 		const inner = unwrapped(node);
 		switch (inner.type) {
 			case "UnaryExpression":
-				if (inner.operator === "!") truthy(inner.argument);
+				if (inner.operator === "!") {
+					truthy(inner.argument);
+				}
 				return;
 			case "LogicalExpression":
 				truthy(inner.left);
@@ -313,17 +341,21 @@ function narrowingReads(test: Expression): ReferencePath[] {
 				return;
 			case "BinaryExpression":
 				if (["===", "!==", "==", "!="].includes(inner.operator)) {
-					if (inner.left.type !== "PrivateIdentifier") compared(inner.left);
+					if (inner.left.type !== "PrivateIdentifier") {
+						compared(inner.left);
+					}
 					compared(inner.right);
 				} else if (inner.operator === "instanceof") {
-					add(inner.left as Parsed);
+					add(inner.left);
 				} else if (inner.operator === "in") {
 					add(inner.right);
 				}
 				return;
 			case "CallExpression":
 				for (const argument of inner.arguments) {
-					if (argument.type !== "SpreadElement") add(argument);
+					if (argument.type !== "SpreadElement") {
+						add(argument);
+					}
 				}
 				return;
 			default:
@@ -393,7 +425,7 @@ export class BindingTypes {
 	readonly #component: UfComponent;
 	readonly #types: ReadonlyMap<string, string>;
 
-	constructor(component: UfComponent, types: readonly TypeDeclaration[]) {
+	constructor(component: UfComponent, types: ReadonlyArray<TypeDeclaration>) {
 		this.#component = component;
 		this.#types = new Map(types.map((declaration) => [declaration.name, declaration.code]));
 	}
@@ -403,7 +435,9 @@ export class BindingTypes {
 		let facts = this.#binding(path.binding, new Set());
 		for (const key of path.keys) {
 			// A member of what may be absent or a union is read through what a test narrows.
-			if (facts.optional || this.#union(facts)) return true;
+			if (facts.optional || this.#union(facts)) {
+				return true;
+			}
 			facts = this.#member(facts, key);
 		}
 		return facts.optional || this.#union(facts);
@@ -411,10 +445,14 @@ export class BindingTypes {
 
 	/** What the source says of a binding's type. */
 	#binding(id: BindingId, seen: Set<BindingId>): TypeFacts {
-		if (seen.has(id)) return UNKNOWN;
+		if (seen.has(id)) {
+			return UNKNOWN;
+		}
 		const component = this.#component;
 		const prop = component.props.find((each) => each.binding === id);
-		if (prop) return { node: parseType(prop.type.code), optional: prop.optional };
+		if (prop) {
+			return { node: parseType(prop.type.code), optional: prop.optional };
+		}
 		const item = component.setup.find((each) => "binding" in each && each.binding === id);
 		const annotated = (type: { code: string } | undefined) =>
 			type ? { node: parseType(type.code), optional: false } : undefined;
@@ -449,22 +487,28 @@ export class BindingTypes {
 	/** A member's type, where an object type, an interface or an array says it. */
 	#member(facts: TypeFacts, key: string): TypeFacts {
 		const node = this.#resolve(facts.node, new Set());
-		if (!node) return UNKNOWN;
+		if (!node) {
+			return UNKNOWN;
+		}
 		if (node.type === "TSArrayType" || node.type === "TSTupleType" || isArrayReference(node)) {
 			return key === "length" ? { node: { type: "TSNumberKeyword" }, optional: false } : UNKNOWN;
 		}
 		const members =
 			node.type === "TSTypeLiteral"
-				? (node.members as TypeNode[])
+				? (node.members as Array<TypeNode>)
 				: node.type === "TSInterfaceBody"
-					? (node.body as TypeNode[])
+					? (node.body as Array<TypeNode>)
 					: [];
 		for (const member of members) {
-			if (member.type !== "TSPropertySignature" || member.computed) continue;
+			if (member.type !== "TSPropertySignature" || member.computed) {
+				continue;
+			}
 			const name =
 				(member.key as { name?: string; value?: unknown }).name ??
 				(member.key as { value?: unknown }).value;
-			if (name !== key) continue;
+			if (name !== key) {
+				continue;
+			}
 			const annotation = member.typeAnnotation as { typeAnnotation?: TypeNode } | null;
 			return { node: annotation?.typeAnnotation, optional: Boolean(member.optional) };
 		}
@@ -473,29 +517,45 @@ export class BindingTypes {
 
 	/** A type, through the aliases and interfaces the module declares, to an object type's body. */
 	#resolve(node: TypeNode | undefined, seen: Set<string>): TypeNode | undefined {
-		if (!node) return undefined;
+		if (!node) {
+			return undefined;
+		}
 		if (node.type === "TSParenthesizedType") {
 			return this.#resolve(node.typeAnnotation as TypeNode, seen);
 		}
-		if (node.type !== "TSTypeReference") return node;
+		if (node.type !== "TSTypeReference") {
+			return node;
+		}
 		const name = (node.typeName as { type: string; name?: string }).name;
-		if (name === undefined || isArrayReference(node)) return node;
+		if (name === undefined || isArrayReference(node)) {
+			return node;
+		}
 		const declared = this.#types.get(name);
-		if (declared === undefined || seen.has(name)) return undefined;
+		if (declared === undefined || seen.has(name)) {
+			return undefined;
+		}
 		const declaration = parseDeclaration(declared);
-		if (!declaration) return undefined;
-		if (declaration.type === "TSInterfaceDeclaration") return declaration.body as TypeNode;
+		if (!declaration) {
+			return undefined;
+		}
+		if (declaration.type === "TSInterfaceDeclaration") {
+			return declaration.body as TypeNode;
+		}
 		return this.#resolve(declaration.typeAnnotation as TypeNode, new Set([...seen, name]));
 	}
 
 	/** Whether a type may be a union, or `null` or `undefined`. */
 	#union(facts: TypeFacts): boolean {
-		if (facts.plain) return false;
+		if (facts.plain) {
+			return false;
+		}
 		return this.#unionType(facts.node, new Set());
 	}
 
 	#unionType(node: TypeNode | undefined, seen: Set<string>): boolean {
-		if (!node) return true;
+		if (!node) {
+			return true;
+		}
 		switch (node.type) {
 			case "TSStringKeyword":
 			case "TSNumberKeyword":
@@ -516,13 +576,23 @@ export class BindingTypes {
 				return this.#unionType(node.typeAnnotation as TypeNode, seen);
 			case "TSTypeReference": {
 				const name = (node.typeName as { type: string; name?: string }).name;
-				if (name === undefined) return true;
-				if (PLAIN_TYPES.has(name)) return false;
+				if (name === undefined) {
+					return true;
+				}
+				if (PLAIN_TYPES.has(name)) {
+					return false;
+				}
 				const declared = this.#types.get(name);
-				if (declared === undefined || seen.has(name)) return true;
+				if (declared === undefined || seen.has(name)) {
+					return true;
+				}
 				const declaration = parseDeclaration(declared);
-				if (!declaration) return true;
-				if (declaration.type === "TSInterfaceDeclaration") return false;
+				if (!declaration) {
+					return true;
+				}
+				if (declaration.type === "TSInterfaceDeclaration") {
+					return false;
+				}
 				return this.#unionType(declaration.typeAnnotation as TypeNode, new Set([...seen, name]));
 			}
 			default:
@@ -597,7 +667,7 @@ function isPrefix(prefix: ReferencePath, path: ReferencePath): boolean {
 /** The longest of `candidates` that is `path` or a prefix of it. */
 function longestPrefix(
 	path: ReferencePath,
-	candidates: readonly ReferencePath[],
+	candidates: ReadonlyArray<ReferencePath>,
 ): ReferencePath | undefined {
 	let longest: ReferencePath | undefined;
 	for (const candidate of candidates) {
@@ -621,7 +691,7 @@ function longestPrefix(
  * `0`, a `false` or an empty quote anywhere counts, a comment's or a longer literal's included.
  * A `boolean` does not: a branch reads a tested boolean as a boolean, which `NonNullable` keeps.
  */
-export function declaresFalsyLiteral(types: readonly string[]): boolean {
+export function declaresFalsyLiteral(types: ReadonlyArray<string>): boolean {
 	return types.some(
 		(code) =>
 			/(["'`])\1/.test(code) ||
@@ -639,8 +709,8 @@ export function declaresFalsyLiteral(types: readonly string[]): boolean {
  * of a call, so such a branch needs the values themselves: a keyed callback.
  */
 export function narrowsFurther(
-	children: readonly RenderNode[],
-	paths: readonly ReferencePath[],
+	children: ReadonlyArray<RenderNode>,
+	paths: ReadonlyArray<ReferencePath>,
 ): boolean {
 	const further = (part: Expression) =>
 		readsOf(part).some(({ path: read }) =>
@@ -654,12 +724,18 @@ export function narrowsFurther(
 	return expressionsIn(children).some((expression) => {
 		let found = false;
 		const visit = (node: unknown): void => {
-			if (found) return;
-			if (Array.isArray(node)) {
-				for (const item of node) visit(item);
+			if (found) {
 				return;
 			}
-			if (!isNode(node)) return;
+			if (Array.isArray(node)) {
+				for (const item of node) {
+					visit(item);
+				}
+				return;
+			}
+			if (!isNode(node)) {
+				return;
+			}
 			// The walk reads parsed nodes, as `readsOf` does.
 			const parsed = node as Parsed;
 			// `??` narrows nothing its right operand reads.
@@ -674,7 +750,9 @@ export function narrowsFurther(
 				return;
 			}
 			for (const [key, value] of Object.entries(node)) {
-				if (key !== "type" && typeof value === "object") visit(value);
+				if (key !== "type" && typeof value === "object") {
+					visit(value);
+				}
 			}
 		};
 		visit(parseExpression(expression.code));
@@ -683,20 +761,25 @@ export function narrowsFurther(
 }
 
 /** Paths, each once. */
-function union(...groups: (readonly ReferencePath[])[]): ReferencePath[] {
-	const paths: ReferencePath[] = [];
+function union(...groups: Array<ReadonlyArray<ReferencePath>>): Array<ReferencePath> {
+	const paths: Array<ReferencePath> = [];
 	for (const path of groups.flat()) {
-		if (!paths.some((entry) => samePath(entry, path))) paths.push(path);
+		if (!paths.some((entry) => samePath(entry, path))) {
+			paths.push(path);
+		}
 	}
 	return paths;
 }
 
-function intersection(a: readonly ReferencePath[], b: readonly ReferencePath[]): ReferencePath[] {
+function intersection(
+	a: ReadonlyArray<ReferencePath>,
+	b: ReadonlyArray<ReferencePath>,
+): Array<ReferencePath> {
 	return a.filter((path) => b.some((entry) => samePath(entry, path)));
 }
 
 /** A path and each of its prefixes up to `depth` properties: `user`, `user.address`… */
-function prefixes(path: ReferencePath, depth: number): ReferencePath[] {
+function prefixes(path: ReferencePath, depth: number): Array<ReferencePath> {
 	return Array.from({ length: depth + 1 }, (_, length) => ({
 		binding: path.binding,
 		keys: path.keys.slice(0, length),
@@ -705,7 +788,7 @@ function prefixes(path: ReferencePath, depth: number): ReferencePath[] {
 
 /** The properties of a path's read before its first `?.`: 1 for `box.inner?.t`. */
 function plainDepth(node: Parsed): number {
-	const optional: boolean[] = [];
+	const optional: Array<boolean> = [];
 	let current: Parsed = node.type === "ChainExpression" ? node.expression : node;
 	while (current.type === "MemberExpression") {
 		optional.unshift(current.optional);
@@ -720,21 +803,29 @@ function plainDepth(node: Parsed): number {
  * reads before any `&&`, `||`, `??` or `?:` decides, and before the first `?.` of a chain, which
  * may stop there. `whole` where the chain is known to have run to its end.
  */
-function evaluated(node: Parsed, expression: Expression, whole = false): ReferencePath[] {
+function evaluated(node: Parsed, expression: Expression, whole = false): Array<ReferencePath> {
 	const path = pathAt(node, expression);
-	if (path) return prefixes(path, whole ? path.keys.length : plainDepth(node));
+	if (path) {
+		return prefixes(path, whole ? path.keys.length : plainDepth(node));
+	}
 	switch (node.type) {
 		case "ChainExpression": {
-			if (whole) return evaluated(node.expression, expression, true);
+			if (whole) {
+				return evaluated(node.expression, expression, true);
+			}
 			// Up to the object of its first `?.`, which runs whatever the chain gives.
 			let head: Parsed = node.expression;
 			let reached: Parsed | undefined;
 			for (;;) {
 				if (head.type === "MemberExpression") {
-					if (head.optional) reached = head.object;
+					if (head.optional) {
+						reached = head.object;
+					}
 					head = head.object;
 				} else if (head.type === "CallExpression") {
-					if (head.optional) reached = head.callee;
+					if (head.optional) {
+						reached = head.callee;
+					}
 					head = head.callee;
 				} else {
 					break;
@@ -781,7 +872,7 @@ function evaluated(node: Parsed, expression: Expression, whole = false): Referen
  * falsy: a chain that gives a truthy value ran to its end, `a && b` that is falsy read what `a`
  * read when falsy, and also when truthy or what `b` read when falsy, and so on.
  */
-function outcome(node: Parsed, expression: Expression, truthy: boolean): ReferencePath[] {
+function outcome(node: Parsed, expression: Expression, truthy: boolean): Array<ReferencePath> {
 	if (pathAt(node, expression) || node.type === "ChainExpression") {
 		return evaluated(node, expression, truthy);
 	}
@@ -809,14 +900,18 @@ function outcome(node: Parsed, expression: Expression, truthy: boolean): Referen
 		}
 		case "BinaryExpression": {
 			const read = evaluated(node, expression);
-			if (!["===", "==", "!==", "!="].includes(node.operator)) return read;
-			if (node.left.type === "PrivateIdentifier") return read;
+			if (!["===", "==", "!==", "!="].includes(node.operator)) {
+				return read;
+			}
+			if (node.left.type === "PrivateIdentifier") {
+				return read;
+			}
 			// Whether the sides are equal, and so whether a chain on one side ran to its end.
 			const equal = (node.operator === "===" || node.operator === "==") === truthy;
 			const loose = node.operator === "==" || node.operator === "!=";
 			const ends = (other: Parsed): boolean =>
 				equal ? isPresent(other) : isUndefined(other) || (loose && isNull(other));
-			const sides: [Parsed, Parsed][] = [
+			const sides: Array<[Parsed, Parsed]> = [
 				[node.left, node.right],
 				[node.right, node.left],
 			];
@@ -855,8 +950,12 @@ function outcome(node: Parsed, expression: Expression, truthy: boolean): Referen
 
 /** A literal that is neither `null` nor `undefined`: `"circle"`, `0`, `-1`, `` `a` ``. */
 function isPresent(node: Parsed): boolean {
-	if (node.type === "Literal") return node.raw !== "null";
-	if (node.type === "TemplateLiteral") return true;
+	if (node.type === "Literal") {
+		return node.raw !== "null";
+	}
+	if (node.type === "TemplateLiteral") {
+		return true;
+	}
 	return (
 		node.type === "UnaryExpression" &&
 		(node.operator === "-" || node.operator === "+") &&
@@ -900,7 +999,7 @@ export function slice(
 		code: expression.code.slice(part.start, part.end),
 		span: { start, end },
 		// A handler's code holds writes and emits too: a path's read holds none.
-		refs: (expression.refs as readonly CodeReference[]).flatMap((reference) =>
+		refs: (expression.refs as ReadonlyArray<CodeReference>).flatMap((reference) =>
 			(reference.kind === "Binding" || reference.kind === "Global") &&
 			reference.span.start >= start &&
 			reference.span.end <= end
@@ -917,13 +1016,17 @@ export function slice(
  */
 export function pathExpression(
 	path: ReferencePath,
-	tests: readonly Expression[],
-	children: readonly RenderNode[],
+	tests: ReadonlyArray<Expression>,
+	children: ReadonlyArray<RenderNode>,
 ): Expression {
 	for (const expression of [...tests, ...expressionsIn(children)]) {
 		for (const read of readsOf(expression)) {
-			if (read.path.binding !== path.binding || read.path.keys.length < path.keys.length) continue;
-			if (!path.keys.every((key, index) => read.path.keys[index] === key)) continue;
+			if (read.path.binding !== path.binding || read.path.keys.length < path.keys.length) {
+				continue;
+			}
+			if (!path.keys.every((key, index) => read.path.keys[index] === key)) {
+				continue;
+			}
 			return slice(expression, prefixOf(read, path.keys.length, expression));
 		}
 	}
@@ -934,10 +1037,16 @@ export function pathExpression(
 function prefixOf(read: Read, depth: number, expression: Expression | Code): Parsed {
 	let node = read.node;
 	for (;;) {
-		if (pathAt(node, expression)?.keys.length === depth) return node;
-		if (node.type === "ChainExpression") node = node.expression;
-		else if (node.type === "MemberExpression") node = node.object;
-		else return node;
+		if (pathAt(node, expression)?.keys.length === depth) {
+			return node;
+		}
+		if (node.type === "ChainExpression") {
+			node = node.expression;
+		} else if (node.type === "MemberExpression") {
+			node = node.object;
+		} else {
+			return node;
+		}
 	}
 }
 
@@ -948,7 +1057,7 @@ function prefixOf(read: Read, depth: number, expression: Expression | Code): Par
 export interface Frame {
 	/** The callback's parameter: the accessor. */
 	parameter: string;
-	names: { path: ReferencePath; name: string; read: string }[];
+	names: Array<{ path: ReferencePath; name: string; read: string }>;
 }
 
 /**
@@ -964,8 +1073,8 @@ export class Narrowings {
 	/** The names callbacks took that are neither the source's nor another claim's. */
 	readonly #taken = new Set<string>();
 	/** The accessor names of object-valued branches this file claimed (`narrowed`, `narrowed_1`). */
-	readonly #accessors: string[] = [];
-	readonly #frames: Frame[] = [];
+	readonly #accessors: Array<string> = [];
+	readonly #frames: Array<Frame> = [];
 	/** The reads {@link once} is taking as parameters, by what they read. */
 	#once: Map<string, { name: string; read: string }> | undefined;
 	/** What the bindings' types allow a test to narrow. */
@@ -1001,11 +1110,11 @@ export class Narrowings {
 	 * through the accessor anyway.
 	 */
 	names(
-		paths: readonly ReferencePath[],
+		paths: ReadonlyArray<ReferencePath>,
 		context: JsxContext,
 		mode: "keyed" | "accessor" | "accessor-only",
-	): string[] {
-		const names: string[] = [];
+	): Array<string> {
+		const names: Array<string> = [];
 		for (const path of paths) {
 			const key = path.keys.at(-1);
 			const preferred =
@@ -1048,8 +1157,8 @@ export class Narrowings {
 	 * binding's name, or its last property's, or `value` for one no target can declare, and
 	 * `_1`, `_2`… for one an earlier key took. Keys are no variables, so they capture nothing.
 	 */
-	keys(paths: readonly ReferencePath[], context: JsxContext): string[] {
-		const keys: string[] = [];
+	keys(paths: ReadonlyArray<ReferencePath>, context: JsxContext): Array<string> {
+		const keys: Array<string> = [];
 		for (const path of paths) {
 			const key = path.keys.at(-1);
 			const preferred =
@@ -1059,7 +1168,9 @@ export class Narrowings {
 						? key
 						: "value";
 			let unique = preferred;
-			for (let suffix = 1; keys.includes(unique); suffix++) unique = `${preferred}_${suffix}`;
+			for (let suffix = 1; keys.includes(unique); suffix++) {
+				unique = `${preferred}_${suffix}`;
+			}
 			keys.push(unique);
 		}
 		return keys;
@@ -1072,14 +1183,16 @@ export class Narrowings {
 	accessor(): string {
 		const around = new Set(this.#frames.map((frame) => frame.parameter));
 		const free = this.#accessors.find((name) => !around.has(name));
-		if (free) return free;
+		if (free) {
+			return free;
+		}
 		const name = this.#imports.claim("narrowed");
 		this.#accessors.push(name);
 		return name;
 	}
 
 	/** The paths the callbacks around what is being printed receive. */
-	carried(): ReferencePath[] {
+	carried(): Array<ReferencePath> {
 		return this.#frames.flatMap((frame) => frame.names.map((entry) => entry.path));
 	}
 
@@ -1090,7 +1203,7 @@ export class Narrowings {
 	 * TypeScript narrows it (`((user) => (user !== null ? { user } : undefined))(user())`), as it
 	 * narrows no call.
 	 */
-	once<T>(print: () => T): { value: T; parameters: { name: string; read: string }[] } {
+	once<T>(print: () => T): { value: T; parameters: Array<{ name: string; read: string }> } {
 		const outer = this.#once;
 		const parameters = new Map<string, { name: string; read: string }>();
 		this.#once = parameters;
@@ -1105,7 +1218,9 @@ export class Narrowings {
 	#parameter(key: string, read: string, preferred: string, own: boolean): string {
 		const parameters = this.#once!;
 		const known = parameters.get(key);
-		if (known) return known.name;
+		if (known) {
+			return known.name;
+		}
 		const used = new Set([...parameters.values()].map((entry) => entry.name));
 		// A binding's own name shadows only the accessor it replaces; any other might capture a name
 		// the code prints as it is, a callback's or one the output claimed.
@@ -1115,7 +1230,9 @@ export class Narrowings {
 			(this.#imports.scope.has(preferred) && !this.#sourceNames.has(preferred));
 		let name =
 			!used.has(preferred) && (own || !captures) ? preferred : this.#imports.claim(preferred);
-		while (used.has(name)) name = this.#imports.claim(preferred);
+		while (used.has(name)) {
+			name = this.#imports.claim(preferred);
+		}
 		parameters.set(key, { name, read });
 		return name;
 	}
@@ -1129,28 +1246,40 @@ export class Narrowings {
 	 */
 	client(fn: FunctionCode): FunctionCode {
 		const entries = this.#frames.flatMap((frame) => frame.names);
-		if (!entries.length || !fn.expression) return fn;
-		const edits: { start: number; end: number; text: string }[] = [];
+		if (!entries.length || !fn.expression) {
+			return fn;
+		}
+		const edits: Array<{ start: number; end: number; text: string }> = [];
 		for (const read of readsOf(fn.body)) {
 			const best = this.#best(read, entries);
-			if (!best) continue;
+			if (!best) {
+				continue;
+			}
 			const node = prefixOf(read, best.depth, fn.body);
 			edits.push({ start: node.start, end: node.end, text: best.read });
 		}
-		if (!edits.length) return fn;
+		if (!edits.length) {
+			return fn;
+		}
 		return { ...fn, body: replaced(fn.body, edits) };
 	}
 
 	/** The longest carried prefix of a read, from the innermost callback. */
 	#best(
 		read: Read,
-		entries: readonly Frame["names"][number][],
+		entries: ReadonlyArray<Frame["names"][number]>,
 	): { read: string; depth: number; name: string } | undefined {
 		let best: { read: string; depth: number; name: string } | undefined;
 		for (const entry of entries) {
-			if (entry.path.binding !== read.path.binding) continue;
-			if (entry.path.keys.length > read.path.keys.length) continue;
-			if (!entry.path.keys.every((key, index) => read.path.keys[index] === key)) continue;
+			if (entry.path.binding !== read.path.binding) {
+				continue;
+			}
+			if (entry.path.keys.length > read.path.keys.length) {
+				continue;
+			}
+			if (!entry.path.keys.every((key, index) => read.path.keys[index] === key)) {
+				continue;
+			}
 			if (!best || entry.path.keys.length >= best.depth) {
 				best = { read: entry.read, depth: entry.path.keys.length, name: entry.name };
 			}
@@ -1186,11 +1315,13 @@ export class Narrowings {
 			return rewriteExpression(expression, context.component, rules);
 		}
 		const offset = expression.span.start;
-		const edits: { start: number; end: number; text: string }[] = [];
-		const replaced: { start: number; end: number }[] = [];
+		const edits: Array<{ start: number; end: number; text: string }> = [];
+		const replaced: Array<{ start: number; end: number }> = [];
 		for (const read of readsOf(expression)) {
 			const best = this.#best(read, entries);
-			if (!best) continue;
+			if (!best) {
+				continue;
+			}
 			const node = prefixOf(read, best.depth, expression);
 			const written = expression.code.slice(node.start, node.end);
 			// A shorthand property (`{ user }`) is a binding read whole.
@@ -1239,7 +1370,9 @@ export class Narrowings {
 					edits.push({ start: position - offset, end: position - offset, text: "!" });
 				}
 			}
-			if (spelling === written) continue;
+			if (spelling === written) {
+				continue;
+			}
 			edits.push({ start, end, text: reference.shorthand ? `${written}: ${spelling}` : spelling });
 		}
 		let code = "";
@@ -1259,7 +1392,7 @@ export class Narrowings {
  */
 function replaced(
 	code: Code,
-	edits: readonly { start: number; end: number; text: string }[],
+	edits: ReadonlyArray<{ start: number; end: number; text: string }>,
 ): Code {
 	const offset = code.span.start;
 	const sorted = edits.toSorted((a, b) => a.start - b.start);
@@ -1278,8 +1411,10 @@ function replaced(
 		last = edit.end;
 	}
 	text += code.code.slice(last);
-	const refs = code.refs.flatMap((ref): CodeReference[] => {
-		if (inside(ref.span)) return [];
+	const refs = code.refs.flatMap((ref): Array<CodeReference> => {
+		if (inside(ref.span)) {
+			return [];
+		}
 		switch (ref.kind) {
 			case "Write":
 				return [

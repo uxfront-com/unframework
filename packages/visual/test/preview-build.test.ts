@@ -76,7 +76,7 @@ const BIN = join(
  * without Vitest's `NODE_ENV`, under which Vite would build for development.
  */
 function unframework(
-	args: string[],
+	args: Array<string>,
 	cwd: string,
 ): Promise<{ code: number | null; stdout: string; stderr: string }> {
 	const { NODE_ENV: _test, ...env } = process.env;
@@ -89,7 +89,9 @@ function unframework(
 	let stderr = "";
 	child.stdout.on("data", (chunk) => void (stdout += String(chunk)));
 	child.stderr.on("data", (chunk) => void (stderr += String(chunk)));
-	return new Promise((done) => child.once("exit", (code) => done({ code, stdout, stderr })));
+	return new Promise((done) => {
+		child.once("exit", (code) => done({ code, stdout, stderr }));
+	});
 }
 
 function project(files: Record<string, string>): string {
@@ -133,15 +135,15 @@ function fileServer(dir: string): Promise<{ url: string; server: Server }> {
 			() => response.writeHead(404).end(),
 		);
 	});
-	return new Promise((done) =>
+	return new Promise((done) => {
 		server.listen(0, "127.0.0.1", () =>
 			done({ url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/sub/`, server }),
-		),
-	);
+		);
+	});
 }
 
 /** Every file under a directory, relative to it. */
-function filesUnder(dir: string): string[] {
+function filesUnder(dir: string): Array<string> {
 	return readdirSync(dir, { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile())
 		.map((entry) => join(entry.parentPath, entry.name).slice(dir.length + 1));
@@ -173,7 +175,9 @@ describe("unframework preview build", () => {
 
 	afterAll(async () => {
 		await browser?.close();
-		await new Promise((done) => site?.server.close(done));
+		await new Promise((done) => {
+			site?.server.close(done);
+		});
 	});
 
 	it("exits 0, prints where it wrote, and writes the shell, seven frames and Astro's renders", () => {
@@ -186,7 +190,9 @@ describe("unframework preview build", () => {
 		const written = filesUnder(out);
 		expect(written).toContain("index.html");
 		expect(written).toContain(PREVIEW_MARKER);
-		for (const target of TARGETS) expect(written).toContain(join(target, "frame.html"));
+		for (const target of TARGETS) {
+			expect(written).toContain(join(target, "frame.html"));
+		}
 		expect(written).toContain(EMBED_FILE);
 		expect(written.filter((file) => file.startsWith(join("astro", "renders")))).toHaveLength(
 			EXAMPLES.length + 4,
@@ -201,7 +207,9 @@ describe("unframework preview build", () => {
 			for (const path of [REPOSITORY, homedir(), tmpdir(), realpathSync(tmpdir())]) {
 				expect(text.includes(path), `${file} holds ${path}`).toBe(false);
 			}
-			if (file.endsWith(".html")) expect(text, file).not.toMatch(/\b(?:src|href)="\/(?!\/)/);
+			if (file.endsWith(".html")) {
+				expect(text, file).not.toMatch(/\b(?:src|href)="\/(?!\/)/);
+			}
 		}
 	});
 
@@ -311,7 +319,9 @@ describe("unframework preview build", () => {
 				].join("\n"),
 			);
 		});
-		await new Promise<void>((done) => other.listen(0, "127.0.0.1", done));
+		await new Promise<void>((done) => {
+			other.listen(0, "127.0.0.1", done);
+		});
 		const page = await browser.newPage();
 		try {
 			await page.goto(`http://127.0.0.1:${(other.address() as AddressInfo).port}/`);
@@ -329,10 +339,14 @@ describe("unframework preview build", () => {
 			// Nothing listens in a refused frame, so a render would have answered by now.
 			await page.waitForTimeout(1000);
 			expect(await framed.locator("[data-uf-preview-root], button").count()).toBe(0);
-			expect(await page.evaluate(() => (window as { received?: unknown[] }).received)).toEqual([]);
+			expect(await page.evaluate(() => (window as { received?: Array<unknown> }).received)).toEqual(
+				[],
+			);
 		} finally {
 			await page.close();
-			await new Promise((done) => other.close(done));
+			await new Promise((done) => {
+				other.close(done);
+			});
 		}
 	});
 
@@ -410,7 +424,9 @@ describe("unframework preview build", () => {
 					].join("\n"),
 				);
 			});
-			await new Promise<void>((done) => other.listen(0, "127.0.0.1", done));
+			await new Promise<void>((done) => {
+				other.listen(0, "127.0.0.1", done);
+			});
 			const page = await browser.newPage();
 			try {
 				await page.goto(`http://127.0.0.1:${(other.address() as AddressInfo).port}/`);
@@ -442,12 +458,14 @@ describe("unframework preview build", () => {
 					);
 					expect(await framed(target).getByText("Release notes").count(), target).toBe(0);
 				}
-				expect(await page.evaluate(() => (window as { received?: unknown[] }).received)).toEqual(
-					[],
-				);
+				expect(
+					await page.evaluate(() => (window as { received?: Array<unknown> }).received),
+				).toEqual([]);
 			} finally {
 				await page.close();
-				await new Promise((done) => other.close(done));
+				await new Promise((done) => {
+					other.close(done);
+				});
 			}
 		},
 	);
@@ -758,7 +776,7 @@ describe("unframework preview build", () => {
 	it("says why on a missing or unknown example or target, never a blank page", async () => {
 		const targets = TARGETS.join(", ");
 		const usage = `Open an example with embed.html?example=<id>&target=<target>. The targets are ${targets}.`;
-		const cases: [path: string, message: string, stays: string][] = [
+		const cases: Array<[path: string, message: string, stays: string]> = [
 			[`${EMBED_FILE}?example=nope&target=vue`, 'This preview has no example "nope".', EMBED_FILE],
 			[
 				`${EMBED_FILE}?example=examples/Card&target=nope`,
@@ -782,7 +800,7 @@ describe("unframework preview build", () => {
 				["controls=yes", 'The controls parameter takes true, not "yes".'],
 				["theme=blue", 'The theme parameter takes light or dark, not "blue".'],
 				["resize=1", 'The resize parameter takes true, not "1".'],
-			].flatMap(([query, message]): [string, string, string][] => [
+			].flatMap(([query, message]): Array<[string, string, string]> => [
 				[`${EMBED_FILE}?example=examples/Card&target=vue&${query}`, message!, EMBED_FILE],
 				[`vue/frame.html?example=examples/Card&${query}`, message!, "vue/frame.html"],
 				[`astro/frame.html?example=examples/Card&${query}`, message!, "astro/frame.html"],
@@ -816,7 +834,7 @@ describe("unframework preview build", () => {
 				"src/Hello.uf.tsx": "export default function Hello() {\n  return <p>Hello</p>;\n}\n",
 				"notes/todo.md": "Keep me.\n",
 			});
-			const cases: [string[], string][] = [
+			const cases: Array<[Array<string>, string]> = [
 				[["preview", "build", "--port", "1"], "--port is the served preview's"],
 				[["preview", "build", "--out", "."], "holds the project"],
 				[["preview", "build", "--out", ".."], "holds the project"],
@@ -897,7 +915,9 @@ describe("buildPreview of an example's controls", () => {
 				expect(await tone("astro", "bare")).toBe("info");
 			} finally {
 				await browser.close();
-				await new Promise((done) => site.server.close(done));
+				await new Promise((done) => {
+					site.server.close(done);
+				});
 			}
 		},
 	);
@@ -960,7 +980,9 @@ describe("buildPreview", () => {
 					.toBe(`failed: ${render.error}`);
 			} finally {
 				await browser.close();
-				await new Promise((done) => site.server.close(done));
+				await new Promise((done) => {
+					site.server.close(done);
+				});
 			}
 		},
 	);

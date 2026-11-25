@@ -54,8 +54,11 @@ const UNTYPED_ELEMENTS = new Set(["keygen", "noindex", "param", "webview"]);
 const vendored = readFileSync(join(repo, "packages/unframework/src/vendor/vue-jsx.d.ts"), "utf8");
 
 /** Every (element, attribute, authoring type) the authoring types declare on an HTML element. */
-function authoringPairs(): [tag: string, attribute: string, type: string][] {
-	const interfaces = new Map<string, { parents: string[]; members: [string, string][] }>();
+function authoringPairs(): Array<[tag: string, attribute: string, type: string]> {
+	const interfaces = new Map<
+		string,
+		{ parents: Array<string>; members: Array<[string, string]> }
+	>();
 	for (const match of vendored.matchAll(
 		/export interface (\w+)(?: extends ([\w<>, ]+))? \{([\s\S]*?)\n\}/g,
 	)) {
@@ -66,7 +69,7 @@ function authoringPairs(): [tag: string, attribute: string, type: string][] {
 			),
 		});
 	}
-	const membersOf = (name: string): [string, string][] => {
+	const membersOf = (name: string): Array<[string, string]> => {
 		const entry = interfaces.get(name);
 		return entry ? [...entry.parents.flatMap(membersOf), ...entry.members] : [];
 	};
@@ -84,7 +87,7 @@ function authoringPairs(): [tag: string, attribute: string, type: string][] {
 }
 
 /** Some elements by name, or every element that has the attribute but some. */
-type Elements = { readonly on: readonly string[] } | { readonly except: readonly string[] };
+type Elements = { readonly on: ReadonlyArray<string> } | { readonly except: ReadonlyArray<string> };
 
 /**
  * Attributes the authoring types accept that Qwik 2.0.0-rc.5's JSX types do not declare on
@@ -119,7 +122,7 @@ const covers = (elements: Elements, tag: string) =>
 	"on" in elements ? elements.on.includes(tag) : !elements.except.includes(tag);
 
 /** The pinned gaps as (element, attribute) pairs of the authoring types. */
-function gapsOf(pairs: readonly [string, string, string][]): Record<string, string[]> {
+function gapsOf(pairs: ReadonlyArray<[string, string, string]>): Record<string, Array<string>> {
 	return Object.fromEntries(
 		Object.entries(QWIK_NAME_GAPS).map(([attribute, elements]) => [
 			attribute,
@@ -142,7 +145,7 @@ async function failingLines(contents: string, first: number): Promise<Set<number
 
 /** Emits the elements through the Qwik target and type-checks them, one element per line. */
 async function typecheck(
-	pairs: readonly (readonly [string, string, string])[],
+	pairs: ReadonlyArray<readonly [string, string, string]>,
 	blankStrings: boolean,
 ): Promise<Set<number>> {
 	const at = { start: 0, end: 0 };
@@ -164,7 +167,9 @@ async function typecheck(
 		},
 	});
 	// A string value only tests the name: Qwik types many values narrower than HTML does.
-	const contents = blankStrings ? file!.contents.replace(/="x"/g, "={undefined}") : file!.contents;
+	const contents = blankStrings
+		? file!.contents.replaceAll('="x"', "={undefined}")
+		: file!.contents;
 	const formatted = (await formatOutput({ ...file!, contents })).file.contents;
 	// Each element sits on its own line, in order, after the `<div>` line.
 	const first = formatted.split("\n").findIndex((line) => line.trim().startsWith("<div")) + 2;
@@ -172,7 +177,7 @@ async function typecheck(
 }
 
 /** A hand-written Qwik component of one JSX line per entry, after some declarations. */
-async function typecheckLines(lines: readonly string[], before = ""): Promise<Set<number>> {
+async function typecheckLines(lines: ReadonlyArray<string>, before = ""): Promise<Set<number>> {
 	const head = `import { component$ } from "@qwik.dev/core";\n${before}\nexport default component$(() => {\n  return (\n    <>`;
 	const contents = `${head}\n${lines.map((line) => `      ${line}`).join("\n")}\n    </>\n  );\n});\n`;
 	return failingLines(contents, head.split("\n").length + 1);
@@ -213,9 +218,11 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
 			pairs.map(([tag, attribute]) => [tag, attribute, "x"]),
 			true,
 		);
-		const gaps = new Map<string, string[]>();
+		const gaps = new Map<string, Array<string>>();
 		pairs.forEach(([tag, attribute], index) => {
-			if (failing.has(index)) gaps.set(attribute, [...(gaps.get(attribute) ?? []), tag]);
+			if (failing.has(index)) {
+				gaps.set(attribute, [...(gaps.get(attribute) ?? []), tag]);
+			}
 		});
 		expect(Object.fromEntries(gaps)).toEqual(gapsOf(pairs));
 	});
@@ -259,7 +266,7 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
 	it("write the static values of attributes Qwik types as numbers or booleans as Qwik takes them", async () => {
 		// Qwik types these values as numbers or booleans, so their static strings fail L4: the
 		// target writes `{0}` and `{false}`, which Qwik serialises back to the same strings.
-		const pairs: [string, string, string][] = [
+		const pairs: Array<[string, string, string]> = [
 			["div", "tabindex", "0"],
 			["td", "colspan", "2"],
 			["input", "maxlength", "3"],
@@ -308,7 +315,7 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
 		const gaps = gapsOf(all);
 		const pairs = all
 			.filter(([tag, attribute]) => booleans.has(attribute) && !gaps[attribute]?.includes(tag))
-			.flatMap(([tag, attribute]): [string, string, string][] =>
+			.flatMap(([tag, attribute]): Array<[string, string, string]> =>
 				["", "false", attribute].map((value) => [tag, attribute, value]),
 			);
 		expect(new Set(pairs.map(([, attribute]) => attribute)).size).toBeGreaterThan(20);

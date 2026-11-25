@@ -18,14 +18,14 @@ import type { Kinds } from "./types/kinds.ts";
 /** The values every typed target accepts for an enumerated attribute. */
 export interface Enumerated {
 	/** The tokens, in the order the specifications list them. */
-	readonly tokens: readonly string[];
+	readonly tokens: ReadonlyArray<string>;
 	/** Whether every target also accepts a boolean (ARIA's true/false states, `draggable`). */
 	readonly boolean: boolean;
 }
 
-const words = (text: string): string[] => text.trim().split(/\s+/);
+const words = (text: string): Array<string> => text.trim().split(/\s+/);
 
-const keywords = (values: string | readonly string[]): Enumerated => ({
+const keywords = (values: string | ReadonlyArray<string>): Enumerated => ({
 	tokens: typeof values === "string" ? words(values) : values,
 	boolean: false,
 });
@@ -280,12 +280,20 @@ function lookup(
 	name: string,
 ): { values: Enumerated; byElement: boolean } | undefined {
 	const shared = SHARED.get(name);
-	if (shared) return { values: shared, byElement: false };
+	if (shared) {
+		return { values: shared, byElement: false };
+	}
 	const entry = (namespace === "svg" ? SVG : HTML).get(name);
-	if (!entry) return undefined;
-	if ("tokens" in entry) return { values: entry, byElement: false };
+	if (!entry) {
+		return undefined;
+	}
+	if ("tokens" in entry) {
+		return { values: entry, byElement: false };
+	}
 	const own = entry.get(tag);
-	if (own) return { values: own, byElement: true };
+	if (own) {
+		return { values: own, byElement: true };
+	}
 	const values = entry.get("*");
 	return values && { values, byElement: false };
 }
@@ -294,7 +302,7 @@ function lookup(
 const LISTED = 12;
 
 /** The accepted values, for a message: the tokens (the first `LISTED`), and a boolean. */
-function accepted(tokens: readonly string[], boolean: boolean): string {
+function accepted(tokens: ReadonlyArray<string>, boolean: boolean): string {
 	const quoted = tokens.map((token) => JSON.stringify(token));
 	return list(
 		[
@@ -319,20 +327,31 @@ export function enumeratedProblem(
 	kinds: Kinds,
 ): Problem | undefined {
 	const found = lookup(tag, namespace, name);
-	if (!found) return undefined;
+	if (!found) {
+		return undefined;
+	}
 	const { values } = found;
-	const outside: string[] = [];
+	const outside: Array<string> = [];
 	if (kinds.primitives.has("string")) {
-		if (!kinds.strings) outside.push("any string");
-		else {
+		if (!kinds.strings) {
+			outside.push("any string");
+		} else {
 			for (const value of kinds.strings) {
-				if (!values.tokens.includes(value)) outside.push(JSON.stringify(value));
+				if (!values.tokens.includes(value)) {
+					outside.push(JSON.stringify(value));
+				}
 			}
 		}
 	}
-	if (kinds.primitives.has("number")) outside.push("a number");
-	if (kinds.primitives.has("boolean") && !values.boolean) outside.push("a boolean");
-	if (!outside.length) return undefined;
+	if (kinds.primitives.has("number")) {
+		outside.push("a number");
+	}
+	if (kinds.primitives.has("boolean") && !values.boolean) {
+		outside.push("a boolean");
+	}
+	if (!outside.length) {
+		return undefined;
+	}
 	const quoted = values.tokens.map((token) => JSON.stringify(token));
 	const element = found.byElement ? ` on <${tag}>` : "";
 	return {
@@ -350,7 +369,7 @@ export function enumeratedProblem(
  * the boolean its types take (the Qwik target's `qwikStaticValue`), and a `contenteditable` of
  * "plaintext-only" under its HTML name in an object spread, which its types do not check.
  */
-const CONVERTED: ReadonlyMap<string, readonly string[]> = new Map([
+const CONVERTED: ReadonlyMap<string, ReadonlyArray<string>> = new Map([
 	["contenteditable", ["plaintext-only"]],
 	["draggable", ["true", "false"]],
 	["spellcheck", ["true", "false"]],
@@ -361,7 +380,9 @@ const CONVERTED: ReadonlyMap<string, readonly string[]> = new Map([
  * `<button>`'s invalid `type` is a submit button.
  */
 function emptyMeaning(tag: string, name: string): string | undefined {
-	if (name === "type") return tag === "button" ? "submit" : tag === "input" ? "text" : undefined;
+	if (name === "type") {
+		return tag === "button" ? "submit" : tag === "input" ? "text" : undefined;
+	}
 	return EMPTY_MEANS.get(name);
 }
 
@@ -379,7 +400,9 @@ const EMPTY_MEANS: ReadonlyMap<string, string> = new Map([
  */
 export function emptyValue(tag: string, namespace: Namespace, name: string): string {
 	const tokens = staticTokens(tag, namespace, name);
-	if (!tokens || tokens.includes("") || namespace !== "html") return "";
+	if (!tokens || tokens.includes("") || namespace !== "html") {
+		return "";
+	}
 	return emptyMeaning(tag, name) ?? "";
 }
 
@@ -388,9 +411,11 @@ export function staticTokens(
 	tag: string,
 	namespace: Namespace,
 	name: string,
-): readonly string[] | undefined {
+): ReadonlyArray<string> | undefined {
 	const found = lookup(tag, namespace, name);
-	if (!found) return undefined;
+	if (!found) {
+		return undefined;
+	}
 	const converted = namespace === "html" ? CONVERTED.get(name) : undefined;
 	return converted ? [...found.values.tokens, ...converted] : found.values.tokens;
 }
@@ -418,7 +443,9 @@ export function enumeratedStaticProblem(
 ): Problem | undefined {
 	const found = lookup(tag, namespace, name);
 	const tokens = staticTokens(tag, namespace, name);
-	if (!found || !tokens || tokens.includes(value)) return undefined;
+	if (!found || !tokens || tokens.includes(value)) {
+		return undefined;
+	}
 	const lower = value.toLowerCase();
 	const canonical =
 		namespace === "html" && value === ""

@@ -23,11 +23,16 @@ export async function hostPage(): Promise<HostPage> {
 		response.writeHead(200, { "content-type": "text/html" });
 		response.end(html);
 	});
-	await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+	await new Promise<void>((done) => {
+		server.listen(0, "127.0.0.1", done);
+	});
 	return {
 		url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/`,
 		set: (next) => void (html = next),
-		close: () => new Promise((done) => server.close(() => done())),
+		close: () =>
+			new Promise((done) => {
+				server.close(() => done());
+			}),
 	};
 }
 
@@ -57,13 +62,13 @@ export function framing(src: string, height?: number): string {
 export interface PanelGroup {
 	component: string;
 	name: string;
-	controls: string[];
-	setByExample: string[];
-	uncontrolled: string[];
+	controls: Array<string>;
+	setByExample: Array<string>;
+	uncontrolled: Array<string>;
 }
 
 /** The groups a panel should show for an example's controls (ADR-0113). */
-export function expectedPanel(groups: readonly ExampleControlGroup[]): PanelGroup[] {
+export function expectedPanel(groups: ReadonlyArray<ExampleControlGroup>): Array<PanelGroup> {
 	return groups.map((group) => ({
 		component: group.component,
 		name: group.name,
@@ -74,10 +79,12 @@ export function expectedPanel(groups: readonly ExampleControlGroup[]): PanelGrou
 }
 
 /** The groups an embed's panel shows, read through its shadow root, or `null` with no panel. */
-export function panel(frame: FrameLocator | Page | Frame): Promise<PanelGroup[] | null> {
+export function panel(frame: FrameLocator | Page | Frame): Promise<Array<PanelGroup> | null> {
 	return frame.locator("body").evaluate(() => {
 		const root = document.querySelector("uf-embed-controls")?.shadowRoot;
-		if (!root) return null;
+		if (!root) {
+			return null;
+		}
 		const list = (group: Element, title: string) => {
 			const heading = [...group.querySelectorAll("h4")].find((each) => each.textContent === title);
 			return heading
@@ -178,14 +185,18 @@ export function scrolls(frame: FrameLocator | Page | Frame): Promise<Scrolls> {
 /** Asserts nothing in an embed scrolls. */
 export function expectNoScroll(boxes: Scrolls, at: string): void {
 	for (const [name, sizes] of Object.entries(boxes)) {
-		if (!Array.isArray(sizes)) continue;
+		if (!Array.isArray(sizes)) {
+			continue;
+		}
 		expect(sizes[0], `${at}: ${name}`).toBeLessThanOrEqual(sizes[1]);
 	}
 }
 
 /** The heights an embed has reported to the host page, in order. */
-export async function reports(page: Page): Promise<number[]> {
-	const received = await page.evaluate(() => (window as { received?: unknown[] }).received ?? []);
+export async function reports(page: Page): Promise<Array<number>> {
+	const received = await page.evaluate(
+		() => (window as { received?: Array<unknown> }).received ?? [],
+	);
 	return received.flatMap((each) =>
 		typeof each === "object" &&
 		each !== null &&
@@ -204,7 +215,9 @@ export async function settled(page: Page, at: string): Promise<number> {
 		const before = (await reports(page)).length;
 		await page.waitForTimeout(1000);
 		const after = await reports(page);
-		if (after.length === before) return after.at(-1)!;
+		if (after.length === before) {
+			return after.at(-1)!;
+		}
 	}
 	throw new Error(`${at}: the reports never settled: ${JSON.stringify(await reports(page))}`);
 }
@@ -212,6 +225,8 @@ export async function settled(page: Page, at: string): Promise<number> {
 /** The frame the host page holds in `#embed`. */
 export async function embedFrame(page: Page): Promise<Frame> {
 	const frame = await (await page.locator("#embed").elementHandle())?.contentFrame();
-	if (!frame) throw new Error("The host page frames nothing in #embed.");
+	if (!frame) {
+		throw new Error("The host page frames nothing in #embed.");
+	}
 	return frame;
 }

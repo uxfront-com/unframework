@@ -44,7 +44,7 @@ export interface ComponentEventsRequest {
 
 /** The events the component a case's spec mounts declares, from the module the project compiled. */
 export interface ComponentEventsResult {
-	events: MountEvent[];
+	events: Array<MountEvent>;
 }
 
 /**
@@ -94,7 +94,7 @@ export interface HydrationRenderRequest {
 export interface HydrationRenderResult {
 	/** The target's `renderForHydration`: every marker and script its client needs. */
 	html: string;
-	console: CapturedConsoleMessage[];
+	console: Array<CapturedConsoleMessage>;
 	/** The URL the page imports the rendered component from: the spec must mount that one. */
 	module: string;
 }

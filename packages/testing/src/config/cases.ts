@@ -30,11 +30,11 @@ export interface DiscoverOptions {
 	/** The project's root (absolute): case ids are relative to it. */
 	root: string;
 	/** Globs of test files, relative to the root. */
-	include: readonly string[];
+	include: ReadonlyArray<string>;
 }
 
 /** What a test file never lies in: installed packages and build output. */
-export const EXCLUDED: readonly string[] = ["**/node_modules/**", "**/dist/**"];
+export const EXCLUDED: ReadonlyArray<string> = ["**/node_modules/**", "**/dist/**"];
 
 /** The keys of a project's `case.json`: the public ones (ADR-0085). */
 const CASE_KEYS = new Set(["description", "main", "ssr", "axe", "colorScheme", "reference"]);
@@ -44,18 +44,18 @@ const CASE_KEYS = new Set(["description", "main", "ssr", "axe", "colorScheme", "
  * files, a case with no main source, a test file at the root itself and a malformed `case.json`:
  * a case that cannot be told apart would have nowhere to go in the run.
  */
-export function discoverCases(options: DiscoverOptions): ProjectCase[] {
+export function discoverCases(options: DiscoverOptions): Array<ProjectCase> {
 	const files = globSync([...options.include], {
 		cwd: options.root,
 		exclude: [...EXCLUDED],
 	}).toSorted();
-	const byDirectory = new Map<string, string[]>();
+	const byDirectory = new Map<string, Array<string>>();
 	for (const file of files) {
 		const absolute = resolve(options.root, file);
 		const directory = dirname(absolute);
 		byDirectory.set(directory, [...(byDirectory.get(directory) ?? []), absolute]);
 	}
-	const cases: ProjectCase[] = [];
+	const cases: Array<ProjectCase> = [];
 	for (const [dir, specs] of byDirectory) {
 		const id = relative(options.root, dir).split(sep).join("/");
 		if (!id) {
@@ -89,7 +89,9 @@ function mainSource(id: string, dir: string, main: string | undefined): string {
 		return source;
 	}
 	const inputs = readdirSync(dir).filter((file) => file.endsWith(".uf.tsx"));
-	if (inputs.length === 1) return join(dir, inputs[0]!);
+	if (inputs.length === 1) {
+		return join(dir, inputs[0]!);
+	}
 	throw new Error(
 		inputs.length
 			? `[uf] Case ${id} holds ${inputs.join(", ")}: name the one the test mounts in case.json, "main": "${inputs[0]}".`
@@ -99,7 +101,9 @@ function mainSource(id: string, dir: string, main: string | undefined): string {
 
 /** A case's `case.json`, checked: `{}` when it has none. */
 export function readCaseConfig(id: string, file: string): CaseConfig {
-	if (!existsSync(file)) return {};
+	if (!existsSync(file)) {
+		return {};
+	}
 	let config: unknown;
 	try {
 		config = JSON.parse(readFileSync(file, "utf8"));
@@ -113,7 +117,7 @@ export function readCaseConfig(id: string, file: string): CaseConfig {
 		throw new Error(`[uf] Case ${id}: case.json must hold an object.`);
 	}
 	const record = config as Record<string, unknown>;
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	for (const key of Object.keys(record)) {
 		if (!CASE_KEYS.has(key)) {
 			problems.push(`unknown key "${key}" (it takes ${[...CASE_KEYS].join(", ")})`);
@@ -127,13 +131,13 @@ export function readCaseConfig(id: string, file: string): CaseConfig {
 	}
 	if (
 		record.reference !== undefined &&
-		!(TARGET_NAMES as readonly unknown[]).includes(record.reference)
+		!(TARGET_NAMES as ReadonlyArray<unknown>).includes(record.reference)
 	) {
 		problems.push(`"reference" must name a target: ${TARGET_NAMES.join(", ")}`);
 	}
 	if (
 		record.colorScheme !== undefined &&
-		!(COLOR_SCHEMES as readonly unknown[]).includes(record.colorScheme)
+		!(COLOR_SCHEMES as ReadonlyArray<unknown>).includes(record.colorScheme)
 	) {
 		problems.push(`"colorScheme" must be one of ${COLOR_SCHEMES.map((s) => `"${s}"`).join(", ")}`);
 	}
@@ -165,6 +169,8 @@ export function readCaseConfig(id: string, file: string): CaseConfig {
 			}
 		}
 	}
-	if (problems.length) throw new Error(`[uf] Case ${id}: case.json has ${problems.join("; ")}.`);
-	return record as CaseConfig;
+	if (problems.length) {
+		throw new Error(`[uf] Case ${id}: case.json has ${problems.join("; ")}.`);
+	}
+	return record;
 }

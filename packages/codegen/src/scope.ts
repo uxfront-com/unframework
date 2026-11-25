@@ -31,20 +31,28 @@ export function slottedAttribute(scopeId: string): string {
  * `<template v-if>`). So is a component with `inheritAttrs: false`. The JSX targets spread the
  * attributes on these nodes, by their spans.
  */
-export function scopeRoots(component: UfComponent): Span[] {
-	if (component.inheritAttrs === false) return [];
+export function scopeRoots(component: UfComponent): Array<Span> {
+	if (component.inheritAttrs === false) {
+		return [];
+	}
 	const { render } = component;
-	if (render.kind === "Element") return [render.span];
-	if (render.children.length !== 1) return [];
+	if (render.kind === "Element") {
+		return [render.span];
+	}
+	if (render.children.length !== 1) {
+		return [];
+	}
 	const [root] = render.children as [RenderNode];
-	if (root.kind !== "If") return single(root);
+	if (root.kind !== "If") {
+		return single(root);
+	}
 	return root.branches.flatMap((branch) =>
 		branch.children.length === 1 ? single(branch.children[0]!) : [],
 	);
 }
 
 /** A node's span where it is one element, component or `<component is>`, which Vue scopes. */
-function single(node: RenderNode): Span[] {
+function single(node: RenderNode): Array<Span> {
 	return node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
 		? [node.span]
 		: [];
@@ -58,7 +66,9 @@ function single(node: RenderNode): Span[] {
 export function childStyles(module: UfModule, local: string): ComponentStylesApi | undefined {
 	for (const entry of module.imports ?? []) {
 		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-		if (!imported) continue;
+		if (!imported) {
+			continue;
+		}
 		const api = entry.api.components.find((each) =>
 			imported.imported === "default"
 				? each.export === "default"
@@ -67,7 +77,9 @@ export function childStyles(module: UfModule, local: string): ComponentStylesApi
 		return api?.styles;
 	}
 	const own = module.components.find((component) => component.name === local);
-	if (!own?.scopeId) return undefined;
+	if (!own?.scopeId) {
+		return undefined;
+	}
 	const scopeId = own.scopeId;
 	return {
 		scopeId,
@@ -83,9 +95,11 @@ export function childStyles(module: UfModule, local: string): ComponentStylesApi
  */
 export function slottedAttributes(
 	module: UfModule | undefined,
-	children: readonly string[],
-): string[] {
-	if (!module) return [];
+	children: ReadonlyArray<string>,
+): Array<string> {
+	if (!module) {
+		return [];
+	}
 	return children.flatMap((child) => {
 		const styles = childStyles(module, child);
 		return styles?.slotted ? [slottedAttribute(styles.scopeId)] : [];

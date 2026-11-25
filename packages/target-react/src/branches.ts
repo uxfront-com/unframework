@@ -46,7 +46,9 @@ export function keyedTernary(node: IfNode, context: JsxContext, imports: ImportS
 			// A nested conditional that is the branch's only root prints in this chain: its keys carry
 			// this branch's (`key="1.0"`), so none equals another branch's.
 			PREFIXES.set(only, `${prefix}${index}.`);
-			if (keyed) KEYED.add(only);
+			if (keyed) {
+				KEYED.add(only);
+			}
 		} else {
 			placeConditionals(entry.children, context.module);
 		}
@@ -101,12 +103,16 @@ export function keyedBranches(node: IfNode, context: JsxContext, imports: Import
  * about two children with one key and reconciles them by it. Call it on the children a parent
  * prints (an element's, the root fragment's), before they print.
  */
-export function placeConditionals(children: readonly RenderNode[], module?: UfModule): void {
+export function placeConditionals(children: ReadonlyArray<RenderNode>, module?: UfModule): void {
 	const keyed = children.flatMap((child, position) =>
 		child.kind === "If" && conflicts(child, module) ? [[child, position] as const] : [],
 	);
-	if (keyed.length < 2) return;
-	for (const [child, position] of keyed) PREFIXES.set(child, `${position}-`);
+	if (keyed.length < 2) {
+		return;
+	}
+	for (const [child, position] of keyed) {
+		PREFIXES.set(child, `${position}-`);
+	}
 }
 
 /**
@@ -222,7 +228,9 @@ function conflicts(node: IfNode, module: UfModule | undefined): boolean {
 	) {
 		return true;
 	}
-	if (!branches.some((branch) => branch.children.some(holdsState))) return false;
+	if (!branches.some((branch) => branch.children.some(holdsState))) {
+		return false;
+	}
 	return tags.some((own, a) =>
 		tags.some((other, b) => a < b && [...own].some((tag) => other.has(tag))),
 	);
@@ -232,7 +240,7 @@ function conflicts(node: IfNode, module: UfModule | undefined): boolean {
  * The tags of the elements nodes can render at their top, where React reconciles them: their own
  * elements, those their nested conditionals' branches render there, and a list's rows.
  */
-function topTags(nodes: readonly RenderNode[], module: UfModule | undefined): Set<string> {
+function topTags(nodes: ReadonlyArray<RenderNode>, module: UfModule | undefined): Set<string> {
 	const tags = new Set<string>();
 	for (const node of nodes) {
 		switch (node.kind) {
@@ -241,15 +249,21 @@ function topTags(nodes: readonly RenderNode[], module: UfModule | undefined): Se
 				break;
 			case "If":
 				for (const branch of node.branches) {
-					for (const tag of topTags(branch.children, module)) tags.add(tag);
+					for (const tag of topTags(branch.children, module)) {
+						tags.add(tag);
+					}
 				}
 				break;
 			case "For":
-				if (node.body.kind === "Element") tags.add(node.body.tag);
+				if (node.body.kind === "Element") {
+					tags.add(node.body.tag);
+				}
 				break;
 			// An async component, by its name in angle brackets, which no element's tag takes.
 			case "Component":
-				if (module && childIsAsync(module, node.component)) tags.add(`<${node.component}>`);
+				if (module && childIsAsync(module, node.component)) {
+					tags.add(`<${node.component}>`);
+				}
 				break;
 			case "Text":
 			case "Interpolation":

@@ -20,7 +20,9 @@ describe("the event vocabulary", () => {
 			// `addEventListener`'s name, which `EventAttribute.event`'s pattern also holds.
 			expect(event, event).toMatch(/^[a-z][a-z0-9]*$/);
 		}
-		for (const event of WINDOW_EVENTS.keys()) expect(UNSUPPORTED_EVENTS.has(event)).toBe(false);
+		for (const event of WINDOW_EVENTS.keys()) {
+			expect(UNSUPPORTED_EVENTS.has(event)).toBe(false);
+		}
 		expect(DOM_EVENTS.size).toBe(96);
 	});
 
@@ -62,7 +64,9 @@ describe("the event vocabulary", () => {
 
 	it("lets a listener be passive only where it lets scrolling go on", () => {
 		expect([...PASSIVE_EVENTS].toSorted()).toEqual(["touchmove", "touchstart", "wheel"]);
-		for (const event of PASSIVE_EVENTS) expect(DOM_EVENTS.has(event)).toBe(true);
+		for (const event of PASSIVE_EVENTS) {
+			expect(DOM_EVENTS.has(event)).toBe(true);
+		}
 	});
 
 	it("knows every interface the events are dispatched with, down to Event", () => {

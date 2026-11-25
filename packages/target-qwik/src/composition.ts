@@ -114,25 +114,38 @@ export function planComposition(
 	}
 	const written = new Set<BindingId>();
 	for (const { code, context } of codeOf(component)) {
-		if (context !== "client") continue;
-		for (const reference of code.refs)
-			if (reference.kind === "Write") written.add(reference.binding);
+		if (context !== "client") {
+			continue;
+		}
+		for (const reference of code.refs) {
+			if (reference.kind === "Write") {
+				written.add(reference.binding);
+			}
+		}
 	}
 	// A model a `v-model` binds, on an element or a child, is written there too.
 	walk(component.render, {
 		enter(node) {
-			if (!("attributes" in node)) return;
+			if (!("attributes" in node)) {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") continue;
+				if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") {
+					continue;
+				}
 				for (const reference of attribute.value.refs) {
-					if (reference.kind === "Binding") written.add(reference.binding);
+					if (reference.kind === "Binding") {
+						written.add(reference.binding);
+					}
 				}
 			}
 		},
 	});
 	const models = new Map<BindingId, ModelPlan>();
 	for (const item of component.setup) {
-		if (item.kind !== "Model") continue;
+		if (item.kind !== "Model") {
+			continue;
+		}
 		const binding = bindingOf(component, item.binding);
 		const taken = names.imports.scope.has(item.name);
 		const callbackProp = modelCallback(item.name);
@@ -174,18 +187,26 @@ export function planComposition(
  */
 export function declaredProps(component: UfComponent): Set<string> {
 	const declared = new Set(component.props.map((prop) => prop.name));
-	for (const event of component.emits?.events ?? []) declared.add(qwikEventProp(event.name));
+	for (const event of component.emits?.events ?? []) {
+		declared.add(qwikEventProp(event.name));
+	}
 	for (const item of component.setup) {
-		if (item.kind !== "Model") continue;
+		if (item.kind !== "Model") {
+			continue;
+		}
 		declared.add(item.name);
 		declared.add(modelCallback(item.name));
 	}
 	for (const slot of component.slots?.slots ?? []) {
-		if (isRenderProp(component, slot.name)) declared.add(slotProp(slot.name));
+		if (isRenderProp(component, slot.name)) {
+			declared.add(slotProp(slot.name));
+		}
 	}
 	declared.add("class");
 	declared.add("style");
-	if (component.exposes) declared.add("ref");
+	if (component.exposes) {
+		declared.add("ref");
+	}
 	return declared;
 }
 
@@ -214,7 +235,9 @@ export function modelCallback(model: string): string {
  * which `<Slot />` projects.
  */
 export function isRenderProp(component: UfComponent, slot: string): boolean {
-	if (slot !== "default") return true;
+	if (slot !== "default") {
+		return true;
+	}
 	return component.slots?.slots.some((each) => each.name === slot && each.props) ?? false;
 }
 
@@ -222,22 +245,34 @@ export function isRenderProp(component: UfComponent, slot: string): boolean {
  * The render-prop slots the component's code names, in the order it first names them: an outlet
  * or a forwarded fill, then a presence test.
  */
-function renderedSlots(component: UfComponent): string[] {
-	const found: string[] = [];
+function renderedSlots(component: UfComponent): Array<string> {
+	const found: Array<string> = [];
 	const add = (slot: string) => {
-		if (isRenderProp(component, slot) && !found.includes(slot)) found.push(slot);
+		if (isRenderProp(component, slot) && !found.includes(slot)) {
+			found.push(slot);
+		}
 	};
 	walk(component.render, {
 		enter(node) {
-			if (node.kind === "SlotOutlet") add(node.slot);
-			if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+			if (node.kind === "SlotOutlet") {
+				add(node.slot);
+			}
+			if (node.kind !== "Component" && node.kind !== "Dynamic") {
+				return;
+			}
 			for (const fill of node.kind === "Component" ? node.fills : (node.fills ?? [])) {
-				if (fill.forward !== undefined) add(fill.forward);
+				if (fill.forward !== undefined) {
+					add(fill.forward);
+				}
 			}
 		},
 	});
 	for (const { expression } of expressionsOf(component)) {
-		for (const reference of expression.refs) if (reference.kind === "Slot") add(reference.slot);
+		for (const reference of expression.refs) {
+			if (reference.kind === "Slot") {
+				add(reference.slot);
+			}
+		}
 	}
 	return found;
 }
@@ -285,7 +320,7 @@ export function fillAttribute(
 	context: JsxContext,
 	plan: CompositionPlan,
 	locals: RenderLocals,
-): JsxAttribute[] {
+): Array<JsxAttribute> {
 	const name = slotProp(fill.slot);
 	if (fill.forward !== undefined) {
 		// Forwarding the default slot needs its presence, an error on Qwik
@@ -326,7 +361,9 @@ export function componentHandler(
 		return context.placeholders.expression(printFunction(plan, handler.function, "client").text);
 	}
 	const fn = plan.functions.get(handler.binding)!;
-	if (fn.form !== "module") return js.identifier(fn.qrl);
+	if (fn.form !== "module") {
+		return js.identifier(fn.qrl);
+	}
 	return context.placeholders.expression(`(...payload) => ${fn.binding.name}(...payload)`);
 }
 
@@ -338,7 +375,9 @@ export function modelWriter(value: Expression, plan: SetupPlan): string {
 	const reference = value.refs.find((each) => each.kind === "Binding");
 	const binding = reference && bindingOf(plan.component, reference.binding);
 	const model = binding && plan.composition.models.get(binding.id);
-	if (model) return model.setter;
+	if (model) {
+		return model.setter;
+	}
 	const parameter = binding?.name === "value" ? "next" : "value";
 	return `(${parameter}) => (${value.code} = ${parameter})`;
 }
@@ -350,13 +389,13 @@ export function modelWriter(value: Expression, plan: SetupPlan): string {
 export class RenderLocals {
 	readonly #plan: SetupPlan;
 	readonly #declared = new Map<string, string>();
-	readonly statements: string[] = [];
+	readonly statements: Array<string> = [];
 	/** The callbacks being printed (a list's, a fill's), innermost last, with what they declare. */
-	readonly #scopes: {
-		statements: string[];
+	readonly #scopes: Array<{
+		statements: Array<string>;
 		fill: boolean;
 		functions: Map<string, string>;
-	}[] = [];
+	}> = [];
 
 	constructor(plan: SetupPlan) {
 		this.#plan = plan;
@@ -386,7 +425,7 @@ export class RenderLocals {
 	}
 
 	/** Ends the callback {@link enter} started: what it declares, its functions first. */
-	leave(): string[] {
+	leave(): Array<string> {
 		const scope = this.#scopes.pop()!;
 		return [...scope.functions.values(), ...scope.statements];
 	}
@@ -399,7 +438,9 @@ export class RenderLocals {
 	/** Declares a setup function in the innermost fill's callback, once. */
 	declareInFill(name: string, declaration: () => string): void {
 		const fill = this.#scopes.findLast((scope) => scope.fill);
-		if (!fill || fill.functions.has(name)) return;
+		if (!fill || fill.functions.has(name)) {
+			return;
+		}
 		fill.functions.set(name, declaration());
 	}
 }
@@ -410,11 +451,13 @@ export class RenderLocals {
  */
 export function withLocals(
 	arrow: ReturnType<typeof js.arrowFunction>,
-	statements: readonly string[],
+	statements: ReadonlyArray<string>,
 	context: JsxContext,
 ): ReturnType<typeof js.arrowFunction> {
 	const { body } = arrow;
-	if (!statements.length || body.type === "BlockStatement") return arrow;
+	if (!statements.length || body.type === "BlockStatement") {
+		return arrow;
+	}
 	return js.arrowFunction(arrow.params, [
 		context.placeholders.statements(`${statements.join("\n")}\n`),
 		js.returnStatement(body),
@@ -438,9 +481,13 @@ export function fillExpressions(component: UfComponent): Set<Expression> {
 	const found = new Set<Expression>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+			if (node.kind !== "Component" && node.kind !== "Dynamic") {
+				return;
+			}
 			for (const fill of node.kind === "Component" ? node.fills : (node.fills ?? [])) {
-				if (fill.forward !== undefined || (fill.slot === "default" && !fill.parameter)) continue;
+				if (fill.forward !== undefined || (fill.slot === "default" && !fill.parameter)) {
+					continue;
+				}
 				const render: FragmentNode = { kind: "Fragment", children: fill.children, span: fill.span };
 				for (const { expression } of expressionsOf({
 					...component,
@@ -476,7 +523,7 @@ export function modelAttribute(
 	plan: SetupPlan,
 	locals: RenderLocals,
 	explicit: boolean,
-): JsxAttribute[] {
+): Array<JsxAttribute> {
 	const read = expressionCode(attribute.value, context);
 	const current = locals.current(read, modelBindingName(attribute.value, plan));
 	const { event, handler } = modelListener(attribute, element, context, plan);
@@ -513,7 +560,9 @@ export function modelAttribute(
 		case "number":
 		case "textarea": {
 			const options = modelTextOptions(attribute);
-			if (!options) return [prop("value", current), ...listener];
+			if (!options) {
+				return [prop("value", current), ...listener];
+			}
 			const modelText = plan.names.once("modelText");
 			const ref = controlRef(element, plan, locals, modelBindingName(attribute.value, plan));
 			return [
@@ -616,8 +665,9 @@ function controlRef(
 	base: string,
 ): { name: string; attribute: boolean } {
 	const own = element.attributes.find((attribute) => attribute.kind === "Ref");
-	if (own?.kind === "Ref")
+	if (own?.kind === "Ref") {
 		return { name: bindingOf(plan.component, own.binding).name, attribute: false };
+	}
 	const textarea = element.tag === "textarea";
 	const name = locals.declare(
 		`${base}${textarea ? "Textarea" : "Input"}`,
@@ -655,14 +705,20 @@ export function modelOptions(root: RenderNode | FragmentNode): Map<ElementNode, 
 	const found = new Map<ElementNode, ModelAttribute>();
 	walk(root, {
 		enter(node) {
-			if (node.kind !== "Element" || node.tag !== "select") return;
+			if (node.kind !== "Element" || node.tag !== "select") {
+				return;
+			}
 			const model = node.attributes.find(
 				(attribute): attribute is ModelAttribute => attribute.kind === "Model",
 			);
-			if (!model) return;
+			if (!model) {
+				return;
+			}
 			walk(node, {
 				enter(inner) {
-					if (inner.kind === "Element" && inner.tag === "option") found.set(inner, model);
+					if (inner.kind === "Element" && inner.tag === "option") {
+						found.set(inner, model);
+					}
 				},
 			});
 		},
@@ -692,7 +748,7 @@ export function optionSelected(
 }
 
 /** The authoring types of a ref a key may hold, and the Qwik signal each is. */
-const REF_SIGNALS: readonly (readonly [string, string])[] = [
+const REF_SIGNALS: ReadonlyArray<readonly [string, string]> = [
 	["Ref", "Signal"],
 	["ComputedRef", "ReadonlySignal"],
 	["ModelRef", "ReadonlySignal"],
@@ -707,7 +763,7 @@ export function keyType(type: string, names: OutputNames): string {
 	for (const [name, signal] of REF_SIGNALS) {
 		const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
 		if (reference.test(written)) {
-			written = written.replace(reference, names.core(signal, { type: true }));
+			written = written.replaceAll(reference, names.core(signal, { type: true }));
 		}
 	}
 	return written;
@@ -733,11 +789,15 @@ export function textOptionSelected(
 	const [prefix, suffix] =
 		model.control === "select-multiple" ? [`${read}.includes(`, ")"] : [`${read} === `, ""];
 	const at = option.span;
-	const parts: (string | Expression)[] = [];
+	const parts: Array<string | Expression> = [];
 	for (const child of optionSource(option)) {
-		if (child.kind === "Text") parts.push(child.value);
-		else if (child.kind === "Interpolation") parts.push(child.value);
-		else return undefined;
+		if (child.kind === "Text") {
+			parts.push(child.value);
+		} else if (child.kind === "Interpolation") {
+			parts.push(child.value);
+		} else {
+			return undefined;
+		}
 	}
 	let compared: string;
 	if (parts.every((part) => typeof part === "string")) {
@@ -747,7 +807,7 @@ export function textOptionSelected(
 		const template = parts
 			.map((part) =>
 				typeof part === "string"
-					? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
+					? part.replaceAll(/[`\\]|\$\{/g, (found) => `\\${found}`)
 					: // A nullish value renders nothing, as in Vue's text. TypeScript rejects `?? ""` after
 						// an expression it knows never is, or always is (./values.ts).
 						textPart(part, context),
@@ -789,5 +849,5 @@ function nullishOperand(code: string): string {
 
 /** An option's value from its text, as the DOM reads it: ASCII whitespace collapsed and stripped. */
 function optionText(text: string): string {
-	return text.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "");
+	return text.replaceAll(/[\t\n\f\r ]+/g, " ").replaceAll(/^ | $/g, "");
 }

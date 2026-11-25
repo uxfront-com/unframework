@@ -23,7 +23,7 @@ export const INTEGRATION_DIR: string = fileURLToPath(
 );
 
 /** The rendering cases of composables and shared modules, by id, `<area>/<case>`. */
-export const COMPOSABLE_CASES: readonly string[] = [
+export const COMPOSABLE_CASES: ReadonlyArray<string> = [
 	"composables/use-toggle",
 	"composables/use-controllable-state",
 	"composables/use-media-query",
@@ -55,7 +55,9 @@ export function locateCase(id: string, integrationDir: string = INTEGRATION_DIR)
 	for (const directory of ["pending", "cases"]) {
 		const root = join(integrationDir, directory);
 		const dir = join(root, id);
-		if (existsSync(dir)) return { id, root, dir };
+		if (existsSync(dir)) {
+			return { id, root, dir };
+		}
 	}
 	throw new Error(
 		`The case ${id} is in neither tests/integration/pending/ nor tests/integration/cases/.`,
@@ -66,14 +68,14 @@ export function locateCase(id: string, integrationDir: string = INTEGRATION_DIR)
 export interface CompiledSource {
 	/** The source's path under its root, `composables/use-toggle/useToggle.uf.ts`. */
 	filename: string;
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 	/** What the target emitted, the copied `.ts` modules included, as `compile()` returns it. */
-	outputs: OutputFile[];
+	outputs: Array<OutputFile>;
 }
 
 /** A case, each of its sources compiled for one target. */
 export interface CompiledCase extends CaseLocation {
-	sources: CompiledSource[];
+	sources: Array<CompiledSource>;
 }
 
 /**
@@ -87,22 +89,24 @@ export async function compileComposableCases(
 	{
 		ids = COMPOSABLE_CASES,
 		integrationDir = INTEGRATION_DIR,
-	}: { ids?: readonly string[]; integrationDir?: string } = {},
-): Promise<CompiledCase[]> {
-	const compiled: CompiledCase[] = [];
+	}: { ids?: ReadonlyArray<string>; integrationDir?: string } = {},
+): Promise<Array<CompiledCase>> {
+	const compiled: Array<CompiledCase> = [];
 	for (const id of ids) {
 		const location = locateCase(id, integrationDir);
 		const root = location.root.split(sep).join("/");
 		const readFile = async (path: string): Promise<string | undefined> => {
 			const file = join(path);
 			const inCase = relative(location.dir, dirname(file)) === "";
-			if (!inCase && !file.split(sep).includes("node_modules")) return undefined;
+			if (!inCase && !file.split(sep).includes("node_modules")) {
+				return undefined;
+			}
 			return readText(file, "utf8").catch(() => undefined);
 		};
 		const names = readdirSync(location.dir)
 			.filter((name) => name.endsWith(".uf.tsx") || name.endsWith(".uf.ts"))
 			.toSorted();
-		const sources: CompiledSource[] = [];
+		const sources: Array<CompiledSource> = [];
 		for (const name of names) {
 			const filename = `${id}/${name}`;
 			const result = await compile(await readText(join(location.dir, name), "utf8"), {

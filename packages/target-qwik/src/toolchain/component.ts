@@ -13,7 +13,9 @@ const SERIALIZABLE_STATE = _qwikSymbol("serializable-data");
  * function, render it as an inline component that the target never emits.
  */
 export function asComponent(value: unknown): Component<Props> {
-	if (typeof value === "function" && SERIALIZABLE_STATE in value) return value as Component<Props>;
+	if (typeof value === "function" && SERIALIZABLE_STATE in value) {
+		return value as Component<Props>;
+	}
 	const actual =
 		typeof value === "function"
 			? `the function ${value.name || "(anonymous)"}`

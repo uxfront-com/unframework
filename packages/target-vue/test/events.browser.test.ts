@@ -33,7 +33,7 @@ const Counter = defineComponent({
 	},
 });
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -53,8 +53,8 @@ afterEach(async () => {
 });
 
 it("passes the test's listeners beside the props, and keeps them across a rerender", async () => {
-	const changes: unknown[][] = [];
-	const values: unknown[][] = [];
+	const changes: Array<Array<unknown>> = [];
+	const values: Array<Array<unknown>> = [];
 	mounted = await mount(Counter, container, {
 		on: {
 			change: (...args) => void changes.push(args),

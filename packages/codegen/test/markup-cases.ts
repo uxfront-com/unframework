@@ -87,9 +87,9 @@ function claim(length: number): number {
  * mistake in the case.
  */
 export class Builder {
-	readonly bindings: Binding[] = [];
+	readonly bindings: Array<Binding> = [];
 	readonly propBindings: Map<string, Binding> = new Map();
-	private readonly loops: Map<string, BindingId>[] = [];
+	private readonly loops: Array<Map<string, BindingId>> = [];
 	private readonly props: Readonly<Record<string, PropSpec>>;
 
 	constructor(props: Readonly<Record<string, PropSpec>>) {
@@ -105,21 +105,29 @@ export class Builder {
 	/** An expression whose references are found in its code. */
 	e(code: string): Expression {
 		const start = claim(code.length);
-		const refs: Reference[] = [];
+		const refs: Array<Reference> = [];
 		const { expression } = parseExpressionSource(code);
 		const resolve = (name: string): { binding: BindingId } | { global: string } | undefined => {
 			for (const scope of this.loops.toReversed()) {
 				const id = scope.get(name);
-				if (id) return { binding: id };
+				if (id) {
+					return { binding: id };
+				}
 			}
 			const prop = this.propBindings.get(name);
-			if (prop) return { binding: prop.id };
+			if (prop) {
+				return { binding: prop.id };
+			}
 			return ALLOWED_GLOBALS.has(name) ? { global: name } : undefined;
 		};
 		const reference = (node: Identifier, locals: ReadonlySet<string>, shorthand: boolean) => {
-			if (locals.has(node.name)) return;
+			if (locals.has(node.name)) {
+				return;
+			}
 			const found = resolve(node.name);
-			if (found === undefined) throw new Error(`\`${node.name}\` in \`${code}\` is unresolved.`);
+			if (found === undefined) {
+				throw new Error(`\`${node.name}\` in \`${code}\` is unresolved.`);
+			}
 			const at = span(start + node.start, start + node.end);
 			refs.push(
 				"global" in found
@@ -129,25 +137,33 @@ export class Builder {
 		};
 		const visit = (value: unknown, locals: ReadonlySet<string>): void => {
 			if (Array.isArray(value)) {
-				for (const item of value) visit(item, locals);
+				for (const item of value) {
+					visit(item, locals);
+				}
 				return;
 			}
 			if (isIdentifier(value)) {
 				reference(value, locals, false);
 				return;
 			}
-			if (!isNode(value)) return;
+			if (!isNode(value)) {
+				return;
+			}
 			switch (value.type) {
 				case "MemberExpression":
 					visit(value.object, locals);
-					if (value.computed) visit(value.property, locals);
+					if (value.computed) {
+						visit(value.property, locals);
+					}
 					return;
 				case "Property":
 					if (value.shorthand && isIdentifier(value.value)) {
 						reference(value.value, locals, true);
 						return;
 					}
-					if (value.computed) visit(value.key, locals);
+					if (value.computed) {
+						visit(value.key, locals);
+					}
 					visit(value.value, locals);
 					return;
 				case "ArrowFunctionExpression": {
@@ -157,7 +173,9 @@ export class Builder {
 				}
 				default:
 					for (const [key, child] of Object.entries(value)) {
-						if (key !== "type" && typeof child === "object") visit(child, locals);
+						if (key !== "type" && typeof child === "object") {
+							visit(child, locals);
+						}
 					}
 			}
 		};
@@ -166,7 +184,11 @@ export class Builder {
 		return createExpression(code, span(start, start + code.length), refs);
 	}
 
-	el(tag: string, attributes: Attribute[] = [], ...children: (RenderNode | string)[]): ElementNode {
+	el(
+		tag: string,
+		attributes: Array<Attribute> = [],
+		...children: Array<RenderNode | string>
+	): ElementNode {
 		return createElement(
 			tag,
 			attributes,
@@ -185,7 +207,7 @@ export class Builder {
 
 	/** A conditional: `[condition, ...children]` per branch, `[undefined, ...]` for the else. */
 	if(
-		...branches: [condition: string | undefined, ...children: (RenderNode | string)[]][]
+		...branches: Array<[condition: string | undefined, ...children: Array<RenderNode | string>]>
 	): RenderNode {
 		return createIf(
 			branches.map(([condition, ...children]): IfBranch =>
@@ -236,7 +258,7 @@ export class Builder {
 	}
 
 	/** A class from parts: a string is a static part, `[name, condition]` a toggle, `{ code }` dynamic. */
-	cls(...items: (string | [name: string, condition: string] | { code: string })[]): Attribute {
+	cls(...items: Array<string | [name: string, condition: string] | { code: string }>): Attribute {
 		return createClassAttribute(
 			items.map((item): ClassItem =>
 				typeof item === "string"
@@ -250,7 +272,7 @@ export class Builder {
 	}
 
 	/** A style from declarations: `[property, value]` static, `[property, { code }]` bound. */
-	style(...declarations: [property: string, value: string | { code: string }][]): Attribute {
+	style(...declarations: Array<[property: string, value: string | { code: string }]>): Attribute {
 		return createStyleAttribute(
 			declarations.map(([property, value]): StyleDeclaration =>
 				typeof value === "string"
@@ -262,7 +284,7 @@ export class Builder {
 	}
 
 	/** A spread of `source`'s keys: a prop by its name, or code that says whether it is nullish. */
-	spread(source: string | { code: string; nullish: boolean }, ...keys: string[]): Attribute {
+	spread(source: string | { code: string; nullish: boolean }, ...keys: Array<string>): Attribute {
 		const { code, nullish } = typeof source === "string" ? this.propSource(source) : source;
 		return createSpreadAttribute(
 			this.e(code),
@@ -278,12 +300,14 @@ export class Builder {
 	 */
 	private propSource(name: string): { code: string; nullish: boolean } {
 		const spec = this.props[name];
-		if (!spec) throw new Error(`\`${name}\` is no prop of the case.`);
+		if (!spec) {
+			throw new Error(`\`${name}\` is no prop of the case.`);
+		}
 		const passed = "value" in spec && spec.value !== undefined;
 		return { code: name, nullish: !passed || /\|\s*(?:null|undefined)\s*$/.test(spec.type) };
 	}
 
-	fragment(...children: (RenderNode | string)[]): FragmentNode {
+	fragment(...children: Array<RenderNode | string>): FragmentNode {
 		return createFragment(
 			children.map((child) => (typeof child === "string" ? this.text(child) : child)),
 			here(),
@@ -319,10 +343,10 @@ const here = () => span(0, 0);
 export interface Suite {
 	component: UfComponent;
 	/** Each prop by its name in the wrapper (`c3Label`): its type, and the value passed. */
-	props: { name: string; type: string; value?: unknown; passed: boolean }[];
+	props: Array<{ name: string; type: string; value?: unknown; passed: boolean }>;
 	/** The allowed globals the expressions read (Angular declares them as members). */
-	globals: string[];
-	cases: { name: string; expected: string }[];
+	globals: Array<string>;
+	cases: Array<{ name: string; expected: string }>;
 	/** How a target spells a reference: a prop by its name in the wrapper, `call`ed on Angular. */
 	rules(call: boolean): RewriteRules;
 }
@@ -332,12 +356,12 @@ export interface Suite {
  * single root case, the root itself), and each case's props are namespaced (`c3Label`), so
  * one compile and one render check them all.
  */
-export function suite(cases: readonly MarkupCase[], root: "div" | "self" = "div"): Suite {
-	const bindings: Binding[] = [];
+export function suite(cases: ReadonlyArray<MarkupCase>, root: "div" | "self" = "div"): Suite {
+	const bindings: Array<Binding> = [];
 	const spelled = new Map<BindingId, string>();
 	const props: Suite["props"] = [];
-	const declared: Prop[] = [];
-	const trees: (ElementNode | FragmentNode)[] = [];
+	const declared: Array<Prop> = [];
+	const trees: Array<ElementNode | FragmentNode> = [];
 	cases.forEach((each, index) => {
 		const builder = new Builder(each.props);
 		trees.push(each.render(builder));
@@ -384,17 +408,26 @@ export function suite(cases: readonly MarkupCase[], root: "div" | "self" = "div"
 }
 
 function asElement(tree: ElementNode | FragmentNode): ElementNode {
-	if (tree.kind !== "Element") throw new Error("Only a root case's tree can be a fragment.");
+	if (tree.kind !== "Element") {
+		throw new Error("Only a root case's tree can be a fragment.");
+	}
 	return tree;
 }
 
 /** The allowed globals a tree's expressions read. */
 function collectGlobals(value: unknown, found: Set<string>): Set<string> {
-	if (Array.isArray(value)) for (const item of value) collectGlobals(item, found);
-	else if (typeof value === "object" && value !== null) {
+	if (Array.isArray(value)) {
+		for (const item of value) {
+			collectGlobals(item, found);
+		}
+	} else if (typeof value === "object" && value !== null) {
 		const node = value as { kind?: unknown; name?: unknown };
-		if (node.kind === "Global" && typeof node.name === "string") found.add(node.name);
-		for (const child of Object.values(value)) collectGlobals(child, found);
+		if (node.kind === "Global" && typeof node.name === "string") {
+			found.add(node.name);
+		}
+		for (const child of Object.values(value)) {
+			collectGlobals(child, found);
+		}
 	}
 	return found;
 }
@@ -405,8 +438,8 @@ function collectGlobals(value: unknown, found: Set<string>): Set<string> {
  * may differ: a `class` or `style` with nothing in it is no attribute, class tokens are sorted,
  * and style declarations without a value are dropped and the others sorted.
  */
-export function canonical(html: string): DomNode[] {
-	const expanded = html.replace(
+export function canonical(html: string): Array<DomNode> {
+	const expanded = html.replaceAll(
 		/<([A-Za-z][A-Za-z0-9]*)((?:\s+[^\s"'=<>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'))?)*)\s*\/>/g,
 		(tag, name: string, attributes: string) =>
 			/^(?:area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/i.test(name)
@@ -417,19 +450,27 @@ export function canonical(html: string): DomNode[] {
 }
 
 function canonicalNode(node: DomNode): DomNode {
-	if (typeof node === "string") return node;
+	if (typeof node === "string") {
+		return node;
+	}
 	const attributes: Record<string, string> = {};
 	for (const [name, value] of Object.entries(node.attributes).toSorted(([a], [b]) =>
 		a.localeCompare(b),
 	)) {
 		if (name === "class") {
 			const tokens = value.split(/[\t\n\f\r ]+/).filter(Boolean);
-			if (tokens.length) attributes[name] = tokens.toSorted().join(" ");
+			if (tokens.length) {
+				attributes[name] = tokens.toSorted().join(" ");
+			}
 		} else if (name === "style") {
 			// Split outside strings, parentheses and comments: a `;` in a string ends no declaration.
 			const declarations = comparableValue(name, value);
-			if (declarations !== undefined) attributes[name] = declarations;
-		} else attributes[name] = value;
+			if (declarations !== undefined) {
+				attributes[name] = declarations;
+			}
+		} else {
+			attributes[name] = value;
+		}
 	}
 	return {
 		tag: node.tag,
@@ -440,9 +481,9 @@ function canonicalNode(node: DomNode): DomNode {
 
 /** What each case rendered, from a suite's rendered root `<div>`, beside what it should. */
 export function compareSuite(
-	rendered: readonly DomNode[],
+	rendered: ReadonlyArray<DomNode>,
 	cases: Suite["cases"],
-): { name: string; expected: DomNode[]; actual: DomNode[] }[] {
+): Array<{ name: string; expected: Array<DomNode>; actual: Array<DomNode> }> {
 	const [root, ...rest] = rendered.map(canonicalNode);
 	if (rest.length || typeof root !== "object" || root.tag !== "div") {
 		throw new Error(`expected one root <div>, got ${JSON.stringify(rendered).slice(0, 300)}`);
@@ -472,7 +513,7 @@ const item = (id: string, label: string, on = true) => ({ id, label, on });
  * The cases, by what they show. Each holds only values inside the contract (ADR-0035): keys
  * are unique, arrays dense, numbers in attributes finite.
  */
-export const MARKUP_CASES: readonly MarkupCase[] = [
+export const MARKUP_CASES: ReadonlyArray<MarkupCase> = [
 	// Interpolations (ADR-0037): text, numbers, nothing for nullish, beside text.
 	{
 		name: "a string with markup and every template's delimiters",
@@ -692,11 +733,11 @@ export const MARKUP_CASES: readonly MarkupCase[] = [
 					[],
 					b.i(`saved ? "Saved" : 'Not "saved" yet'`),
 					"|",
-					b.i('name + "it\'s \\"x\\""'),
+					b.i(String.raw`name + "it's \"x\""`),
 				),
 				b.el("p", [], 'Visit "https://a.b".  Thanks'),
 				b.if([`name === 'say "hi"'`, b.el("b", [], "hi")]),
-				b.el("p", [b.bind("title", '/a\\/b|[\\]]|\\(/.test(name) ? "match" : "none"')], "r"),
+				b.el("p", [b.bind("title", String.raw`/a\/b|[\]]|\(/.test(name) ? "match" : "none"`)], "r"),
 			),
 		expected: [
 			`<div title="Don't forget" aria-label="say &quot;hi&quot;'s">`,
@@ -1295,7 +1336,7 @@ export const MARKUP_CASES: readonly MarkupCase[] = [
 ];
 
 /** Cases whose tree is a component's root: a fragment, whose edges a target pads. */
-export const ROOT_CASES: readonly MarkupCase[] = [
+export const ROOT_CASES: ReadonlyArray<MarkupCase> = [
 	{
 		name: "a root fragment with text and interpolations at its edges",
 		props: { s: { type: "string", value: "S" } },

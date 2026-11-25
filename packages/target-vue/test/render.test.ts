@@ -180,7 +180,7 @@ async function renderModule(source: string, props: Record<string, unknown>): Pro
 				inlineTemplate: true,
 				templateOptions: { ssr: true, ssrCssVars: [], transformAssetUrls: false },
 			});
-			return [`${id}.ts`, content.replace(/(from "\.\/\w+)\.vue"/g, '$1.ts"')];
+			return [`${id}.ts`, content.replaceAll(/(from "\.\/\w+)\.vue"/g, '$1.ts"')];
 		}),
 	);
 	const paths = writeScratch(modules);

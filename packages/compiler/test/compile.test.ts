@@ -20,7 +20,9 @@ function capabilities(cells: Partial<Capabilities> = {}): Capabilities {
 /** The root element of a module's only component, which every test source renders. */
 function rootOf(module: UfModule): ElementNode {
 	const { render } = module.components[0]!;
-	if (render.kind !== "Element") throw new Error("The test source renders one root element.");
+	if (render.kind !== "Element") {
+		throw new Error("The test source renders one root element.");
+	}
 	return render;
 }
 
@@ -126,7 +128,7 @@ describe("compile", () => {
 
 describe("plugins", () => {
 	it("runs the ir hook before emitting and the output hook before formatting", async () => {
-		const calls: string[] = [];
+		const calls: Array<string> = [];
 		const plugin: CompilerPlugin = {
 			name: "test",
 			ir(module) {
@@ -471,7 +473,9 @@ describe("misbehaving plugins", () => {
 				'The "holey" plugin\'s ir hook returned invalid IR: /components/0/render/children/1 must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode, TeleportNode, TransitionNode',
 			],
 		]);
-		for (const name of TARGET_NAMES) expect(ownOutputs(result, name)).toHaveLength(1);
+		for (const name of TARGET_NAMES) {
+			expect(ownOutputs(result, name)).toHaveLength(1);
+		}
 	});
 
 	// Capability diagnostics point at IR spans, and JSON and SARIF output refuse a location outside
@@ -499,7 +503,9 @@ describe("misbehaving plugins", () => {
 				`The "astray" plugin's ir hook returned invalid IR: /file must stay "Hello.uf.tsx", the file analysed; /components/0/render/span must lie in the source (${hello.length} characters); /exports/0/span must lie in the source (${hello.length} characters)`,
 			],
 		]);
-		for (const name of TARGET_NAMES) expect(ownOutputs(result, name)).toHaveLength(1);
+		for (const name of TARGET_NAMES) {
+			expect(ownOutputs(result, name)).toHaveLength(1);
+		}
 	});
 
 	// Targets copy an expression's code into seven outputs, and the IR cannot parse it: a plugin
@@ -559,7 +565,9 @@ describe("misbehaving plugins", () => {
 							{ kind: "Static", name: "role", value: "uf-canary", span: render.span },
 						);
 						const text = render.children[0]!;
-						if (text.kind === "Text") text.value += " (canary)";
+						if (text.kind === "Text") {
+							text.value += " (canary)";
+						}
 						return copy;
 					},
 				},
@@ -818,6 +826,8 @@ describe("output paths", () => {
 				'The "twin" plugin\'s ir hook returned invalid IR: /components/1/name must differ from "Hello" by more than case, as each names a file',
 			],
 		]);
-		for (const name of TARGET_NAMES) expect(ownOutputs(result, name)).toHaveLength(1);
+		for (const name of TARGET_NAMES) {
+			expect(ownOutputs(result, name)).toHaveLength(1);
+		}
 	});
 });

@@ -19,7 +19,9 @@ export default function Badge({ text }: { text?: string }) {
 `;
 
 /** Each target's project, as its own packaging tests lay it out, and the check it keeps. */
-const TARGETS: readonly [target: string, project: Omit<DesignSystem, "files">, check: RegExp][] = [
+const TARGETS: ReadonlyArray<
+	[target: string, project: Omit<DesignSystem, "files">, check: RegExp]
+> = [
 	[
 		"react",
 		{

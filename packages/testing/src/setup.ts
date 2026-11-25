@@ -58,7 +58,9 @@ import type { LayerSubject } from "./layers.ts";
 
 /** A hydrate project (L12, ADR-0095): every check a spec runs is recorded as L12. */
 const hydrating = isHydrateProject();
-if (hydrating) recordEveryLayerAs("L12");
+if (hydrating) {
+	recordEveryLayerAs("L12");
+}
 
 installConsoleCapture();
 beginSpecFileConsole();
@@ -74,7 +76,9 @@ installNavigationGuard();
 aroundAll(async (runSuite, {}, suite) => {
 	await runSuite();
 	// A hydrate project captures no pixels, so no follower waits on it.
-	if (hydrating) return;
+	if (hydrating) {
+		return;
+	}
 	await commands.ufSpecFinished({ case: caseOfFile(suite.file.filepath, inject("ufHarness")) });
 });
 
@@ -118,12 +122,16 @@ beforeEach(({ task, skip }) => {
 		// layer fails here with the stand-in's cause, the test still runs, and its quarantine
 		// entries hold only while it fails (ADR-0068).
 		const cause = standInCause(subject.case);
-		if (cause !== undefined) recordStandIn(task, subject, cause);
+		if (cause !== undefined) {
+			recordStandIn(task, subject, cause);
+		}
 		return;
 	}
 	// Recorded before skipping: the parity reporter fails a skip that records no reason, and the
 	// summary excuses this test's scenarios on this target alone (`meta.uf.skipped`).
-	for (const layer of BROWSER_LAYERS) recordLayer(task, subject, layer, { status: "skip", reason });
+	for (const layer of BROWSER_LAYERS) {
+		recordLayer(task, subject, layer, { status: "skip", reason });
+	}
 	task.meta.uf!.skipped = reason;
 	skip(reason);
 });
@@ -142,7 +150,9 @@ afterEach(async ({ task }) => {
 // parameter is the test's, the second its fixtures, which Vitest needs as a destructuring pattern.
 aroundEach(async (runTest, { task }) => {
 	await runTest();
-	if (!judged.has(task)) await afterTest(task);
+	if (!judged.has(task)) {
+		await afterTest(task);
+	}
 });
 
 /**
@@ -155,7 +165,9 @@ aroundEach(async (runTest, { task }) => {
  * the next test's to judge.
  */
 async function afterTest(task: RunnerTestCase): Promise<void> {
-	if (task.meta.uf?.skipped !== undefined) return;
+	if (task.meta.uf?.skipped !== undefined) {
+		return;
+	}
 	let cleanupError: unknown;
 	try {
 		await cleanup();
@@ -211,7 +223,9 @@ async function resetInput(): Promise<void> {
 	await releaseKeys();
 	await userEvent.cleanup();
 	const active = document.activeElement;
-	if (active instanceof HTMLElement || active instanceof SVGElement) active.blur();
+	if (active instanceof HTMLElement || active instanceof SVGElement) {
+		active.blur();
+	}
 	window.focus();
 }
 
@@ -229,7 +243,9 @@ afterAll(async ({}, suite) => {
 	// What the page logs from here on, before the next spec file that shares it starts, is judged
 	// with that file's first test, which names this case (ADR-0092).
 	endSpecFileConsole(caseId);
-	if (!late.length) return;
+	if (!late.length) {
+		return;
+	}
 	// The last test has recorded L13 already; the file's own record reaches the parity reporter
 	// with the file's result, and the quarantine applies to it as to any record.
 	const recorded = recordLayer(
@@ -245,7 +261,9 @@ afterAll(async ({}, suite) => {
 			message: `after the last test of this file (a late teardown or an afterAll hook): ${describeConsole(late)}`,
 		},
 	);
-	if (recorded.status === "fail") throw new Error(`L13: ${recorded.message}`);
+	if (recorded.status === "fail") {
+		throw new Error(`L13: ${recorded.message}`);
+	}
 });
 
 /**
@@ -253,6 +271,10 @@ afterAll(async ({}, suite) => {
  * framework scheduler's warning after unmount then lands in the test that unmounted.
  */
 async function settleTeardown(): Promise<void> {
-	await new Promise<void>((resolve) => setTimeout(resolve, 0));
-	await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+	await new Promise<void>((resolve) => {
+		setTimeout(resolve, 0);
+	});
+	await new Promise<void>((resolve) => {
+		requestAnimationFrame(() => resolve());
+	});
 }

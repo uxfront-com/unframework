@@ -20,7 +20,7 @@ const MALFORMED = "The HTML provided is malformed";
  * `console.warn`; anything printed during a compile is a warning.
  */
 export async function compileWithSolid(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
 	assertFilesToCompile(files);
 	const babel: typeof Babel = await import("@babel/core");
@@ -47,8 +47,8 @@ export async function compileWithSolid(
 
 /** L15: Solid's client output for each file, as a client build compiles it. */
 export async function emitWithSolid(
-	files: readonly ToolchainFile[],
-): Promise<Map<string, ToolchainFile[]>> {
+	files: ReadonlyArray<ToolchainFile>,
+): Promise<Map<string, Array<ToolchainFile>>> {
 	assertFilesToCompile(files);
 	const babel: typeof Babel = await import("@babel/core");
 	const require = createRequire(import.meta.url);
@@ -83,7 +83,7 @@ function compileFile(
 ): FrameworkCompileResult {
 	const warnings = new Map<string, ToolchainMessage>();
 	for (const generate of ["dom", "ssr"] as const) {
-		let printed: string[];
+		let printed: Array<string>;
 		try {
 			printed = printedWhile(() =>
 				babel.transformSync(file.contents, {
@@ -125,10 +125,10 @@ function compileFile(
  * Runs `fn` and returns what it printed with `console.warn` and `console.error`. The console
  * is swapped process-wide, so `fn` must be synchronous: an `await` would capture other work.
  */
-function printedWhile(fn: () => unknown): string[] {
-	const printed: string[] = [];
+function printedWhile(fn: () => unknown): Array<string> {
+	const printed: Array<string> = [];
 	const { warn, error } = console;
-	const capture = (...args: unknown[]): void => {
+	const capture = (...args: Array<unknown>): void => {
 		printed.push(args.map((arg) => (typeof arg === "string" ? arg : String(arg))).join(""));
 	};
 	console.warn = capture;
@@ -146,13 +146,16 @@ function printedWhile(fn: () => unknown): string[] {
  * dom-expressions prints one malformed template as four calls (the verdict, then the HTML as
  * written, as a browser would parse it, and as authored); join each group into one message.
  */
-function groupWarnings(printed: readonly string[]): string[] {
-	const groups: string[][] = [];
+function groupWarnings(printed: ReadonlyArray<string>): Array<string> {
+	const groups: Array<Array<string>> = [];
 	for (const entry of printed) {
 		const text = entry.trim();
 		const current = groups.at(-1);
-		if (current && !text.startsWith(MALFORMED)) current.push(text);
-		else groups.push([text]);
+		if (current && !text.startsWith(MALFORMED)) {
+			current.push(text);
+		} else {
+			groups.push([text]);
+		}
 	}
 	return groups.map((group) => group.join("\n"));
 }
@@ -162,15 +165,21 @@ function groupWarnings(printed: readonly string[]): string[] {
  * `(line:column)` Babel appends, which the message's own 1-based position replaces.
  */
 function fromBabelError(error: unknown, filename: string): ToolchainMessage {
-	if (!(error instanceof Error)) return { message: String(error) };
+	if (!(error instanceof Error)) {
+		return { message: String(error) };
+	}
 	const { loc, reasonCode, code } = error as Error & {
 		loc?: { line: number; column: number };
 		reasonCode?: string;
 		code?: string;
 	};
 	let message = error.message.split("\n")[0] ?? error.message;
-	if (message.startsWith(`${filename}: `)) message = message.slice(filename.length + 2);
-	if (loc) message = message.replace(` (${loc.line}:${loc.column})`, "");
+	if (message.startsWith(`${filename}: `)) {
+		message = message.slice(filename.length + 2);
+	}
+	if (loc) {
+		message = message.replace(` (${loc.line}:${loc.column})`, "");
+	}
 	return {
 		message,
 		...(loc ? { line: loc.line, column: loc.column + 1 } : {}),

@@ -38,12 +38,12 @@ import { readPartialMatrices } from "./reporter.ts";
 /** What a complete run covers. */
 export interface SummaryExpectations {
 	/** Every project the config defines (for the selected targets). */
-	projects: readonly string[];
+	projects: ReadonlyArray<string>;
 	/** Every case id in the corpus. */
-	cases: readonly string[];
-	targets: readonly string[];
+	cases: ReadonlyArray<string>;
+	targets: ReadonlyArray<string>;
 	/** The layers live in this milestone: each needs a cell for every case and target. */
-	liveLayers: readonly LayerName[];
+	liveLayers: ReadonlyArray<LayerName>;
 	/** The skip reason recorded for the layers that are not live yet. */
 	notLiveReason: string;
 	/**
@@ -56,14 +56,14 @@ export interface SummaryExpectations {
 	 * Every capability name: a skip by capability on a live layer (`requires <name>: …`) must
 	 * name one. Without it, any kebab-case name passes.
 	 */
-	capabilities?: readonly string[];
+	capabilities?: ReadonlyArray<string>;
 }
 
 /**
  * The skips a live layer may record besides one by capability (plan §7.7, ADR-0050): each has a
  * mechanical cause. Anything else on a live layer would hide a check that never ran.
  */
-const MECHANICAL_SKIPS: readonly string[] = [
+const MECHANICAL_SKIPS: ReadonlyArray<string> = [
 	NO_OUTPUT_SKIP,
 	NO_SPEC_SKIP,
 	LIVE_REFERENCE_SKIP,
@@ -74,10 +74,12 @@ const MECHANICAL_SKIPS: readonly string[] = [
 /** Why a live layer's skip is not one the summary accepts, or nothing when it is. */
 export function unacceptedSkip(
 	reason: string,
-	capabilities?: readonly string[],
+	capabilities?: ReadonlyArray<string>,
 ): string | undefined {
 	// A browser test of a case its target has no output for: the errors that case expects.
-	if (MECHANICAL_SKIPS.includes(reason) || NO_OUTPUT_TEST_SKIP.test(reason)) return undefined;
+	if (MECHANICAL_SKIPS.includes(reason) || NO_OUTPUT_TEST_SKIP.test(reason)) {
+		return undefined;
+	}
 	const capability = REQUIRES_SKIP.exec(reason)?.[1];
 	if (capability === undefined) {
 		return `skipped (${reason}), which names no capability its target lacks and none of the mechanical causes (${[...MECHANICAL_SKIPS, "no output: <the expected errors>"].join("; ")}): a live layer skips only for a reason the matrix can show.`;
@@ -120,7 +122,7 @@ export interface SummaryResult {
 	matrix: MergedMatrix;
 	markdown: string;
 	/** Everything that makes the run not green; empty when it is. */
-	problems: string[];
+	problems: Array<string>;
 	/**
 	 * Whether every expected project ran all its tests (in a run without a file, test-name or
 	 * other filter, or in every shard of one), so completeness and stale quarantine entries were
@@ -132,14 +134,14 @@ export interface SummaryResult {
 /** Which expected projects the merged runs do not cover in full. */
 export interface Coverage {
 	/** No run has records of them. */
-	missingProjects: readonly string[];
+	missingProjects: ReadonlyArray<string>;
 	/** Only filtered runs ran them: project → why each such run was filtered. */
-	partialProjects: ReadonlyMap<string, readonly string[]>;
+	partialProjects: ReadonlyMap<string, ReadonlyArray<string>>;
 	/**
 	 * Every shard ran them, and none collected a test of them. An unfiltered run fails on such a
 	 * project itself; one shard cannot tell, as it may hold none of the project's files.
 	 */
-	emptyProjects: readonly string[];
+	emptyProjects: ReadonlyArray<string>;
 }
 
 /** Merges the partial matrices in `reportsDir`, writes the merged matrix and its Markdown. */
@@ -162,7 +164,9 @@ export function writeSummary(options: SummaryOptions): SummaryResult {
 	const name = summaryName(options.browser ?? "chromium");
 	writeFileSync(join(options.reportsDir, `${name}.json`), stringifyMatrix(result.matrix));
 	writeFileSync(join(options.reportsDir, `${name}.md`), result.markdown);
-	if (options.stepSummary) appendFileSync(options.stepSummary, `${result.markdown}\n`);
+	if (options.stepSummary) {
+		appendFileSync(options.stepSummary, `${result.markdown}\n`);
+	}
 	return result;
 }
 
@@ -177,7 +181,7 @@ export function summaryName(browser: BrowserEngine): string {
 
 /** Merges matrices, fills the layers that are not live, and lists the problems. Pure. */
 export function summarise(
-	partials: readonly PartialMatrix[],
+	partials: ReadonlyArray<PartialMatrix>,
 	expected: SummaryExpectations,
 	judgement: SummaryJudgement = {},
 ): SummaryResult {
@@ -186,7 +190,7 @@ export function summarise(
 	const { missingProjects, partialProjects } = coverage;
 	const complete = missingProjects.length === 0 && partialProjects.size === 0;
 	const checkMissing = complete || Boolean(judgement.requireComplete);
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	const live = new Set(expected.liveLayers);
 	const knownCases = new Set(expected.cases);
 
@@ -219,8 +223,9 @@ export function summarise(
 	settleQuarantine(merged.cases, quarantine, { stale: complete });
 
 	for (const caseId of Object.keys(merged.cases)) {
-		if (!knownCases.has(caseId))
+		if (!knownCases.has(caseId)) {
 			problems.push(`${caseId}: recorded, but not a case in the corpus.`);
+		}
 	}
 	for (const caseId of [...expected.cases].sort()) {
 		const targets = (merged.cases[caseId] ??= {});
@@ -230,22 +235,29 @@ export function summarise(
 				const cell = cells[layer];
 				if (cell === undefined) {
 					const recordedBy = expected.recordedOnlyBy?.[layer];
-					if (!live.has(layer)) cells[layer] = `skip(${expected.notLiveReason})`;
-					else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy))
+					if (!live.has(layer)) {
+						cells[layer] = `skip(${expected.notLiveReason})`;
+					} else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy)) {
 						cells[layer] = `skip(${NOT_IN_THIS_RUN_SKIP})`;
-					else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer))
+					} else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer)) {
 						problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
+					}
 					continue;
 				}
-				if (layer === "L10" && drops.blocks(caseId, target)) continue;
+				if (layer === "L10" && drops.blocks(caseId, target)) {
+					continue;
+				}
 				// A skip on a live layer names a capability the target lacks or a mechanical cause
 				// (plan §7.7); a quarantined cell is not a skip. They are listed under each table.
 				const outcome = outcomeOfCell(cell);
-				if (outcome.status === "fail")
+				if (outcome.status === "fail") {
 					problems.push(`${caseId} › ${target} › ${layer}: ${cellHeadline(cell)}`);
+				}
 				if (outcome.status === "skip" && live.has(layer)) {
 					const why = unacceptedSkip(outcome.reason, expected.capabilities);
-					if (why) problems.push(`${caseId} › ${target} › ${layer}: ${why}`);
+					if (why) {
+						problems.push(`${caseId} › ${target} › ${layer}: ${why}`);
+					}
 				}
 			}
 			targets[target] = Object.fromEntries(
@@ -294,7 +306,9 @@ const cellKey = (caseId: string, target: string) => `${caseId}\u0000${target}`;
 
 /** The project a blocked L10 cell names, or none for any other cell. */
 function blockedBy(cell: string | undefined): string | undefined {
-	if (cell === undefined || !cell.startsWith("skip(")) return undefined;
+	if (cell === undefined || !cell.startsWith("skip(")) {
+		return undefined;
+	}
 	const outcome = outcomeOfCell(cell);
 	return outcome.status === "skip" ? REFERENCE_NOT_RUN_SKIP.exec(outcome.reason)?.[1] : undefined;
 }
@@ -306,7 +320,9 @@ function referenceDrops(cells: MatrixCells): ReferenceDrops {
 	for (const [caseId, targets] of Object.entries(cells)) {
 		for (const [target, layers] of Object.entries(targets)) {
 			const project = blockedBy(layers.L10);
-			if (project === undefined) continue;
+			if (project === undefined) {
+				continue;
+			}
 			const drop = drops.get(project) ?? { cases: new Set<string>(), cells: new Set<string>() };
 			drop.cases.add(caseId);
 			drop.cells.add(cellKey(caseId, target));
@@ -327,7 +343,10 @@ const NAMED = 3;
  * runs that recorded its blocked cells: the closed connection is reported there, outside every
  * test. A drop is never green, whatever else ran, and with no error the problem says so.
  */
-function dropProblems(drops: ReferenceDrops, partials: readonly PartialMatrix[]): string[] {
+function dropProblems(
+	drops: ReferenceDrops,
+	partials: ReadonlyArray<PartialMatrix>,
+): Array<string> {
 	return [...drops]
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([project, drop]) => {
@@ -350,7 +369,7 @@ function dropProblems(drops: ReferenceDrops, partials: readonly PartialMatrix[])
 }
 
 /** The first few items of a list, and how many more there are. */
-function named(items: readonly string[]): string {
+function named(items: ReadonlyArray<string>): string {
 	const more = items.length - NAMED;
 	return `${items.slice(0, NAMED).join(", ")}${more > 0 ? `, and ${more} more` : ""}`;
 }
@@ -374,24 +393,32 @@ function scenarioProblems(
 	matrix: MergedMatrix,
 	caseId: string,
 	reference: string,
-	targets: readonly string[],
-): string[] {
-	if (!targets.includes(reference)) return [];
+	targets: ReadonlyArray<string>,
+): Array<string> {
+	if (!targets.includes(reference)) {
+		return [];
+	}
 	const expected = matrix.tests[caseId]?.[reference] ?? {};
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	for (const target of targets) {
-		if (target === reference) continue;
+		if (target === reference) {
+			continue;
+		}
 		const actual = matrix.tests[caseId]?.[target] ?? {};
-		const differences: string[] = [];
+		const differences: Array<string> = [];
 		for (const name of [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort()) {
 			const theirs = expected[name];
 			const ours = actual[name];
-			if (ours?.skipped !== undefined || ours?.standIn !== undefined) continue;
+			if (ours?.skipped !== undefined || ours?.standIn !== undefined) {
+				continue;
+			}
 			const wanted = theirs?.skipped === undefined ? (theirs?.scenarios ?? []) : [];
 			const checked = ours?.scenarios ?? [];
 			const missing = wanted.filter((scenario) => !checked.includes(scenario));
 			const extra = checked.filter((scenario) => !wanted.includes(scenario));
-			if (missing.length) differences.push(`"${name}" never checks ${missing.join(", ")}`);
+			if (missing.length) {
+				differences.push(`"${name}" never checks ${missing.join(", ")}`);
+			}
 			if (extra.length) {
 				const why =
 					theirs?.skipped === undefined ? "" : ` (it skipped the test: ${theirs.skipped})`;
@@ -400,7 +427,9 @@ function scenarioProblems(
 				);
 			}
 		}
-		if (!differences.length) continue;
+		if (!differences.length) {
+			continue;
+		}
 		problems.push(
 			`${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability, has no output for the case, or cannot compile it yet.`,
 		);
@@ -414,16 +443,18 @@ function scenarioProblems(
  * ran: it covers no project in full, so its missing cells say nothing. Shards add up, though:
  * shards 1 to n of one selection, with no other filter, ran every test of its projects.
  */
-export function coverageOf(merged: MergedMatrix, projects: readonly string[]): Coverage {
+export function coverageOf(merged: MergedMatrix, projects: ReadonlyArray<string>): Coverage {
 	const ran = new Set(merged.projects);
 	const unfiltered = new Set(
 		merged.runs.filter((run) => narrowing(run) === null).flatMap((run) => run.projects),
 	);
 	const sets = shardSets(merged.runs);
-	const partialProjects = new Map<string, string[]>();
-	const emptyProjects: string[] = [];
+	const partialProjects = new Map<string, Array<string>>();
+	const emptyProjects: Array<string> = [];
 	for (const project of projects) {
-		if (!ran.has(project) || unfiltered.has(project)) continue;
+		if (!ran.has(project) || unfiltered.has(project)) {
+			continue;
+		}
 		const ofProject = sets.filter((set) => set.projects.includes(project));
 		const complete = ofProject.filter((set) => !set.missing.length);
 		if (complete.length) {
@@ -453,13 +484,13 @@ export function coverageOf(merged: MergedMatrix, projects: readonly string[]): C
 
 /** The shards of one selection of projects into one number of parts. */
 interface ShardSet {
-	projects: readonly string[];
+	projects: ReadonlyArray<string>;
 	count: number;
-	runs: readonly RunInfo[];
+	runs: ReadonlyArray<RunInfo>;
 	/** The indices of the shards that ran, ascending. */
-	ran: readonly number[];
+	ran: ReadonlyArray<number>;
 	/** The indices of the shards that did not. */
-	missing: readonly number[];
+	missing: ReadonlyArray<number>;
 }
 
 /**
@@ -467,13 +498,15 @@ interface ShardSet {
  * test files of every selected project together and cuts them into `count` parts, so only the
  * parts of one selection and one count make up a whole; any other shard says nothing about them.
  */
-function shardSets(runs: readonly RunInfo[]): ShardSet[] {
+function shardSets(runs: ReadonlyArray<RunInfo>): Array<ShardSet> {
 	const groups = new Map<
 		string,
-		{ projects: string[]; count: number; runs: RunInfo[]; indices: Set<number> }
+		{ projects: Array<string>; count: number; runs: Array<RunInfo>; indices: Set<number> }
 	>();
 	for (const run of runs) {
-		if (run.shard === null || run.filtered !== null) continue;
+		if (run.shard === null || run.filtered !== null) {
+			continue;
+		}
 		const key = JSON.stringify([run.shard.count, run.projects.toSorted()]);
 		const group = groups.get(key) ?? {
 			projects: run.projects,
@@ -496,7 +529,7 @@ function shardSets(runs: readonly RunInfo[]): ShardSet[] {
 }
 
 /** Shards by index, such as `shard 1/3, shard 3/3`. */
-function shardList(indices: readonly number[], count: number): string {
+function shardList(indices: ReadonlyArray<number>, count: number): string {
 	return indices.map((index) => `shard ${index}/${count}`).join(", ");
 }
 
@@ -505,7 +538,7 @@ export function renderMarkdown(
 	matrix: MergedMatrix,
 	expected: SummaryExpectations,
 	status: Coverage & {
-		problems: readonly string[];
+		problems: ReadonlyArray<string>;
 		requireComplete: boolean;
 		/** How many quarantine entries the newest run applied, which judged every record. */
 		quarantined: number;
@@ -517,7 +550,7 @@ export function renderMarkdown(
 	const layers = LAYERS.filter((layer) => expected.liveLayers.includes(layer));
 	const { missingProjects, partialProjects, problems } = status;
 	// The projects a filter narrowed, grouped by the filter: usually one run narrowed them all.
-	const narrowed = new Map<string, string[]>();
+	const narrowed = new Map<string, Array<string>>();
 	for (const [project, filters] of partialProjects) {
 		const filter = filters.join("; ");
 		narrowed.set(filter, [...(narrowed.get(filter) ?? []), project]);
@@ -600,7 +633,9 @@ export function renderMarkdown(
 			for (const layer of layers) {
 				const cell = cells[layer];
 				const outcome = cell === undefined ? undefined : outcomeOfCell(cell);
-				if (outcome?.status !== "skip" && outcome?.status !== "quarantined") continue;
+				if (outcome?.status !== "skip" && outcome?.status !== "quarantined") {
+					continue;
+				}
 				const note =
 					outcome.status === "skip"
 						? `skipped: ${outcome.reason}`
@@ -636,10 +671,14 @@ export function renderMarkdown(
 			),
 		);
 		lines.push(...skipped);
-		if (notes.size || skipped.length) lines.push("");
+		if (notes.size || skipped.length) {
+			lines.push("");
+		}
 	}
 	lines.push(problems.length ? `### Problems (${problems.length})` : "### No problems", "");
-	for (const problem of problems) lines.push(`- ${escapeCell(problem)}`);
+	for (const problem of problems) {
+		lines.push(`- ${escapeCell(problem)}`);
+	}
 	return `${lines.join("\n").trimEnd()}\n`;
 }
 
@@ -659,11 +698,13 @@ function describeRun(run: RunInfo): string {
 
 /** A cell in a table: the status only; reasons are listed under the table. */
 function short(cell: string | undefined): string {
-	if (cell === undefined) return "**missing**";
+	if (cell === undefined) {
+		return "**missing**";
+	}
 	const { status } = outcomeOfCell(cell);
 	return status === "fail" ? "**FAIL**" : status;
 }
 
 function escapeCell(text: string): string {
-	return text.replaceAll("|", "\\|");
+	return text.replaceAll("|", String.raw`\|`);
 }

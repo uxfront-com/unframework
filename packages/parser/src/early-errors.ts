@@ -27,9 +27,9 @@ interface Binding {
 export function moduleEarlyErrors(
 	program: Program,
 	source: string,
-	reported: readonly ParseError[],
-): ParseError[] {
-	const errors: ParseError[] = [];
+	reported: ReadonlyArray<ParseError>,
+): Array<ParseError> {
+	const errors: Array<ParseError> = [];
 	// An error already reported over the same two spans, by oxc or by an earlier rule here (an
 	// exported function declared twice is also exported twice).
 	const seen = (first: Span, second: Span) =>
@@ -86,12 +86,14 @@ export function moduleEarlyErrors(
 }
 
 /** The value bindings a top-level statement declares: functions, classes, variables, imports. */
-function valueBindings(statement: Directive | Statement): Binding[] {
+function valueBindings(statement: Directive | Statement): Array<Binding> {
 	const declaration =
 		statement.type === "ExportNamedDeclaration" || statement.type === "ExportDefaultDeclaration"
 			? statement.declaration
 			: statement;
-	if (!declaration) return [];
+	if (!declaration) {
+		return [];
+	}
 	switch (declaration.type) {
 		case "FunctionDeclaration":
 		case "ClassDeclaration":
@@ -102,7 +104,9 @@ function valueBindings(statement: Directive | Statement): Binding[] {
 		case "VariableDeclaration":
 			return declaration.declare ? [] : variableBindings(declaration);
 		case "ImportDeclaration":
-			if (declaration.importKind === "type") return [];
+			if (declaration.importKind === "type") {
+				return [];
+			}
 			return declaration.specifiers
 				.filter(
 					(specifier) => specifier.type !== "ImportSpecifier" || specifier.importKind !== "type",
@@ -117,7 +121,7 @@ function valueBindings(statement: Directive | Statement): Binding[] {
 	}
 }
 
-function variableBindings(declaration: VariableDeclaration): Binding[] {
+function variableBindings(declaration: VariableDeclaration): Array<Binding> {
 	const kind = declaration.kind === "var" ? "var" : "lexical";
 	return declaration.declarations
 		.flatMap((declarator) => patternNames(declarator.id))
@@ -126,8 +130,10 @@ function variableBindings(declaration: VariableDeclaration): Binding[] {
 
 function patternNames(
 	pattern: BindingPattern | BindingRestElement | null,
-): { name: string; start: number; end: number }[] {
-	if (!pattern) return [];
+): Array<{ name: string; start: number; end: number }> {
+	if (!pattern) {
+		return [];
+	}
 	switch (pattern.type) {
 		case "Identifier":
 			return [pattern];
@@ -147,12 +153,14 @@ function patternNames(
 }
 
 /** Every name a top-level statement declares, in the value or the type space. */
-function declaredNames(statement: Directive | Statement): string[] {
+function declaredNames(statement: Directive | Statement): Array<string> {
 	const declaration =
 		statement.type === "ExportNamedDeclaration" || statement.type === "ExportDefaultDeclaration"
 			? statement.declaration
 			: statement;
-	if (!declaration) return [];
+	if (!declaration) {
+		return [];
+	}
 	switch (declaration.type) {
 		case "FunctionDeclaration":
 		case "TSDeclareFunction":
@@ -177,10 +185,12 @@ function declaredNames(statement: Directive | Statement): string[] {
 function exportedNames(
 	statement: Directive | Statement,
 	source: string,
-): { name: string; span: Span }[] {
+): Array<{ name: string; span: Span }> {
 	switch (statement.type) {
 		case "ExportDefaultDeclaration": {
-			if (statement.declaration.type === "TSInterfaceDeclaration") return [];
+			if (statement.declaration.type === "TSInterfaceDeclaration") {
+				return [];
+			}
 			// The span of `export default`: the declaration has no node for the keyword.
 			const keyword = source.slice(statement.start, statement.declaration.start).trimEnd();
 			return [
@@ -195,7 +205,9 @@ function exportedNames(
 				? [{ name: exportName(statement.exported), span: span(statement.exported) }]
 				: [];
 		case "ExportNamedDeclaration": {
-			if (statement.exportKind === "type") return [];
+			if (statement.exportKind === "type") {
+				return [];
+			}
 			const declaration = statement.declaration;
 			if (declaration) {
 				if (declaration.type === "VariableDeclaration") {
@@ -234,7 +246,7 @@ function span(node: { start: number; end: number }): Span {
 	return { start: node.start, end: node.end };
 }
 
-function labelled(message: string, labels: [Span, string][]): ParseError {
+function labelled(message: string, labels: Array<[Span, string]>): ParseError {
 	return {
 		message,
 		span: labels[0]![0],

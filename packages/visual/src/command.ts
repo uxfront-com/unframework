@@ -33,13 +33,13 @@ const FAILURE_FILES = {
 /** Per process: each run's captures, by run id. */
 const STATE = Symbol.for("unframework.visual.captures");
 
-function store(): Map<string, RecordedCapture[]> {
-	const holder = globalThis as { [STATE]?: Map<string, RecordedCapture[]> };
-	return (holder[STATE] ??= new Map());
+function store(): Map<string, Array<RecordedCapture>> {
+	const holder = globalThis as { [STATE]?: Map<string, Array<RecordedCapture>> };
+	return (holder[STATE] ??= new Map<string, Array<RecordedCapture>>());
 }
 
 /** The captures a run recorded, and forgets them. */
-export function takeCaptures(runId: string): RecordedCapture[] {
+export function takeCaptures(runId: string): Array<RecordedCapture> {
 	const captures = store().get(runId) ?? [];
 	store().delete(runId);
 	return captures;

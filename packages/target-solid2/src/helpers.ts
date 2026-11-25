@@ -155,7 +155,9 @@ export function watcherHelperCode(uses: WatcherUses, names: HelperNames): string
 			: "before the DOM updates";
 	const parts = [schedulerCode(names, both)];
 	const effect = names.watchEffect ? [watchEffectCode(names.watchEffect, names, both)] : [];
-	if (!names.watcher) return [...parts, ...effect].join("\n\n");
+	if (!names.watcher) {
+		return [...parts, ...effect].join("\n\n");
+	}
 	const name = names.watcher;
 	const doc = docComment(
 		[
@@ -229,7 +231,7 @@ ${stop}
 			? `{ flush: "post" }`
 			: undefined;
 	const values = names.values!;
-	const overloads: string[] = [];
+	const overloads: Array<string> = [];
 	if (uses.single.lazy) {
 		overloads.push(
 			`function ${name}<T>(\n  source: () => T,\n  callback: (value: T, previous: T, onCleanup: ${registrar}) => unknown,${lazyOptions}\n): void;`,
@@ -278,7 +280,8 @@ ${stop}
 		: singles
 			? `\n  // An array of sources changes when one of its values does: one source is an array of one.\n  const sources = typeof source === "function" ? [source] : source;`
 			: "";
-	parts.push(`${doc}
+	parts.push(
+		`${doc}
 ${overloads.join("\n")}
 function ${name}(
   ${parameter},
@@ -310,8 +313,9 @@ ${stop}
     const register = (cleanup: () => void) => cleanups.push(cleanup);
 ${callback}
   }
-}`);
-	parts.push(...effect);
+}`,
+		...effect,
+	);
 	if (arrays) {
 		parts.push(
 			`/** The values of an array of sources, in order, as a tuple the callback may annotate as it is. */
@@ -459,7 +463,7 @@ ${requestCode}`;
 
 /** A JSDoc comment of prose, wrapped at 100 columns as the formatter leaves comments. */
 function docComment(text: string): string {
-	const lines: string[] = [];
+	const lines: Array<string> = [];
 	let line = "";
 	for (const word of text.split(" ")) {
 		if (line && ` * ${line} ${word}`.length > 100) {
@@ -469,7 +473,9 @@ function docComment(text: string): string {
 			line = line ? `${line} ${word}` : word;
 		}
 	}
-	if (line) lines.push(line);
+	if (line) {
+		lines.push(line);
+	}
 	return `/**\n${lines.map((each) => ` * ${each}`).join("\n")}\n */`;
 }
 

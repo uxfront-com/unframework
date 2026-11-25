@@ -36,7 +36,9 @@ export function writeAstroModule(directory: string, source: string, name: string
 		// Without it the output imports `createMetadata`, which the runtime does not export.
 		resolvePath: (specifier) => specifier,
 	});
-	if (diagnostics.length > 0) throw new Error(JSON.stringify(diagnostics));
+	if (diagnostics.length > 0) {
+		throw new Error(JSON.stringify(diagnostics));
+	}
 	const file = join(directory, `${name}.mjs`);
 	writeFileSync(file, code);
 	return file;

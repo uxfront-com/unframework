@@ -10,7 +10,7 @@ import { codeOf, expressionsOf } from "./visit.ts";
 /** What a piece of code does, itself and through the local functions it calls. */
 export interface CodeSummary {
 	/** The local functions it calls itself, by binding, in source order, each once. */
-	calls: readonly BindingId[];
+	calls: ReadonlyArray<BindingId>;
 	/** Every local function it reaches through calls, transitively. */
 	reaches: ReadonlySet<BindingId>;
 	/** The bindings it and what it reaches read, other than as the callee of a call. */
@@ -46,7 +46,7 @@ export interface FunctionSummary extends CodeSummary {
 
 /** What one piece of code does itself, before the functions it calls are followed. */
 interface Facts {
-	calls: BindingId[];
+	calls: Array<BindingId>;
 	reads: Set<BindingId>;
 	writes: Set<BindingId>;
 	emits: Set<string>;
@@ -56,7 +56,7 @@ interface Facts {
 }
 
 /** What references say, each kind read exhaustively. */
-function factsOf(refs: readonly CodeReference[]): Facts {
+function factsOf(refs: ReadonlyArray<CodeReference>): Facts {
 	const facts: Facts = {
 		calls: [],
 		reads: new Set(),
@@ -69,8 +69,11 @@ function factsOf(refs: readonly CodeReference[]): Facts {
 	for (const ref of refs) {
 		switch (ref.kind) {
 			case "Binding":
-				if (!ref.call) facts.reads.add(ref.binding);
-				else if (!facts.calls.includes(ref.binding)) facts.calls.push(ref.binding);
+				if (!ref.call) {
+					facts.reads.add(ref.binding);
+				} else if (!facts.calls.includes(ref.binding)) {
+					facts.calls.push(ref.binding);
+				}
 				break;
 			case "Global":
 				facts.globals.add(ref.name);
@@ -111,7 +114,9 @@ export function summarize(component: UfComponent): ReadonlyMap<BindingId, Functi
 	const kinds = new Map(component.bindings.map((binding) => [binding.id, binding]));
 	const own = new Map<BindingId, { facts: Facts; async: boolean; controls: boolean }>();
 	for (const item of component.setup) {
-		if (item.kind !== "Function") continue;
+		if (item.kind !== "Function") {
+			continue;
+		}
 		const fn = item.function;
 		own.set(item.binding, {
 			facts: factsOf(fn.body.refs),
@@ -126,7 +131,9 @@ export function summarize(component: UfComponent): ReadonlyMap<BindingId, Functi
 	];
 	for (const refs of located) {
 		for (const ref of refs) {
-			if (ref.kind === "Binding" && !ref.call && own.has(ref.binding)) escaping.add(ref.binding);
+			if (ref.kind === "Binding" && !ref.call && own.has(ref.binding)) {
+				escaping.add(ref.binding);
+			}
 		}
 	}
 	const summaries = new Map<BindingId, FunctionSummary>();
@@ -183,7 +190,7 @@ export function summarizeTracked(code: Code, component: UfComponent): CodeSummar
 }
 
 /** The references code makes while it runs: all but those marked `later`. */
-function now(refs: readonly CodeReference[]): CodeReference[] {
+function now(refs: ReadonlyArray<CodeReference>): Array<CodeReference> {
 	return refs.filter((ref) => ref.kind !== "Binding" || ref.later !== true);
 }
 
@@ -208,12 +215,22 @@ function close(
 			reads.add(id);
 			continue;
 		}
-		if (reaches.has(id)) continue;
+		if (reaches.has(id)) {
+			continue;
+		}
 		reaches.add(id);
-		for (const read of callee.facts.reads) reads.add(read);
-		for (const write of callee.facts.writes) writes.add(write);
-		for (const event of callee.facts.emits) emits.add(event);
-		for (const name of callee.facts.globals) globals.add(name);
+		for (const read of callee.facts.reads) {
+			reads.add(read);
+		}
+		for (const write of callee.facts.writes) {
+			writes.add(write);
+		}
+		for (const event of callee.facts.emits) {
+			emits.add(event);
+		}
+		for (const name of callee.facts.globals) {
+			globals.add(name);
+		}
 		api ||= callee.facts.api;
 		dev ||= callee.facts.dev;
 		async ||= callee.async;
@@ -244,16 +261,32 @@ function close(
  */
 export function impurity(summary: CodeSummary): string | undefined {
 	const [write] = summary.writes;
-	if (write !== undefined) return `it writes "${write}"`;
+	if (write !== undefined) {
+		return `it writes "${write}"`;
+	}
 	const [event] = summary.emits;
-	if (event !== undefined) return `it emits "${event}"`;
-	if (summary.api) return "it calls `nextTick`";
-	if (summary.dev) return "it tests `isDev`";
-	if (summary.async) return "it is asynchronous";
-	if (summary.readsTemplateRef) return "it reads a template ref";
-	if (summary.readsLocalVar) return "it reads a setup `let`";
+	if (event !== undefined) {
+		return `it emits "${event}"`;
+	}
+	if (summary.api) {
+		return "it calls `nextTick`";
+	}
+	if (summary.dev) {
+		return "it tests `isDev`";
+	}
+	if (summary.async) {
+		return "it is asynchronous";
+	}
+	if (summary.readsTemplateRef) {
+		return "it reads a template ref";
+	}
+	if (summary.readsLocalVar) {
+		return "it reads a setup `let`";
+	}
 	const [global] = summary.clientGlobals;
-	if (global !== undefined) return `it reads \`${global}\`, which only client code may`;
+	if (global !== undefined) {
+		return `it reads \`${global}\`, which only client code may`;
+	}
 	return undefined;
 }
 

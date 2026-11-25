@@ -7,7 +7,9 @@ type Component = ComponentType<Record<string, unknown>>;
  * "Element type is invalid", far from the import that went wrong.
  */
 export function asComponent(value: unknown): Component {
-	if (isComponent(value)) return value;
+	if (isComponent(value)) {
+		return value;
+	}
 	throw new TypeError(
 		`Expected a React component, received ${value === null ? "null" : typeof value}.`,
 	);

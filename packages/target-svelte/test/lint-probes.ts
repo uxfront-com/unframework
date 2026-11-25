@@ -105,7 +105,7 @@ export const M1_SHAPES: Readonly<Record<string, string>> = {
  * values, watchers, effects and lifecycle hooks, listeners and attachments, template refs and
  * ids, and an object form's callback props.
  */
-export const M2_FIXTURES: readonly string[] = [
+export const M2_FIXTURES: ReadonlyArray<string> = [
 	"Stepper.svelte",
 	"Pager.svelte",
 	"Ticker.svelte",

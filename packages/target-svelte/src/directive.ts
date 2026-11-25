@@ -52,8 +52,10 @@ export function attachmentCode(
 	const mounted = directiveHook(directive, "mounted");
 	const updated = directiveHook(directive, "updated");
 	const unmounted = directiveHook(directive, "unmounted");
-	const body: string[] = [];
-	if (updated) body.push(`let ${own.current} = ${untrack}(${own.getValue});`);
+	const body: Array<string> = [];
+	if (updated) {
+		body.push(`let ${own.current} = ${untrack}(${own.getValue});`);
+	}
 	if (mounted) {
 		const value = updated ? own.current : `${untrack}(${own.getValue})`;
 		body.push(`${untrack}(() => ${hookCall(own.hooks, mounted, [own.element, value])});`);
@@ -71,7 +73,9 @@ export function attachmentCode(
 			"});",
 		);
 	}
-	if (unmounted) body.push(`return () => ${hookCall(own.hooks, unmounted, [own.element])};`);
+	if (unmounted) {
+		body.push(`return () => ${hookCall(own.hooks, unmounted, [own.element])};`);
+	}
 	const element = directiveElement(directive);
 	const hooks = directiveHooksObject(directive).replaceAll("\n", "\n  ");
 	return [
@@ -86,7 +90,7 @@ export function attachmentCode(
 }
 
 /** `vFocusTrap.svelte.ts`: a `.uf.ts` module's directive, as an attachment factory. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
 	const dependencies = directiveDependencies(directive, context.module);
 	// Svelte's names, apart from everything the copied code declares or reads.
 	const scope = new NameScope(directiveModuleNames(directive, dependencies));
@@ -119,23 +123,29 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
 export function narrowedDirectiveValues(
 	render: ElementNode | FragmentNode,
 	claim: (base: string) => string,
-): Map<Container, { attribute: DirectiveAttribute; name: string }[]> {
-	const found = new Map<Container, { attribute: DirectiveAttribute; name: string }[]>();
+): Map<Container, Array<{ attribute: DirectiveAttribute; name: string }>> {
+	const found = new Map<Container, Array<{ attribute: DirectiveAttribute; name: string }>>();
 	const visit = (node: RenderNode | FragmentNode, branch: IfBranch | undefined): void => {
 		if (node.kind === "If") {
 			for (const each of node.branches) {
-				for (const child of each.children) visit(child, each);
+				for (const child of each.children) {
+					visit(child, each);
+				}
 			}
 			return;
 		}
 		if (node.kind === "Element" && branch) {
 			for (const attribute of node.attributes) {
-				if (attribute.kind !== "Directive" || !attribute.value.refs.length) continue;
+				if (attribute.kind !== "Directive" || !attribute.value.refs.length) {
+					continue;
+				}
 				const name = claim(`${attribute.name[1]!.toLowerCase()}${attribute.name.slice(2)}Value`);
 				found.set(branch, [...(found.get(branch) ?? []), { attribute, name }]);
 			}
 		}
-		for (const child of childrenOf(node)) visit(child, branch);
+		for (const child of childrenOf(node)) {
+			visit(child, branch);
+		}
 	};
 	visit(render, undefined);
 	return found;

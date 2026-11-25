@@ -6,12 +6,16 @@ export function random(seed: number): () => number {
 		let t = state;
 		t = Math.imul(t ^ (t >>> 15), t | 1);
 		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
 	};
 }
 
 /** `count` strings of one to six pieces each, drawn from `pieces` with the seed. */
-export function randomSamples(seed: number, count: number, pieces: readonly string[]): string[] {
+export function randomSamples(
+	seed: number,
+	count: number,
+	pieces: ReadonlyArray<string>,
+): Array<string> {
 	const next = random(seed);
 	return Array.from({ length: count }, () =>
 		Array.from(

@@ -12,12 +12,12 @@ export type AriaType =
 	| { type: "idlist" }
 	| { type: "integer" }
 	| { type: "number" }
-	| { type: "token"; values: readonly string[] }
-	| { type: "tokenlist"; values: readonly string[] };
+	| { type: "token"; values: ReadonlyArray<string> }
+	| { type: "tokenlist"; values: ReadonlyArray<string> };
 
-const words = (text: string): string[] => text.trim().split(/\s+/);
+const words = (text: string): Array<string> => text.trim().split(/\s+/);
 
-const of = (type: AriaType, names: string): [string, AriaType][] =>
+const of = (type: AriaType, names: string): Array<[string, AriaType]> =>
 	words(names).map((name) => [name, type]);
 
 /** Each ARIA attribute's value type, by name (`ARIA_ATTRIBUTES` lists the names). */
@@ -92,7 +92,9 @@ export const ABSTRACT_ROLES: ReadonlySet<string> = new Set(
  */
 export function ariaValueProblem(name: string, value: string): string | undefined {
 	const aria = ARIA_TYPES.get(name);
-	if (!aria) return undefined;
+	if (!aria) {
+		return undefined;
+	}
 	switch (aria.type) {
 		case "boolean":
 			return value === "true" || value === "false" ? undefined : '`"true"` or `"false"`';
@@ -126,14 +128,17 @@ export function ariaValueProblem(name: string, value: string): string | undefine
  */
 export function roleProblem(value: string): string | undefined {
 	for (const role of value.split(/[\t\n\f\r ]+/).filter(Boolean)) {
-		if (ABSTRACT_ROLES.has(role))
+		if (ABSTRACT_ROLES.has(role)) {
 			return `\`${role}\` is an abstract role, which authors cannot use`;
-		if (!ARIA_ROLES.has(role)) return `\`${role}\` is not an ARIA role`;
+		}
+		if (!ARIA_ROLES.has(role)) {
+			return `\`${role}\` is not an ARIA role`;
+		}
 	}
 	return undefined;
 }
 
-function alternatives(values: readonly string[]): string {
+function alternatives(values: ReadonlyArray<string>): string {
 	const quoted = values.map((value) => `\`"${value}"\``);
 	return `${quoted.slice(0, -1).join(", ")} or ${quoted.at(-1)}`;
 }

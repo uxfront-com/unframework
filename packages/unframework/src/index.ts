@@ -63,12 +63,12 @@ export interface WatchEffectOptions {
 	flush?: "pre" | "post" | "sync";
 }
 /** The values of an array source, a mutable tuple as Vue passes it: a callback may annotate it. */
-type WatchValues<S extends readonly WatchSource<unknown>[]> = {
+type WatchValues<S extends ReadonlyArray<WatchSource<unknown>>> = {
 	-readonly [K in keyof S]: S[K] extends WatchSource<infer V> ? V : never;
 };
 
 /** `defineEmits<{ change: [value: number] }>()`: each event name maps to a named-tuple payload. */
-export type EmitsMap = Record<string, readonly unknown[]>;
+export type EmitsMap = Record<string, ReadonlyArray<unknown>>;
 /** The `emit` function. It returns `void`: listeners may run asynchronously on some targets (Qwik). */
 export type EmitFn<E extends EmitsMap> = <K extends keyof E & string>(
 	event: K,
@@ -76,7 +76,7 @@ export type EmitFn<E extends EmitsMap> = <K extends keyof E & string>(
 ) => void;
 
 /** `defineSlots<{ default?(): Element; item?(props: { item: Item }): Element }>()`. */
-export type SlotsMap = Record<string, ((...props: any[]) => unknown) | undefined>;
+export type SlotsMap = Record<string, ((...props: Array<any>) => unknown) | undefined>;
 
 /** The static options `defineOptions` accepts. */
 export interface ComponentOptions {
@@ -121,7 +121,7 @@ export function watch<T, Immediate extends boolean = false>(
 ): WatchStopHandle;
 /** Runs `callback` after any of the sources changes, with the tuples of new and previous values. */
 export function watch<
-	const S extends readonly WatchSource<unknown>[],
+	const S extends ReadonlyArray<WatchSource<unknown>>,
 	Immediate extends boolean = false,
 >(
 	sources: S,

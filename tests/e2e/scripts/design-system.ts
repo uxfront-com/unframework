@@ -20,7 +20,9 @@ const run = (command: string): number => {
 		cwd: copy,
 		stdio: "inherit",
 	});
-	if (error) throw error;
+	if (error) {
+		throw error;
+	}
 	return status ?? 1;
 };
 

@@ -92,8 +92,8 @@ describe("checkEnvironment", () => {
 });
 
 /** A document that records the sheets put in its head, and fonts that load at once. */
-function stubDocument(): unknown[] {
-	const appended: unknown[] = [];
+function stubDocument(): Array<unknown> {
+	const appended: Array<unknown> = [];
 	vi.stubGlobal("document", {
 		createElement: () => ({ setAttribute() {}, textContent: "" }),
 		head: { append: (node: unknown) => appended.push(node) },

@@ -16,7 +16,7 @@ function io(cwd = "."): Io & { out: string; err: string } {
 }
 
 /** A command that records its arguments and exits with `code`. */
-function command(code: number, seen: string[][] = []): Command {
+function command(code: number, seen: Array<Array<string>> = []): Command {
 	return {
 		usage: "test [--target <t>]",
 		summary: "Run the project's tests.",
@@ -32,7 +32,7 @@ function command(code: number, seen: string[][] = []): Command {
 
 describe("extra commands", () => {
 	it("runs one by name, with its arguments and exit code", async () => {
-		const seen: string[][] = [];
+		const seen: Array<Array<string>> = [];
 		const sink = io();
 		const code = await main(
 			["test", "--target", "react"],
@@ -70,7 +70,7 @@ describe("extra commands", () => {
 	});
 
 	it("passes a --help after -- on to the command", async () => {
-		const seen: string[][] = [];
+		const seen: Array<Array<string>> = [];
 		const sink = io();
 		expect(await main(["test", "--", "--help"], sink, new Map([["test", command(0, seen)]]))).toBe(
 			0,

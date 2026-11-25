@@ -45,7 +45,7 @@ interface Case {
 	read: string;
 }
 
-const CASES: readonly Case[] = [
+const CASES: ReadonlyArray<Case> = [
 	...[
 		"ref(0)",
 		'ref("x")',
@@ -86,7 +86,7 @@ const CASES: readonly Case[] = [
 
 /** The TypeScript type kinds stand for, as the probe writes it. */
 function typeOf(kinds: Kinds): string {
-	const parts: string[] = [];
+	const parts: Array<string> = [];
 	for (const primitive of kinds.primitives) {
 		switch (primitive) {
 			case "string":
@@ -115,7 +115,9 @@ function typeOf(kinds: Kinds): string {
 					);
 					parts.push(`{ ${members.join("; ")} }`);
 				}
-				if (!kinds.objects?.length) parts.push("object");
+				if (!kinds.objects?.length) {
+					parts.push("object");
+				}
 				break;
 			default:
 				parts.push(primitive);
@@ -142,7 +144,9 @@ function kindsOf(declaration: string): Kinds {
 			diagnostic.code !== "UF3024" &&
 			diagnostic.code !== "UF2021",
 	);
-	if (errors.length) throw new Error(`${declaration}: ${JSON.stringify(errors)}`);
+	if (errors.length) {
+		throw new Error(`${declaration}: ${JSON.stringify(errors)}`);
+	}
 	return found!;
 }
 
@@ -150,7 +154,7 @@ const folder = mkdtempSync(join(tmpdir(), "uf-kinds-"));
 afterAll(() => rmSync(folder, { recursive: true, force: true }));
 
 /** Runs `tsc` over the probe: the lines it rejects, by case. */
-function rejected(lines: readonly string[]): Map<number, string> {
+function rejected(lines: ReadonlyArray<string>): Map<number, string> {
 	writeFileSync(
 		join(folder, "tsconfig.json"),
 		JSON.stringify({
@@ -173,12 +177,17 @@ function rejected(lines: readonly string[]): Map<number, string> {
 		],
 		{ cwd: folder, encoding: "utf8" },
 	);
-	if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);
+	if (result.error) {
+		throw new Error(`could not start tsc: ${result.error.message}`);
+	}
 	const found = new Map<number, string>();
 	for (const line of `${result.stdout}${result.stderr}`.split("\n")) {
 		const match = /probe\.ts\((\d+),\d+\): (.*)$/.exec(line);
-		if (match) found.set(Number(match[1]) - HEADER.length - 1, match[2]!);
-		else if (line.trim()) throw new Error(`tsc reported more than the probe: ${line}`);
+		if (match) {
+			found.set(Number(match[1]) - HEADER.length - 1, match[2]!);
+		} else if (line.trim()) {
+			throw new Error(`tsc reported more than the probe: ${line}`);
+		}
 	}
 	return found;
 }
@@ -186,7 +195,9 @@ function rejected(lines: readonly string[]): Map<number, string> {
 describe("the setup's kinds", () => {
 	it("declares the authoring API as the package does", () => {
 		const index = readFileSync(new URL("../../unframework/src/index.ts", import.meta.url), "utf8");
-		for (const signature of SIGNATURES) expect(index).toContain(signature);
+		for (const signature of SIGNATURES) {
+			expect(index).toContain(signature);
+		}
 	});
 
 	it("are what TypeScript infers for each binding", { timeout: 60_000 }, () => {

@@ -420,7 +420,9 @@ describe("compositionUse", () => {
 
 	it("finds nothing in a component without composition", () => {
 		const module = everyKind();
-		for (const each of module.components) expect(compositionUse(module, each)).toBeUndefined();
+		for (const each of module.components) {
+			expect(compositionUse(module, each)).toBeUndefined();
+		}
 	});
 });
 
@@ -681,7 +683,9 @@ describe("requiredCapabilities over generics and composables (ADR-0068, ADR-0069
 	it("scans a composable's arguments for what their code needs", () => {
 		const module = m5.modules();
 		const item = module.components[0]!.setup[0]!;
-		if (item.kind !== "Use") throw new Error("the fixture changed");
+		if (item.kind !== "Use") {
+			throw new Error("the fixture changed");
+		}
 		const at = item.arguments[1]!.span;
 		const call = { start: at.start, end: at.start + "nextTick".length };
 		item.arguments[1] = {

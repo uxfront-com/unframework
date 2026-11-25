@@ -21,10 +21,11 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import type { ToolchainMessage } from "../src/index.ts";
 import { lintWithEslint, lintWithOxlint, mergeLintResults } from "../src/toolchain-node/index.ts";
 
-const temporaries: string[] = [];
+const temporaries: Array<string> = [];
 afterAll(() => {
-	for (const directory of temporaries.splice(0))
+	for (const directory of temporaries.splice(0)) {
 		rmSync(directory, { recursive: true, force: true });
+	}
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -68,7 +69,7 @@ interface Behaviour {
 
 /** What a stand-in linter was run with. */
 interface Invocation {
-	args: string[];
+	args: Array<string>;
 	cwd: string;
 	env: { NODE_OPTIONS: string | null; NODE_PATH: string | null; NO_COLOR?: string };
 }
@@ -113,7 +114,7 @@ const invocation = (toolchainDir: string) =>
 	JSON.parse(readFileSync(join(toolchainDir, "invocation.json"), "utf8")) as Invocation;
 
 /** An oxlint JSON report over the given files. */
-const report = (diagnostics: object[], count = 3) => ({
+const report = (diagnostics: Array<object>, count = 3) => ({
 	diagnostics,
 	number_of_files: count,
 	number_of_rules: 100,
@@ -137,7 +138,7 @@ const problem = (
 			: [{ span: { offset: 0, length: 1, line: fields.line, column: fields.column ?? 1 } }],
 });
 
-const lintOx = (toolchainDir: string, given: readonly string[] = Object.values(files)) =>
+const lintOx = (toolchainDir: string, given: ReadonlyArray<string> = Object.values(files)) =>
 	lintWithOxlint(given, { toolchainDir, root: toolchainDir });
 
 describe("lintWithOxlint", () => {
@@ -204,7 +205,7 @@ describe("lintWithOxlint", () => {
 	});
 
 	it("rejects a run that did not end with its report", async () => {
-		const cases: [Behaviour, RegExp][] = [
+		const cases: Array<[Behaviour, RegExp]> = [
 			[
 				{ code: 1, stdout: "Failed to parse oxlint configuration file.\n" },
 				/oxlint exited with code 1: it printed output this toolchain cannot read\.\nFailed to parse oxlint configuration file\./,
@@ -324,13 +325,17 @@ function eslintToolchain(
 }
 
 /** One file's ESLint result. */
-const result = (filePath: string, messages: object[] = [], suppressedMessages: object[] = []) => ({
+const result = (
+	filePath: string,
+	messages: Array<object> = [],
+	suppressedMessages: Array<object> = [],
+) => ({
 	filePath,
 	messages,
 	suppressedMessages,
 });
 
-const lintEs = (toolchainDir: string, given: readonly string[] = Object.values(files)) =>
+const lintEs = (toolchainDir: string, given: ReadonlyArray<string> = Object.values(files)) =>
 	lintWithEslint(given, { toolchainDir, root: toolchainDir });
 
 /** A file name of over 200 characters, so a few thousand of them fill a long list. */

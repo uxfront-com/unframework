@@ -27,7 +27,7 @@ export interface ScopedStylesheet {
 	 * UF5004 at each selector that cannot be scoped, or UF5002 where the sheet does not parse,
 	 * in the sheet's own file. A sheet with any is not scoped: `code` is empty.
 	 */
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 	/** Whether a selector uses `:slotted()`, whose content the parent stamps (ADR-0063). */
 	slotted: boolean;
 }
@@ -53,7 +53,9 @@ export function scopeStylesheet(file: string, source: string, scopeId: string): 
 	});
 	// lightningcss judges validity, an unknown at-rule included, as for the analyser (UF5002).
 	const [error] = parseStylesheet(file, source).errors;
-	if (error) return invalid(error.message, error.span);
+	if (error) {
+		return invalid(error.message, error.span);
+	}
 	// postcss drops a byte-order mark, and counts its offsets without it.
 	const bom = source.charCodeAt(0) === 0xfeff ? 1 : 0;
 	let root: Root;
@@ -134,13 +136,15 @@ const hasNestedRules = (rule: Rule) => rule.nodes.some((node) => node.type === "
 /** Whether a rule around `rule` passes `test`: Vue's walk up to a parent's `__deep`. */
 function anyAncestor(rule: Rule, test: (rule: Rule) => boolean): boolean {
 	for (let parent = rule.parent; parent && parent.type !== "root"; parent = parent.parent) {
-		if (parent.type === "rule" && test(parent as Rule)) return true;
+		if (parent.type === "rule" && test(parent)) {
+			return true;
+		}
 	}
 	return false;
 }
 
 class Scoper {
-	readonly diagnostics: Diagnostic[] = [];
+	readonly diagnostics: Array<Diagnostic> = [];
 	slotted = false;
 	readonly #file: string;
 	readonly #id: string;
@@ -160,7 +164,9 @@ class Scoper {
 	/** Reports UF5004 at each selector that cannot be scoped, before anything is rewritten. */
 	check(root: Root): void {
 		root.walkRules((rule) => {
-			if (inKeyframes(rule)) return;
+			if (inKeyframes(rule)) {
+				return;
+			}
 			const text = rule.raws.selector?.raw ?? rule.selector;
 			const offset = (rule.source?.start?.offset ?? 0) + this.#bom;
 			const parsed = parseSelectors(text);
@@ -183,7 +189,9 @@ class Scoper {
 								help: "Give the `:deep()` selector a rule of its own.",
 							}
 						: this.#problem(selector, nested, inDeep);
-				if (problem) this.#report(problem, selectorSpan(selector, offset));
+				if (problem) {
+					this.#report(problem, selectorSpan(selector, offset));
+				}
 			}
 		});
 	}
@@ -193,7 +201,9 @@ class Scoper {
 		root.walkAtRules(KEYFRAMES, (rule) => {
 			const quoted = /^(["'])(.*)\1$/s.exec(rule.params);
 			const name = quoted ? quoted[2]! : rule.params;
-			if (!name || name.endsWith(`-${this.#id}`)) return;
+			if (!name || name.endsWith(`-${this.#id}`)) {
+				return;
+			}
 			const renamed = `${name}-${this.#id}`;
 			this.#keyframes.set(name, renamed);
 			rule.params = quoted ? `${quoted[1]}${renamed}${quoted[1]}` : renamed;
@@ -204,7 +214,9 @@ class Scoper {
 	rules(container: Container): void {
 		for (const node of container.nodes ?? []) {
 			if (node.type === "rule") {
-				if (inKeyframes(node)) continue;
+				if (inKeyframes(node)) {
+					continue;
+				}
 				this.#rule(node);
 				this.rules(node);
 			} else if (node.type === "atrule" && !KEYFRAMES.test(node.name)) {
@@ -219,11 +231,15 @@ class Scoper {
 	 * name matches as the identifier does.
 	 */
 	animations(root: Root): void {
-		if (!this.#keyframes.size) return;
+		if (!this.#keyframes.size) {
+			return;
+		}
 		const rename = (token: string) => {
 			const quoted = /^(["'])(.*)\1$/s.exec(token);
 			const renamed = this.#keyframes.get(quoted ? quoted[2]! : token);
-			if (!renamed) return undefined;
+			if (!renamed) {
+				return undefined;
+			}
 			return quoted ? `${quoted[1]}${renamed}${quoted[1]}` : renamed;
 		};
 		root.walkDecls((declaration: Declaration) => {
@@ -239,7 +255,9 @@ class Scoper {
 					.map((part) => {
 						const values = part.trim().split(/\s+/);
 						const index = values.findIndex((value) => rename(value) !== undefined);
-						if (index === -1) return part;
+						if (index === -1) {
+							return part;
+						}
 						values.splice(index, 1, rename(values[index]!)!);
 						return values.join(" ");
 					})
@@ -328,11 +346,15 @@ class Scoper {
 						return undefined;
 					}
 					// `* .a` and `*.a` are `.a[x]`.
-					if (next.type === "combinator") next.remove();
+					if (next.type === "combinator") {
+						next.remove();
+					}
 					item.remove();
 					return undefined;
 				}
-				if (node) return undefined;
+				if (node) {
+					return undefined;
+				}
 			}
 			if (
 				(item.type !== "pseudo" && item.type !== "combinator") ||
@@ -348,19 +370,30 @@ class Scoper {
 			const ruleDeep = this.#deep.has(rule);
 			if (!ruleDeep) {
 				extractAndWrap(rule);
-				for (const child of rule.nodes) if (child.type === "atrule") extractAndWrap(child);
+				for (const child of rule.nodes) {
+					if (child.type === "atrule") {
+						extractAndWrap(child);
+					}
+				}
 			}
 			inject = ruleDeep;
 		}
 		const anchor = node as Item | undefined;
 		if (anchor?.type === "pseudo" && (anchor.value === ":is" || anchor.value === ":where")) {
-			for (const each of anchor.nodes) this.#rewrite(rule, each, deep, slotted);
+			for (const each of anchor.nodes) {
+				this.#rewrite(rule, each, deep, slotted);
+			}
 			inject = false;
 		}
 		// Vue's own spacing: none after the anchor, or before the selector without one.
-		if (anchor) anchor.spaces.after = "";
-		else if (selector.first) selector.first.spaces.before = "";
-		if (!inject) return;
+		if (anchor) {
+			anchor.spaces.after = "";
+		} else if (selector.first) {
+			selector.first.spaces.before = "";
+		}
+		if (!inject) {
+			return;
+		}
 		const name = `data-uf-${this.#id}${slotted ? "-s" : ""}`;
 		// As Vue writes it: the value is the name, and with no operator only the name is printed.
 		const attribute = selectorParser.attribute({
@@ -371,16 +404,21 @@ class Scoper {
 		});
 		const alone = lone as Item | undefined;
 		const leading = kept as Item | undefined;
-		if (alone) alone.replaceWith(attribute);
-		else if (anchor) selector.insertAfter(anchor, attribute);
-		else if (leading) selector.insertAfter(leading, attribute);
-		else selector.prepend(attribute);
+		if (alone) {
+			alone.replaceWith(attribute);
+		} else if (anchor) {
+			selector.insertAfter(anchor, attribute);
+		} else if (leading) {
+			selector.insertAfter(leading, attribute);
+		} else {
+			selector.prepend(attribute);
+		}
 	}
 
 	/** Why a selector cannot be scoped, or `undefined`. */
 	#problem(selector: Selector, nested: boolean, inDeep: boolean): Problem | undefined {
 		const items = selector.nodes.filter((item) => item.type !== "comment");
-		const calls = items.filter(isScopingCall) as Pseudo[];
+		const calls = items.filter(isScopingCall) as Array<Pseudo>;
 		if (calls.length > 1) {
 			return {
 				message: "A selector uses one of `:deep()`, `:slotted()` and `:global()`, once.",
@@ -422,8 +460,12 @@ function extractAndWrap(container: Container): void {
 	const nodes = (container.nodes ?? []).filter(
 		(node): node is ChildNode => node.type === "decl" || node.type === "comment",
 	);
-	if (!nodes.length) return;
-	for (const node of nodes) node.remove();
+	if (!nodes.length) {
+		return;
+	}
+	for (const node of nodes) {
+		node.remove();
+	}
 	container.prepend(postcss.rule({ nodes, selector: "&" }));
 }
 
@@ -450,7 +492,9 @@ function problemIn(selector: Selector, global: boolean, top: boolean): Problem |
 						message: `\`:${name}\` takes its selector in parentheses, \`:${name}(.child)\`.`,
 					};
 				}
-				if (!top) return NESTED;
+				if (!top) {
+					return NESTED;
+				}
 			} else if (name === "root" && !global) {
 				return outsidePage(":root");
 			} else if ((name === "is" || name === "where") && !item.nodes.some(hasItems)) {
@@ -463,7 +507,9 @@ function problemIn(selector: Selector, global: boolean, top: boolean): Problem |
 			}
 			for (const each of item.nodes) {
 				const problem = problemIn(each, global || item.value === ":global", false);
-				if (problem) return problem;
+				if (problem) {
+					return problem;
+				}
 			}
 		} else if (item.type === "tag" || item.type === "universal") {
 			if ((item as { namespace?: unknown }).namespace !== undefined) {
@@ -487,7 +533,7 @@ function problemIn(selector: Selector, global: boolean, top: boolean): Problem |
 					? item.value
 					: raw
 							.replace(/^(["'])([^]*)\1(?:\/\*[^]*?\*\/)*$/, "$2")
-							.replace(/\\(?:\r\n|[\n\r\f])/g, "");
+							.replaceAll(/\\(?:\r\n|[\n\r\f])/g, "");
 			if (
 				(name === "class" || name === "style") &&
 				(!operator || (value === "" && (operator === "=" || operator === "|=")))

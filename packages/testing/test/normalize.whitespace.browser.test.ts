@@ -46,7 +46,7 @@ afterEach(() => {
 	document.body.replaceChildren();
 });
 
-const SAME: readonly (readonly [string, string, string])[] = [
+const SAME: ReadonlyArray<readonly [string, string, string]> = [
 	[
 		"Svelte's spaces between blocks",
 		"<section><h2>Title</h2> <p>x</p> <p>y</p></section>",
@@ -169,7 +169,7 @@ const SAME: readonly (readonly [string, string, string])[] = [
 	],
 ];
 
-const DIFFERENT: readonly (readonly [string, string, string])[] = [
+const DIFFERENT: ReadonlyArray<readonly [string, string, string]> = [
 	[
 		"a space between two images",
 		"<p><img width=10 height=10> <img width=10 height=10></p>",
@@ -361,7 +361,7 @@ function random(seed: number): () => number {
 		let t = state;
 		t = Math.imul(t ^ (t >>> 15), t | 1);
 		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
 	};
 }
 
@@ -423,9 +423,13 @@ const VOID = new Set(["br", "wbr", "img"]);
  * rather than repairing the markup: a `<p>` closes at a block, an `<li>` at another `<li>`,
  * and an `<rt>` or `<rp>` closes everything up to the ruby around it.
  */
-function fits(tag: string, ancestors: readonly string[]): boolean {
-	if (ancestors.includes("p") && ["div", "p", "li"].includes(tag)) return false;
-	if (ancestors.includes("li") && tag === "li") return false;
+function fits(tag: string, ancestors: ReadonlyArray<string>): boolean {
+	if (ancestors.includes("p") && ["div", "p", "li"].includes(tag)) {
+		return false;
+	}
+	if (ancestors.includes("li") && tag === "li") {
+		return false;
+	}
 	if ((tag === "rt" || tag === "rp") && ancestors.includes("ruby")) {
 		return ancestors.at(-1) === "ruby";
 	}
@@ -436,13 +440,13 @@ function fits(tag: string, ancestors: readonly string[]): boolean {
 type Item =
 	| { kind: "slot"; id: number }
 	| { kind: "word"; word: string }
-	| { kind: "element"; open: string; tag: string; children: Item[] };
+	| { kind: "element"; open: string; tag: string; children: Array<Item> };
 
-function fragment(next: () => number): { items: Item[]; slots: number } {
+function fragment(next: () => number): { items: Array<Item>; slots: number } {
 	let slots = 0;
-	const pick = <T>(items: readonly T[]): T => items[Math.floor(next() * items.length)]!;
-	const level = (depth: number, ancestors: readonly string[]): Item[] => {
-		const items: Item[] = [];
+	const pick = <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!;
+	const level = (depth: number, ancestors: ReadonlyArray<string>): Array<Item> => {
+		const items: Array<Item> = [];
 		for (let count = 1 + Math.floor(next() * 4); count > 0; count -= 1) {
 			items.push({ kind: "slot", id: slots++ });
 			const open = depth > 2 || next() < 0.3 ? undefined : pick(ELEMENTS);
@@ -452,7 +456,9 @@ function fragment(next: () => number): { items: Item[]; slots: number } {
 				continue;
 			}
 			const children = VOID.has(tag) ? [] : level(depth + 1, [...ancestors, tag]);
-			if (!VOID.has(tag)) children.push({ kind: "slot", id: slots++ });
+			if (!VOID.has(tag)) {
+				children.push({ kind: "slot", id: slots++ });
+			}
 			items.push({ kind: "element", open, tag, children });
 		}
 		items.push({ kind: "slot", id: slots++ });
@@ -461,12 +467,18 @@ function fragment(next: () => number): { items: Item[]; slots: number } {
 	return { items: level(0, []), slots };
 }
 
-function render(items: readonly Item[], spaces: readonly string[]): string {
+function render(items: ReadonlyArray<Item>, spaces: ReadonlyArray<string>): string {
 	return items
 		.map((item) => {
-			if (item.kind === "slot") return spaces[item.id]!;
-			if (item.kind === "word") return item.word;
-			if (VOID.has(item.tag)) return item.open;
+			if (item.kind === "slot") {
+				return spaces[item.id]!;
+			}
+			if (item.kind === "word") {
+				return item.word;
+			}
+			if (VOID.has(item.tag)) {
+				return item.open;
+			}
 			return `${item.open}${render(item.children, spaces)}</${item.tag}>`;
 		})
 		.join("");
@@ -474,8 +486,8 @@ function render(items: readonly Item[], spaces: readonly string[]): string {
 
 describe("rule 6 against Chromium's layout, fuzzed", () => {
 	it("never calls two fragments equal that Chromium lays out differently, on either path", () => {
-		const falseEquals: string[] = [];
-		const liveFalseEquals: string[] = [];
+		const falseEquals: Array<string> = [];
+		const liveFalseEquals: Array<string> = [];
 		let equal = 0;
 		let liveEqual = 0;
 		for (let seed = 1; seed <= 20_000; seed += 1) {
@@ -491,21 +503,33 @@ describe("rule 6 against Chromium's layout, fuzzed", () => {
 			}
 			const a = `<div>${render(items, spaces)}</div>`;
 			const b = `<div>${render(items, changed)}</div>`;
-			if (a === b) continue;
+			if (a === b) {
+				continue;
+			}
 			const staticEquals = normalizeHtml(a) === normalizeHtml(b);
 			const liveEquals = bothPaths(a).live === bothPaths(b).live;
-			if (!staticEquals && !liveEquals) continue;
-			if (staticEquals) equal += 1;
-			if (liveEquals) liveEqual += 1;
+			if (!staticEquals && !liveEquals) {
+				continue;
+			}
+			if (staticEquals) {
+				equal += 1;
+			}
+			if (liveEquals) {
+				liveEqual += 1;
+			}
 			if (layout(a) !== layout(b)) {
 				const pair = `seed ${seed}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`;
-				if (staticEquals) falseEquals.push(pair);
-				if (liveEquals) liveFalseEquals.push(pair);
+				if (staticEquals) {
+					falseEquals.push(pair);
+				}
+				if (liveEquals) {
+					liveFalseEquals.push(pair);
+				}
 			}
 		}
 		// The fuzz has to exercise the rule: thousands of pairs it equates, each laid out twice.
-		expect(equal).toBeGreaterThan(5_000);
-		expect(liveEqual).toBeGreaterThan(5_000);
+		expect(equal).toBeGreaterThan(5000);
+		expect(liveEqual).toBeGreaterThan(5000);
 		expect(falseEquals).toEqual([]);
 		expect(liveFalseEquals).toEqual([]);
 	}, 120_000);

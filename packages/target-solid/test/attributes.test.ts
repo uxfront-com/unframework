@@ -111,13 +111,19 @@ function rejected(tag: string): boolean {
  * Every binding of a primitive kind the analyser accepts, on every element it accepts, and of
  * the union of its tokens for an enumerated attribute (which takes only those, UF3018).
  */
-function bindings(): SweptBinding[] {
-	const found: SweptBinding[] = [];
+function bindings(): Array<SweptBinding> {
+	const found: Array<SweptBinding> = [];
 	const add = (tag: string, namespace: "html" | "svg", name: string) => {
 		// Attributes the analyser takes only statically, or by a kind of their own (class, style).
-		if (["class", "style"].includes(name)) return;
-		if (namespace === "html" && isStateAttribute(tag, name, undefined)) return;
-		if (nameProblem(tag, namespace, name, name)) return;
+		if (["class", "style"].includes(name)) {
+			return;
+		}
+		if (namespace === "html" && isStateAttribute(tag, name, undefined)) {
+			return;
+		}
+		if (nameProblem(tag, namespace, name, name)) {
+			return;
+		}
 		for (const kind of KINDS) {
 			if (!boundValueProblem(tag, namespace, name, kinds(kind))) {
 				found.push([tag, name, `v.${kind}`]);
@@ -139,7 +145,9 @@ function bindings(): SweptBinding[] {
 			...(ELEMENT_ATTRIBUTES.get(tag) ?? []),
 			...ARIA_ATTRIBUTES,
 		]);
-		for (const name of names) add(tag, "html", name);
+		for (const name of names) {
+			add(tag, "html", name);
+		}
 	}
 	for (const tag of [...SVG_ELEMENTS].filter(
 		(element) => !SVG_UNRENDERABLE_ELEMENTS.has(element),
@@ -149,7 +157,9 @@ function bindings(): SweptBinding[] {
 			...SVG_PRESENTATION_ATTRIBUTES,
 			...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? []),
 		]);
-		for (const name of names) add(tag, "svg", name);
+		for (const name of names) {
+			add(tag, "svg", name);
+		}
 	}
 	return found;
 }
@@ -157,13 +167,15 @@ function bindings(): SweptBinding[] {
 /** An element binding `name` to `value`: as an attribute, or as the output spreads it. */
 function binding(name: string, value: string, form: "spread" | "untyped" | undefined) {
 	const key = /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
-	if (!form) return `${name}={${value}}`;
+	if (!form) {
+		return `${name}={${value}}`;
+	}
 	const object = `{ ${key}: ${value} }`;
 	return form === "spread" ? `{...${object}}` : `{...(${object} as Record<string, unknown>)}`;
 }
 
 /** A file of one element per line, from line 4. */
-function sweepSource(lines: readonly string[]): string {
+function sweepSource(lines: ReadonlyArray<string>): string {
 	return [
 		"declare const v: { string: string; number: number; boolean: boolean };",
 		"export const all = (",
@@ -228,13 +240,19 @@ describe("solid JSX types against every binding the analyser accepts (L4)", () =
 		expect([...solid.keys()]).toEqual([solidFile]);
 		const byAuthoring = new Set(authoring.get(authoringFile)!.map((message) => message.line! - 4));
 		const bySolid = new Set(solid.get(solidFile)!.map((message) => message.line! - 4));
-		const rejectedAsWritten: string[] = [];
-		const unneeded: string[] = [];
+		const rejectedAsWritten: Array<string> = [];
+		const unneeded: Array<string> = [];
 		found.forEach(([tag, name, value], index) => {
-			if (byAuthoring.has(index)) return;
+			if (byAuthoring.has(index)) {
+				return;
+			}
 			const [written, alone, beside] = [0, 1, 2].map((line) => bySolid.has(index * 3 + line));
-			if (alone || beside) rejectedAsWritten.push(`<${tag} ${name}={${value}}>`);
-			if (isUntyped(tag, name) && !written) unneeded.push(`<${tag} ${name}={${value}}>`);
+			if (alone || beside) {
+				rejectedAsWritten.push(`<${tag} ${name}={${value}}>`);
+			}
+			if (isUntyped(tag, name) && !written) {
+				unneeded.push(`<${tag} ${name}={${value}}>`);
+			}
 		});
 		expect(found.length).toBeGreaterThan(5000);
 		expect(rejectedAsWritten).toEqual([]);

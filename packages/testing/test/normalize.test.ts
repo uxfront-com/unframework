@@ -89,7 +89,7 @@ describe("quote", () => {
 	it("is a JSON string literal that reads back exactly", () => {
 		for (const text of [
 			"plain",
-			' "quoted" \\ ',
+			String.raw` "quoted" \ `,
 			"line\nbreak\ttab\r",
 			"a\u{a0}b",
 			"\u{200b}\u{ad}\u{2028}\u{2029}\u{202f}\u{3000}",
@@ -103,13 +103,13 @@ describe("quote", () => {
 	});
 
 	it("escapes every invisible or ambiguous character", () => {
-		expect(quote("a\u{a0}b")).toBe('"a\\u00a0b"');
-		expect(quote("zero\u{200b}width")).toBe('"zero\\u200bwidth"');
-		expect(quote("soft\u{ad}hyphen")).toBe('"soft\\u00adhyphen"');
-		expect(quote("\u{2003}em space")).toBe('"\\u2003em space"');
-		expect(quote("\u0001")).toBe('"\\u0001"');
-		expect(quote("\ud800")).toBe('"\\ud800"');
-		expect(quote("\u{e0001}")).toBe('"\\udb40\\udc01"');
+		expect(quote("a\u{a0}b")).toBe(String.raw`"a\u00a0b"`);
+		expect(quote("zero\u{200b}width")).toBe(String.raw`"zero\u200bwidth"`);
+		expect(quote("soft\u{ad}hyphen")).toBe(String.raw`"soft\u00adhyphen"`);
+		expect(quote("\u{2003}em space")).toBe(String.raw`"\u2003em space"`);
+		expect(quote("\u0001")).toBe(String.raw`"\u0001"`);
+		expect(quote("\ud800")).toBe(String.raw`"\ud800"`);
+		expect(quote("\u{e0001}")).toBe(String.raw`"\udb40\udc01"`);
 	});
 
 	it("keeps visible characters as they are", () => {
@@ -120,8 +120,8 @@ describe("quote", () => {
 		const composed = "caf\u00e9";
 		const decomposed = "cafe\u0301";
 		expect(quote(composed)).toBe('"café"');
-		expect(quote(decomposed)).toBe('"cafe\\u0301"');
-		expect(normalizeHtml(`<p>${decomposed}</p>`)).toContain('"cafe\\u0301"');
+		expect(quote(decomposed)).toBe(String.raw`"cafe\u0301"`);
+		expect(normalizeHtml(`<p>${decomposed}</p>`)).toContain(String.raw`"cafe\u0301"`);
 		expect(JSON.parse(quote(decomposed))).toBe(decomposed);
 	});
 

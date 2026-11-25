@@ -281,7 +281,7 @@ describe("moduleIdCandidates", () => {
 });
 
 describe("SCAN_ID_PREFIX", () => {
-	it("contains \\0, which Vite's dependency scanner externalises", () => {
+	it(String.raw`contains \0, which Vite's dependency scanner externalises`, () => {
 		expect(SCAN_ID_PREFIX).toContain("\0");
 	});
 });

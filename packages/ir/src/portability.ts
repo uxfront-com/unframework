@@ -39,9 +39,9 @@ export type TypedFramework = "React" | "Vue" | "Svelte";
  */
 export const UNDECLARED_ATTRIBUTES: ReadonlyMap<
 	string,
-	ReadonlyMap<string, readonly TypedFramework[]>
+	ReadonlyMap<string, ReadonlyArray<TypedFramework>>
 > = new Map(
-	Object.entries<Readonly<Record<string, readonly TypedFramework[]>>>({
+	Object.entries<Readonly<Record<string, ReadonlyArray<TypedFramework>>>>({
 		"*": {
 			popover: ["Vue"],
 			writingsuggestions: ["React", "Vue"],
@@ -86,9 +86,13 @@ export function undeclaredBy(
 	tag: string,
 	namespace: "html" | "svg",
 	name: string,
-): readonly TypedFramework[] | undefined {
-	if (DRAFT_ARIA_ATTRIBUTES.has(name)) return ["Vue", "Svelte"];
-	if (namespace !== "html") return undefined;
+): ReadonlyArray<TypedFramework> | undefined {
+	if (DRAFT_ARIA_ATTRIBUTES.has(name)) {
+		return ["Vue", "Svelte"];
+	}
+	if (namespace !== "html") {
+		return undefined;
+	}
 	return UNDECLARED_ATTRIBUTES.get(tag)?.get(name) ?? UNDECLARED_ATTRIBUTES.get("*")?.get(name);
 }
 
@@ -102,7 +106,9 @@ export function undeclaredAttribute(
 	name: string,
 ): string | undefined {
 	const frameworks = undeclaredBy(tag, namespace, name);
-	if (!frameworks) return undefined;
+	if (!frameworks) {
+		return undefined;
+	}
 	const owners = frameworks.map((framework) => `${framework}'s`);
 	const types = `${owners.length > 1 ? `${owners.slice(0, -1).join(", ")} and ` : ""}${owners.at(-1)!} element types`;
 	const what = DRAFT_ARIA_ATTRIBUTES.has(name)
@@ -328,15 +334,23 @@ export function angularRespellsRegex(raw: string): boolean {
 	const body = raw.slice(1, close);
 	const escaped =
 		/['"`;\f\n\r\t\v\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff\ue500]| {2}|\\ |\{\{/;
-	if (escaped.test(body) || `/${body}/`.includes("//")) return true;
+	if (escaped.test(body) || `/${body}/`.includes("//")) {
+		return true;
+	}
 	let inClass = false;
 	for (let index = 0; index < body.length; index++) {
 		const character = body[index]!;
-		if (character === "\\") index++;
-		else if (character === "[") inClass = true;
-		else if (character === "]") inClass = false;
+		if (character === "\\") {
+			index++;
+		} else if (character === "[") {
+			inClass = true;
+		} else if (character === "]") {
+			inClass = false;
+		}
 		// A parenthesis in a class, which Angular's block lexer would count.
-		else if (inClass && (character === "(" || character === ")")) return true;
+		else if (inClass && (character === "(" || character === ")")) {
+			return true;
+		}
 		// A `<` before a letter opens a tag in an interpolation, unless it opens a group's name or a
 		// lookbehind (`(?<x>`, `(?<!`) or names a group (`\k<x>`).
 		else if (
@@ -344,7 +358,7 @@ export function angularRespellsRegex(raw: string): boolean {
 			/[A-Za-z!/?]/.test(body[index + 1] ?? "") &&
 			!(
 				!inClass &&
-				(body.slice(index - 2, index) === "(?" || body.slice(index - 2, index) === "\\k")
+				(body.slice(index - 2, index) === "(?" || body.slice(index - 2, index) === String.raw`\k`)
 			)
 		) {
 			return true;

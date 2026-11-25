@@ -46,15 +46,21 @@ function libDomGlobals(typescript: string): Set<string> {
 		[join(dirname(typescript), bin), "-p", join(folder, "tsconfig.json"), "--listFilesOnly"],
 		{ cwd: folder, encoding: "utf8" },
 	);
-	if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);
+	if (result.error) {
+		throw new Error(`could not start tsc: ${result.error.message}`);
+	}
 	const lib = result.stdout
 		.split("\n")
 		.map((line) => line.trim())
 		.find((line) => /[\\/]lib\.dom\.d\.ts$/.test(line));
-	if (!lib) throw new Error(`tsc listed no lib.dom.d.ts:\n${result.stdout}${result.stderr}`);
+	if (!lib) {
+		throw new Error(`tsc listed no lib.dom.d.ts:\n${result.stdout}${result.stderr}`);
+	}
 	const names = new Set<string>();
 	const declared = /^declare (?:var|function|const|let|namespace) ([A-Za-z_$][\w$]*)/gm;
-	for (const match of readFileSync(lib, "utf8").matchAll(declared)) names.add(match[1]!);
+	for (const match of readFileSync(lib, "utf8").matchAll(declared)) {
+		names.add(match[1]!);
+	}
 	return names;
 }
 
@@ -83,13 +89,13 @@ describe("the browser's globals", () => {
 	);
 
 	it("split lib.dom between what client code reads by name and through `window`", () => {
-		const runtime = ["console", "performance", "crypto", "structuredClone"];
+		const runtime = new Set(["console", "performance", "crypto", "structuredClone"]);
 		for (const name of LIB_DOM_GLOBALS) {
 			const kept =
 				BROWSER_GLOBALS.has(name) ||
 				SCHEDULING_GLOBALS.has(name) ||
 				PURE_GLOBALS.has(name) ||
-				runtime.includes(name);
+				runtime.has(name);
 			expect(kept !== WINDOW_MEMBER_GLOBALS.has(name), name).toBe(true);
 			expect(CLIENT_GLOBALS.has(name), name).toBe(kept);
 		}

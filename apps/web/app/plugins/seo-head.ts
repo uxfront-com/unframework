@@ -52,12 +52,16 @@ export default defineNuxtPlugin((nuxtApp) => {
 		// that, so resolve the head here to read the page's og:image.
 		nuxtApp.hook("app:rendered", () => {
 			head.render();
-			if (rendered) nuxtApp.payload.data[IMAGE] = rendered;
+			if (rendered) {
+				nuxtApp.payload.data[IMAGE] = rendered;
+			}
 		});
 	}
 	const loaded = (url: string) => {
 		for (const entry of [nuxtApp.payload.data[IMAGE], nuxtApp.static.data[IMAGE]]) {
-			if (isPageImage(entry)) images.set(entry.url, entry.image);
+			if (isPageImage(entry)) {
+				images.set(entry.url, entry.image);
+			}
 		}
 		return images.get(url);
 	};
@@ -75,7 +79,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 	head.use({
 		key: "seo-head",
 		hooks: {
-			"tags:beforeResolve": ({ tags }: { tags: Tag[] }) => {
+			"tags:beforeResolve": ({ tags }: { tags: Array<Tag> }) => {
 				const placeholders = tags.filter((tag) => typeof tag.props[INFER] === "string");
 				const meta = (key: string) =>
 					tags.find(
@@ -85,30 +89,37 @@ export default defineNuxtPlugin((nuxtApp) => {
 				for (const tag of placeholders) {
 					const source = tag.props[INFER] as string;
 					delete tag.props[INFER];
-					if (source !== "og:image:alt") tag.props.content = meta(source);
-					else if (meta("og:image") && !meta("og:image:alt") && meta("og:title")) {
+					if (source !== "og:image:alt") {
+						tag.props.content = meta(source);
+					} else if (meta("og:image") && !meta("og:image:alt") && meta("og:title")) {
 						tag.props.content = `${meta("og:title")}, a page of the Unframework docs`;
 					}
 				}
 			},
 
-			"tags:resolve": ({ tags }: { tags: Tag[] }) => {
+			"tags:resolve": ({ tags }: { tags: Array<Tag> }) => {
 				// nuxt-og-image makes the URL absolute only as the tags render.
 				const og = tags.find((tag) => tag.tag === "meta" && metaKey(tag) === "og:image")?.props
 					.content as string | undefined;
 				const image = og?.startsWith("/") ? `${SITE_URL}${og}` : og;
 
 				for (const tag of tags) {
-					if (tag.tag !== "script" || tag.props.type !== "application/ld+json") continue;
+					if (tag.tag !== "script" || tag.props.type !== "application/ld+json") {
+						continue;
+					}
 					const block = parse(tag.innerHTML);
-					if (!block) continue;
+					if (!block) {
+						continue;
+					}
 
 					let rewritten: Record<string, unknown> | undefined;
 					if (block["@type"] === "Organization") {
 						rewritten = homeGraph(typeof block.description === "string" ? block.description : "");
 					} else if (block["@type"] === "Article") {
 						const url = typeof block.url === "string" ? block.url : "";
-						if (import.meta.server && image) rendered = { url, image };
+						if (import.meta.server && image) {
+							rendered = { url, image };
+						}
 						rewritten = techArticle(block, {
 							dateModified: seoData.lastmod[url.slice(SITE_URL.length) || "/"],
 							image: image ?? (import.meta.client ? loaded(url) : undefined),
@@ -116,7 +127,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 					} else if (block["@type"] === "BreadcrumbList") {
 						rewritten = breadcrumbList(block, seoData.sections);
 					}
-					if (rewritten) tag.innerHTML = JSON.stringify(rewritten);
+					if (rewritten) {
+						tag.innerHTML = JSON.stringify(rewritten);
+					}
 				}
 			},
 		},
@@ -139,8 +152,12 @@ function metaKey(tag: Tag) {
 }
 
 function parse(content: unknown): Record<string, unknown> | undefined {
-	if (content && typeof content === "object") return content as Record<string, unknown>;
-	if (typeof content !== "string") return undefined;
+	if (content && typeof content === "object") {
+		return content as Record<string, unknown>;
+	}
+	if (typeof content !== "string") {
+		return undefined;
+	}
 	try {
 		return JSON.parse(content) as Record<string, unknown>;
 	} catch {

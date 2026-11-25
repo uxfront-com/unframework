@@ -197,5 +197,5 @@ export interface FrameOptions {
 	 * The control groups of each example that has any, by key (ADR-0113), which a standalone frame
 	 * shows with `controls=true` (ADR-0116).
 	 */
-	controls?: Record<string, ExampleControlGroup[]>;
+	controls?: Record<string, Array<ExampleControlGroup>>;
 }

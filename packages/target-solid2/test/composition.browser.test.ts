@@ -57,7 +57,7 @@ it("renders a slot a list's row tests in every row, once each", async () => {
 	});
 	// Solid 2 marks where it inserts a branch with comments, which are no content.
 	const rows = [...container.querySelectorAll("li")];
-	expect(rows.map((row) => row.innerHTML.replace(/<!--[^>]*-->/g, ""))).toEqual([
+	expect(rows.map((row) => row.innerHTML.replaceAll(/<!--[^>]*-->/g, ""))).toEqual([
 		"a<b><span>badge</span></b>",
 		"b<b><span>badge</span></b>",
 		"c<b><span>badge</span></b>",
@@ -104,7 +104,9 @@ it("selects the option a child component renders after the mount", async () => {
 	const select = container.querySelector("select")!;
 	setValues(["x", "y"]);
 	// The browser reports added options in a microtask (MutationObserver).
-	await new Promise((resolve) => setTimeout(resolve));
+	await new Promise((resolve) => {
+		setTimeout(resolve);
+	});
 	expect([select.value, select.selectedIndex]).toEqual(["y", 1]);
 });
 
@@ -143,6 +145,8 @@ it("selects no option once the selected one leaves the list, as Vue's vModelSele
 	container.querySelector("button")!.click();
 	await settle();
 	// The browser reports removed options in a microtask (MutationObserver).
-	await new Promise((resolve) => setTimeout(resolve));
+	await new Promise((resolve) => {
+		setTimeout(resolve);
+	});
 	expect([select.value, select.selectedIndex, select.options.length]).toEqual(["", -1, 2]);
 });

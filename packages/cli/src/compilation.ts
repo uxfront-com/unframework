@@ -21,7 +21,7 @@ import type { Io } from "./command.ts";
 
 export const TYPE_ORACLE_OPTION = { "type-oracle": { type: "string" } } as const;
 
-const TYPE_ORACLES = ["syntactic", "tsgo"];
+const TYPE_ORACLES = new Set(["syntactic", "tsgo"]);
 const SOURCES = "**/*.uf.{tsx,ts}";
 /**
  * An example (`*.example.uf.tsx`) is `unframework visual`'s to render, never a source to build or
@@ -38,13 +38,13 @@ const SINGLE_FILE_COMPONENT = /\.(vue|svelte|astro)$/;
 export interface Compilation {
 	/** The exit code. */
 	status: number;
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 	/** The text of each diagnostic's file, which the renderers need. */
 	sources: ReadonlyMap<string, string>;
 	/** The resolved config, once it loaded and passed its checks. */
 	config?: ResolvedConfig;
 	/** Each target's files, at their paths in `outDir/<target>`. Empty unless `status` is 0. */
-	trees: ReadonlyMap<string, OutputFile[]>;
+	trees: ReadonlyMap<string, Array<OutputFile>>;
 	/**
 	 * The paths in each tree that are shared helper modules (ADR-0121), `_unframework/<file>`:
 	 * no source holds their text, so each one's map names the module itself.
@@ -55,7 +55,7 @@ export interface Compilation {
 	/** The config file as diagnostics name it. */
 	configFile: string;
 	/** The sources, and the files they read, relative to the root. Sorted. */
-	authored: string[];
+	authored: Array<string>;
 }
 
 /** One source's compile, and where it sits under srcDir. */
@@ -63,9 +63,9 @@ interface Compiled {
 	file: string;
 	directory: string;
 	result: CompileResult;
-	copies: OutputFile[];
+	copies: Array<OutputFile>;
 	/** What its compile read: files relative to the root, and packages as `pkg:<name>`. */
-	read: string[];
+	read: Array<string>;
 }
 
 /** A renderer's text as it goes to a terminal: nothing when there is nothing, else a whole line. */
@@ -89,24 +89,26 @@ function within(directory: string, path: string): boolean {
 export async function compileSources(
 	io: Io,
 	oracle: string | undefined,
-	alsoCleans: readonly string[] = [],
+	alsoCleans: ReadonlyArray<string> = [],
 ): Promise<Compilation> {
-	if (oracle !== undefined && !TYPE_ORACLES.includes(oracle)) {
+	if (oracle !== undefined && !TYPE_ORACLES.has(oracle)) {
 		throw new Error(`--type-oracle takes syntactic or tsgo, not "${oracle}".`);
 	}
 	const loaded = await loadConfig(io.cwd);
 	const root = loaded.directory ?? io.cwd;
 	const finish = async (
 		status: number,
-		diagnostics: Diagnostic[],
+		diagnostics: Array<Diagnostic>,
 		config?: ResolvedConfig,
-		trees: ReadonlyMap<string, OutputFile[]> = new Map(),
-		authored: string[] = [],
+		trees: ReadonlyMap<string, Array<OutputFile>> = new Map(),
+		authored: Array<string> = [],
 		helpers: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
 	): Promise<Compilation> => {
 		const sources = new Map<string, string>();
 		for (const { file } of diagnostics) {
-			if (!sources.has(file)) sources.set(file, (await read(join(root, file))) ?? "");
+			if (!sources.has(file)) {
+				sources.set(file, (await read(join(root, file))) ?? "");
+			}
 		}
 		return {
 			status,
@@ -121,9 +123,13 @@ export async function compileSources(
 		};
 	};
 
-	if (loaded.diagnostics.length > 0) return finish(2, loaded.diagnostics);
+	if (loaded.diagnostics.length > 0) {
+		return finish(2, loaded.diagnostics);
+	}
 	const { config, diagnostics: invalid } = await resolveConfig(loaded.raw, loaded);
-	if (!config) return finish(2, invalid);
+	if (!config) {
+		return finish(2, invalid);
+	}
 
 	const named = (path: string) => relative(root, path).split(sep).join("/");
 	const configProblem = (field: string, problem: string) =>
@@ -160,7 +166,7 @@ export async function compileSources(
 		(oracle ?? config.typeOracle) === "tsgo"
 			? (await import("@unframework.dev/type-oracle-tsgo")).createTsgoOracle({ root })
 			: createSyntacticOracle({ root, readFile: read });
-	const compiled: Compiled[] = [];
+	const compiled: Array<Compiled> = [];
 	try {
 		const project = createProject({
 			root,
@@ -191,7 +197,9 @@ export async function compileSources(
 	const diagnostics = compiled.flatMap(({ result }) =>
 		result.diagnostics.map((diagnostic) => (config.strict ? strictly(diagnostic) : diagnostic)),
 	);
-	if (hasErrors(diagnostics)) return finish(1, diagnostics, config);
+	if (hasErrors(diagnostics)) {
+		return finish(1, diagnostics, config);
+	}
 
 	// Nor what a source read, which the glob doesn't list: a child, a sheet, a shared module, a type.
 	for (const { file, read: readFiles } of compiled) {
@@ -221,24 +229,26 @@ export async function compileSources(
 		}
 	}
 
-	const trees = new Map<string, OutputFile[]>();
+	const trees = new Map<string, Array<OutputFile>>();
 	const helpers = new Map<string, ReadonlySet<string>>();
 	for (const target of config.targets) {
 		const tree = assembleTree(target, compiled, diagnostics);
 		trees.set(target, tree.files);
 		helpers.set(target, tree.helpers);
 	}
-	if (hasErrors(diagnostics)) return finish(1, diagnostics, config);
+	if (hasErrors(diagnostics)) {
+		return finish(1, diagnostics, config);
+	}
 	const authored = await authoredFiles(files, compiled, root);
 	return finish(0, diagnostics, config, trees, authored, helpers);
 }
 
 /** What a package's `source/` needs for its sources to compile in a consumer's app (ADR-0077). */
 async function authoredFiles(
-	files: readonly string[],
-	compiled: readonly Compiled[],
+	files: ReadonlyArray<string>,
+	compiled: ReadonlyArray<Compiled>,
 	root: string,
-): Promise<string[]> {
+): Promise<Array<string>> {
 	const authored = new Set(files);
 	for (const each of compiled.flatMap(({ read: readFiles }) => readFiles)) {
 		// A read list also holds packages, as `pkg:<name>`, and what a compile looked for and missed.
@@ -246,7 +256,9 @@ async function authoredFiles(
 			(entry) => entry.isFile(),
 			() => false,
 		);
-		if (found) authored.add(each);
+		if (found) {
+			authored.add(each);
+		}
 	}
 	return [...authored].toSorted();
 }
@@ -255,8 +267,8 @@ async function authoredFiles(
 async function findSources(
 	config: ResolvedConfig,
 	named: (path: string) => string,
-): Promise<string[]> {
-	const files: string[] = [];
+): Promise<Array<string>> {
+	const files: Array<string> = [];
 	const entries = glob(SOURCES, {
 		cwd: config.srcDir,
 		withFileTypes: true,
@@ -264,7 +276,9 @@ async function findSources(
 			entry.name === "node_modules" || join(entry.parentPath, entry.name) === config.outDir,
 	});
 	for await (const entry of entries) {
-		if (entry.isDirectory() || entry.name.endsWith(EXAMPLE)) continue;
+		if (entry.isDirectory() || entry.name.endsWith(EXAMPLE)) {
+			continue;
+		}
 		files.push(named(join(entry.parentPath, entry.name)));
 	}
 	return files.toSorted();
@@ -285,9 +299,9 @@ function strictly(diagnostic: Diagnostic): Diagnostic {
  */
 function assembleTree(
 	target: string,
-	compiled: readonly Compiled[],
-	diagnostics: Diagnostic[],
-): { files: OutputFile[]; helpers: Set<string> } {
+	compiled: ReadonlyArray<Compiled>,
+	diagnostics: Array<Diagnostic>,
+): { files: Array<OutputFile>; helpers: Set<string> } {
 	const collision = (file: string, span: Span, message: string) =>
 		diagnostics.push(createDiagnostic("UF1104", { file, span, message, target }));
 
@@ -303,7 +317,9 @@ function assembleTree(
 		}
 		// A helper module every compile that uses it emits is one file, with one text (ADR-0121).
 		if (kind === "helper" && held.kind === "helper" && held.output.path === output.path) {
-			if (held.output.contents === output.contents) return;
+			if (held.output.contents === output.contents) {
+				return;
+			}
 			diagnostics.push(
 				createDiagnostic("UF9001", {
 					file: module,
@@ -335,7 +351,9 @@ function assembleTree(
 	) => {
 		const written = exported.get(name)?.specifier;
 		// A component exported twice under one name, as default and by name, is one line.
-		if (written === specifier) return;
+		if (written === specifier) {
+			return;
+		}
 		if (written !== undefined) {
 			const message = `The ${target} barrel would export ${name} from both ${written} and ${specifier}. Rename one of them.`;
 			collision(module, span, message);
@@ -358,21 +376,28 @@ function assembleTree(
 			}
 			claim({ ...output, path }, file);
 			const owner = result.owners[target]?.[output.path];
-			if (owner === undefined) continue;
+			if (owner === undefined) {
+				continue;
+			}
 			// An output imports a TypeScript file without its extension, and a component file with it.
 			const specifier = `./${path.replace(/\.tsx?$/, "")}`;
 			const whole = SINGLE_FILE_COMPONENT.test(path);
 			const composable = result.ir?.composables?.find((each) => each.name === owner);
-			if (composable) barrelLine(owner, owner, specifier, file, composable.span);
+			if (composable) {
+				barrelLine(owner, owner, specifier, file, composable.span);
+			}
 			for (const each of result.ir?.exports ?? []) {
-				if (each.local !== owner) continue;
+				if (each.local !== owner) {
+					continue;
+				}
 				const isDefault = each.kind === "default";
 				const name = isDefault ? owner : each.name;
 				barrelLine(name, whole || isDefault ? "default" : name, specifier, file, each.span);
 			}
 		}
-		for (const copy of copies)
+		for (const copy of copies) {
 			claim({ ...copy, path: posix.join(directory, copy.path) }, file, "copy");
+		}
 	}
 
 	const lines = [...exported.values()].map(({ line }) => line).toSorted();

@@ -34,10 +34,12 @@ const SCAFFOLD = [
 	"unframework.config.ts",
 ];
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(() => {
-	for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+	for (const root of roots.splice(0)) {
+		rmSync(root, { recursive: true, force: true });
+	}
 });
 
 function temporary(): string {
@@ -56,7 +58,10 @@ function linked(): string {
 	return project;
 }
 
-function run(cwd: string, ...argv: string[]): { code: number; stdout: string; stderr: string } {
+function run(
+	cwd: string,
+	...argv: Array<string>
+): { code: number; stdout: string; stderr: string } {
 	let stdout = "";
 	let stderr = "";
 	const code = main(argv, {
@@ -67,7 +72,7 @@ function run(cwd: string, ...argv: string[]): { code: number; stdout: string; st
 	return { code, stdout, stderr };
 }
 
-function node(cwd: string, ...args: string[]): { status: number | null; output: string } {
+function node(cwd: string, ...args: Array<string>): { status: number | null; output: string } {
 	const { status, stdout, stderr } = spawnSync(process.execPath, args, {
 		cwd,
 		encoding: "utf8",
@@ -84,13 +89,17 @@ describe("create-unframework", () => {
 			"app",
 		);
 		expect(created).toMatchObject({ status: 0 });
-		for (const file of SCAFFOLD) expect(created.output).toContain(`Wrote ${file}\n`);
-		for (const file of SCAFFOLD) expect(existsSync(join(project, file)), file).toBe(true);
+		for (const file of SCAFFOLD) {
+			expect(created.output).toContain(`Wrote ${file}\n`);
+		}
+		for (const file of SCAFFOLD) {
+			expect(existsSync(join(project, file)), file).toBe(true);
+		}
 
 		const bin = join(project, "node_modules", "@uxfront", "unframework", "bin", "unframework.js");
 		const check = node(project, bin, "check", "--format", "json");
 		expect(check.status).toBe(0);
-		const severities = (JSON.parse(check.output) as { severity: string }[]).map(
+		const severities = (JSON.parse(check.output) as Array<{ severity: string }>).map(
 			({ severity }) => severity,
 		);
 		expect(new Set(severities)).toEqual(new Set(["info"]));
@@ -266,7 +275,9 @@ describe("create-unframework", () => {
 		["a package.json already there", ["."], 2],
 	])("exits with main's code through the bin, on %s", (_, argv, status) => {
 		const root = temporary();
-		if (status === 2 && argv.length > 0) writeFileSync(join(root, "package.json"), "{}\n");
+		if (status === 2 && argv.length > 0) {
+			writeFileSync(join(root, "package.json"), "{}\n");
+		}
 		const bin = join(packageDirectory, "bin", "create-unframework.js");
 		expect(node(root, bin, ...argv).status).toBe(status);
 	});

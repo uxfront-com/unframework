@@ -19,7 +19,7 @@ export interface TextEdit {
 /** A machine-applicable fix: edits to the diagnostic's file. */
 export interface Fix {
 	title: string;
-	edits: TextEdit[];
+	edits: Array<TextEdit>;
 	/** `safe` fixes are applied by `unframework fix`; `likely` ones need a review. */
 	confidence: "safe" | "likely";
 }
@@ -39,10 +39,10 @@ export interface Diagnostic {
 	/** The file that `span` points into, as the caller named it. */
 	file: string;
 	span: Span;
-	related?: RelatedInformation[];
+	related?: Array<RelatedInformation>;
 	/** How to fix it, when the fix is not mechanical. */
 	help?: string;
-	fixes?: Fix[];
+	fixes?: Array<Fix>;
 	/** Set for portability diagnostics: the target the problem applies to. */
 	target?: string;
 }

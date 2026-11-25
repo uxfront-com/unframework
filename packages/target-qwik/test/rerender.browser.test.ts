@@ -13,7 +13,7 @@ import { mount } from "../src/toolchain/client.ts";
 interface BadgeProps {
 	label: string;
 	tone?: "info" | "warn";
-	items?: string[];
+	items?: Array<string>;
 	count?: number;
 }
 
@@ -40,7 +40,7 @@ function read(container: HTMLElement) {
 	};
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

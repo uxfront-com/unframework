@@ -43,7 +43,7 @@ const vueStandIn: Plugin = { ...fakeVue, name: "vite:vue" };
 /** Runs `fn` against a server whose plugins are this plugin, then `others`. */
 async function withPlugins<T>(
 	options: UnframeworkOptions | undefined,
-	others: Plugin[],
+	others: Array<Plugin>,
 	fn: (server: TestServer) => Promise<T>,
 ): Promise<T> {
 	const server = await startServer(project.root, [...unframework(options), ...others]);
@@ -55,7 +55,7 @@ async function withPlugins<T>(
 }
 
 /** A server's start, which fails with what `configResolved` reports. */
-const starting = (others: Plugin[], options?: UnframeworkOptions) =>
+const starting = (others: Array<Plugin>, options?: UnframeworkOptions) =>
 	withPlugins(options, others, () => Promise.resolve());
 
 describe("target detection", () => {

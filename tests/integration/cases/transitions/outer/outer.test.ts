@@ -10,13 +10,19 @@ import { expect } from "vitest";
 import Drawer from "./Drawer.uf.tsx";
 
 /** Records every class the element carries from now on, until `stop`. */
-function watchClasses(element: Element): { stop: () => string[] } {
+function watchClasses(element: Element): { stop: () => Array<string> } {
 	const seen = new Set(element.classList);
 	const observer = new MutationObserver((records) => {
 		for (const record of records) {
-			for (const name of record.oldValue?.split(/\s+/) ?? []) if (name) seen.add(name);
+			for (const name of record.oldValue?.split(/\s+/) ?? []) {
+				if (name) {
+					seen.add(name);
+				}
+			}
 		}
-		for (const name of element.classList) seen.add(name);
+		for (const name of element.classList) {
+			seen.add(name);
+		}
 	});
 	observer.observe(element, {
 		attributes: true,
@@ -26,9 +32,15 @@ function watchClasses(element: Element): { stop: () => string[] } {
 	return {
 		stop: () => {
 			for (const record of observer.takeRecords()) {
-				for (const name of record.oldValue?.split(/\s+/) ?? []) if (name) seen.add(name);
+				for (const name of record.oldValue?.split(/\s+/) ?? []) {
+					if (name) {
+						seen.add(name);
+					}
+				}
 			}
-			for (const name of element.classList) seen.add(name);
+			for (const name of element.classList) {
+				seen.add(name);
+			}
 			observer.disconnect();
 			return [...seen].toSorted();
 		},
@@ -97,16 +109,27 @@ describeTargets("transitions/outer", () => {
 		// Watched from before the mount: the first render's child enters only with `appear`.
 		const seen = new Set<string>();
 		const record = (element: Element) => {
-			if (!element.classList.contains("body")) return;
-			for (const name of element.classList) seen.add(name);
+			if (!element.classList.contains("body")) {
+				return;
+			}
+			for (const name of element.classList) {
+				seen.add(name);
+			}
 		};
 		const observer = new MutationObserver((records) => {
 			for (const each of records) {
-				if (each.target instanceof Element) record(each.target);
-				for (const name of each.oldValue?.split(/\s+/) ?? [])
-					if (name.startsWith("fade-")) seen.add(name);
+				if (each.target instanceof Element) {
+					record(each.target);
+				}
+				for (const name of each.oldValue?.split(/\s+/) ?? []) {
+					if (name.startsWith("fade-")) {
+						seen.add(name);
+					}
+				}
 				for (const node of each.addedNodes) {
-					if (node instanceof Element) [node, ...node.querySelectorAll(".body")].forEach(record);
+					if (node instanceof Element) {
+						[node, ...node.querySelectorAll(".body")].forEach(record);
+					}
 				}
 			}
 		});
@@ -122,7 +145,9 @@ describeTargets("transitions/outer", () => {
 			await view.expectParity("first-mount");
 			await expect.element(view.getByText("Colour, size")).toBeVisible();
 			for (const each of observer.takeRecords()) {
-				if (each.target instanceof Element) record(each.target);
+				if (each.target instanceof Element) {
+					record(each.target);
+				}
 			}
 			expect([...seen].filter((name) => name.startsWith("fade-"))).toEqual([]);
 		} finally {
@@ -144,13 +169,21 @@ describeTargets("transitions/outer", () => {
 				const seen = new Set<string>();
 				const observer = new MutationObserver((records) => {
 					for (const each of records) {
-						for (const name of each.oldValue?.split(/\s+/) ?? []) if (name) seen.add(name);
+						for (const name of each.oldValue?.split(/\s+/) ?? []) {
+							if (name) {
+								seen.add(name);
+							}
+						}
 						const targets = [each.target, ...each.addedNodes];
 						for (const node of targets) {
-							if (!(node instanceof Element)) continue;
+							if (!(node instanceof Element)) {
+								continue;
+							}
 							for (const element of [node, ...node.querySelectorAll(".body")]) {
 								if (element.classList.contains("body")) {
-									for (const name of element.classList) seen.add(name);
+									for (const name of element.classList) {
+										seen.add(name);
+									}
 								}
 							}
 						}
@@ -220,12 +253,20 @@ describeTargets("transitions/outer", () => {
 				const seen = new Set<string>();
 				const observer = new MutationObserver((records) => {
 					for (const each of records) {
-						for (const name of each.oldValue?.split(/\s+/) ?? []) if (name) seen.add(name);
+						for (const name of each.oldValue?.split(/\s+/) ?? []) {
+							if (name) {
+								seen.add(name);
+							}
+						}
 						for (const node of [each.target, ...each.addedNodes]) {
-							if (!(node instanceof Element)) continue;
+							if (!(node instanceof Element)) {
+								continue;
+							}
 							for (const element of [node, ...node.querySelectorAll(".body")]) {
 								if (element.classList.contains("body")) {
-									for (const name of element.classList) seen.add(name);
+									for (const name of element.classList) {
+										seen.add(name);
+									}
 								}
 							}
 						}

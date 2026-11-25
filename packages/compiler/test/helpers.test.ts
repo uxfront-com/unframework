@@ -1,7 +1,7 @@
 // Shared helper modules (ADR-0121): where `compile()` puts them, how it lists, formats and maps
 // them, and what it refuses.
 import { defineTarget } from "@unframework.dev/codegen";
-import type { Capabilities, Target } from "@unframework.dev/codegen";
+import type { Target } from "@unframework.dev/codegen";
 import { react } from "@unframework.dev/target-react";
 import { describe, expect, it } from "vitest";
 
@@ -11,14 +11,14 @@ import type { Resolver } from "../src/index.ts";
 const CARD =
 	'export default function Card(props: { on: boolean }) {\n  return <p class={["card", { on: props.on }]}>Hi</p>;\n}\n';
 
-const paths = (files: readonly { path: string }[] = []) => files.map(({ path }) => path);
+const paths = (files: ReadonlyArray<{ path: string }> = []) => files.map(({ path }) => path);
 
 /** A target whose every component calls `helper` with the text `text(component)`. */
 function helperTarget(text: (name: string) => string): Target {
 	return defineTarget({
 		name: "probe",
 		framework: { package: "probe", range: "*" },
-		capabilities: react.capabilities as Capabilities,
+		capabilities: react.capabilities,
 		emit(component, context) {
 			const from = `${component.name}.ts`;
 			const specifier = context.helper!("probe.ts", text(component.name), from);

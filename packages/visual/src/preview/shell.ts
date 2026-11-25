@@ -21,31 +21,31 @@ import { PREVIEW_HOST } from "./servers.ts";
  * static preview, where every frame shares the shell's origin.
  */
 export interface ShellData {
-	frames: { target: string; src: string }[];
+	frames: Array<{ target: string; src: string }>;
 	/** In the catalogue's order, with the metadata of ADR-0110. */
-	examples: {
+	examples: Array<{
 		key: string;
 		id: string;
-		category: string[];
+		category: Array<string>;
 		title: string;
 		description?: string;
 		order?: number;
 		/** Its controls, by component (ADR-0113): none for one the preview serves as written. */
-		controls: ExampleControlGroup[];
-	}[];
-	components: {
+		controls: Array<ExampleControlGroup>;
+	}>;
+	components: Array<{
 		key: string;
 		id: string;
 		name: string;
 		controls: PreviewCatalogue["components"][number]["controls"];
 		uncontrolled: PreviewCatalogue["components"][number]["uncontrolled"];
-	}[];
+	}>;
 }
 
 /** The shell's data, from the catalogue and the frame pages' URLs. */
 export function shellData(
 	catalogue: PreviewCatalogue,
-	frames: readonly { target: string; src: string }[],
+	frames: ReadonlyArray<{ target: string; src: string }>,
 ): ShellData {
 	return {
 		frames: frames.map(({ target, src }) => ({ target, src })),
@@ -73,9 +73,9 @@ export function shellData(
 /** JSON safe inside a `<script>` element: no `</script>` or `<!--` can close it. */
 export function scriptJson(value: unknown): string {
 	return JSON.stringify(value)
-		.replace(/</g, "\\u003c")
-		.replace(/\u2028/g, "\\u2028")
-		.replace(/\u2029/g, "\\u2029");
+		.replaceAll("<", String.raw`\u003c`)
+		.replaceAll("\u2028", String.raw`\u2028`)
+		.replaceAll("\u2029", String.raw`\u2029`);
 }
 
 /** Where the shell keeps the reader's theme, when they chose one over their system's. */
@@ -316,7 +316,7 @@ function shellScript(
 	type Control = ShellData["components"][number]["controls"][number];
 	type Component = ShellData["components"][number];
 	type Example = ShellData["examples"][number];
-	const data = JSON.parse(document.getElementById("uf-preview-data")!.textContent!) as ShellData;
+	const data = JSON.parse(document.getElementById("uf-preview-data")!.textContent) as ShellData;
 	const $ = <T extends Element>(selector: string) => document.querySelector<T>(selector)!;
 	const filter = $<HTMLInputElement>("#uf-filter");
 	const trees = [...document.querySelectorAll<HTMLElement>("[data-uf-tree]")];
@@ -355,8 +355,11 @@ function shellScript(
 	};
 	const applyTheme = () => {
 		const choice = stored();
-		if (choice === "light" || choice === "dark") document.documentElement.dataset.theme = choice;
-		else delete document.documentElement.dataset.theme;
+		if (choice === "light" || choice === "dark") {
+			document.documentElement.dataset.theme = choice;
+		} else {
+			delete document.documentElement.dataset.theme;
+		}
 		const isDark = choice ? choice === "dark" : dark.matches;
 		themeButton.setAttribute("aria-pressed", String(isDark));
 	};
@@ -414,11 +417,15 @@ function shellScript(
 	view.addEventListener("change", (event) => {
 		const value = (event.target as HTMLInputElement).value;
 		grid.dataset.view = value === "all" ? "all" : "one";
-		for (const frame of frames) frame.figure.hidden = value !== "all" && frame.target !== value;
+		for (const frame of frames) {
+			frame.figure.hidden = value !== "all" && frame.target !== value;
+		}
 	});
 
 	const send = (frame: (typeof frames)[number]) => {
-		if (selected === undefined) return;
+		if (selected === undefined) {
+			return;
+		}
 		frame.status.dataset.state = "rendering";
 		frame.status.textContent = "rendering…";
 		frame.iframe.contentWindow?.postMessage(
@@ -428,7 +435,9 @@ function shellScript(
 	};
 	const sendAll = () => {
 		seq += 1;
-		for (const frame of frames) send(frame);
+		for (const frame of frames) {
+			send(frame);
+		}
 	};
 
 	window.addEventListener("message", (event) => {
@@ -441,8 +450,12 @@ function shellScript(
 			seq?: unknown;
 			message?: unknown;
 		};
-		if (!frame || message?.type !== constants.message) return;
-		if (message.kind === "ready") send(frame);
+		if (!frame || message?.type !== constants.message) {
+			return;
+		}
+		if (message.kind === "ready") {
+			send(frame);
+		}
 		if ((message.kind === "rendered" || message.kind === "failed") && message.seq === seq) {
 			frame.status.dataset.state = message.kind;
 			frame.status.textContent =
@@ -451,7 +464,7 @@ function shellScript(
 	});
 
 	// Controls.
-	const propsOf = (controls: readonly Control[]): Record<string, unknown> =>
+	const propsOf = (controls: ReadonlyArray<Control>): Record<string, unknown> =>
 		kit.componentProps(
 			controls,
 			(name) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement,
@@ -463,13 +476,17 @@ function shellScript(
 		);
 
 	form.addEventListener("input", () => {
-		if (!current) return;
+		if (!current) {
+			return;
+		}
 		props = propsOf(current.controls);
 		sendAll();
 	});
 	form.addEventListener("submit", (event) => event.preventDefault());
 	exampleBox.addEventListener("input", () => {
-		if (!currentExample) return;
+		if (!currentExample) {
+			return;
+		}
 		props = exampleProps(currentExample);
 		sendAll();
 	});
@@ -482,7 +499,9 @@ function shellScript(
 		exampleBox.replaceChildren();
 		const groups = example?.controls ?? [];
 		exampleBox.hidden = !groups.length;
-		if (!example) return;
+		if (!example) {
+			return;
+		}
 		noControls.hidden = groups.length > 0;
 		noControls.textContent = "This example has no controls.";
 		exampleBox.append(...kit.exampleGroups(groups));
@@ -502,7 +521,9 @@ function shellScript(
 		noControls.textContent = bare
 			? "This component has no props."
 			: "Select an example or a component to set its props.";
-		if (!component) return;
+		if (!component) {
+			return;
+		}
 		for (const control of component.controls) {
 			form.append(...kit.controlField(control, control.name, `uf-prop-${control.name}`));
 		}
@@ -519,7 +540,7 @@ function shellScript(
 	interface Item {
 		element: HTMLElement;
 		parent: Item | undefined;
-		children: Item[];
+		children: Array<Item>;
 		key?: string;
 		text: string;
 	}
@@ -585,16 +606,24 @@ function shellScript(
 		});
 		makeItem(listOf(parent, exampleTree), parent, category.length, title, key);
 	}
-	for (const { key, id } of data.components) makeItem(componentTree, undefined, 0, id, key);
-	for (const tree of trees)
+	for (const { key, id } of data.components) {
+		makeItem(componentTree, undefined, 0, id, key);
+	}
+	for (const tree of trees) {
 		tree.previousElementSibling!.toggleAttribute("hidden", !tree.children.length);
-	for (const tree of trees) tree.hidden = !tree.children.length;
+	}
+	for (const tree of trees) {
+		tree.hidden = !tree.children.length;
+	}
 
 	const visible = (element: HTMLElement): boolean => {
 		for (let item = items.get(element); item; item = item.parent) {
-			if (item.element.hidden) return false;
-			if (item !== items.get(element) && item.element.getAttribute("aria-expanded") === "false")
+			if (item.element.hidden) {
 				return false;
+			}
+			if (item !== items.get(element) && item.element.getAttribute("aria-expanded") === "false") {
+				return false;
+			}
 		}
 		return true;
 	};
@@ -607,10 +636,14 @@ function shellScript(
 			focus ??
 			[...all].find((each) => each.getAttribute("aria-selected") === "true" && visible(each)) ??
 			visibleItems(tree)[0];
-		for (const each of all) each.tabIndex = each === target ? 0 : -1;
+		for (const each of all) {
+			each.tabIndex = each === target ? 0 : -1;
+		}
 	};
 	const moveTo = (element: HTMLElement | undefined) => {
-		if (!element) return;
+		if (!element) {
+			return;
+		}
 		rove(element.closest<HTMLElement>("[role='tree']")!, element);
 		element.focus();
 	};
@@ -622,36 +655,59 @@ function shellScript(
 		tree.addEventListener("click", (event) => {
 			const element = (event.target as Element).closest<HTMLElement>("[role='treeitem']");
 			const item = element && items.get(element);
-			if (!item) return;
+			if (!item) {
+				return;
+			}
 			event.stopPropagation();
-			if (item.key) select(item.key);
-			else setExpanded(item, item.element.getAttribute("aria-expanded") === "false");
+			if (item.key) {
+				select(item.key);
+			} else {
+				setExpanded(item, item.element.getAttribute("aria-expanded") === "false");
+			}
 			moveTo(item.element);
 		});
 		tree.addEventListener("keydown", (event) => {
 			const element = (event.target as Element).closest<HTMLElement>("[role='treeitem']");
 			const item = element && items.get(element);
-			if (!item || event.altKey || event.ctrlKey || event.metaKey) return;
+			if (!item || event.altKey || event.ctrlKey || event.metaKey) {
+				return;
+			}
 			const list = visibleItems(tree);
 			const index = list.indexOf(item.element);
 			const expanded = item.element.getAttribute("aria-expanded");
 			let handled = true;
-			if (event.key === "ArrowDown") moveTo(list[index + 1]);
-			else if (event.key === "ArrowUp") moveTo(list[index - 1]);
-			else if (event.key === "Home") moveTo(list[0]);
-			else if (event.key === "End") moveTo(list.at(-1));
-			else if (event.key === "ArrowRight") {
-				if (expanded === "false") setExpanded(item, true);
-				else if (expanded === "true")
+			if (event.key === "ArrowDown") {
+				moveTo(list[index + 1]);
+			} else if (event.key === "ArrowUp") {
+				moveTo(list[index - 1]);
+			} else if (event.key === "Home") {
+				moveTo(list[0]);
+			} else if (event.key === "End") {
+				moveTo(list.at(-1));
+			} else if (event.key === "ArrowRight") {
+				if (expanded === "false") {
+					setExpanded(item, true);
+				} else if (expanded === "true") {
 					moveTo(item.children.find((each) => visible(each.element))?.element);
+				}
 			} else if (event.key === "ArrowLeft") {
-				if (expanded === "true") setExpanded(item, false);
-				else moveTo(item.parent?.element);
+				if (expanded === "true") {
+					setExpanded(item, false);
+				} else {
+					moveTo(item.parent?.element);
+				}
 			} else if (event.key === "Enter" || event.key === " ") {
-				if (item.key) select(item.key);
-				else setExpanded(item, expanded === "false");
-			} else handled = false;
-			if (handled) event.preventDefault();
+				if (item.key) {
+					select(item.key);
+				} else {
+					setExpanded(item, expanded === "false");
+				}
+			} else {
+				handled = false;
+			}
+			if (handled) {
+				event.preventDefault();
+			}
 		});
 	}
 
@@ -661,16 +717,26 @@ function shellScript(
 		const show = (item: Item, inherited: boolean): boolean => {
 			const match = inherited || item.text.includes(query);
 			let any = false;
-			for (const child of item.children) any = show(child, match) || any;
+			for (const child of item.children) {
+				any = show(child, match) || any;
+			}
 			const shown = !query || match || any;
 			item.element.hidden = !shown;
-			if (query && any && !item.key) setExpanded(item, true);
+			if (query && any && !item.key) {
+				setExpanded(item, true);
+			}
 			return shown;
 		};
 		let count = 0;
-		for (const item of items.values()) if (!item.parent && show(item, false)) count += 1;
+		for (const item of items.values()) {
+			if (!item.parent && show(item, false)) {
+				count += 1;
+			}
+		}
 		empty.hidden = count > 0;
-		for (const tree of trees) rove(tree);
+		for (const tree of trees) {
+			rove(tree);
+		}
 	};
 	filter.addEventListener("input", applyFilter);
 	filter.addEventListener("keydown", (event) => {
@@ -692,22 +758,29 @@ function shellScript(
 	const select = (key: string) => {
 		const component = data.components.find((each) => each.key === key);
 		const example = data.examples.find((each) => each.key === key);
-		if (!component && !example) return;
+		if (!component && !example) {
+			return;
+		}
 		selected = key;
 		trail.textContent = component ? "Components" : example!.category.join(" / ");
 		heading.textContent = component ? component.name : example!.title;
 		description.textContent = component ? component.id : (example!.description ?? example!.id);
 		description.hidden = false;
 		document.title = `${heading.textContent} · unframework preview`;
-		for (const [each, element] of entries)
+		for (const [each, element] of entries) {
 			element.setAttribute("aria-selected", String(each === key));
-		for (const tree of trees) rove(tree);
+		}
+		for (const tree of trees) {
+			rove(tree);
+		}
 		showControls(component);
 		showExampleControls(example);
 		// An example opens by its own URL on each target. A component takes props, which no URL holds.
 		for (const frame of frames) {
 			frame.link.hidden = !example;
-			if (!example) continue;
+			if (!example) {
+				continue;
+			}
 			const query = new URLSearchParams({
 				[constants.embed.example]: example.id,
 				[constants.embed.target]: frame.target,
@@ -720,18 +793,26 @@ function shellScript(
 		}
 		// An example starts as written: every control at "(default)", so it takes no props.
 		props = component ? propsOf(component.controls) : {};
-		if (location.hash !== `#${key}`) history.replaceState(null, "", `#${key}`);
+		if (location.hash !== `#${key}`) {
+			history.replaceState(null, "", `#${key}`);
+		}
 		sendAll();
 	};
 
 	// Page-wide keys: `/` for the filter and `?` for the shortcuts, never while typing.
 	document.addEventListener("keydown", (event) => {
-		if (!filter.isConnected || event.defaultPrevented) return;
-		if (event.altKey || event.ctrlKey || event.metaKey) return;
+		if (!filter.isConnected || event.defaultPrevented) {
+			return;
+		}
+		if (event.altKey || event.ctrlKey || event.metaKey) {
+			return;
+		}
 		const typing = (event.target as Element).closest?.(
 			"input, select, textarea, [contenteditable]",
 		);
-		if (typing || dialog.open) return;
+		if (typing || dialog.open) {
+			return;
+		}
 		if (event.key === "/") {
 			event.preventDefault();
 			filter.focus();

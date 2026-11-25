@@ -21,10 +21,10 @@ async function component(name: string): Promise<ComponentType<Record<string, unk
 	return module.default;
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
-let events: [string, ...unknown[]][];
+let events: Array<[string, ...Array<unknown>]>;
 
 beforeEach(() => {
 	logged.length = 0;
@@ -43,14 +43,14 @@ afterEach(async () => {
 });
 
 /** Listeners that record every emit of `names`, in order, as `[name, ...args]`. */
-function recording(...names: string[]): Record<string, MountListener> {
+function recording(...names: Array<string>): Record<string, MountListener> {
 	return Object.fromEntries(
-		names.map((name) => [name, (...args: unknown[]) => void events.push([name, ...args])]),
+		names.map((name) => [name, (...args: Array<unknown>) => void events.push([name, ...args])]),
 	);
 }
 
 /** The props a parent passes to record emits of `names` without the adapter: `onChange`. */
-function props(...names: string[]): Record<string, MountListener> {
+function props(...names: Array<string>): Record<string, MountListener> {
 	return Object.fromEntries(
 		Object.entries(recording(...names)).map(([name, listener]) => [
 			`on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
@@ -61,7 +61,7 @@ function props(...names: string[]): Record<string, MountListener> {
 
 async function start(
 	type: ComponentType<Record<string, unknown>>,
-	names: string[],
+	names: Array<string>,
 	props: Record<string, unknown> = {},
 ): Promise<MountedComponent> {
 	mounted = await mount(type, container, { props, on: recording(...names) });
@@ -78,7 +78,7 @@ const button = (name: string) =>
  */
 async function startStrict(
 	type: ComponentType<Record<string, unknown>>,
-	names: string[],
+	names: Array<string>,
 ): Promise<MountedComponent> {
 	const root = createRoot(container);
 	const inAct = async <T>(callback: () => T | Promise<T>): Promise<T> => {
@@ -95,7 +95,9 @@ async function startStrict(
 	mounted = {
 		async settle() {
 			await inAct(async () => {});
-			await new Promise<void>((resolve) => setTimeout(resolve, 0));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
 		},
 		rerender: () => Promise.reject(new Error("A StrictMode test does not rerender.")),
 		interact: (action) => inAct(action),
@@ -116,12 +118,16 @@ describe("react output in the browser", () => {
 		const field = (label: string) =>
 			container.querySelector<HTMLElement>(`[aria-label="${label}"]`)!;
 		await act(() => userEvent.selectOptions(field("Size"), "s"));
-		for (let click = 0; click < 3; click++) await act(() => userEvent.click(field("Agree")));
+		for (let click = 0; click < 3; click++) {
+			await act(() => userEvent.click(field("Agree")));
+		}
 		await act(() => userEvent.type(field("Name"), "Al"));
 		// React's onChange on a checkbox or a radio fires on click, before the DOM's input: a listener
 		// of input reads the model after its write, where Vue's reads it before (the declared
 		// difference of two-way-binding).
-		for (let click = 0; click < 2; click++) await act(() => userEvent.click(field("Notify")));
+		for (let click = 0; click < 2; click++) {
+			await act(() => userEvent.click(field("Notify")));
+		}
 		await act(() => userEvent.click(field("B")));
 		expect(events).toEqual([
 			["seen", "select:s"],
@@ -141,8 +147,9 @@ describe("react output in the browser", () => {
 		await start(await component("DirtyForm"), []);
 		const field = (label: string) =>
 			container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
-		for (const label of ["Agree", "B", "Solo", "Veto"])
+		for (const label of ["Agree", "B", "Solo", "Veto"]) {
 			await act(() => userEvent.click(field(label)));
+		}
 		expect(container.querySelector("output")!.textContent).toBe("true|b|true|2|1|false");
 		expect([field("Agree").checked, field("A").checked, field("B").checked]).toEqual([
 			true,
@@ -155,12 +162,14 @@ describe("react output in the browser", () => {
 	});
 
 	it("asks a parent that holds a model's value for the same value on every write", async () => {
-		const changes: unknown[] = [];
+		const changes: Array<unknown> = [];
 		await start(await component("HeldStepper"), [], {
 			value: 5,
 			onValueChange: (value: unknown) => void changes.push(value),
 		});
-		for (let click = 0; click < 4; click++) await act(() => userEvent.click(button("Fewer")));
+		for (let click = 0; click < 4; click++) {
+			await act(() => userEvent.click(button("Fewer")));
+		}
 		expect(changes).toEqual([4, 4, 4, 4]);
 		expect(logged).toEqual([]);
 	});
@@ -204,7 +213,9 @@ describe("react output in the browser", () => {
 		mounted = undefined;
 		const count = events.length;
 		expect(events.at(-1)).toEqual(["unmounted"]);
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 100);
+		});
 		expect(events).toHaveLength(count);
 	});
 
@@ -240,7 +251,12 @@ describe("react output in the browser", () => {
 		await start(await component("Notes"), ["mounted", "picked"]);
 		// The template ref and the native listener share the caret's callback, and placing the caret
 		// selects nothing: Vue's set value fires no `select`.
-		await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+		await act(
+			() =>
+				new Promise((resolve) => {
+					setTimeout(resolve, 50);
+				}),
+		);
 		expect(events).toEqual([["mounted", true]]);
 		for (const [label, text] of [
 			["Note", "Buy milk"],
@@ -426,7 +442,7 @@ describe("react output in the browser", () => {
 
 	describe("a directive", () => {
 		/** The calls `Marked`'s directive reports, in order. */
-		const calls: string[] = [];
+		const calls: Array<string> = [];
 		const record = (event: Event) => void calls.push(String((event as CustomEvent).detail));
 		beforeEach(() => {
 			calls.length = 0;
@@ -467,7 +483,7 @@ describe("react output in the browser", () => {
 
 	describe("a directive on every element one use renders", () => {
 		/** The calls each element got, by element, in the order of their first call. */
-		const calls = new Map<Element, string[]>();
+		const calls = new Map<Element, Array<string>>();
 		const record = (event: Event) => {
 			const { call, el } = (event as CustomEvent<{ call: string; el: Element }>).detail;
 			calls.set(el, [...(calls.get(el) ?? []), call]);
@@ -521,7 +537,9 @@ describe("react output in the browser", () => {
 			await mounted!.unmount();
 			mounted = undefined;
 			const count = events.length;
-			await new Promise((resolve) => setTimeout(resolve, 100));
+			await new Promise((resolve) => {
+				setTimeout(resolve, 100);
+			});
 			expect(events).toHaveLength(count);
 		});
 
@@ -585,7 +603,9 @@ describe("react output in the browser", () => {
 			try {
 				root.render(createElement(await component("DirtyForm")));
 				await vi.waitFor(() => expect(output()).toBe("false|a|false|0|0|false"));
-				for (const label of ["Agree", "B", "Solo", "Veto"]) await userEvent.click(field(label));
+				for (const label of ["Agree", "B", "Solo", "Veto"]) {
+					await userEvent.click(field(label));
+				}
 				await vi.waitFor(() => expect(output()).toBe("true|b|true|2|1|false"));
 				expect(["Agree", "B", "Solo", "Veto"].map((label) => field(label).checked)).toEqual([
 					true,
@@ -707,7 +727,9 @@ describe("react output in the browser", () => {
 				await userEvent.click(button("Suggest"));
 				await vi.waitFor(() => expect(events).toHaveLength(3));
 				// A later commit would let them run late: none comes on its own.
-				await new Promise((resolve) => setTimeout(resolve, 100));
+				await new Promise((resolve) => {
+					setTimeout(resolve, 100);
+				});
 				expect(events).toEqual([
 					["summary", "ada@example.com is valid"],
 					["saved", "ada@lovelace.dev"],
@@ -767,7 +789,9 @@ describe("react output in the browser", () => {
 				await userEvent.click(button("Close"));
 				await userEvent.keyboard("{Escape}");
 				await vi.waitFor(() => expect(events).toHaveLength(2));
-				await new Promise((resolve) => setTimeout(resolve, 50));
+				await new Promise((resolve) => {
+					setTimeout(resolve, 50);
+				});
 				expect(events).toEqual([
 					["closed", "escape"],
 					["closed", "button"],

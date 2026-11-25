@@ -51,8 +51,7 @@ import type {
  * Angular's `WS_CHARS`: with `preserveWhitespaces: false` it drops text made only of these and
  * turns any run of two or more into one space, interpolations included, before rendering.
  */
-const ANGULAR_SPACE =
-	" \\f\\n\\r\\t\\v\\u1680\\u180e\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff";
+const ANGULAR_SPACE = String.raw` \f\n\r\t\v\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff`;
 const ANGULAR_WHITESPACE_ONLY = new RegExp(`^[${ANGULAR_SPACE}]+$`);
 const ANGULAR_RUN = new RegExp(`[${ANGULAR_SPACE}]{2,}`);
 /**
@@ -87,14 +86,16 @@ export type AngularContext = "interpolation" | "attribute" | "block" | "event";
  */
 function angularCharacter(character: string): string | undefined {
 	// `\n`, `\t` and the other simple escapes keep their short spelling.
-	if (/[\n\r\t\v\f]/.test(character)) return undefined;
+	if (/[\n\r\t\v\f]/.test(character)) {
+		return undefined;
+	}
 	return /[&<>{}]/.test(character) || ANGULAR_OTHER_SPACE.test(character)
 		? unicodeEscape(character)
 		: undefined;
 }
 
 /** A run of spaces, which Angular's whitespace processing would condense, as escapes. */
-const escapeSpaceRuns = (text: string) => text.replace(/ {2,}/g, unicodeEscape);
+const escapeSpaceRuns = (text: string) => text.replaceAll(/ {2,}/g, unicodeEscape);
 
 /** `<` where Angular's template lexer opens a tag: before a letter, `/`, `!` or `?`. */
 const TAG_START = /<(?=[A-Za-z!/?])/g;
@@ -126,31 +127,39 @@ export function angularCode(code: string, context: AngularContext): string {
 			number: (raw, { value, end }, before) => angularNumber(raw, value, before, source[end]),
 			regex: (raw, before) => {
 				const regex = angularRegex(raw, interpolation);
-				if (!interpolation) return regex;
+				if (!interpolation) {
+					return regex;
+				}
 				// `a</b/` would open a tag; `\}` means `}` in a regular expression either way.
-				return `${before.endsWith("<") ? " " : ""}${regex.replace(/(?<=\})\}/g, "\\}")}`;
+				return `${before.endsWith("<") ? " " : ""}${regex.replaceAll(/(?<=\})\}/g, String.raw`\}`)}`;
 			},
 			comment: () => " ",
 			other: (text, before) => {
-				const spaced = `${before.endsWith("/") && text.startsWith("/") ? " " : ""}${text.replace(
+				const spaced = `${before.endsWith("/") && text.startsWith("/") ? " " : ""}${text.replaceAll(
 					NON_ASCII_SPACE,
 					" ",
 				)}`;
-				return interpolation ? spaced.replace(/\}(?=\})/g, "} ").replace(TAG_START, "< ") : spaced;
+				return interpolation
+					? spaced.replaceAll(/\}(?=\})/g, "} ").replaceAll(TAG_START, "< ")
+					: spaced;
 			},
 		},
 		kind,
 	).trim();
-	if (context === "block") return respelled;
+	if (context === "block") {
+		return respelled;
+	}
 	// An attribute value's lexer decodes each reference on its own.
-	if (quoted) return escapeReferences(respelled).replace(/"/g, "&quot;");
+	if (quoted) {
+		return escapeReferences(respelled).replaceAll('"', "&quot;");
+	}
 	// Angular decodes an interpolation's references only once it has found its end, with
 	// `/&([^;]+);/`: a bare `&` (`a && b`) would take the `;` of a reference after it, which then
 	// reaches the expression as written. So where a reference is needed, every `&` is one: an `&`
 	// that could start one (`/R&D/`), and a `<` left before a letter, which is a regular
 	// expression's (`(?<name>…)`), where a space would change it, and which would open a tag.
 	return /&[A-Za-z0-9#]/.test(respelled) || respelled.search(TAG_START) !== -1
-		? respelled.replace(/&/g, "&amp;").replace(TAG_START, "&lt;")
+		? respelled.replaceAll("&", "&amp;").replaceAll(TAG_START, "&lt;")
 		: respelled;
 }
 
@@ -162,7 +171,9 @@ export function angularCode(code: string, context: AngularContext): string {
  */
 function angularNumber(raw: string, value: number, before: string, next?: string): string {
 	const decimal = DECIMAL.test(raw) ? raw : String(value);
-	if (next === ".") return `(${decimal.replace(/\.$/, "")})`;
+	if (next === ".") {
+		return `(${decimal.replace(/\.$/, "")})`;
+	}
 	return before.endsWith("?") && decimal.startsWith(".") ? `0${decimal}` : decimal;
 }
 
@@ -178,7 +189,7 @@ function angularNumber(raw: string, value: number, before: string, next?: string
 function angularString(value: string, preferred: "'" | '"'): string {
 	const other = preferred === "'" ? '"' : "'";
 	const quote = value.includes(preferred) && !value.includes(other) ? other : preferred;
-	return escapeSpaceRuns(quoteString(value, quote, angularCharacter)).replace(
+	return escapeSpaceRuns(quoteString(value, quote, angularCharacter)).replaceAll(
 		/\\[\s\S]/g,
 		(escape) => (escape === `\\${quote}` ? unicodeEscape(quote) : escape),
 	);
@@ -213,7 +224,7 @@ const REGEX_ESCAPED = new RegExp(`['"\`;${ANGULAR_SPACE.replace(" ", "")}${NGSP}
  */
 function angularRegex(raw: string, interpolation: boolean): string {
 	const close = raw.lastIndexOf("/");
-	const units: { text: string; slash: boolean }[] = [];
+	const units: Array<{ text: string; slash: boolean }> = [];
 	let inClass = false;
 	for (let index = 1; index < close; index++) {
 		const character = raw[index]!;
@@ -228,11 +239,14 @@ function angularRegex(raw: string, interpolation: boolean): string {
 			);
 			continue;
 		}
-		if (character === "[") inClass = true;
-		else if (character === "]") inClass = false;
+		if (character === "[") {
+			inClass = true;
+		} else if (character === "]") {
+			inClass = false;
+		}
 		const syntax =
 			!inClass &&
-			(units.at(-1)?.text === "\\k" ||
+			(units.at(-1)?.text === String.raw`\k` ||
 				units
 					.slice(-2)
 					.map((unit) => unit.text)
@@ -247,13 +261,15 @@ function angularRegex(raw: string, interpolation: boolean): string {
 	// the `{{` out of an attribute value, whose lexer would decode what follows it as an
 	// interpolation's text ({@link angularCode}).
 	units.forEach((unit, at) => {
-		if (unit.text.endsWith("{") && units[at + 1]?.text.startsWith("{")) unit.text = "\\x7b";
+		if (unit.text.endsWith("{") && units[at + 1]?.text.startsWith("{")) {
+			unit.text = String.raw`\x7b`;
+		}
 	});
 	const write = (slashes: boolean) =>
 		units
-			.map((unit) => (slashes && unit.slash ? "\\x2f" : unit.text))
+			.map((unit) => (slashes && unit.slash ? String.raw`\x2f` : unit.text))
 			.join("")
-			.replace(/ {2,}/g, (run) => "\\x20".repeat(run.length));
+			.replaceAll(/ {2,}/g, (run) => String.raw`\x20`.repeat(run.length));
 	const body = `/${write(false)}/`.includes("//") ? write(true) : write(false);
 	return `/${body}/${raw.slice(close + 1)}`;
 }
@@ -262,8 +278,8 @@ interface TemplateNode {
 	type: string;
 	start: number;
 	end: number;
-	quasis?: { value: { cooked: string | null; raw: string } }[];
-	expressions?: { start: number; end: number }[];
+	quasis?: Array<{ value: { cooked: string | null; raw: string } }>;
+	expressions?: Array<{ start: number; end: number }>;
 	[key: string]: unknown;
 }
 
@@ -342,15 +358,21 @@ function concatenationFits(parent: TemplateNode, key: string): boolean {
  * `+` (`` `${n}px` `` → `n + "px"`). It is parenthesised only where `+` would bind wrongly.
  */
 export function withoutTemplateLiterals(code: string, kind: CodeKind = "expression"): string {
-	if (!code.includes("`")) return code;
+	if (!code.includes("`")) {
+		return code;
+	}
 	const { root } = parseCodeSource(code, kind);
-	const outermost: { template: TemplateNode; fits: boolean }[] = [];
+	const outermost: Array<{ template: TemplateNode; fits: boolean }> = [];
 	const visit = (value: unknown, parent: TemplateNode | undefined, key: string): void => {
 		if (Array.isArray(value)) {
-			for (const item of value) visit(item, parent, key);
+			for (const item of value) {
+				visit(item, parent, key);
+			}
 			return;
 		}
-		if (!isTemplateNode(value)) return;
+		if (!isTemplateNode(value)) {
+			return;
+		}
 		if (value.type === "TemplateLiteral") {
 			outermost.push({
 				template: value,
@@ -359,7 +381,9 @@ export function withoutTemplateLiterals(code: string, kind: CodeKind = "expressi
 			return;
 		}
 		for (const [childKey, child] of Object.entries(value)) {
-			if (childKey !== "type" && typeof child === "object") visit(child, value, childKey);
+			if (childKey !== "type" && typeof child === "object") {
+				visit(child, value, childKey);
+			}
 		}
 	};
 	visit(root, undefined, "");
@@ -367,10 +391,12 @@ export function withoutTemplateLiterals(code: string, kind: CodeKind = "expressi
 	let position = 0;
 	for (const { template, fits } of outermost) {
 		output += code.slice(position, template.start);
-		const parts: { code: string; string: boolean }[] = [];
+		const parts: Array<{ code: string; string: boolean }> = [];
 		template.quasis!.forEach((quasi, index) => {
 			const cooked = quasi.value.cooked ?? quasi.value.raw;
-			if (cooked !== "") parts.push({ code: JSON.stringify(cooked), string: true });
+			if (cooked !== "") {
+				parts.push({ code: JSON.stringify(cooked), string: true });
+			}
 			const substitution = template.expressions![index];
 			if (substitution) {
 				const inner = withoutTemplateLiterals(code.slice(substitution.start, substitution.end));
@@ -462,7 +488,9 @@ export const angularDialect: MarkupDialect = {
 			? `[attr.${name}]="${angularCode(`${test(code)} ? "" : null`, "attribute")}"`
 			: `[attr.${name}]="${angularCode(code, "attribute")}"`,
 	classAttribute: (written, { element }) => {
-		if (isComponentTag(element.tag)) return [componentClass(written)];
+		if (isComponentTag(element.tag)) {
+			return [componentClass(written)];
+		}
 		// A static name holding `{{` has no static spelling (it would interpolate): it is bound as a
 		// string, which a class binding takes as written (no security context).
 		const parts = written.map((part): ClassPart =>
@@ -475,7 +503,9 @@ export const angularDialect: MarkupDialect = {
 			? [{ name: "class", text: angularDialect.attribute("class", value, "") }]
 			: [];
 		const bound = parts.filter((part) => part.kind !== "Static");
-		if (bound.length === 0) return printed;
+		if (bound.length === 0) {
+			return printed;
+		}
 		const [only, ...more] = bound;
 		const expression = bound.every((part) => part.kind === "Toggle")
 			? toggleObject(bound)
@@ -646,7 +676,7 @@ export const angularDialect: MarkupDialect = {
 							component: {
 								kind: "Component",
 								component: candidate.component,
-								attributes: node.attributes as ComponentAttribute[],
+								attributes: node.attributes as Array<ComponentAttribute>,
 								fills: node.fills ?? [],
 								span: node.span,
 							},
@@ -677,7 +707,7 @@ function isComponentTag(tag: string): boolean {
  * A component's `class`, which falls through to its root through an input (ADR-0056): one
  * string binding, since a static `class` beside a `[class]` would set the input twice.
  */
-function componentClass(parts: readonly ClassPart[]): PrintedAttribute {
+function componentClass(parts: ReadonlyArray<ClassPart>): PrintedAttribute {
 	const values = parts.map((part) =>
 		part.kind === "Static"
 			? JSON.stringify(part.value)
@@ -697,7 +727,7 @@ function componentClass(parts: readonly ClassPart[]): PrintedAttribute {
  * object, spread last, so a property the consumer leaves `undefined` removes the root's own,
  * as Vue's merge does.
  */
-function componentStyle(parts: readonly StylePart[]): PrintedAttribute {
+function componentStyle(parts: ReadonlyArray<StylePart>): PrintedAttribute {
 	readsEveryDeclaration(parts.filter((part) => part.property !== ""));
 	const [only] = parts;
 	const expression =
@@ -721,7 +751,7 @@ function componentStyle(parts: readonly StylePart[]): PrintedAttribute {
  * the component's selector in camel case and the slot's name, `ufFieldTitle` for `uf-field`.
  */
 function slotAttribute(tag: string, slot: string): string {
-	const component = tag.replace(/-(\w)/g, (_, next: string) => next.toUpperCase());
+	const component = tag.replaceAll(/-(\w)/g, (_, next: string) => next.toUpperCase());
 	return `${component}${slot.charAt(0).toUpperCase()}${slot.slice(1)}`;
 }
 
@@ -777,17 +807,21 @@ function fillPiece({ fill, parameter, presence }: PrintedFill, tag: string): Mar
  * The `let-` variables of a scoped fill's parameter: a name takes the whole props (the
  * context's `$implicit`), and a destructuring pattern's names each take their key.
  */
-function letVariables(parameter: string | undefined): PrintedAttribute[] {
-	if (parameter === undefined) return [];
-	if (!parameter.startsWith("{")) return [{ name: `let-${parameter}`, text: `let-${parameter}` }];
+function letVariables(parameter: string | undefined): Array<PrintedAttribute> {
+	if (parameter === undefined) {
+		return [];
+	}
+	if (!parameter.startsWith("{")) {
+		return [{ name: `let-${parameter}`, text: `let-${parameter}` }];
+	}
 	const pattern = parseExpression(`(${parameter})`) as unknown as {
 		type: string;
-		properties: {
+		properties: Array<{
 			type: string;
 			computed: boolean;
 			key: { type: string; name?: string; value?: unknown };
 			value: { type: string; name?: string };
-		}[];
+		}>;
 	};
 	return pattern.properties.map((property) => {
 		const key = property.key.type === "Identifier" ? property.key.name : String(property.key.value);
@@ -819,7 +853,7 @@ function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
 	// reads none of: a loop's item or a `@let` called `template` stays the source's.
 	const context = props && slotContext(props);
 	const alias = unreadName("template", context ?? "");
-	const attributes: PrintedAttribute[] = [
+	const attributes: Array<PrintedAttribute> = [
 		{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${alias}"` },
 	];
 	if (context !== undefined) {
@@ -854,7 +888,9 @@ function slotContext(props: NonNullable<PrintedSlotOutlet["props"]>): string {
 function unreadName(base: string, code: string): string {
 	const reads = (name: string) => new RegExp(`(?<![\\w$.])${name}(?![\\w$])`).test(code);
 	let name = base;
-	for (let suffix = 2; reads(name); suffix += 1) name = `${base}${suffix}`;
+	for (let suffix = 2; reads(name); suffix += 1) {
+		name = `${base}${suffix}`;
+	}
 	return name;
 }
 
@@ -871,9 +907,11 @@ const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
  * Angular target's context type declares too.
  */
 function contextKey(key: string): string {
-	if (IDENTIFIER.test(key)) return key;
+	if (IDENTIFIER.test(key)) {
+		return key;
+	}
 	return key
-		.replace(/[^A-Za-z0-9_$]+(.)?/g, (_, next: string | undefined) => next?.toUpperCase() ?? "")
+		.replaceAll(/[^A-Za-z0-9_$]+(.)?/g, (_, next: string | undefined) => next?.toUpperCase() ?? "")
 		.replace(/^(?=\d)/, "_");
 }
 
@@ -883,7 +921,7 @@ function contextKey(key: string): string {
  * `change`, a checkbox as `[checked]`, and a radio as `[checked]` when it holds the radio's
  * value. The control is the event's target.
  */
-function modelAttributes({ attribute, value }: PrintedModel): PrintedAttribute[] {
+function modelAttributes({ attribute, value }: PrintedModel): Array<PrintedAttribute> {
 	const signal = angularCode(value, "attribute");
 	const write = (event: string, read: string) => ({
 		name: `(${event})`,
@@ -926,12 +964,18 @@ function unreachableControl(control: never): never {
 function angularText(text: string, position: TextPosition): string {
 	const afterBlock = position.previous === "If" || position.previous === "For";
 	if (afterBlock && text.trim() === "") {
-		return angularInterpolation(text).replace(/[^\x20-\x7e]/g, unicodeEscape);
+		return angularInterpolation(text).replaceAll(/[^\u0020-\u007e]/g, unicodeEscape);
 	}
 	// Only an escape in a literal keeps U+E500 from becoming a space, in a `<pre>` too.
-	if (text.includes(NGSP)) return angularInterpolation(text);
-	if (keepsWhitespace(position)) return escapeAngular(text, position);
-	if (text === " ") return "&ngsp;";
+	if (text.includes(NGSP)) {
+		return angularInterpolation(text);
+	}
+	if (keepsWhitespace(position)) {
+		return escapeAngular(text, position);
+	}
+	if (text === " ") {
+		return "&ngsp;";
+	}
 	return ANGULAR_WHITESPACE_ONLY.test(text) || ANGULAR_RUN.test(text)
 		? angularInterpolation(text)
 		: escapeAngular(text, position);
@@ -955,7 +999,7 @@ function rootEdge(position: TextPosition, written: string): string {
  */
 const angularLiteralDialect: MarkupDialect = {
 	name: "angular-literal",
-	escapeText: (text) => escapeBraces(escapeHtmlText(text)).replace(/@/g, "&#64;"),
+	escapeText: (text) => escapeBraces(escapeHtmlText(text)).replaceAll("@", "&#64;"),
 	attribute: (name, value) => `${name}="${escapeBraces(escapeHtmlAttribute(value))}"`,
 	voidElement: "self-closing",
 	stripsWhitespaceBetweenElements: false,
@@ -972,7 +1016,9 @@ const angularLiteralDialect: MarkupDialect = {
 				]
 			: staticOnly("a class binding"),
 	styleAttribute: (parts) => {
-		if (parts.some((part) => part.kind !== "Static")) return staticOnly("a style binding");
+		if (parts.some((part) => part.kind !== "Static")) {
+			return staticOnly("a style binding");
+		}
 		readsEveryDeclaration(parts);
 		return [
 			{
@@ -1002,7 +1048,7 @@ function angularReadsStatic(property: string, value: string): boolean {
 }
 
 /** Throws for a declaration Angular would misread, which the analyser keeps out of the IR. */
-function readsEveryDeclaration(parts: readonly StylePart[]): void {
+function readsEveryDeclaration(parts: ReadonlyArray<StylePart>): void {
 	const misread = parts.find((part) =>
 		part.kind === "Static"
 			? !angularReadsStatic(part.property, part.value)
@@ -1046,5 +1092,5 @@ function escapeAngular(text: string, position: TextPosition): string {
 		position.next === "Interpolation" ? /(?:&#123;)+$|(?:&#123;){2,}/g : /(?:&#123;){2,}/g;
 	return escapeBraces(escapeHtmlText(text))
 		.replace(braces, (run) => `{{ ${stringLiteral("{".repeat(run.length / "&#123;".length))} }}`)
-		.replace(/@/g, "&#64;");
+		.replaceAll("@", "&#64;");
 }

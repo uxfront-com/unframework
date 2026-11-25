@@ -41,12 +41,18 @@ const PROJECTS: Record<ProjectKind, string> = {
  * The canaries the arguments name: a canary's id, or a layer for every canary of that layer.
  * An unknown name, or a layer without canaries, throws: a typo never runs nothing.
  */
-export function selectCanaries(names: readonly string[]): Canary[] {
-	if (!names.length) return [...CANARIES];
+export function selectCanaries(names: ReadonlyArray<string>): Array<Canary> {
+	if (!names.length) {
+		return [...CANARIES];
+	}
 	const selected = names.flatMap((name) => {
-		if (!LAYERS.includes(name as LayerName)) return [findCanary(name)];
+		if (!LAYERS.includes(name as LayerName)) {
+			return [findCanary(name)];
+		}
 		const ofLayer = CANARIES.filter((canary) => canary.layer === name);
-		if (!ofLayer.length) throw new Error(`No canary proves ${name}: it is not live.`);
+		if (!ofLayer.length) {
+			throw new Error(`No canary proves ${name}: it is not live.`);
+		}
 		return ofLayer;
 	});
 	return [...new Set(selected)];
@@ -59,21 +65,25 @@ export interface CanaryShard {
 }
 
 /** The canaries the arguments name, and the shard `--shard <index>/<count>` names, if any. */
-export function parseArguments(argv: readonly string[]): {
-	names: string[];
+export function parseArguments(argv: ReadonlyArray<string>): {
+	names: Array<string>;
 	shard: CanaryShard | undefined;
 } {
-	const names: string[] = [];
+	const names: Array<string> = [];
 	let shard: CanaryShard | undefined;
 	for (let index = 0; index < argv.length; index += 1) {
 		const argument = argv[index]!;
-		if (argument === "--") continue;
+		if (argument === "--") {
+			continue;
+		}
 		const option = /^--shard(?:=(.*))?$/s.exec(argument);
 		if (!option) {
 			names.push(argument);
 			continue;
 		}
-		if (shard) throw new Error("--shard is given twice.");
+		if (shard) {
+			throw new Error("--shard is given twice.");
+		}
 		const value = option[1] ?? argv[(index += 1)] ?? "";
 		const match = /^(\d+)\/(\d+)$/.exec(value);
 		const [part, count] = [Number(match?.[1]), Number(match?.[2])];
@@ -92,7 +102,7 @@ export function parseArguments(argv: readonly string[]): {
  * `count` hold every case once, and share each area's cases, so the diagnostics cases, which
  * have no spec, do not leave one shard with the browser specs.
  */
-export function shardCases<T>(cases: readonly T[], shard: CanaryShard | undefined): T[] {
+export function shardCases<T>(cases: ReadonlyArray<T>, shard: CanaryShard | undefined): Array<T> {
 	return shard
 		? cases.filter((_, position) => position % shard.count === shard.index - 1)
 		: [...cases];
@@ -104,9 +114,9 @@ export function shardCases<T>(cases: readonly T[], shard: CanaryShard | undefine
  * as does a project whose toolchain cannot load (`harness/unavailable.test.ts`).
  */
 export function shardFilters(
-	cases: readonly CanaryCase[],
+	cases: ReadonlyArray<CanaryCase>,
 	shard: CanaryShard | undefined,
-): string[] {
+): Array<string> {
 	return shard ? ["harness/", ...cases.flatMap((info) => (info.spec ? [info.spec] : []))] : [];
 }
 
@@ -125,10 +135,10 @@ export function shardFilters(
  */
 export function canaryRuns(
 	canary: Canary,
-	targets: readonly string[],
-	cases: readonly CanaryCase[],
+	targets: ReadonlyArray<string>,
+	cases: ReadonlyArray<CanaryCase>,
 	shard: CanaryShard | undefined,
-): { name: string; args: string[] }[] {
+): Array<{ name: string; args: Array<string> }> {
 	// A canary of some targets runs their projects only: the others have nothing corrupted.
 	const corrupted = (canary.targets ?? targets).filter((target) => targets.includes(target));
 	const projectsOf = (kind: ProjectKind) =>
@@ -151,7 +161,7 @@ export function canaryRuns(
  * not load, from runs of disjoint projects, and the first failed status. A run that wrote no
  * matrix or no list of load failures did not finish, so the canary has neither.
  */
-export function combineRuns(runs: readonly CanaryRun[]): CanaryRun {
+export function combineRuns(runs: ReadonlyArray<CanaryRun>): CanaryRun {
 	return {
 		status: runs.find(({ status }) => status !== 0)?.status ?? 0,
 		projects: runs.every(({ projects }) => projects)
@@ -166,8 +176,8 @@ export function combineRuns(runs: readonly CanaryRun[]): CanaryRun {
 /** Runs one canary and judges whether its layer caught it everywhere it should. */
 function runCanary(
 	canary: Canary,
-	targets: readonly string[],
-	cases: readonly CanaryCase[],
+	targets: ReadonlyArray<string>,
+	cases: ReadonlyArray<CanaryCase>,
 	shard: CanaryShard | undefined,
 ): CanaryVerdict & { log: string; seconds: number } {
 	const directory = join(CANARY_DIR, canary.id);
@@ -218,15 +228,21 @@ function main(): number {
 	// Every kind of project is judged on the shard's cases: shards 1 to n judge each case once.
 	const cases = shardCases(listCases(), shard).map(canaryCase);
 	const print = (line: string) => process.stdout.write(`${line}\n`);
-	if (shard) print(`[uf:canaries] Shard ${shard.index}/${shard.count}: ${cases.length} cases.`);
-	const missed: string[] = [];
+	if (shard) {
+		print(`[uf:canaries] Shard ${shard.index}/${shard.count}: ${cases.length} cases.`);
+	}
+	const missed: Array<string> = [];
 	for (const canary of canaries) {
 		const verdict = runCanary(canary, targets, cases, shard);
 		print(
 			`[uf:canaries] ${canary.id} (${canary.layer}, ${canaryProjects(canary).join(" + ")}): ${verdict.caught ? "caught" : "NOT CAUGHT"} in ${verdict.seconds.toFixed(1)} s`,
 		);
-		for (const note of verdict.notes) print(`    (${note})`);
-		for (const problem of verdict.problems) print(`    ${problem}`);
+		for (const note of verdict.notes) {
+			print(`    (${note})`);
+		}
+		for (const problem of verdict.problems) {
+			print(`    ${problem}`);
+		}
 		if (!verdict.caught) {
 			print(`    log: ${relative(ROOT, verdict.log)}`);
 			missed.push(canary.id);
@@ -240,4 +256,6 @@ function main(): number {
 	return missed.length ? 1 : 0;
 }
 
-if (import.meta.main) process.exitCode = main();
+if (import.meta.main) {
+	process.exitCode = main();
+}

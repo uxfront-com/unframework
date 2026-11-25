@@ -8,7 +8,7 @@ import { importsOf, packageOf, packages, root, sourceFiles } from "./workspace.t
  * The package layers, lowest first (plan §5.2). A package never imports one above it, nor one
  * on its own layer. Packages not listed yet must be added here when they are created.
  */
-const LAYERS: readonly (readonly string[])[] = [
+const LAYERS: ReadonlyArray<ReadonlyArray<string>> = [
 	["@unframework.dev/ir", "@unframework.dev/diagnostics"],
 	["@unframework.dev/parser", "@unframework.dev/type-oracle"],
 	["@unframework.dev/type-oracle-tsgo", "@unframework.dev/codegen"],
@@ -43,7 +43,9 @@ describe("layering", () => {
 	const all = packages();
 
 	it("knows the layer of every package", () => {
-		expect(all.map((pkg) => pkg.manifest.name).filter((name) => !layerOf.has(name))).toEqual([]);
+		expect(
+			all.map((pkg) => pkg.manifest.name as string).filter((name) => !layerOf.has(name)),
+		).toEqual([]);
 	});
 
 	it.each(all.map((pkg) => [pkg.manifest.name as string, pkg] as const))(
@@ -54,7 +56,9 @@ describe("layering", () => {
 				.flatMap(importsOf)
 				.filter((record) => {
 					const imported = packageOf(record.specifier);
-					if (!imported || !isWorkspace(imported) || imported === name) return false;
+					if (!imported || !isWorkspace(imported) || imported === name) {
+						return false;
+					}
 					return (layerOf.get(imported) ?? Number.POSITIVE_INFINITY) >= layer;
 				})
 				.map((record) => `${record.file} imports ${record.specifier}`);

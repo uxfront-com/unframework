@@ -65,7 +65,9 @@ export function setInputs(
 	props: Readonly<Record<string, unknown>>,
 ): void {
 	for (const name of set) {
-		if (Object.hasOwn(props, name)) continue;
+		if (Object.hasOwn(props, name)) {
+			continue;
+		}
 		ref.setInput(name, undefined);
 		set.delete(name);
 	}
@@ -83,8 +85,8 @@ export function setInputs(
  */
 export function outputBindings(
 	on: Readonly<Record<string, MountListener>> = {},
-	events: readonly MountEvent[] = [],
-): Binding[] {
+	events: ReadonlyArray<MountEvent> = [],
+): Array<Binding> {
 	return Object.entries(on).map(([name, listener]) => {
 		const optional = events.find((event) => event.name === name)?.optional;
 		if (!optional) {
@@ -93,9 +95,13 @@ export function outputBindings(
 			);
 		}
 		return outputBinding<unknown>(outputName(name), (value) => {
-			if (!optional.length) listener();
-			else if (optional.length === 1 && !optional[0]) listener(value);
-			else listener(...(value as unknown[]));
+			if (!optional.length) {
+				listener();
+			} else if (optional.length === 1 && !optional[0]) {
+				listener(value);
+			} else {
+				listener(...(value as Array<unknown>));
+			}
 		});
 	});
 }

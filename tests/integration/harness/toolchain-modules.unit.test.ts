@@ -170,7 +170,7 @@ describe("every toolchain", () => {
 			}
 			// The tree's helper modules too, in `_unframework/` (ADR-0121).
 			const files = toolchainFiles(
-				(readdirSync(directory, { recursive: true }) as string[])
+				(readdirSync(directory, { recursive: true }) as Array<string>)
 					.map((file) => join(directory, file))
 					.filter((path) => statSync(path).isFile()),
 			);

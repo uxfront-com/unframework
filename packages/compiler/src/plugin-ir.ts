@@ -42,8 +42,8 @@ export function pluginIrProblems(
 	result: UfModule,
 	analysed: UfModule,
 	source: string,
-): IrValidationError[] {
-	const problems: IrValidationError[] = [];
+): Array<IrValidationError> {
+	const problems: Array<IrValidationError> = [];
 	if (result.file !== analysed.file) {
 		problems.push({ path: "/file", message: `must stay "${analysed.file}", the file analysed` });
 	}
@@ -54,7 +54,9 @@ export function pluginIrProblems(
 	}
 	const known = analysedCode(analysed);
 	const check = (key: string, path: string, message: string) => {
-		if (!known.has(key)) problems.push({ path, message });
+		if (!known.has(key)) {
+			problems.push({ path, message });
+		}
 	};
 	for (const [index, component] of result.components.entries()) {
 		const base = `/components/${index}`;
@@ -83,11 +85,17 @@ export function pluginIrProblems(
 			check(functionKey(located), located.path, NOT_ANALYSED.function);
 		}
 		for (const { key, path } of codeKeys(component, functions, base)) {
-			if (functions.some((located) => path.startsWith(`${located.path}/`))) continue;
+			if (functions.some((located) => path.startsWith(`${located.path}/`))) {
+				continue;
+			}
 			check(key, path, NOT_ANALYSED.code);
 		}
-		if (component.emits) check(emitsKey(component.emits), `${base}/emits`, NOT_ANALYSED.emits);
-		if (component.styles) check(stylesKey(component), `${base}/styles`, NOT_ANALYSED.styles);
+		if (component.emits) {
+			check(emitsKey(component.emits), `${base}/emits`, NOT_ANALYSED.emits);
+		}
+		if (component.styles) {
+			check(stylesKey(component), `${base}/styles`, NOT_ANALYSED.styles);
+		}
 	}
 	for (const [index, declaration] of result.types.entries()) {
 		check(declarationKey(declaration), `/types/${index}`, NOT_ANALYSED.declaration);
@@ -98,7 +106,9 @@ export function pluginIrProblems(
 	let next = 0;
 	for (const [index, entry] of (result.passThroughImports ?? []).entries()) {
 		const key = passThroughKey(entry);
-		while (next < imports.length && imports[next] !== key) next++;
+		while (next < imports.length && imports[next] !== key) {
+			next++;
+		}
 		if (next === imports.length) {
 			problems.push({ path: `/passThroughImports/${index}`, message: NOT_ANALYSED.passThrough });
 		} else {
@@ -138,19 +148,37 @@ const NOT_ANALYSED = {
  */
 function analysedCode(module: UfModule): ReadonlySet<string> {
 	const keys = new Set<string>();
-	for (const declaration of module.types) keys.add(declarationKey(declaration));
+	for (const declaration of module.types) {
+		keys.add(declarationKey(declaration));
+	}
 	for (const component of module.components) {
-		if (component.propsParameter) keys.add(typeTextKey(component.propsParameter.type));
-		for (const { type } of component.props) keys.add(typeTextKey(type));
-		for (const { expression } of expressionsOf(component)) keys.add(expressionKey(expression));
+		if (component.propsParameter) {
+			keys.add(typeTextKey(component.propsParameter.type));
+		}
+		for (const { type } of component.props) {
+			keys.add(typeTextKey(type));
+		}
+		for (const { expression } of expressionsOf(component)) {
+			keys.add(expressionKey(expression));
+		}
 		for (const item of component.setup) {
-			if ("type" in item && item.type) keys.add(typeTextKey(item.type));
+			if ("type" in item && item.type) {
+				keys.add(typeTextKey(item.type));
+			}
 		}
 		const functions = functionsOf(component);
-		for (const located of functions) keys.add(functionKey(located));
-		for (const { key } of codeKeys(component, functions)) keys.add(key);
-		if (component.emits) keys.add(emitsKey(component.emits));
-		if (component.styles) keys.add(stylesKey(component));
+		for (const located of functions) {
+			keys.add(functionKey(located));
+		}
+		for (const { key } of codeKeys(component, functions)) {
+			keys.add(key);
+		}
+		if (component.emits) {
+			keys.add(emitsKey(component.emits));
+		}
+		if (component.styles) {
+			keys.add(stylesKey(component));
+		}
 	}
 	return keys;
 }
@@ -168,9 +196,9 @@ function expressionKey(expression: Expression): string {
  */
 function codeKeys(
 	component: UfComponent,
-	functions: readonly LocatedFunction[],
+	functions: ReadonlyArray<LocatedFunction>,
 	base = "",
-): { key: string; path: string }[] {
+): Array<{ key: string; path: string }> {
 	const bodies = new Map(functions.map(({ function: fn, path }) => [`${path}/body`, fn]));
 	return codeOf(component, base).map(({ code, path, context }) => {
 		const fn = bodies.get(path);
@@ -220,16 +248,16 @@ function declarationKey({ name, exported, code, span }: TypeDeclaration): string
 	return JSON.stringify(["TypeDeclaration", name, exported, code, span.start, span.end]);
 }
 
-function expressionValue({ code, span, refs }: Expression): unknown[] {
+function expressionValue({ code, span, refs }: Expression): Array<unknown> {
 	return ["Expression", code, span.start, span.end, refs.map(referenceValue)];
 }
 
-function codeValue({ code, span, refs }: Code): unknown[] {
+function codeValue({ code, span, refs }: Code): Array<unknown> {
 	return ["Code", code, span.start, span.end, refs.map(referenceValue)];
 }
 
 /** A reference with every field its kind has, each kind read exhaustively. */
-function referenceValue(reference: CodeReference): unknown[] {
+function referenceValue(reference: CodeReference): Array<unknown> {
 	switch (reference.kind) {
 		case "Binding":
 			return [
@@ -274,7 +302,7 @@ function referenceValue(reference: CodeReference): unknown[] {
 	}
 }
 
-function functionValue(fn: FunctionCode): unknown[] {
+function functionValue(fn: FunctionCode): Array<unknown> {
 	return [
 		"Function",
 		fn.async === true,
@@ -287,7 +315,7 @@ function functionValue(fn: FunctionCode): unknown[] {
 	];
 }
 
-function parameterValue(parameter: Parameter): unknown[] {
+function parameterValue(parameter: Parameter): Array<unknown> {
 	const { pattern } = parameter;
 	return [
 		parameter.name ?? null,
@@ -301,7 +329,7 @@ function parameterValue(parameter: Parameter): unknown[] {
 	];
 }
 
-function controlValue(control: EventControl): unknown[] {
+function controlValue(control: EventControl): Array<unknown> {
 	return [
 		control.method,
 		control.condition ? codeValue(control.condition) : null,
@@ -309,11 +337,11 @@ function controlValue(control: EventControl): unknown[] {
 	];
 }
 
-function typeTextValue({ code, span }: TypeText): unknown[] {
+function typeTextValue({ code, span }: TypeText): Array<unknown> {
 	return ["TypeText", code, span.start, span.end];
 }
 
-const spanValue = ({ start, end }: Span): number[] => [start, end];
+const spanValue = ({ start, end }: Span): Array<number> => [start, end];
 
 /** Whether a span is a well-formed range of UTF-16 offsets in a source of `length` characters. */
 export function isSpanIn(span: unknown, length: number): boolean {

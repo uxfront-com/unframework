@@ -125,8 +125,8 @@ describe("unframework()", () => {
 	});
 
 	it("forwards the passThrough prefixes to compile() (ADR-0064)", async () => {
-		const compiles = async (passThrough?: readonly string[]) => {
-			const events: CompileEvent[] = [];
+		const compiles = async (passThrough?: ReadonlyArray<string>) => {
+			const events: Array<CompileEvent> = [];
 			const plugins = [
 				...unframework({
 					target: "vue",
@@ -151,7 +151,7 @@ describe("unframework()", () => {
 });
 
 /** The targets whose module is one markup file, which has only a default export. */
-const MARKUP_TARGETS: readonly string[] = ["vue", "svelte", "astro"];
+const MARKUP_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro"]);
 
 describe.each(TARGET_NAMES)("the %s target", (target) => {
 	it("resolves an import to its module id and loads compile()'s output", async () => {
@@ -176,7 +176,7 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
 	});
 
 	it(
-		MARKUP_TARGETS.includes(target)
+		MARKUP_TARGETS.has(target)
 			? "refuses a main component exported by name"
 			: "loads a component exported by name, keeping its name",
 		async () => {
@@ -185,7 +185,7 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
 				const loading = client.pluginContainer.load(
 					`${file("Named.uf.tsx")}${ID_SUFFIXES[target]}`,
 				);
-				if (!MARKUP_TARGETS.includes(target)) {
+				if (!MARKUP_TARGETS.has(target)) {
 					const code = codeOf(await loading);
 					expect(code).toBe(expected.outputs[target]![0]!.contents);
 					expect(code).toMatch(/^export (?:function|const|class) Hello\b/m);
@@ -1192,7 +1192,7 @@ describe("types read through the type oracle (ADR-0067)", () => {
 
 describe("the golden guard (onCompile)", () => {
 	it("receives every compile, and leaves a module it accepts alone", async () => {
-		const events: CompileEvent[] = [];
+		const events: Array<CompileEvent> = [];
 		const plugins = [
 			...unframework({ target: "vue", onCompile: (event) => void events.push(event) }),
 			fakeVue,
@@ -1234,7 +1234,9 @@ describe("the golden guard (onCompile)", () => {
 				'throw new Error("[uf guard] vue output differs");\nexport default undefined;\n',
 			);
 			const ssr = server.environments.ssr;
-			if (!isRunnableDevEnvironment(ssr)) throw new Error("the ssr environment is not runnable");
+			if (!isRunnableDevEnvironment(ssr)) {
+				throw new Error("the ssr environment is not runnable");
+			}
 			await expect(ssr.runner.import(vueId())).rejects.toThrow("[uf guard] vue output differs");
 		});
 	});
@@ -1383,7 +1385,7 @@ const watchedBy = (graph: Project, client: TestServer["client"], id: string) =>
 		.toSorted();
 
 /** The props and the error codes of the last compile `onCompile` saw for an id. */
-const lastCompile = (events: CompileEvent[], id: string) => {
+const lastCompile = (events: Array<CompileEvent>, id: string) => {
 	const event = events.findLast((each) => each.id === id)!;
 	return {
 		props: event.ir?.components[0]?.props.map(({ name }) => name),
@@ -1476,13 +1478,13 @@ describe("the project graph (ADR-0071)", () => {
 			client: TestServer["client"];
 			ids: Record<"B" | "C" | "D", string>;
 			idOf: (name: string) => string;
-			compiled: string[];
-			events: CompileEvent[];
+			compiled: Array<string>;
+			events: Array<CompileEvent>;
 		}) => Promise<void>,
 	) {
 		const graph = createProject(GRAPH);
-		const compiled: string[] = [];
-		const events: CompileEvent[] = [];
+		const compiled: Array<string> = [];
+		const events: Array<CompileEvent> = [];
 		const counter: CompilerPlugin = {
 			name: "counter",
 			ir: (module) => void compiled.push(module.file),
@@ -1498,7 +1500,9 @@ describe("the project graph (ADR-0071)", () => {
 			try {
 				const idOf = (name: string) => `${join(graph.root, `${name}.uf.tsx`)}.vue`;
 				const ids = { B: idOf("B"), C: idOf("C"), D: idOf("D") };
-				for (const each of Object.values(ids)) await server.client.transformRequest(each);
+				for (const each of Object.values(ids)) {
+					await server.client.transformRequest(each);
+				}
 				await fn({ graph, client: server.client, ids, idOf, compiled, events });
 			} finally {
 				await server.close();
@@ -1529,8 +1533,11 @@ describe("the project graph (ADR-0071)", () => {
 			client.moduleGraph.onFileChange(edited);
 			for (const [name, id] of Object.entries(ids)) {
 				const result = client.moduleGraph.getModuleById(id)?.transformResult;
-				if ((names as readonly string[]).includes(name)) expect(result, name).toBeNull();
-				else expect(result, name).not.toBeNull();
+				if ((names as ReadonlyArray<string>).includes(name)) {
+					expect(result, name).toBeNull();
+				} else {
+					expect(result, name).not.toBeNull();
+				}
 			}
 		});
 	});
@@ -1542,7 +1549,9 @@ describe("the project graph (ADR-0071)", () => {
 			compiled.length = 0;
 			graph.write("a.ts", PROPS.replace("label: string;", "label: string;\n  hint?: string;"));
 			client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
-			for (const id of Object.values(ids)) await client.transformRequest(id);
+			for (const id of Object.values(ids)) {
+				await client.transformRequest(id);
+			}
 			expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx", "useC.uf.ts"]);
 		});
 	});
@@ -1602,7 +1611,9 @@ describe("the project graph (ADR-0071)", () => {
 	])("sees an edit to a file that modules import %s, and by the other", async (_, names) => {
 		await withGraph(async ({ graph, client, idOf, events }) => {
 			linkPackage(graph, "tokens");
-			for (const name of names) await request(client, idOf(name));
+			for (const name of names) {
+				await request(client, idOf(name));
+			}
 			graph.write("packages/tokens/index.ts", HINTED);
 			client.moduleGraph.onFileChange(join(graph.root, "packages/tokens/index.ts"));
 			for (const name of names) {
@@ -1675,7 +1686,7 @@ describe("the project graph (ADR-0071)", () => {
 			});
 			await typeOracle.dispose();
 			// The guard judges their text. Only the module's own file loads, so only that keeps its map.
-			const texts = (files: readonly OutputFile[]) =>
+			const texts = (files: ReadonlyArray<OutputFile>) =>
 				files.map(({ path, contents }) => ({ path, contents }));
 			expect(texts(filesOf())).toEqual(texts(direct.outputs.html!));
 			expect(filesOf()[0]!.map).toEqual(direct.outputs.html![0]!.map);

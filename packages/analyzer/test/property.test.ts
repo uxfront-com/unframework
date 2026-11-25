@@ -98,7 +98,7 @@ describe("a sample of an exhaustive list", () => {
 
 describe("a bound scaled to the run", () => {
 	it("is the bound itself at full size", () => {
-		expect(scaledBound(5_000, { seed: 0, size: 32_034, full: 32_034 })).toBe(5_000);
+		expect(scaledBound(5000, { seed: 0, size: 32_034, full: 32_034 })).toBe(5000);
 		expect(scaledBound(1500, { seed: 0, size: 2000, full: 2000 })).toBe(1500);
 	});
 
@@ -117,7 +117,7 @@ describe("a bound scaled to the run", () => {
 			expect(bound, `size ${size}`).toBe(-1);
 			expect(0, `size ${size}`).toBeGreaterThan(bound);
 		}
-		expect(scaledBound(5_000, { seed: 0, size: 1, full: 32_034 })).toBe(-1);
+		expect(scaledBound(5000, { seed: 0, size: 1, full: 32_034 })).toBe(-1);
 		expect(scaledBound(1500, { seed: 0, size: 1, full: 2000 })).toBe(-1);
 	});
 });

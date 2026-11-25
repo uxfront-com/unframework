@@ -27,7 +27,7 @@ describe("copyPayload", () => {
 	});
 
 	it("refuses what no trace can hold, naming the event and where the value is", () => {
-		const refused = (args: unknown[]) => {
+		const refused = (args: Array<unknown>) => {
 			try {
 				copyPayload("change", args);
 			} catch (error) {

@@ -39,7 +39,7 @@ const hook = (id: string) =>
  * Writes outputs under `directory` in the scratch tree, and runs React Compiler (L3), tsgo (L4)
  * and oxlint (L5) on them: each must report nothing, about them or any other file.
  */
-async function expectClean(directory: string, outputs: readonly OutputFile[]): Promise<void> {
+async function expectClean(directory: string, outputs: ReadonlyArray<OutputFile>): Promise<void> {
 	const at = join(scratch, directory);
 	mkdirSync(at, { recursive: true });
 	const files = outputs.map((output) => {
@@ -55,9 +55,13 @@ async function expectClean(directory: string, outputs: readonly OutputFile[]): P
 	}
 	const paths = files.map(({ path }) => path);
 	const checked = await toolchain.typecheck(paths, context);
-	for (const [path, messages] of checked) expect(messages, path).toEqual([]);
+	for (const [path, messages] of checked) {
+		expect(messages, path).toEqual([]);
+	}
 	const linted = await toolchain.lint(paths, context);
-	for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+	for (const [path, messages] of linted) {
+		expect(messages, path).toEqual([]);
+	}
 }
 
 /**
@@ -79,7 +83,9 @@ async function compileProject(files: Record<string, string>) {
 		}
 		const result = await compile(source, { filename, targets: ["react"], resolve, typeOracle });
 		diagnostics.push(...result.diagnostics);
-		for (const file of result.outputs.react ?? []) outputs.set(file.path, file.contents);
+		for (const file of result.outputs.react ?? []) {
+			outputs.set(file.path, file.contents);
+		}
 	}
 	return {
 		diagnostics,

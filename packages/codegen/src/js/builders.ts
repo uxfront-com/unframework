@@ -14,7 +14,7 @@ function isIdentifierName(name: string): boolean {
 // --- Identifiers and literals ---------------------------------------------------------------
 
 export function identifier(name: string): AST.IdentifierReference {
-	return { type: "Identifier", name, ...at } as AST.IdentifierReference;
+	return { type: "Identifier", name, ...at };
 }
 
 /** A binding identifier, with a type annotation when given (`props: Props`). */
@@ -27,19 +27,19 @@ export function bindingIdentifier(
 		name,
 		...(typeAnnotation ? { typeAnnotation: tsTypeAnnotation(typeAnnotation) } : {}),
 		...at,
-	} as AST.BindingIdentifier;
+	};
 }
 
 export function stringLiteral(value: string): AST.StringLiteral {
-	return { type: "Literal", value, raw: JSON.stringify(value), ...at } as AST.StringLiteral;
+	return { type: "Literal", value, raw: JSON.stringify(value), ...at };
 }
 
 export function booleanLiteral(value: boolean): AST.BooleanLiteral {
-	return { type: "Literal", value, raw: String(value), ...at } as AST.BooleanLiteral;
+	return { type: "Literal", value, raw: String(value), ...at };
 }
 
 export function nullLiteral(): AST.NullLiteral {
-	return { type: "Literal", value: null, raw: "null", ...at } as AST.NullLiteral;
+	return { type: "Literal", value: null, raw: "null", ...at };
 }
 
 /**
@@ -48,13 +48,18 @@ export function nullLiteral(): AST.NullLiteral {
  * are. A negative number is a unary minus.
  */
 export function numberLiteral(value: number): AST.NumericLiteral | AST.UnaryExpression {
-	if (value < 0 || Object.is(value, -0)) return unaryExpression("-", numberLiteral(-value));
-	return { type: "Literal", value, raw: String(value), ...at } as AST.NumericLiteral;
+	if (value < 0 || Object.is(value, -0)) {
+		return unaryExpression("-", numberLiteral(-value));
+	}
+	return { type: "Literal", value, raw: String(value), ...at };
 }
 
 /** A template literal without expressions. Escapes backticks, `${` and backslashes. */
 export function templateLiteral(text: string): AST.TemplateLiteral {
-	const raw = text.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+	const raw = text
+		.replaceAll("\\", String.raw`\\`)
+		.replaceAll("`", "\\`")
+		.replaceAll("${", "\\${");
 	return {
 		type: "TemplateLiteral",
 		quasis: [{ type: "TemplateElement", value: { raw, cooked: text }, tail: true, ...at }],
@@ -65,13 +70,13 @@ export function templateLiteral(text: string): AST.TemplateLiteral {
 
 // --- Programs and modules -------------------------------------------------------------------
 
-export function program(body: AST.Statement[]): AST.Program {
-	return { type: "Program", sourceType: "module", hashbang: null, body, ...at } as AST.Program;
+export function program(body: Array<AST.Statement>): AST.Program {
+	return { type: "Program", sourceType: "module", hashbang: null, body, ...at };
 }
 
 export function importDeclaration(
 	source: string,
-	specifiers: AST.ImportDeclarationSpecifier[],
+	specifiers: Array<AST.ImportDeclarationSpecifier>,
 	importKind: "value" | "type" = "value",
 ): AST.ImportDeclaration {
 	return {
@@ -82,7 +87,7 @@ export function importDeclaration(
 		phase: null,
 		importKind,
 		...at,
-	} as AST.ImportDeclaration;
+	};
 }
 
 export function importSpecifier(
@@ -96,7 +101,7 @@ export function importSpecifier(
 		local: bindingIdentifier(local),
 		importKind,
 		...at,
-	} as AST.ImportSpecifier;
+	};
 }
 
 export function importDefaultSpecifier(local: string): AST.ImportDefaultSpecifier {
@@ -104,7 +109,7 @@ export function importDefaultSpecifier(local: string): AST.ImportDefaultSpecifie
 		type: "ImportDefaultSpecifier",
 		local: bindingIdentifier(local),
 		...at,
-	} as AST.ImportDefaultSpecifier;
+	};
 }
 
 export function exportDefault(
@@ -115,7 +120,7 @@ export function exportDefault(
 		declaration,
 		exportKind: "value",
 		...at,
-	} as AST.ExportDefaultDeclaration;
+	};
 }
 
 export function exportNamed(declaration: AST.Declaration): AST.ExportNamedDeclaration {
@@ -127,43 +132,43 @@ export function exportNamed(declaration: AST.Declaration): AST.ExportNamedDeclar
 		exportKind: "value",
 		attributes: [],
 		...at,
-	} as AST.ExportNamedDeclaration;
+	};
 }
 
 /** `export { local, local as alias, local as default };` */
-export function exportList(local: string, names: readonly string[]): AST.ExportNamedDeclaration {
+export function exportList(
+	local: string,
+	names: ReadonlyArray<string>,
+): AST.ExportNamedDeclaration {
 	return {
 		type: "ExportNamedDeclaration",
 		declaration: null,
-		specifiers: names.map(
-			(name) =>
-				({
-					type: "ExportSpecifier",
-					local: identifier(local),
-					exported: identifier(name),
-					exportKind: "value",
-					...at,
-				}) as AST.ExportSpecifier,
-		),
+		specifiers: names.map((name) => ({
+			type: "ExportSpecifier",
+			local: identifier(local),
+			exported: identifier(name),
+			exportKind: "value",
+			...at,
+		})),
 		source: null,
 		exportKind: "value",
 		attributes: [],
 		...at,
-	} as AST.ExportNamedDeclaration;
+	};
 }
 
 // --- Statements -----------------------------------------------------------------------------
 
-export function blockStatement(body: AST.Statement[]): AST.BlockStatement {
-	return { type: "BlockStatement", body, ...at } as AST.BlockStatement;
+export function blockStatement(body: Array<AST.Statement>): AST.BlockStatement {
+	return { type: "BlockStatement", body, ...at };
 }
 
 export function returnStatement(argument: AST.Expression | null): AST.ReturnStatement {
-	return { type: "ReturnStatement", argument, ...at } as AST.ReturnStatement;
+	return { type: "ReturnStatement", argument, ...at };
 }
 
 export function expressionStatement(expression: AST.Expression): AST.ExpressionStatement {
-	return { type: "ExpressionStatement", expression, ...at } as AST.ExpressionStatement;
+	return { type: "ExpressionStatement", expression, ...at };
 }
 
 /**
@@ -172,10 +177,10 @@ export function expressionStatement(expression: AST.Expression): AST.ExpressionS
  */
 export function ifStatement(
 	test: AST.Expression,
-	consequent: AST.Statement | AST.Statement[],
-	alternate?: AST.Statement | AST.Statement[],
+	consequent: AST.Statement | Array<AST.Statement>,
+	alternate?: AST.Statement | Array<AST.Statement>,
 ): AST.IfStatement {
-	const statement = (body: AST.Statement | AST.Statement[]) =>
+	const statement = (body: AST.Statement | Array<AST.Statement>) =>
 		Array.isArray(body) ? blockStatement(body) : body;
 	return {
 		type: "IfStatement",
@@ -183,7 +188,7 @@ export function ifStatement(
 		consequent: statement(consequent),
 		alternate: alternate === undefined ? null : statement(alternate),
 		...at,
-	} as AST.IfStatement;
+	};
 }
 
 /**
@@ -204,15 +209,15 @@ export function variableDeclaration(
 		declare: false,
 		declarations: [{ type: "VariableDeclarator", id, init, definite: false, ...at }],
 		...at,
-	} as AST.VariableDeclaration;
+	};
 }
 
 // --- Functions and calls --------------------------------------------------------------------
 
 export function functionDeclaration(
 	name: string,
-	params: AST.ParamPattern[],
-	body: AST.Statement[],
+	params: Array<AST.ParamPattern>,
+	body: Array<AST.Statement>,
 	options: { returnType?: AST.TSType; async?: boolean } = {},
 ): AST.Function {
 	return {
@@ -222,7 +227,7 @@ export function functionDeclaration(
 		async: Boolean(options.async),
 		declare: false,
 		params,
-		body: blockStatement(body) as AST.FunctionBody,
+		body: blockStatement(body),
 		expression: false,
 		typeParameters: null,
 		returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
@@ -232,8 +237,8 @@ export function functionDeclaration(
 
 /** `(params) => body`, or `async (params): T => body` with the options. */
 export function arrowFunction(
-	params: AST.ParamPattern[],
-	body: AST.Statement[] | AST.Expression,
+	params: Array<AST.ParamPattern>,
+	body: Array<AST.Statement> | AST.Expression,
 	options: { async?: boolean; returnType?: AST.TSType } = {},
 ): AST.ArrowFunctionExpression {
 	const expression = !Array.isArray(body);
@@ -254,8 +259,8 @@ export function arrowFunction(
 /** A call, with type arguments when given (`component$<Props>(…)`, `input<string>()`). */
 export function callExpression(
 	callee: AST.Expression,
-	args: AST.Argument[],
-	typeArguments: readonly AST.TSType[] = [],
+	args: Array<AST.Argument>,
+	typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.CallExpression {
 	return {
 		type: "CallExpression",
@@ -264,14 +269,14 @@ export function callExpression(
 		optional: false,
 		typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
 		...at,
-	} as AST.CallExpression;
+	};
 }
 
 /** `new callee(args)`, with type arguments when given (`new Map<string, number>()`). */
 export function newExpression(
 	callee: AST.Expression,
-	args: AST.Argument[],
-	typeArguments: readonly AST.TSType[] = [],
+	args: Array<AST.Argument>,
+	typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.NewExpression {
 	return {
 		type: "NewExpression",
@@ -279,7 +284,7 @@ export function newExpression(
 		arguments: args,
 		typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
 		...at,
-	} as AST.NewExpression;
+	};
 }
 
 /** `await argument`. */
@@ -297,7 +302,7 @@ export function restElement(name: string, typeAnnotation?: AST.TSType): AST.Form
 		typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
 		value: null,
 		...at,
-	} as AST.FormalParameterRest;
+	};
 }
 
 // --- Patterns -------------------------------------------------------------------------------
@@ -307,7 +312,7 @@ export function restElement(name: string, typeAnnotation?: AST.TSType): AST.Form
  * with its default when given (see {@link bindingProperty}).
  */
 export function objectPattern(
-	properties: (AST.BindingProperty | AST.BindingRestElement)[],
+	properties: Array<AST.BindingProperty | AST.BindingRestElement>,
 	typeAnnotation?: AST.TSType,
 ): AST.ObjectPattern {
 	return {
@@ -317,7 +322,7 @@ export function objectPattern(
 		optional: false,
 		typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
 		...at,
-	} as AST.ObjectPattern;
+	};
 }
 
 /**
@@ -325,7 +330,7 @@ export function objectPattern(
  * (`null`).
  */
 export function arrayPattern(
-	elements: (string | AST.BindingPattern | null)[],
+	elements: Array<string | AST.BindingPattern | null>,
 	typeAnnotation?: AST.TSType,
 ): AST.ArrayPattern {
 	return {
@@ -337,7 +342,7 @@ export function arrayPattern(
 		optional: false,
 		typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
 		...at,
-	} as AST.ArrayPattern;
+	};
 }
 
 /** The rest of an object pattern, `...rest`. */
@@ -350,7 +355,7 @@ export function bindingRestElement(name: string): AST.BindingRestElement {
 		typeAnnotation: null,
 		value: null,
 		...at,
-	} as AST.BindingRestElement;
+	};
 }
 
 /** A shorthand property of an object pattern, `name` or `name = defaultValue`. */
@@ -358,7 +363,7 @@ export function bindingProperty(name: string, defaultValue?: AST.Expression): AS
 	return {
 		type: "Property",
 		kind: "init",
-		key: identifier(name) as unknown as AST.IdentifierName,
+		key: identifier(name),
 		value: defaultValue
 			? assignmentPattern(bindingIdentifier(name), defaultValue)
 			: bindingIdentifier(name),
@@ -366,7 +371,7 @@ export function bindingProperty(name: string, defaultValue?: AST.Expression): AS
 		shorthand: true,
 		computed: false,
 		...at,
-	} as AST.BindingProperty;
+	};
 }
 
 /** `left = right`, a binding with a default. */
@@ -382,7 +387,7 @@ export function assignmentPattern(
 		optional: false,
 		typeAnnotation: null,
 		...at,
-	} as AST.AssignmentPattern;
+	};
 }
 
 // --- Expressions ----------------------------------------------------------------------------
@@ -411,7 +416,7 @@ export function memberExpression(
 
 /** An optional chain, around the outermost link of a chain holding `?.`. */
 export function chainExpression(expression: AST.ChainElement): AST.ChainExpression {
-	return { type: "ChainExpression", expression, ...at } as AST.ChainExpression;
+	return { type: "ChainExpression", expression, ...at };
 }
 
 export function conditionalExpression(
@@ -435,7 +440,7 @@ export function binaryExpression(
 	left: AST.Expression,
 	right: AST.Expression,
 ): AST.BinaryExpression {
-	return { type: "BinaryExpression", operator, left, right, ...at } as AST.BinaryExpression;
+	return { type: "BinaryExpression", operator, left, right, ...at };
 }
 
 export function unaryExpression(
@@ -468,8 +473,8 @@ export function updateExpression(
 	return { type: "UpdateExpression", operator, prefix, argument, ...at };
 }
 
-export function arrayExpression(elements: AST.ArrayExpressionElement[]): AST.ArrayExpression {
-	return { type: "ArrayExpression", elements, ...at } as AST.ArrayExpression;
+export function arrayExpression(elements: Array<AST.ArrayExpressionElement>): AST.ArrayExpression {
+	return { type: "ArrayExpression", elements, ...at };
 }
 
 export function spreadElement(argument: AST.Expression): AST.SpreadElement {
@@ -494,7 +499,7 @@ export function property(
 		shorthand: Boolean(options.shorthand) && isIdentifierName(key),
 		computed: false,
 		...at,
-	} as AST.ObjectProperty;
+	};
 }
 
 /**
@@ -502,7 +507,7 @@ export function property(
  * spreads.
  */
 export function objectExpression(
-	properties: ([key: string, value: AST.Expression] | AST.ObjectPropertyKind)[],
+	properties: Array<[key: string, value: AST.Expression] | AST.ObjectPropertyKind>,
 ): AST.ObjectExpression {
 	return {
 		type: "ObjectExpression",
@@ -510,7 +515,7 @@ export function objectExpression(
 			Array.isArray(entry) ? property(entry[0], entry[1]) : entry,
 		),
 		...at,
-	} as AST.ObjectExpression;
+	};
 }
 
 /** `expression satisfies type`. */
@@ -535,18 +540,18 @@ export function tsTypeAnnotation(type: AST.TSType): AST.TSTypeAnnotation {
 /** A reference to a named type, with type arguments when given (`Partial<Props>`). */
 export function typeReference(
 	name: string,
-	typeArguments: readonly AST.TSType[] = [],
+	typeArguments: ReadonlyArray<AST.TSType> = [],
 ): AST.TSTypeReference {
 	return {
 		type: "TSTypeReference",
 		typeName: identifier(name),
 		typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
 		...at,
-	} as AST.TSTypeReference;
+	};
 }
 
 function typeParameterInstantiation(
-	params: readonly AST.TSType[],
+	params: ReadonlyArray<AST.TSType>,
 ): AST.TSTypeParameterInstantiation {
 	return { type: "TSTypeParameterInstantiation", params: [...params], ...at };
 }
@@ -574,7 +579,7 @@ const KEYWORD_TYPES = {
 } as const satisfies Record<KeywordType, string>;
 
 export function keywordType(keyword: KeywordType): AST.TSType {
-	return { type: KEYWORD_TYPES[keyword], ...at } as AST.TSType;
+	return { type: KEYWORD_TYPES[keyword], ...at };
 }
 
 /** `element[]`. */
@@ -583,22 +588,22 @@ export function arrayType(element: AST.TSType): AST.TSArrayType {
 }
 
 /** `a | b`. */
-export function unionType(types: readonly AST.TSType[]): AST.TSUnionType {
+export function unionType(types: ReadonlyArray<AST.TSType>): AST.TSUnionType {
 	return { type: "TSUnionType", types: [...types], ...at };
 }
 
 // --- Classes --------------------------------------------------------------------------------
 
 export function decorator(expression: AST.Expression): AST.Decorator {
-	return { type: "Decorator", expression, ...at } as AST.Decorator;
+	return { type: "Decorator", expression, ...at };
 }
 
 /** A class, with the interfaces it implements by name (`implements OnInit`). */
 export function classDeclaration(
 	name: string,
-	decorators: AST.Decorator[],
-	body: AST.ClassElement[] = [],
-	options: { implements?: readonly string[] } = {},
+	decorators: Array<AST.Decorator>,
+	body: Array<AST.ClassElement> = [],
+	options: { implements?: ReadonlyArray<string> } = {},
 ): AST.Class {
 	return {
 		type: "ClassDeclaration",
@@ -617,7 +622,7 @@ export function classDeclaration(
 		abstract: false,
 		declare: false,
 		...at,
-	} as AST.Class;
+	};
 }
 
 /**
@@ -637,7 +642,7 @@ export function propertyDefinition(
 	return {
 		type: "PropertyDefinition",
 		decorators: [],
-		key: identifier(name) as unknown as AST.IdentifierName,
+		key: identifier(name),
 		typeAnnotation: options.typeAnnotation ? tsTypeAnnotation(options.typeAnnotation) : null,
 		value,
 		computed: false,
@@ -659,8 +664,8 @@ export function propertyDefinition(
  */
 export function methodDefinition(
 	name: string,
-	params: AST.ParamPattern[],
-	body: AST.Statement[],
+	params: Array<AST.ParamPattern>,
+	body: Array<AST.Statement>,
 	options: {
 		kind?: "method" | "constructor";
 		async?: boolean;
@@ -673,7 +678,7 @@ export function methodDefinition(
 	return {
 		type: "MethodDefinition",
 		decorators: [],
-		key: identifier(kind === "constructor" ? "constructor" : name) as unknown as AST.IdentifierName,
+		key: identifier(kind === "constructor" ? "constructor" : name),
 		value: {
 			type: "FunctionExpression",
 			id: null,
@@ -681,7 +686,7 @@ export function methodDefinition(
 			async: Boolean(options.async),
 			declare: false,
 			params,
-			body: blockStatement(body) as AST.FunctionBody,
+			body: blockStatement(body),
 			expression: false,
 			typeParameters: null,
 			returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
@@ -738,10 +743,7 @@ export function jsxAttribute(
 	return {
 		type: "JSXAttribute",
 		name: jsxName(name) as AST.JSXAttributeName,
-		value:
-			typeof value === "string"
-				? ({ type: "Literal", value, raw: `"${value}"`, ...at } as AST.StringLiteral)
-				: value,
+		value: typeof value === "string" ? { type: "Literal", value, raw: `"${value}"`, ...at } : value,
 		...at,
 	};
 }
@@ -753,14 +755,14 @@ export function jsxSpreadAttribute(argument: AST.Expression): AST.JSXSpreadAttri
 
 /** `{expression}`, as a child or an attribute value. */
 export function jsxExpressionContainer(expression: AST.Expression): AST.JSXExpressionContainer {
-	return { type: "JSXExpressionContainer", expression, ...at } as AST.JSXExpressionContainer;
+	return { type: "JSXExpressionContainer", expression, ...at };
 }
 
 /** An element, self-closing when it has no children. */
 export function jsxElement(
 	name: string,
-	attributes: AST.JSXAttributeItem[] = [],
-	children: AST.JSXChild[] = [],
+	attributes: Array<AST.JSXAttributeItem> = [],
+	children: Array<AST.JSXChild> = [],
 ): AST.JSXElement {
 	const elementName = jsxName(name);
 	const selfClosing = children.length === 0;
@@ -781,12 +783,12 @@ export function jsxElement(
 }
 
 /** `<>…</>`. */
-export function jsxFragment(children: AST.JSXChild[]): AST.JSXFragment {
+export function jsxFragment(children: Array<AST.JSXChild>): AST.JSXFragment {
 	return {
 		type: "JSXFragment",
 		openingFragment: { type: "JSXOpeningFragment", ...at },
 		children,
 		closingFragment: { type: "JSXClosingFragment", ...at },
 		...at,
-	} as AST.JSXFragment;
+	};
 }

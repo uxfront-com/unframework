@@ -27,18 +27,28 @@ export function parseKeys(
 	text: string,
 	action: string,
 	held: ReadonlySet<string> = new Set(),
-): KeyInput[] {
+): Array<KeyInput> {
 	const refuse = (problem: string): never => {
 		throw new TypeError(`${action}: ${problem} in ${JSON.stringify(text)}: ${SYNTAX}.`);
 	};
-	if (text === "") refuse("no key to press");
-	const keys: KeyInput[] = [];
+	if (text === "") {
+		refuse("no key to press");
+	}
+	const keys: Array<KeyInput> = [];
 	const holding = new Set(held);
 	const add = (written: string, key: string, press: boolean, release: boolean) => {
-		if (press && holding.has(key)) refuse(`${written} presses ${key}, which is held already`);
-		if (!press && !holding.has(key)) refuse(`${written} releases ${key}, which is not held`);
-		if (!release) holding.add(key);
-		if (!press) holding.delete(key);
+		if (press && holding.has(key)) {
+			refuse(`${written} presses ${key}, which is held already`);
+		}
+		if (!press && !holding.has(key)) {
+			refuse(`${written} releases ${key}, which is not held`);
+		}
+		if (!release) {
+			holding.add(key);
+		}
+		if (!press) {
+			holding.delete(key);
+		}
 		keys.push({ key, text: isCharacter(key), press, release });
 	};
 	const chars = characters(text);
@@ -53,10 +63,14 @@ export function parseKeys(
 			add(char, char, true, true);
 		} else {
 			const end = chars.indexOf("}", index + 1);
-			if (end === -1) refuse(`the "{" at ${index} is never closed`);
+			if (end === -1) {
+				refuse(`the "{" at ${index} is never closed`);
+			}
 			const tag = chars.slice(index + 1, end).join("");
 			const match = /^(\/)?([^{}/>[\]\\]+)(>)?$/u.exec(tag);
-			if (!match || (match[1] && match[3])) refuse(`{${tag}} is not a key`);
+			if (!match || (match[1] && match[3])) {
+				refuse(`{${tag}} is not a key`);
+			}
 			const [, release, key = "", hold] = match!;
 			add(`{${tag}}`, key, !release, !hold);
 			index = end;
@@ -75,6 +89,6 @@ export function isCharacter(key: string): boolean {
  * `keyboard.type` loops with `for … of`): an emoji of several code points is several keys there
  * too, so a grapheme is not one character here.
  */
-function characters(text: string): string[] {
+function characters(text: string): Array<string> {
 	return Array.from(text);
 }

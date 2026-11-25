@@ -40,7 +40,7 @@ import { writeIfChanged } from "./policy.ts";
 export type { GeometryDelta } from "../visual-types.ts";
 
 /** The font file's internal family name that CDP reports for the bundled "UF Test Sans". */
-export const ALLOWED_FONTS: readonly string[] = ["Inter"];
+export const ALLOWED_FONTS: ReadonlyArray<string> = ["Inter"];
 
 /** Baseline PNGs are named after the browser and the platform that produced them. */
 const BROWSER = "chromium";
@@ -57,7 +57,7 @@ interface RunProject {
 export interface VisualCommandContext extends CommandProject {
 	project: CommandProject["project"] & {
 		/** The run's projects, after `--project`: whether the reference's browser project is in it. */
-		vitest?: { projects: readonly RunProject[] };
+		vitest?: { projects: ReadonlyArray<RunProject> };
 	};
 	page: Page;
 	iframe: { locator(selector: string): PlaywrightLocatorLike };
@@ -92,7 +92,7 @@ const STATE = Symbol.for("unframework.visual.references");
 
 function references(): Map<string, ReferenceCapture> {
 	const store = globalThis as { [STATE]?: Map<string, ReferenceCapture> };
-	return (store[STATE] ??= new Map());
+	return (store[STATE] ??= new Map<string, ReferenceCapture>());
 }
 
 const cdpSessions = new WeakMap<Page, Promise<CDPSession>>();
@@ -324,13 +324,15 @@ export async function captureAt(
 	const expectedBuffer = readFileSync(expectedPng);
 	const expected = PNG.sync.read(expectedBuffer);
 	const against = rel(expectedPng);
-	const attachments: CaptureAttachment[] = [];
+	const attachments: Array<CaptureAttachment> = [];
 	const recordFailure = (diff?: PNG) => {
-		const images: [CaptureAttachment["name"], Uint8Array, PNG][] = [
+		const images: Array<[CaptureAttachment["name"], Uint8Array, PNG]> = [
 			["reference", expectedBuffer, expected],
 			["actual", png, actual],
 		];
-		if (diff) images.push(["diff", PNG.sync.write(diff), diff]);
+		if (diff) {
+			images.push(["diff", PNG.sync.write(diff), diff]);
+		}
 		for (const [name, buffer, image] of images) {
 			const file = join(paths.diffs, `${name}.png`);
 			writeIfChanged(file, buffer);
@@ -397,7 +399,7 @@ async function stableCapture(
 		caret: "hide",
 		scale: "css",
 		type: "png",
-		timeout: 5_000,
+		timeout: 5000,
 	};
 	// The union of the container's box and those of what it teleported (ADR-0098).
 	const clip = request.teleported?.length ? await unionClip(context, request) : undefined;
@@ -406,7 +408,9 @@ async function stableCapture(
 	let previous = await shoot();
 	for (let attempt = 0; attempt < 10; attempt += 1) {
 		const next = await shoot();
-		if (next.equals(previous)) return next;
+		if (next.equals(previous)) {
+			return next;
+		}
 		previous = next;
 	}
 	return undefined;
@@ -419,8 +423,10 @@ async function unionClip(
 ): Promise<{ x: number; y: number; width: number; height: number }> {
 	const boxes = [];
 	for (const { selector } of [request.element, ...(request.teleported ?? [])]) {
-		const box = await context.iframe.locator(selector).boundingBox({ timeout: 5_000 });
-		if (!box) throw new Error(`[uf:visual] ${selector} has no box to capture.`);
+		const box = await context.iframe.locator(selector).boundingBox({ timeout: 5000 });
+		if (!box) {
+			throw new Error(`[uf:visual] ${selector} has no box to capture.`);
+		}
 		boxes.push(box);
 	}
 	const left = Math.min(...boxes.map(({ x }) => x));
@@ -436,11 +442,11 @@ interface CdpNode {
 	nodeType: number;
 	localName?: string;
 	/** Name, value, name, value… */
-	attributes?: string[];
+	attributes?: Array<string>;
 	pseudoType?: string;
-	children?: CdpNode[];
-	shadowRoots?: CdpNode[];
-	pseudoElements?: CdpNode[];
+	children?: Array<CdpNode>;
+	shadowRoots?: Array<CdpNode>;
+	pseudoElements?: Array<CdpNode>;
 	contentDocument?: CdpNode;
 }
 
@@ -458,8 +464,8 @@ interface CdpNode {
 async function fontAudit(
 	page: Page,
 	marker: string,
-	families: readonly string[],
-): Promise<string[]> {
+	families: ReadonlyArray<string>,
+): Promise<Array<string>> {
 	let session = cdpSessions.get(page);
 	if (!session) {
 		session = (async () => {
@@ -475,7 +481,7 @@ async function fontAudit(
 	const { root } = (await cdp.send("DOM.getDocument", { depth: -1, pierce: true })) as {
 		root: CdpNode;
 	};
-	const containers: CdpNode[] = [];
+	const containers: Array<CdpNode> = [];
 	const find = (node: CdpNode) => {
 		const attributes = node.attributes ?? [];
 		for (let index = 0; index < attributes.length; index += 2) {
@@ -493,23 +499,32 @@ async function fontAudit(
 		}
 	};
 	find(root);
-	if (!containers.length)
+	if (!containers.length) {
 		throw new Error(`[uf:visual] The font audit could not find the capture container ${marker}.`);
+	}
 
 	// Every element under the container, with the element a reader would name for it: a node in
 	// a user-agent shadow root is its host's rendering, a pseudo-element its owner's.
-	const elements: { nodeId: number; label: string }[] = [];
+	const elements: Array<{ nodeId: number; label: string }> = [];
 	const collect = (node: CdpNode, host: string | undefined) => {
 		let label = host;
 		if (node.nodeType === 1) {
 			label = node.pseudoType ? `${host}::${node.pseudoType}` : (host ?? `<${node.localName}>`);
 			elements.push({ nodeId: node.nodeId, label });
 		}
-		for (const child of node.children ?? []) collect(child, host);
-		for (const shadow of node.shadowRoots ?? []) collect(shadow, label);
-		for (const pseudo of node.pseudoElements ?? []) collect(pseudo, label);
+		for (const child of node.children ?? []) {
+			collect(child, host);
+		}
+		for (const shadow of node.shadowRoots ?? []) {
+			collect(shadow, label);
+		}
+		for (const pseudo of node.pseudoElements ?? []) {
+			collect(pseudo, label);
+		}
 	};
-	for (const container of containers) collect(container, undefined);
+	for (const container of containers) {
+		collect(container, undefined);
+	}
 
 	// Every element's request is sent before any answer is awaited. CDP answers one session's
 	// requests in the order they were sent, so the audit waits for one round trip, not one per
@@ -522,8 +537,12 @@ async function fontAudit(
 	for (const [index, { fonts }] of answers.entries()) {
 		const { label } = elements[index]!;
 		for (const font of fonts) {
-			if (font.isCustomFont && ALLOWED_FONTS.includes(font.familyName)) continue;
-			if (families.includes(font.familyName)) continue;
+			if (font.isCustomFont && ALLOWED_FONTS.includes(font.familyName)) {
+				continue;
+			}
+			if (families.includes(font.familyName)) {
+				continue;
+			}
 			violations.add(
 				`${label} rendered ${font.glyphCount} glyph(s) with "${font.familyName}"${font.isCustomFont ? "" : " (system font)"}`,
 			);
@@ -563,8 +582,8 @@ function countDifferentPixels(a: Uint8Array, b: Uint8Array): number {
 export function diffGeometry(
 	expected: GeometrySnapshot,
 	actual: GeometrySnapshot,
-): GeometryDelta[] {
-	const deltas: GeometryDelta[] = [];
+): Array<GeometryDelta> {
+	const deltas: Array<GeometryDelta> = [];
 	const paths = new Set([...Object.keys(expected.nodes), ...Object.keys(actual.nodes)]);
 	for (const path of [...paths].sort()) {
 		const e = expected.nodes[path];
@@ -593,17 +612,21 @@ export function diffGeometry(
 
 /** Geometry deltas as message lines, the first `limit` of them. */
 export function formatGeometryDiff(
-	deltas: readonly GeometryDelta[],
+	deltas: ReadonlyArray<GeometryDelta>,
 	against = "the reference",
 	limit = 12,
-): string[] {
-	if (!deltas.length) return [];
+): Array<string> {
+	if (!deltas.length) {
+		return [];
+	}
 	const lines = deltas
 		.slice(0, limit)
 		.map(
 			(delta) =>
 				`  ${delta.path}  ${delta.property}: ${JSON.stringify(delta.expected)} → ${JSON.stringify(delta.actual)}`,
 		);
-	if (deltas.length > limit) lines.push(`  … ${deltas.length - limit} more`);
+	if (deltas.length > limit) {
+		lines.push(`  … ${deltas.length - limit} more`);
+	}
 	return [`Geometry and computed styles differ from ${against} (${deltas.length}):`, ...lines];
 }

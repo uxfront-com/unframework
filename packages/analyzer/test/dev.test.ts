@@ -22,7 +22,9 @@ describe("isDev", () => {
 		expect(codes(diagnostics)).toEqual([]);
 		const [item] = only(module).setup;
 		expect(item?.kind).toBe("DevCheck");
-		if (item?.kind !== "DevCheck") return;
+		if (item?.kind !== "DevCheck") {
+			return;
+		}
 		expect(codeOf(source, item.code)).toBe(
 			'if (isDev) { const name = label?.trim(); if (!name) console.warn("no name"); } [dev:isDev, label:label, global:console]',
 		);
@@ -53,7 +55,9 @@ describe("isDev", () => {
 		expect(codes(diagnostics)).toEqual([]);
 		const hook = only(module).setup.find((item) => item.kind === "Lifecycle");
 		expect(hook?.kind).toBe("Lifecycle");
-		if (hook?.kind !== "Lifecycle") return;
+		if (hook?.kind !== "Lifecycle") {
+			return;
+		}
 		expect(hook.callback.body.refs.map((ref) => ref.kind)).toContain("Dev");
 		expect(codeOf(source, hook.callback.body)).toContain("dev:isDev");
 	});

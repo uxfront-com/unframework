@@ -154,7 +154,7 @@ export const astro: Target = defineTarget({
 	 * (`./composition.ts`, ADR-0054): the markup is printed first, since whether it names `Astro`
 	 * decides how the frontmatter declares `Props`.
 	 */
-	emit(source: UfComponent, context): OutputFile[] {
+	emit(source: UfComponent, context): Array<OutputFile> {
 		const { module } = context;
 		// A teleport prints nothing (ADR-0098), nor does a directive (ADR-0099), and a transition's
 		// child prints in its place (ADR-0100).
@@ -195,10 +195,12 @@ export const astro: Target = defineTarget({
 		// names the component claimed; without it, the frontmatter prints them inline, as before.
 		const share = context.helper && sharedHelper(context.helper, `${component.name}.astro`);
 		if (share) {
-			if (scope)
+			if (scope) {
 				imports.add(share("scopeAttributes"), "scopeAttributes", { local: scope, exact: true });
-			if (styleObject)
+			}
+			if (styleObject) {
 				imports.add(share("styleObject"), "styleObject", { local: styleObject, exact: true });
+			}
 		}
 		const code = frontmatterOf(component, module, {
 			spelling,

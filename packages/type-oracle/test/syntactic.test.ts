@@ -18,8 +18,8 @@ typeOracleContract("syntactic", ({ root }) =>
 );
 
 /** An oracle over files in memory, under `/project`, that records what it reads. */
-function memory(files: Record<string, string>): { oracle: TypeOracle; reads: string[] } {
-	const reads: string[] = [];
+function memory(files: Record<string, string>): { oracle: TypeOracle; reads: Array<string> } {
+	const reads: Array<string> = [];
 	const oracle = createSyntacticOracle({
 		root: "/project/",
 		readFile: (path) => {
@@ -824,7 +824,7 @@ describe("createSyntacticOracle", () => {
 			"D.uf.tsx": "function D(props: { d: string }) {}",
 			"types.tsx": "export interface P { a: string }",
 		};
-		const reads: string[] = [];
+		const reads: Array<string> = [];
 		const oracle = createSyntacticOracle({
 			root: "/project",
 			readFile: (path) => {
@@ -939,12 +939,17 @@ describe("createSyntacticOracle", () => {
 					root: project,
 					readFile: (path) => readFile(path, "utf8").catch(() => undefined),
 				});
-				const shapes = new Map();
-				for (const query of order) shapes.set(query, await oracle.resolveShape(query));
+				const shapes = new Map<unknown, TypeShape | undefined>();
+				for (const query of order) {
+					shapes.set(query, await oracle.resolveShape(query));
+				}
 				results.push(queries.map((query) => shapes.get(query)));
 			}
 			expect(results[0]).toEqual(results[1]);
 			const [a, b] = results[0]!;
+			if (!a || !b) {
+				throw new Error("The oracle resolved no shape for a query.");
+			}
 			expect(printShape(a)).toBe('{ tone: "v2.0.0" }');
 			expect(printShape(b)).toBe('{ tone: "v3.0.0" }');
 			expect(a.dependencies).toEqual(["pkg:tokens", "pkg:ui"]);
@@ -972,8 +977,10 @@ describe("createSyntacticOracle", () => {
 				root: project,
 				readFile: (path) => readFile(path, "utf8").catch(() => undefined),
 			});
-			const shapes = new Map();
-			for (const query of order) shapes.set(query, await oracle.resolveShape(query));
+			const shapes = new Map<unknown, TypeShape | undefined>();
+			for (const query of order) {
+				shapes.set(query, await oracle.resolveShape(query));
+			}
 			results.push([nested, owner].map((query) => shapes.get(query)));
 		}
 		expect(results[0]).toEqual(results[1]);
@@ -1039,7 +1046,7 @@ describe("createSyntacticOracle", () => {
 
 	it("reads a package again after update names it", async () => {
 		const project = fileURLToPath(new URL("fixtures/packages", import.meta.url));
-		const reads: string[] = [];
+		const reads: Array<string> = [];
 		const oracle = createSyntacticOracle({
 			root: project,
 			readFile: (path) => {

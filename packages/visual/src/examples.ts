@@ -21,7 +21,7 @@ import type { PreviewLayout } from "./preview/protocol.ts";
 export const EXAMPLE_SUFFIX = ".example.uf.tsx";
 
 /** The directories discovery never enters, besides dot directories and the run's own. */
-export const SKIPPED_DIRECTORIES: readonly string[] = ["node_modules", "dist"];
+export const SKIPPED_DIRECTORIES: ReadonlyArray<string> = ["node_modules", "dist"];
 
 /** One example of a project. */
 export interface Example {
@@ -38,7 +38,7 @@ export interface Example {
 	 * The groups the preview files it under, outermost first, as `@category Components/Actions/Button`
 	 * gives `["Components", "Actions", "Button"]`. Derived from its directory by default (ADR-0110).
 	 */
-	category: string[];
+	category: Array<string>;
 	/** Its name in the preview: `@title`, or its file name in words without its category's. */
 	title: string;
 	/** The text of its doc comment, when it has one. */
@@ -56,14 +56,14 @@ export interface DiscoverExamplesOptions {
 	/** The project's root (absolute). */
 	root: string;
 	/** Directories (absolute) to skip besides the defaults: the run directory. */
-	skip?: readonly string[];
+	skip?: ReadonlyArray<string>;
 }
 
 /**
  * Every `*.example.uf.tsx` under the root, at any depth, sorted by id. It skips
  * `node_modules`, `dist`, dot directories (`.unframework/`, among them) and `skip`.
  */
-export function discoverExamples(options: DiscoverExamplesOptions): Example[] {
+export function discoverExamples(options: DiscoverExamplesOptions): Array<Example> {
 	const root = resolve(options.root);
 	const skipped = new Set((options.skip ?? []).map((directory) => resolve(directory)));
 	// Entries, not paths: `exclude` gets some entries by their bare name, which would skip every
@@ -111,12 +111,12 @@ export function exampleBaselines(example: Pick<Example, "file" | "name">): Examp
  */
 export async function checkExamples(
 	root: string,
-	examples: readonly Example[],
-	compileErrors?: Map<string, Diagnostic[]>,
-): Promise<Diagnostic[]> {
+	examples: ReadonlyArray<Example>,
+	compileErrors?: Map<string, Array<Diagnostic>>,
+): Promise<Array<Diagnostic>> {
 	const read = (path: string) => readFile(path, "utf8").catch(() => undefined);
 	const resolver = createFileResolver({ root, readFile: read });
-	const diagnostics: Diagnostic[] = [];
+	const diagnostics: Array<Diagnostic> = [];
 	for (const example of examples) {
 		const source = await readFile(example.file, "utf8");
 		const filename = relative(root, example.file).split(sep).join("/");
@@ -158,7 +158,7 @@ const ROOT_CATEGORY = "Examples";
  * The words of a name: `ButtonColors` gives `Button` and `Colors`, `HTMLButton` gives `HTML` and
  * `Button`, `field-group` gives `field` and `group`.
  */
-function wordsOf(text: string): string[] {
+function wordsOf(text: string): Array<string> {
 	return text.match(/\p{Lu}+(?!\p{Ll})|\p{Lu}?\p{Ll}+|\p{L}+|\p{N}+/gu) ?? [];
 }
 
@@ -170,7 +170,10 @@ const capitalised = (word: string): string => word.charAt(0).toUpperCase() + wor
  * `_` as spaces; an example at the root, or in a root `examples/`, is in `Examples`. The title is
  * its file name in words, without a leading run of words equal to the category's.
  */
-export function derivedMetadata(id: string, name: string): { category: string[]; title: string } {
+export function derivedMetadata(
+	id: string,
+	name: string,
+): { category: Array<string>; title: string } {
 	const directories = id.split("/").slice(0, -1);
 	const directory = directories.at(-1) === "examples" ? directories.at(-2) : directories.at(-1);
 	const titled = directory?.split(/[-_]+/).filter(Boolean).map(capitalised).join(" ");
@@ -187,9 +190,9 @@ export function derivedMetadata(id: string, name: string): { category: string[];
 /** What {@link readExampleMetadata} gives. */
 export interface ExampleMetadataResult {
 	/** The examples, in the order given, each with what its doc comment sets. */
-	examples: Example[];
+	examples: Array<Example>;
 	/** UF7012 at each malformed tag, in the order of the examples and their tags. */
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 }
 
 /**
@@ -201,10 +204,10 @@ export interface ExampleMetadataResult {
  */
 export async function readExampleMetadata(
 	root: string,
-	examples: readonly Example[],
+	examples: ReadonlyArray<Example>,
 ): Promise<ExampleMetadataResult> {
-	const read: Example[] = [];
-	const diagnostics: Diagnostic[] = [];
+	const read: Array<Example> = [];
+	const diagnostics: Array<Diagnostic> = [];
 	for (const example of examples) {
 		const source = await readFile(example.file, "utf8").catch(() => undefined);
 		if (source === undefined) {
@@ -238,12 +241,14 @@ function exampleMetadata(
 	example: Example,
 	source: string,
 	filename: string,
-): { example: Example; diagnostics: Diagnostic[] } {
+): { example: Example; diagnostics: Array<Diagnostic> } {
 	const comment = docComment(source, filename);
-	if (!comment) return { example, diagnostics: [] };
+	if (!comment) {
+		return { example, diagnostics: [] };
+	}
 	const { description, tags } = comment;
 	const derived = derivedMetadata(example.id, example.name);
-	const diagnostics: Diagnostic[] = [];
+	const diagnostics: Array<Diagnostic> = [];
 	const warn = (tag: DocTag, message: string, help: string) =>
 		diagnostics.push(createDiagnostic("UF7012", { file: filename, span: tag.span, message, help }));
 	const values: { [Tag in KnownTag]?: string } = {};
@@ -256,7 +261,9 @@ function exampleMetadata(
 				`Keep one @${name}.`,
 			);
 		}
-		if (given.length === 1) values[name] = given[0]!.value;
+		if (given.length === 1) {
+			values[name] = given[0]!.value;
+		}
 	}
 	const tagOf = (name: KnownTag) => tags.find((tag) => tag.name === name)!;
 	const result: Example = { ...example, ...derived };
@@ -307,7 +314,9 @@ function exampleMetadata(
 			result.layout = layout;
 		}
 	}
-	if (description) result.description = description;
+	if (description) {
+		result.description = description;
+	}
 	return { example: result, diagnostics };
 }
 
@@ -357,22 +366,30 @@ const GAP_WORD = /^gap-(0|\d+(?:\.\d+)?(?:px|rem|em))$/;
  */
 function parseLayout(value: string): PreviewLayout | string {
 	const words = value.split(/\s+/).filter(Boolean);
-	if (!words.length) return "is empty";
+	if (!words.length) {
+		return "is empty";
+	}
 	if (words.includes("none")) {
-		if (words.length === 1) return { display: "block" };
+		if (words.length === 1) {
+			return { display: "block" };
+		}
 		return words.every((word) => word === "none")
 			? "gives none twice"
 			: "gives none with other words";
 	}
-	let layout: FlexLayout = DEFAULT_LAYOUT;
+	const layout: FlexLayout = { ...DEFAULT_LAYOUT };
 	const seen = new Set<string>();
 	for (const word of words) {
 		const gap = GAP_WORD.exec(word)?.[1];
 		const known = gap === undefined ? LAYOUT_WORDS.get(word) : { kind: "the gap", sets: { gap } };
-		if (!known) return `has the unknown word ${word}`;
-		if (seen.has(known.kind)) return `sets ${known.kind} twice`;
+		if (!known) {
+			return `has the unknown word ${word}`;
+		}
+		if (seen.has(known.kind)) {
+			return `sets ${known.kind} twice`;
+		}
 		seen.add(known.kind);
-		layout = { ...layout, ...known.sets };
+		Object.assign(layout, known.sets);
 	}
 	return layout;
 }
@@ -385,10 +402,12 @@ function parseLayout(value: string): PreviewLayout | string {
 function docComment(
 	source: string,
 	filename: string,
-): { description: string; tags: DocTag[] } | undefined {
+): { description: string; tags: Array<DocTag> } | undefined {
 	const { program, comments } = parseModule(filename, source);
 	const statement = program.body.find((node) => node.type === "ExportDefaultDeclaration");
-	if (!statement) return undefined;
+	if (!statement) {
+		return undefined;
+	}
 	const comment = comments.findLast((each) => each.end <= statement.start);
 	if (
 		!comment ||
@@ -400,8 +419,8 @@ function docComment(
 	}
 	// After `/**`; each line drops its indentation and its leading `*`.
 	let offset = comment.start + 3;
-	const text: string[] = [];
-	const tags: DocTag[] = [];
+	const text: Array<string> = [];
+	const tags: Array<DocTag> = [];
 	for (const [index, raw] of comment.value.slice(1).split("\n").entries()) {
 		const lead = (index === 0 ? /^[ \t]*/ : /^[ \t]*\*?[ \t]*/).exec(raw)![0].length;
 		const line = raw.slice(lead).trimEnd();
@@ -414,7 +433,9 @@ function docComment(
 		} else if (tags.length) {
 			// A tag's value goes on until the next tag.
 			const last = tags.at(-1)!;
-			if (line) last.value = last.value ? `${last.value} ${line}` : line;
+			if (line) {
+				last.value = last.value ? `${last.value} ${line}` : line;
+			}
 		} else {
 			text.push(line);
 		}

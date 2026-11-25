@@ -11,8 +11,10 @@ export const REFERENCE: TargetName = "vue";
  * The targets this run verifies: every built-in target, or the comma-separated `UF_TARGETS`
  * (`UF_TARGETS=vue,react`). An unknown name throws, so a typo never verifies nothing.
  */
-export function selectTargets(value: string | undefined): TargetName[] {
-	if (!value?.trim()) return [...TARGET_NAMES];
+export function selectTargets(value: string | undefined): Array<TargetName> {
+	if (!value?.trim()) {
+		return [...TARGET_NAMES];
+	}
 	const requested = value
 		.split(",")
 		.map((name) => name.trim())

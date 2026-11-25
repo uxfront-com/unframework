@@ -29,7 +29,7 @@ describe("embedOptions", () => {
 	});
 
 	it("names the parameter and its values for any other value, empty and repeated ones too", () => {
-		const cases: [string, string][] = [
+		const cases: Array<[string, string]> = [
 			["controls=yes", 'The controls parameter takes true, not "yes".'],
 			["controls=", 'The controls parameter takes true, not "".'],
 			["controls", 'The controls parameter takes true, not "".'],
@@ -42,7 +42,9 @@ describe("embedOptions", () => {
 			["theme=dark&theme=x", 'The theme parameter takes light or dark, not "x".'],
 			["theme=%3C%2Fscript%3E", 'The theme parameter takes light or dark, not "</script>".'],
 		];
-		for (const [query, error] of cases) expect(read(query), query).toEqual({ error });
+		for (const [query, error] of cases) {
+			expect(read(query), query).toEqual({ error });
+		}
 	});
 });
 
@@ -78,7 +80,7 @@ describe("controlKit's props rule", () => {
 	const label: PropControl = { name: "label", optional: false, kind: "string", initial: "" };
 
 	it("gives a component each control's value, leaving out an optional one at its default", () => {
-		const rows: [Record<string, ControlField>, Record<string, unknown>][] = [
+		const rows: Array<[Record<string, ControlField>, Record<string, unknown>]> = [
 			[
 				{
 					tone: field(""),
@@ -110,12 +112,12 @@ describe("controlKit's props rule", () => {
 	});
 
 	it("gives an example nothing at its defaults, and otherwise every key, undefined at default", () => {
-		const controls: ExampleControl[] = [
+		const controls: Array<ExampleControl> = [
 			{ ...tone, key: "ufControl0" },
 			{ ...on, key: "ufControl1" },
 			{ ...size, key: "ufControl2" },
 		];
-		const rows: [Record<string, string>, Record<string, unknown>][] = [
+		const rows: Array<[Record<string, string>, Record<string, unknown>]> = [
 			[{ ufControl0: "", ufControl1: "", ufControl2: "" }, {}],
 			[
 				{ ufControl0: "warn", ufControl1: "", ufControl2: "" },

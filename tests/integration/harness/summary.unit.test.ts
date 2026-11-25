@@ -27,7 +27,7 @@ const SPEC_CASES = listCases()
 	.map((info) => info.id);
 
 /** The live layers each kind of project records (plan §7.3). */
-const LAYERS_OF: Record<string, LayerName[]> = {
+const LAYERS_OF: Record<string, Array<LayerName>> = {
 	compile: ["L1", "L2", "L14"],
 	harness: [],
 	toolchain: ["L3", "L4", "L5"],
@@ -42,14 +42,16 @@ const LAYERS_OF: Record<string, LayerName[]> = {
  * on the cases of its files.
  */
 function partial(
-	projects: readonly string[],
+	projects: ReadonlyArray<string>,
 	finishedAt: string,
-	{ shard = null, cases = CASES }: { shard?: Shard | null; cases?: readonly string[] } = {},
+	{ shard = null, cases = CASES }: { shard?: Shard | null; cases?: ReadonlyArray<string> } = {},
 ): string {
-	const records: ProjectRecord[] = projects.flatMap((project) => {
+	const records: Array<ProjectRecord> = projects.flatMap((project) => {
 		const [kind, target] = project.split(":") as [string, string | undefined];
 		const layers = Object.fromEntries(LAYERS_OF[kind]!.map((layer) => [layer, { status: "pass" }]));
-		if (!Object.keys(layers).length) return [];
+		if (!Object.keys(layers).length) {
+			return [];
+		}
 		return cases.flatMap((caseId) =>
 			(target ? [target] : TARGETS).map((cellTarget) => ({
 				project,
@@ -76,13 +78,13 @@ function partial(
 interface JobRun {
 	job: string;
 	name: string;
-	projects: string[];
+	projects: Array<string>;
 	/** Whether the job uploads its partial matrix for the parity job (`parity-*`). */
 	uploads: boolean;
 }
 
 /** Each job's block in ci.yml, from its id's line. */
-function jobBlocks(): string[] {
+function jobBlocks(): Array<string> {
 	const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
 	return workflow
 		.slice(workflow.indexOf("\njobs:\n"))
@@ -91,9 +93,9 @@ function jobBlocks(): string[] {
 }
 
 /** The CI jobs that run harness projects, and the jobs the parity job waits for, from ci.yml. */
-function ciJobs(): { runs: JobRun[]; parityNeeds: string[] } {
-	const runs: JobRun[] = [];
-	let parityNeeds: string[] = [];
+function ciJobs(): { runs: Array<JobRun>; parityNeeds: Array<string> } {
+	const runs: Array<JobRun> = [];
+	let parityNeeds: Array<string> = [];
 	for (const block of jobBlocks()) {
 		const job = block.slice(0, block.indexOf(":"));
 		if (job === "parity") {
@@ -105,7 +107,9 @@ function ciJobs(): { runs: JobRun[]; parityNeeds: string[] } {
 			continue;
 		}
 		const command = /vitest run((?: --project (?:"[^"]*"|\S+))+)/.exec(block);
-		if (!command) continue;
+		if (!command) {
+			continue;
+		}
 		const patterns = [...command[1]!.matchAll(/--project (?:"([^"]*)"|(\S+))/g)].map(
 			([, quoted, bare]) => (quoted ?? bare)!,
 		);
@@ -166,7 +170,9 @@ describe("CI's parity job", () => {
 
 	it("leaves out the Baselines job: an update run, which no summary judges (ADR-0062)", () => {
 		const baselines = jobBlocks().find((block) => block.startsWith("baselines:\n"));
-		if (!baselines) throw new Error("ci.yml has no baselines job.");
+		if (!baselines) {
+			throw new Error("ci.yml has no baselines job.");
+		}
 		expect(baselines).toContain("run: bash tests/integration/scripts/baselines.sh ci\n");
 		expect(baselines).not.toMatch(/^ {10}name: parity-/m);
 		expect(parityNeeds).not.toContain("baselines");
@@ -361,13 +367,13 @@ describe("the nightly's WebKit job, merged browser-only (ADR-0081)", () => {
 	const LISTBOX = "semantics/listbox";
 
 	/** A green batch's partial matrix: its browser projects on every case with a spec. */
-	function batch(targets: readonly string[], finishedAt: string): string {
+	function batch(targets: ReadonlyArray<string>, finishedAt: string): string {
 		const projects = targets.map((target) => `browser:${target}`);
 		const extra = targets.includes("react") ? [] : ["browser:react"];
 		const layers = Object.fromEntries(
 			LAYERS_OF.browser!.map((layer) => [layer, { status: "pass" }]),
 		);
-		const records: ProjectRecord[] = [
+		const records: Array<ProjectRecord> = [
 			...projects.flatMap((project) =>
 				SPEC_CASES.map((caseId) => ({
 					project,
@@ -394,7 +400,7 @@ describe("the nightly's WebKit job, merged browser-only (ADR-0081)", () => {
 			}),
 		);
 	}
-	const file = (targets: readonly string[]) =>
+	const file = (targets: ReadonlyArray<string>) =>
 		join(
 			reportsDir,
 			`parity-matrix.${runName(
@@ -402,7 +408,7 @@ describe("the nightly's WebKit job, merged browser-only (ADR-0081)", () => {
 				ALL,
 			)}.json`,
 		);
-	function writeBatches(batches: readonly (readonly string[])[]): void {
+	function writeBatches(batches: ReadonlyArray<ReadonlyArray<string>>): void {
 		batches.forEach((targets, index) =>
 			writeFileSync(file(targets), batch(targets, new Date(Date.now() + index).toISOString())),
 		);

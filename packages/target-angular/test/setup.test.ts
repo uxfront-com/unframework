@@ -17,7 +17,7 @@ async function output(file: string): Promise<string> {
 }
 
 /** Lines as one string, so an expectation reads as the output does. */
-const lines = (...text: string[]) => text.join("\n");
+const lines = (...text: Array<string>) => text.join("\n");
 
 describe("state, derived values and constants (ADR-0046)", () => {
 	it("seeds from inputs lazily, and reads what was seeded once in ngOnInit", async () => {
@@ -721,9 +721,11 @@ describe("reads a condition narrows (ADR-0046)", () => {
 		const [component] = module.components;
 		const binding = component!.bindings.find(({ name }) => name === "count")!;
 		// The one write, wherever the IR keeps it.
-		const writes: WriteReference[] = [];
+		const writes: Array<WriteReference> = [];
 		JSON.stringify(component, (_key, value: { kind?: string }) => {
-			if (value?.kind === "Write") writes.push(value as WriteReference);
+			if (value?.kind === "Write") {
+				writes.push(value as WriteReference);
+			}
 			return value;
 		});
 		const rules = classRules(planComponent(component!, module));

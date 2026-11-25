@@ -49,12 +49,14 @@ const STUB_FRAME = `<!doctype html>
 `;
 
 /** `ufShellFixture`: the shell page of a fixture, which only Node can read the catalogue for. */
-export const ufShellFixture: BrowserCommand<[name: ShellFixture, targets?: string[]]> = async (
+export const ufShellFixture: BrowserCommand<[name: ShellFixture, targets?: Array<string>]> = async (
 	_context,
 	name,
 	targets = TARGETS,
 ) => {
-	if (!SHELL_FIXTURES.includes(name)) throw new Error(`No shell fixture named ${String(name)}.`);
+	if (!SHELL_FIXTURES.includes(name)) {
+		throw new Error(`No shell fixture named ${String(name)}.`);
+	}
 	const root = ROOTS[name];
 	const catalogue = await readCatalogue(root, (await projectConfig(root)).srcDir);
 	const out = join(PACKAGE, ".output/shell");

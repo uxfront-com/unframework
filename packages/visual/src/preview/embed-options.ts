@@ -26,14 +26,16 @@ export function embedOptions(
 	params: URLSearchParams,
 	names: EmbedParamNames,
 ): EmbedOptions | { error: string } {
-	const accepted: [name: string, values: string[]][] = [
+	const accepted: Array<[name: string, values: Array<string>]> = [
 		[names.controls, ["true"]],
 		[names.theme, ["light", "dark"]],
 		[names.resize, ["true"]],
 	];
 	for (const [name, values] of accepted) {
 		for (const value of params.getAll(name)) {
-			if (values.includes(value)) continue;
+			if (values.includes(value)) {
+				continue;
+			}
 			const list = values.join(" or ");
 			return { error: `The ${name} parameter takes ${list}, not ${JSON.stringify(value)}.` };
 		}

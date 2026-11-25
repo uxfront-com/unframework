@@ -9,7 +9,7 @@ import { userEvent } from "vitest/browser";
 import { mount } from "../src/toolchain/client.ts";
 import Counter from "./fixtures/Counter.svelte";
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -29,8 +29,8 @@ afterEach(async () => {
 });
 
 it("passes the test's listeners as lower-case callback props, kept across a rerender", async () => {
-	const changes: unknown[][] = [];
-	const values: unknown[][] = [];
+	const changes: Array<Array<unknown>> = [];
+	const values: Array<Array<unknown>> = [];
 	mounted = await mount(Counter, container, {
 		on: {
 			change: (...args) => void changes.push(args),

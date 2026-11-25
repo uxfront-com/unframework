@@ -26,13 +26,19 @@ type TestError = NonNullable<NonNullable<RunnerTestCase["result"]>["errors"]>[nu
  */
 export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
 	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-	if (!test) throw new Error("expectLayerFailure must be called inside a test.");
+	if (!test) {
+		throw new Error("expectLayerFailure must be called inside a test.");
+	}
 	const outcome = test.meta.uf?.layers[layer];
 	expect(outcome, `${layer}'s recorded outcome`).toEqual({
 		status: "fail",
-		message: expect.stringMatching(new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, ""))),
+		message: expect.stringMatching(
+			new RegExp(pattern.source, pattern.flags.replaceAll(/[gy]/g, "")),
+		) as unknown,
 	});
-	if (outcome?.status !== "fail") throw new Error(`${layer} did not fail.`);
+	if (outcome?.status !== "fail") {
+		throw new Error(`${layer} did not fail.`);
+	}
 	const layers = consumed.get(test) ?? new Set<LayerName>();
 	layers.add(layer);
 	consumed.set(test, layers);
@@ -56,7 +62,7 @@ export function judgeTest(
 	task: RunnerTestCase,
 	subject: LayerSubject,
 	unmountError?: unknown,
-	late: readonly string[] = [],
+	late: ReadonlyArray<string> = [],
 ): void {
 	const errors = task.result?.errors ?? [];
 	const own = errors.filter((error) => error.name !== "LayerFailure");
@@ -86,11 +92,15 @@ export function judgeTest(
 	if (recorded.status === "quarantined" && task.result) {
 		const kept = errors.filter((error) => !own.includes(error));
 		task.result.errors = kept.length ? kept : undefined;
-		if (!kept.length && !failures.length) task.result.state = "pass";
+		if (!kept.length && !failures.length) {
+			task.result.state = "pass";
+		}
 	} else if (recorded.status === "fail" && unseen.length) {
 		failures.push(...unseen.map((message) => `L8: ${message}`));
 	}
-	if (failures.length) throw new LayerFailure(subject, failures);
+	if (failures.length) {
+		throw new LayerFailure(subject, failures);
+	}
 }
 
 /** Terminal colours, which Vitest's element errors carry. */
@@ -105,7 +115,7 @@ const PAGE_HTML = /\n+HTML:\n[\s\S]*$/;
  * page's HTML that an element error appends (its ARIA tree stays, which says what was there).
  */
 function describeTestError(error: TestError): string {
-	const message = error.message.replace(ANSI_COLOUR, "");
+	const message = error.message.replaceAll(ANSI_COLOUR, "");
 	if (message === NO_ASSERTIONS) {
 		return "The test asserted nothing: every test asserts at least one fact about what it rendered (expect.requireAssertions).";
 	}

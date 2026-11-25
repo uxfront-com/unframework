@@ -24,7 +24,7 @@ export interface PreviewIo {
 export interface PreviewArguments {
 	/** Set when writing the static site (`preview build`) rather than serving the preview. */
 	build?: true;
-	targets: TargetName[];
+	targets: Array<TargetName>;
 	/** The shell's port, when serving. */
 	port?: number;
 	/** The site's directory, when building, relative to the project's root. */
@@ -39,7 +39,7 @@ const EXAMPLE_VALUES: Readonly<Record<string, string>> = {
 };
 
 /** Reads the arguments, throwing on a usage error: the CLI exits 2 with the message. */
-export function parsePreviewArguments(args: readonly string[]): PreviewArguments {
+export function parsePreviewArguments(args: ReadonlyArray<string>): PreviewArguments {
 	const build = args[0] === "build";
 	const parsed: PreviewArguments = { ...(build ? { build } : {}), targets: [] };
 	for (let index = build ? 1 : 0; index < args.length; index += 1) {
@@ -64,10 +64,14 @@ export function parsePreviewArguments(args: readonly string[]): PreviewArguments
 			throw new VisualUsageError(`${name} needs a value, such as ${name} ${EXAMPLE_VALUES[name]}.`);
 		}
 		if (name === "--out") {
-			if (parsed.out !== undefined) throw new VisualUsageError("--out is given twice.");
+			if (parsed.out !== undefined) {
+				throw new VisualUsageError("--out is given twice.");
+			}
 			parsed.out = value;
 		} else if (name === "--port") {
-			if (parsed.port !== undefined) throw new VisualUsageError("--port is given twice.");
+			if (parsed.port !== undefined) {
+				throw new VisualUsageError("--port is given twice.");
+			}
 			if (!/^\d+$/.test(value) || Number(value) > 65_535) {
 				throw new VisualUsageError(`--port takes a whole number from 0 to 65535, not ${value}.`);
 			}
@@ -106,11 +110,15 @@ export function diagnosticLine(diagnostic: Diagnostic, root: string): string {
  */
 export function untilInterrupted(): { interrupted: Promise<void>; dispose(): void } {
 	let interrupt!: () => void;
-	const interrupted = new Promise<void>((resolve) => (interrupt = resolve));
+	const interrupted = new Promise<void>((resolve) => {
+		interrupt = resolve;
+	});
 	let count = 0;
 	const onSignal = () => {
 		count += 1;
-		if (count > 1) process.exit(130);
+		if (count > 1) {
+			process.exit(130);
+		}
 		interrupt();
 	};
 	process.on("SIGINT", onSignal);
@@ -131,7 +139,7 @@ export function untilInterrupted(): { interrupted: Promise<void>; dispose(): voi
  * CLI reports with exit 2.
  */
 export async function preview(
-	args: string[],
+	args: Array<string>,
 	io: PreviewIo,
 	stop?: Promise<void>,
 ): Promise<number> {
@@ -142,7 +150,9 @@ export async function preview(
 			...(parsed.targets.length ? { targets: parsed.targets } : {}),
 			...(parsed.out === undefined ? {} : { out: parsed.out }),
 		});
-		for (const diagnostic of built.diagnostics) io.stderr(diagnosticLine(diagnostic, io.cwd));
+		for (const diagnostic of built.diagnostics) {
+			io.stderr(diagnosticLine(diagnostic, io.cwd));
+		}
 		io.stdout(`unframework preview build: ${built.out} (${built.targets.join(", ")})\n`);
 		return 0;
 	}
@@ -153,7 +163,9 @@ export async function preview(
 			...(parsed.targets.length ? { targets: parsed.targets } : {}),
 			...(parsed.port === undefined ? {} : { port: parsed.port }),
 		});
-		for (const diagnostic of running.diagnostics) io.stderr(diagnosticLine(diagnostic, io.cwd));
+		for (const diagnostic of running.diagnostics) {
+			io.stderr(diagnosticLine(diagnostic, io.cwd));
+		}
 		io.stdout(
 			[
 				`unframework preview: ${running.url}`,

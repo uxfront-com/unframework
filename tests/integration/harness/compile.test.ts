@@ -59,7 +59,7 @@ const targets = selectTargets(process.env.UF_TARGETS);
 const owner: ArtefactContext = { role: "owner", update: harness.update, root: ROOT };
 
 /** The layers a case with compile errors has nothing to verify at: there is no output. */
-const NO_OUTPUT_LAYERS: readonly LayerName[] = [
+const NO_OUTPUT_LAYERS: ReadonlyArray<LayerName> = [
 	"L3",
 	"L4",
 	"L5",
@@ -78,7 +78,7 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
  * no spec: one its target has output for (a capability's note, UF4004) skips them. L13 is the
  * server render's too, and L14 this project's.
  */
-const NO_SPEC_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter(
+const NO_SPEC_LAYERS: ReadonlyArray<LayerName> = BROWSER_LAYERS.filter(
 	(layer) => layer !== "L13" && layer !== "L14",
 );
 
@@ -92,7 +92,7 @@ async function compileSource(
 	info: CaseInfo,
 	source: CaseSource,
 	text: string,
-	plugins: readonly CompilerPlugin[],
+	plugins: ReadonlyArray<CompilerPlugin>,
 	{ format = true, sourceMap = false }: { format?: boolean; sourceMap?: boolean } = {},
 ): Promise<CompileResult> {
 	const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
@@ -111,9 +111,9 @@ async function compileSource(
 	}
 }
 
-let clean: Promise<CompileResult[]> | undefined;
+let clean: Promise<Array<CompileResult>> | undefined;
 /** Every source's compile without the canary, so the corpus gates measure the corpus. */
-function corpus(): Promise<CompileResult[]> {
+function corpus(): Promise<Array<CompileResult>> {
 	clean ??= Promise.all(
 		cases.flatMap((info) =>
 			info.sources.map((source) =>
@@ -133,9 +133,9 @@ interface CompiledSource {
 	second: CompileResult;
 }
 
-const memo = new Map<string, Promise<CompiledSource[]>>();
+const memo = new Map<string, Promise<Array<CompiledSource>>>();
 /** Each source's two compiles, with the run's canary installed (a fresh plugin for each). */
-function compiled(info: CaseInfo): Promise<CompiledSource[]> {
+function compiled(info: CaseInfo): Promise<Array<CompiledSource>> {
 	let pending = memo.get(info.id);
 	if (!pending) {
 		pending = Promise.all(
@@ -156,15 +156,18 @@ function compiled(info: CaseInfo): Promise<CompiledSource[]> {
 }
 
 /** The first compile of each source, as the case's artefacts join them. */
-const firsts = (compiles: readonly CompiledSource[]): SourceCompile[] =>
+const firsts = (compiles: ReadonlyArray<CompiledSource>): Array<SourceCompile> =>
 	compiles.map(({ source, text, first }) => ({ source, text, result: first }));
 
 /** `toJsonDiagnostics` without the documentation URL, which only restates the code. */
-function jsonDiagnostics(diagnostics: readonly Diagnostic[], texts: ReadonlyMap<string, string>) {
+function jsonDiagnostics(
+	diagnostics: ReadonlyArray<Diagnostic>,
+	texts: ReadonlyMap<string, string>,
+) {
 	return toJsonDiagnostics(diagnostics, texts).map(({ url: _url, ...diagnostic }) => diagnostic);
 }
 
-const hasErrors = (diagnostics: readonly Diagnostic[], target: string) =>
+const hasErrors = (diagnostics: ReadonlyArray<Diagnostic>, target: string) =>
 	forTarget(diagnostics, target).some((diagnostic) => diagnostic.severity === "error");
 
 describe("compile", () => {
@@ -179,10 +182,14 @@ describe("compile", () => {
 						L14: () => checkSourceMaps(info, compiles, target),
 					};
 					if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
-						for (const layer of NO_OUTPUT_LAYERS) checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+						for (const layer of NO_OUTPUT_LAYERS) {
+							checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+						}
 					} else if (!info.spec && info.id.startsWith("diagnostics/")) {
 						// Only a diagnostics case: a feature case without a spec stays a missing cell.
-						for (const layer of NO_SPEC_LAYERS) checks[layer] = () => ({ skip: NO_SPEC_SKIP });
+						for (const layer of NO_SPEC_LAYERS) {
+							checks[layer] = () => ({ skip: NO_SPEC_SKIP });
+						}
 					}
 					// No hydrate project runs a diagnostics case, which has no spec: its L12 says so, with
 					// compile errors or without, as the targets that do not hydrate say why they skip
@@ -224,7 +231,9 @@ describe("compile", () => {
 
 	it("holds no shared expectation that no case owns", () => {
 		if (harness.update) {
-			for (const info of cases) removeStaleArtefacts(info);
+			for (const info of cases) {
+				removeStaleArtefacts(info);
+			}
 			return;
 		}
 		const stale = cases.flatMap((info) =>
@@ -243,7 +252,7 @@ describe("compile", () => {
  */
 async function checkDiagnostics(
 	info: CaseInfo,
-	compiles: readonly CompiledSource[],
+	compiles: ReadonlyArray<CompiledSource>,
 	target: string,
 ): Promise<void> {
 	const joined = firsts(compiles);
@@ -251,11 +260,13 @@ async function checkDiagnostics(
 	const path = join(info.dir, "__expected__", "diagnostics.json");
 	const outcome = settleArtefact(path, `${JSON.stringify(actual, null, 2)}\n`, owner);
 	if (!outcome.pass) {
-		if (outcome.status !== "mismatch") throw new Error(outcome.message);
+		if (outcome.status !== "mismatch") {
+			throw new Error(outcome.message);
+		}
 		// The file is target-independent: fail the targets whose own diagnostics differ, with the
 		// difference in theirs, which every other target's would bury in a case of several.
-		const expected = JSON.parse(readFileSync(path, "utf8")) as Omit<JsonDiagnostic, "url">[];
-		const own = (list: readonly Omit<JsonDiagnostic, "url">[]) =>
+		const expected = JSON.parse(readFileSync(path, "utf8")) as Array<Omit<JsonDiagnostic, "url">>;
+		const own = (list: ReadonlyArray<Omit<JsonDiagnostic, "url">>) =>
 			`${JSON.stringify(forTarget(list, target), null, 2)}\n`;
 		if (own(expected) !== own(actual)) {
 			const file = relative(ROOT, path).split(sep).join("/");
@@ -274,7 +285,9 @@ async function checkDiagnostics(
 			? referenceProblems(actual, info.spec !== undefined, REFERENCE, info.config.reference)
 			: []),
 	];
-	if (problems.length) throw new Error(problems.join("\n"));
+	if (problems.length) {
+		throw new Error(problems.join("\n"));
+	}
 
 	// The L1-fix-no-op canary corrupts the fixes here, on the cases whose diagnostics have one.
 	for (const { source, text, first } of compiles) {
@@ -294,13 +307,15 @@ async function checkDiagnostics(
  */
 async function checkOutputs(
 	info: CaseInfo,
-	compiles: readonly CompiledSource[],
+	compiles: ReadonlyArray<CompiledSource>,
 	target: string,
 ): Promise<void> {
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	const output = join(info.dir, "__output__");
 	const settle = (outcome: { pass: boolean; message: string }) => {
-		if (!outcome.pass) problems.push(outcome.message);
+		if (!outcome.pass) {
+			problems.push(outcome.message);
+		}
 	};
 
 	for (const { source, first } of compiles) {
@@ -326,7 +341,9 @@ async function checkOutputs(
 	const stale = existsSync(output)
 		? readdirSync(output).filter((file) => /^ir\..+\.json$/.test(file) && !snapshots.has(file))
 		: [];
-	for (const file of stale) settle(settleArtefact(join(output, file), undefined, owner));
+	for (const file of stale) {
+		settle(settleArtefact(join(output, file), undefined, owner));
+	}
 
 	const joined = firsts(compiles);
 	const diagnostics = caseDiagnostics(joined);
@@ -340,8 +357,8 @@ async function checkOutputs(
 	);
 
 	const { files, problems: collisions } = caseOutputs(joined, target);
-	problems.push(...collisions);
 	problems.push(
+		...collisions,
 		...moduleCopyProblems(
 			target,
 			files,
@@ -361,12 +378,18 @@ async function checkOutputs(
 	// P8: the same input and versions give byte-identical, formatted output.
 	for (const { first, second } of compiles) {
 		const different = nondeterminism(first, second, target);
-		if (different) problems.push(different);
-		problems.push(...(await formattingProblems(target, first.outputs[target] ?? [])));
-		problems.push(...stylesheetProblems(target, first.outputs[target] ?? []));
+		if (different) {
+			problems.push(different);
+		}
+		problems.push(
+			...(await formattingProblems(target, first.outputs[target] ?? [])),
+			...stylesheetProblems(target, first.outputs[target] ?? []),
+		);
 	}
 
-	if (problems.length) throw new Error(problems.join("\n\n"));
+	if (problems.length) {
+		throw new Error(problems.join("\n\n"));
+	}
 }
 
 /**
@@ -375,7 +398,7 @@ async function checkOutputs(
  */
 function checkSourceMaps(
 	info: CaseInfo,
-	compiles: readonly CompiledSource[],
+	compiles: ReadonlyArray<CompiledSource>,
 	target: string,
 ): void {
 	const modules = new Set(info.modules.map((module) => basename(module.source)));
@@ -383,7 +406,9 @@ function checkSourceMaps(
 		const files = first.outputs[target] ?? [];
 		// A source a target writes no file for has no map to check or corrupt: a `.uf.ts` module's
 		// directives on Astro, which runs no hook (ADR-0099).
-		if (!files.length) return [];
+		if (!files.length) {
+			return [];
+		}
 		// A helper module maps onto itself, as a copy does (ADR-0121).
 		const own = new Set([...modules, ...(first.helpers[target] ?? [])]);
 		return sourceMapProblems(
@@ -393,5 +418,7 @@ function checkSourceMaps(
 			own,
 		);
 	});
-	if (problems.length) throw new Error(problems.join("\n"));
+	if (problems.length) {
+		throw new Error(problems.join("\n"));
+	}
 }

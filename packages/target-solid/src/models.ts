@@ -97,8 +97,8 @@ export class ModelHelpers {
 	}
 
 	/** The helpers' code, in the order they print. */
-	helpers(): string[] {
-		const helpers: string[] = [];
+	helpers(): Array<string> {
+		const helpers: Array<string> = [];
 		if (this.#modelText) {
 			helpers.push(
 				...printHelper(this.#shared, "modelText", this.#modelText, (name) =>
@@ -106,9 +106,15 @@ export class ModelHelpers {
 				),
 			);
 		}
-		if (this.#toggle) helpers.push(toggleHelperCode(this.#toggle));
-		if (this.#textCaret) helpers.push(textCaretHelperCode(this.#textCaret));
-		if (this.#selectedValues) helpers.push(selectedValuesHelperCode(this.#selectedValues));
+		if (this.#toggle) {
+			helpers.push(toggleHelperCode(this.#toggle));
+		}
+		if (this.#textCaret) {
+			helpers.push(textCaretHelperCode(this.#textCaret));
+		}
+		if (this.#selectedValues) {
+			helpers.push(selectedValuesHelperCode(this.#selectedValues));
+		}
 		if (this.#selectOptions) {
 			helpers.push(
 				...printHelper(this.#shared, "selectOptions", this.#selectOptions, (name) =>
@@ -131,9 +137,11 @@ export function modelAttribute(
 	code: SolidCode,
 	helpers: ModelHelpers,
 	carried: boolean,
-): JsxAttributeItem[] {
+): Array<JsxAttributeItem> {
 	const [ref] = attribute.value.refs;
-	if (ref?.kind !== "Binding") throw new Error("A v-model binds a binding's value: invalid IR.");
+	if (ref?.kind !== "Binding") {
+		throw new Error("A v-model binds a binding's value: invalid IR.");
+	}
 	const binding = jsxBinding(ref.binding, context);
 	const setter = code.setter(ref.binding)!;
 	const value = () => jsxExpression(attribute.value, context, "operand");
@@ -180,8 +188,12 @@ export function modelAttribute(
 	// (`selectOptions`), from the element's own `ref` callback where it has one. A single
 	// `<select>` calls it with marked options too (see the module comment).
 	const selection = () => {
-		if (carried) return [];
-		if (attribute.control !== "select" && !unmarkedOptions(element.children)) return [];
+		if (carried) {
+			return [];
+		}
+		if (attribute.control !== "select" && !unmarkedOptions(element.children)) {
+			return [];
+		}
 		const select = helpers.select();
 		return [
 			prop(
@@ -275,7 +287,9 @@ export function modelRef(
 		(each): each is ModelAttribute => each.kind === "Model",
 	);
 	const [ref] = attribute?.value.refs ?? [];
-	if (!attribute || ref?.kind !== "Binding") return undefined;
+	if (!attribute || ref?.kind !== "Binding") {
+		return undefined;
+	}
 	const { name } = jsxBinding(ref.binding, context);
 	const caret = attribute.control === "textarea";
 	if (attribute.trim || attribute.lazy || attribute.number || attribute.control === "number") {
@@ -285,7 +299,9 @@ export function modelRef(
 				? `${call}(${parameter});\n${helpers.textCaret()}(${parameter});`
 				: `${call}(${parameter});`;
 	}
-	if (caret) return (parameter) => `${helpers.textCaret()}(${parameter});`;
+	if (caret) {
+		return (parameter) => `${helpers.textCaret()}(${parameter});`;
+	}
 	if (
 		attribute.control === "select" ||
 		(attribute.control === "select-multiple" && unmarkedOptions(element.children))
@@ -333,10 +349,14 @@ function modelTextCall(
 function mayBeNullish(component: UfComponent, id: string): boolean {
 	const item = component.setup.find((each) => "binding" in each && each.binding === id);
 	if (item?.kind === "State") {
-		if (named(item.type) || !item.initial) return true;
+		if (named(item.type) || !item.initial) {
+			return true;
+		}
 		return !item.type && /^(?:null|undefined)$/.test(item.initial.code.trim());
 	}
-	if (item?.kind === "Model") return named(item.type) || (!item.default && !item.required);
+	if (item?.kind === "Model") {
+		return named(item.type) || (!item.default && !item.required);
+	}
 	return false;
 }
 

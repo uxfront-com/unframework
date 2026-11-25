@@ -40,8 +40,12 @@ function installBuilt(directory: string, name: string): void {
 		[tsdown, "--out-dir", join(installed, "dist"), "--logLevel", "error"],
 		{ cwd: directory, encoding: "utf8" },
 	);
-	if (build.error) throw build.error;
-	if (build.status !== 0) throw new Error(`tsdown failed:\n${build.stdout}${build.stderr}`);
+	if (build.error) {
+		throw build.error;
+	}
+	if (build.status !== 0) {
+		throw new Error(`tsdown failed:\n${build.stdout}${build.stderr}`);
+	}
 
 	const manifest = JSON.parse(readFileSync(join(directory, "package.json"), "utf8")) as {
 		exports: unknown;
@@ -76,7 +80,9 @@ beforeAll(() => {
 }, 60_000);
 
 afterAll(() => {
-	if (consumer) rmSync(consumer, { recursive: true, force: true });
+	if (consumer) {
+		rmSync(consumer, { recursive: true, force: true });
+	}
 });
 
 /** Each test runs the type checker over the packed package: seconds on a loaded CI runner. */

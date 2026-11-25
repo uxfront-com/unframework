@@ -29,7 +29,9 @@ import type { Kinds, Member } from "./types/kinds.ts";
 export function skipTrivia(source: string, from: number): number {
 	let index = from;
 	for (;;) {
-		while (index < source.length && /\s/.test(source[index]!)) index++;
+		while (index < source.length && /\s/.test(source[index]!)) {
+			index++;
+		}
 		if (source.startsWith("//", index)) {
 			const end = source.indexOf("\n", index);
 			index = end === -1 ? source.length : end;
@@ -46,7 +48,9 @@ export function skipTrivia(source: string, from: number): number {
 function nextToken(source: string, from: number, token: string, to: number): number | undefined {
 	for (let index = from; index < to;) {
 		const next = skipTrivia(source, index);
-		if (source.startsWith(token, next)) return next;
+		if (source.startsWith(token, next)) {
+			return next;
+		}
 		index = next + 1;
 	}
 	return undefined;
@@ -69,7 +73,9 @@ export function arrowBodySpan(fn: AST.ArrowFunctionExpression, source: string): 
  * after its name, to the end of its body.
  */
 export function functionSpan(fn: AST.Function | AST.ArrowFunctionExpression, source: string): Span {
-	if (fn.type === "ArrowFunctionExpression") return { start: fn.start, end: fn.end };
+	if (fn.type === "ArrowFunctionExpression") {
+		return { start: fn.start, end: fn.end };
+	}
 	const from = fn.typeParameters?.end ?? fn.id?.end ?? fn.start;
 	const open = nextToken(source, from, "(", fn.end) ?? fn.start;
 	return { start: open, end: fn.end };
@@ -78,7 +84,7 @@ export function functionSpan(fn: AST.Function | AST.ArrowFunctionExpression, sou
 /** The identifiers a binding pattern declares, in source order. */
 export function patternNames(
 	pattern: AST.ParamPattern | AST.BindingPattern | AST.BindingRestElement,
-): AST.BindingIdentifier[] {
+): Array<AST.BindingIdentifier> {
 	switch (pattern.type) {
 		case "Identifier":
 			return [pattern];
@@ -100,7 +106,7 @@ export function patternNames(
 /** The defaults written inside a pattern (`{ size = 1 }`, `[first = ""]`), in source order. */
 export function patternDefaults(
 	pattern: AST.ParamPattern | AST.BindingPattern | AST.BindingRestElement,
-): AST.Expression[] {
+): Array<AST.Expression> {
 	switch (pattern.type) {
 		case "AssignmentPattern":
 			return [...patternDefaults(pattern.left), pattern.right];
@@ -131,12 +137,24 @@ export function widened(node: AST.Expression, known: (node: AST.Node) => Kinds):
 	switch (node.type) {
 		case "Literal": {
 			const { value } = node;
-			if ("regex" in node && node.regex) return kinds("object");
-			if ("bigint" in node && node.bigint !== undefined) return kinds("bigint");
-			if (value === null) return NULL;
-			if (typeof value === "string") return STRING;
-			if (typeof value === "number") return NUMBER;
-			if (typeof value === "boolean") return BOOLEAN;
+			if ("regex" in node && node.regex) {
+				return kinds("object");
+			}
+			if ("bigint" in node && node.bigint !== undefined) {
+				return kinds("bigint");
+			}
+			if (value === null) {
+				return NULL;
+			}
+			if (typeof value === "string") {
+				return STRING;
+			}
+			if (typeof value === "number") {
+				return NUMBER;
+			}
+			if (typeof value === "boolean") {
+				return BOOLEAN;
+			}
 			return UNKNOWN;
 		}
 		case "TemplateLiteral":
@@ -152,7 +170,9 @@ export function widened(node: AST.Expression, known: (node: AST.Node) => Kinds):
 		case "LogicalExpression": {
 			const left = known(node.left);
 			const right = widened(node.right, known);
-			if (node.operator === "&&") return union(falsyPart(left), right);
+			if (node.operator === "&&") {
+				return union(falsyPart(left), right);
+			}
 			return union(without(left, "null", "undefined"), right);
 		}
 		case "ArrayExpression": {
@@ -181,7 +201,9 @@ export function widened(node: AST.Expression, known: (node: AST.Node) => Kinds):
 						: key.type === "Literal" && typeof key.value === "string"
 							? key.value
 							: undefined;
-				if (name === undefined) continue;
+				if (name === undefined) {
+					continue;
+				}
 				const value = property.method ? kinds("function") : widened(property.value, known);
 				members.set(name, {
 					kinds: () => value,
@@ -231,10 +253,12 @@ function fresh(node: AST.Expression): boolean {
  * widens (`() => "x"` returns `string`) and a union of literals stays (`c ? "a" : "b"`).
  */
 export function returnedKinds(
-	returned: readonly AST.Expression[],
+	returned: ReadonlyArray<AST.Expression>,
 	known: (node: AST.Node) => Kinds,
 ): Kinds {
-	if (!returned.length) return UNDEFINED;
+	if (!returned.length) {
+		return UNDEFINED;
+	}
 	const all = union(...returned.map((node) => literalKinds(node, known)));
 	const unit =
 		all.primitives.size === 1 &&
@@ -288,8 +312,12 @@ function statementExit(statement: AST.Statement): StatementExit {
 
 /** Whether a statement always leaves the function: a `return`, a `throw`, or a block ending so. */
 function alwaysLeaves(statement: AST.Statement): boolean {
-	if (statement.type === "ReturnStatement" || statement.type === "ThrowStatement") return true;
-	if (statement.type !== "BlockStatement") return false;
+	if (statement.type === "ReturnStatement" || statement.type === "ThrowStatement") {
+		return true;
+	}
+	if (statement.type !== "BlockStatement") {
+		return false;
+	}
 	const last = statement.body.at(-1);
 	return last !== undefined && alwaysLeaves(last);
 }
@@ -300,8 +328,12 @@ function alwaysLeaves(statement: AST.Statement): boolean {
  * no labels, UF1002; a label still counts, to be safe).
  */
 function mayLeave(node: unknown, caught = false): boolean {
-	if (!node || typeof node !== "object") return false;
-	if (Array.isArray(node)) return node.some((item) => mayLeave(item, caught));
+	if (!node || typeof node !== "object") {
+		return false;
+	}
+	if (Array.isArray(node)) {
+		return node.some((item) => mayLeave(item, caught));
+	}
 	const typed = node as AST.Node;
 	switch (typed.type) {
 		case "ReturnStatement":
@@ -349,13 +381,19 @@ function mayLeave(node: unknown, caught = false): boolean {
 export function eventControlsOf(
 	body: AST.BlockStatement | { node: AST.Expression; span: Span },
 	isEvent: (identifier: AST.IdentifierReference) => boolean,
-): { controls: ControlStatement[]; deferred: DeferredControl[] } {
-	const controls: ControlStatement[] = [];
+): { controls: Array<ControlStatement>; deferred: Array<DeferredControl> } {
+	const controls: Array<ControlStatement> = [];
 	const control = (node: AST.Node | null | undefined): ControlCall | undefined => {
-		if (node?.type !== "CallExpression" || node.optional || node.arguments.length) return undefined;
+		if (node?.type !== "CallExpression" || node.optional || node.arguments.length) {
+			return undefined;
+		}
 		const { callee } = node;
-		if (callee.type !== "MemberExpression" || callee.computed || callee.optional) return undefined;
-		if (callee.object.type !== "Identifier" || !isEvent(callee.object)) return undefined;
+		if (callee.type !== "MemberExpression" || callee.computed || callee.optional) {
+			return undefined;
+		}
+		if (callee.object.type !== "Identifier" || !isEvent(callee.object)) {
+			return undefined;
+		}
 		const name = callee.property.type === "Identifier" ? callee.property.name : "";
 		return name === "preventDefault" || name === "stopPropagation"
 			? { call: node, method: name }
@@ -370,7 +408,9 @@ export function eventControlsOf(
 		// a leading one.
 		let blocked = false;
 		for (const statement of body.body) {
-			if (statement.type === "EmptyStatement") continue;
+			if (statement.type === "EmptyStatement") {
+				continue;
+			}
 			const direct = statementCall(statement);
 			let found: ControlStatement | undefined;
 			if (direct) {
@@ -387,9 +427,15 @@ export function eventControlsOf(
 					found = { ...inner, statement: span(statement), test: statement.test };
 				}
 			}
-			if (found && !blocked) controls.push(found);
-			if (awaits(statement)) break;
-			if (blocked) continue;
+			if (found && !blocked) {
+				controls.push(found);
+			}
+			if (awaits(statement)) {
+				break;
+			}
+			if (blocked) {
+				continue;
+			}
 			// A guard clause on the event leaves what follows dispatched, under its negated test,
 			// which codegen's `handlerControls` reads from the body.
 			const exit = statementExit(statement);
@@ -399,13 +445,19 @@ export function eventControlsOf(
 		}
 	} else {
 		const direct = control(body.node);
-		if (direct) controls.push({ ...direct, statement: body.span });
+		if (direct) {
+			controls.push({ ...direct, statement: body.span });
+		}
 	}
-	const deferred: DeferredControl[] = [];
+	const deferred: Array<DeferredControl> = [];
 	const visit = (node: unknown, inFunction: boolean, afterAwait: { value: boolean }): void => {
-		if (!node || typeof node !== "object") return;
+		if (!node || typeof node !== "object") {
+			return;
+		}
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item, inFunction, afterAwait);
+			for (const item of node) {
+				visit(item, inFunction, afterAwait);
+			}
 			return;
 		}
 		const typed = node as AST.Node;
@@ -433,11 +485,15 @@ export function eventControlsOf(
 			}
 			visit((typed as unknown as Record<string, unknown>)[key], inFunction || nested, afterAwait);
 		}
-		if (typed.type === "AwaitExpression" && !inFunction) afterAwait.value = true;
+		if (typed.type === "AwaitExpression" && !inFunction) {
+			afterAwait.value = true;
+		}
 	};
 	if ("type" in body) {
 		const afterAwait = { value: false };
-		for (const statement of body.body) visit(statement, false, afterAwait);
+		for (const statement of body.body) {
+			visit(statement, false, afterAwait);
+		}
 	} else {
 		visit(body.node, false, { value: false });
 	}
@@ -451,10 +507,16 @@ function span(node: { start: number; end: number }): Span {
 
 /** Whether a statement awaits, outside the functions in it. */
 function awaits(node: unknown): boolean {
-	if (!node || typeof node !== "object") return false;
-	if (Array.isArray(node)) return node.some(awaits);
+	if (!node || typeof node !== "object") {
+		return false;
+	}
+	if (Array.isArray(node)) {
+		return node.some(awaits);
+	}
 	const typed = node as AST.Node;
-	if (typed.type === "AwaitExpression") return true;
+	if (typed.type === "AwaitExpression") {
+		return true;
+	}
 	if (
 		typed.type === "ArrowFunctionExpression" ||
 		typed.type === "FunctionExpression" ||
@@ -462,7 +524,9 @@ function awaits(node: unknown): boolean {
 	) {
 		return false;
 	}
-	if (typed.type === "ForOfStatement" && typed.await) return true;
+	if (typed.type === "ForOfStatement" && typed.await) {
+		return true;
+	}
 	return (visitorKeys[typed.type] ?? []).some((key) =>
 		awaits((typed as unknown as Record<string, unknown>)[key]),
 	);
@@ -489,12 +553,16 @@ const TYPE_KEYS: ReadonlySet<string> = new Set([
  * The identifiers an expression reads as names: not a member's name after `.`, nor an object
  * literal's key, nor a name in a type (`event.target as HTMLInputElement` reads only `event`).
  */
-export function readIdentifiers(node: unknown): AST.IdentifierReference[] {
-	const found: AST.IdentifierReference[] = [];
+export function readIdentifiers(node: unknown): Array<AST.IdentifierReference> {
+	const found: Array<AST.IdentifierReference> = [];
 	const visit = (value: unknown): void => {
-		if (!value || typeof value !== "object") return;
+		if (!value || typeof value !== "object") {
+			return;
+		}
 		if (Array.isArray(value)) {
-			for (const item of value) visit(item);
+			for (const item of value) {
+				visit(item);
+			}
 			return;
 		}
 		const typed = value as AST.Node;
@@ -504,21 +572,31 @@ export function readIdentifiers(node: unknown): AST.IdentifierReference[] {
 		}
 		if (typed.type === "MemberExpression") {
 			visit(typed.object);
-			if (typed.computed) visit(typed.property);
+			if (typed.computed) {
+				visit(typed.property);
+			}
 			return;
 		}
 		if (typed.type === "Property") {
-			if (typed.computed || typed.shorthand) visit(typed.key);
-			if (!typed.shorthand) visit(typed.value);
+			if (typed.computed || typed.shorthand) {
+				visit(typed.key);
+			}
+			if (!typed.shorthand) {
+				visit(typed.value);
+			}
 			return;
 		}
 		if (TYPED_EXPRESSIONS.has(typed.type)) {
 			visit((typed as unknown as { expression: unknown }).expression);
 			return;
 		}
-		if (typed.type.startsWith("TS")) return;
+		if (typed.type.startsWith("TS")) {
+			return;
+		}
 		for (const key of visitorKeys[typed.type] ?? []) {
-			if (!TYPE_KEYS.has(key)) visit((typed as unknown as Record<string, unknown>)[key]);
+			if (!TYPE_KEYS.has(key)) {
+				visit((typed as unknown as Record<string, unknown>)[key]);
+			}
 		}
 	};
 	visit(node);

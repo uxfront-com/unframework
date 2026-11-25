@@ -13,7 +13,7 @@ const STATE = Symbol.for("unframework.visual.finished");
 /** Run id and target → the cases whose spec file that target's browser project finished. */
 function finished(): Map<string, Set<string>> {
 	const store = globalThis as { [STATE]?: Map<string, Set<string>> };
-	return (store[STATE] ??= new Map());
+	return (store[STATE] ??= new Map<string, Set<string>>());
 }
 
 const keyOf = (runId: string, target: string) => `${runId}:${target}`;

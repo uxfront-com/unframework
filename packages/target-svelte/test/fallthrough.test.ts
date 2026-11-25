@@ -23,7 +23,7 @@ async function render(sources: Record<string, string>, main: string): Promise<st
 	const modules = Object.fromEntries(
 		Object.entries(outputs).map(([path, contents]) => [
 			path.replace(/\.svelte$/, ".js"),
-			compile(contents, { filename: path, generate: "server" }).js.code.replace(
+			compile(contents, { filename: path, generate: "server" }).js.code.replaceAll(
 				/(from\s+["']\.\/[^"']+)\.svelte(["'])/g,
 				"$1.js$2",
 			),
@@ -37,7 +37,7 @@ async function render(sources: Record<string, string>, main: string): Promise<st
 }
 
 /** svelte-check's messages on every output of the sources, by file name. */
-async function check(sources: Record<string, string>): Promise<Record<string, string[]>> {
+async function check(sources: Record<string, string>): Promise<Record<string, Array<string>>> {
 	const paths = writeScratch(await compileSources(sources));
 	const results = await toolchain.typecheck(Object.values(paths), {
 		toolchainDir,
@@ -52,7 +52,7 @@ async function check(sources: Record<string, string>): Promise<Record<string, st
 }
 
 /** A file of source lines. */
-const file = (...lines: string[]) => `${lines.join("\n")}\n`;
+const file = (...lines: Array<string>) => `${lines.join("\n")}\n`;
 
 const SAVE_BUTTON = file(
 	"export default function SaveButton({",

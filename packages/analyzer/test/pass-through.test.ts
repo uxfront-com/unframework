@@ -139,7 +139,7 @@ describe("imports that pass through", () => {
 
 describe("the passThrough option", () => {
 	/** Analyses `source` with the given prefixes. */
-	function withPrefixes(source: string, passThrough?: readonly string[]) {
+	function withPrefixes(source: string, passThrough?: ReadonlyArray<string>) {
 		return analyze(parseModule("B.uf.tsx", source), passThrough ? { passThrough } : {});
 	}
 

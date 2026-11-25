@@ -18,7 +18,9 @@ function refsOf(expression: string, props = PROPS) {
 	const { source, module, diagnostics } = component(`<p>{${expression}}</p>`, { props });
 	expect(diagnostics).toEqual([]);
 	const [child] = root(module).children;
-	if (child?.kind !== "Interpolation") throw new Error("Expected an interpolation.");
+	if (child?.kind !== "Interpolation") {
+		throw new Error("Expected an interpolation.");
+	}
 	return child.value.refs.map((ref) =>
 		ref.kind === "Global"
 			? `global ${ref.name}`
@@ -171,7 +173,7 @@ describe("the accepted syntax", () => {
 	it.each([
 		["user.café", "café"],
 		["items.filter((é) => é).join()", "é"],
-		["\\u0075ser.name", "\\u0075ser"],
+		[String.raw`\u0075ser.name`, String.raw`\u0075ser`],
 	])("reports the identifier in %s that is not written in ASCII", (expression, at) => {
 		expect(check(expression).problems).toContain(`UF1002 ${at}`);
 	});
@@ -188,9 +190,9 @@ describe("the accepted syntax", () => {
 	});
 
 	it.each([
-		['"\\u{41}"', "\\u{41}", "\\u0041"],
-		['"a\\u{1F600}b"', "\\u{1F600}", "\\uD83D\\uDE00"],
-		["`x${label}\\u{1F600}`", "\\u{1F600}", "\\uD83D\\uDE00"],
+		[String.raw`"\u{41}"`, String.raw`\u{41}`, String.raw`\u0041`],
+		[String.raw`"a\u{1F600}b"`, String.raw`\u{1F600}`, String.raw`\uD83D\uDE00`],
+		["`x${label}\\u{1F600}`", String.raw`\u{1F600}`, String.raw`\uD83D\uDE00`],
 	])("rewrites the escape in %s to four-digit escapes", (literal, at, replacement) => {
 		const { source, diagnostics } = check(`${literal} + label`);
 		expect(problems(source, diagnostics)).toEqual([`UF1002 ${at}`]);

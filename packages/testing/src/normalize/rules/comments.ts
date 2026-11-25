@@ -17,6 +17,8 @@ export function removeComments(root: TreeParent): void {
 		);
 	}
 	for (const node of childrenOf(root)) {
-		if (isElement(node)) removeComments(node);
+		if (isElement(node)) {
+			removeComments(node);
+		}
 	}
 }

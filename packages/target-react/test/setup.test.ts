@@ -13,16 +13,16 @@ import target from "../src/index.ts";
  * The formatted React output of each component of a source the analyser lowers with no error
  * (a warning, UF2007's on a setup `const`, is the author's to see; it changes nothing emitted).
  */
-async function outputs(source: string): Promise<string[]> {
+async function outputs(source: string): Promise<Array<string>> {
 	const { module, diagnostics } = analyze(parseModule("Fixture.uf.tsx", source));
 	const errors = diagnostics.filter((diagnostic) => diagnostic.severity !== "warning");
 	if (!module || errors.length) {
 		const messages = errors.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`);
 		throw new Error(`The analyser rejected the fixture:\n${messages.join("\n")}`);
 	}
-	const files: string[] = [];
+	const files: Array<string> = [];
 	for (const component of module.components) {
-		const reported: unknown[] = [];
+		const reported: Array<unknown> = [];
 		const emitted = target.emit(component, {
 			module,
 			options: undefined,

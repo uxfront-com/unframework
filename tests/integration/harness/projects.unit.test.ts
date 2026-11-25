@@ -68,7 +68,9 @@ describe("projects", () => {
 	it("shares each page among spec files in every hydrate project (ADR-0106)", () => {
 		const targets = selectTargets(undefined);
 		expect(targets).toHaveLength(8);
-		for (const target of targets) expect(isolatesFiles("hydrate", target)).toBe(false);
+		for (const target of targets) {
+			expect(isolatesFiles("hydrate", target)).toBe(false);
+		}
 	});
 
 	it("names, for Vue alone, the case that leaves a page unusable, with the reason (ADR-0106)", () => {
@@ -127,7 +129,7 @@ describe("projects", () => {
 });
 
 describe("the bench project", () => {
-	const names = (projectFilter?: string[]) =>
+	const names = (projectFilter?: Array<string>) =>
 		harnessProjects({ harness, mode, targets: ["vue"], projectFilter })
 			.filter((project) => typeof project === "object")
 			.map((project) => (project as UserWorkspaceConfig).test?.name);
@@ -190,10 +192,12 @@ describe("project factories", () => {
 			const project = await (factory as () => Promise<UserWorkspaceConfig>)();
 			expect(project.test?.include).toEqual(["harness/unavailable.test.ts"]);
 			const provided = project.test?.provide as
-				| { ufUnavailable: { layers: string[]; message: string } }
+				| { ufUnavailable: { layers: Array<string>; message: string } }
 				| undefined;
 			const unavailable = provided?.ufUnavailable;
-			if (!unavailable) throw new Error("The project provides no ufUnavailable.");
+			if (!unavailable) {
+				throw new Error("The project provides no ufUnavailable.");
+			}
 			expect(unavailable.layers).toEqual(layers);
 			expect(unavailable.message).toMatch(
 				/^The missing toolchain \(@unframework\.dev\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
@@ -228,7 +232,7 @@ describe("browser projects", () => {
 		const [, , , , browser] = harnessProjects({ harness, mode, targets: ["qwik"] });
 		const project = await (browser as () => Promise<UserWorkspaceConfig>)();
 		expect(project.test?.include).toEqual(["cases/**/*.test.ts"]);
-		const provided = project.test?.provide as { ufNoOutput?: Record<string, string> } | undefined;
+		const provided = project.test?.provide;
 		expect(provided?.ufNoOutput).toEqual(noOutputCases(listCases(harness.casesDir), "qwik"));
 		const names = (project.plugins ?? [])
 			.flat()
@@ -249,8 +253,8 @@ describe("browser projects", () => {
 	});
 
 	it("send no compile error to the pages, whose overlay would cover every later spec", () => {
-		const sent: unknown[][] = [];
-		const hot = { send: (...args: unknown[]) => void sent.push(args) };
+		const sent: Array<Array<unknown>> = [];
+		const hot = { send: (...args: Array<unknown>) => void sent.push(args) };
 		const server = { environments: { client: { hot } } };
 		const plugin = noErrorBroadcast();
 		(plugin.configureServer as (server: unknown) => void)(server);
@@ -280,7 +284,7 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
 			projects.slice(6).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
 		);
 		expect(ssr!.test?.name).toBe("ssr:react");
-		const provided = ssr!.test?.provide as { ufOnly?: string[] } | undefined;
+		const provided = ssr!.test?.provide;
 		expect(provided?.ufOnly).toEqual(["semantics/listbox"]);
 		expect(browser!.test?.name).toBe("browser:react");
 		expect(browser!.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
@@ -308,7 +312,7 @@ describe("the reference's own page count (ADR-0092)", () => {
 	const targets = selectTargets(undefined);
 	const live = { ...mode, pixels: "live" } as const;
 	const modes = { live, update: { ...live, update: true }, baseline: mode } as const;
-	const filters: Record<string, string[] | undefined> = {
+	const filters: Record<string, Array<string> | undefined> = {
 		"no filter": undefined,
 		"browser:*": ["browser:*"],
 		"harness and browser:vue": ["harness", "browser:vue"],
@@ -321,12 +325,16 @@ describe("the reference's own page count (ADR-0092)", () => {
 				const pages = referencePages(setup, 14, [], {});
 				const groups = new Map<number, Set<number | undefined>>();
 				for (const entry of projectEntries(setup)) {
-					if (!isSelected(entry.name, projectFilter)) continue;
+					if (!isSelected(entry.name, projectFilter)) {
+						continue;
+					}
 					const group = projectGroup(setup, entry.kind, entry.target);
 					const workers = entry.name === "browser:vue" ? pages : undefined;
 					groups.set(group, (groups.get(group) ?? new Set()).add(workers));
 				}
-				for (const workers of groups.values()) expect(workers.size).toBe(1);
+				for (const workers of groups.values()) {
+					expect(workers.size).toBe(1);
+				}
 				// Only a live run of the browser projects leaves the reference alone in its group.
 				const alone = modeName === "live" && filterName === "browser:*";
 				expect(pages).toBe(alone ? 28 : undefined);

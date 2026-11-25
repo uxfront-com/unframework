@@ -63,7 +63,7 @@ export interface WriteParts {
 /** What a target's `emit` hook receives besides the emit itself. */
 export interface EmitParts {
 	/** Each argument with its references rewritten, parenthesised where an argument needs it. */
-	arguments: string[];
+	arguments: Array<string>;
 	/** The call as written, with every reference in its arguments respelled. */
 	code: string;
 }
@@ -163,7 +163,9 @@ function bindingsOf(component: UfComponent): ReadonlyMap<BindingId, Binding> {
 /** The binding a component declares under `id`. Throws when it declares none: invalid IR. */
 export function bindingOf(component: UfComponent, id: BindingId): Binding {
 	const binding = bindingsOf(component).get(id);
-	if (!binding) throw new Error(`Component ${component.name} declares no binding ${id}.`);
+	if (!binding) {
+		throw new Error(`Component ${component.name} declares no binding ${id}.`);
+	}
 	return binding;
 }
 
@@ -243,13 +245,13 @@ interface Context {
 /** A reference, with the references inside its value or each of its arguments. */
 interface ReferenceNode {
 	reference: CodeReference;
-	slots: SlotNode[];
+	slots: Array<SlotNode>;
 }
 
 /** A write's value or an emit's argument, with the references in it. */
 interface SlotNode {
 	span: Span;
-	children: ReferenceNode[];
+	children: Array<ReferenceNode>;
 }
 
 function rewrite(
@@ -259,7 +261,9 @@ function rewrite(
 	rules: RewriteRules,
 	site: RewriteSite,
 ): string {
-	if (code.refs.length === 0) return code.code;
+	if (code.refs.length === 0) {
+		return code.code;
+	}
 	const context: Context = {
 		component,
 		rules,
@@ -276,19 +280,21 @@ function rewrite(
  * that follow it inside them (ADR-0045); every other reference stands alone, after the previous
  * one ends.
  */
-function referenceTree({ code, span, refs }: Expression | Code): ReferenceNode[] {
+function referenceTree({ code, span, refs }: Expression | Code): Array<ReferenceNode> {
 	let index = 0;
 	const fail = (reference: CodeReference, why: string): never => {
 		throw new Error(
 			`A reference at ${reference.span.start}–${reference.span.end} ${why} the code \`${code}\` at ${span.start}.`,
 		);
 	};
-	const level = (start: number, end: number): ReferenceNode[] => {
-		const nodes: ReferenceNode[] = [];
+	const level = (start: number, end: number): Array<ReferenceNode> => {
+		const nodes: Array<ReferenceNode> = [];
 		let previous = start;
 		while (index < refs.length) {
 			const reference = refs[index]!;
-			if (reference.span.start >= end) break;
+			if (reference.span.start >= end) {
+				break;
+			}
 			if (
 				reference.span.start < previous ||
 				reference.span.end > end ||
@@ -316,12 +322,14 @@ function referenceTree({ code, span, refs }: Expression | Code): ReferenceNode[]
 		return nodes;
 	};
 	const nodes = level(span.start, span.end);
-	if (index < refs.length) fail(refs[index]!, "is outside or overlaps another reference in");
+	if (index < refs.length) {
+		fail(refs[index]!, "is outside or overlaps another reference in");
+	}
 	return nodes;
 }
 
 /** The spans that hold references of their own: a write's value, an emit's arguments. */
-function slotsOf(reference: CodeReference): readonly Span[] {
+function slotsOf(reference: CodeReference): ReadonlyArray<Span> {
 	switch (reference.kind) {
 		case "Write":
 			return reference.value ? [reference.value] : [];
@@ -344,7 +352,7 @@ function slotsOf(reference: CodeReference): readonly Span[] {
 function spliced(
 	text: string,
 	offset: number,
-	nodes: readonly ReferenceNode[],
+	nodes: ReadonlyArray<ReferenceNode>,
 	context: Context,
 ): string {
 	return replaced(
@@ -364,16 +372,21 @@ function spliced(
 function replaced(
 	text: string,
 	offset: number,
-	edits: readonly (readonly [Span, string])[],
+	edits: ReadonlyArray<readonly [Span, string]>,
 ): string {
 	let output: MagicString | undefined;
 	for (const [span, code] of edits) {
 		const start = span.start - offset;
 		const end = span.end - offset;
-		if (text.slice(start, end) === code) continue;
+		if (text.slice(start, end) === code) {
+			continue;
+		}
 		output ??= new MagicString(text);
-		if (code === "") output.remove(start, end);
-		else output.overwrite(start, end, code);
+		if (code === "") {
+			output.remove(start, end);
+		} else {
+			output.overwrite(start, end, code);
+		}
 	}
 	return output ? output.toString() : text;
 }
@@ -394,7 +407,9 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
 			const spelling = rules.global?.(reference, site) ?? written;
 			// The IR marks shorthand properties on bindings only: find a global's from the AST, and
 			// only when its spelling changes.
-			if (spelling === written) return written;
+			if (spelling === written) {
+				return written;
+			}
 			context.shorthands ??= shorthandStarts(context.code, context.kind, context.offset);
 			return context.shorthands.has(reference.span.start) ? `${written}: ${spelling}` : spelling;
 		}
@@ -420,7 +435,7 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
 
 function spellWrite(
 	write: WriteReference,
-	slots: readonly SlotNode[],
+	slots: ReadonlyArray<SlotNode>,
 	written: string,
 	context: Context,
 ): string {
@@ -446,7 +461,9 @@ function spellWrite(
 		[write.target, target],
 		...(slot && value !== undefined ? [[slot.span, value] as const] : []),
 	]);
-	if (!rules.write) return code;
+	if (!rules.write) {
+		return code;
+	}
 	const parts: WriteParts = {
 		target,
 		...(value === undefined ? {} : { value: inParentheses(value, "argument") }),
@@ -460,7 +477,7 @@ function spellWrite(
 
 function spellEmit(
 	emit: EmitReference,
-	slots: readonly SlotNode[],
+	slots: ReadonlyArray<SlotNode>,
 	written: string,
 	context: Context,
 ): string {
@@ -473,7 +490,9 @@ function spellEmit(
 		offset,
 		slots.map((slot, index) => [slot.span, values[index]!] as const),
 	);
-	if (!rules.emit) return code;
+	if (!rules.emit) {
+		return code;
+	}
 	const parts: EmitParts = {
 		arguments: values.map((value) => inParentheses(value, "argument")),
 		code,
@@ -509,7 +528,9 @@ function standalone(code: string, hook: "write" | "emit"): string {
 		});
 	}
 	const wrapped = code.startsWith("(") && code.endsWith(")") && expression.start > 0;
-	if (wrapped && expression.end < code.length) return code;
+	if (wrapped && expression.end < code.length) {
+		return code;
+	}
 	return /^(?:\{|function\b|class\b|async\s+function\b|let\s*\[)/.test(code) ||
 		expression.type === "SequenceExpression"
 		? `(${code})`
@@ -537,7 +558,9 @@ function shorthandStarts(code: string, kind: CodeKind, offset: number): Readonly
  */
 export function writtenValue(write: WriteReference, parts: WriteParts): string {
 	const { operator } = write;
-	if (operator === "=") return valueOf(write, parts);
+	if (operator === "=") {
+		return valueOf(write, parts);
+	}
 	if (operator === "++" || operator === "--") {
 		return binary(parts.target, operator === "++" ? "+" : "-", "1");
 	}
@@ -599,7 +622,9 @@ function binary(left: string, operator: string, right: string): string {
 function precedenceOf(code: string): number {
 	const expression = parseExpression(code);
 	if (code.startsWith("(") && code.endsWith(")") && expression.start > 0) {
-		if (expression.end < code.length) return Number.POSITIVE_INFINITY;
+		if (expression.end < code.length) {
+			return Number.POSITIVE_INFINITY;
+		}
 	}
 	switch (expression.type) {
 		case "SequenceExpression":
@@ -623,7 +648,9 @@ function precedenceOf(code: string): number {
 
 /** Whether code is a unary operation, which `**` rejects as its left operand. */
 function unary(code: string, operator: string): boolean {
-	if (operator !== "**") return false;
+	if (operator !== "**") {
+		return false;
+	}
 	const { type } = parseExpression(code);
 	return type === "UnaryExpression" || type === "AwaitExpression";
 }
@@ -646,7 +673,9 @@ export function parenthesesNeeded(
 	// The parser drops parentheses: an expression that starts after the code's first character
 	// and ends before its last sits inside the author's own.
 	if (code.startsWith("(") && code.endsWith(")") && expression.start > 0) {
-		if (expression.end < code.length) return false;
+		if (expression.end < code.length) {
+			return false;
+		}
 	}
 	switch (slot) {
 		case "argument":
@@ -721,21 +750,29 @@ export function codeNames(code: string, kind: CodeKind = "expression"): Set<stri
 export function collectNames(root: unknown, names: Set<string>): void {
 	const visit = (node: unknown, skip: ReadonlySet<unknown>): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item, skip);
+			for (const item of node) {
+				visit(item, skip);
+			}
 			return;
 		}
-		if (!isNode(node) || skip.has(node)) return;
-		if (node.type === "Identifier") names.add((node as AST.IdentifierName).name);
+		if (!isNode(node) || skip.has(node)) {
+			return;
+		}
+		if (node.type === "Identifier") {
+			names.add((node as AST.IdentifierName).name);
+		}
 		const ignored = new Set<unknown>(ignoredNames(node));
 		for (const [key, value] of Object.entries(node)) {
-			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value, ignored);
+			if (key !== "type" && key !== "parent" && typeof value === "object") {
+				visit(value, ignored);
+			}
 		}
 	};
 	visit(root, new Set());
 }
 
 /** The children of a node that hold names, not variables (a member's property, a key, a label). */
-function ignoredNames(node: { type: string }): unknown[] {
+function ignoredNames(node: { type: string }): Array<unknown> {
 	const of = node as Record<string, unknown>;
 	switch (node.type) {
 		case "MemberExpression":

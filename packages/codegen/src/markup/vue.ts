@@ -45,7 +45,10 @@ const VUE_WHITESPACE_ONLY = /^[\t\n\f\r ]+$/;
 
 /** A string literal in single quotes, escaped as the value of a double-quoted attribute binding. */
 function boundLiteral(value: string): string {
-	const body = stringLiteral(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'");
+	const body = stringLiteral(value)
+		.slice(1, -1)
+		.replaceAll(String.raw`\"`, '"')
+		.replaceAll("'", String.raw`\'`);
 	return escapeHtmlAttribute(`'${body}'`);
 }
 
@@ -67,7 +70,7 @@ export function vueAttributeCode(code: string, kind: CodeKind = "expression"): s
 	const requoted = code.includes('"')
 		? mapCode(code, { string: (raw) => (raw.startsWith('"') ? singleQuoted(raw) : raw) }, kind)
 		: code;
-	return escapeReferences(requoted).replace(/"/g, "&quot;");
+	return escapeReferences(requoted).replaceAll('"', "&quot;");
 }
 
 /** A double-quoted string literal's raw text, in single quotes with the same escapes. */
@@ -79,7 +82,9 @@ function singleQuoted(raw: string): string {
 			const next = raw[index + 1]!;
 			body += next === '"' ? '"' : `\\${next}`;
 			index++;
-		} else body += character === "'" ? "\\'" : character;
+		} else {
+			body += character === "'" ? String.raw`\'` : character;
+		}
 	}
 	return `'${body}'`;
 }
@@ -89,11 +94,15 @@ function singleQuoted(raw: string): string {
  * part alone, an object of toggles alone, or an array of both in source order, consecutive
  * toggles in one object.
  */
-export function vueClassValue(parts: readonly ClassPart[]): string {
+export function vueClassValue(parts: ReadonlyArray<ClassPart>): string {
 	const bound = parts.filter((part) => part.kind !== "Static");
 	const [only, ...more] = bound;
-	if (only?.kind === "Dynamic" && more.length === 0) return only.value;
-	if (bound.every((part) => part.kind === "Toggle")) return toggleObject(bound);
+	if (only?.kind === "Dynamic" && more.length === 0) {
+		return only.value;
+	}
+	if (bound.every((part) => part.kind === "Toggle")) {
+		return toggleObject(bound);
+	}
 	return `[${classArrayItems(bound, false).join(", ")}]`;
 }
 
@@ -116,7 +125,7 @@ function vueReadsStatic(value: string): boolean {
  * root's hyphenated declaration beside it, which a nullish value then never removes, and which
  * the server renders twice.
  */
-function styleObject(parts: readonly StylePart[]): string {
+function styleObject(parts: ReadonlyArray<StylePart>): string {
 	return `{ ${parts
 		.flatMap((part) =>
 			part.kind === "Bound"
@@ -148,18 +157,34 @@ const BUILT_IN_DIRECTIVES = new Set([
  * order.
  */
 function vueRank({ name }: PrintedAttribute): number {
-	if (name === ":is") return -1;
-	if (name === "v-for") return 0;
-	if (name === "v-if" || name === "v-else-if" || name === "v-else") return 1;
-	if (name === "id") return 2;
-	if (name === "key" || name === "ref") return 3;
-	if (name === "v-model" || name.startsWith("v-model:")) return 3.5;
+	if (name === ":is") {
+		return -1;
+	}
+	if (name === "v-for") {
+		return 0;
+	}
+	if (name === "v-if" || name === "v-else-if" || name === "v-else") {
+		return 1;
+	}
+	if (name === "id") {
+		return 2;
+	}
+	if (name === "key" || name === "ref") {
+		return 3;
+	}
+	if (name === "v-model" || name.startsWith("v-model:")) {
+		return 3.5;
+	}
 	// Content, which comes after the listeners.
-	if (name === "v-html") return 6;
+	if (name === "v-html") {
+		return 6;
+	}
 	if (/^v-[a-z]/.test(name) && !BUILT_IN_DIRECTIVES.has(name) && !name.startsWith("v-on:")) {
 		return 3.75;
 	}
-	if (name.startsWith("@") || name.startsWith("v-on:")) return 5;
+	if (name.startsWith("@") || name.startsWith("v-on:")) {
+		return 5;
+	}
 	return 4;
 }
 
@@ -202,8 +227,10 @@ export const vueDialect: MarkupDialect = {
 			: VUE_CONDENSED.test(text) ||
 				((position.first || position.last) && VUE_WHITESPACE_ONLY.test(text)) ||
 				atRootEdge(position);
-		if (condensed) return `{{ ${stringLiteral(text)} }}`;
-		const escaped = escapeHtmlText(text).replace(/\{\{/g, "{&#123;");
+		if (condensed) {
+			return `{{ ${stringLiteral(text)} }}`;
+		}
+		const escaped = escapeHtmlText(text).replaceAll("{{", "{&#123;");
 		// A `{` right before an interpolation would open it early (`{{{ x }}`).
 		return position.next === "Interpolation" && escaped.endsWith("{")
 			? `${escaped.slice(0, -1)}&#123;`
@@ -218,7 +245,7 @@ export const vueDialect: MarkupDialect = {
 	boundAttribute: (name, code) => `:${name}="${vueAttributeCode(code)}"`,
 	classAttribute: (parts) => {
 		const value = staticClassValue(parts);
-		const printed: PrintedAttribute[] = value
+		const printed: Array<PrintedAttribute> = value
 			? [{ name: "class", text: vueDialect.attribute("class", value, "") }]
 			: [];
 		if (parts.some((part) => part.kind !== "Static")) {
@@ -229,7 +256,9 @@ export const vueDialect: MarkupDialect = {
 	styleAttribute: (written) => {
 		// A whole style, an object or a declaration list, is Vue's own `:style` (ADR-0065).
 		const whole = written.find((part) => part.property === "");
-		if (whole) return [{ name: "style", text: `:style="${vueAttributeCode(whole.value)}"` }];
+		if (whole) {
+			return [{ name: "style", text: `:style="${vueAttributeCode(whole.value)}"` }];
+		}
 		// A static declaration Vue would misread joins the bound ones, whose values it takes whole.
 		const parts = written.map((part): StylePart =>
 			part.kind === "Static" && !vueReadsStatic(part.value)
@@ -237,7 +266,7 @@ export const vueDialect: MarkupDialect = {
 				: part,
 		);
 		const value = staticStyleValue(parts);
-		const printed: PrintedAttribute[] = value
+		const printed: Array<PrintedAttribute> = value
 			? [{ name: "style", text: vueDialect.attribute("style", value, "") }]
 			: [];
 		if (parts.some((part) => part.kind === "Bound")) {
@@ -266,7 +295,7 @@ export const vueDialect: MarkupDialect = {
 					};
 		}),
 	list: ({ node, source, item, index, key }) => {
-		const directives: PrintedAttribute[] = [
+		const directives: Array<PrintedAttribute> = [
 			{
 				name: "v-for",
 				text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
@@ -355,7 +384,9 @@ export const vueDialect: MarkupDialect = {
 	// `<component :is>`, with the candidates' attributes and content as an element's (tags) or a
 	// component's (components).
 	dynamic: ({ node, is }) => {
-		const directives: PrintedAttribute[] = [{ name: ":is", text: `:is="${vueAttributeCode(is)}"` }];
+		const directives: Array<PrintedAttribute> = [
+			{ name: ":is", text: `:is="${vueAttributeCode(is)}"` },
+		];
 		if (node.candidates.every((candidate) => candidate.kind === "Tag")) {
 			return [
 				{
@@ -363,7 +394,7 @@ export const vueDialect: MarkupDialect = {
 					element: {
 						kind: "Element",
 						tag: "component",
-						attributes: node.attributes as Attribute[],
+						attributes: node.attributes as Array<Attribute>,
 						children: node.children,
 						span: node.span,
 					},
@@ -379,7 +410,7 @@ export const vueDialect: MarkupDialect = {
 				component: {
 					kind: "Component",
 					component: "component",
-					attributes: node.attributes as ComponentAttribute[],
+					attributes: node.attributes as Array<ComponentAttribute>,
 					fills: node.fills ?? [],
 					span: node.span,
 				},
@@ -437,7 +468,7 @@ function slotTemplate({ fill, parameter, presence, forwardsProps }: PrintedFill)
  * (camelCase, as the slot's fill reads them), and its fallback as its content.
  */
 function slotElement({ node, props }: PrintedSlotOutlet): MarkupPiece {
-	const attributes: PrintedAttribute[] = [];
+	const attributes: Array<PrintedAttribute> = [];
 	if (node.slot !== "default") {
 		attributes.push({ name: "name", text: quotedAttribute("name", node.slot) });
 	}
@@ -471,10 +502,10 @@ function atRootEdge(position: TextPosition): boolean {
  * camelises back to `imageURL`.
  */
 function hyphenate(name: string): string {
-	return name.replace(/\B([A-Z])/g, "-$1").toLowerCase();
+	return name.replaceAll(/\B([A-Z])/g, "-$1").toLowerCase();
 }
 
 /** Vue's camelisation of a hyphenated name (`camelize` in `@vue/shared`). */
 function camelize(name: string): string {
-	return name.replace(/-(\w)/g, (_, character: string) => character.toUpperCase());
+	return name.replaceAll(/-(\w)/g, (_, character: string) => character.toUpperCase());
 }

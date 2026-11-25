@@ -33,7 +33,7 @@ export type PreviewEntry =
 			id: string;
 			file: string;
 			/** The example's controls, by component: none for one the preview serves as written. */
-			controls: ExampleControlGroup[];
+			controls: Array<ExampleControlGroup>;
 	  } & Pick<Example, "category" | "title" | "description" | "order" | "layout">)
 	| ({ kind: "component"; key: string; id: string; file: string; name: string } & PropControls);
 
@@ -50,10 +50,10 @@ export function entryKey(kind: PreviewEntry["kind"], id: string): string {
  * components, sorted by id.
  */
 export interface PreviewCatalogue {
-	examples: Extract<PreviewEntry, { kind: "example" }>[];
-	components: Extract<PreviewEntry, { kind: "component" }>[];
+	examples: Array<Extract<PreviewEntry, { kind: "example" }>>;
+	components: Array<Extract<PreviewEntry, { kind: "component" }>>;
 	/** UF7012 for each malformed tag in an example's doc comment: warnings, which the commands print. */
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 }
 
 /** Code-unit order, the same on every machine (P8), unlike a locale's. */
@@ -68,7 +68,9 @@ export function compareExamples(
 	b: Pick<Example, "id" | "title" | "order">,
 ): number {
 	const order = (a.order ?? Infinity) - (b.order ?? Infinity);
-	if (order) return order;
+	if (order) {
+		return order;
+	}
 	return byCodeUnit(a.title, b.title) || byCodeUnit(a.id, b.id);
 }
 
@@ -85,7 +87,7 @@ function idOf(root: string, file: string, suffix: string): string {
  * Every `.uf.tsx` file under `srcDir` but the examples, sorted by id, skipping the directories
  * discovery skips (`node_modules`, `dist` and dot directories).
  */
-export function discoverComponentFiles(srcDir: string): string[] {
+export function discoverComponentFiles(srcDir: string): Array<string> {
 	const entries = globSync(`**/*${COMPONENT_SUFFIX}`, {
 		cwd: srcDir,
 		withFileTypes: true,
@@ -115,7 +117,9 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
 			const specifier = path.startsWith(".") ? path : `./${path}`;
 			const api = await resolver({ specifier, importer: "preview.uf.tsx" }).catch(() => undefined);
 			const component = api?.components.find((each) => each.export === "default");
-			if (!component) continue;
+			if (!component) {
+				continue;
+			}
 			const id = idOf(root, file, COMPONENT_SUFFIX);
 			components.push({
 				kind: "component",
@@ -160,7 +164,9 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
 }
 
 /** The control groups of each example that has any, by key, for an embed's controls (ADR-0116). */
-export function entryControls(catalogue: PreviewCatalogue): Record<string, ExampleControlGroup[]> {
+export function entryControls(
+	catalogue: PreviewCatalogue,
+): Record<string, Array<ExampleControlGroup>> {
 	return Object.fromEntries(
 		catalogue.examples.flatMap((entry) =>
 			entry.controls.length ? [[entry.key, entry.controls]] : [],

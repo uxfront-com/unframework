@@ -127,7 +127,9 @@ export function lowerRawHtml(
 			lowered = createRawHtmlAttribute(checked.expression, span(item));
 		}
 	}
-	if (!lowered || reporter.hasErrorsSince(mark)) return undefined;
+	if (!lowered || reporter.hasErrorsSince(mark)) {
+		return undefined;
+	}
 	reporter.report(
 		"UF3051",
 		item,

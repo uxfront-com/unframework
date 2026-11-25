@@ -40,7 +40,9 @@ function Counter({ step = 1, onChange }: CounterProps) {
 			{
 				type: "button",
 				onClick: async () => {
-					await new Promise<void>((resolve) => setTimeout(resolve, 0));
+					await new Promise<void>((resolve) => {
+						setTimeout(resolve, 0);
+					});
 					setCount(100);
 					onChange?.(100);
 				},
@@ -50,7 +52,7 @@ function Counter({ step = 1, onChange }: CounterProps) {
 	);
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -74,7 +76,7 @@ const button = (name: string) =>
 	[...container.querySelectorAll("button")].find((element) => element.textContent === name)!;
 
 it("passes the test's listeners as event props, and keeps them across a rerender", async () => {
-	const changes: unknown[][] = [];
+	const changes: Array<Array<unknown>> = [];
 	mounted = await mount(Counter, container, {
 		on: { change: (...args) => void changes.push(args) },
 		events: [{ name: "change", optional: [false] }],
@@ -90,7 +92,7 @@ it("passes the test's listeners as event props, and keeps them across a rerender
 });
 
 it("declares the act environment only inside its own act calls", async () => {
-	const changes: unknown[][] = [];
+	const changes: Array<Array<unknown>> = [];
 	mounted = await mount(Counter, container, {
 		on: { change: (...args) => void changes.push(args) },
 	});

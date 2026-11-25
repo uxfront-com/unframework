@@ -30,7 +30,9 @@ export default function unframework(options: UnframeworkAstroOptions = {}): Astr
 			// Done rather than setup: a later integration may still set the option there. The printer's
 			// layout assumes `"jsx"`, and no file can pin it (ADR-0026).
 			"astro:config:done": ({ config, logger }) => {
-				if (config.compressHTML === "jsx") return;
+				if (config.compressHTML === "jsx") {
+					return;
+				}
 				const diagnostic = createDiagnostic("UF7010", {
 					file: "astro.config",
 					// A configuration has no source span to point at: the message names the option.

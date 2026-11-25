@@ -18,7 +18,9 @@ export function png(width: number, height: number, red = 255): Buffer {
 	header.writeUInt32BE(height, 4);
 	header.set([8, 6, 0, 0, 0], 8);
 	const row = Buffer.alloc(1 + width * 4);
-	for (let x = 0; x < width; x += 1) row.set([red, 255, 255, 255], 1 + x * 4);
+	for (let x = 0; x < width; x += 1) {
+		row.set([red, 255, 255, 255], 1 + x * 4);
+	}
 	const pixels = Buffer.concat(Array.from({ length: height }, () => row));
 	return Buffer.concat([
 		Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
@@ -29,11 +31,11 @@ export function png(width: number, height: number, red = 255): Buffer {
 }
 
 /** The colour of one pixel of an 8-bit RGB or RGBA PNG, such as a capture: `[r, g, b, a]`. */
-export function pixelAt(file: Buffer, x: number, y: number): number[] {
+export function pixelAt(file: Buffer, x: number, y: number): Array<number> {
 	let offset = 8;
 	let width = 0;
 	let channels = 0;
-	const data: Buffer[] = [];
+	const data: Array<Buffer> = [];
 	while (offset < file.length) {
 		const length = file.readUInt32BE(offset);
 		const type = file.toString("ascii", offset + 4, offset + 8);
@@ -41,9 +43,13 @@ export function pixelAt(file: Buffer, x: number, y: number): number[] {
 		if (type === "IHDR") {
 			width = body.readUInt32BE(0);
 			channels = { 2: 3, 6: 4 }[body[9]!] ?? 0;
-			if (body[8] !== 8 || !channels || body[12] !== 0) throw new Error("Not an 8-bit RGB(A) PNG.");
+			if (body[8] !== 8 || !channels || body[12] !== 0) {
+				throw new Error("Not an 8-bit RGB(A) PNG.");
+			}
 		}
-		if (type === "IDAT") data.push(body);
+		if (type === "IDAT") {
+			data.push(body);
+		}
 		offset += 12 + length;
 	}
 	const raw = inflateSync(Buffer.concat(data));

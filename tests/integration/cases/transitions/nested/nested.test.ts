@@ -35,14 +35,20 @@ describeTargets("transitions/nested", () => {
 				const seen = new Set<string>();
 				const take = (element: Element) => {
 					for (const name of element.classList) {
-						if (name.startsWith("outer-") || name.startsWith("inner-")) seen.add(name);
+						if (name.startsWith("outer-") || name.startsWith("inner-")) {
+							seen.add(name);
+						}
 					}
 				};
 				const observer = new MutationObserver((records) => {
 					for (const each of records) {
-						if (each.target instanceof Element) take(each.target);
+						if (each.target instanceof Element) {
+							take(each.target);
+						}
 						for (const node of each.addedNodes) {
-							if (node instanceof Element) [node, ...node.querySelectorAll("*")].forEach(take);
+							if (node instanceof Element) {
+								[node, ...node.querySelectorAll("*")].forEach(take);
+							}
 						}
 					}
 				});
@@ -56,7 +62,9 @@ describeTargets("transitions/nested", () => {
 					await view.user.click(view.getByRole("button", { name: "Shipping" }));
 					await view.expectParity("reopened");
 					observer.takeRecords().forEach((each) => {
-						if (each.target instanceof Element) take(each.target);
+						if (each.target instanceof Element) {
+							take(each.target);
+						}
 					});
 				} finally {
 					observer.disconnect();

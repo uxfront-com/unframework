@@ -25,7 +25,9 @@ describe("Astro's compiler over output (L3)", () => {
 		);
 		const results = await astroFrameworkCompile(files, context);
 		expect([...results.keys()]).toEqual(files.map((golden) => golden.path));
-		for (const result of results.values()) expect(result).toEqual({ errors: [], warnings: [] });
+		for (const result of results.values()) {
+			expect(result).toEqual({ errors: [], warnings: [] });
+		}
 	});
 
 	it("reports a mismatched closing tag as errors, with 1-based positions", async () => {

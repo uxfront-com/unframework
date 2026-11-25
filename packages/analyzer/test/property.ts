@@ -27,7 +27,9 @@ export interface PropertyRun {
 /** A positive whole number from a variable, or `undefined` when it is unset. */
 function count(env: Env, name: string, minimum: number): number | undefined {
 	const value = env[name]?.trim();
-	if (!value) return undefined;
+	if (!value) {
+		return undefined;
+	}
 	if (!/^\d+$/.test(value) || Number(value) < minimum || Number(value) > 0xffff_ffff) {
 		throw new Error(
 			`${name} must be a whole number from ${minimum} to 4294967295, not "${value}".`,
@@ -55,11 +57,13 @@ export function propertyRun(full: number, seed: number, env: Env = process.env):
  * The items a run takes from an exhaustive list: all of them, in order, at full size, and
  * otherwise a seeded sample from all of it, not a prefix, still in the list's order.
  */
-export function sampleOf<T>(items: readonly T[], run: PropertyRun): T[] {
+export function sampleOf<T>(items: ReadonlyArray<T>, run: PropertyRun): Array<T> {
 	if (items.length !== run.full) {
 		throw new Error(`The run is for ${run.full} items, not ${items.length}.`);
 	}
-	if (run.size >= items.length) return [...items];
+	if (run.size >= items.length) {
+		return [...items];
+	}
 	// A partial Fisher–Yates shuffle of the indices: the first `size` are the sample.
 	const next = random(run.seed);
 	const indices = items.map((_, index) => index);
@@ -82,7 +86,9 @@ export function sampleOf<T>(items: readonly T[], run: PropertyRun): T[] {
  * runs at any size.
  */
 export function scaledBound(bound: number, run: PropertyRun): number {
-	if (run.size >= run.full) return bound;
+	if (run.size >= run.full) {
+		return bound;
+	}
 	const least = (bound * run.size) / run.full - 2 * Math.sqrt(run.size);
 	return Math.max(-1, Math.ceil(least) - 1);
 }

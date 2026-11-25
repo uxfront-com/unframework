@@ -119,7 +119,7 @@ function ghRun({
 }
 
 /** A page of a run's artefacts, as `GET /actions/runs/<id>/artifacts` gives it. */
-function artefacts(names: readonly string[], total = names.length): string {
+function artefacts(names: ReadonlyArray<string>, total = names.length): string {
 	return JSON.stringify({ total_count: total, artifacts: names.map((name) => ({ name })) });
 }
 
@@ -134,7 +134,7 @@ const FIRST_PAGE = artefacts(
 
 /** Makes `repo` a git repository with one commit on `probe`, detached if asked; returns HEAD. */
 function commit(repo: string, { detach = false } = {}): string {
-	const git = (...args: string[]) =>
+	const git = (...args: Array<string>) =>
 		spawnSync(
 			"git",
 			[
@@ -154,7 +154,9 @@ function commit(repo: string, { detach = false } = {}): string {
 		);
 	git("init", "--quiet", "--initial-branch", "probe");
 	git("commit", "--quiet", "--allow-empty", "--message", "probe");
-	if (detach) git("switch", "--quiet", "--detach");
+	if (detach) {
+		git("switch", "--quiet", "--detach");
+	}
 	return git("rev-parse", "HEAD").stdout.trim();
 }
 
@@ -171,13 +173,15 @@ exit "\${FAKE_DOCKER_STATUS:-0}"
 /** What the container leaves in /out by default: one changed baseline. */
 const WRITES_BASELINE = `mkdir -p "$out/$(dirname "${BASELINE}")" && printf png >"$out/${BASELINE}"`;
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(() => {
-	for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+	for (const root of roots.splice(0)) {
+		rmSync(root, { recursive: true, force: true });
+	}
 });
 
 function run(
-	args: string[],
+	args: Array<string>,
 	env: Record<string, string> = {},
 	prepare?: (root: string, repo: string) => Record<string, string> | void,
 ) {
@@ -238,7 +242,7 @@ function run(
 }
 
 /** The calls a stand-in recorded, each its list of arguments. */
-function callsIn(log: string): string[][] {
+function callsIn(log: string): Array<Array<string>> {
 	return existsSync(log)
 		? readFileSync(log, "utf8")
 				.split("--end--\n")
@@ -256,7 +260,7 @@ function stage(root: string, files: Record<string, string>) {
 }
 
 /** Runs `update` with a container that leaves exactly `staged` in its /out. */
-function updateWith(staged: readonly string[]) {
+function updateWith(staged: ReadonlyArray<string>) {
 	return run(
 		["update"],
 		{ FAKE_CONTAINER_WRITES: 'cp -R "$FAKE_DOCKER_CONTAINERS/../stage/." "$out"' },
@@ -265,7 +269,7 @@ function updateWith(staged: readonly string[]) {
 }
 
 /** The value after each `flag` in an argument list. */
-const valuesOf = (args: readonly string[], flag: string) =>
+const valuesOf = (args: ReadonlyArray<string>, flag: string) =>
 	args.flatMap((argument, index) => (args[index - 1] === flag ? [argument] : []));
 
 describe("baselines.sh update", () => {
@@ -447,7 +451,7 @@ describe("baselines.sh check", () => {
 });
 
 /** Runs `ci` as CI's Baselines job does, with the stand-in container script. */
-function runCi(env: Record<string, string> = {}, args: string[] = []) {
+function runCi(env: Record<string, string> = {}, args: Array<string> = []) {
 	const outside = realpathSync(mkdtempSync(join(tmpdir(), "uf-baselines-artefact-")));
 	roots.push(outside);
 	const artefact = join(outside, "artefact");
@@ -467,7 +471,7 @@ function runCi(env: Record<string, string> = {}, args: string[] = []) {
 
 /** Runs `download <args>` against a run whose artefact holds `files`. */
 function runDownload(
-	args: string[],
+	args: Array<string>,
 	files: Record<string, string>,
 	env: Record<string, string> = {},
 	prepare?: (root: string, repo: string) => Record<string, string> | void,
@@ -685,7 +689,9 @@ describe("CI's Baselines job", () => {
 		.find((block) => block.startsWith("baselines:\n"));
 
 	it("runs on pull requests and by hand, in the baseline image, and uploads the artefact download reads", () => {
-		if (!job) throw new Error("ci.yml has no baselines job.");
+		if (!job) {
+			throw new Error("ci.yml has no baselines job.");
+		}
 		expect(job).toMatch(/^ {4}name: Baselines$/m);
 		// A docs-only pull request skips it, like every test job (ADR-0084).
 		expect(job).toMatch(
@@ -721,7 +727,9 @@ describe("the baseline image", () => {
 		const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
 		const images = [...workflow.matchAll(/image: (mcr\.microsoft\.com\/playwright:\S+)/g)];
 		expect(images.length).toBeGreaterThan(0);
-		for (const [, used] of images) expect(used).toBe(image);
+		for (const [, used] of images) {
+			expect(used).toBe(image);
+		}
 	});
 });
 

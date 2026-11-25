@@ -22,7 +22,7 @@ export function qwikClassAttribute(
 	element: ElementNode,
 	context: JsxContext,
 	isPrimitive: (condition: Expression) => boolean,
-): JsxAttribute[] {
+): Array<JsxAttribute> {
 	const items = classItems(attribute, context, isPrimitive);
 	const reads = spreadClassReads(element, context);
 	const [only] = items;
@@ -43,11 +43,13 @@ function classItems(
 	attribute: ClassAttribute,
 	context: JsxContext,
 	isPrimitive: (condition: Expression) => boolean,
-): AstExpression[] {
-	const items: AstExpression[] = [];
-	let toggles: ToggleClass[] = [];
+): Array<AstExpression> {
+	const items: Array<AstExpression> = [];
+	let toggles: Array<ToggleClass> = [];
 	const flush = () => {
-		if (toggles.length) items.push(toggleObject(toggles, context, isPrimitive));
+		if (toggles.length) {
+			items.push(toggleObject(toggles, context, isPrimitive));
+		}
 		toggles = [];
 	};
 	for (const item of attribute.items) {
@@ -70,15 +72,18 @@ function classItems(
  * condition is written shorthand.
  */
 function toggleObject(
-	toggles: readonly ToggleClass[],
+	toggles: ReadonlyArray<ToggleClass>,
 	context: JsxContext,
 	isPrimitive: (condition: Expression) => boolean,
 ): AstExpression {
-	const groups: { names: string[]; condition: Expression }[] = [];
+	const groups: Array<{ names: Array<string>; condition: Expression }> = [];
 	for (const toggle of toggles) {
 		const last = groups.at(-1);
-		if (last && sameSpan(last.condition, toggle.condition)) last.names.push(toggle.name);
-		else groups.push({ names: [toggle.name], condition: toggle.condition });
+		if (last && sameSpan(last.condition, toggle.condition)) {
+			last.names.push(toggle.name);
+		} else {
+			groups.push({ names: [toggle.name], condition: toggle.condition });
+		}
 	}
 	return js.objectExpression(
 		groups.map(({ names, condition }) => {

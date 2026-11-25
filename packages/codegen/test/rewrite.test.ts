@@ -39,13 +39,13 @@ const label = createBinding("label", "prop", span(10, 15));
 const tone = createBinding("tone", "prop", span(17, 21));
 const item = createBinding("item", "loopVar", span(60, 64));
 const index = createBinding("index", "loopVar", span(66, 71));
-const bindings: Binding[] = [label, tone, item, index];
+const bindings: Array<Binding> = [label, tone, item, index];
 
 /** An expression at {@link BASE}: see {@link expressionAt}. */
-const expression = (code: string, ...refs: ReferenceTarget[]): Expression =>
+const expression = (code: string, ...refs: Array<ReferenceTarget>): Expression =>
 	expressionAt(BASE, code, ...refs);
 
-function component(...expressions: Expression[]): UfComponent {
+function component(...expressions: Array<Expression>): UfComponent {
 	const render = createElement(
 		"p",
 		[],

@@ -44,9 +44,9 @@ export const SERVER: LiveOptions = { client: false, includeKeys: false };
 /** The frontmatter's setup: statements in source order, after the helpers they call. */
 export interface SetupCode {
 	/** The helpers the statements call, each a statement of its own. */
-	helpers: string[];
+	helpers: Array<string>;
 	/** The setup's statements, in source order. */
-	statements: string[];
+	statements: Array<string>;
 	/** Whether a helper reads `Astro` (`Astro.locals`). */
 	readsAstro: boolean;
 }
@@ -58,16 +58,20 @@ export function setupCode(
 	spelling: Spelling,
 	injectedType: (item: InjectItem) => string,
 ): SetupCode {
-	const helpers: string[] = [];
-	const statements: string[] = [];
+	const helpers: Array<string> = [];
+	const statements: Array<string> = [];
 	let uniqueId: string | undefined;
 	for (const item of component.setup) {
 		switch (item.kind) {
 			case "State":
-				if (live.has(item.binding)) statements.push(state(item, component, spelling));
+				if (live.has(item.binding)) {
+					statements.push(state(item, component, spelling));
+				}
 				break;
 			case "Derived":
-				if (live.has(item.binding)) statements.push(...derived(item, component, spelling));
+				if (live.has(item.binding)) {
+					statements.push(...derived(item, component, spelling));
+				}
 				break;
 			// Top-level `await` in the frontmatter, which the Container API waits for (ADR-0101). The
 			// setup always awaits, so an await no server code reads is a statement of its own.
@@ -89,7 +93,9 @@ export function setupCode(
 				}
 				break;
 			case "Function":
-				if (live.has(item.binding)) statements.push(localFunction(item, component, spelling));
+				if (live.has(item.binding)) {
+					statements.push(localFunction(item, component, spelling));
+				}
 				break;
 			case "Id":
 				if (live.has(item.binding)) {
@@ -123,8 +129,9 @@ export function setupCode(
 			case "Provide":
 				break;
 			case "Inject":
-				if (live.has(item.binding))
+				if (live.has(item.binding)) {
 					statements.push(injected(item, component, spelling, injectedType));
+				}
 				break;
 			case "Use":
 				if (item.members.some(({ binding }) => live.has(binding))) {
@@ -157,7 +164,9 @@ function injected(
 ): string {
 	const name = spelling.name(item.binding);
 	const type = injectedType(item);
-	if (!item.fallback) return `const ${name} = undefined as ${unionWithUndefined(type)};`;
+	if (!item.fallback) {
+		return `const ${name} = undefined as ${unionWithUndefined(type)};`;
+	}
 	return `const ${name} = ${cast(initialiser(item.fallback, component, spelling), type)};`;
 }
 
@@ -182,8 +191,10 @@ export function serverView(component: UfComponent, module: UfModule): UfComponen
 		value: constant.value,
 		span: constant.span,
 	}));
-	const setup = component.setup.flatMap((item): SetupItem[] => {
-		if (item.kind !== "Use") return [item];
+	const setup = component.setup.flatMap((item): Array<SetupItem> => {
+		if (item.kind !== "Use") {
+			return [item];
+		}
 		const value = serverArguments(item);
 		return item.members.map(({ binding }) => ({ kind: "Const", binding, value, span: item.span }));
 	});
@@ -195,8 +206,8 @@ export function serverView(component: UfComponent, module: UfModule): UfComponen
  * arguments, with their references, for the walks of {@link serverView} alone.
  */
 function serverArguments(item: UseItem): Code {
-	const parts: string[] = [];
-	const refs: CodeReference[] = [];
+	const parts: Array<string> = [];
+	const refs: Array<CodeReference> = [];
 	for (const argument of item.arguments) {
 		if (argument.kind === "Value") {
 			parts.push(argument.value.code);
@@ -222,7 +233,9 @@ function use(
 	spelling: Spelling,
 ): string {
 	const members = item.members.flatMap(({ member, binding }) => {
-		if (!live.has(binding)) return [];
+		if (!live.has(binding)) {
+			return [];
+		}
 		const local = spelling.name(binding);
 		return [local === member ? local : `${member}: ${local}`];
 	});
@@ -269,7 +282,7 @@ function state(item: StateItem, component: UfComponent, spelling: Spelling): str
  * function, called once: `function getTier() {…}` and `const tier = getTier();`. A block getter's
  * return type is the one TypeScript infers for the getter, as `computed`'s type is.
  */
-function derived(item: DerivedItem, component: UfComponent, spelling: Spelling): string[] {
+function derived(item: DerivedItem, component: UfComponent, spelling: Spelling): Array<string> {
 	const name = spelling.name(item.binding);
 	const { getter } = item;
 	if (getter.expression) {
@@ -370,7 +383,9 @@ function widenedLiteralType(code: string, branches: boolean): string | undefined
 		switch (node.type) {
 			case "Literal":
 				if (node.raw === "null") {
-					if (!branches) return false;
+					if (!branches) {
+						return false;
+					}
 					types.add("null");
 					return true;
 				}

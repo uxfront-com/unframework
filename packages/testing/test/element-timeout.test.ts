@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("vitest/browser", () => ({
-	server: { config: { expect: { poll: { timeout: 5_000 } } } },
+	server: { config: { expect: { poll: { timeout: 5000 } } } },
 }));
 
 const { boundElementTimeout } = await import("../src/browser/element-timeout.ts");
@@ -25,6 +25,6 @@ describe("boundElementTimeout", () => {
 		expect(expect.element).toBe(bound);
 		void bound(null);
 		expect(element).toHaveBeenCalledTimes(1);
-		expect(element).toHaveBeenCalledWith(null, { timeout: 5_000 });
+		expect(element).toHaveBeenCalledWith(null, { timeout: 5000 });
 	});
 });

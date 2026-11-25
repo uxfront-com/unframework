@@ -20,11 +20,11 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 const ENTITIES: Readonly<Record<string, string>> = { "&lt;": "<", "&gt;": ">", "&amp;": "&" };
 
 /** The text of each `<title>` in server HTML, in order. */
-function titles(html: string): string[] {
+function titles(html: string): Array<string> {
 	return [...html.matchAll(/<title[^>]*>([\s\S]*?)<\/title>/g)].map(([, inner]) =>
 		inner!
-			.replace(/<!--[\s\S]*?-->/g, "")
-			.replace(/&(?:lt|gt|amp);/g, (entity) => ENTITIES[entity]!),
+			.replaceAll(/<!--[\s\S]*?-->/g, "")
+			.replaceAll(/&(?:lt|gt|amp);/g, (entity) => ENTITIES[entity]!),
 	);
 }
 

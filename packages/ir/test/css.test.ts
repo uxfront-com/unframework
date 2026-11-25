@@ -115,7 +115,7 @@ describe("the CSS facts", () => {
 		"calc(1px + (2px * 3))",
 		"rgb(0 0 0 / 50%)",
 		"/* a; */ red",
-		"'it\\'s'",
+		String.raw`'it\'s'`,
 	])("accepts the value %j", (value) => {
 		expect(cssValueProblem(value)).toBeUndefined();
 	});
@@ -144,7 +144,7 @@ describe("the CSS facts", () => {
 
 	// Angular's style parser (`parse`), which its compiler and its server DOM read styles with.
 	it.each([
-		['"a\\";b"', true],
+		[String.raw`"a\";b"`, true],
 		['"("', true],
 		["red /* it's */", true],
 		["red /* a; b */", true],

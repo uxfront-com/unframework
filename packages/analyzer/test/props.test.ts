@@ -227,8 +227,7 @@ describe("props", () => {
 	});
 
 	it("reports a default holding </script, which would end a script block", () => {
-		const source =
-			'export function A({ a = "<\\/x></SCRIPT>" }: { a?: string }) { return <p>{a}</p>; }';
+		const source = String.raw`export function A({ a = "<\/x></SCRIPT>" }: { a?: string }) { return <p>{a}</p>; }`;
 		expect(problems(source, run(source).diagnostics)).toEqual(["UF1002 </SCRIPT"]);
 	});
 

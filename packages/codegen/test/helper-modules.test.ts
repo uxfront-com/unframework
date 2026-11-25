@@ -46,7 +46,7 @@ describe("createHelperModules (ADR-0121)", () => {
 		"a/../../cx.ts",
 		"/cx.ts",
 		"c x.ts",
-		"a\\\\cx.ts",
+		String.raw`a\\cx.ts`,
 		"a/cx.ts",
 		".ts",
 	])("throws on a file name that leaves _unframework/ or isn't a module's: %j", (file) => {

@@ -20,7 +20,7 @@ import {
 
 /** The configuration with its defaults applied, and its paths absolute. */
 export interface ResolvedConfig {
-	targets: readonly TargetName[];
+	targets: ReadonlyArray<TargetName>;
 	srcDir: string;
 	outDir: string;
 	targetOptions: Partial<Record<TargetName, unknown>>;
@@ -30,12 +30,12 @@ export interface ResolvedConfig {
 	/** The project's Vite config, as a function each server calls (ADR-0104). */
 	vite?: UnframeworkConfig["vite"];
 	/** The font families that may draw text when pixels compare live, besides Inter (ADR-0105). */
-	liveFonts: readonly string[];
+	liveFonts: ReadonlyArray<string>;
 }
 
 /** The packaging config with its selectors resolved to target ids (ADR-0102). */
 export interface ResolvedPackageConfig extends Omit<PackageConfig, "targets"> {
-	targets?: readonly TargetName[];
+	targets?: ReadonlyArray<TargetName>;
 }
 
 /** Where a configuration came from: what {@link loadConfig} gives {@link resolveConfig}. */
@@ -54,14 +54,14 @@ export interface LoadedConfig extends ConfigOrigin {
 	directory: string;
 	/** The file relative to the root, when there is one. */
 	file?: string;
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 }
 
 /** The result of {@link resolveConfig}. */
 export interface ResolveConfigResult {
 	/** `undefined` when any field is invalid. */
 	config: ResolvedConfig | undefined;
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 }
 
 /** The file names {@link loadConfig} looks for, the first one found winning. */
@@ -84,7 +84,7 @@ const FIELDS = [
 	"liveFonts",
 ];
 const PACKAGE_FIELDS = ["targets", "resolveFrom"];
-const TYPE_ORACLES = ["syntactic", "tsgo"];
+const TYPE_ORACLES = new Set(["syntactic", "tsgo"]);
 
 /** A configuration has no source span to point at: the message names the file, or the field. */
 const NO_SPAN = { start: 0, end: 0 };
@@ -100,7 +100,9 @@ export async function loadConfig(root: string, file?: string): Promise<LoadedCon
 		file === undefined
 			? CONFIG_FILES.map((name) => resolve(base, name)).find((each) => existsSync(each))
 			: resolve(base, file);
-	if (path === undefined) return { raw: {}, directory: base, diagnostics: [] };
+	if (path === undefined) {
+		return { raw: {}, directory: base, diagnostics: [] };
+	}
 
 	const shown = relative(base, path);
 	const failed = (reason: string): LoadedConfig => ({
@@ -136,7 +138,7 @@ export async function resolveConfig(
 	raw: unknown,
 	origin: ConfigOrigin = {},
 ): Promise<ResolveConfigResult> {
-	const diagnostics: Diagnostic[] = [];
+	const diagnostics: Array<Diagnostic> = [];
 	const report: Report = (code, pointer, problem) => {
 		diagnostics.push(
 			createDiagnostic(code, {
@@ -183,7 +185,7 @@ async function checkConfig(
 		report,
 	);
 	const targetOptions = await resolveTargetOptions(raw.targetOptions, report);
-	if (raw.typeOracle !== undefined && !TYPE_ORACLES.includes(raw.typeOracle as string)) {
+	if (raw.typeOracle !== undefined && !TYPE_ORACLES.has(raw.typeOracle as string)) {
 		report("UF7002", "/typeOracle", `must be "syntactic" or "tsgo".`);
 	}
 	if (raw.strict !== undefined && typeof raw.strict !== "boolean") {
@@ -215,8 +217,10 @@ async function checkConfig(
 }
 
 /** The font families a live capture may take, each a name that isn't empty (ADR-0105). */
-function fontList(value: unknown, report: Report): string[] {
-	if (value === undefined) return [];
+function fontList(value: unknown, report: Report): Array<string> {
+	if (value === undefined) {
+		return [];
+	}
 	if (!Array.isArray(value)) {
 		report(
 			"UF7002",
@@ -225,8 +229,8 @@ function fontList(value: unknown, report: Report): string[] {
 		);
 		return [];
 	}
-	const names: string[] = [];
-	for (const [index, item] of (value as unknown[]).entries()) {
+	const names: Array<string> = [];
+	for (const [index, item] of (value as Array<unknown>).entries()) {
 		// A space at either end would never match the name CDP reports, so it is reported here.
 		if (typeof item !== "string" || !item || item.trim() !== item) {
 			report(
@@ -234,7 +238,9 @@ function fontList(value: unknown, report: Report): string[] {
 				`/liveFonts/${index}`,
 				"must be a font family's name, as a string that isn't empty and has no space at either end.",
 			);
-		} else names.push(item);
+		} else {
+			names.push(item);
+		}
 	}
 	return names;
 }
@@ -259,11 +265,15 @@ function isEmptyCommonJs(loaded: { default?: unknown }): boolean {
 /** What a thrown value says. Whatever the value is, reading it here can't throw again. */
 function reasonOf(error: unknown): string {
 	try {
-		if (!(error instanceof Error)) return String(error);
+		if (!(error instanceof Error)) {
+			return String(error);
+		}
 		// Node's own messages may end their sentence, or a line, or neither.
 		const text = String(error.message).trimEnd() || "it threw an error with no message";
 		const reason = text.replace(/\.?$/, ".");
-		if (!("code" in error) || error.code !== "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") return reason;
+		if (!("code" in error) || error.code !== "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") {
+			return reason;
+		}
 		return `${reason} Node loads a TypeScript configuration by stripping its types, so the file cannot use syntax that needs compiling, such as an enum or a parameter property.`;
 	} catch {
 		return "it threw a value that can't be read.";
@@ -271,7 +281,9 @@ function reasonOf(error: unknown): string {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-	if (typeof value !== "object" || value === null) return false;
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
 	const prototype: unknown = Object.getPrototypeOf(value);
 	return prototype === Object.prototype || prototype === null;
 }
@@ -281,7 +293,7 @@ function segment(key: string): string {
 	return `/${key.replaceAll("~", "~0").replaceAll("/", "~1")}`;
 }
 
-function didYouMean(name: string, names: readonly string[]): string {
+function didYouMean(name: string, names: ReadonlyArray<string>): string {
 	const meant = closest(name, names);
 	return meant ? ` Did you mean \`${meant}\`?` : "";
 }
@@ -290,11 +302,13 @@ function didYouMean(name: string, names: readonly string[]): string {
 function checkFields(
 	record: Record<string, unknown>,
 	pointer: string,
-	fields: readonly string[],
+	fields: ReadonlyArray<string>,
 	report: Report,
 ): void {
 	for (const key of Object.keys(record)) {
-		if (fields.includes(key)) continue;
+		if (fields.includes(key)) {
+			continue;
+		}
 		report(
 			"UF7002",
 			`${pointer}${segment(key)}`,
@@ -313,7 +327,7 @@ function reportUnknownTarget(
 	name: string,
 	pointer: string,
 	report: Report,
-	names: readonly string[] = TARGET_SELECTORS,
+	names: ReadonlyArray<string> = TARGET_SELECTORS,
 ): void {
 	const meant = didYouMean(name, names);
 	report(
@@ -328,25 +342,30 @@ function targetList(
 	value: unknown,
 	pointer: string,
 	report: Report,
-	within?: readonly TargetName[],
-): TargetName[] | undefined {
+	within?: ReadonlyArray<TargetName>,
+): Array<TargetName> | undefined {
 	if (!Array.isArray(value) || value.length === 0) {
 		report("UF7002", pointer, "must be a list of at least one target name.");
 		return undefined;
 	}
-	const seen: TargetName[] = [];
-	for (const [index, item] of (value as unknown[]).entries()) {
+	const seen: Array<TargetName> = [];
+	for (const [index, item] of (value as Array<unknown>).entries()) {
 		const at = `${pointer}/${index}`;
-		if (typeof item !== "string") report("UF7002", at, "must be a target name.");
-		else if (!isTargetSelector(item)) reportUnknownTarget(item, at, report);
-		else {
+		if (typeof item !== "string") {
+			report("UF7002", at, "must be a target name.");
+		} else if (!isTargetSelector(item)) {
+			reportUnknownTarget(item, at, report);
+		} else {
 			// `solid` and `solid@1` select one target, so the second repeats it (ADR-0102).
 			const name = targetName(item);
 			const named = item === name ? `"${name}"` : `"${name}" (${JSON.stringify(item)})`;
-			if (seen.includes(name)) report("UF7002", at, `repeats the target ${named}.`);
-			else if (within && !within.includes(name)) {
+			if (seen.includes(name)) {
+				report("UF7002", at, `repeats the target ${named}.`);
+			} else if (within && !within.includes(name)) {
 				report("UF7002", at, `names the target ${named}, which "/targets" leaves out.`);
-			} else seen.push(name);
+			} else {
+				seen.push(name);
+			}
 		}
 	}
 	return seen;
@@ -370,7 +389,9 @@ async function resolveTargetOptions(
 	report: Report,
 ): Promise<Partial<Record<TargetName, unknown>>> {
 	const resolved: Partial<Record<TargetName, unknown>> = {};
-	if (value === undefined) return resolved;
+	if (value === undefined) {
+		return resolved;
+	}
 	if (!isRecord(value)) {
 		report("UF7002", "/targetOptions", "must be an object, by target name.");
 		return resolved;
@@ -381,13 +402,16 @@ async function resolveTargetOptions(
 			reportUnknownTarget(name, pointer, report, TARGET_NAMES);
 			continue;
 		}
-		if (options === undefined) continue;
+		if (options === undefined) {
+			continue;
+		}
 		const schema = builtinTargets[name].options;
 		if (!schema) {
 			// Nothing would read them, so they would be ignored in silence (P2, ADR-0076).
 			const problem = `is not valid: \`${name}\` declares no options.`;
-			if (!isRecord(options)) report("UF7004", pointer, problem);
-			else {
+			if (!isRecord(options)) {
+				report("UF7004", pointer, problem);
+			} else {
 				for (const key of Reflect.ownKeys(options)) {
 					report("UF7004", `${pointer}${segment(String(key))}`, problem);
 				}
@@ -419,7 +443,7 @@ async function resolveTargetOptions(
 
 function resolvePackage(
 	value: unknown,
-	targets: readonly TargetName[] | undefined,
+	targets: ReadonlyArray<TargetName> | undefined,
 	directory: string,
 	report: Report,
 ): ResolvedPackageConfig | undefined {
@@ -431,12 +455,16 @@ function resolvePackage(
 	const resolved: ResolvedPackageConfig = {};
 	if (value.targets !== undefined) {
 		const list = targetList(value.targets, "/package/targets", report, targets);
-		if (list) resolved.targets = list;
+		if (list) {
+			resolved.targets = list;
+		}
 	}
 	const from = value.resolveFrom;
 	if (typeof from === "string") {
 		const path = pathField(from, "/package/resolveFrom", directory, report);
-		if (path) resolved.resolveFrom = path;
+		if (path) {
+			resolved.resolveFrom = path;
+		}
 	} else if (isRecord(from)) {
 		const each: Partial<Record<TargetName, string>> = {};
 		for (const [name, path] of Object.entries(from)) {
@@ -445,9 +473,13 @@ function resolvePackage(
 				reportUnknownTarget(name, pointer, report, TARGET_NAMES);
 				continue;
 			}
-			if (path === undefined) continue;
+			if (path === undefined) {
+				continue;
+			}
 			const absolute = pathField(path, pointer, directory, report);
-			if (absolute) each[name] = absolute;
+			if (absolute) {
+				each[name] = absolute;
+			}
 		}
 		resolved.resolveFrom = each;
 	} else if (from !== undefined) {

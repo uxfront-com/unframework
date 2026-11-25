@@ -80,16 +80,20 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
 	it("captures only the render's own calls, not those other work makes meanwhile", async () => {
 		let entered!: () => void;
 		let release!: () => void;
-		const started = new Promise<void>((resolve) => (entered = resolve));
-		const gate = new Promise<void>((resolve) => (release = resolve));
+		const started = new Promise<void>((resolve) => {
+			entered = resolve;
+		});
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
 		Object.assign(globalThis, { __ufTestGate: { entered, gate } });
 		compileInBrowserProject(
 			"Gated",
 			'---\nconst { entered, gate } = (globalThis as any).__ufTestGate;\nentered();\nawait gate;\nconsole.warn("inside");\n---\n\n<p>gated</p>\n',
 		);
 		const original = console.warn;
-		const elsewhere: unknown[][] = [];
-		console.warn = (...args: unknown[]) => void elsewhere.push(args);
+		const elsewhere: Array<Array<unknown>> = [];
+		console.warn = (...args: Array<unknown>) => void elsewhere.push(args);
 		try {
 			const rendering = renderAstroComponent(root, { id: idOf("Gated"), props: {} });
 			await started;
@@ -130,7 +134,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
 
 		it("renders the child the browser project resolves and compiles on request", async () => {
 			compileInBrowserProject("Form", parent("Form"));
-			const asked: string[] = [];
+			const asked: Array<string> = [];
 			const children = {
 				resolve: (specifier: string, importer: string) => {
 					asked.push(`resolve ${specifier} from ${importer}`);
@@ -223,7 +227,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
 				"Disclosure",
 				'---\nimport { useToggle } from "./useToggle";\n\nconst { on } = useToggle(false);\n---\n\n<p>{on ? "open" : "closed"}</p>\n',
 			);
-			const asked: string[] = [];
+			const asked: Array<string> = [];
 			const children = {
 				resolve: (specifier: string) =>
 					Promise.resolve(specifier === "./useToggle" ? composableId : undefined),
@@ -253,7 +257,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
 				"Scoped",
 				'---\nimport { scopeAttributes } from "./_unframework/scopeAttributes";\n---\n\n<p {...scopeAttributes(Astro.props)}>scoped</p>\n',
 			);
-			const asked: string[] = [];
+			const asked: Array<string> = [];
 			const children = {
 				resolve: (specifier: string) =>
 					Promise.resolve(specifier === "./_unframework/scopeAttributes" ? helperId : undefined),
@@ -292,7 +296,9 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
 				const unframework: Plugin = {
 					name: "unframework",
 					resolveId: (id, importer) => {
-						if (ASTRO_VIRTUAL_ID.test(id)) return id;
+						if (ASTRO_VIRTUAL_ID.test(id)) {
+							return id;
+						}
 						const name = /^\.\/(\w+)\.astro$/.exec(id)?.[1];
 						return name && importer && ASTRO_VIRTUAL_ID.test(importer) ? idOf(name) : null;
 					},

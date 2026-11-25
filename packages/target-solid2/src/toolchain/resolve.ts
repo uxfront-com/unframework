@@ -7,7 +7,11 @@ import { join } from "node:path";
 import type { Plugin } from "vite";
 
 /** Solid 2's runtime packages: what an output, the adapters and Solid itself import. */
-export const SOLID_PACKAGES: readonly string[] = ["solid-js", "@solidjs/web", "@solidjs/signals"];
+export const SOLID_PACKAGES: ReadonlyArray<string> = [
+	"solid-js",
+	"@solidjs/web",
+	"@solidjs/signals",
+];
 
 /** Whether a specifier names one of Solid 2's packages or a subpath of one. */
 export function isSolidSpecifier(specifier: string): boolean {
@@ -18,7 +22,7 @@ export function isSolidSpecifier(specifier: string): boolean {
  * The packages an output or an adapter imports, which resolve in the toolchain directory:
  * `@solidjs/signals` is `solid-js`'s own dependency, which resolves from `solid-js` itself.
  */
-const IMPORTED: readonly string[] = ["solid-js", "@solidjs/web"];
+const IMPORTED: ReadonlyArray<string> = ["solid-js", "@solidjs/web"];
 
 /**
  * Resolves every import of Solid 2's packages as if the toolchain directory imported it, through
@@ -32,7 +36,9 @@ export function resolveSolid(toolchainDir: string): Plugin {
 		name: "unframework:solid2-resolve",
 		enforce: "pre",
 		async resolveId(source, _importer, options) {
-			if (!IMPORTED.some((name) => source === name || source.startsWith(`${name}/`))) return null;
+			if (!IMPORTED.some((name) => source === name || source.startsWith(`${name}/`))) {
+				return null;
+			}
 			return this.resolve(source, importer, { ...options, skipSelf: true });
 		},
 	};
@@ -50,7 +56,9 @@ export function undedupeSolid(): Plugin {
 		name: "unframework:solid2-undedupe",
 		config(config) {
 			const dedupe = config.resolve?.dedupe;
-			if (dedupe) config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+			if (dedupe) {
+				config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+			}
 			const include = config.optimizeDeps?.include;
 			if (include) {
 				config.optimizeDeps!.include = include.filter((name) => !isSolidSpecifier(name));
@@ -58,7 +66,9 @@ export function undedupeSolid(): Plugin {
 		},
 		configEnvironment(name, config) {
 			const dedupe = config.resolve?.dedupe;
-			if (dedupe) config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+			if (dedupe) {
+				config.resolve!.dedupe = dedupe.filter((name) => !SOLID_PACKAGES.includes(name));
+			}
 			// In a browser test, the plugin resolves every environment with the `browser` condition, the
 			// server's too, where a hydrate project renders the HTML it hydrates (L12, ADR-0095).
 			const conditions = config.resolve?.conditions;

@@ -30,7 +30,7 @@ export function lowered(
 
 /** The formatted Qwik output of a module's component, its first by default. */
 export async function output(module: UfModule, index = 0): Promise<string> {
-	const reported: unknown[] = [];
+	const reported: Array<unknown> = [];
 	const [file] = target.emit(module.components[index]!, {
 		module,
 		options: undefined,

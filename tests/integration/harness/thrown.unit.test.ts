@@ -9,14 +9,18 @@ import { checkMappedStack, stackFrames, throwSite, ufMapStack } from "./thrown.t
 
 let dir: string | undefined;
 afterEach(() => {
-	if (dir) rmSync(dir, { recursive: true, force: true });
+	if (dir) {
+		rmSync(dir, { recursive: true, force: true });
+	}
 	dir = undefined;
 });
 
 function caseDir(files: Record<string, string>): string {
 	dir = mkdtempSync(join(tmpdir(), "uf-thrown-"));
 	mkdirSync(dir, { recursive: true });
-	for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, name), text);
+	for (const [name, text] of Object.entries(files)) {
+		writeFileSync(join(dir, name), text);
+	}
 	return dir;
 }
 

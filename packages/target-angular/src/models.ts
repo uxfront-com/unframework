@@ -154,7 +154,7 @@ export function modelHelperCode(
 /** The native controls' `v-model`s of a template, and what they need from the class and the file. */
 export interface Models {
 	/** The attributes each `v-model` writes, by its IR attribute. */
-	attributes: ReadonlyMap<ModelAttribute, PrintedAttribute[]>;
+	attributes: ReadonlyMap<ModelAttribute, Array<PrintedAttribute>>;
 	/**
 	 * The model's write that runs first in the template listener of an author's listener of the
 	 * same element and event, by that listener's attribute (`writeFirst`).
@@ -170,9 +170,9 @@ export interface Models {
 	/** The member that tells the server's render apart, for a select's options (`onServer`). */
 	server?: string;
 	/** The helpers the template calls, each once. */
-	helpers: ModelHelper[];
+	helpers: Array<ModelHelper>;
 	/** The files' functions only the helpers call (`looseToNumber`), declared in the file. */
-	support: ModelHelper[];
+	support: Array<ModelHelper>;
 	/** The `classNames` helper's name, where a class part may be an array or an object. */
 	classNames?: string;
 	/** The `styleObject` helper's name, where a style bound to a value is merged (ADR-0065). */
@@ -186,7 +186,7 @@ export interface Models {
 
 /** Plans every native control's `v-model` of the component's template. */
 export function planModels(plan: Plan): Models {
-	const attributes = new Map<ModelAttribute, PrintedAttribute[]>();
+	const attributes = new Map<ModelAttribute, Array<PrintedAttribute>>();
 	const writes = new Map<EventAttribute, string>();
 	const options = new Map<Attribute, string>();
 	const helpers = new Map<keyof typeof HELPERS, ModelHelper>();
@@ -198,14 +198,20 @@ export function planModels(plan: Plan): Models {
 			// A shared one (ADR-0121) takes the name every component of the source imports it by.
 			const shared = plan.shared !== undefined && SHARED_MODEL_HELPERS.has(base);
 			let name = shared ? plan.helper(base) : plan.imports.claim(base);
-			while (plan.members.has(name)) name = plan.imports.claim(base);
+			while (plan.members.has(name)) {
+				name = plan.imports.claim(base);
+			}
 			plan.members.reserve(name);
 			// A shared `modelText` imports `looseToNumber` in its own module.
 			const support = base === "modelText" || base === "writeModelText";
-			if (support && !shared && !helpers.has("looseToNumber")) helper("looseToNumber");
+			if (support && !shared && !helpers.has("looseToNumber")) {
+				helper("looseToNumber");
+			}
 			found = { name, code: "", ...(shared ? { shared: base } : {}) };
 			helpers.set(base, found);
-			if (!shared) found.code = HELPERS[base](name);
+			if (!shared) {
+				found.code = HELPERS[base](name);
+			}
 		}
 		return found.name;
 	};
@@ -221,15 +227,21 @@ export function planModels(plan: Plan): Models {
 		const model = element.attributes.find(
 			(attribute): attribute is ModelAttribute => attribute.kind === "Model",
 		);
-		if (!model) return element;
+		if (!model) {
+			return element;
+		}
 		const [reference] = model.value.refs;
-		if (reference?.kind !== "Binding") throw new Error("A `v-model` binds no state.");
+		if (reference?.kind !== "Binding") {
+			throw new Error("A `v-model` binds no state.");
+		}
 		const binding = bindingById(plan, reference.binding);
 		const signal = `this.${binding.name}`;
 		const ref = element.attributes.find((attribute) => attribute.kind === "Ref");
 		let variable: string | undefined;
 		const field = () => {
-			if (ref && ref.kind === "Ref") return bindingById(plan, ref.binding).name;
+			if (ref && ref.kind === "Ref") {
+				return bindingById(plan, ref.binding).name;
+			}
 			variable ??= claimVariable(plan, `${binding.name}Field`);
 			return variable;
 		};
@@ -243,17 +255,19 @@ export function planModels(plan: Plan): Models {
 			}
 			return JSON.stringify(value?.kind === "Static" && value.value !== true ? value.value : "on");
 		};
-		const printed: PrintedAttribute[] = [];
+		const printed: Array<PrintedAttribute> = [];
 		const bind = (name: string, code: string) =>
 			printed.push({ name, text: `${name}="${angularCode(code, "attribute")}"` });
 		const listen = (event: string, statement: string) => {
 			const first = writeFirst(element, event);
-			if (first) writes.set(first, statement);
-			else
+			if (first) {
+				writes.set(first, statement);
+			} else {
 				printed.push({
 					name: `(${event})`,
 					text: `(${event})="${angularCode(statement, "event")}"`,
 				});
+			}
 		};
 		const text = model.control === "text" || model.control === "textarea";
 		const number = model.control === "number" || model.number === true;
@@ -266,10 +280,13 @@ export function planModels(plan: Plan): Models {
 			const write = `${helper("writeModelText")}(${signal}, ${name}, ${modifiers})`;
 			// Vue trims the field's own text once it is committed.
 			const trim = model.trim ? `${name}.value = ${name}.value.trim()` : undefined;
-			if (model.lazy) listen("change", trim ? `${write}; ${trim}` : write);
-			else {
+			if (model.lazy) {
+				listen("change", trim ? `${write}; ${trim}` : write);
+			} else {
 				listen("input", write);
-				if (trim) listen("change", trim);
+				if (trim) {
+					listen("change", trim);
+				}
 			}
 		} else if (text) {
 			// A lazy field writes on `change`; Angular sets its value only when the state changes, as
@@ -311,12 +328,16 @@ export function planModels(plan: Plan): Models {
 				`${signal}.set(${generic(plan.component, reference.binding) ? `$any(${chosen})` : chosen})`,
 			);
 			server ??= claimVariable(plan, "onServer");
-			if (variable !== undefined) printed.unshift({ name: `#${variable}`, text: `#${variable}` });
+			if (variable !== undefined) {
+				printed.unshift({ name: `#${variable}`, text: `#${variable}` });
+			}
 			attributes.set(model, printed);
 			// Every option of the select, wherever it sits: in a list, a conditional or an
 			// `<optgroup>`, its value bound or its text's.
 			const withSelected = (option: ElementNode): ElementNode => {
-				if (option.tag !== "option") return option;
+				if (option.tag !== "option") {
+					return option;
+				}
 				const added: Attribute = {
 					kind: "Static",
 					name: "selected",
@@ -341,8 +362,12 @@ export function planModels(plan: Plan): Models {
 		}
 		// A hydrated field keeps the server's text with the caret before it: a directive the field's
 		// `[value]` binding selects puts it after (ADR-0095).
-		if (model.control === "textarea") textCaret ??= plan.helper("TextCaret");
-		if (variable !== undefined) printed.unshift({ name: `#${variable}`, text: `#${variable}` });
+		if (model.control === "textarea") {
+			textCaret ??= plan.helper("TextCaret");
+		}
+		if (variable !== undefined) {
+			printed.unshift({ name: `#${variable}`, text: `#${variable}` });
+		}
 		attributes.set(model, printed);
 		return element;
 	});
@@ -400,13 +425,17 @@ function optionValue(
 	if (value?.kind === "Bound") {
 		return rewriteExpression(value.value, plan.component, rules, "render");
 	}
-	if (value?.kind === "Static") return JSON.stringify(value.value === true ? "" : value.value);
+	if (value?.kind === "Static") {
+		return JSON.stringify(value.value === true ? "" : value.value);
+	}
 	const [only] = option.children;
 	if (option.children.length === 1 && only?.kind === "Text") {
-		return JSON.stringify(only.value.replace(ASCII_EDGES, "").replace(ASCII_WHITESPACE, " "));
+		return JSON.stringify(only.value.replaceAll(ASCII_EDGES, "").replaceAll(ASCII_WHITESPACE, " "));
 	}
 	const parts = option.children.flatMap((child) => {
-		if (child.kind === "Text") return [JSON.stringify(child.value)];
+		if (child.kind === "Text") {
+			return [JSON.stringify(child.value)];
+		}
 		if (child.kind === "Interpolation") {
 			// `{{ }}` renders `null` and `undefined` as no text.
 			return [`((${rewriteExpression(child.value, plan.component, rules, "render")}) ?? "")`];
@@ -419,7 +448,9 @@ function optionValue(
 /** Whether a binding's declared type names a type parameter of its component (ADR-0068). */
 function generic(component: UfComponent, binding: BindingId): boolean {
 	const parameters = new Set(component.typeParameters?.map(({ name }) => name));
-	if (!parameters.size) return false;
+	if (!parameters.size) {
+		return false;
+	}
 	const item = component.setup.find((each) => "binding" in each && each.binding === binding);
 	const type = item && "type" in item ? item.type : undefined;
 	return type !== undefined && [...typeNames(type)].some((name) => parameters.has(name));
@@ -428,7 +459,9 @@ function generic(component: UfComponent, binding: BindingId): boolean {
 /** A template variable's name, free beside the class's members and the lists' variables. */
 function claimVariable(plan: Plan, base: string): string {
 	let name = plan.members.claim(base);
-	while (plan.loopNames.has(name)) name = plan.members.claim(base);
+	while (plan.loopNames.has(name)) {
+		name = plan.members.claim(base);
+	}
 	return name;
 }
 
@@ -438,8 +471,12 @@ function mapElements<T extends { kind: string }>(
 	map: (element: ElementNode) => ElementNode,
 ): T {
 	const visit = (value: unknown): unknown => {
-		if (Array.isArray(value)) return value.map(visit);
-		if (typeof value !== "object" || value === null) return value;
+		if (Array.isArray(value)) {
+			return value.map(visit);
+		}
+		if (typeof value !== "object" || value === null) {
+			return value;
+		}
 		if ((value as { kind?: string }).kind === "Element") {
 			const element = value as ElementNode;
 			return map({ ...element, children: element.children.map((child) => visit(child) as never) });

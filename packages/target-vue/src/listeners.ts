@@ -39,7 +39,7 @@ export interface Listeners {
 	/** Each listener's attribute (`@click.stop="record('stopped')"`), by its IR attribute. */
 	attributes: ReadonlyMap<EventAttribute, string>;
 	/** The script functions the template calls for the handlers it cannot hold, in its order. */
-	functions: string[];
+	functions: Array<string>;
 }
 
 /**
@@ -52,23 +52,31 @@ export function planListeners(
 	rules: { script: RewriteRules; template: RewriteRules },
 ): Listeners {
 	const attributes = new Map<EventAttribute, string>();
-	const functions: string[] = [];
+	const functions: Array<string> = [];
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element") return;
+			if (node.kind !== "Element") {
+				return;
+			}
 			const captures = node.attributes.some(
 				(attribute) =>
 					attribute.kind === "Event" && attribute.capture && attribute.event === "input",
 			);
 			const write = captures ? fieldWrite(node, component, names, rules.script) : undefined;
 			for (const attribute of node.attributes) {
-				if (attribute.kind !== "Event") continue;
+				if (attribute.kind !== "Event") {
+					continue;
+				}
 				const then = attribute.capture && attribute.event === "input" ? write?.call : undefined;
 				const planned = listener(attribute, component, names, rules, then);
 				attributes.set(attribute, planned.attribute);
-				if (planned.function !== undefined) functions.push(planned.function);
+				if (planned.function !== undefined) {
+					functions.push(planned.function);
+				}
 			}
-			if (write !== undefined) functions.push(write.function);
+			if (write !== undefined) {
+				functions.push(write.function);
+			}
 		},
 	});
 	return { attributes, functions };
@@ -100,7 +108,7 @@ function listener(
 	].filter((option) => option !== undefined);
 	const write = (
 		value: string | undefined,
-		guards: readonly string[] = [],
+		guards: ReadonlyArray<string> = [],
 		takesEvent?: boolean,
 	) => {
 		const called =
@@ -139,15 +147,21 @@ function listener(
 	// `.prevent` beside `.passive`, where it would do nothing.
 	const guarded = attribute.passive ? undefined : leadingControls(fn);
 	if (guarded) {
-		if (guarded.rest === undefined) return { attribute: write(undefined, guarded.modifiers) };
+		if (guarded.rest === undefined) {
+			return { attribute: write(undefined, guarded.modifiers) };
+		}
 		if (inTemplate(guarded.rest, component)) {
 			const value = templateValue(fn, guarded.rest, component, rules.template);
-			if (held(value)) return { attribute: write(value, guarded.modifiers) };
+			if (held(value)) {
+				return { attribute: write(value, guarded.modifiers) };
+			}
 		}
 	}
 	if (fn.expression && inTemplate(fn.body, component)) {
 		const value = templateValue(fn, fn.body, component, rules.template);
-		if (held(value)) return { attribute: write(value) };
+		if (held(value)) {
+			return { attribute: write(value) };
+		}
 	}
 	const name = names.scope.claim(
 		`on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}`,
@@ -179,7 +193,9 @@ function fieldWrite(
 	const model = element.attributes.find(
 		(attribute): attribute is ModelAttribute => attribute.kind === "Model",
 	);
-	if (model === undefined || model.lazy) return undefined;
+	if (model === undefined || model.lazy) {
+		return undefined;
+	}
 	if (model.control !== "text" && model.control !== "textarea" && model.control !== "number") {
 		return undefined;
 	}
@@ -233,8 +249,12 @@ function templateValue(
 			(parameter.name !== undefined && names.has(parameter.name)) ||
 			(parameter.pattern?.names ?? []).some((name) => names.has(name)),
 	);
-	if (!fn.async && !readsParameter && !calledByVue(code)) return code;
-	if (body === fn.body) return functionText(fn, component, rules, "client");
+	if (!fn.async && !readsParameter && !calledByVue(code)) {
+		return code;
+	}
+	if (body === fn.body) {
+		return functionText(fn, component, rules, "client");
+	}
 	// A body `leadingControls` cut down to its last statement's expression.
 	return `${fn.async ? "async " : ""}(${parametersText(fn)}) => ${needsWrapping(code) ? `(${code})` : code}`;
 }
@@ -253,8 +273,9 @@ function calledByVue(code: string): boolean {
 	) {
 		expression = expression.expression;
 	}
-	if (expression.type === "ChainExpression")
+	if (expression.type === "ChainExpression") {
 		return expression.expression.type === "MemberExpression";
+	}
 	return (
 		expression.type === "Identifier" ||
 		expression.type === "MemberExpression" ||
@@ -273,9 +294,13 @@ function needsWrapping(code: string): boolean {
 function unwrapped(code: string): string {
 	let current = code.trim();
 	for (;;) {
-		if (!current.startsWith("(")) return current;
+		if (!current.startsWith("(")) {
+			return current;
+		}
 		const expression = parseExpression(current);
-		if (expression.start === 0) return current;
+		if (expression.start === 0) {
+			return current;
+		}
 		current = current.slice(expression.start, expression.end).trim();
 	}
 }
@@ -367,7 +392,7 @@ function modifierOf(control: EventControl): string {
  * the calls are all it does). `undefined` for any other handler, or one with comments, which a
  * modifier would drop.
  */
-function leadingControls(fn: FunctionCode): { modifiers: string[]; rest?: Code } | undefined {
+function leadingControls(fn: FunctionCode): { modifiers: Array<string>; rest?: Code } | undefined {
 	const controls = fn.eventControls ?? [];
 	if (controls.length === 0 || controls.some((control) => control.condition !== undefined)) {
 		return undefined;
@@ -379,7 +404,9 @@ function leadingControls(fn: FunctionCode): { modifiers: string[]; rest?: Code }
 	}
 	const { statements, comments } = parseStatementsSource(fn.body.code);
 	const [block] = statements;
-	if (comments.length > 0 || block?.type !== "BlockStatement") return undefined;
+	if (comments.length > 0 || block?.type !== "BlockStatement") {
+		return undefined;
+	}
 	const base = fn.body.span.start;
 	const leading = block.body.slice(0, controls.length);
 	const matches = leading.every(
@@ -387,11 +414,17 @@ function leadingControls(fn: FunctionCode): { modifiers: string[]; rest?: Code }
 			base + statement.start === controls[index]!.span.start &&
 			base + statement.end === controls[index]!.span.end,
 	);
-	if (!matches || leading.length < controls.length) return undefined;
+	if (!matches || leading.length < controls.length) {
+		return undefined;
+	}
 	const rest = block.body.slice(controls.length);
-	if (rest.length === 0) return { modifiers };
+	if (rest.length === 0) {
+		return { modifiers };
+	}
 	const [only] = rest;
-	if (rest.length > 1 || only?.type !== "ExpressionStatement") return undefined;
+	if (rest.length > 1 || only?.type !== "ExpressionStatement") {
+		return undefined;
+	}
 	const span = { start: base + only.expression.start, end: base + only.expression.end };
 	return {
 		modifiers,
@@ -427,7 +460,9 @@ function scriptFunction(
 				: parameter,
 		),
 	};
-	if (!typed.expression) return functionText(typed, component, rules, "client", { name });
+	if (!typed.expression) {
+		return functionText(typed, component, rules, "client", { name });
+	}
 	const body = functionBodyText(typed, component, rules, "client", { discard: true });
 	const returnType = typed.returnType ? `: ${typed.returnType.code}` : "";
 	return `${typed.async ? "async " : ""}function ${name}(${parametersText(typed)})${returnType} {\n  ${body}\n}`;
@@ -439,8 +474,12 @@ function scriptFunction(
  * annotated `ErrorEvent` would not take what `@error` passes (vocabulary.test.ts pins both).
  */
 export function vueEventInterface(event: string): string {
-	if (event === "error") return "Event";
+	if (event === "error") {
+		return "Event";
+	}
 	const name = DOM_EVENTS.get(event);
-	if (name === undefined) throw new Error(`Unknown DOM event "${event}".`);
+	if (name === undefined) {
+		throw new Error(`Unknown DOM event "${event}".`);
+	}
 	return name;
 }

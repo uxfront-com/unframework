@@ -134,7 +134,7 @@ describe("angular child-root rule, rendered by Angular", () => {
 	 * writes them beside each other and loads the last one's component. A child's output is
 	 * imported by its kebab-case name (`./button`).
 	 */
-	async function load(...sources: [file: string, source: string, sheet?: string][]) {
+	async function load(...sources: Array<[file: string, source: string, sheet?: string]>) {
 		const directory = scratchDir();
 		const apis: Record<string, ModuleApi> = {};
 		const outputs = new Map<string, { name: string; code: string }>();
@@ -146,7 +146,9 @@ describe("angular child-root rule, rendered by Angular", () => {
 			const [code] = await emitFormatted(module);
 			// The sheet `compile()` scopes and emits beside the outputs.
 			const { scopeId } = module.components[0]!;
-			if (sheet) sheets[join(directory, file)] = scopeStylesheet(css, sheet, scopeId!).code;
+			if (sheet) {
+				sheets[join(directory, file)] = scopeStylesheet(css, sheet, scopeId!).code;
+			}
 			const name = code!.path.replace(/\.ts$/, "");
 			outputs.set(join(directory, `${file}.ts`), { name, code: code!.contents });
 		}
@@ -160,7 +162,7 @@ describe("angular child-root rule, rendered by Angular", () => {
 		for (const [id, { name }] of outputs) {
 			const { code } = await transform(id);
 			last = join(directory, `${name}.js`);
-			writeFileSync(last, code.replace(/from "\.\/([\w-]+)"/g, 'from "./$1.js"'));
+			writeFileSync(last, code.replaceAll(/from "\.\/([\w-]+)"/g, 'from "./$1.js"'));
 		}
 		return ((await import(pathToFileURL(last).href)) as { default: unknown }).default;
 	}

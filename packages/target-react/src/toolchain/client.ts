@@ -41,7 +41,9 @@ export const mount: MountAdapter = async (component, container, options) => {
 		async settle() {
 			await act(async () => {});
 			// What the scheduler queued outside `act` runs in a task of its own (a MessageChannel).
-			await new Promise<void>((resolve) => setTimeout(resolve, 0));
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
 		},
 		async rerender(props) {
 			await act(async () => root.render(element(props)));

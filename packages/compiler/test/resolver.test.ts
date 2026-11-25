@@ -26,7 +26,7 @@ export default function Form() {
 
 /** A resolver over in-memory files, which counts its reads. */
 function memoryResolver(files: Record<string, string>) {
-	const reads: string[] = [];
+	const reads: Array<string> = [];
 	const resolve = createFileResolver({
 		root: "/project",
 		readFile: (path) => {
@@ -287,7 +287,7 @@ export default function Field({ label }: { label: string }) {
 	const TYPES = "export interface Options { [name: string]: unknown }\n";
 
 	/** The codes of a parent whose ref on `Field` is typed `type`, after `declarations`. */
-	async function codesOf(declarations: string, type: string): Promise<string[]> {
+	async function codesOf(declarations: string, type: string): Promise<Array<string>> {
 		const source = `import { useTemplateRef } from "@uxfront/unframework";
 import Field from "./Field.uf.tsx";
 import type { Options } from "./types.ts";

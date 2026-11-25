@@ -29,7 +29,7 @@ export interface Problem {
 	code: DiagnosticCode;
 	message: string;
 	help?: string;
-	fixes?: Fix[];
+	fixes?: Array<Fix>;
 }
 
 /**
@@ -98,17 +98,29 @@ function svgNames(tag: string): ReadonlyMap<string, string> {
  */
 export function canonicalName(tag: string, namespace: Namespace, authored: string): string {
 	if (namespace === "svg") {
-		if (isSvgAttribute(tag, authored)) return authored;
-		if (authored === "xlink:href" || authored === "xlinkHref") return "href";
-		const kebab = authored.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-		if (kebab !== authored && isSvgAttribute(tag, kebab)) return kebab;
+		if (isSvgAttribute(tag, authored)) {
+			return authored;
+		}
+		if (authored === "xlink:href" || authored === "xlinkHref") {
+			return "href";
+		}
+		const kebab = authored.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+		if (kebab !== authored && isSvgAttribute(tag, kebab)) {
+			return kebab;
+		}
 		const svg = svgNames(tag).get(authored.toLowerCase());
-		if (svg) return svg;
+		if (svg) {
+			return svg;
+		}
 	}
-	if (authored === "xlink:href") return "href";
+	if (authored === "xlink:href") {
+		return "href";
+	}
 	const lower = authored.toLowerCase();
 	const alias = ALIASES.get(lower);
-	if (alias) return alias;
+	if (alias) {
+		return alias;
+	}
 	if (/^aria[a-z]/.test(lower) && ARIA_ATTRIBUTES.has(`aria-${lower.slice(4)}`)) {
 		return `aria-${lower.slice(4)}`;
 	}
@@ -124,7 +136,7 @@ export function isAttributeOf(tag: string, namespace: Namespace, name: string): 
  * The attributes an element takes in its namespace, by name, `data-*` aside: what a misspelt
  * attribute may mean (UF3035). One whose name alone is a problem (`autofocus`, `slot`) is none.
  */
-export function attributesOf(tag: string, namespace: Namespace): string[] {
+export function attributesOf(tag: string, namespace: Namespace): Array<string> {
 	const names =
 		namespace === "svg"
 			? [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])]
@@ -193,9 +205,13 @@ export function nameProblem(
 		return unsupported(`\`${authored}\` is not supported yet: ${unrendered}`, LATER.get(name));
 	}
 	const syntax = TEMPLATE_SYNTAX_ATTRIBUTES.get(name);
-	if (syntax) return { code: "UF3005", message: syntax, help: LATER.get(name) };
+	if (syntax) {
+		return { code: "UF3005", message: syntax, help: LATER.get(name) };
+	}
 	const reserved = reservedProblem(authored, lower);
-	if (reserved) return { code: "UF3005", message: reserved };
+	if (reserved) {
+		return { code: "UF3005", message: reserved };
+	}
 	// HTML has no `value` on these: their value is their content, or their selected options'.
 	if (
 		namespace === "html" &&
@@ -204,7 +220,9 @@ export function nameProblem(
 	) {
 		return formState(tag, name);
 	}
-	if (!isAttributeOf(tag, namespace, name)) return unknownProblem(tag, namespace, authored, name);
+	if (!isAttributeOf(tag, namespace, name)) {
+		return unknownProblem(tag, namespace, authored, name);
+	}
 	const undeclared = undeclaredAttribute(tag, namespace, name);
 	if (undeclared) {
 		return unsupported(`\`${name}\` is not supported yet: ${undeclared}. It lands when they do.`);
@@ -222,7 +240,9 @@ export function nameProblem(
 /** Why a name belongs to a framework, or `undefined`. */
 function reservedProblem(authored: string, name: string): string | undefined {
 	const prop = FRAMEWORK_PROPS.get(name);
-	if (prop) return prop;
+	if (prop) {
+		return prop;
+	}
 	if (/^(bind|bindon|on|ref|let)-/.test(name)) {
 		return `Angular reads \`${authored}\` as template syntax (a binding, a listener or a reference), not as an attribute.`;
 	}
@@ -235,15 +255,18 @@ function reservedProblem(authored: string, name: string): string | undefined {
 	if (name === "nonce") {
 		return "`nonce` authorises scripts and styles under a Content Security Policy, which components do not render, and browsers hide its value from the DOM.";
 	}
-	if (name === "data-hk")
+	if (name === "data-hk") {
 		return "`data-hk` is the hydration key Solid adds to server-rendered elements.";
+	}
 	for (const [prefix, owner] of [
 		["data-astro-", "Astro adds `data-astro-*` attributes for its scoped styles and tools."],
 		["data-qwik-", "Qwik adds `data-qwik-*` attributes itself."],
 		["data-v-", "Vue's scoped styles use `data-v-*` attributes."],
 		["data-uf-", "the compiler's own scope attributes are `data-uf-*`."],
 	] as const) {
-		if (name.startsWith(prefix)) return `\`${authored}\` is reserved: ${owner}`;
+		if (name.startsWith(prefix)) {
+			return `\`${authored}\` is reserved: ${owner}`;
+		}
 	}
 	return undefined;
 }
@@ -256,7 +279,9 @@ function reservedProblem(authored: string, name: string): string | undefined {
  */
 export function takesByName(tag: string, authored: string): boolean {
 	const name = canonicalName(tag, "html", authored);
-	if (name === "key" || name.startsWith("aria-") || name.startsWith("data-")) return true;
+	if (name === "key" || name.startsWith("aria-") || name.startsWith("data-")) {
+		return true;
+	}
 	const problem = nameProblem(tag, "html", authored, name);
 	return !(problem?.code === "UF3006" && !isAttributeOf(tag, "html", name));
 }
@@ -265,7 +290,7 @@ export function takesByName(tag: string, authored: string): boolean {
  * The problem with a name that no tag `<component is>` may render takes (ADR-0119), reported
  * once for them all: "`colspan` is not an attribute of <a> or <button>."
  */
-export function unknownOnEvery(tags: readonly string[], authored: string): Problem {
+export function unknownOnEvery(tags: ReadonlyArray<string>, authored: string): Problem {
 	const [first = "div"] = tags;
 	const name = canonicalName(first, "html", authored);
 	const problem = unknownProblem(first, "html", authored, name);
@@ -376,7 +401,7 @@ export function reservedSpreadKey(message: string): Problem {
 }
 
 /** `a`, `a and b`, `a, b and c` (or `or`, for alternatives). */
-export function list(items: readonly string[], conjunction: "and" | "or" = "and"): string {
+export function list(items: ReadonlyArray<string>, conjunction: "and" | "or" = "and"): string {
 	return items.length < 2
 		? (items[0] ?? "")
 		: `${items.slice(0, -1).join(", ")} ${conjunction} ${items.at(-1)}`;
@@ -479,6 +504,8 @@ const SVG_STRING_ATTRIBUTES: ReadonlySet<string> = words(`
 
 /** Whether a typed target other than the authoring types declares an attribute as a string only. */
 export function isTargetStringAttribute(tag: string, namespace: Namespace, name: string): boolean {
-	if (namespace === "svg") return SVG_STRING_ATTRIBUTES.has(name);
+	if (namespace === "svg") {
+		return SVG_STRING_ATTRIBUTES.has(name);
+	}
 	return TARGET_STRING_ATTRIBUTES.get(tag)?.has(name) ?? false;
 }

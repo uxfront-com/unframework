@@ -65,7 +65,7 @@ function listParameters(node: ForNode, item: string, index: string | undefined):
  * What a branch, a list body or a slot's fallback holds, as an expression in a ternary or a
  * `.map` callback.
  */
-function content(nodes: readonly RenderNode[], container: Container): MarkupPiece {
+function content(nodes: ReadonlyArray<RenderNode>, container: Container): MarkupPiece {
 	const [only, ...more] = nodes;
 	if (more.length === 0 && only?.kind === "Element") {
 		return { kind: "element", element: only, directives: [] };
@@ -104,7 +104,9 @@ function fillContent({ fill, forwardsProps }: PrintedFill): MarkupPiece {
 		throw new Error(`The astro dialect writes no scoped fill (${fill.slot}): it is a render prop.`);
 	}
 	const slot: PrintedAttribute = { name: "slot", text: quotedAttribute("slot", fill.slot) };
-	if (fill.forward === "default") return { kind: "tag", tag: "slot", attributes: [] };
+	if (fill.forward === "default") {
+		return { kind: "tag", tag: "slot", attributes: [] };
+	}
 	if (fill.forward !== undefined) {
 		const name = { name: "name", text: quotedAttribute("name", fill.forward) };
 		return { kind: "tag", tag: "slot", attributes: [name, slot] };
@@ -146,7 +148,7 @@ export const astroDialect: MarkupDialect = {
 		(isRoot(position.container) &&
 			((position.first && /^(?:\s|---)/.test(text)) || (position.last && /\s$/.test(text))))
 			? `{${stringLiteral(text)}}`
-			: escapeBraces(escapeHtmlText(text)).replace(/>/g, "&gt;"),
+			: escapeBraces(escapeHtmlText(text)).replaceAll(">", "&gt;"),
 	attribute: quotedAttribute,
 	voidElement: "self-closing",
 	stripsWhitespaceBetweenElements: true,
@@ -184,8 +186,10 @@ export const astroDialect: MarkupDialect = {
 	conditional: (branches) => {
 		// A trailing empty branch renders nothing either way.
 		let last = branches.length;
-		while (last > 0 && branches[last - 1]!.branch.children.length === 0) last--;
-		const segments: BlockSegment[] = [];
+		while (last > 0 && branches[last - 1]!.branch.children.length === 0) {
+			last--;
+		}
+		const segments: Array<BlockSegment> = [];
 		let tail = "{";
 		for (const { condition, branch } of branches.slice(0, last)) {
 			const head = condition === undefined ? "" : `${test(condition)} ? `;
@@ -242,7 +246,9 @@ export const astroDialect: MarkupDialect = {
 	slotOutlet: ({ node, props }) => {
 		if (props) {
 			const call = `${node.slot}(${props.code})`;
-			if (!node.fallback.length) return [{ kind: "code", code: `{${node.slot}?.(${props.code})}` }];
+			if (!node.fallback.length) {
+				return [{ kind: "code", code: `{${node.slot}?.(${props.code})}` }];
+			}
 			return [
 				{
 					kind: "block",

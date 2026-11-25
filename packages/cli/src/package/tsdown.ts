@@ -18,7 +18,7 @@ export interface JsxOptions {
 export interface TsdownRun {
 	/** The extension of what it writes. */
 	extension: ".js" | ".jsx";
-	plugins?: readonly object[];
+	plugins?: ReadonlyArray<object>;
 }
 
 const SCRIPT = /\.[cm]?[jt]sx?$/;
@@ -31,7 +31,9 @@ const SCRIPT = /\.[cm]?[jt]sx?$/;
 const KEEP_IMPORTS = {
 	name: "unframework:keep-imports",
 	resolveId(id: string, importer: string | undefined) {
-		if (importer === undefined) return null;
+		if (importer === undefined) {
+			return null;
+		}
 		const local = id.startsWith(".") || isAbsolute(id);
 		return !local || id.endsWith(".css") ? { id, external: true } : null;
 	},
@@ -45,10 +47,13 @@ const KEEP_IMPORTS = {
  */
 async function checkDeclarations(tsdown: string, work: string): Promise<void> {
 	const manifest = createRequire(tsdown).resolve("typescript/package.json");
-	const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
-		await readFile(manifest, "utf8"),
-	);
-	if (!version.startsWith("7.")) return;
+	const { version, bin } = JSON.parse(await readFile(manifest, "utf8")) as {
+		version: string;
+		bin: { tsc: string };
+	};
+	if (!version.startsWith("7.")) {
+		return;
+	}
 	await runScript(join(dirname(manifest), bin.tsc), ["--declaration", "--noCheck"], work);
 }
 
@@ -59,7 +64,7 @@ async function checkDeclarations(tsdown: string, work: string): Promise<void> {
 export async function buildWithTsdown(
 	{ files, out, work, resolve }: PackagerInput,
 	options: JsxOptions,
-	runs: readonly TsdownRun[],
+	runs: ReadonlyArray<TsdownRun>,
 ): Promise<void> {
 	await writeFiles(join(work, "in"), files);
 	await writeFile(
@@ -81,9 +86,9 @@ export async function buildWithTsdown(
 		}),
 	);
 	const tsdownPath = resolve("tsdown");
-	const tsdown: { build(config: object): Promise<unknown> } = await import(
-		/* @vite-ignore */ pathToFileURL(tsdownPath).href
-	);
+	const tsdown = (await import(/* @vite-ignore */ pathToFileURL(tsdownPath).href)) as {
+		build(config: object): Promise<unknown>;
+	};
 	const scratch = join(work, "in");
 	const common = {
 		config: false,
@@ -119,6 +124,6 @@ export async function buildWithTsdown(
 			{ name: "unframework:declarations", renderChunk: dropSideEffectImports },
 		],
 	});
-	const sheets: OutputFile[] = files.filter((file) => !SCRIPT.test(file.path));
+	const sheets: Array<OutputFile> = files.filter((file) => !SCRIPT.test(file.path));
 	await writeFiles(out, sheets);
 }

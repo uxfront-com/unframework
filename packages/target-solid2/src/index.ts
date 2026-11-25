@@ -227,13 +227,17 @@ export const solid2: Target = defineTarget({
 			note: "Solid 2's <Portal> inserts its content with no wrapper, but throws on the server and renders where it is created, so a `<Teleport>` goes through an inline helper, `Teleport`, that renders a <Portal> into `to` once the component has mounted, the teleports in the order they rendered (ADR-0098).",
 		},
 	},
-	emit(component: UfComponent, context: EmitContext): OutputFile[] {
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
 		// Every name the source declares or reads is taken before the output claims its own
 		// (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035); so is
 		// every name the module declares for its components to read, which keep theirs (ADR-0070).
 		const names = sourceNames(component, context.module);
-		for (const name of freeNames(component, names)) names.delete(name);
-		for (const name of moduleValueNames(context.module)) names.add(name);
+		for (const name of freeNames(component, names)) {
+			names.delete(name);
+		}
+		for (const name of moduleValueNames(context.module)) {
+			names.add(name);
+		}
 		// With `helper`, the helpers one text serves are shared modules (ADR-0121); without it, inline.
 		// A source's components are joined into one module where it is loaded (ADR-0053): each claims
 		// the helpers it prints inline from bases of its own (`cx_1`), past the names any other
@@ -245,7 +249,9 @@ export const solid2: Target = defineTarget({
 		const index = context.module.components.findIndex((each) => each.name === component.name);
 		const reserved = context.module.components.map((each) => {
 			const taken = sourceNames(each, context.module);
-			for (const name of freeNames(each, taken)) taken.delete(name);
+			for (const name of freeNames(each, taken)) {
+				taken.delete(name);
+			}
 			return taken;
 		});
 		const bases = [
@@ -265,12 +271,16 @@ export const solid2: Target = defineTarget({
 			)
 			.map((helper) => {
 				const { base, others } = moduleHelperName(helper, reserved, index);
-				for (const name of others) names.add(name);
+				for (const name of others) {
+					names.add(name);
+				}
 				return [helper, base] as const;
 			});
 		// A shared helper (ADR-0121) is imported by every component of the source under one name,
 		// the module's own unless a component declares it, so their imports are one line in the join.
-		if (shared) reserveSharedNames(names, reserved);
+		if (shared) {
+			reserveSharedNames(names, reserved);
+		}
 		// A component with watchers prints its own `createState`, whose write requests their flush
 		// (R1): from its base, past the name the others import the shared one under, where the
 		// source has others.
@@ -278,7 +288,9 @@ export const solid2: Target = defineTarget({
 			names.add(sharedName(STATE_HELPER, reserved, moduleValueNames(context.module)));
 		}
 		const scope = new NameScope(names);
-		for (const [helper, base] of bases) scope.rebase(helper, base);
+		for (const [helper, base] of bases) {
+			scope.rebase(helper, base);
+		}
 		const imports = new ImportSet(scope);
 		// The imports that pass through, which the render reads as written (ADR-0064).
 		addPassThroughImports(component, context.module, imports);
@@ -410,7 +422,9 @@ export const solid2: Target = defineTarget({
 			...(queue ? printHelper(shared, QUEUE_HELPER, queue.name, hookQueueCode) : []),
 		];
 		const path = `${component.name}.tsx`;
-		if (context.helper && shared) importShared(context.helper, path, imports, shared.used);
+		if (context.helper && shared) {
+			importShared(context.helper, path, imports, shared.used);
+		}
 		return [
 			{
 				path,
@@ -446,7 +460,7 @@ function rendered(
 	code: SolidCode,
 	types: BindingTypes,
 	context: JsxContext,
-	spreads: readonly Span[],
+	spreads: ReadonlyArray<Span>,
 ): JsxExpression {
 	const render = forSolid(component, code.rules, types, spreads);
 	const [only] = render.children;
@@ -458,7 +472,9 @@ function rendered(
 			: render;
 	let wrapped: JsxExpression = jsxNode(root, context);
 	for (const item of component.setup.toReversed()) {
-		if (item.kind !== "Provide") continue;
+		if (item.kind !== "Provide") {
+			continue;
+		}
 		const value = context.placeholders.expression(code.provided(item.key, item.value));
 		// Solid 2's context is its own provider, `<ThemeKey value={…}>`.
 		wrapped = js.jsxElement(
@@ -481,7 +497,7 @@ function rendered(
  * `<Show>` callback, not an inner component: the rest of the setup closes over `props`, which an
  * inner component would read through props of its own, and `solid/reactivity` (L5) reports.
  */
-function pending(resource: SolidResource, body: Statement[], code: SolidCode): JsxExpression {
+function pending(resource: SolidResource, body: Array<Statement>, code: SolidCode): JsxExpression {
 	// Keyed: the child takes the record itself, which Solid 2 reads nowhere but where it tracks.
 	const show = js.jsxElement(
 		code.solid("Show"),
@@ -509,8 +525,8 @@ function pending(resource: SolidResource, body: Statement[], code: SolidCode): J
 function moduleTypes(
 	component: UfComponent,
 	module: UfModule,
-	types: readonly TypeDeclaration[],
-): TypeDeclaration[] {
+	types: ReadonlyArray<TypeDeclaration>,
+): Array<TypeDeclaration> {
 	const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
 		name: "",
 		exported: false,
@@ -527,7 +543,7 @@ function moduleTypes(
  * a parameter or a local, which shadows the module's own where it is declared, or the API's call;
  * a component's binding of either name keeps it taken.
  */
-function freeNames(component: UfComponent, names: ReadonlySet<string>): string[] {
+function freeNames(component: UfComponent, names: ReadonlySet<string>): Array<string> {
 	const bindings = new Set(component.bindings.map((binding) => binding.name));
 	return ["onCleanup", NEXT_TICK_HELPER].filter((name) => names.has(name) && !bindings.has(name));
 }

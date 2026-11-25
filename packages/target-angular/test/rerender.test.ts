@@ -8,7 +8,6 @@
 // in Node, on the DOM Angular's server platform uses (domino), through the same renderer as in
 // the browser. Angular's own packages ship partially compiled; in this plain-Node project the
 // JIT compiler finishes them as they load. The component itself is compiled ahead of time.
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -50,7 +49,9 @@ beforeAll(async () => {
 	// from `document`.
 	DominoAdapter.makeCurrent();
 	const document = new DominoAdapter().createHtmlDocument();
-	for (const name of globals) saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+	for (const name of globals) {
+		saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+	}
 	Object.assign(globalThis, { document, window: document.defaultView });
 
 	const directory = scratchDir();
@@ -64,8 +65,11 @@ beforeAll(async () => {
 afterAll(() => {
 	for (const name of globals) {
 		const descriptor = saved.get(name);
-		if (descriptor) Object.defineProperty(globalThis, name, descriptor);
-		else Reflect.deleteProperty(globalThis, name);
+		if (descriptor) {
+			Object.defineProperty(globalThis, name, descriptor);
+		} else {
+			Reflect.deleteProperty(globalThis, name);
+		}
 	}
 	removeScratch();
 });
@@ -83,7 +87,7 @@ function read(container: HTMLElement) {
 	};
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

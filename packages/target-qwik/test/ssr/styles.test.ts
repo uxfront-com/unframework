@@ -22,7 +22,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
  * Writes each source's output beside the others, with the sheet `compile()` scopes and emits
  * beside it, and loads the last one's component.
  */
-async function load(...sources: [file: string, source: string, sheet?: string][]) {
+async function load(...sources: Array<[file: string, source: string, sheet?: string]>) {
 	const apis: Record<string, ModuleApi> = {};
 	let path = "";
 	for (const [file, source, sheet] of sources) {
@@ -30,8 +30,9 @@ async function load(...sources: [file: string, source: string, sheet?: string][]
 		const { module, api } = lowered(file, source, sheet ? { [`./${css}`]: sheet } : {}, apis);
 		apis[`./${file}`] = { ...api, file };
 		const { name, scopeId } = module.components[0]!;
-		if (sheet)
+		if (sheet) {
 			writeFileSync(join(scratch, `${file}.css`), scopeStylesheet(css, sheet, scopeId!).code);
+		}
 		path = join(scratch, `${name}.tsx`);
 		writeFileSync(path, await output(module));
 	}

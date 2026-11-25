@@ -177,7 +177,7 @@ export function subscribeNothing(): () => void {
 };
 
 /** The helpers each shared helper's module imports. */
-const DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
+const DEPENDENCIES: Readonly<Record<string, ReadonlyArray<string>>> = {
 	useDirective: ["queueHook"],
 	useElementDirective: ["queueHook"],
 	Transition: ["subscribeNothing"],
@@ -209,7 +209,9 @@ export function importShared(
 	used: ReadonlyMap<string, string>,
 ): void {
 	const put = (name: string): string => {
-		for (const dependency of DEPENDENCIES[name] ?? []) put(dependency);
+		for (const dependency of DEPENDENCIES[name] ?? []) {
+			put(dependency);
+		}
 		const path = helper(SHARED_HELPERS[name]!.file, sharedModule(name), from);
 		// React's outputs import a sibling by its name, without the extension.
 		return path.replace(/\.tsx?$/, "");

@@ -35,7 +35,9 @@ function write(watcher: Watcher, path: string, source: string, timeout: number):
 			watcher.off("change", onChange);
 		};
 		const onChange = (changed: string): void => {
-			if (changed !== path && changed !== ANY_FILE) return;
+			if (changed !== path && changed !== ANY_FILE) {
+				return;
+			}
 			stop();
 			setTimeout(resolve, SETTLE_MS);
 		};
@@ -62,7 +64,9 @@ const REBUILT = /Application bundle generation (?:complete|failed)/;
 export function rebuildWatcher(output: Readable): Watcher {
 	const events = new EventEmitter();
 	createInterface({ input: output }).on("line", (line) => {
-		if (REBUILT.test(stripVTControlCharacters(line))) events.emit("change", ANY_FILE);
+		if (REBUILT.test(stripVTControlCharacters(line))) {
+			events.emit("change", ANY_FILE);
+		}
 	});
 	return {
 		on: (event, listener) => events.on(event, listener),
@@ -78,8 +82,12 @@ export function createEditor(root: string, watcher: Watcher, timeout: number = 5
 			const path = join(root, file);
 			const source = readFileSync(path, "utf8");
 			// An edit that changes nothing would leave a test waiting for an update that never comes.
-			if (!source.includes(from)) throw new Error(`${file} does not contain "${from}".`);
-			if (!originals.has(path)) originals.set(path, source);
+			if (!source.includes(from)) {
+				throw new Error(`${file} does not contain "${from}".`);
+			}
+			if (!originals.has(path)) {
+				originals.set(path, source);
+			}
 			// A function, because `$` in a replacement string is a pattern.
 			await write(
 				watcher,

@@ -57,9 +57,9 @@ export interface CaseInfo {
 	 * Every input, sorted by file name: the main `.uf.tsx`, its children or harness parents
 	 * (ADR-0057), and the `.uf.ts` composables (ADR-0069). Each compiles to every target.
 	 */
-	sources: CaseSource[];
+	sources: Array<CaseSource>;
 	/** The case's `.ts` modules but its spec, sorted by file name (ADR-0070). */
-	modules: CaseModule[];
+	modules: Array<CaseModule>;
 	/** The browser spec, absent for diagnostics cases. */
 	spec: string | undefined;
 	config: CorpusCaseConfig;
@@ -78,8 +78,8 @@ const CASE_KEYS = new Set([
 ]);
 
 /** Every case, sorted by id. Throws on a malformed case, so a broken corpus is loud. */
-export function listCases(casesDir: string = CASES_DIR): CaseInfo[] {
-	const cases: CaseInfo[] = [];
+export function listCases(casesDir: string = CASES_DIR): Array<CaseInfo> {
+	const cases: Array<CaseInfo> = [];
 	for (const area of sortedDirectories(casesDir)) {
 		for (const name of sortedDirectories(join(casesDir, area))) {
 			const id = `${area}/${name}`;
@@ -91,12 +91,14 @@ export function listCases(casesDir: string = CASES_DIR): CaseInfo[] {
 			cases.push(readCase(casesDir, id));
 		}
 	}
-	if (!cases.length) throw new Error(`No cases under ${casesDir}.`);
+	if (!cases.length) {
+		throw new Error(`No cases under ${casesDir}.`);
+	}
 	return cases;
 }
 
 /** Each case's `case.json`, by id: what the harness provides to every project. */
-export function caseConfigs(cases: readonly CaseInfo[]): Record<string, CaseConfig> {
+export function caseConfigs(cases: ReadonlyArray<CaseInfo>): Record<string, CaseConfig> {
 	return Object.fromEntries(cases.map((info) => [info.id, info.config]));
 }
 
@@ -105,9 +107,13 @@ function readCase(casesDir: string, id: string): CaseInfo {
 	const files = readdirSync(dir).toSorted();
 	// The main input is a component: a case still needs one (ADR-0069).
 	const inputs = files.filter((file) => file.endsWith(".uf.tsx"));
-	if (!inputs.length) throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
+	if (!inputs.length) {
+		throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
+	}
 	const specs = files.filter((file) => file.endsWith(".test.ts"));
-	if (specs.length > 1) throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
+	if (specs.length > 1) {
+		throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
+	}
 	const modules = files.filter(
 		(file) => file.endsWith(".ts") && !file.endsWith(".test.ts") && !file.endsWith(".uf.ts"),
 	);
@@ -146,9 +152,11 @@ function readCase(casesDir: string, id: string): CaseInfo {
  * when it holds several. No rule of names can pick it: a parent and its children sit side by
  * side, and the corpus already holds cases named unlike their component.
  */
-function mainSource(id: string, inputs: readonly string[], main: string | undefined): string {
+function mainSource(id: string, inputs: ReadonlyArray<string>, main: string | undefined): string {
 	if (main === undefined) {
-		if (inputs.length === 1) return inputs[0]!;
+		if (inputs.length === 1) {
+			return inputs[0]!;
+		}
 		throw new Error(
 			`Case ${id} holds ${inputs.join(", ")}: name the one the spec mounts in case.json, "main": "${inputs[0]}".`,
 		);
@@ -162,11 +170,15 @@ function mainSource(id: string, inputs: readonly string[], main: string | undefi
 }
 
 function readConfig(id: string, file: string): CorpusCaseConfig {
-	if (!existsSync(file)) return {};
+	if (!existsSync(file)) {
+		return {};
+	}
 	const config = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	for (const key of Object.keys(config)) {
-		if (!CASE_KEYS.has(key)) problems.push(`unknown key "${key}"`);
+		if (!CASE_KEYS.has(key)) {
+			problems.push(`unknown key "${key}"`);
+		}
 	}
 	if (config.description !== undefined && typeof config.description !== "string") {
 		problems.push(`"description" must be a string`);
@@ -180,7 +192,7 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
 		config.reference !== undefined &&
 		(typeof config.reference !== "string" ||
 			config.reference === REFERENCE ||
-			!(TARGET_NAMES as readonly string[]).includes(config.reference))
+			!(TARGET_NAMES as ReadonlyArray<string>).includes(config.reference))
 	) {
 		problems.push(
 			`"reference" must name a target other than ${REFERENCE}: ${TARGET_NAMES.filter((name) => name !== REFERENCE).join(", ")}`,
@@ -196,7 +208,7 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
 	// The scheme the browser projects emulate (`CaseConfig.colorScheme`, ADR-0061).
 	if (
 		config.colorScheme !== undefined &&
-		!(COLOR_SCHEMES as readonly unknown[]).includes(config.colorScheme)
+		!(COLOR_SCHEMES as ReadonlyArray<unknown>).includes(config.colorScheme)
 	) {
 		problems.push(`"colorScheme" must be one of ${COLOR_SCHEMES.map((s) => `"${s}"`).join(", ")}`);
 	}
@@ -208,7 +220,11 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
 	}
 	// Props the server render throws with, which L14 checks (`CaseConfig.ssrThrows`, ADR-0078).
 	if (config.ssrThrows !== undefined) {
-		const props = (config.ssrThrows as { props?: unknown } | null)?.props;
+		const { ssrThrows } = config;
+		const props =
+			typeof ssrThrows === "object" && ssrThrows !== null && "props" in ssrThrows
+				? ssrThrows.props
+				: undefined;
 		if (
 			typeof config.ssrThrows !== "object" ||
 			config.ssrThrows === null ||
@@ -227,8 +243,9 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
 			problems.push(`"ssr" must map scenario names to { "props": {…} }`);
 		} else {
 			for (const [scenario, value] of Object.entries(config.ssr)) {
-				if (!KEBAB_CASE.test(scenario))
+				if (!KEBAB_CASE.test(scenario)) {
 					problems.push(`SSR scenario "${scenario}", which is not kebab-case`);
+				}
 				const props = (value as { props?: unknown } | null)?.props;
 				if (
 					typeof value !== "object" ||
@@ -243,15 +260,19 @@ function readConfig(id: string, file: string): CorpusCaseConfig {
 	if (config.typeOracle !== undefined && config.typeOracle !== "tsgo") {
 		problems.push(`"typeOracle" must be "tsgo", or absent for the syntactic oracle`);
 	}
-	if (problems.length) throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
-	return config as CorpusCaseConfig;
+	if (problems.length) {
+		throw new Error(`Case ${id}: case.json has ${problems.join("; ")}.`);
+	}
+	return config;
 }
 
 /** The diagnostics a case expects (`__expected__/diagnostics.json`), or `undefined` if missing. */
-export function expectedDiagnostics(info: CaseInfo): ExpectedDiagnostic[] | undefined {
+export function expectedDiagnostics(info: CaseInfo): Array<ExpectedDiagnostic> | undefined {
 	const file = join(info.dir, "__expected__", "diagnostics.json");
-	if (!existsSync(file)) return undefined;
-	return JSON.parse(readFileSync(file, "utf8")) as ExpectedDiagnostic[];
+	if (!existsSync(file)) {
+		return undefined;
+	}
+	return JSON.parse(readFileSync(file, "utf8")) as Array<ExpectedDiagnostic>;
 }
 
 /** The fields of a JSON diagnostic the harness reads; the file holds the full form. */
@@ -261,7 +282,7 @@ export interface ExpectedDiagnostic {
 	message: string;
 	target?: string;
 	/** The fixes L1 applies, which the L1-fix-no-op canary corrupts. */
-	fixes?: readonly unknown[];
+	fixes?: ReadonlyArray<unknown>;
 }
 
 /**
@@ -300,8 +321,10 @@ export function errorState(info: CaseInfo, target?: string): boolean | Error {
  * which shared expectations the case owns. Throws when a call does not name its scenario with a
  * string literal, because then the case's expectations cannot be told from stale ones.
  */
-export function parityScenarios(info: CaseInfo): string[] {
-	if (!info.spec) return [];
+export function parityScenarios(info: CaseInfo): Array<string> {
+	if (!info.spec) {
+		return [];
+	}
 	const source = readFileSync(info.spec, "utf8");
 	const calls = source.match(/\bexpectParity\s*\(/g)?.length ?? 0;
 	const names = [...source.matchAll(/\bexpectParity\s*\(\s*(["'`])([^"'`$\\\n]*)\1/g)].map(
@@ -338,7 +361,7 @@ export interface SpecTest {
 	 * The capabilities it declares it requires (`it(name, { requires: ["interactivity"] }, fn)`),
 	 * in order: none when it declares none.
 	 */
-	requires: string[];
+	requires: Array<string>;
 	/** Whether it checks a scenario before its first action (`view.user.…`), if it acts at all. */
 	checksFirst: boolean;
 	/** Whether it acts through `view.user`. */
@@ -357,7 +380,7 @@ export interface SpecTest {
 	 * assertion comes after, or the test ends after, before any `expectParity` compares them:
 	 * the first of each run of such steps, with what came next.
 	 */
-	uncompared: UncomparedStep[];
+	uncompared: Array<UncomparedStep>;
 }
 
 /** A step a test takes that no `expectParity` compares before an assertion or the test's end. */
@@ -393,11 +416,14 @@ function withoutThrownSteps(code: string): string {
 		let depth = 1;
 		let end = match.index + match[0].length;
 		for (; end < code.length && depth > 0; end += 1) {
-			if (code[end] === "(") depth += 1;
-			else if (code[end] === ")") depth -= 1;
+			if (code[end] === "(") {
+				depth += 1;
+			} else if (code[end] === ")") {
+				depth -= 1;
+			}
 		}
 		const start = match.index + match[0].length;
-		result = `${result.slice(0, start)}${code.slice(start, end - 1).replace(/[^\n]/g, " ")}${result.slice(end - 1)}`;
+		result = `${result.slice(0, start)}${code.slice(start, end - 1).replaceAll(/[^\n]/g, " ")}${result.slice(end - 1)}`;
 	}
 	return result;
 }
@@ -427,7 +453,7 @@ const EVENTS =
  * that is not an array of string literals: the canaries read which tests run on a target from
  * it.
  */
-export function specTests(source: string): SpecTest[] {
+export function specTests(source: string): Array<SpecTest> {
 	const code = withoutThrownSteps(withoutComments(source));
 	const calls = [...code.matchAll(TEST_CALL)];
 	return calls.map((call, index) => {
@@ -438,7 +464,7 @@ export function specTests(source: string): SpecTest[] {
 		const parity = body.search(/\.expectParity\s*\(/);
 		const action = body.search(ACTION);
 		const assertion =
-			parity === -1 ? undefined : ASSERTION.exec(body.slice(parity))?.[0].replace(/\s+/g, "");
+			parity === -1 ? undefined : ASSERTION.exec(body.slice(parity))?.[0].replaceAll(/\s+/g, "");
 		return {
 			name: call[2]!,
 			requires: declaredRequires(call[2]!, header),
@@ -453,8 +479,10 @@ export function specTests(source: string): SpecTest[] {
 }
 
 /** The capability names a test's options declare in `requires`, which must be string literals. */
-function declaredRequires(name: string, header: string): string[] {
-	if (!/\brequires\s*:/.test(header)) return [];
+function declaredRequires(name: string, header: string): Array<string> {
+	if (!/\brequires\s*:/.test(header)) {
+		return [];
+	}
 	const list = /\brequires\s*:\s*\[([^\]]*)\]/.exec(header)?.[1];
 	const items = list
 		?.split(",")
@@ -473,12 +501,14 @@ function declaredRequires(name: string, header: string): string[] {
  * The steps of a test's body that an assertion follows, or the test ends after, before an
  * `expectParity` compares them: the first step of each such run.
  */
-function uncomparedSteps(code: string, start: number, body: string): UncomparedStep[] {
-	const found: UncomparedStep[] = [];
+function uncomparedSteps(code: string, start: number, body: string): Array<UncomparedStep> {
+	const found: Array<UncomparedStep> = [];
 	let pending: { index: number; text: string } | undefined;
 	let unmounted = false;
 	const report = (next: string | undefined) => {
-		if (!pending) return;
+		if (!pending) {
+			return;
+		}
 		found.push({
 			line: code.slice(0, start + pending.index).split("\n").length,
 			step: `view${pending.text}`,
@@ -487,13 +517,20 @@ function uncomparedSteps(code: string, start: number, body: string): UncomparedS
 		pending = undefined;
 	};
 	for (const match of body.matchAll(EVENTS)) {
-		const text = match[0].replace(/\s+/g, "");
-		if (text.startsWith(".expectParity")) pending = undefined;
-		else if (text.startsWith(".unmount")) unmounted = true;
-		else if (/^\.?mount/.test(text)) unmounted = false;
-		else if (text.startsWith("expect")) report(text);
+		const text = match[0].replaceAll(/\s+/g, "");
+		if (text.startsWith(".expectParity")) {
+			pending = undefined;
+		} else if (text.startsWith(".unmount")) {
+			unmounted = true;
+		} else if (/^\.?mount/.test(text)) {
+			unmounted = false;
+		} else if (text.startsWith("expect")) {
+			report(text);
+		}
 		// A tick once the view is unmounted records no step: there is nothing to compare.
-		else if (!(text.startsWith(".clock") && unmounted)) pending ??= { index: match.index, text };
+		else if (!(text.startsWith(".clock") && unmounted)) {
+			pending ??= { index: match.index, text };
+		}
 	}
 	report(undefined);
 	return found;
@@ -505,8 +542,8 @@ function uncomparedSteps(code: string, start: number, body: string): UncomparedS
  * URL) is kept: a comment starts a line or follows whitespace.
  */
 function withoutComments(source: string): string {
-	return source.replace(/\/\*[\s\S]*?\*\/|(?<=^|\s)\/\/[^\n]*/g, (comment) =>
-		comment.replace(/[^\n]/g, " "),
+	return source.replaceAll(/\/\*[\s\S]*?\*\/|(?<=^|\s)\/\/[^\n]*/g, (comment) =>
+		comment.replaceAll(/[^\n]/g, " "),
 	);
 }
 
@@ -535,11 +572,13 @@ function withoutComments(source: string): string {
  *   target whose cell leaves it unsupported, but only for a capability that is not behavioural:
  *   a case whose every test requires `interactivity` still checks Astro's server render.
  */
-export function specProblems(info: CaseInfo): string[] {
-	if (!info.spec) return [];
+export function specProblems(info: CaseInfo): Array<string> {
+	if (!info.spec) {
+		return [];
+	}
 	const source = readFileSync(info.spec, "utf8");
 	const file = `${info.id}/${basename(info.spec)}`;
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	const tests = specTests(source);
 	const names = tests.map((test) => test.name);
 	for (const name of new Set(names.filter((each, index) => names.indexOf(each) !== index))) {
@@ -554,7 +593,9 @@ export function specProblems(info: CaseInfo): string[] {
 	}
 	for (const match of source.matchAll(DIRECT_ACTION)) {
 		const before = source.slice(0, match.index);
-		if (/\.user\s*$/.test(before)) continue;
+		if (/\.user\s*$/.test(before)) {
+			continue;
+		}
 		const action = match[0].slice(1).replace(/\s*\($/, "");
 		problems.push(
 			`${file}:${before.split("\n").length}: calls ${action}() directly. Act through view.user (view.user.${action}(…)): it runs the action through the target's adapter, settles, and records a step of the trace.`,
@@ -578,7 +619,9 @@ export function specProblems(info: CaseInfo): string[] {
 		}
 	}
 	for (const test of tests) {
-		if (test.requires.length || test.firstAssertion === undefined) continue;
+		if (test.requires.length || test.firstAssertion === undefined) {
+			continue;
+		}
 		if (test.firstAssertion === "expect.element(" || test.firstAssertion === "expect.poll(") {
 			continue;
 		}
@@ -634,13 +677,15 @@ export function sharedArtefacts(info: CaseInfo): Set<string> {
  * reads them (a renamed scenario, a removed SSR scenario, a deleted spec), yet reviewers would
  * read them as the contract. Relative to the case directory, sorted.
  */
-export function staleArtefacts(info: CaseInfo): string[] {
+export function staleArtefacts(info: CaseInfo): Array<string> {
 	const owned = sharedArtefacts(info);
 	return ["__expected__", "__screenshots__"]
 		.flatMap((directory) => {
 			const path = join(info.dir, directory);
-			if (!existsSync(path)) return [];
-			return (readdirSync(path, { recursive: true }) as string[])
+			if (!existsSync(path)) {
+				return [];
+			}
+			return (readdirSync(path, { recursive: true }) as Array<string>)
 				.filter((entry) => !basename(entry).startsWith(".") && statSync(join(path, entry)).isFile())
 				.map((entry) => `${directory}/${entry.split(sep).join("/")}`);
 		})
@@ -652,7 +697,7 @@ export function staleArtefacts(info: CaseInfo): string[] {
  * Deletes a case's stale artefacts ({@link staleArtefacts}) and the directories they leave
  * empty: what `pnpm test:update` does with them. Returns what it deleted.
  */
-export function removeStaleArtefacts(info: CaseInfo): string[] {
+export function removeStaleArtefacts(info: CaseInfo): Array<string> {
 	const stale = staleArtefacts(info);
 	for (const file of stale) {
 		rmSync(join(info.dir, file));
@@ -667,7 +712,7 @@ export function removeStaleArtefacts(info: CaseInfo): string[] {
 	return stale;
 }
 
-function sortedDirectories(directory: string): string[] {
+function sortedDirectories(directory: string): Array<string> {
 	return readdirSync(directory)
 		.filter((entry) => !entry.startsWith(".") && statSync(join(directory, entry)).isDirectory())
 		.sort();

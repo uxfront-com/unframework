@@ -25,7 +25,7 @@ import { transitionHelpers } from "./transition.ts";
 interface SharedModule {
 	file: string;
 	/** The names a component imports from it, its types among them. */
-	exports: readonly string[];
+	exports: ReadonlyArray<string>;
 	/** The module's code after its imports, with its imports added to `imports`. */
 	code(imports: ImportSet): string;
 }
@@ -34,7 +34,7 @@ interface SharedModule {
  * Exports the declaration of `name` in a helper's code: `function nextTick(` →
  * `export function nextTick(`.
  */
-function exported(code: string, ...names: string[]): string {
+function exported(code: string, ...names: Array<string>): string {
 	return names.reduce(
 		(text, name) =>
 			text.replace(new RegExp(`^(function|interface|const) ${name}\\b`, "m"), `export $1 ${name}`),
@@ -121,7 +121,7 @@ const MODULE_OF: ReadonlyMap<string, string> = new Map(
 );
 
 /** Every name a component imports from a shared module, which the source's components share. */
-export const SHARED_HELPER_NAMES: readonly string[] = [...MODULE_OF.keys()];
+export const SHARED_HELPER_NAMES: ReadonlyArray<string> = [...MODULE_OF.keys()];
 
 /** The text of a shared module: its imports, then its code. */
 export function sharedModule(module: string): string {
@@ -144,7 +144,9 @@ export function importShared(
 ): void {
 	for (const [name, local] of used) {
 		const module = MODULE_OF.get(name);
-		if (module === undefined) throw new Error(`No shared module exports ${name}.`);
+		if (module === undefined) {
+			throw new Error(`No shared module exports ${name}.`);
+		}
 		// Qwik's outputs import a sibling by its name, without the extension.
 		const path = helper(SHARED_MODULES[module]!.file, sharedModule(module), from).replace(
 			/\.ts$/,

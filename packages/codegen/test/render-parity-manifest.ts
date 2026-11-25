@@ -3,7 +3,7 @@
 // it, importing this module fails.
 import type { ClientSuite } from "./render-parity-client.ts";
 
-export const suites: readonly ClientSuite[] = notServed();
+export const suites: ReadonlyArray<ClientSuite> = notServed();
 
 function notServed(): never {
 	throw new Error(

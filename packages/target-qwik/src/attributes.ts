@@ -98,7 +98,7 @@ export const QWIK_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
 ]);
 
 /** Some elements by name, or every element but some. */
-type Elements = { readonly on: readonly string[] } | { readonly except: readonly string[] };
+type Elements = { readonly on: ReadonlyArray<string> } | { readonly except: ReadonlyArray<string> };
 
 /**
  * HTML attributes the analyser accepts that Qwik 2.0.0-rc.5's JSX types declare under no
@@ -132,13 +132,17 @@ export function isUntypedAttribute(
 	name: string,
 	value?: string | true,
 ): boolean {
-	if (namespace !== "html") return false;
+	if (namespace !== "html") {
+		return false;
+	}
 	const html = name.toLowerCase();
 	if (html === "contenteditable") {
 		return typeof value === "string" && !QWIK_CONTENT_EDITABLE.has(value);
 	}
 	const elements = QWIK_UNTYPED_ATTRIBUTES[html];
-	if (!elements) return false;
+	if (!elements) {
+		return false;
+	}
 	return "on" in elements ? elements.on.includes(tag) : !elements.except.includes(tag);
 }
 
@@ -159,15 +163,21 @@ export function elementNamespaces(root: ElementNode | FragmentNode): Map<Element
 					parent === "html" && (node.tag === "svg" || node.tag === "math") ? node.tag : parent;
 				namespaces.set(node, namespace);
 				const inner = namespace === "svg" && node.tag === "foreignObject" ? "html" : namespace;
-				for (const child of node.children) visit(child, inner);
+				for (const child of node.children) {
+					visit(child, inner);
+				}
 				return;
 			}
 			case "Fragment":
-				for (const child of node.children) visit(child, parent);
+				for (const child of node.children) {
+					visit(child, parent);
+				}
 				return;
 			case "If":
 				for (const branch of node.branches) {
-					for (const child of branch.children) visit(child, parent);
+					for (const child of branch.children) {
+						visit(child, parent);
+					}
 				}
 				return;
 			case "For":
@@ -178,23 +188,37 @@ export function elementNamespaces(root: ElementNode | FragmentNode): Map<Element
 				return;
 			// A fill renders in the child's HTML: the analyser keeps components out of SVG (M8).
 			case "Component":
-				for (const fill of node.fills) for (const child of fill.children) visit(child, "html");
+				for (const fill of node.fills) {
+					for (const child of fill.children) {
+						visit(child, "html");
+					}
+				}
 				return;
 			case "SlotOutlet":
-				for (const child of node.fallback) visit(child, parent);
+				for (const child of node.fallback) {
+					visit(child, parent);
+				}
 				return;
 			case "Dynamic":
-				for (const child of node.children) visit(child, parent);
+				for (const child of node.children) {
+					visit(child, parent);
+				}
 				for (const fill of node.fills ?? []) {
-					for (const child of fill.children) visit(child, "html");
+					for (const child of fill.children) {
+						visit(child, "html");
+					}
 				}
 				return;
 			case "Teleport":
-				for (const child of node.children) visit(child, "html");
+				for (const child of node.children) {
+					visit(child, "html");
+				}
 				return;
 			// A transition's child renders in its place (ADR-0100).
 			case "Transition":
-				for (const child of node.children) visit(child, parent);
+				for (const child of node.children) {
+					visit(child, parent);
+				}
 				return;
 			default:
 				return node satisfies never;
@@ -236,9 +260,13 @@ export function qwikStaticValue(
 		const untilFound = html === "hidden" && value !== true && value.toLowerCase() === "until-found";
 		return untilFound ? value : true;
 	}
-	if (value === true) return "";
+	if (value === true) {
+		return "";
+	}
 	const numberTyped = isNumberTypedAttribute(namespace === "html" ? tag : "", html);
-	if (numberTyped && String(Number(value)) === value) return { code: value };
+	if (numberTyped && String(Number(value)) === value) {
+		return { code: value };
+	}
 	if (namespace === "html" && QWIK_BOOLEAN_TYPED.has(html) && /^(?:true|false)$/.test(value)) {
 		return { code: value };
 	}

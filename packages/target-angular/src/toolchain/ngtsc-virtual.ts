@@ -63,11 +63,11 @@ export interface CompileRequest {
 	 * not, by id, and the scoped sheet each of them names as its `styleUrl`, by its path: the
 	 * worker cannot ask the unframework plugin.
 	 */
-	sources: [id: string, source: string][];
+	sources: Array<[id: string, source: string]>;
 	/** The virtual module each relative import among them resolved to, by `childKey`. */
-	children: [key: string, id: string][];
+	children: Array<[key: string, id: string]>;
 	/** The ambient declarations the program reads beside the module, from the disk (ADR-0064). */
-	declarations: string[];
+	declarations: Array<string>;
 }
 
 /** What a worker receives: a compile, or a plugin whose program it can drop. */
@@ -79,10 +79,10 @@ export interface Compiled {
 	map?: string;
 	/** The errors as ngc prints them, and their codes: none when it compiled. */
 	errors: string;
-	codes: string[];
+	codes: Array<string>;
 	warnings: string;
 	/** The module's export names, for a module that has to stand in for a rejected one. */
-	exports: string[];
+	exports: Array<string>;
 }
 
 /** What a worker replies to a compile: its outcome, or what it threw. */
@@ -98,7 +98,7 @@ export type WorkerReply = { request: number } & ({ compiled: Compiled } | { fail
  */
 export function ngtscVirtual(
 	compiler: AngularCompiler,
-	declarations: readonly string[] = [],
+	declarations: ReadonlyArray<string> = [],
 ): Plugin {
 	const pluginId = nextPlugin++;
 	let api: UnframeworkApi | undefined;
@@ -121,17 +121,25 @@ export function ngtscVirtual(
 			for (const [, specifier = ""] of text.matchAll(STYLE_URL)) {
 				const path = resolve(dirname(file), specifier);
 				const sheet = api!.getSheet(path.slice(0, -".css".length));
-				if (sheet !== undefined) sheets.set(path, sheet);
+				if (sheet !== undefined) {
+					sheets.set(path, sheet);
+				}
 			}
 			for (const [, specifier = ""] of text.matchAll(RELATIVE_IMPORT)) {
 				const key = childKey(file, specifier);
 				const child = COMPONENT_IMPORT.test(specifier)
 					? `${resolve(dirname(file), specifier)}.ts`
 					: (children.get(key) ?? helperModule(resolve(dirname(file), specifier)));
-				if (!child) continue;
-				if (!COMPONENT_IMPORT.test(specifier)) resolved.set(key, child);
+				if (!child) {
+					continue;
+				}
+				if (!COMPONENT_IMPORT.test(specifier)) {
+					resolved.set(key, child);
+				}
 				const source = sources.has(child) ? undefined : api!.getCompiled(child);
-				if (source !== undefined) sources.set(child, source);
+				if (source !== undefined) {
+					sources.set(child, source);
+				}
 			}
 		}
 		return compilePoolOf(compiler).compile({
@@ -167,7 +175,9 @@ export function ngtscVirtual(
 			filter: { id: /(?:\.uf\.tsx?(?:\.[^/?]+)?|\/_unframework\/(?:[^/?]+\/)?[^/?]+)\.ts(?:\?|$)/ },
 			async handler(code, rawId) {
 				const id = rawId.split("?")[0]!;
-				if (HELPER_ID.test(id) && api!.getCompiled(id) === undefined) return null;
+				if (HELPER_ID.test(id) && api!.getCompiled(id) === undefined) {
+					return null;
+				}
 				// ngtsc reads a child's source from the unframework plugin, which has it only once Vite
 				// has loaded the child (ADR-0027's negative): resolve each relative import with Vite
 				// and load the virtual modules it names before this module compiles (ADR-0053). A child
@@ -176,12 +186,18 @@ export function ngtscVirtual(
 				const client =
 					this.environment.mode === "dev" && this.environment.config.consumer === "client";
 				for (const [, fileName = ""] of code.matchAll(RELATIVE_IMPORT)) {
-					if (COMPONENT_IMPORT.test(fileName)) continue;
+					if (COMPONENT_IMPORT.test(fileName)) {
+						continue;
+					}
 					const resolved = await this.resolve(fileName, id);
 					const child = resolved?.id.split("?")[0];
-					if (!resolved || !child || !VIRTUAL_ID.test(child)) continue;
+					if (!resolved || !child || !VIRTUAL_ID.test(child)) {
+						continue;
+					}
 					children.set(childKey(id, fileName), child);
-					if (api!.getCompiled(child) !== undefined) continue;
+					if (api!.getCompiled(child) !== undefined) {
+						continue;
+					}
 					try {
 						await this.load({ id: resolved.id });
 					} catch (error) {
@@ -189,7 +205,9 @@ export function ngtscVirtual(
 						// guard's, say), which a page would otherwise get only as a failed fetch.
 						const reason = error instanceof Error ? error.message : String(error);
 						const message = `${id} imports ${fileName}, which failed to load:\n${reason}`;
-						if (!client) this.error(message);
+						if (!client) {
+							this.error(message);
+						}
 						this.environment.logger.error(message);
 						return { code: failingModule(message, exportedNames(code)), map: null };
 					}
@@ -199,7 +217,9 @@ export function ngtscVirtual(
 				// holds them, and the worker reads nothing else of the plugin. Two transforms that
 				// compile at once go to two workers, or wait in one, each with its own outcome.
 				const compiled = await compile(id, code);
-				if (compiled.warnings) this.warn(compiled.warnings);
+				if (compiled.warnings) {
+					this.warn(compiled.warnings);
+				}
 				if (compiled.codes.length) {
 					const message = `ngtsc rejected ${id} (${compiled.codes.join(", ")}):\n${compiled.errors}`;
 					// A page gets a module that failed to transform only as "Failed to fetch dynamically
@@ -211,7 +231,9 @@ export function ngtscVirtual(
 					}
 					this.error(message);
 				}
-				if (compiled.code === undefined) this.error(`ngtsc emitted no JavaScript for ${id}`);
+				if (compiled.code === undefined) {
+					this.error(`ngtsc emitted no JavaScript for ${id}`);
+				}
 				return { code: compiled.code, map: compiled.map ?? null };
 			},
 		},
@@ -275,7 +297,7 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
 		thread: CompileThread;
 		pending: Map<number, { resolve(compiled: Compiled): void; reject(e: unknown): void }>;
 	}
-	const slots: Slot[] = [];
+	const slots: Array<Slot> = [];
 	let nextRequest = 0;
 
 	function open(): Slot {
@@ -284,16 +306,27 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
 		const slot: Slot = { thread, pending: new Map() };
 		thread.on("message", (reply: WorkerReply) => {
 			const waiting = slot.pending.get(reply.request);
-			if (!waiting) return;
+			if (!waiting) {
+				return;
+			}
 			slot.pending.delete(reply.request);
-			if (!slot.pending.size) thread.unref();
-			if ("failure" in reply) waiting.reject(reply.failure);
-			else waiting.resolve(reply.compiled);
+			if (!slot.pending.size) {
+				thread.unref();
+			}
+			if ("failure" in reply) {
+				waiting.reject(reply.failure);
+			} else {
+				waiting.resolve(reply.compiled);
+			}
 		});
 		const end = (error: unknown) => {
 			const index = slots.indexOf(slot);
-			if (index !== -1) slots.splice(index, 1);
-			for (const waiting of slot.pending.values()) waiting.reject(error);
+			if (index !== -1) {
+				slots.splice(index, 1);
+			}
+			for (const waiting of slot.pending.values()) {
+				waiting.reject(error);
+			}
 			slot.pending.clear();
 		};
 		thread.on("error", end);
@@ -305,8 +338,12 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
 
 	function pick(): Slot {
 		const idle = slots.find((slot) => !slot.pending.size);
-		if (idle) return idle;
-		if (slots.length < size) return open();
+		if (idle) {
+			return idle;
+		}
+		if (slots.length < size) {
+			return open();
+		}
 		return slots.reduce((least, slot) => (slot.pending.size < least.pending.size ? slot : least));
 	}
 
@@ -314,15 +351,18 @@ export function compilePool(start: () => CompileThread, size: number): CompilePo
 		compile(request) {
 			const slot = pick();
 			const number = nextRequest++;
-			if (!slot.pending.size) slot.thread.ref();
+			if (!slot.pending.size) {
+				slot.thread.ref();
+			}
 			return new Promise((fulfil, reject) => {
 				slot.pending.set(number, { resolve: fulfil, reject });
 				slot.thread.postMessage({ ...request, request: number } satisfies WorkerRequest);
 			});
 		},
 		release(plugin) {
-			for (const { thread } of slots)
+			for (const { thread } of slots) {
 				thread.postMessage({ release: plugin } satisfies WorkerRequest);
+			}
 		},
 		get threads() {
 			return slots.length;
@@ -340,7 +380,9 @@ const released = new FinalizationRegistry<() => void>((release) => release());
  */
 function compilePoolOf(compiler: AngularCompiler): CompilePool {
 	const existing = pools.get(compiler);
-	if (existing) return existing;
+	if (existing) {
+		return existing;
+	}
 	// `angularScope` is the toolchain directory's `node_modules/@angular` (tools.ts).
 	const toolchainDir = dirname(dirname(compiler.angularScope));
 	const pool = compilePool(
@@ -352,7 +394,7 @@ function compilePoolOf(compiler: AngularCompiler): CompilePool {
 }
 
 /** The values a module's code exports by name, for a module that stands in for it. */
-function exportedNames(code: string): string[] {
+function exportedNames(code: string): Array<string> {
 	return [...code.matchAll(/^export\s+(?:default\s+)?(?:class|const|function)\s+(\w+)/gm)]
 		.filter(([whole]) => !/^export\s+default\b/.test(whole))
 		.map(([, name]) => name!);
@@ -367,7 +409,7 @@ export function childKey(importer: string, specifier: string): string {
  * A module that throws `message` when it runs and still provides every export of the module it
  * stands in for, so its importers link and the message is what they see.
  */
-function failingModule(message: string, exports: readonly string[]): string {
+function failingModule(message: string, exports: ReadonlyArray<string>): string {
 	const lines = [`throw new Error(${JSON.stringify(message)});`, "export default undefined;"];
 	const named = exports.filter((name) => name !== "default");
 	if (named.length) {

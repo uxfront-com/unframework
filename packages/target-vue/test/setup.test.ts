@@ -15,12 +15,12 @@ describe.each([{ inline: true }, { inline: false }])(
 	"vue setup on the server (inline: $inline)",
 	(mode) => {
 		/** Renders a component with listeners for its events, and what they heard. */
-		async function render(contents: string, names: readonly string[], props = {}) {
-			const heard: unknown[][] = [];
+		async function render(contents: string, names: ReadonlyArray<string>, props = {}) {
+			const heard: Array<Array<unknown>> = [];
 			const listeners = Object.fromEntries(
 				names.map((name) => [
 					`on${name[0]!.toUpperCase()}${name.slice(1)}`,
-					(...args: unknown[]) => void heard.push([name, ...args]),
+					(...args: Array<unknown>) => void heard.push([name, ...args]),
 				]),
 			);
 			const html = await renderSfc(contents, { ...props, ...listeners }, mode);
@@ -48,7 +48,9 @@ describe.each([{ inline: true }, { inline: false }])(
 			);
 			expect(html).toBe("<div>Ticking</div>");
 			// A timer started on the server would tick here.
-			await new Promise((resolve) => setTimeout(resolve, 20));
+			await new Promise((resolve) => {
+				setTimeout(resolve, 20);
+			});
 			expect(heard).toEqual([]);
 		});
 

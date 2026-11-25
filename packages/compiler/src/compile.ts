@@ -67,7 +67,7 @@ export interface CompilerPlugin {
 	/** Transforms the IR after analysis. Return a new module, or nothing to keep it. */
 	ir?(module: UfModule): UfModule | void;
 	/** Transforms one component's files for one target, before formatting. */
-	output?(files: readonly OutputFile[], context: OutputHookContext): OutputFile[] | void;
+	output?(files: ReadonlyArray<OutputFile>, context: OutputHookContext): Array<OutputFile> | void;
 }
 
 /** Options for {@link compile}. */
@@ -81,7 +81,7 @@ export interface CompileOptions {
 	 * The targets to emit, by selector (`solid@2`, ADR-0102) or as target objects. Outputs are keyed
 	 * by each target's id, so `solid@2`'s are under `solid2`.
 	 */
-	targets: readonly (TargetSelector | Target)[];
+	targets: ReadonlyArray<TargetSelector | Target>;
 	/** Formats the output with oxfmt. Defaults to `true`; the dev server may skip it. */
 	format?: boolean;
 	/**
@@ -91,7 +91,7 @@ export interface CompileOptions {
 	 * without one.
 	 */
 	sourceMap?: boolean;
-	plugins?: readonly CompilerPlugin[];
+	plugins?: ReadonlyArray<CompilerPlugin>;
 	/** Each target's options, by target name. */
 	targetOptions?: Readonly<Record<string, unknown>>;
 	/**
@@ -113,7 +113,7 @@ export interface CompileOptions {
 	 * absolute throws (`checkPassThrough`). An import the analyser classifies itself (the
 	 * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
 	 */
-	passThrough?: readonly string[];
+	passThrough?: ReadonlyArray<string>;
 	/**
 	 * The type oracle the props, events, models, slots and injection keys' types are resolved
 	 * through (plan §5.5, ADR-0067): `compile()` asks it for each type the analyser reads before it
@@ -141,7 +141,9 @@ export interface CompileOptions {
 export function checkHelperRoot(filename: string, helperRoot: string | undefined): string {
 	const parts = (path: string) => path.split("/").filter((part) => part && part !== ".");
 	const directory = parts(directoryOf(filename));
-	if (helperRoot === undefined) return "";
+	if (helperRoot === undefined) {
+		return "";
+	}
 	const root = typeof helperRoot === "string" ? parts(helperRoot) : [];
 	// Named as `filename` is: both absolute, or both relative.
 	const above =
@@ -165,7 +167,7 @@ export function checkHelperRoot(filename: string, helperRoot: string | undefined
  * `/`, `\\` or a drive letter, since such a specifier names a file of the project, a component's
  * own sheet or a child, never a module a plugin registers.
  */
-export function checkPassThrough(prefixes: readonly string[]): void {
+export function checkPassThrough(prefixes: ReadonlyArray<string>): void {
 	for (const prefix of prefixes) {
 		if (typeof prefix !== "string" || !prefix || /^(?:[./\\]|[A-Za-z]:)/.test(prefix)) {
 			throw new TypeError(
@@ -181,20 +183,20 @@ export interface CompileResult {
 	/** The module's IR (frozen), or `undefined` when module-level errors stop compilation. */
 	ir: UfModule | undefined;
 	/** Every diagnostic, sorted. Portability diagnostics carry their target. */
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 	/**
 	 * Each target's files, by target name, in the order of `targets`: each component's, then a copy
 	 * of each shared `.ts` module the source reaches, unchanged, at its path relative to the source
 	 * (ADR-0070).
 	 */
-	outputs: Record<string, OutputFile[]>;
+	outputs: Record<string, Array<OutputFile>>;
 	/**
 	 * The paths in each target's `outputs` that are shared helper modules (ADR-0121), by target
 	 * name, sorted: `_unframework/<file>` in the `helperRoot` directory. Each one's text depends only
 	 * on the target and the helper, so every compile that emits it writes the same file, and a
 	 * caller that writes a tree writes it once. A caller must write them beside the components.
 	 */
-	helpers: Record<string, string[]>;
+	helpers: Record<string, Array<string>>;
 	/**
 	 * The component each output file is written for, by target name, then by the file's path, or
 	 * the composable for a `.uf.ts` source's: the unplugin loads a file's components under ids of
@@ -209,7 +211,7 @@ export interface CompileResult {
 	 * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is
 	 * not installed included. Never an absolute path (P8).
 	 */
-	dependencies: string[];
+	dependencies: Array<string>;
 }
 
 /**
@@ -223,13 +225,15 @@ export interface CompileResult {
  */
 export async function compile(source: string, options: CompileOptions): Promise<CompileResult> {
 	const file = options.filename;
-	if (options.passThrough) checkPassThrough(options.passThrough);
+	if (options.passThrough) {
+		checkPassThrough(options.passThrough);
+	}
 	const helperBase = checkHelperRoot(file, options.helperRoot);
-	const diagnostics: Diagnostic[] = [];
+	const diagnostics: Array<Diagnostic> = [];
 	const targets = options.targets.map(resolveTarget);
-	const outputs: Record<string, OutputFile[]> = {};
+	const outputs: Record<string, Array<OutputFile>> = {};
 	const owners: Record<string, Record<string, string>> = {};
-	const helpers: Record<string, string[]> = {};
+	const helpers: Record<string, Array<string>> = {};
 	for (const target of targets) {
 		if (Object.hasOwn(outputs, target.name)) {
 			throw new TypeError(`Two targets are named "${target.name}".`);
@@ -260,7 +264,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
 			try {
 				const shape = await oracle.resolveShape(query);
 				shapes.set(`${query.span.start}:${query.span.end}`, shape);
-				for (const dependency of shape.dependencies) dependencies.add(dependency);
+				for (const dependency of shape.dependencies) {
+					dependencies.add(dependency);
+				}
 			} catch (error) {
 				const type = source.slice(query.span.start, query.span.end);
 				diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
@@ -275,9 +281,13 @@ export async function compile(source: string, options: CompileOptions): Promise<
 				const answer = await oracle.checkDirectiveValues!(file, source, valueQueries);
 				valueQueries.forEach((query, index) => {
 					const check = answer.checks[index];
-					if (check) directiveValues.set(`${query.value.start}:${query.value.end}`, check);
+					if (check) {
+						directiveValues.set(`${query.value.start}:${query.value.end}`, check);
+					}
 				});
-				for (const dependency of answer.dependencies) dependencies.add(dependency);
+				for (const dependency of answer.dependencies) {
+					dependencies.add(dependency);
+				}
 			} catch (error) {
 				diagnostics.push(internal(file, error, "The type oracle failed on the directives' values"));
 			}
@@ -289,7 +299,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
 			const composable = COMPOSABLE_SPECIFIER.test(specifier)
 				? joinPath(directoryOf(file), specifier)
 				: undefined;
-			if (composable !== undefined) dependencies.add(composable);
+			if (composable !== undefined) {
+				dependencies.add(composable);
+			}
 			try {
 				const api = await options.resolve!({ specifier, importer: file });
 				imports.set(specifier, api);
@@ -349,14 +361,16 @@ export async function compile(source: string, options: CompileOptions): Promise<
 		// project finds, not the analyser: components that import each other to render cannot each
 		// load before the others, on Angular (ADR-0053, ADR-0071). A key, a type or another value
 		// imported back closes none, so the context pattern stays valid (UF2033).
-		const cycles: Diagnostic[] = [];
+		const cycles: Array<Diagnostic> = [];
 		const edges = componentImportNames(parsed).filter(({ specifier, names }) =>
 			takesComponent(imports.get(specifier), names),
 		);
 		for (const { specifier, span } of options.resolve?.cycle ? edges : []) {
 			try {
 				const files = await options.resolve!.cycle!({ specifier, importer: file });
-				if (files) cycles.push(importCycle(file, specifier, span, files));
+				if (files) {
+					cycles.push(importCycle(file, specifier, span, files));
+				}
 			} catch (error) {
 				diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
 			}
@@ -384,17 +398,23 @@ export async function compile(source: string, options: CompileOptions): Promise<
 		// error does.
 		const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
 		diagnostics.push(...collisions, ...cycles);
-		if (collisions.length || cycles.length) analysed = undefined;
+		if (collisions.length || cycles.length) {
+			analysed = undefined;
+		}
 	} catch (error) {
 		diagnostics.push(internal(file, error, "The analyser failed"));
 	}
 
 	let module = analysed;
 	for (const plugin of options.plugins ?? []) {
-		if (!module || !analysed || !plugin.ir) continue;
+		if (!module || !analysed || !plugin.ir) {
+			continue;
+		}
 		try {
 			const result = plugin.ir(module);
-			if (result === undefined) continue;
+			if (result === undefined) {
+				continue;
+			}
 			const problems = validateModule(result);
 			// Only a module of the schema's shape can be walked for its invariants.
 			if (!problems.length) {
@@ -423,10 +443,14 @@ export async function compile(source: string, options: CompileOptions): Promise<
 			const sheetFile = sheetFiles.get(sheet.specifier) ?? sheet.specifier;
 			const scoped = scopeStylesheet(sheetFile, sheet.source, component.scopeId!);
 			diagnostics.push(...scoped.diagnostics);
-			if (scoped.diagnostics.length) module = undefined;
+			if (scoped.diagnostics.length) {
+				module = undefined;
+			}
 			joined += joined && !joined.endsWith("\n") ? `\n${scoped.code}` : scoped.code;
 		}
-		if (component.styles?.length) sheets.set(component.name, joined);
+		if (component.styles?.length) {
+			sheets.set(component.name, joined);
+		}
 	}
 
 	if (module) {
@@ -489,14 +513,16 @@ function copyCollisions(
 	module: UfModule,
 	copies: ReadonlyMap<string, Copy>,
 	file: string,
-): Diagnostic[] {
+): Array<Diagnostic> {
 	const names = new Map<string, string>();
 	const add = (directory: string, name: string) => {
 		for (const stem of [name, kebabCase(name)]) {
 			names.set(`${directory}${stem}`.toLowerCase(), name);
 		}
 	};
-	for (const component of module.components) add("", component.name);
+	for (const component of module.components) {
+		add("", component.name);
+	}
 	for (const entry of module.imports ?? []) {
 		const slash = entry.file.lastIndexOf("/");
 		for (const component of entry.api.components) {
@@ -505,7 +531,9 @@ function copyCollisions(
 	}
 	return [...copies].flatMap(([path, { span }]) => {
 		const name = names.get(path.replace(/\.ts$/, "").toLowerCase());
-		if (name === undefined) return [];
+		if (name === undefined) {
+			return [];
+		}
 		return [
 			createDiagnostic("UF1104", {
 				file,
@@ -521,7 +549,7 @@ function copyCollisions(
  * The source's relative imports and re-exports, each specifier once with the span of its first
  * declaration's specifier.
  */
-function relativeImports(parsed: ParsedModule): { specifier: string; span: Span }[] {
+function relativeImports(parsed: ParsedModule): Array<{ specifier: string; span: Span }> {
 	const found = new Map<string, Span>();
 	for (const statement of parsed.program.body) {
 		const from =
@@ -530,15 +558,24 @@ function relativeImports(parsed: ParsedModule): { specifier: string; span: Span 
 			statement.type === "ExportNamedDeclaration"
 				? statement.source
 				: null;
-		if (!from || found.has(from.value)) continue;
-		if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
+		if (!from || found.has(from.value)) {
+			continue;
+		}
+		if (!from.value.startsWith("./") && !from.value.startsWith("../")) {
+			continue;
+		}
 		found.set(from.value, { start: from.start, end: from.end });
 	}
 	return [...found].map(([specifier, span]) => ({ specifier, span }));
 }
 
 /** UF1205 at an import that closes a cycle, which names its files relative to the source. */
-function importCycle(file: string, specifier: string, span: Span, files: string[]): Diagnostic {
+function importCycle(
+	file: string,
+	specifier: string,
+	span: Span,
+	files: Array<string>,
+): Diagnostic {
 	const names = files.map((path) => relativePath(directoryOf(file), path));
 	return createDiagnostic("UF1205", {
 		file,
@@ -570,20 +607,20 @@ async function emitTarget(
 	module: UfModule,
 	source: string,
 	options: CompileOptions,
-	diagnostics: Diagnostic[],
+	diagnostics: Array<Diagnostic>,
 	sheets: ReadonlyMap<string, string>,
 	copies: ReadonlyMap<string, Copy>,
 	helperBase: string,
-): Promise<{ files: OutputFile[]; owners: Record<string, string>; helpers: string[] }> {
+): Promise<{ files: Array<OutputFile>; owners: Record<string, string>; helpers: Array<string> }> {
 	const file = options.filename;
 	const helperModules = createHelperModules(helperBase);
 	const helper = helperModules.helper;
 	const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
 	diagnostics.push(...checkCapabilities(module, target));
-	const written: OutputFile[] = [];
+	const written: Array<OutputFile> = [];
 	const owners = new Map<string, { path: string; component: string }>();
 	for (const component of module.components) {
-		let files: readonly OutputFile[];
+		let files: ReadonlyArray<OutputFile>;
 		try {
 			const emitted = readFiles(
 				target.emit(component, {
@@ -593,9 +630,13 @@ async function emitTarget(
 					helper,
 				}),
 			);
-			if ("problem" in emitted) throw new TypeError(`emit returned ${emitted.problem}`);
+			if ("problem" in emitted) {
+				throw new TypeError(`emit returned ${emitted.problem}`);
+			}
 			const sheet = sheets.get(component.name);
-			if (sheet !== undefined) emitted.files.push({ path: sheetPath, contents: sheet });
+			if (sheet !== undefined) {
+				emitted.files.push({ path: sheetPath, contents: sheet });
+			}
 			files = deepFreeze(emitted.files);
 		} catch (error) {
 			const what = `The ${target.name} target failed on ${component.name}`;
@@ -604,10 +645,14 @@ async function emitTarget(
 		}
 
 		for (const plugin of options.plugins ?? []) {
-			if (!plugin.output) continue;
+			if (!plugin.output) {
+				continue;
+			}
 			try {
 				const result: unknown = plugin.output(files, { target: target.name, component, module });
-				if (result === undefined) continue;
+				if (result === undefined) {
+					continue;
+				}
 				const returned = readFiles(result);
 				if ("problem" in returned) {
 					const what = `returned ${returned.problem}`;
@@ -668,13 +713,13 @@ async function emitTarget(
 	// ADR-0099). The `output` hooks are a component's, so they see none of it.
 	const emitComposable = target.emitComposable?.bind(target);
 	const emitDirective = target.emitDirective?.bind(target);
-	const modules: {
+	const modules: Array<{
 		name: string;
 		span: Span;
 		what: string;
-		emit: ((context: EmitContext) => OutputFile[]) | undefined;
+		emit: ((context: EmitContext) => Array<OutputFile>) | undefined;
 		own: Pick<UfModule, "composables" | "directives">;
-	}[] = [
+	}> = [
 		...(module.composables ?? []).map((composable) => ({
 			name: composable.name,
 			span: composable.span,
@@ -704,7 +749,7 @@ async function emitTarget(
 			);
 			continue;
 		}
-		let files: OutputFile[];
+		let files: Array<OutputFile>;
 		try {
 			const emitted = readFiles(
 				each.emit({
@@ -714,8 +759,9 @@ async function emitTarget(
 					helper,
 				}),
 			);
-			if ("problem" in emitted)
+			if ("problem" in emitted) {
 				throw new TypeError(`emitting ${each.name} returned ${emitted.problem}`);
+			}
 			files = emitted.files;
 		} catch (error) {
 			const what = `The ${target.name} target failed on ${each.name}`;
@@ -773,7 +819,7 @@ async function emitTarget(
 	}
 	// The helper modules, where an output was written: formatted like generated code, then mapped
 	// onto themselves, since no source holds their text (ADR-0121).
-	const helperPaths: string[] = [];
+	const helperPaths: Array<string> = [];
 	for (const module of written.length ? helperModules.files() : []) {
 		let output = module;
 		if (options.format !== false) {
@@ -830,12 +876,16 @@ function remapped(
 	{ file: after, error }: FormatOutcome,
 	file: string,
 	target: string,
-	diagnostics: Diagnostic[],
+	diagnostics: Array<Diagnostic>,
 ): OutputFile {
-	if (!before.map || error) return after;
+	if (!before.map || error) {
+		return after;
+	}
 	const { map: _stale, ...formatted } = after;
 	const result = remapFormatted(before, after, before.map);
-	if ("map" in result) return { ...formatted, map: result.map };
+	if ("map" in result) {
+		return { ...formatted, map: result.map };
+	}
 	const { code, ...init } = result.diagnostic;
 	diagnostics.push(createDiagnostic(code, { ...init, file, target }));
 	return formatted;
@@ -856,7 +906,9 @@ function reported(value: unknown, source: string, file: string, target: string):
 
 /** Why a value is not a diagnostic whose spans lie in a source of `length` characters. */
 function diagnosticProblem(value: unknown, length: number): string | undefined {
-	if (!isRecord(value)) return `${describe(value)} instead of a diagnostic`;
+	if (!isRecord(value)) {
+		return `${describe(value)} instead of a diagnostic`;
+	}
 	const { code, message } = value;
 	if (typeof code !== "string" || typeof message !== "string") {
 		return "a diagnostic without a code or a message";
@@ -872,7 +924,7 @@ function diagnosticProblem(value: unknown, length: number): string | undefined {
 	) {
 		return malformed;
 	}
-	const edits: Record<string, unknown>[] = [];
+	const edits: Array<Record<string, unknown>> = [];
 	for (const fix of fixes) {
 		const { title, confidence, edits: written } = fix;
 		if (typeof title !== "string" || !CONFIDENCES.has(confidence) || !isRecordList(written)) {
@@ -900,7 +952,7 @@ function diagnosticProblem(value: unknown, length: number): string | undefined {
 const SEVERITIES: ReadonlySet<unknown> = new Set(["error", "warning", "info"]);
 const CONFIDENCES: ReadonlySet<unknown> = new Set(["safe", "likely"]);
 
-function isRecordList(value: unknown): value is Record<string, unknown>[] {
+function isRecordList(value: unknown): value is Array<Record<string, unknown>> {
 	return Array.isArray(value) && value.every(isRecord);
 }
 
@@ -909,10 +961,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** A target's or a plugin's files, copied, or why the value is not a list of output files. */
-function readFiles(value: unknown): { files: OutputFile[] } | { problem: string } {
-	if (!Array.isArray(value)) return { problem: `${describe(value)} instead of a list of files` };
-	const files: OutputFile[] = [];
-	for (const [index, item] of (value as unknown[]).entries()) {
+function readFiles(value: unknown): { files: Array<OutputFile> } | { problem: string } {
+	if (!Array.isArray(value)) {
+		return { problem: `${describe(value)} instead of a list of files` };
+	}
+	const files: Array<OutputFile> = [];
+	for (const [index, item] of (value as Array<unknown>).entries()) {
 		if (
 			typeof item !== "object" ||
 			item === null ||
@@ -930,14 +984,18 @@ function readFiles(value: unknown): { files: OutputFile[] } | { problem: string 
 
 /** `undefined`, `an array`, `a string`, … */
 function describe(value: unknown): string {
-	if (value === null || value === undefined) return String(value);
-	if (Array.isArray(value)) return "an array";
+	if (value === null || value === undefined) {
+		return String(value);
+	}
+	if (Array.isArray(value)) {
+		return "an array";
+	}
 	const type = typeof value;
 	return `${/^[aeiou]/.test(type) ? "an" : "a"} ${type}`;
 }
 
 /** The first problems with a module, by JSON Pointer: `/components/0/render/tag must …`. */
-function describeProblems(problems: readonly IrValidationError[]): string {
+function describeProblems(problems: ReadonlyArray<IrValidationError>): string {
 	const first = problems.slice(0, 3).map(({ path, message }) => `${path || "/"} ${message}`);
 	const more = problems.length > 3 ? ` (and ${problems.length - 3} more)` : "";
 	return `${first.join("; ")}${more}`;
@@ -947,7 +1005,9 @@ function describeProblems(problems: readonly IrValidationError[]): string {
 function deepFreeze<T>(value: T): T {
 	if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
 		Object.freeze(value);
-		for (const item of Object.values(value)) deepFreeze(item);
+		for (const item of Object.values(value)) {
+			deepFreeze(item);
+		}
 	}
 	return value;
 }

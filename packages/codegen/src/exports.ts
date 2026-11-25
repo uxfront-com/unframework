@@ -20,14 +20,18 @@ import { collectNames } from "./rewrite.ts";
 export function exportDeclaration(
 	local: string,
 	declaration: AST.Function | AST.Class | AST.Expression,
-	exports: readonly UfExport[],
-): AST.Statement[] {
+	exports: ReadonlyArray<UfExport>,
+): Array<AST.Statement> {
 	const [only] = exports;
-	if (exports.length === 1 && only!.kind === "default") return [exportDefault(declaration)];
+	if (exports.length === 1 && only!.kind === "default") {
+		return [exportDefault(declaration)];
+	}
 	const statement = isDeclaration(declaration)
 		? declaration
 		: variableDeclaration("const", local, declaration);
-	if (exports.length === 1 && only!.name === local) return [exportNamed(statement)];
+	if (exports.length === 1 && only!.name === local) {
+		return [exportNamed(statement)];
+	}
 	const names = exports.map((entry) => entry.name);
 	return names.length ? [statement, exportList(local, names)] : [statement];
 }
@@ -43,7 +47,7 @@ function isDeclaration(
  * exported by its name all the same: it is a sibling file of the module's (ADR-0053), which its
  * siblings import, and which the module's public exports leave out.
  */
-export function exportsOf(component: string, exports: readonly UfExport[]): UfExport[] {
+export function exportsOf(component: string, exports: ReadonlyArray<UfExport>): Array<UfExport> {
 	const own = exports.filter((entry) => entry.local === component);
 	return own.length
 		? own
@@ -54,7 +58,7 @@ export function exportsOf(component: string, exports: readonly UfExport[]): UfEx
  * The type declarations a component's output declares beside it: those its props' types
  * reach (`component.types`), in source order (ADR-0034).
  */
-export function componentTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
+export function componentTypes(component: UfComponent, module: UfModule): Array<TypeDeclaration> {
 	const used = new Set(component.types);
 	return module.types.filter((declaration) => used.has(declaration.name));
 }
@@ -81,10 +85,14 @@ export function typeSpecifier(
 	module: UfModule,
 	file: (name: string) => string,
 ): string {
-	if (!specifier.endsWith(".uf.tsx")) return specifier;
+	if (!specifier.endsWith(".uf.tsx")) {
+		return specifier;
+	}
 	const entry = module.imports?.find((each) => each.specifier === specifier);
 	const owner = entry && keyOwner(entry.api.components);
-	if (!entry || owner === undefined) return specifier;
+	if (!entry || owner === undefined) {
+		return specifier;
+	}
 	const directory = entry.file.includes("/")
 		? entry.file.slice(0, entry.file.lastIndexOf("/") + 1)
 		: "";
@@ -111,18 +119,24 @@ export function addTypeImports(
 		local = (name) => name,
 	}: { live?: LiveOptions; local?: (name: string) => string } = {},
 ): void {
-	if (!module.typeImports?.length) return;
+	if (!module.typeImports?.length) {
+		return;
+	}
 	const read = liveTypeNames(component, module, live);
 	if (keyOwner(module.components, module.exports) === component.name) {
 		for (const entry of module.typeExports ?? []) {
-			if (entry.kind !== "Declaration") continue;
+			if (entry.kind !== "Declaration") {
+				continue;
+			}
 			const [statement] = parseStatementsSource(entry.code).statements;
 			collectNames(statement, read);
 		}
 	}
 	for (const entry of module.typeImports) {
 		for (const name of entry.names) {
-			if (!read.has(name.local)) continue;
+			if (!read.has(name.local)) {
+				continue;
+			}
 			imports.add(typeSpecifier(entry.specifier, module, file), name.imported, {
 				type: true,
 				local: local(name.local),
@@ -143,10 +157,14 @@ export function typeExportsCode(
 	component: UfComponent,
 	module: UfModule,
 	file: (name: string) => string,
-): { code: string; span: Span }[] {
-	if (keyOwner(module.components, module.exports) !== component.name) return [];
+): Array<{ code: string; span: Span }> {
+	if (keyOwner(module.components, module.exports) !== component.name) {
+		return [];
+	}
 	const exports = (module.typeExports ?? []).map((entry) => {
-		if (entry.kind === "Declaration") return { code: `export ${entry.code}`, span: entry.span };
+		if (entry.kind === "Declaration") {
+			return { code: `export ${entry.code}`, span: entry.span };
+		}
 		const names = entry.names.map(({ imported, exported }) =>
 			imported === exported ? imported : `${imported} as ${exported}`,
 		);
@@ -157,9 +175,13 @@ export function typeExportsCode(
 	// component's output: the main output re-exports it, so a consumer finds every exported type
 	// where it imports the module's (ADR-0068).
 	for (const declaration of module.types) {
-		if (!declaration.exported || component.types.includes(declaration.name)) continue;
+		if (!declaration.exported || component.types.includes(declaration.name)) {
+			continue;
+		}
 		const sibling = module.components.find((each) => each.types.includes(declaration.name));
-		if (!sibling) continue;
+		if (!sibling) {
+			continue;
+		}
 		exports.push({
 			code: `export type { ${declaration.name} } from ${JSON.stringify(`./${file(sibling.name)}`)};`,
 			span: declaration.span,

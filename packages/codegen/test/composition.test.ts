@@ -57,7 +57,7 @@ function api(name: string, kind: ComponentApi["export"]): ComponentApi {
 }
 
 /** A component that renders the given components, in order. */
-function rendering(name: string, children: string[]): UfComponent {
+function rendering(name: string, children: Array<string>): UfComponent {
 	return createComponent(
 		name,
 		createElement(

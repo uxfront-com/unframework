@@ -22,21 +22,25 @@ export function lower(source: string, file = "Card.uf.tsx", shapes?: Shapes): Uf
 		throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics)}`);
 	}
 	const broken = checkInvariants(module);
-	if (broken.length) throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
+	if (broken.length) {
+		throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
+	}
 	return module;
 }
 
 /** The files this target emits for each component of a source, which must report nothing. */
-export function emitSource(source: string, file?: string, shapes?: Shapes): OutputFile[] {
+export function emitSource(source: string, file?: string, shapes?: Shapes): Array<OutputFile> {
 	const module = lower(source, file, shapes);
-	const reported: unknown[] = [];
+	const reported: Array<unknown> = [];
 	const context: EmitContext = {
 		module,
 		options: undefined,
 		report: (diagnostic) => void reported.push(diagnostic),
 	};
 	const files = module.components.flatMap((component) => target.emit(component, context));
-	if (reported.length) throw new Error(`emit reported ${JSON.stringify(reported)}`);
+	if (reported.length) {
+		throw new Error(`emit reported ${JSON.stringify(reported)}`);
+	}
 	return files;
 }
 
@@ -62,14 +66,18 @@ export async function emittedWithTypes(
 	const [output, ...more] = emitSource(source, file, (span) =>
 		resolved.get(`${span.start}:${span.end}`),
 	);
-	if (!output || more.length) throw new Error("Expected one file.");
+	if (!output || more.length) {
+		throw new Error("Expected one file.");
+	}
 	return output.contents;
 }
 
 /** The one file a single-component source emits, as `emit` prints it. */
 export function emitted(source: string): string {
 	const [file, ...more] = emitSource(source);
-	if (!file || more.length) throw new Error("Expected one file.");
+	if (!file || more.length) {
+		throw new Error("Expected one file.");
+	}
 	return file.contents;
 }
 
@@ -77,6 +85,8 @@ export function emitted(source: string): string {
 export async function compiled(source: string): Promise<string> {
 	const [file] = emitSource(source);
 	const { file: formatted, error } = await formatOutput(file!);
-	if (error) throw new Error(error);
+	if (error) {
+		throw new Error(error);
+	}
 	return formatted.contents;
 }

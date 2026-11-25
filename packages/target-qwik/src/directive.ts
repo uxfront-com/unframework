@@ -53,7 +53,7 @@ export function hooksCode(directive: UfDirective, exported = false): string {
 }
 
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, as its plain hooks. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
 	const dependencies = directiveDependencies(directive, context.module);
 	const imports = dependencyImports(dependencies);
 	const code = [
@@ -76,7 +76,7 @@ export class QwikDirectives {
 	 */
 	readonly #lists = new Map<
 		ElementNode,
-		{ name: string; type: string; templateRef?: string; values: DirectiveAttribute[] }
+		{ name: string; type: string; templateRef?: string; values: Array<DirectiveAttribute> }
 	>();
 	/**
 	 * The list each node's first directive collects into with its `ref`, by the directive: the
@@ -86,7 +86,7 @@ export class QwikDirectives {
 	 */
 	readonly #refs = new Map<
 		DirectiveAttribute,
-		{ list: string; templateRef?: string; values: DirectiveAttribute[] }
+		{ list: string; templateRef?: string; values: Array<DirectiveAttribute> }
 	>();
 	/** The template refs that a directive's `ref` fills instead of a `ref` of their own. */
 	readonly #templateRefs = new Set<RefAttribute>();
@@ -120,15 +120,21 @@ export class QwikDirectives {
 		this.#plan = plan;
 		walk(component.render, {
 			enter: (node) => {
-				if (node.kind !== "Element") return;
+				if (node.kind !== "Element") {
+					return;
+				}
 				const [first] = node.attributes.filter(
 					(attribute): attribute is DirectiveAttribute => attribute.kind === "Directive",
 				);
-				if (!first) return;
+				if (!first) {
+					return;
+				}
 				const ref = node.attributes.find(
 					(attribute): attribute is RefAttribute => attribute.kind === "Ref",
 				);
-				if (ref) this.#templateRefs.add(ref);
+				if (ref) {
+					this.#templateRefs.add(ref);
+				}
 				const templateRef = ref
 					? component.bindings.find(({ id }) => id === ref.binding)!.name
 					: undefined;
@@ -151,7 +157,9 @@ export class QwikDirectives {
 		const branched = (node: RenderNode, inBranch: boolean): void => {
 			if (node.kind === "If") {
 				for (const branch of node.branches) {
-					for (const child of branch.children) branched(child, true);
+					for (const child of branch.children) {
+						branched(child, true);
+					}
 				}
 				return;
 			}
@@ -168,9 +176,13 @@ export class QwikDirectives {
 			) {
 				this.#branched.add(node);
 			}
-			for (const child of childrenOf(node)) branched(child, inBranch);
+			for (const child of childrenOf(node)) {
+				branched(child, inBranch);
+			}
 		};
-		for (const child of childrenOf(component.render)) branched(child, false);
+		for (const child of childrenOf(component.render)) {
+			branched(child, false);
+		}
 		const waits = this.#branched.size > 0;
 		const passes = [...this.#lists.values()].some(({ values }) => values.length > 0);
 		this.#helper = this.#lists.size
@@ -208,10 +220,12 @@ export class QwikDirectives {
 		attribute: DirectiveAttribute,
 		context: JsxContext,
 		passedRef?: string,
-	): ReturnType<typeof js.jsxAttribute>[] {
+	): Array<ReturnType<typeof js.jsxAttribute>> {
 		const ref = this.#refs.get(attribute);
 		const helper = this.#helper;
-		if (ref === undefined || !helper) return [];
+		if (ref === undefined || !helper) {
+			return [];
+		}
 		// What the element's ref fills besides the directive's list: its template ref, and on the
 		// root, a consumer's ref (ADR-0118).
 		const fills = [
@@ -246,8 +260,10 @@ export class QwikDirectives {
 	/** The statements of the component's body: the element lists, then a task per directive. */
 	setup(names: OutputNames): string {
 		const helper = this.#helper;
-		if (!helper) return "";
-		const statements: string[] = [];
+		if (!helper) {
+			return "";
+		}
+		const statements: Array<string> = [];
 		for (const [element, list] of this.#lists) {
 			const type = list.type.replace("DirectiveElement", helper.element);
 			// An element that passes its directives' values is listed with them (ADR-0108).
@@ -257,7 +273,9 @@ export class QwikDirectives {
 				: type;
 			statements.push(`const ${list.name} = ${names.core("useSignal")}<${entry}[]>([]);`);
 			for (const attribute of element.attributes) {
-				if (attribute.kind !== "Directive") continue;
+				if (attribute.kind !== "Directive") {
+					continue;
+				}
 				// The task's own names, apart from the component's.
 				const track = names.once("track");
 				const cleanup = names.once("cleanup");
@@ -269,7 +287,7 @@ export class QwikDirectives {
 				// The element's own value, which its `ref` passed, or one the task reads.
 				const index = list.values.indexOf(attribute);
 				const valuesName = passed ? names.once("values") : undefined;
-				const lines: string[] = [];
+				const lines: Array<string> = [];
 				let value: string;
 				if (index >= 0) {
 					value = `${valuesName}[${index}]`;
@@ -350,9 +368,11 @@ export class QwikDirectives {
 	 * The module's helpers: the hooks' type, the runner the tasks call, and the queue, which
 	 * `shared` takes by its local name instead, where the queue is a shared module (ADR-0121).
 	 */
-	helpers(names: OutputNames, shared?: Map<string, string>): string[] {
+	helpers(names: OutputNames, shared?: Map<string, string>): Array<string> {
 		const helper = this.#helper;
-		if (!helper) return [];
+		if (!helper) {
+			return [];
+		}
 		const { run, hooks, element, queue, values, watch, watches, wait, collect, forget } = helper;
 		shared?.set("queueHook", queue);
 		const signal = names.core("Signal", { type: true });
@@ -380,7 +400,7 @@ type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : ne
 }
 
 /** The list of elements alone, for an element whose directives' values the tasks read. */
-function plainHelpers(collect: string, forget: string, signal: string): string[] {
+function plainHelpers(collect: string, forget: string, signal: string): Array<string> {
 	return [
 		`/**
  * Adds an element a directive's \`ref\` receives to the directive's elements, once: on the server
@@ -409,7 +429,7 @@ function valuesHelpers(
 	names: { collect: string; forget: string; type: string },
 	hooks: string,
 	signal: string,
-): string[] {
+): Array<string> {
 	const { collect, forget, type } = names;
 	return [
 		`/**

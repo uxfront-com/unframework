@@ -29,7 +29,7 @@ const GENERATED_ID: RegExp = new RegExp(`(?<![\\w-])${GENERATED_ID_PREFIX}[\\w-]
  * renaming `names` holds and adding to it.
  */
 export function renameGeneratedIds(text: string, names: Map<string, string>): string {
-	return text.replace(GENERATED_ID, (id) => {
+	return text.replaceAll(GENERATED_ID, (id) => {
 		let name = names.get(id);
 		if (name === undefined) {
 			name = `${GENERATED_ID_PREFIX}${names.size + 1}`;

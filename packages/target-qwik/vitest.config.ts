@@ -9,7 +9,7 @@ import target from "./src/index.ts";
 import { toolchain } from "./src/toolchain/index.ts";
 import { ufSources } from "./test/sources.ts";
 
-const root = fileURLToPath(new URL(".", import.meta.url));
+const root = import.meta.dirname;
 const fixtures = fileURLToPath(new URL("test/fixtures", import.meta.url));
 const toolchainDir = fileURLToPath(new URL("../../tests/toolchains/qwik", import.meta.url));
 

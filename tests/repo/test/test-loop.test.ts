@@ -22,18 +22,26 @@ import { root } from "./workspace.ts";
  * key and a comment after it, so the pattern takes all of them (a narrower one let `qa_job:` and
  * `qa-job: # …` through).
  */
-function workflowJobIds(workflow: string): string[] {
+function workflowJobIds(workflow: string): Array<string> {
 	const lines = workflow.split(/\r?\n/);
 	const start = lines.findIndex((line) => /^jobs:[ \t]*(?:#.*)?$/.test(line));
-	if (start === -1) return [];
-	const ids: string[] = [];
+	if (start === -1) {
+		return [];
+	}
+	const ids: Array<string> = [];
 	let indent: string | undefined;
 	for (const line of lines.slice(start + 1)) {
-		if (/^[ \t]*(?:#.*)?$/.test(line)) continue;
+		if (/^[ \t]*(?:#.*)?$/.test(line)) {
+			continue;
+		}
 		// The next top-level key ends the mapping.
-		if (!/^[ \t]/.test(line)) break;
+		if (!/^[ \t]/.test(line)) {
+			break;
+		}
 		indent ??= /^[ \t]+/.exec(line)?.[0] ?? "";
-		if (!line.startsWith(indent) || /^[ \t]/.test(line.slice(indent.length))) continue;
+		if (!line.startsWith(indent) || /^[ \t]/.test(line.slice(indent.length))) {
+			continue;
+		}
 		const key = /^(["']?)([A-Za-z_][\w-]*)\1:[ \t]*(?:#.*)?$/.exec(line.slice(indent.length));
 		// A line at the jobs' indentation that isn't a plain key fails the guard, not skips it.
 		ids.push(key?.[2] ?? `<unreadable: ${line.trim()}>`);
@@ -42,12 +50,12 @@ function workflowJobIds(workflow: string): string[] {
 }
 
 /** The job ids of CI's workflow. */
-function ciJobs(): string[] {
+function ciJobs(): Array<string> {
 	return workflowJobIds(readFileSync(join(root, ".github", "workflows", "ci.yml"), "utf8"));
 }
 
 /** The job ids the left-out list in `.github/CONTRIBUTING.md` names, from lines like ``- `check`: …``. */
-function contributingExcludedJobs(contributing: string): string[] {
+function contributingExcludedJobs(contributing: string): Array<string> {
 	const section = contributing.slice(contributing.indexOf("## Verifying a change"));
 	return [...section.matchAll(/^[ \t]*- ((?:`[\w-]+`(?:, | and )?)+):/gm)].flatMap((match) =>
 		[...(match[1] ?? "").matchAll(/`([\w-]+)`/g)].map((id) => id[1] ?? ""),

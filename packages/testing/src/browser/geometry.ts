@@ -12,7 +12,7 @@
 import type { GeometrySnapshot, GeometryBox, GeometryNode } from "../visual-types.ts";
 
 /** The computed properties that explain how a box looks. Width and height come from the box. */
-export const GEOMETRY_STYLE_PROPERTIES: readonly string[] = [
+export const GEOMETRY_STYLE_PROPERTIES: ReadonlyArray<string> = [
 	"display",
 	"position",
 	"top",
@@ -109,13 +109,13 @@ const toBox = (rect: DOMRect, origin: DOMRect): GeometryBox => [
  */
 export function captureGeometry(
 	container: Element,
-	teleported: readonly Element[] = [],
+	teleported: ReadonlyArray<Element> = [],
 ): GeometrySnapshot {
 	const origin = container.getBoundingClientRect();
 	const nodes: Record<string, GeometryNode> = {};
 
 	const visit = (parent: Node, prefix: string) => visitNodes(flatten(parent), prefix);
-	const visitNodes = (children: readonly Node[], prefix: string) => {
+	const visitNodes = (children: ReadonlyArray<Node>, prefix: string) => {
 		const counters = new Map<string, number>();
 		const next = (key: string) => {
 			const index = counters.get(key) ?? 0;
@@ -124,7 +124,9 @@ export function captureGeometry(
 		};
 		for (const child of children) {
 			if (child.nodeType === Node.TEXT_NODE) {
-				if (!child.textContent?.trim()) continue;
+				if (!child.textContent?.trim()) {
+					continue;
+				}
 				const range = document.createRange();
 				range.selectNodeContents(child);
 				nodes[next("#text")] = { box: [...range.getClientRects()].map((r) => toBox(r, origin)) };
@@ -136,14 +138,18 @@ export function captureGeometry(
 				nodes[path] = { box: toBox(child.getBoundingClientRect(), origin), style };
 				for (const pseudo of PSEUDO_ELEMENTS) {
 					const computed = getComputedStyle(child, pseudo);
-					if (computed.content === "none") continue;
+					if (computed.content === "none") {
+						continue;
+					}
 					nodes[`${path}${pseudo}`] = {
 						style: { ...styleOf(computed), content: computed.content },
 					};
 				}
 				// A `<textarea>`'s text is its default value, which it shows as its value, never laid out:
 				// the box holds what it shows, and L7 compares the value (`uf:value`, ADR-0058's 4d).
-				if (child.localName !== "textarea") visit(child, `${path}/`);
+				if (child.localName !== "textarea") {
+					visit(child, `${path}/`);
+				}
 			}
 		}
 	};
@@ -155,8 +161,8 @@ export function captureGeometry(
 }
 
 /** The element and text children of a node, looking through `display: contents` wrappers. */
-function flatten(parent: Node): Node[] {
-	const out: Node[] = [];
+function flatten(parent: Node): Array<Node> {
+	const out: Array<Node> = [];
 	for (const child of parent.childNodes) {
 		if (child instanceof Element && getComputedStyle(child).display === "contents") {
 			out.push(...flatten(child));

@@ -26,20 +26,22 @@ export interface SourceCompile {
  * Every source's text by its file name, as its diagnostics name it, and the text of each other
  * file a diagnostic points into: a stylesheet beside the sources (UF5002, UF5004, ADR-0063).
  */
-export function sourceTexts(compiles: readonly SourceCompile[]): Map<string, string> {
+export function sourceTexts(compiles: ReadonlyArray<SourceCompile>): Map<string, string> {
 	const texts = new Map(compiles.map(({ source, text }) => [source.filename, text]));
 	for (const { source, result } of compiles) {
 		// The cases directory: the source's path, without its file name relative to it.
 		const root = source.source.slice(0, source.source.length - source.filename.length);
 		for (const { file } of result.diagnostics) {
-			if (!texts.has(file)) texts.set(file, readFileSync(join(root, file), "utf8"));
+			if (!texts.has(file)) {
+				texts.set(file, readFileSync(join(root, file), "utf8"));
+			}
 		}
 	}
 	return texts;
 }
 
 /** Every source's diagnostics in one list, sorted by file, then by span. */
-export function caseDiagnostics(compiles: readonly SourceCompile[]): Diagnostic[] {
+export function caseDiagnostics(compiles: ReadonlyArray<SourceCompile>): Array<Diagnostic> {
 	return sortDiagnostics(compiles.flatMap(({ result }) => result.diagnostics));
 }
 
@@ -52,17 +54,19 @@ export function caseDiagnostics(compiles: readonly SourceCompile[]): Diagnostic[
  * the same contents is one file.
  */
 export function caseOutputs(
-	compiles: readonly SourceCompile[],
+	compiles: ReadonlyArray<SourceCompile>,
 	target: string,
-): { files: Map<string, string>; problems: string[] } {
+): { files: Map<string, string>; problems: Array<string> } {
 	const files = new Map<string, string>();
 	const producer = new Map<string, string>();
-	const problems: string[] = [];
+	const problems: Array<string> = [];
 	for (const { source, result } of compiles) {
 		for (const file of result.outputs[target] ?? []) {
 			const key = file.path.toLowerCase();
 			const other = producer.get(key);
-			if (other !== undefined && files.get(file.path) === file.contents) continue;
+			if (other !== undefined && files.get(file.path) === file.contents) {
+				continue;
+			}
 			if (other !== undefined) {
 				problems.push(
 					`${other} and ${source.filename} both produce ${target}/${file.path}: the components of a case need names of their own on every target.`,
@@ -91,7 +95,9 @@ export function caseResolver(
 		root: casesDir.split(sep).join("/"),
 		readFile: async (path) => {
 			const file = join(path);
-			if (relative(info.dir, dirname(file)) !== "") return undefined;
+			if (relative(info.dir, dirname(file)) !== "") {
+				return undefined;
+			}
 			return readFile(file, "utf8").catch(() => undefined);
 		},
 		...(typeOracle ? { typeOracle } : {}),
@@ -115,7 +121,9 @@ export function caseOracle(
 ): TypeOracle {
 	const root = casesDir.split(sep).join("/");
 	const read = async (path: string) => {
-		if (path === `${root}/${compiled.filename}`) return compiled.text;
+		if (path === `${root}/${compiled.filename}`) {
+			return compiled.text;
+		}
 		const file = join(path);
 		if (relative(info.dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
 			return undefined;

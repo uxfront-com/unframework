@@ -13,7 +13,7 @@ export interface HelperModules {
 	/** What a target's {@link EmitContext.helper} calls. */
 	helper: NonNullable<EmitContext["helper"]>;
 	/** Every helper module put so far, sorted by path (P8). */
-	files(): OutputFile[];
+	files(): Array<OutputFile>;
 }
 
 /**
@@ -52,7 +52,7 @@ export function createHelperModules(base = ""): HelperModules {
 }
 
 /** A path's parts, without the empty and `.` ones. */
-function segments(path: string): string[] {
+function segments(path: string): Array<string> {
 	return path.split("/").filter((part) => part !== "" && part !== ".");
 }
 

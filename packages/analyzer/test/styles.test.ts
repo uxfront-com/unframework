@@ -23,7 +23,9 @@ function run(source: string, sheets: Record<string, string | StylesheetSource> =
 		]),
 	);
 	const result = analyze(parseModule("src/Card.uf.tsx", source), { stylesheets });
-	if (result.module) expect(checkInvariants(result.module)).toEqual([]);
+	if (result.module) {
+		expect(checkInvariants(result.module)).toEqual([]);
+	}
 	return result;
 }
 
@@ -43,7 +45,9 @@ describe("scopeIdOf", () => {
 			scopeIdOf("Button", [".a {}.b {}"]),
 		];
 		expect(new Set(ids).size).toBe(ids.length);
-		for (const id of ids) expect(id).toMatch(/^[0-9a-f]{8}$/);
+		for (const id of ids) {
+			expect(id).toMatch(/^[0-9a-f]{8}$/);
+		}
 	});
 });
 
@@ -111,7 +115,9 @@ describe("stylesheets", () => {
 		expect(module).toBeUndefined();
 		expect(codes(diagnostics)).toEqual(["UF5001"]);
 		expect(slices(source, diagnostics)).toEqual(['"./Card.css"']);
-		for (const component of api!.components) expect(component).not.toHaveProperty("styles");
+		for (const component of api!.components) {
+			expect(component).not.toHaveProperty("styles");
+		}
 	});
 
 	it("reports a sheet the resolver could not read as UF5005", () => {

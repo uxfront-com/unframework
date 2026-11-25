@@ -40,13 +40,17 @@ export function qwikTransitions(
 	plan: SetupPlan,
 	names: OutputNames,
 ): QwikTransitions | undefined {
-	const nodes: TransitionNode[] = [];
+	const nodes: Array<TransitionNode> = [];
 	walk(component.render, {
 		enter(node) {
-			if (node.kind === "Transition") nodes.push(node);
+			if (node.kind === "Transition") {
+				nodes.push(node);
+			}
 		},
 	});
-	if (!nodes.length) return undefined;
+	if (!nodes.length) {
+		return undefined;
+	}
 	const helper = names.once("transition");
 	const run = names.once("runTransition");
 	const stateType = names.once("TransitionState");
@@ -65,7 +69,9 @@ export function qwikTransitions(
 	/** Which branch the conditional shows, as code: its index, or -1 for none. */
 	const branchOf = (node: TransitionNode): string => {
 		const [child] = node.children;
-		if (child?.kind !== "If") return "0";
+		if (child?.kind !== "If") {
+			return "0";
+		}
 		const value = (index: number) => (child.branches[index]!.children.length ? `${index}` : "-1");
 		let chain =
 			child.branches.at(-1)!.condition === undefined ? value(child.branches.length - 1) : "-1";
@@ -138,11 +144,15 @@ export function qwikTransitions(
 			const [child] = node.children;
 			const marked = (element: ElementNode, index: number) =>
 				withTransitionRef(jsxElement(element, context), helper, state, node, index);
-			if (child?.kind !== "If") return marked(child as ElementNode, 0);
+			if (child?.kind !== "If") {
+				return marked(child as ElementNode, 0);
+			}
 			return js.jsxFragment(
 				child.branches.flatMap((branch, index) => {
 					const [element] = branch.children;
-					if (!element) return [];
+					if (!element) {
+						return [];
+					}
 					return [
 						js.jsxExpressionContainer(
 							js.logicalExpression(
@@ -229,8 +239,11 @@ function withTransitionRef(
 			]),
 		),
 	);
-	if (own < 0) attributes.push(ref);
-	else attributes[own] = ref;
+	if (own < 0) {
+		attributes.push(ref);
+	} else {
+		attributes[own] = ref;
+	}
 	return element;
 }
 

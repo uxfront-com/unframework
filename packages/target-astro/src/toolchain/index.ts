@@ -22,7 +22,9 @@ import { closeAstroRenderServers, createAstroRenderCommand } from "./render.ts";
 export const toolchain: Toolchain = {
 	name: "astro",
 	vite(mode, context) {
-		if (mode === "ssr") return astroViteConfig(context.root);
+		if (mode === "ssr") {
+			return astroViteConfig(context.root);
+		}
 		// Nothing to pre-bundle: in the browser a compiled component is a plain reference that
 		// imports nothing, and the unframework plugin keeps virtual ids out of the dep scan.
 		return { plugins: [astroBrowserRef()] };

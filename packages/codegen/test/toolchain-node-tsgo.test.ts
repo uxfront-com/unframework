@@ -15,10 +15,11 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { typecheckWithTsgo } from "../src/toolchain-node/index.ts";
 
-const temporaries: string[] = [];
+const temporaries: Array<string> = [];
 afterAll(() => {
-	for (const directory of temporaries.splice(0))
+	for (const directory of temporaries.splice(0)) {
 		rmSync(directory, { recursive: true, force: true });
+	}
 });
 
 /** A fresh directory under the OS's temporary directory, which macOS reaches through a symlink. */
@@ -36,7 +37,7 @@ function write(name: string, contents: string): string {
 	return path;
 }
 
-const check = (toolchainDir: string, files: readonly string[]) =>
+const check = (toolchainDir: string, files: ReadonlyArray<string>) =>
 	typecheckWithTsgo(files, { toolchainDir, root: toolchainDir });
 
 /** The workspace's own TypeScript 7, installed into a toolchain directory of the test's own. */
@@ -167,7 +168,9 @@ describe("typecheckWithTsgo with TypeScript 7", { timeout: 60_000 }, () => {
 function fakeToolchain(options: { version?: string; tsc?: string; tsconfig?: boolean }): string {
 	const directory = temporaryDir();
 	writeFileSync(join(directory, "package.json"), `{ "name": "fake", "private": true }`);
-	if (options.tsconfig ?? true) writeFileSync(join(directory, "tsconfig.json"), "{}");
+	if (options.tsconfig ?? true) {
+		writeFileSync(join(directory, "tsconfig.json"), "{}");
+	}
 	if (options.version) {
 		const typescript = join(directory, "node_modules/typescript");
 		mkdirSync(join(typescript, "bin"), { recursive: true });
@@ -199,7 +202,7 @@ describe("tsgo's output", () => {
 			`  "",`,
 			`  ${JSON.stringify(`${second}(1,1): error TS2304: Cannot find name 'greet'.`)},`,
 			`  "/elsewhere/Imported.ts(2,1): error TS2304: Cannot find name 'missing'.",`,
-			'].join("\\n"));',
+			String.raw`].join("\n"));`,
 			"process.exitCode = 2;",
 		].join("\n");
 		const results = await check(fakeToolchain({ version: "7.0.2", tsc }), files);

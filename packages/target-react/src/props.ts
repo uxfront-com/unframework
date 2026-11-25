@@ -239,7 +239,9 @@ export function formControlProp(
 	if (name === "value" && (tag === "input" || tag === "select" || tag === "textarea")) {
 		return "defaultValue";
 	}
-	if (name === "checked" && tag === "input") return "defaultChecked";
+	if (name === "checked" && tag === "input") {
+		return "defaultChecked";
+	}
 	return undefined;
 }
 

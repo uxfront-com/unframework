@@ -75,7 +75,7 @@ const PROCESS_IO: Io = {
  * `extra` adds commands by name, after the built-in ones, which it may not replace.
  */
 export async function main(
-	argv: readonly string[],
+	argv: ReadonlyArray<string>,
 	io: Io = PROCESS_IO,
 	extra: ReadonlyMap<string, Command> = new Map(),
 ): Promise<number> {
@@ -97,7 +97,9 @@ export async function main(
 	}
 	const command = name === undefined ? undefined : commands.get(name);
 	if (!command) {
-		if (name !== undefined) io.stderr(`unframework: unknown command "${name}".\n\n`);
+		if (name !== undefined) {
+			io.stderr(`unframework: unknown command "${name}".\n\n`);
+		}
 		io.stderr(usageOf(commands));
 		return 2;
 	}

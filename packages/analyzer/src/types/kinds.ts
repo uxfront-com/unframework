@@ -52,12 +52,12 @@ export interface Kinds {
 	readonly strings?: ReadonlySet<string>;
 	readonly numbers?: ReadonlySet<number>;
 	readonly booleans?: ReadonlySet<boolean>;
-	readonly objects?: readonly ObjectShape[];
-	readonly elements?: readonly (() => Kinds)[];
+	readonly objects?: ReadonlyArray<ObjectShape>;
+	readonly elements?: ReadonlyArray<() => Kinds>;
 }
 
 /** Kinds of the given primitives, without literals. */
-export function kinds(...primitives: Primitive[]): Kinds {
+export function kinds(...primitives: Array<Primitive>): Kinds {
 	return { primitives: new Set(primitives) };
 }
 
@@ -96,44 +96,66 @@ export function objectOf(shape: ObjectShape): Kinds {
 }
 
 /** The kinds any of the given kinds may have. */
-export function union(...all: Kinds[]): Kinds {
+export function union(...all: Array<Kinds>): Kinds {
 	const primitives = new Set<Primitive>();
-	for (const item of all) for (const primitive of item.primitives) primitives.add(primitive);
+	for (const item of all) {
+		for (const primitive of item.primitives) {
+			primitives.add(primitive);
+		}
+	}
 	const result: {
 		primitives: Set<Primitive>;
 		strings?: Set<string>;
 		numbers?: Set<number>;
 		booleans?: Set<boolean>;
-		objects?: ObjectShape[];
-		elements?: (() => Kinds)[];
+		objects?: Array<ObjectShape>;
+		elements?: Array<() => Kinds>;
 	} = { primitives };
 	const literals = <T>(primitive: Primitive, pick: (item: Kinds) => ReadonlySet<T> | undefined) => {
-		if (!primitives.has(primitive)) return undefined;
+		if (!primitives.has(primitive)) {
+			return undefined;
+		}
 		const values = new Set<T>();
 		for (const item of all) {
-			if (!item.primitives.has(primitive)) continue;
+			if (!item.primitives.has(primitive)) {
+				continue;
+			}
 			const own = pick(item);
-			if (!own) return undefined;
-			for (const value of own) values.add(value);
+			if (!own) {
+				return undefined;
+			}
+			for (const value of own) {
+				values.add(value);
+			}
 		}
 		return values;
 	};
 	const strings = literals("string", (item) => item.strings);
 	const numbers = literals("number", (item) => item.numbers);
 	const booleans = literals("boolean", (item) => item.booleans);
-	if (strings) result.strings = strings;
-	if (numbers) result.numbers = numbers;
-	if (booleans) result.booleans = booleans;
+	if (strings) {
+		result.strings = strings;
+	}
+	if (numbers) {
+		result.numbers = numbers;
+	}
+	if (booleans) {
+		result.booleans = booleans;
+	}
 	// A shape or an element that two of them share is one.
 	const objects = [...new Set(all.flatMap((item) => item.objects ?? []))];
 	const elements = [...new Set(all.flatMap((item) => item.elements ?? []))];
-	if (objects.length) result.objects = objects;
-	if (elements.length) result.elements = elements;
+	if (objects.length) {
+		result.objects = objects;
+	}
+	if (elements.length) {
+		result.elements = elements;
+	}
 	return result;
 }
 
 /** The kinds without the given primitives (and their literals, shapes or elements). */
-export function without(value: Kinds, ...removed: Primitive[]): Kinds {
+export function without(value: Kinds, ...removed: Array<Primitive>): Kinds {
 	const primitives = new Set([...value.primitives].filter((item) => !removed.includes(item)));
 	return {
 		primitives,
@@ -152,7 +174,9 @@ export function without(value: Kinds, ...removed: Primitive[]): Kinds {
  */
 export function falsyPart(left: Kinds): Kinds {
 	const kept = without(left, "object", "array", "function", "symbol", "boolean");
-	if (!has(left, "boolean") || (left.booleans && !left.booleans.has(false))) return kept;
+	if (!has(left, "boolean") || (left.booleans && !left.booleans.has(false))) {
+		return kept;
+	}
 	return union(kept, { primitives: new Set(["boolean"]), booleans: new Set([false]) });
 }
 
@@ -170,7 +194,7 @@ export function mayBeNullish(value: Kinds): boolean {
  * The primitives of a value that lie outside `allowed`: none when it fits. `unknown` is always
  * allowed: the model trusts what it cannot type (ADR-0035).
  */
-export function outside(value: Kinds, allowed: readonly Primitive[]): Primitive[] {
+export function outside(value: Kinds, allowed: ReadonlyArray<Primitive>): Array<Primitive> {
 	return [...value.primitives].filter(
 		(primitive) => primitive !== "unknown" && !allowed.includes(primitive),
 	);
@@ -191,10 +215,13 @@ export function elementsOf(value: Kinds): Kinds {
  * cannot type, or a member it does not know, gives `unknown`.
  */
 export function memberOf(value: Kinds, name: string): Kinds {
-	const found: Kinds[] = [];
+	const found: Array<Kinds> = [];
 	let unknown = has(value, "unknown") || has(value, "function") || has(value, "symbol");
-	if (name === "length" && (has(value, "string") || has(value, "array"))) found.push(NUMBER);
-	else if (has(value, "string") || has(value, "array") || has(value, "number")) unknown = true;
+	if (name === "length" && (has(value, "string") || has(value, "array"))) {
+		found.push(NUMBER);
+	} else if (has(value, "string") || has(value, "array") || has(value, "number")) {
+		unknown = true;
+	}
 	for (const shape of value.objects ?? []) {
 		const member = shape.members().get(name);
 		if (!member) {
@@ -203,8 +230,12 @@ export function memberOf(value: Kinds, name: string): Kinds {
 		}
 		found.push(member.optional ? union(member.kinds(), UNDEFINED) : member.kinds());
 	}
-	if (has(value, "object") && !value.objects?.length) unknown = true;
-	if (unknown) found.push(UNKNOWN);
+	if (has(value, "object") && !value.objects?.length) {
+		unknown = true;
+	}
+	if (unknown) {
+		found.push(UNKNOWN);
+	}
 	return found.length ? union(...found) : UNKNOWN;
 }
 
@@ -212,7 +243,9 @@ export function memberOf(value: Kinds, name: string): Kinds {
 export function declaredShapeOf(value: Kinds): ObjectShape | undefined {
 	const shapes = value.objects ?? [];
 	const others = outside(value, ["object", "null", "undefined"]);
-	if (has(value, "unknown") || others.length || shapes.length !== 1) return undefined;
+	if (has(value, "unknown") || others.length || shapes.length !== 1) {
+		return undefined;
+	}
 	return shapes[0]!.declared ? shapes[0] : undefined;
 }
 
@@ -231,7 +264,7 @@ const NAMES: Readonly<Record<Primitive, string>> = {
 };
 
 /** `a string`, `a string or a number`: the primitives, for a message. */
-export function describe(primitives: readonly Primitive[]): string {
+export function describe(primitives: ReadonlyArray<Primitive>): string {
 	const names = primitives.map((primitive) => NAMES[primitive]);
 	return names.length < 2
 		? (names[0] ?? "nothing")
@@ -245,8 +278,10 @@ export function describe(primitives: readonly Primitive[]): string {
  * `depth` levels, and for what the model cannot type, it writes `unknown`.
  */
 export function kindsType(value: Kinds, depth = 3): string {
-	if (depth < 0) return "unknown";
-	const parts: string[] = [];
+	if (depth < 0) {
+		return "unknown";
+	}
+	const parts: Array<string> = [];
 	for (const primitive of value.primitives) {
 		switch (primitive) {
 			case "string":
@@ -271,7 +306,9 @@ export function kindsType(value: Kinds, depth = 3): string {
 				break;
 			}
 			case "object":
-				if (!value.objects?.length) parts.push("object");
+				if (!value.objects?.length) {
+					parts.push("object");
+				}
 				for (const shape of value.objects ?? []) {
 					const members = [...shape.members()].map(([name, member]) => {
 						const key = /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);

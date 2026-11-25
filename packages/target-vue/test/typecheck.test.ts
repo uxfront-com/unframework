@@ -65,7 +65,9 @@ describe("vue typecheck", () => {
 				].join("\n"),
 			});
 			const results = await toolchain.typecheck(Object.values(paths), context);
-			for (const path of Object.values(paths)) expect(results.get(path), path).toEqual([]);
+			for (const path of Object.values(paths)) {
+				expect(results.get(path), path).toEqual([]);
+			}
 		},
 	);
 
@@ -93,7 +95,9 @@ describe("vue typecheck", () => {
 		const results = await toolchain.typecheck([...clean, broken!], context);
 
 		expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());
-		for (const path of clean) expect(results.get(path), path).toEqual([]);
+		for (const path of clean) {
+			expect(results.get(path), path).toEqual([]);
+		}
 		expect(results.get(broken!)).toEqual([
 			{
 				message: "Type 'string' is not assignable to type 'number'.",
@@ -124,7 +128,9 @@ describe("vue typecheck", () => {
 		async () => {
 			const files = writeScratch(M2_SHAPES);
 			const results = await toolchain.typecheck(Object.values(files), context);
-			for (const [name, path] of Object.entries(files)) expect(results.get(path), name).toEqual([]);
+			for (const [name, path] of Object.entries(files)) {
+				expect(results.get(path), name).toEqual([]);
+			}
 		},
 	);
 

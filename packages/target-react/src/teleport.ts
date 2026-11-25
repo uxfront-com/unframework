@@ -11,7 +11,9 @@ import type { ReactPlan, TeleportNames } from "./plan.ts";
 /** The dialect's `teleport` hook: `mounted ? teleport(<div …/>, "body") : null`. */
 export function teleportCall(plan: ReactPlan): JsxDialect["teleport"] {
 	const names = plan.helpers.teleport;
-	if (!names) return undefined;
+	if (!names) {
+		return undefined;
+	}
 	return (node, context) =>
 		js.conditionalExpression(
 			js.identifier(names.mounted),
@@ -24,7 +26,7 @@ export function teleportCall(plan: ReactPlan): JsxDialect["teleport"] {
 }
 
 /** The inline helpers a teleport needs, after the component. */
-export function teleportHelpers(names: TeleportNames, imports: ImportSet): string[] {
+export function teleportHelpers(names: TeleportNames, imports: ImportSet): Array<string> {
 	return [
 		`/** Subscribes to nothing: whether the component has mounted never changes once it has. */
 function ${names.subscribe}(): () => void {

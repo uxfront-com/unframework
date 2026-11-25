@@ -6,20 +6,20 @@ import type { Diagnostic, Severity, Span } from "./types.ts";
 export interface SarifLog {
 	$schema: string;
 	version: "2.1.0";
-	runs: SarifRun[];
+	runs: Array<SarifRun>;
 }
 
 export interface SarifRun {
 	tool: { driver: SarifDriver };
 	columnKind: "utf16CodeUnits";
-	results: SarifResult[];
+	results: Array<SarifResult>;
 }
 
 export interface SarifDriver {
 	name: string;
 	informationUri: string;
 	version?: string;
-	rules: SarifRule[];
+	rules: Array<SarifRule>;
 }
 
 export interface SarifRule {
@@ -57,18 +57,18 @@ export interface SarifResult {
 	ruleId: string;
 	level: SarifLevel;
 	message: { text: string };
-	locations: SarifLocation[];
-	relatedLocations?: SarifLocation[];
-	fixes?: {
+	locations: Array<SarifLocation>;
+	relatedLocations?: Array<SarifLocation>;
+	fixes?: Array<{
 		description: { text: string };
-		artifactChanges: {
+		artifactChanges: Array<{
 			artifactLocation: SarifArtifactLocation;
-			replacements: {
+			replacements: Array<{
 				deletedRegion: { charOffset: number; charLength: number };
 				insertedContent: { text: string };
-			}[];
-		}[];
-	}[];
+			}>;
+		}>;
+	}>;
 	properties?: { target?: string; help?: string };
 }
 
@@ -84,7 +84,7 @@ export interface SarifOptions {
  * instead of writing a wrong region.
  */
 export function toSarif(
-	diagnostics: readonly Diagnostic[],
+	diagnostics: ReadonlyArray<Diagnostic>,
 	sources: ReadonlyMap<string, string>,
 	options: SarifOptions = {},
 ): SarifLog {
@@ -156,8 +156,12 @@ export function toSarif(
 		}
 		if (diagnostic.target || diagnostic.help) {
 			result.properties = {};
-			if (diagnostic.target) result.properties.target = diagnostic.target;
-			if (diagnostic.help) result.properties.help = diagnostic.help;
+			if (diagnostic.target) {
+				result.properties.target = diagnostic.target;
+			}
+			if (diagnostic.help) {
+				result.properties.help = diagnostic.help;
+			}
 		}
 		return result;
 	});
@@ -166,7 +170,9 @@ export function toSarif(
 		informationUri: "https://unframework.dev",
 		rules,
 	};
-	if (options.version) driver.version = options.version;
+	if (options.version) {
+		driver.version = options.version;
+	}
 	return {
 		$schema: "https://json.schemastore.org/sarif-2.1.0.json",
 		version: "2.1.0",
@@ -182,9 +188,15 @@ export function toSarif(
 function artifactLocation(file: string): SarifArtifactLocation {
 	const path = file.replaceAll("\\", "/");
 	const drive = /^([A-Za-z]:)\//.exec(path);
-	if (drive) return { uri: `file:///${drive[1]}/${encode(path.slice(3))}` };
-	if (path.startsWith("//")) return { uri: `file:${encode(path)}` };
-	if (path.startsWith("/")) return { uri: `file://${encode(path)}` };
+	if (drive) {
+		return { uri: `file:///${drive[1]}/${encode(path.slice(3))}` };
+	}
+	if (path.startsWith("//")) {
+		return { uri: `file:${encode(path)}` };
+	}
+	if (path.startsWith("/")) {
+		return { uri: `file://${encode(path)}` };
+	}
 	return { uri: encode(path), uriBaseId: "%SRCROOT%" };
 }
 

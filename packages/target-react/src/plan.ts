@@ -124,7 +124,7 @@ export type ListenerMode = "synthetic" | "native";
  */
 export interface NativeElement {
 	/** The native listeners in attribute order, those of one event and phase together. */
-	groups: EventAttribute[][];
+	groups: Array<Array<EventAttribute>>;
 	/** The ref callback's name, when it is declared once. */
 	callback?: string;
 }
@@ -291,7 +291,9 @@ export function planComponent(
 		return reservedNames(each, module, modes, eventParameterModes(each, modes));
 	});
 	for (const helper of HELPER_NAMES) {
-		if (shares && SHARED_HELPER_NAMES.includes(helper)) continue;
+		if (shares && SHARED_HELPER_NAMES.includes(helper)) {
+			continue;
+		}
 		const { base, others } = moduleHelperName(helper, reserved, index);
 		names.reserve(...others);
 		names.scope.rebase(helper, base);
@@ -304,14 +306,18 @@ export function planComponent(
 	for (const helper of shares ? SHARED_HELPER_NAMES : []) {
 		const own = new RegExp(`^${helper}(?:_\\d+)*$`);
 		for (const each of [...reserved, imported]) {
-			for (const name of each) if (own.test(name)) names.reserve(name);
+			for (const name of each) {
+				if (own.test(name)) {
+					names.reserve(name);
+				}
+			}
 		}
 	}
 	// The imports that pass through, which the render reads as written (ADR-0064).
 	addPassThroughImports(component, module, names);
 	const nativeElements = nativeElementsOf(listeners);
 	const narrowedReads = narrowedReadsOf(component);
-	const stable = (groups: readonly EventAttribute[][]) =>
+	const stable = (groups: ReadonlyArray<Array<EventAttribute>>) =>
 		stableCallback(groups, kindOf, narrowedReads);
 
 	// Client code: the inline handlers, the functions handlers name or client code calls, and
@@ -319,7 +325,9 @@ export function planComponent(
 	const clientFunctions = new Set<FunctionCode>();
 	const functionItems = new Map<BindingId, FunctionCode>();
 	for (const item of component.setup) {
-		if (item.kind === "Function") functionItems.set(item.binding, item.function);
+		if (item.kind === "Function") {
+			functionItems.set(item.binding, item.function);
+		}
 	}
 	for (const { function: fn, role } of functionsOf(component)) {
 		if (role === "handler" || role === "watch" || role === "watchEffect" || role === "lifecycle") {
@@ -329,28 +337,42 @@ export function planComponent(
 	for (const [listener] of listeners) {
 		if (listener.handler.kind === "Function") {
 			const fn = functionItems.get(listener.handler.binding);
-			if (fn) clientFunctions.add(fn);
+			if (fn) {
+				clientFunctions.add(fn);
+			}
 		}
 	}
 	// A composable's callback argument runs in the caller's client code, as a handler does: the
 	// hook calls the one its caller's last render passed (ADR-0069).
 	for (const item of component.setup) {
-		if (item.kind !== "Use") continue;
+		if (item.kind !== "Use") {
+			continue;
+		}
 		for (const argument of item.arguments) {
-			if (argument.kind === "Callback") clientFunctions.add(argument.callback);
+			if (argument.kind === "Callback") {
+				clientFunctions.add(argument.callback);
+			}
 		}
 	}
 	for (const [id, summary] of summaries) {
-		if (summary.escapes) clientFunctions.add(functionItems.get(id)!);
+		if (summary.escapes) {
+			clientFunctions.add(functionItems.get(id)!);
+		}
 	}
 	// What the component exposes runs when its parent calls it, as a handler does (ADR-0054).
-	for (const id of component.exposes?.functions ?? []) clientFunctions.add(functionItems.get(id)!);
+	for (const id of component.exposes?.functions ?? []) {
+		clientFunctions.add(functionItems.get(id)!);
+	}
 	// What client code calls, transitively.
 	for (const fn of clientFunctions) {
 		for (const reference of fn.body.refs) {
-			if (reference.kind !== "Binding" || kindOf(reference.binding) !== "localFn") continue;
+			if (reference.kind !== "Binding" || kindOf(reference.binding) !== "localFn") {
+				continue;
+			}
 			const callee = functionItems.get(reference.binding);
-			if (callee) clientFunctions.add(callee);
+			if (callee) {
+				clientFunctions.add(callee);
+			}
 		}
 	}
 
@@ -361,30 +383,46 @@ export function planComponent(
 	const writtenModels = new Set<BindingId>();
 	for (const { code } of codeOf(component)) {
 		for (const reference of code.refs) {
-			if (reference.kind !== "Write") continue;
-			if (kindOf(reference.binding) === "state") written.add(reference.binding);
-			if (kindOf(reference.binding) === "model") writtenModels.add(reference.binding);
+			if (reference.kind !== "Write") {
+				continue;
+			}
+			if (kindOf(reference.binding) === "state") {
+				written.add(reference.binding);
+			}
+			if (kindOf(reference.binding) === "model") {
+				writtenModels.add(reference.binding);
+			}
 		}
 	}
 
 	// Derived values client code reads get a live getter, and so do those a live getter reads.
 	const getters = new Map<BindingId, FunctionCode>();
 	for (const item of component.setup) {
-		if (item.kind === "Derived") getters.set(item.binding, item.getter);
+		if (item.kind === "Derived") {
+			getters.set(item.binding, item.getter);
+		}
 	}
 	const live = new Set<BindingId>();
-	const pendingLive: BindingId[] = [];
+	const pendingLive: Array<BindingId> = [];
 	const needLive = (id: BindingId) => {
-		if (live.has(id)) return;
+		if (live.has(id)) {
+			return;
+		}
 		live.add(id);
 		pendingLive.push(id);
 	};
 	// `watchEffect` reads what it depends on as its effect event's parameters (UF2015 keeps them in
 	// its own straight-line code): only what the functions it calls read is live.
 	const effects = new Set<FunctionCode>();
-	for (const item of component.setup) if (item.kind === "WatchEffect") effects.add(item.effect);
+	for (const item of component.setup) {
+		if (item.kind === "WatchEffect") {
+			effects.add(item.effect);
+		}
+	}
 	for (const fn of clientFunctions) {
-		if (effects.has(fn)) continue;
+		if (effects.has(fn)) {
+			continue;
+		}
 		for (const reference of fn.body.refs) {
 			if (reference.kind === "Binding" && kindOf(reference.binding) === "derived") {
 				needLive(reference.binding);
@@ -392,7 +430,11 @@ export function planComponent(
 		}
 	}
 	// The caller's client code reads a returned derived value through its live getter.
-	for (const id of returned) if (kindOf(id) === "derived") needLive(id);
+	for (const id of returned) {
+		if (kindOf(id) === "derived") {
+			needLive(id);
+		}
+	}
 	for (let id = pendingLive.pop(); id !== undefined; id = pendingLive.pop()) {
 		for (const reference of getters.get(id)!.body.refs) {
 			if (reference.kind === "Binding" && kindOf(reference.binding) === "derived") {
@@ -406,35 +448,49 @@ export function planComponent(
 	// reads props and event props through mirrors, never a render's snapshot.
 	const deferred = new Set<FunctionCode>();
 	for (const [id, summary] of summaries) {
-		if (summary.escapes) deferred.add(functionItems.get(id)!);
+		if (summary.escapes) {
+			deferred.add(functionItems.get(id)!);
+		}
 	}
 	// A ref callback declared once keeps the first render's listeners: they read what changes
 	// through mirrors, as a function passed as a value does.
 	for (const { groups } of nativeElements.values()) {
-		if (!stable(groups)) continue;
+		if (!stable(groups)) {
+			continue;
+		}
 		for (const listener of groups.flat()) {
 			const fn =
 				listener.handler.kind === "Inline"
 					? listener.handler.function
 					: functionItems.get(listener.handler.binding);
-			if (fn) deferred.add(fn);
+			if (fn) {
+				deferred.add(fn);
+			}
 		}
 	}
 	// A returned derived value's live getter is the caller's, which may call it from any render's
 	// client code: it reads what changes through mirrors all through (ADR-0069).
-	for (const id of returned) if (kindOf(id) === "derived") deferred.add(getters.get(id)!);
+	for (const id of returned) {
+		if (kindOf(id) === "derived") {
+			deferred.add(getters.get(id)!);
+		}
+	}
 	const mirroredProps = new Set<BindingId>();
 	const mirroredEvents = new Set<string>();
-	const ranges = new Map<FunctionCode, readonly Span[]>();
+	const ranges = new Map<FunctionCode, ReadonlyArray<Span>>();
 	for (let grew = true; grew;) {
 		grew = false;
 		const clientCode = [...clientFunctions, ...[...live].map((id) => getters.get(id)!)];
 		for (const fn of clientCode) {
 			let spans = ranges.get(fn);
-			if (!spans) ranges.set(fn, (spans = deferredRanges(fn)));
+			if (!spans) {
+				ranges.set(fn, (spans = deferredRanges(fn)));
+			}
 			const whole = deferred.has(fn);
 			for (const reference of fn.body.refs) {
-				if (!whole && !spans.some((span) => inside(reference.span, span))) continue;
+				if (!whole && !spans.some((span) => inside(reference.span, span))) {
+					continue;
+				}
 				switch (reference.kind) {
 					case "Binding": {
 						let target: FunctionCode | undefined;
@@ -444,7 +500,9 @@ export function planComponent(
 								mirroredProps.add(reference.binding);
 								break;
 							case "argument":
-								if (mirrorable.has(reference.binding)) mirroredProps.add(reference.binding);
+								if (mirrorable.has(reference.binding)) {
+									mirroredProps.add(reference.binding);
+								}
 								break;
 							// A function or a live getter that deferred code calls runs deferred all through.
 							case "localFn":
@@ -512,48 +570,76 @@ export function planComponent(
 		}
 	};
 	for (const { expression } of expressionsOf(component)) {
-		if (![...passedToDirectives.values()].includes(expression)) renderCalls(expression);
+		if (![...passedToDirectives.values()].includes(expression)) {
+			renderCalls(expression);
+		}
 	}
-	for (const { code, context } of codeOf(component)) if (context === "pure") renderCalls(code);
+	for (const { code, context } of codeOf(component)) {
+		if (context === "pure") {
+			renderCalls(code);
+		}
+	}
 	for (const { function: fn, role } of functionsOf(component)) {
-		if (role === "getter") renderCalls(fn.body);
+		if (role === "getter") {
+			renderCalls(fn.body);
+		}
 	}
 	for (const id of renderFunctions) {
-		for (const reached of summaries.get(id)?.reaches ?? []) renderFunctions.add(reached);
+		for (const reached of summaries.get(id)?.reaches ?? []) {
+			renderFunctions.add(reached);
+		}
 	}
 
 	// Derived values render code reads: a memo each (an unread one fails L5). Render code is the
 	// template, the values the setup evaluates, the functions a template calls, the watch sources
 	// and the values `watchEffect` reads, which effects list; a memo's getter reads others.
 	const memos = new Set<BindingId>();
-	const pendingMemos: BindingId[] = [];
+	const pendingMemos: Array<BindingId> = [];
 	const needMemo = (id: BindingId) => {
-		if (kindOf(id) !== "derived" || memos.has(id)) return;
+		if (kindOf(id) !== "derived" || memos.has(id)) {
+			return;
+		}
 		memos.add(id);
 		pendingMemos.push(id);
 	};
 	const renderReads = (code: Code) => {
 		for (const reference of code.refs) {
-			if (reference.kind === "Binding") needMemo(reference.binding);
+			if (reference.kind === "Binding") {
+				needMemo(reference.binding);
+			}
 		}
 	};
-	for (const { expression } of expressionsOf(component)) renderReads(expression);
+	for (const { expression } of expressionsOf(component)) {
+		renderReads(expression);
+	}
 	for (const { code, context, path } of codeOf(component)) {
-		if (context === "pure" && !/^\/setup\/\d+\/getter\//.test(path)) renderReads(code);
+		if (context === "pure" && !/^\/setup\/\d+\/getter\//.test(path)) {
+			renderReads(code);
+		}
 	}
 	for (const id of renderFunctions) {
 		const fn = functionItems.get(id);
-		if (fn) renderReads(fn.body);
+		if (fn) {
+			renderReads(fn.body);
+		}
 	}
 	for (const item of component.setup) {
 		if (item.kind === "Watch") {
-			for (const source of item.sources) if (source.kind === "Ref") needMemo(source.binding);
+			for (const source of item.sources) {
+				if (source.kind === "Ref") {
+					needMemo(source.binding);
+				}
+			}
 		} else if (item.kind === "WatchEffect") {
-			for (const id of summarizeCode(item.effect.body, component).reads) needMemo(id);
+			for (const id of summarizeCode(item.effect.body, component).reads) {
+				needMemo(id);
+			}
 		}
 	}
 	// The caller renders a returned derived value.
-	for (const id of returned) needMemo(id);
+	for (const id of returned) {
+		needMemo(id);
+	}
 	for (let id = pendingMemos.pop(); id !== undefined; id = pendingMemos.pop()) {
 		renderReads(getters.get(id)!.body);
 	}
@@ -573,7 +659,11 @@ export function planComponent(
 	const eventsInterface = component.emits ? names.claim(`${component.name}Events`) : undefined;
 	const emitted = new Set<string>();
 	for (const { code } of codeOf(component)) {
-		for (const reference of code.refs) if (reference.kind === "Emit") emitted.add(reference.event);
+		for (const reference of code.refs) {
+			if (reference.kind === "Emit") {
+				emitted.add(reference.event);
+			}
+		}
 	}
 	const events = new Map<string, EventPlan>();
 	for (const declaration of component.emits?.events ?? []) {
@@ -642,18 +732,24 @@ export function planComponent(
 	const clientVariants = new Map<BindingId, string>();
 	const differs = (id: BindingId): boolean => {
 		const summary = summaries.get(id);
-		if (!summary) return false;
+		if (!summary) {
+			return false;
+		}
 		for (const read of summary.reads) {
 			const kind = kindOf(read)!;
 			switch (kind) {
 				case "derived":
 					return true;
 				case "state":
-					if (written.has(read)) return true;
+					if (written.has(read)) {
+						return true;
+					}
 					break;
 				case "prop":
 				case "argument":
-					if (mirroredProps.has(read)) return true;
+					if (mirroredProps.has(read)) {
+						return true;
+					}
 					break;
 				case "loopVar":
 				case "templateRef":
@@ -688,7 +784,9 @@ export function planComponent(
 		grew = false;
 		for (const id of renderFunctions) {
 			const fn = functionItems.get(id);
-			if (!fn || clientVariants.has(id) || hoisted.has(id) || !clientFunctions.has(fn)) continue;
+			if (!fn || clientVariants.has(id) || hoisted.has(id) || !clientFunctions.has(fn)) {
+				continue;
+			}
 			if (differs(id)) {
 				clientVariants.set(id, names.claim(`current${pascalCase(bindings.get(id)!.name)}`));
 				grew = true;
@@ -708,15 +806,21 @@ export function planComponent(
 		}
 	}
 	for (const [name, event] of events) {
-		if (mirroredEvents.has(name)) event.mirror = names.claim(`${event.prop}Ref`);
+		if (mirroredEvents.has(name)) {
+			event.mirror = names.claim(`${event.prop}Ref`);
+		}
 	}
 
 	const onceGuards = new Map<EventAttribute, string>();
 	for (const [listener] of listeners) {
-		if (listener.once) onceGuards.set(listener, names.claim(`${listener.event}Once`));
+		if (listener.once) {
+			onceGuards.set(listener, names.claim(`${listener.event}Once`));
+		}
 	}
 	const helpers: ReactPlan["helpers"] = {};
-	if (onceGuards.size) helpers.once = names.claim("useOnce");
+	if (onceGuards.size) {
+		helpers.once = names.claim("useOnce");
+	}
 	// A directive whose value reads a list's row or a fill's props makes its element's callback as
 	// the row renders, so the element's own callback is written in place too, as for a listener
 	// that reads the row (ADR-0108).
@@ -735,12 +839,18 @@ export function planComponent(
 	const carets = new Map<ModelAttribute, Caret>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element" || node.tag !== "textarea") return;
+			if (node.kind !== "Element" || node.tag !== "textarea") {
+				return;
+			}
 			const model = node.attributes.find((attribute) => attribute.kind === "Model");
-			if (model?.kind !== "Model") return;
+			if (model?.kind !== "Model") {
+				return;
+			}
 			const native = nativeElements.get(node);
 			// A callback written in place runs at every render, which would move the caret each time.
-			if ((native && !native.callback) || passesValues(node)) return;
+			if ((native && !native.callback) || passesValues(node)) {
+				return;
+			}
 			carets.set(
 				model,
 				native
@@ -762,11 +872,15 @@ export function planComponent(
 		}
 	}
 
-	if (nextTick) helpers.nextTick = names.claim("useNextTick");
+	if (nextTick) {
+		helpers.nextTick = names.claim("useNextTick");
+	}
 	let teleports = false;
 	walk(component.render, {
 		enter(node) {
-			if (node.kind === "Teleport") teleports = true;
+			if (node.kind === "Teleport") {
+				teleports = true;
+			}
 		},
 	});
 	if (teleports) {
@@ -779,7 +893,9 @@ export function planComponent(
 	let transitions = false;
 	walk(component.render, {
 		enter(node) {
-			if (node.kind === "Transition") transitions = true;
+			if (node.kind === "Transition") {
+				transitions = true;
+			}
 		},
 	});
 	if (transitions) {
@@ -877,9 +993,13 @@ function directiveFunctionValues(component: UfComponent): Map<BindingId, Express
 	);
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element") return;
+			if (node.kind !== "Element") {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind !== "Directive") continue;
+				if (attribute.kind !== "Directive") {
+					continue;
+				}
 				const [ref, other] = attribute.value.refs;
 				if (ref?.kind === "Binding" && other === undefined && functions.has(ref.binding)) {
 					found.set(ref.binding, attribute.value);
@@ -911,7 +1031,9 @@ export function setupOwner(composable: UfComposable): UfComponent {
 export function composableApi(module: UfModule, local: string): ComposableApi {
 	for (const entry of module.imports ?? []) {
 		const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
-		if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;
+		if (name) {
+			return entry.api.composables!.find((each) => each.name === name.imported)!;
+		}
 	}
 	throw new Error(`No composable is imported as ${local}.`);
 }
@@ -923,15 +1045,19 @@ export function composableApi(module: UfModule, local: string): ComposableApi {
  * hook and its callers agree on every name.
  */
 export function liveReaderNames(
-	members: readonly Pick<ComposableMemberApi, "name" | "kind">[],
+	members: ReadonlyArray<Pick<ComposableMemberApi, "name" | "kind">>,
 ): Map<string, string> {
 	const taken = new Set(members.map(({ name }) => name));
 	const readers = new Map<string, string>();
 	for (const { name, kind } of members) {
-		if (kind !== "state" && kind !== "derived") continue;
+		if (kind !== "state" && kind !== "derived") {
+			continue;
+		}
 		const base = `current${pascalCase(name)}`;
 		let reader = base;
-		for (let suffix = 1; taken.has(reader); suffix++) reader = `${base}_${suffix}`;
+		for (let suffix = 1; taken.has(reader); suffix++) {
+			reader = `${base}_${suffix}`;
+		}
 		taken.add(reader);
 		readers.set(name, reader);
 	}
@@ -1053,16 +1179,20 @@ function listenerModes(
 	component: UfComponent,
 	module?: UfModule,
 ): Map<EventAttribute, { element: ElementNode; mode: ListenerMode }> {
-	const found: [EventAttribute, ElementNode][] = [];
+	const found: Array<[EventAttribute, ElementNode]> = [];
 	/** The tags each element may render: one, or a `<component is>`'s candidates. */
-	const tags = new Map<ElementNode, string[]>();
+	const tags = new Map<ElementNode, Array<string>>();
 	walk(component.render, {
 		enter(node) {
 			const element = node.kind === "Dynamic" ? tagElementOf(node) : node;
-			if (element?.kind !== "Element") return;
+			if (element?.kind !== "Element") {
+				return;
+			}
 			tags.set(element, node.kind === "Dynamic" ? candidateTags(node) : [element.tag]);
 			for (const attribute of element.attributes) {
-				if (attribute.kind === "Event") found.push([attribute, element]);
+				if (attribute.kind === "Event") {
+					found.push([attribute, element]);
+				}
 			}
 		},
 	});
@@ -1083,7 +1213,9 @@ function listenerModes(
 	for (let grew = true; grew;) {
 		grew = false;
 		for (const entry of entries) {
-			if (entry.native) continue;
+			if (entry.native) {
+				continue;
+			}
 			const { event } = entry.listener;
 			entry.native = entries.some(
 				(other) =>
@@ -1105,12 +1237,16 @@ function listenerModes(
 	// there, and `emit` reports one React's prop would not keep the DOM's semantics for (UF1002).
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component") return;
+			if (node.kind !== "Component") {
+				return;
+			}
 			const passed = node.attributes.filter(
 				(attribute) =>
 					attribute.kind === "Static" || attribute.kind === "Bound" || attribute.kind === "Event",
 			);
-			if (!passed.some((attribute) => attribute.kind === "Event")) return;
+			if (!passed.some((attribute) => attribute.kind === "Event")) {
+				return;
+			}
 			const tags = (module && componentFallthroughTags(module, node)) ?? [""];
 			const element: ElementNode = {
 				kind: "Element",
@@ -1121,7 +1257,9 @@ function listenerModes(
 			};
 			passedTags.set(element, tags);
 			for (const attribute of passed) {
-				if (attribute.kind === "Event") modes.set(attribute, { element, mode: "synthetic" });
+				if (attribute.kind === "Event") {
+					modes.set(attribute, { element, mode: "synthetic" });
+				}
 			}
 		},
 	});
@@ -1138,17 +1276,24 @@ function nativeElementsOf(
 ): Map<ElementNode, NativeElement> {
 	const found = new Map<ElementNode, NativeElement>();
 	for (const [listener, { element, mode }] of listeners) {
-		if (mode !== "native") continue;
+		if (mode !== "native") {
+			continue;
+		}
 		let native = found.get(element);
-		if (!native) found.set(element, (native = { groups: [] }));
+		if (!native) {
+			found.set(element, (native = { groups: [] }));
+		}
 		const group = native.groups.find(
 			([first]) =>
 				first!.event === listener.event &&
 				Boolean(first!.capture) === Boolean(listener.capture) &&
 				Boolean(first!.passive) === Boolean(listener.passive),
 		);
-		if (group) group.push(listener);
-		else native.groups.push([listener]);
+		if (group) {
+			group.push(listener);
+		} else {
+			native.groups.push([listener]);
+		}
 	}
 	return found;
 }
@@ -1158,7 +1303,7 @@ function nativeElementsOf(
  * or a value its branch narrows, which only the render that wrote the element holds.
  */
 function stableCallback(
-	groups: readonly EventAttribute[][],
+	groups: ReadonlyArray<Array<EventAttribute>>,
 	kindOf: (id: BindingId) => BindingKind | undefined,
 	narrowedReads: ReadonlySet<number>,
 ): boolean {
@@ -1209,7 +1354,9 @@ function callbackBase(element: ElementNode, bindings: ReadonlyMap<BindingId, Bin
 		);
 		const words =
 			attribute?.kind === "Static" ? String(attribute.value).match(/[A-Za-z0-9]+/g) : null;
-		if (!words || !/^[A-Za-z]/.test(words[0]!)) return undefined;
+		if (!words || !/^[A-Za-z]/.test(words[0])) {
+			return undefined;
+		}
 		const base = pascalCase(words.join("-"));
 		return base.charAt(0).toLowerCase() + base.slice(1);
 	};
@@ -1218,7 +1365,7 @@ function callbackBase(element: ElementNode, bindings: ReadonlyMap<BindingId, Bin
 		label("name") ??
 		(ref?.kind === "Ref" ? bindings.get(ref.binding)!.name : undefined) ??
 		label("aria-label") ??
-		element.tag.replace(/-([a-z])/g, (_, next: string) => next.toUpperCase())
+		element.tag.replaceAll(/-([a-z])/g, (_, next: string) => next.toUpperCase())
 	);
 }
 
@@ -1227,9 +1374,13 @@ function refInterfaces(component: UfComponent): Map<RefAttribute, string> {
 	const found = new Map<RefAttribute, string>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element") return;
+			if (node.kind !== "Element") {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind === "Ref") found.set(attribute, elementInterface(node.tag));
+				if (attribute.kind === "Ref") {
+					found.set(attribute, elementInterface(node.tag));
+				}
 			}
 		},
 	});
@@ -1243,13 +1394,15 @@ const FED_BY: ReadonlyMap<string, string> = new Map([
 ]);
 
 /** Each element of a render tree with the elements from it up to the root, itself first. */
-function elementPaths(component: UfComponent): Map<ElementNode, ElementNode[]> {
-	const paths = new Map<ElementNode, ElementNode[]>();
-	const stack: ElementNode[] = [];
+function elementPaths(component: UfComponent): Map<ElementNode, Array<ElementNode>> {
+	const paths = new Map<ElementNode, Array<ElementNode>>();
+	const stack: Array<ElementNode> = [];
 	walk(component.render, {
 		enter(node) {
 			const element = node.kind === "Dynamic" ? tagElementOf(node) : node;
-			if (element?.kind !== "Element") return;
+			if (element?.kind !== "Element") {
+				return;
+			}
 			stack.unshift(element);
 			paths.set(element, [...stack]);
 		},
@@ -1268,7 +1421,7 @@ const tagElements = new WeakMap<DynamicNode, ElementNode>();
  * The tags of the element what a parent passes a child lands on, by the element its listeners
  * are planned on: one, or a `<component is>` root's, each of which may render (ADR-0122).
  */
-export const passedTags: WeakMap<ElementNode, readonly string[]> = new WeakMap();
+export const passedTags: WeakMap<ElementNode, ReadonlyArray<string>> = new WeakMap();
 
 /**
  * A `<component is>` over tags as the element its listeners are planned on, the same object
@@ -1277,7 +1430,9 @@ export const passedTags: WeakMap<ElementNode, readonly string[]> = new WeakMap()
  */
 export function tagElementOf(node: DynamicNode): ElementNode | undefined {
 	const [first] = node.candidates;
-	if (first?.kind !== "Tag") return undefined;
+	if (first?.kind !== "Tag") {
+		return undefined;
+	}
 	let element = tagElements.get(node);
 	if (!element) {
 		element = {
@@ -1293,7 +1448,7 @@ export function tagElementOf(node: DynamicNode): ElementNode | undefined {
 }
 
 /** The tags a `<component is>` over tags may render. */
-function candidateTags(node: DynamicNode): string[] {
+function candidateTags(node: DynamicNode): Array<string> {
 	return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
 }
 
@@ -1314,8 +1469,12 @@ function eventParameterModes(
 	}
 	const add = (id: BindingId, mode: ListenerMode): boolean => {
 		let set = modes.get(id);
-		if (!set) modes.set(id, (set = new Set()));
-		if (set.has(mode)) return false;
+		if (!set) {
+			modes.set(id, (set = new Set()));
+		}
+		if (set.has(mode)) {
+			return false;
+		}
 		set.add(mode);
 		return true;
 	};
@@ -1327,16 +1486,22 @@ function eventParameterModes(
 		);
 	for (const [listener, { mode }] of listeners) {
 		if (listener.handler.kind === "Function") {
-			if (takesEvent.has(listener.handler.binding)) add(listener.handler.binding, mode);
+			if (takesEvent.has(listener.handler.binding)) {
+				add(listener.handler.binding, mode);
+			}
 		} else if (listener.handler.function.parameters[0]?.event) {
-			for (const callee of callees(listener.handler.function)) add(callee, mode);
+			for (const callee of callees(listener.handler.function)) {
+				add(callee, mode);
+			}
 		}
 	}
 	for (let grew = true; grew;) {
 		grew = false;
 		for (const [id, fn] of takesEvent) {
 			for (const mode of modes.get(id) ?? []) {
-				for (const callee of callees(fn)) grew = add(callee, mode) || grew;
+				for (const callee of callees(fn)) {
+					grew = add(callee, mode) || grew;
+				}
 			}
 		}
 	}
@@ -1358,15 +1523,28 @@ function reservedNames(
 ): Set<string> {
 	const names = sourceAndEventNames(component, module, listeners, eventModes);
 	for (const entry of module.typeImports ?? []) {
-		for (const name of entry.names) names.add(name.local);
+		for (const name of entry.names) {
+			names.add(name.local);
+		}
 	}
 	// The module's values, which the output declares or imports at module scope as the source
 	// does (ADR-0070), and the composables its calls import (ADR-0069).
-	for (const name of moduleNames(module)) names.add(name);
-	for (const item of component.setup) if (item.kind === "Use") names.add(item.composable);
+	for (const name of moduleNames(module)) {
+		names.add(name);
+	}
+	for (const item of component.setup) {
+		if (item.kind === "Use") {
+			names.add(item.composable);
+		}
+	}
 	for (const entry of module.typeExports ?? []) {
-		if (entry.kind === "Declaration") names.add(entry.name);
-		else for (const name of entry.names) names.add(name.exported);
+		if (entry.kind === "Declaration") {
+			names.add(entry.name);
+		} else {
+			for (const name of entry.names) {
+				names.add(name.exported);
+			}
+		}
 	}
 	return names;
 }
@@ -1388,20 +1566,30 @@ function sourceAndEventNames(
 ): Set<string> {
 	const rewritten = new Set<Parameter>();
 	for (const item of component.setup) {
-		if (item.kind !== "Function" || eventModes.get(item.binding)?.has("native")) continue;
+		if (item.kind !== "Function" || eventModes.get(item.binding)?.has("native")) {
+			continue;
+		}
 		for (const parameter of item.function.parameters) {
-			if (parameter.event && parameter.type) rewritten.add(parameter);
+			if (parameter.event && parameter.type) {
+				rewritten.add(parameter);
+			}
 		}
 	}
 	for (const [listener, { mode }] of listeners) {
 		const [first] = listener.handler.kind === "Inline" ? listener.handler.function.parameters : [];
-		if (first?.event && first.type && mode === "synthetic") rewritten.add(first);
+		if (first?.event && first.type && mode === "synthetic") {
+			rewritten.add(first);
+		}
 	}
-	if (rewritten.size === 0) return sourceNames(component, module);
+	if (rewritten.size === 0) {
+		return sourceNames(component, module);
+	}
 	const strip = (fn: FunctionCode): FunctionCode => ({
 		...fn,
 		parameters: fn.parameters.map((parameter) => {
-			if (!rewritten.has(parameter)) return parameter;
+			if (!rewritten.has(parameter)) {
+				return parameter;
+			}
 			const { type: _type, ...rest } = parameter;
 			return rest;
 		}),
@@ -1458,21 +1646,31 @@ function hoistable(
 	moduleLevel: ReadonlySet<string>,
 ): Set<BindingId> {
 	const nameOf = new Map(component.bindings.map(({ id, name }) => [id, name]));
-	const code = new Map<BindingId, Code[]>();
+	const code = new Map<BindingId, Array<Code>>();
 	const parameters = new Set(component.typeParameters?.map(({ name }) => name));
 	const typed = new Set<BindingId>();
-	const names = (types: readonly (TypeText | undefined)[], pieces: readonly Code[]) => {
+	const names = (types: ReadonlyArray<TypeText | undefined>, pieces: ReadonlyArray<Code>) => {
 		const found = new Set<string>();
-		for (const type of types) if (type) for (const name of typeNames(type)) found.add(name);
+		for (const type of types) {
+			if (type) {
+				for (const name of typeNames(type)) {
+					found.add(name);
+				}
+			}
+		}
 		for (const piece of pieces) {
-			for (const name of codeNames(piece.code, codeKind(piece, component))) found.add(name);
+			for (const name of codeNames(piece.code, codeKind(piece, component))) {
+				found.add(name);
+			}
 		}
 		return [...found].some((name) => parameters.has(name));
 	};
 	for (const item of component.setup) {
 		if (item.kind === "Const") {
 			code.set(item.binding, [item.value]);
-			if (parameters.size && names([item.type], [item.value])) typed.add(item.binding);
+			if (parameters.size && names([item.type], [item.value])) {
+				typed.add(item.binding);
+			}
 		} else if (item.kind === "Function") {
 			const fn = item.function;
 			const pieces = [
@@ -1481,13 +1679,17 @@ function hoistable(
 			];
 			code.set(item.binding, pieces);
 			const types = [...fn.parameters.map((parameter) => parameter.type), fn.returnType];
-			if (parameters.size && names(types, pieces)) typed.add(item.binding);
+			if (parameters.size && names(types, pieces)) {
+				typed.add(item.binding);
+			}
 		}
 	}
 	const verdicts = new Map<BindingId, boolean>();
 	const decide = (id: BindingId): boolean => {
 		const known = verdicts.get(id);
-		if (known !== undefined) return known;
+		if (known !== undefined) {
+			return known;
+		}
 		// A cycle (local functions do not recurse, UF2024) stays inside the component.
 		verdicts.set(id, false);
 		const pieces = code.get(id);
@@ -1561,12 +1763,12 @@ function hoistable(
  * (and the whole of a loop that awaits), and inside the functions it writes. Conservative: a
  * read there goes through a mirror, which is right wherever it runs.
  */
-function deferredRanges(fn: FunctionCode): Span[] {
+function deferredRanges(fn: FunctionCode): Array<Span> {
 	const { body } = fn;
 	const offset = body.span.start;
 	const kind = fn.expression ? "expression" : "statements";
 	const { root } = parseCodeSource(body.code, kind);
-	const spans: Span[] = [];
+	const spans: Array<Span> = [];
 	let firstAwait = Number.POSITIVE_INFINITY;
 	const loops = new Set([
 		"ForStatement",
@@ -1584,10 +1786,14 @@ function deferredRanges(fn: FunctionCode): Span[] {
 	const visit = (node: unknown): boolean => {
 		if (Array.isArray(node)) {
 			let awaits = false;
-			for (const item of node) awaits = visit(item) || awaits;
+			for (const item of node) {
+				awaits = visit(item) || awaits;
+			}
 			return awaits;
 		}
-		if (!isNode(node)) return false;
+		if (!isNode(node)) {
+			return false;
+		}
 		if (functions.has(node.type)) {
 			spans.push({ start: offset + node.start, end: offset + node.end });
 			return false;
@@ -1595,7 +1801,9 @@ function deferredRanges(fn: FunctionCode): Span[] {
 		let awaits =
 			node.type === "AwaitExpression" ||
 			(node.type === "ForOfStatement" && (node as { await?: boolean }).await === true);
-		if (node.type === "AwaitExpression") firstAwait = Math.min(firstAwait, node.start);
+		if (node.type === "AwaitExpression") {
+			firstAwait = Math.min(firstAwait, node.start);
+		}
 		for (const [key, value] of Object.entries(node)) {
 			if (key !== "type" && key !== "parent" && typeof value === "object") {
 				awaits = visit(value) || awaits;
@@ -1622,21 +1830,29 @@ function writePositions(component: UfComponent): Map<number, "list" | "single"> 
 	const positions = new Map<number, "list" | "single">();
 	const lists = new Set(["BlockStatement", "FunctionBody", "SwitchCase", "StaticBlock"]);
 	for (const { function: fn } of functionsOf(component)) {
-		if (fn.expression) continue;
+		if (fn.expression) {
+			continue;
+		}
 		const offset = fn.body.span.start;
 		const { root } = parseCodeSource(fn.body.code, codeKind(fn.body, component));
 		const visit = (node: unknown, list: boolean): void => {
 			if (Array.isArray(node)) {
-				for (const item of node) visit(item, list);
+				for (const item of node) {
+					visit(item, list);
+				}
 				return;
 			}
-			if (!isNode(node)) return;
+			if (!isNode(node)) {
+				return;
+			}
 			if (node.type === "ExpressionStatement") {
 				const { expression } = node as unknown as { expression: Node };
 				positions.set(offset + expression.start, list ? "list" : "single");
 			}
 			for (const [key, value] of Object.entries(node)) {
-				if (key === "type" || key === "parent" || typeof value !== "object") continue;
+				if (key === "type" || key === "parent" || typeof value !== "object") {
+					continue;
+				}
 				visit(value, Array.isArray(value) && lists.has(node.type));
 			}
 		};

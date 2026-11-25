@@ -46,7 +46,7 @@ export function formatDiagnostic(
 	const header = `${paint(diagnostic.severity, `${diagnostic.severity}[${diagnostic.code}]`)}${paint("bold", `${target}: ${diagnostic.message}`)}`;
 	const location = start ? `${diagnostic.file}:${start.line}:${start.column}` : diagnostic.file;
 
-	const frames: { span: Span; label: string | undefined }[] = [
+	const frames: Array<{ span: Span; label: string | undefined }> = [
 		{ span: diagnostic.span, label: undefined },
 		...(diagnostic.related ?? []).map((related) => ({
 			span: related.span,
@@ -69,24 +69,37 @@ export function formatDiagnostic(
 			output.push(line.text ? `${gutter(line.number)} ${line.text}` : gutter(line.number));
 		}
 	}
-	if (lines.length) output.push(gutter());
-	if (diagnostic.help) output.push(`${pad} = ${paint("bold", "help")}: ${diagnostic.help}`);
+	if (lines.length) {
+		output.push(gutter());
+	}
+	if (diagnostic.help) {
+		output.push(`${pad} = ${paint("bold", "help")}: ${diagnostic.help}`);
+	}
 	for (const fix of diagnostic.fixes ?? []) {
 		output.push(`${pad} = ${paint("bold", `fix (${fix.confidence})`)}: ${fix.title}`);
 	}
-	if (options.docs !== false) output.push(`${pad} = see: ${docsUrl(diagnostic.code)}`);
+	if (options.docs !== false) {
+		output.push(`${pad} = see: ${docsUrl(diagnostic.code)}`);
+	}
 	return output.join("\n");
+}
+
+/** Narrows the sources to a map, whose entries `instanceof` alone would type as `any`. */
+function isSourceMap(
+	sources: ReadonlyMap<string, string> | Readonly<Record<string, string>>,
+): sources is ReadonlyMap<string, string> {
+	return sources instanceof Map;
 }
 
 /** Renders several diagnostics, separated by blank lines. */
 export function formatDiagnostics(
-	diagnostics: readonly Diagnostic[],
+	diagnostics: ReadonlyArray<Diagnostic>,
 	sources: ReadonlyMap<string, string> | Readonly<Record<string, string>>,
 	options: FormatOptions = {},
 ): string {
 	// Own keys only: a file named `constructor` has no source on the prototype.
 	const sourceOf = (file: string) =>
-		sources instanceof Map
+		isSourceMap(sources)
 			? sources.get(file)
 			: Object.hasOwn(sources, file)
 				? (sources as Record<string, string>)[file]
@@ -102,24 +115,28 @@ interface FrameLine {
 }
 
 /** The source line of a span and a caret line under it; multi-line spans show both ends. */
-function frameLines(index: LineIndex, span: Span, label: string | undefined): FrameLine[] {
+function frameLines(index: LineIndex, span: Span, label: string | undefined): Array<FrameLine> {
 	const start = index.position(span.start);
 	const end = index.position(Math.max(span.start, span.end));
 	const first = index.line(start.line);
-	const lines: FrameLine[] = [{ number: start.line, text: first }];
+	const lines: Array<FrameLine> = [{ number: start.line, text: first }];
 	const caretEnd = start.line === end.line ? end.column : first.length + 1;
 	const width = Math.max(1, caretEnd - start.column);
-	const indent = first.slice(0, start.column - 1).replace(/[^\t]/g, " ");
+	const indent = first.slice(0, start.column - 1).replaceAll(/[^\t]/g, " ");
 	lines.push({
 		number: undefined,
 		text: `${indent}${"^".repeat(width)}${label ? ` ${label}` : ""}`,
 	});
 	if (end.line > start.line) {
 		const last = index.line(end.line);
-		if (end.line > start.line + 1) lines.push({ number: undefined, text: "..." });
+		if (end.line > start.line + 1) {
+			lines.push({ number: undefined, text: "..." });
+		}
 		lines.push({ number: end.line, text: last });
 		const covered = last.slice(0, end.column - 1);
-		if (covered) lines.push({ number: undefined, text: covered.replace(/[^\t]/g, "^") });
+		if (covered) {
+			lines.push({ number: undefined, text: covered.replaceAll(/[^\t]/g, "^") });
+		}
 	}
 	return lines;
 }

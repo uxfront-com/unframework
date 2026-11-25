@@ -117,7 +117,7 @@ export interface AnalyzeResult {
 	 * component can be compiled. A component with errors is left out; its siblings stay.
 	 */
 	module: UfModule | undefined;
-	diagnostics: Diagnostic[];
+	diagnostics: Array<Diagnostic>;
 	/**
 	 * The module's public API, read from its declarations (ADR-0053): what a parent that imports
 	 * it reads, known whatever its templates hold. `undefined` when it does not parse. Its `file`
@@ -149,7 +149,7 @@ export interface AnalyzeOptions {
 	 * `["virtual:"]` when absent. An import the analyser classifies otherwise (the authoring API, a
 	 * framework, a `.uf.tsx` or relative module) never passes through.
 	 */
-	passThrough?: readonly string[];
+	passThrough?: ReadonlyArray<string>;
 	/**
 	 * The shape of each type `shapeQueries` names, as the compiler's type oracle resolved it
 	 * (ADR-0067): `undefined` for one it was not asked for. Without it, the analyser reads the
@@ -175,12 +175,14 @@ export const COMPONENT_SPECIFIER: RegExp = /\.uf\.tsx$/;
  * `.uf.ts` modules whose composables a `.uf.tsx` module imports (ADR-0069), in source order, each
  * once: what `compile()` asks its resolver for before the module is analysed.
  */
-export function componentImports(parsed: ParsedModule): string[] {
+export function componentImports(parsed: ParsedModule): Array<string> {
 	const found = new Set<string>();
 	// A composable calls no other composable (UF2035), so a `.uf.ts` module resolves none.
 	const component = !COMPOSABLE_FILE.test(parsed.file);
 	for (const statement of parsed.program.body) {
-		if (statement.type !== "ImportDeclaration") continue;
+		if (statement.type !== "ImportDeclaration") {
+			continue;
+		}
 		const specifier = statement.source.value;
 		// A type-only import too: its outputs import the types from the output of the module's main
 		// component, which only the module's API names (ADR-0067).
@@ -205,7 +207,7 @@ interface Candidate {
 	/** The statement that declares it, including any `export` keywords. */
 	span: { start: number; end: number };
 	/** Empty for a local (non-exported) component. */
-	exports: ComponentExport[];
+	exports: Array<ComponentExport>;
 	/** The `const` that holds a component written as a value. */
 	value?: AST.VariableDeclaration;
 }
@@ -222,7 +224,7 @@ export function analyze(parsed: ParsedModule, options: AnalyzeOptions = {}): Ana
  * What a component's setup declares, as the analyser reads it: each binding's kinds, which never
  * reach the IR. The tests pin them against TypeScript's inference (ADR-0046).
  */
-export type SetupObserver = (component: string, bindings: readonly SetupBinding[]) => void;
+export type SetupObserver = (component: string, bindings: ReadonlyArray<SetupBinding>) => void;
 
 /** `analyze`, with an observer of each component's setup, for the tests. */
 export function analyzeModule(
@@ -248,7 +250,7 @@ export function analyzeModule(
 
 	// A `.uf.ts` module holds composables and no component (ADR-0069).
 	const composableModule = COMPOSABLE_FILE.test(parsed.file);
-	const candidates: Candidate[] = composableModule
+	const candidates: Array<Candidate> = composableModule
 		? []
 		: [...findComponents(parsed.program), ...findValueComponents(parsed.program)].toSorted(
 				(a, b) => a.span.start - b.span.start,
@@ -315,10 +317,12 @@ export function analyzeModule(
 	};
 	const apis = new Map<Candidate, ComponentApi>();
 	for (const candidate of candidates) {
-		if (!candidate.value) apis.set(candidate, componentApi(candidate, apiContext));
+		if (!candidate.value) {
+			apis.set(candidate, componentApi(candidate, apiContext));
+		}
 	}
 	const keyMark = reporter.diagnostics.length;
-	const keyDeclarations: InjectionKeyDeclaration[] = [];
+	const keyDeclarations: Array<InjectionKeyDeclaration> = [];
 	const keys = new Map<object, InjectionKeyInfo>();
 	for (const candidate of keyCandidates.values()) {
 		if (composableModule) {
@@ -339,14 +343,18 @@ export function analyzeModule(
 			...(ref ? { ref } : {}),
 		});
 		const declaration = checkKey(candidate, parsed.source, reporter);
-		if (declaration) keyDeclarations.push(declaration);
+		if (declaration) {
+			keyDeclarations.push(declaration);
+		}
 	}
 	// A key is the module's, as an import is: an error in one drops every component.
 	const keyErrors = reporter.hasErrorsSince(keyMark);
-	const imports: ModuleImport[] = [];
+	const imports: Array<ModuleImport> = [];
 	const components = new Map<object, ComponentInfo | undefined>();
 	for (const [candidate, api] of apis) {
-		if (candidate.node.id) components.set(candidate.node.id, { name: candidate.name, api });
+		if (candidate.node.id) {
+			components.set(candidate.node.id, { name: candidate.name, api });
+		}
 	}
 	const context: ModuleContext = {
 		program: parsed.program,
@@ -382,7 +390,9 @@ export function analyzeModule(
 	};
 	const moduleMark = reporter.diagnostics.length;
 	for (const statement of parsed.program.body) {
-		if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) continue;
+		if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) {
+			continue;
+		}
 		checkTopLevelStatement(statement, context);
 	}
 	// Lowered once every import is known: imports are hoisted, so a constant may read one
@@ -454,12 +464,16 @@ export function analyzeModule(
 		[...apis].map(([candidate, api]) => ({ node: candidate.node, api })),
 		(name) => {
 			const resolution = scopes.resolve(name as unknown as AST.IdentifierReference);
-			if (resolution.kind !== "import" && resolution.kind !== "variable") return undefined;
+			if (resolution.kind !== "import" && resolution.kind !== "variable") {
+				return undefined;
+			}
 			return components.get(resolution.declaration)?.api;
 		},
 	);
 	const ownerApi = sheetOwner && apis.get(sheetOwner);
-	if (styles && ownerApi) ownerApi.styles = { scopeId: styles.scopeId, slotted: styles.slotted };
+	if (styles && ownerApi) {
+		ownerApi.styles = { scopeId: styles.scopeId, slotted: styles.slotted };
+	}
 	const api: ModuleApi = {
 		file: parsed.file,
 		components: [...apis.values()],
@@ -489,11 +503,13 @@ export function analyzeModule(
 		...(options.directiveValues ? { directiveValues: options.directiveValues } : {}),
 		...(observe ? { observe } : {}),
 	};
-	const lowered: UfComponent[] = [];
-	const exports: UfExport[] = [];
+	const lowered: Array<UfComponent> = [];
+	const exports: Array<UfExport> = [];
 	const names = new Map<string, Candidate>();
 	for (const candidate of candidates) {
-		if (!checkComponentExports(candidate, names, reporter)) continue;
+		if (!checkComponentExports(candidate, names, reporter)) {
+			continue;
+		}
 		if (candidate.value) {
 			// Checked as the declaration its fix writes, which then reveals nothing new.
 			reportValueComponent(candidate, candidate.value, parsed, reporter);
@@ -501,9 +517,13 @@ export function analyzeModule(
 			continue;
 		}
 		const component = analyzeComponent(candidate, module);
-		if (!component) continue;
+		if (!component) {
+			continue;
+		}
 		// A shadowed directive's outputs would read the model or the slot in its place.
-		if (reportDirectiveShadows(component, reporter)) continue;
+		if (reportDirectiveShadows(component, reporter)) {
+			continue;
+		}
 		lowered.push(component);
 		for (const entry of candidate.exports) {
 			exports.push({ ...createExport(entry.kind, candidate.name, entry.span), name: entry.name });
@@ -540,8 +560,9 @@ export function analyzeModule(
 	const uncalled =
 		!reporter.diagnostics.some(({ severity }) => severity === "error") &&
 		reportUnread(parsed.program.body, context.passThrough, reporter);
-	if (moduleErrors || uncalled)
+	if (moduleErrors || uncalled) {
 		return { module: undefined, diagnostics: reporter.diagnostics, api };
+	}
 	if (!candidates.some((candidate) => candidate.exports.length)) {
 		reporter.report("UF1101", { start: 0, end: 0 }, "This file exports no component.", {
 			help: "A component is an exported PascalCase function whose last statement returns JSX.",
@@ -606,11 +627,13 @@ function directiveOwner(directive: UfDirective): UfComposable {
  */
 function reportDirectiveShadows(component: UfComponent, reporter: Reporter): boolean {
 	const applied = new Set(appliedDirectives(component));
-	if (!applied.size) return false;
+	if (!applied.size) {
+		return false;
+	}
 	let reported = false;
 	const report = (name: string, what: "model" | "slot", at: Span) => {
 		reported = true;
-		const authored = `v-${name.slice(1).replace(/[A-Z]/g, (letter, index: number) => `${index ? "-" : ""}${letter.toLowerCase()}`)}`;
+		const authored = `v-${name.slice(1).replaceAll(/[A-Z]/g, (letter, index: number) => `${index ? "-" : ""}${letter.toLowerCase()}`)}`;
 		reporter.report(
 			"UF3024",
 			at,
@@ -619,22 +642,30 @@ function reportDirectiveShadows(component: UfComponent, reporter: Reporter): boo
 		);
 	};
 	for (const item of component.setup) {
-		if (item.kind === "Model" && applied.has(item.name)) report(item.name, "model", item.span);
+		if (item.kind === "Model" && applied.has(item.name)) {
+			report(item.name, "model", item.span);
+		}
 	}
 	for (const slot of component.slots?.slots ?? []) {
-		if (applied.has(slot.name)) report(slot.name, "slot", slot.span);
+		if (applied.has(slot.name)) {
+			report(slot.name, "slot", slot.span);
+		}
 	}
 	return reported;
 }
 
 /** The names of the directives a component's elements apply (ADR-0099). */
-function appliedDirectives(component: UfComponent): string[] {
-	const names: string[] = [];
+function appliedDirectives(component: UfComponent): Array<string> {
+	const names: Array<string> = [];
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element") return;
+			if (node.kind !== "Element") {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind === "Directive") names.push(attribute.name);
+				if (attribute.kind === "Directive") {
+					names.push(attribute.name);
+				}
 			}
 		},
 	});
@@ -646,29 +677,33 @@ function appliedDirectives(component: UfComponent): string[] {
  * its IR holds them and no component, and its API what a caller reads of each.
  */
 function composableResult(
-	candidates: readonly ComposableCandidate[],
-	directives: { lowered: readonly UfDirective[]; count: number },
+	candidates: ReadonlyArray<ComposableCandidate>,
+	directives: { lowered: ReadonlyArray<UfDirective>; count: number },
 	moduleErrors: boolean,
-	constants: readonly ModuleConstant[],
+	constants: ReadonlyArray<ModuleConstant>,
 	constantTypes: ReadonlyMap<string, AST.VariableDeclarator>,
 	module: Parameters<typeof analyzeComposable>[2],
 	context: ModuleContext,
 ): AnalyzeResult {
 	const { parsed, reporter, types } = module;
 	const mark = reporter.diagnostics.length;
-	const lowered: AnalyzedComposable[] = [];
+	const lowered: Array<AnalyzedComposable> = [];
 	for (const candidate of candidates) {
 		const result = analyzeComposable(
 			candidate,
 			typeParametersOf(candidate.node, parsed.source),
 			module,
 		);
-		if (result) lowered.push(result);
+		if (result) {
+			lowered.push(result);
+		}
 	}
 	// A value import no composable calls names a type, or nothing a composable may read: either
 	// way its outputs would import a value the module never had (UF2035).
 	for (const [local, specifier] of module.composableImports) {
-		if (module.called.has(local)) continue;
+		if (module.called.has(local)) {
+			continue;
+		}
 		reporter.report(
 			"UF2035",
 			specifier,
@@ -778,27 +813,41 @@ function composableResult(
  * queries a constant names it in the output, so the output declares it too.
  */
 function readConstants(
-	constants: readonly ModuleConstant[],
-	owners: readonly (UfComponent | UfComposable)[],
-	declarations: readonly TypeDeclarationStatement[],
+	constants: ReadonlyArray<ModuleConstant>,
+	owners: ReadonlyArray<UfComponent | UfComposable>,
+	declarations: ReadonlyArray<TypeDeclarationStatement>,
 	source: string,
-): ModuleConstant[] {
+): Array<ModuleConstant> {
 	const byId = new Map(constants.map((constant) => [constant.binding, constant]));
 	const byName = new Map(constants.map((constant) => [constant.name, constant.binding]));
 	const read = new Set<string>();
 	const add = (id: string) => {
 		const constant = byId.get(id);
-		if (!constant || read.has(id)) return;
+		if (!constant || read.has(id)) {
+			return;
+		}
 		read.add(id);
-		for (const ref of constant.value.refs) if (ref.kind === "Binding") add(ref.binding);
+		for (const ref of constant.value.refs) {
+			if (ref.kind === "Binding") {
+				add(ref.binding);
+			}
+		}
 		const queried = [
 			...(constant.type ? typeQueryRoots(`type T = ${constant.type.code};`) : []),
 			...typeQueryRoots(`(${constant.value.code});`),
 		];
-		for (const name of queried) if (byName.has(name)) add(byName.get(name)!);
+		for (const name of queried) {
+			if (byName.has(name)) {
+				add(byName.get(name)!);
+			}
+		}
 	};
 	for (const owner of owners) {
-		for (const binding of owner.bindings) if (binding.kind === "moduleConst") add(binding.id);
+		for (const binding of owner.bindings) {
+			if (binding.kind === "moduleConst") {
+				add(binding.id);
+			}
+		}
 		const own = new Set(owner.bindings.map(({ name }) => name));
 		const texts = [
 			...ownTypeTexts(owner).map((type) => `type T = ${type};`),
@@ -808,30 +857,54 @@ function readConstants(
 				.map(({ node }) => source.slice(node.start, node.end)),
 		];
 		for (const name of texts.flatMap(typeQueryRoots)) {
-			if (byName.has(name) && !own.has(name)) add(byName.get(name)!);
+			if (byName.has(name) && !own.has(name)) {
+				add(byName.get(name)!);
+			}
 		}
 	}
 	return constants.filter((constant) => read.has(constant.binding));
 }
 
 /** The type texts an owner's IR writes beside its code. */
-function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
-	const found: string[] = [];
+function ownTypeTexts(owner: UfComponent | UfComposable): Array<string> {
+	const found: Array<string> = [];
 	if ("props" in owner) {
-		if (owner.propsParameter) found.push(owner.propsParameter.type.code);
-		for (const prop of owner.props) found.push(prop.type.code);
-		if (owner.emits) found.push(owner.emits.type.code);
+		if (owner.propsParameter) {
+			found.push(owner.propsParameter.type.code);
+		}
+		for (const prop of owner.props) {
+			found.push(prop.type.code);
+		}
+		if (owner.emits) {
+			found.push(owner.emits.type.code);
+		}
 	} else {
-		for (const parameter of owner.parameters) found.push(parameter.type.code);
+		for (const parameter of owner.parameters) {
+			found.push(parameter.type.code);
+		}
 	}
-	for (const item of owner.setup) if ("type" in item && item.type) found.push(item.type.code);
+	for (const item of owner.setup) {
+		if ("type" in item && item.type) {
+			found.push(item.type.code);
+		}
+	}
 	for (const { function: fn } of functionsOf(owner)) {
-		for (const parameter of fn.parameters) if (parameter.type) found.push(parameter.type.code);
-		if (fn.returnType) found.push(fn.returnType.code);
+		for (const parameter of fn.parameters) {
+			if (parameter.type) {
+				found.push(parameter.type.code);
+			}
+		}
+		if (fn.returnType) {
+			found.push(fn.returnType.code);
+		}
 	}
 	for (const parameter of owner.typeParameters ?? []) {
-		if (parameter.constraint) found.push(parameter.constraint.code);
-		if (parameter.default) found.push(parameter.default.code);
+		if (parameter.constraint) {
+			found.push(parameter.constraint.code);
+		}
+		if (parameter.default) {
+			found.push(parameter.default.code);
+		}
 	}
 	return found;
 }
@@ -841,20 +914,30 @@ function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
  * list, an expression in parentheses, or a function's body, which may `return` and `await`, the
  * first it parses as. Every text the IR holds is one of them.
  */
-function typeQueryRoots(text: string): string[] {
+function typeQueryRoots(text: string): Array<string> {
 	// A type query is spelt with the keyword, which no escape can write: a text without it holds
 	// none, so it skips the parses, which every component's code would otherwise pay for.
-	if (!text.includes("typeof")) return [];
+	if (!text.includes("typeof")) {
+		return [];
+	}
 	const parsed = [text, `(${text});`, `async function body() {\n${text}\n}`]
 		.map((source) => parseModule("query.ts", source))
 		.find(({ errors }) => !errors.length);
-	if (!parsed) return [];
-	const found: string[] = [];
+	if (!parsed) {
+		return [];
+	}
+	const found: Array<string> = [];
 	visit(parsed.program, (node) => {
-		if (node.type !== "TSTypeQuery") return;
+		if (node.type !== "TSTypeQuery") {
+			return;
+		}
 		let name = node.exprName;
-		while (name.type === "TSQualifiedName") name = name.left;
-		if (name.type === "Identifier") found.push(name.name);
+		while (name.type === "TSQualifiedName") {
+			name = name.left;
+		}
+		if (name.type === "Identifier") {
+			found.push(name.name);
+		}
 	});
 	return found;
 }
@@ -863,7 +946,7 @@ function typeQueryRoots(text: string): string[] {
  * The types the module exports that no component reaches (ADR-0068): every output exports them
  * as written, for its consumers' types.
  */
-function declaredTypeExports(types: ModuleTypes, source: string): TypeExport[] {
+function declaredTypeExports(types: ModuleTypes, source: string): Array<TypeExport> {
 	return types.declarations
 		.filter(
 			(declaration) =>
@@ -882,7 +965,10 @@ function declaredTypeExports(types: ModuleTypes, source: string): TypeExport[] {
  * lower, until none does: its error is reported, and the IR names only components it holds
  * (ADR-0053).
  */
-function dropFailedRenders(lowered: UfComponent[], candidates: readonly Candidate[]): void {
+function dropFailedRenders(
+	lowered: Array<UfComponent>,
+	candidates: ReadonlyArray<Candidate>,
+): void {
 	const local = new Set(candidates.map((candidate) => candidate.name));
 	for (;;) {
 		const kept = new Set(lowered.map((component) => component.name));
@@ -890,13 +976,16 @@ function dropFailedRenders(lowered: UfComponent[], candidates: readonly Candidat
 			let failed = false;
 			walk(component.render, {
 				enter(node) {
-					if (node.kind === "Component" && local.has(node.component) && !kept.has(node.component))
+					if (node.kind === "Component" && local.has(node.component) && !kept.has(node.component)) {
 						failed = true;
+					}
 				},
 			});
 			return failed;
 		});
-		if (index === -1) return;
+		if (index === -1) {
+			return;
+		}
 		lowered.splice(index, 1);
 	}
 }
@@ -906,11 +995,11 @@ function dropFailedRenders(lowered: UfComponent[], candidates: readonly Candidat
  * component's props reach, in source order, as written from `interface` or `type` on.
  */
 function moduleTypes(
-	components: readonly UfComponent[],
+	components: ReadonlyArray<UfComponent>,
 	types: ModuleTypes,
 	source: string,
 	constants: ReadonlySet<string>,
-): TypeDeclaration[] {
+): Array<TypeDeclaration> {
 	const used = new Set([...components.flatMap((component) => component.types), ...constants]);
 	return types.declarations
 		.filter((declaration) => used.has(declaration.name))
@@ -937,7 +1026,9 @@ function checkComponentExports(
 ): boolean {
 	const mark = reporter.diagnostics.length;
 	for (const entry of candidate.exports) {
-		if (isExportName(entry.name)) continue;
+		if (isExportName(entry.name)) {
+			continue;
+		}
 		reporter.report(
 			"UF1103",
 			entry.span,
@@ -974,17 +1065,17 @@ interface ModuleContext {
 	program: AST.Program;
 	scopes: Scopes;
 	source: string;
-	candidates: Candidate[];
+	candidates: Array<Candidate>;
 	/** The local names the module exports as values (`export { name }`, `export default name`). */
 	exported: ReadonlySet<string>;
 	reporter: Reporter;
 	types: ModuleTypes;
 	/** The module's comments: lint directives must not reach an output. */
-	comments: readonly AST.Comment[];
+	comments: ReadonlyArray<AST.Comment>;
 	/** The API of each imported `.uf.tsx` module, by specifier, as the resolver gave it. */
 	resolved: ReadonlyMap<string, ModuleApi | undefined>;
 	/** The module's imports of `.uf.tsx` modules, collected in source order. */
-	imports: ModuleImport[];
+	imports: Array<ModuleImport>;
 	/**
 	 * The output files in the module's own directory and the ones its imports name, by the path
 	 * an output imports each by, in lower case: the component that writes each.
@@ -1000,25 +1091,25 @@ interface ModuleContext {
 	/** Each stylesheet the module imports, by specifier, as the resolver read it (ADR-0063). */
 	stylesheets: ReadonlyMap<string, StylesheetSource | undefined>;
 	/** The module's sheets, collected in source order. */
-	sheets: LoweredSheet[];
+	sheets: Array<LoweredSheet>;
 	/** The names the module's pass-through imports bind, and those its code reads (ADR-0064). */
 	passThrough: PassThrough & { names: Map<object, string | undefined> };
 	/** The specifier prefixes whose imports pass through (`AnalyzeOptions.passThrough`). */
-	passThroughPrefixes: readonly string[];
+	passThroughPrefixes: ReadonlyArray<string>;
 	/** The module's imports that every output keeps as written, in source order (ADR-0064). */
-	passThroughImports: PassThroughImport[];
+	passThroughImports: Array<PassThroughImport>;
 	/** The module's imports of types, which every output re-imports by name (ADR-0067). */
-	typeImports: TypeImport[];
+	typeImports: Array<TypeImport>;
 	/** The module's type re-exports, in source order (ADR-0068). */
-	typeExports: TypeExport[];
+	typeExports: Array<TypeExport>;
 	/** Each shared `.ts` module the module imports, by specifier, as the resolver read it. */
 	modules: ReadonlyMap<string, SharedModule | undefined>;
 	/** The module's value imports of shared modules, in source order (ADR-0070). */
-	moduleImports: SharedModuleImport[];
+	moduleImports: Array<SharedModuleImport>;
 	/** The values the module's components may read: its value imports and constants. */
 	shared: SharedValues;
 	/** The module's top-level `const`s, in source order, lowered once every import is known. */
-	constants: ConstantCandidate[];
+	constants: Array<ConstantCandidate>;
 	/** Whether the module is a `.uf.ts` module of composables (ADR-0069). */
 	composableModule: boolean;
 	/** In a `.uf.ts` module, the names it imports from other `.uf.ts` modules (UF2035). */
@@ -1031,7 +1122,7 @@ interface ModuleContext {
 	/** The module's authoring imports, by the identifier that declares each (ADR-0006). */
 	authoring: ReadonlyMap<object, AuthoringApi | undefined>;
 	/** The module's top-level directives, in source order, lowered once every import is known (ADR-0099). */
-	directives: DirectiveCandidate[];
+	directives: Array<DirectiveCandidate>;
 	/** The directives a `.uf.tsx` module imports from `.uf.ts` modules, by local name (ADR-0099). */
 	directiveImports: Map<string, DirectiveInfo>;
 }
@@ -1073,7 +1164,9 @@ function checkTopLevelStatement(
 	// A props type, plain or exported (ADR-0034).
 	if (typeDeclarationOf(statement)) {
 		const declaration = types.declarations.find((item) => item.span.start === statement.start);
-		if (declaration) checkTypeDeclaration(declaration, types, source, comments, reporter);
+		if (declaration) {
+			checkTypeDeclaration(declaration, types, source, comments, reporter);
+		}
 		return;
 	}
 	const value = valueFunctionOf(statement);
@@ -1103,18 +1196,18 @@ function checkTopLevelStatement(
 			return;
 		case "VariableDeclaration": {
 			const directive = directiveCandidate(statement, undefined, context.scopes, context.authoring);
-			if (directive) context.directives.push(directive);
-			else moduleConstant(statement, context);
+			if (directive) {
+				context.directives.push(directive);
+			} else {
+				moduleConstant(statement, context);
+			}
 			return;
 		}
 		case "ExpressionStatement": {
 			// `defineDirective(…)` alone declares nothing (ADR-0099).
 			const { expression } = statement;
 			if (isDirectiveCall(expression, context.scopes, context.authoring)) {
-				misplacedDirective(
-					(expression as AST.CallExpression).callee as AST.IdentifierReference,
-					reporter,
-				);
+				misplacedDirective(expression.callee as AST.IdentifierReference, reporter);
 				return;
 			}
 			break;
@@ -1160,7 +1253,9 @@ function checkTopLevelStatement(
 					(item): item is AST.ImportSpecifier =>
 						item.type === "ImportSpecifier" && item.importKind === "type",
 				);
-				if (types.length) typeImport(statement, types, context);
+				if (types.length) {
+					typeImport(statement, types, context);
+				}
 				for (const specifier of statement.specifiers) {
 					if (!types.includes(specifier as AST.ImportSpecifier)) {
 						context.composableImports.set(specifier.local, specifier);
@@ -1209,7 +1304,9 @@ function checkTopLevelStatement(
 				);
 				return;
 			}
-			if (statement.declaration || statement.source) break;
+			if (statement.declaration || statement.source) {
+				break;
+			}
 			// A local type in an export list is exported as if its declaration were
 			// (`listedTypeExports`). A type-only export of anything else exports no value (TS1361).
 			const typeOnly = statement.specifiers.filter(
@@ -1273,6 +1370,8 @@ function checkTopLevelStatement(
 				);
 				return;
 			}
+			break;
+		default:
 			break;
 	}
 	reporter.unsupported(
@@ -1349,7 +1448,9 @@ function functionReturningJsx(statement: AST.Directive | AST.Statement): AST.Fun
 				  statement.declaration?.type === "FunctionDeclaration"
 				? statement.declaration
 				: undefined;
-	if (!fn?.id || isComponentName(fn.id.name)) return undefined;
+	if (!fn?.id || isComponentName(fn.id.name)) {
+		return undefined;
+	}
 	const body = (fn.body?.body ?? []).filter((item) => item.type !== "EmptyStatement");
 	const last = body.at(-1);
 	const returned = last?.type === "ReturnStatement" ? last.argument : undefined;
@@ -1417,7 +1518,7 @@ function reportJsxHelper(fn: AST.Function, reporter: Reporter): void {
 
 /** How many times an identifier is written in a source, as a whole word. */
 function occurrences(source: string, identifier: string): number {
-	const word = identifier.replaceAll("$", "\\$");
+	const word = identifier.replaceAll("$", String.raw`\$`);
 	const pattern = new RegExp(`(?<![\\p{ID_Continue}$])${word}(?![\\p{ID_Continue}$])`, "gu");
 	return source.match(pattern)?.length ?? 0;
 }
@@ -1432,7 +1533,9 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
 	const specifier = statement.source.value;
 	const api = resolved.get(specifier);
 	if (!api) {
-		for (const item of statement.specifiers) context.components.set(item.local, undefined);
+		for (const item of statement.specifiers) {
+			context.components.set(item.local, undefined);
+		}
 		reporter.report(
 			"UF1202",
 			statement.source,
@@ -1448,14 +1551,18 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
 		selfImport(statement, api, context);
 		return;
 	}
-	const names: ImportedName[] = [];
+	const names: Array<ImportedName> = [];
 	const types = statement.specifiers.filter(
 		(item): item is AST.ImportSpecifier =>
 			item.type === "ImportSpecifier" && item.importKind === "type",
 	);
-	if (types.length) typeImport(statement, types, context);
+	if (types.length) {
+		typeImport(statement, types, context);
+	}
 	for (const item of statement.specifiers) {
-		if (item.type === "ImportSpecifier" && item.importKind === "type") continue;
+		if (item.type === "ImportSpecifier" && item.importKind === "type") {
+			continue;
+		}
 		if (item.type === "ImportNamespaceSpecifier") {
 			reporter.unsupported(
 				item,
@@ -1532,12 +1639,16 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
 		);
 		context.components.set(item.local, { name: item.local.name, api: component });
 	}
-	if (!names.length) return;
+	if (!names.length) {
+		return;
+	}
 	// A type-only import of the module before this one recorded it without names.
 	const typesOnly = context.imports.findIndex(
 		(entry) => entry.specifier === specifier && !entry.names.length,
 	);
-	if (typesOnly !== -1) context.imports.splice(typesOnly, 1);
+	if (typesOnly !== -1) {
+		context.imports.splice(typesOnly, 1);
+	}
 	context.imports.push(
 		createModuleImport(specifier, api.file, api, names, {
 			start: statement.start,
@@ -1580,8 +1691,10 @@ function composableImport(statement: AST.ImportDeclaration, context: ModuleConte
 		);
 		return;
 	}
-	if (types.length) typeImport(statement, types, context);
-	const names: ImportedName[] = [];
+	if (types.length) {
+		typeImport(statement, types, context);
+	}
+	const names: Array<ImportedName> = [];
 	for (const item of values) {
 		if (item.type !== "ImportSpecifier") {
 			context.composables.set(item.local, undefined);
@@ -1632,7 +1745,9 @@ function composableImport(statement: AST.ImportDeclaration, context: ModuleConte
 		);
 		context.composables.set(item.local, composable);
 	}
-	if (!names.length) return;
+	if (!names.length) {
+		return;
+	}
 	context.imports.push(
 		createModuleImport(specifier, api.file, api, names, {
 			start: statement.start,
@@ -1666,9 +1781,11 @@ function selfImport(
 		const component = api.components.find((entry) =>
 			imported === "default" ? entry.export === "default" : entry.name === imported,
 		);
-		if (imported !== undefined && component) names.set(item.local, component.name);
+		if (imported !== undefined && component) {
+			names.set(item.local, component.name);
+		}
 	}
-	const edits: { span: { start: number; end: number }; text: string }[] = [];
+	const edits: Array<{ span: { start: number; end: number }; text: string }> = [];
 	if (names.size === statement.specifiers.length) {
 		// Every read of a name the import binds, a tag or a value (`is={Again}`), is renamed. The
 		// fix is withheld where a name it writes would mean something else: a binding that shadows
@@ -1681,26 +1798,39 @@ function selfImport(
 		visit(context.program, (node) => {
 			if (node.type === "Property" && node.shorthand && node.value.type === "Identifier") {
 				const resolution = scopes.resolve(node.value as unknown as AST.IdentifierReference);
-				if (resolution.kind === "import" && names.has(resolution.declaration)) safe = false;
+				if (resolution.kind === "import" && names.has(resolution.declaration)) {
+					safe = false;
+				}
 			}
-			if (node.type !== "Identifier" && node.type !== "JSXIdentifier") return;
-			if (node.start >= statement.start && node.end <= statement.end) return;
+			if (node.type !== "Identifier" && node.type !== "JSXIdentifier") {
+				return;
+			}
+			if (node.start >= statement.start && node.end <= statement.end) {
+				return;
+			}
 			const resolution = scopes.resolve(node as unknown as AST.IdentifierReference);
 			const name = resolution.kind === "import" ? names.get(resolution.declaration) : undefined;
 			if (name) {
 				edits.push({ span: spanOf(node), text: name });
 				return;
 			}
-			if (!written.has(node.name)) return;
+			if (!written.has(node.name)) {
+				return;
+			}
 			const declaration = declarations.get(node.name);
 			const component =
 				node === declaration ||
 				(resolution.kind === "variable" && resolution.declaration === declaration);
-			if (!component) safe = false;
+			if (!component) {
+				safe = false;
+			}
 		});
 		const end = source[statement.end] === "\n" ? statement.end + 1 : statement.end;
-		if (safe) edits.unshift({ span: { start: statement.start, end }, text: "" });
-		else edits.length = 0;
+		if (safe) {
+			edits.unshift({ span: { start: statement.start, end }, text: "" });
+		} else {
+			edits.length = 0;
+		}
 	}
 	const [first] = names.values();
 	reporter.report(
@@ -1726,13 +1856,19 @@ function selfImport(
 
 /** Visits every node in a tree, depth first. */
 function visit(node: unknown, enter: (node: AST.Node) => void): void {
-	if (!node || typeof node !== "object") return;
+	if (!node || typeof node !== "object") {
+		return;
+	}
 	if (Array.isArray(node)) {
-		for (const item of node) visit(item, enter);
+		for (const item of node) {
+			visit(item, enter);
+		}
 		return;
 	}
 	const typed = node as AST.Node;
-	if (typeof typed.type !== "string") return;
+	if (typeof typed.type !== "string") {
+		return;
+	}
 	enter(typed);
 	for (const key of visitorKeys[typed.type] ?? []) {
 		visit((typed as unknown as Record<string, unknown>)[key], enter);
@@ -1765,7 +1901,9 @@ function findKeys(program: AST.Program): Map<number, KeyCandidate> {
 				? statement
 				: undefined;
 		const [declarator] = declaration?.declarations ?? [];
-		if (!declaration || declarator?.id.type !== "Identifier") continue;
+		if (!declaration || declarator?.id.type !== "Identifier") {
+			continue;
+		}
 		const annotation = declarator.id.typeAnnotation?.typeAnnotation;
 		const typed =
 			annotation?.type === "TSTypeReference" &&
@@ -1775,10 +1913,12 @@ function findKeys(program: AST.Program): Map<number, KeyCandidate> {
 			declarator.init?.type === "CallExpression" &&
 			declarator.init.callee.type === "Identifier" &&
 			declarator.init.callee.name === "Symbol";
-		if (!typed && !symbol) continue;
-		const params = typed ? (annotation as AST.TSTypeReference).typeArguments?.params : undefined;
+		if (!typed && !symbol) {
+			continue;
+		}
+		const params = typed ? annotation.typeArguments?.params : undefined;
 		keys.set(statement.start, {
-			statement: statement as AST.Statement,
+			statement,
 			declaration,
 			id: declarator.id,
 			exported,
@@ -1870,7 +2010,9 @@ function checkImport(statement: AST.ImportDeclaration, context: ModuleContext): 
 	}
 	if (statement.importKind === "type") {
 		typeImport(statement, statement.specifiers, context);
-		if (COMPONENT_SPECIFIER.test(specifier)) typeOnlyModule(statement, context);
+		if (COMPONENT_SPECIFIER.test(specifier)) {
+			typeOnlyModule(statement, context);
+		}
 		return;
 	}
 	reporter.unsupported(statement, "Importing modules is not supported yet.");
@@ -1900,7 +2042,9 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
 	}
 	const module = context.modules.get(specifier);
 	const fail = (code: "UF1202" | "UF1204", message: string, help: string) => {
-		for (const item of values) context.shared.failed.add(item.local);
+		for (const item of values) {
+			context.shared.failed.add(item.local);
+		}
 		reporter.report(code, statement.source, message, { help });
 	};
 	if (!module) {
@@ -1929,9 +2073,13 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
 		);
 		return;
 	}
-	if (types.length) typeImport(statement, types, context);
-	if (!module) return;
-	const names: NamedImport[] = [];
+	if (types.length) {
+		typeImport(statement, types, context);
+	}
+	if (!module) {
+		return;
+	}
+	const names: Array<NamedImport> = [];
 	for (const item of values) {
 		if (item.type === "ImportNamespaceSpecifier") {
 			context.shared.failed.add(item.local);
@@ -1944,7 +2092,9 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
 		names.push(createNamedImport(imported, item.local.name, spanOf(item)));
 		context.shared.values.set(item.local, sharedValue("import", item.local));
 	}
-	if (!names.length) return;
+	if (!names.length) {
+		return;
+	}
 	context.moduleImports.push(
 		createSharedModuleImport(specifier, module.file, names, spanOf(statement)),
 	);
@@ -1959,7 +2109,9 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
 function typeOnlyModule(statement: AST.ImportDeclaration, context: ModuleContext): void {
 	const specifier = statement.source.value;
 	const api = context.resolved.get(specifier);
-	if (!api || context.imports.some((entry) => entry.specifier === specifier)) return;
+	if (!api || context.imports.some((entry) => entry.specifier === specifier)) {
+		return;
+	}
 	context.imports.push(
 		createModuleImport(specifier, api.file, api, [], {
 			start: statement.start,
@@ -1975,10 +2127,10 @@ function typeOnlyModule(statement: AST.ImportDeclaration, context: ModuleContext
  */
 function typeImport(
 	statement: AST.ImportDeclaration,
-	specifiers: readonly AST.ImportDeclarationSpecifier[],
+	specifiers: ReadonlyArray<AST.ImportDeclarationSpecifier>,
 	context: ModuleContext,
 ): void {
-	const names: NamedImport[] = [];
+	const names: Array<NamedImport> = [];
 	for (const item of specifiers) {
 		if (item.type === "ImportNamespaceSpecifier") {
 			context.reporter.unsupported(item, "A namespace import of types is not supported.", {
@@ -1989,7 +2141,9 @@ function typeImport(
 		const imported = item.type === "ImportDefaultSpecifier" ? "default" : exportName(item.imported);
 		names.push(createNamedImport(imported, item.local.name, spanOf(item)));
 	}
-	if (!names.length) return;
+	if (!names.length) {
+		return;
+	}
 	context.typeImports.push(createTypeImport(statement.source.value, names, spanOf(statement)));
 }
 
@@ -2013,7 +2167,9 @@ function isListedType(specifier: AST.ExportSpecifier, context: ModuleContext): b
 function listedTypeExports(program: AST.Program): Set<string> {
 	const names = new Set<string>();
 	for (const statement of program.body) {
-		if (statement.type !== "ExportNamedDeclaration" || statement.source) continue;
+		if (statement.type !== "ExportNamedDeclaration" || statement.source) {
+			continue;
+		}
 		for (const specifier of statement.specifiers) {
 			const name = exportName(specifier.local);
 			if (
@@ -2136,7 +2292,9 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
 	});
 	// The props' rest holds what falls through, so only where it falls through to no root
 	// (ADR-0118).
-	if (props.rest && setup.inheritAttrs) restWithoutOptions(props.rest, fn, parsed, reporter);
+	if (props.rest && setup.inheritAttrs) {
+		restWithoutOptions(props.rest, fn, parsed, reporter);
+	}
 	const render: RenderContext = {
 		source: parsed.source,
 		reporter,
@@ -2227,7 +2385,9 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
 	// A name a target's `isDev` check reads, shadowed (UF2003, ADR-0117).
 	reportDevShadows(fn, props.props, { scopes, authoring: setup.scope.authoring }, reporter);
 	module.observe?.(candidate.name, [...setup.scope.bindings.values()]);
-	if (!root || props.failed || reporter.hasErrorsSince(mark)) return undefined;
+	if (!root || props.failed || reporter.hasErrorsSince(mark)) {
+		return undefined;
+	}
 	// The types its output declares: its props', its events' and its setup code's (ADR-0045).
 	const names = new Set([...props.types, ...setupTypes(fn, types.table)]);
 	const componentTypes = types.declarations
@@ -2263,7 +2423,7 @@ function restWithoutOptions(
 	parsed: ParsedModule,
 	reporter: Reporter,
 ): void {
-	const edits: { span: Span; text: string }[] = [];
+	const edits: Array<{ span: Span; text: string }> = [];
 	const block = fn.body?.type === "BlockStatement" ? fn.body : undefined;
 	const first = block?.body[0];
 	if (block && first) {
@@ -2288,9 +2448,9 @@ function restWithoutOptions(
 				specifier.local.name === "defineOptions",
 		);
 		const last = named.filter((specifier) => specifier.type === "ImportSpecifier").at(-1);
-		if (!imported && last)
+		if (!imported && last) {
 			edits.push({ span: { start: last.end, end: last.end }, text: ", defineOptions" });
-		else if (!imported) {
+		} else if (!imported) {
 			edits.push({
 				span: { start: 0, end: 0 },
 				text: `import { defineOptions } from "${AUTHORING_PACKAGE}";\n`,
@@ -2318,7 +2478,7 @@ function restWithoutOptions(
  * A generic component's type parameters (ADR-0068), `List<T extends Item = Item>`: each target
  * writes its own generic form from them, and the consumer's props infer them.
  */
-function typeParametersOf(fn: ComponentFunction, source: string): TypeParameter[] {
+function typeParametersOf(fn: ComponentFunction, source: string): Array<TypeParameter> {
 	const text = (type: AST.TSType | null) =>
 		type ? createTypeText(source.slice(type.start, type.end), spanOf(type)) : undefined;
 	return (fn.typeParameters?.params ?? []).map((parameter) =>
@@ -2378,7 +2538,9 @@ function valueFunctionOf(statement: AST.Directive | AST.Statement):
 				  statement.declaration?.type === "VariableDeclaration"
 				? statement.declaration
 				: undefined;
-	if (declaration?.declarations.length !== 1) return undefined;
+	if (declaration?.declarations.length !== 1) {
+		return undefined;
+	}
 	const [declarator] = declaration.declarations;
 	const fn = declarator!.init;
 	if (
@@ -2393,7 +2555,9 @@ function valueFunctionOf(statement: AST.Directive | AST.Statement):
 
 /** Whether a function returns JSX: its expression body, or its last statement's `return`. */
 function returnsJsx(fn: AST.ArrowFunctionExpression | AST.Function): boolean {
-	if (fn.body && fn.body.type !== "BlockStatement") return containsJsx(fn.body);
+	if (fn.body && fn.body.type !== "BlockStatement") {
+		return containsJsx(fn.body);
+	}
 	const last = (fn.body?.body ?? []).filter((item) => item.type !== "EmptyStatement").at(-1);
 	return last?.type === "ReturnStatement" && containsJsx(last.argument);
 }
@@ -2402,8 +2566,8 @@ function returnsJsx(fn: AST.ArrowFunctionExpression | AST.Function): boolean {
  * The components written as values (`export const Card = (props: CardProps) => …`): an exported
  * PascalCase `const` holding a function that returns JSX, with how it is exported.
  */
-function findValueComponents(program: AST.Program): Candidate[] {
-	const exportsByLocal = new Map<string, ComponentExport[]>();
+function findValueComponents(program: AST.Program): Array<Candidate> {
+	const exportsByLocal = new Map<string, Array<ComponentExport>>();
 	for (const statement of program.body) {
 		if (
 			statement.type === "ExportNamedDeclaration" &&
@@ -2411,7 +2575,9 @@ function findValueComponents(program: AST.Program): Candidate[] {
 			statement.exportKind !== "type"
 		) {
 			for (const specifier of statement.specifiers) {
-				if (specifier.local.type !== "Identifier" || specifier.exportKind === "type") continue;
+				if (specifier.local.type !== "Identifier" || specifier.exportKind === "type") {
+					continue;
+				}
 				const name = exportName(specifier.exported);
 				const entry: ComponentExport = {
 					kind: name === "default" ? "default" : "named",
@@ -2436,13 +2602,15 @@ function findValueComponents(program: AST.Program): Candidate[] {
 			exportsByLocal.set(local, [...(exportsByLocal.get(local) ?? []), entry]);
 		}
 	}
-	const found: Candidate[] = [];
+	const found: Array<Candidate> = [];
 	for (const statement of program.body) {
 		const value = valueFunctionOf(statement);
-		if (!value || !isComponentName(value.id.name)) continue;
+		if (!value || !isComponentName(value.id.name)) {
+			continue;
+		}
 		const span = { start: statement.start, end: statement.end };
 		const { name } = value.id;
-		const exports: ComponentExport[] = [
+		const exports: Array<ComponentExport> = [
 			...(statement.type === "ExportNamedDeclaration"
 				? [{ kind: "named" as const, name, span }]
 				: []),
@@ -2488,8 +2656,12 @@ function valueComponentFix(
 	{ source, comments }: ParsedModule,
 ): Fix | undefined {
 	const declarator = declaration.declarations[0]!;
-	if (declarator.id.typeAnnotation || fn.async || fn.generator) return undefined;
-	if (fn.id && fn.id.name !== name) return undefined;
+	if (declarator.id.typeAnnotation || fn.async || fn.generator) {
+		return undefined;
+	}
+	if (fn.id && fn.id.name !== name) {
+		return undefined;
+	}
 	const edits: Fix["edits"] = [];
 	if (fn.type === "ArrowFunctionExpression") {
 		const parameters = fn.typeParameters?.end ?? fn.start;
@@ -2523,6 +2695,8 @@ function valueComponentFix(
 	const lost = comments.some((comment) =>
 		edits.some(({ span }) => comment.start < span.end && comment.end > span.start),
 	);
-	if (lost) return undefined;
+	if (lost) {
+		return undefined;
+	}
 	return { title: `Declare \`${name}\` as a function`, confidence: "likely", edits };
 }

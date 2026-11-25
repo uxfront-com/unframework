@@ -32,7 +32,9 @@ describe("vue frameworkCompile", () => {
 			context,
 		);
 		expect([...results.keys()].toSorted()).toEqual(paths);
-		for (const path of paths) expect(results.get(path), path).toEqual({ errors: [], warnings: [] });
+		for (const path of paths) {
+			expect(results.get(path), path).toEqual({ errors: [], warnings: [] });
+		}
 	}, 60_000);
 
 	// One test per case, so no test's time grows with the corpus. As one test over the 172 cases

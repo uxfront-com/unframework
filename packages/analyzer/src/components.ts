@@ -75,7 +75,9 @@ export function lowerComponent(
 	const info = componentOf(name, render);
 	if (!info) {
 		// A name an unresolved import binds is reported where it is imported (UF1202).
-		if (info === undefined) unknownComponent(node, name, render);
+		if (info === undefined) {
+			unknownComponent(node, name, render);
+		}
 		// Its content is still checked, as an element's is once its tag is reported.
 		lowerChildren(node.children, FILL, render);
 		return { node: undefined, key: undefined };
@@ -112,8 +114,8 @@ export function lowerComponentAs(
 			: []) {
 		checkPlacement(tag, name, place.ancestors, reporter, false);
 	}
-	const attributes: ComponentAttribute[] = [];
-	const fallthrough: AST.JSXAttribute[] = [];
+	const attributes: Array<ComponentAttribute> = [];
+	const fallthrough: Array<AST.JSXAttribute> = [];
 	let key: AST.JSXAttribute | undefined;
 	let after = name.end;
 	/** Each name set so far: a component takes each once, as an element does (UF3007). */
@@ -123,7 +125,9 @@ export function lowerComponentAs(
 	for (const item of node.openingElement.attributes) {
 		const previous = after;
 		after = item.end;
-		if (item === skip) continue;
+		if (item === skip) {
+			continue;
+		}
 		if (item.type === "JSXAttribute") {
 			const written =
 				item.name.type === "JSXIdentifier"
@@ -163,22 +167,31 @@ export function lowerComponentAs(
 		}
 		if (item.name.type === "JSXNamespacedName") {
 			const binding = lowerModelBinding(item, item.name, api, info, render, items);
-			if (binding) attributes.push(binding);
+			if (binding) {
+				attributes.push(binding);
+			}
 			continue;
 		}
 		const attribute = item.name.name;
 		if (attribute === "key" || attribute.toLowerCase() === "key") {
-			if (!listBody) misplacedKey(item, previous, reporter);
-			else {
-				if (attribute !== "key") keyCase(item, item.name, reporter);
+			if (!listBody) {
+				misplacedKey(item, previous, reporter);
+			} else {
+				if (attribute !== "key") {
+					keyCase(item, item.name, reporter);
+				}
 				key = item;
 			}
 			continue;
 		}
 		if (attribute === "ref") {
 			const ref = lowerRef(item, item.name, { tag: info.name, render }, render.attached);
-			if (!ref || ref.kind !== "Ref") continue;
-			if (componentRefProblem(item, ref.binding, api, info, render)) continue;
+			if (!ref || ref.kind !== "Ref") {
+				continue;
+			}
+			if (componentRefProblem(item, ref.binding, api, info, render)) {
+				continue;
+			}
 			attributes.push(ref);
 			continue;
 		}
@@ -200,27 +213,39 @@ export function lowerComponentAs(
 		}
 		if (/^on[A-Z]/.test(attribute)) {
 			if (passesListener(attribute, api)) {
-				if (!reachesRootDeclaration(item, item.name, api, info, render)) fallthrough.push(item);
+				if (!reachesRootDeclaration(item, item.name, api, info, render)) {
+					fallthrough.push(item);
+				}
 				continue;
 			}
 			const listener = lowerComponentListener(item, item.name, api, info, render, items);
-			if (listener) attributes.push(listener);
+			if (listener) {
+				attributes.push(listener);
+			}
 			continue;
 		}
-		if (kebabMember(item, item.name, api, info, render, items)) continue;
+		if (kebabMember(item, item.name, api, info, render, items)) {
+			continue;
+		}
 		if (passesAttribute(attribute, api)) {
-			if (!reachesRootDeclaration(item, item.name, api, info, render)) fallthrough.push(item);
+			if (!reachesRootDeclaration(item, item.name, api, info, render)) {
+				fallthrough.push(item);
+			}
 			continue;
 		}
 		const prop = lowerProp(item, item.name, api, info, render, items);
-		if (prop) attributes.push(prop);
+		if (prop) {
+			attributes.push(prop);
+		}
 	}
 	// `<component is>` passes its candidates `class` and `style` (ADR-0054), and no target passes
 	// them anything else that falls through yet (ADR-0118).
 	const passed = skip
 		? fallthrough.filter((item) => {
 				const written = item.name.type === "JSXIdentifier" ? item.name.name : "";
-				if (written === "class" || written === "style") return true;
+				if (written === "class" || written === "style") {
+					return true;
+				}
 				reporter.unsupported(
 					item.name,
 					"What falls through to a candidate of `<component is>` is not supported yet: `class` and `style` do, and a candidate takes its own props and events.",
@@ -234,7 +259,9 @@ export function lowerComponentAs(
 	// target lacks is reported where the source first writes it (UF4001).
 	attributes.sort((a, b) => a.span.start - b.span.start);
 	const fills = lowerFills(node, api, info, render, items !== undefined);
-	if (!fills || reporter.hasErrorsSince(mark)) return { node: undefined, key };
+	if (!fills || reporter.hasErrorsSince(mark)) {
+		return { node: undefined, key };
+	}
 	return { node: createComponentNode(info.name, attributes, fills, span(node)), key };
 }
 
@@ -247,7 +274,7 @@ export function lowerComponentAs(
 function dynamicRefProblem(
 	item: AST.JSXAttribute,
 	binding: string,
-	tags: readonly string[],
+	tags: ReadonlyArray<string>,
 	info: ComponentInfo,
 	render: RenderContext,
 ): boolean {
@@ -266,7 +293,9 @@ function dynamicRefProblem(
 		written.length === elements.length &&
 		new Set(written).size === written.length &&
 		written.every((name) => elements.includes(name));
-	if (matches) return false;
+	if (matches) {
+		return false;
+	}
 	const union = elements.join(" | ");
 	render.reporter.report(
 		"UF3046",
@@ -295,8 +324,9 @@ function componentRefProblem(
 	};
 	if (!api.exposes.length) {
 		// A `<component is>` root's ref holds the element that renders (ADR-0122).
-		if (api.refTags !== undefined)
+		if (api.refTags !== undefined) {
 			return dynamicRefProblem(item, binding, api.refTags, info, render);
+		}
 		// A ref on a component that exposes nothing holds its root element (ADR-0118), typed as
 		// that element's DOM interface.
 		const element = api.refTag === undefined ? undefined : ELEMENT_INTERFACES.get(api.refTag);
@@ -338,7 +368,9 @@ function componentRefProblem(
 	}
 	for (const member of members) {
 		const name = keyName(member);
-		if (name !== undefined && api.exposes.includes(name)) continue;
+		if (name !== undefined && api.exposes.includes(name)) {
+			continue;
+		}
 		return report(
 			`The template ref's type names ${name === undefined ? "a member" : `\`${name}\``}, which \`${info.name}\` does not expose: it exposes ${exposed}.`,
 			`Type the ref with what ${info.name} exposes, or expose ${name === undefined ? "the member" : `\`${name}\``} from it.`,
@@ -352,14 +384,28 @@ function componentRefProblem(
  * `interface`'s or `type`'s of one. Read from the syntax, not the type oracle's shapes: UF3046
  * needs only the member names, and a shape cannot say which unread parts hide a member.
  */
-function refMembers(type: AST.TSType, table: TypeTable): readonly AST.TSSignature[] | undefined {
-	if (type.type === "TSTypeLiteral") return type.members;
-	if (type.type !== "TSTypeReference" || type.typeName.type !== "Identifier" || type.typeArguments)
+function refMembers(
+	type: AST.TSType,
+	table: TypeTable,
+): ReadonlyArray<AST.TSSignature> | undefined {
+	if (type.type === "TSTypeLiteral") {
+		return type.members;
+	}
+	if (
+		type.type !== "TSTypeReference" ||
+		type.typeName.type !== "Identifier" ||
+		type.typeArguments
+	) {
 		return undefined;
+	}
 	const declaration = table.declaration(type.typeName.name);
-	if (!declaration) return undefined;
+	if (!declaration) {
+		return undefined;
+	}
 	const { node } = declaration;
-	if (node.type === "TSInterfaceDeclaration") return node.body.body;
+	if (node.type === "TSInterfaceDeclaration") {
+		return node.body.body;
+	}
 	return node.typeAnnotation.type === "TSTypeLiteral" ? node.typeAnnotation.members : undefined;
 }
 
@@ -369,11 +415,17 @@ function templateRefType(binding: string, render: RenderContext): AST.TSType | u
 		(each) => each.id === binding,
 	)?.declaration;
 	const body = render.component.body;
-	if (!declaration || body?.type !== "BlockStatement") return undefined;
+	if (!declaration || body?.type !== "BlockStatement") {
+		return undefined;
+	}
 	for (const statement of body.body) {
-		if (statement.type !== "VariableDeclaration") continue;
+		if (statement.type !== "VariableDeclaration") {
+			continue;
+		}
 		for (const declarator of statement.declarations) {
-			if (declarator.id !== declaration || declarator.init?.type !== "CallExpression") continue;
+			if (declarator.id !== declaration || declarator.init?.type !== "CallExpression") {
+				continue;
+			}
 			return declarator.init.typeArguments?.params[0];
 		}
 	}
@@ -389,8 +441,12 @@ export function componentOf(
 	render: RenderContext,
 ): ComponentInfo | null | undefined {
 	const resolution = render.scopes.resolve(name as unknown as AST.IdentifierReference);
-	if (resolution.kind !== "import" && resolution.kind !== "variable") return undefined;
-	if (!render.components.has(resolution.declaration)) return undefined;
+	if (resolution.kind !== "import" && resolution.kind !== "variable") {
+		return undefined;
+	}
+	if (!render.components.has(resolution.declaration)) {
+		return undefined;
+	}
 	return render.components.get(resolution.declaration) ?? null;
 }
 
@@ -440,7 +496,7 @@ function lowerProp(
 	api: ComponentApi,
 	info: ComponentInfo,
 	render: RenderContext,
-	items: readonly AST.JSXAttributeItem[] | undefined,
+	items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): ComponentAttribute | undefined {
 	const { reporter, source } = render;
 	const prop = api.props.find((each) => each.name === name.name);
@@ -542,7 +598,9 @@ function lowerProp(
 		return undefined;
 	}
 	const checked = checkExpression(value.expression, render);
-	if (!checked.clean) return undefined;
+	if (!checked.clean) {
+		return undefined;
+	}
 	const { expression } = value;
 	if (
 		expression.type === "Literal" &&
@@ -564,7 +622,7 @@ function lowerComponentListener(
 	api: ComponentApi,
 	info: ComponentInfo,
 	render: RenderContext,
-	items: readonly AST.JSXAttributeItem[] | undefined,
+	items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): ComponentAttribute | undefined {
 	const { reporter } = render;
 	const event = eventName(name.name);
@@ -605,7 +663,9 @@ function lowerComponentListener(
 				return [];
 			}
 			const written = each.name.name;
-			if (!/^on[A-Z]/.test(written)) return [];
+			if (!/^on[A-Z]/.test(written)) {
+				return [];
+			}
 			const option = OPTION_SUFFIXES.find((ending) => written.endsWith(ending));
 			return [eventName(option ? written.slice(0, -option.length) : written)];
 		});
@@ -621,7 +681,9 @@ function lowerComponentListener(
 		return undefined;
 	}
 	const handler: Handler | undefined = lowerComponentHandler(item, render);
-	if (!handler) return undefined;
+	if (!handler) {
+		return undefined;
+	}
 	return createListenerAttribute(event, handler, span(item));
 }
 
@@ -652,7 +714,7 @@ function namespaceOf(api: ComponentApi): Namespace {
  * Vue passes an attribute in kebab case to the prop of its camel case.
  */
 function camelize(name: string): string {
-	return name.replace(/-(\w)/g, (_, letter: string) => letter.toUpperCase());
+	return name.replaceAll(/-(\w)/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /**
@@ -666,13 +728,17 @@ function kebabMember(
 	api: ComponentApi,
 	info: ComponentInfo,
 	render: RenderContext,
-	items: readonly AST.JSXAttributeItem[] | undefined,
+	items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): boolean {
-	if (!name.name.includes("-")) return false;
+	if (!name.name.includes("-")) {
+		return false;
+	}
 	const camel = camelize(name.name);
 	const prop = api.props.find((each) => each.name === camel);
 	const model = prop ? undefined : api.models.find((each) => each.name === camel);
-	if (!prop && !model) return false;
+	if (!prop && !model) {
+		return false;
+	}
 	const others = items?.flatMap((each) =>
 		each !== item && each.type === "JSXAttribute" && each.name.type === "JSXIdentifier"
 			? [each.name.name]
@@ -712,7 +778,9 @@ function reachesRootDeclaration(
 			? each.name === event
 			: !listener && (each.name === name.name || each.name === camelize(name.name)),
 	);
-	if (!declaration) return false;
+	if (!declaration) {
+		return false;
+	}
 	const what =
 		declaration.kind === "event"
 			? `\`${declaration.name}\` event`
@@ -750,7 +818,9 @@ function passesAttribute(attribute: string, api: ComponentApi): boolean {
 	// A `<component is>` root's: at least one tag takes it, and the lowering reports a name that
 	// only some take (ADR-0122).
 	const tags = dynamicTags(api);
-	if (tags) return tags.some((tag) => takesByName(tag, attribute));
+	if (tags) {
+		return tags.some((tag) => takesByName(tag, attribute));
+	}
 	const tag = api.fallthroughTag ?? "div";
 	const namespace = namespaceOf(api);
 	return isAttributeOf(tag, namespace, canonicalName(tag, namespace, attribute));
@@ -761,7 +831,7 @@ function passesAttribute(attribute: string, api: ComponentApi): boolean {
  * through is checked against (ADR-0122): where the component keeps `inheritAttrs` and has no
  * fallthrough element of its own. Absent otherwise.
  */
-function dynamicTags(api: ComponentApi): readonly string[] | undefined {
+function dynamicTags(api: ComponentApi): ReadonlyArray<string> | undefined {
 	return api.fallthroughTag === undefined && api.inheritAttrs ? api.rootTags : undefined;
 }
 
@@ -772,7 +842,9 @@ function dynamicTags(api: ComponentApi): readonly string[] | undefined {
  */
 export function passesListener(attribute: string, api: ComponentApi): boolean {
 	const event = eventName(attribute);
-	if (api.events.some((each) => each.name === event)) return false;
+	if (api.events.some((each) => each.name === event)) {
+		return false;
+	}
 	const suffix = OPTION_SUFFIXES.find((each) => attribute.endsWith(each));
 	if (
 		suffix &&
@@ -790,18 +862,22 @@ export function passesListener(attribute: string, api: ComponentApi): boolean {
  * be, then passed to it. UF3045 reports them where the component takes nothing.
  */
 function lowerFallthrough(
-	items: readonly AST.JSXAttribute[],
+	items: ReadonlyArray<AST.JSXAttribute>,
 	opening: AST.JSXOpeningElement,
 	api: ComponentApi,
 	info: ComponentInfo,
 	render: RenderContext,
-): ComponentAttribute[] {
-	if (!items.length) return [];
+): Array<ComponentAttribute> {
+	if (!items.length) {
+		return [];
+	}
 	const { reporter } = render;
 	// A `<component is>` root over tags, or a root component that renders one, takes what every
 	// tag takes (ADR-0122).
 	const tags = dynamicTags(api);
-	if (tags) return lowerDynamicFallthrough(items, opening, tags, api, info, render);
+	if (tags) {
+		return lowerDynamicFallthrough(items, opening, tags, api, info, render);
+	}
 	if (!takesFallthrough(api)) {
 		const dropped =
 			api.inheritAttrs === false
@@ -846,18 +922,22 @@ function lowerFallthrough(
  * attributes', and each later tag is checked in a probe (ADR-0119).
  */
 function lowerDynamicFallthrough(
-	items: readonly AST.JSXAttribute[],
+	items: ReadonlyArray<AST.JSXAttribute>,
 	opening: AST.JSXOpeningElement,
-	tags: readonly string[],
+	tags: ReadonlyArray<string>,
 	api: ComponentApi,
 	info: ComponentInfo,
 	render: RenderContext,
-): ComponentAttribute[] {
+): Array<ComponentAttribute> {
 	const passed = items.filter((item) => {
 		const written = item.name.type === "JSXIdentifier" ? item.name.name : "";
-		if (/^on[A-Z]/.test(written)) return true;
+		if (/^on[A-Z]/.test(written)) {
+			return true;
+		}
 		const without = tags.filter((tag) => !takesByName(tag, written));
-		if (!without.length) return true;
+		if (!without.length) {
+			return true;
+		}
 		render.reporter.unsupported(
 			item.name,
 			`\`${written}\` falls through to ${info.name}'s \`<component is>\` root only where every tag takes it, and ${without.map((tag) => `<${tag}>`).join(" and ")} ${without.length === 1 ? "doesn't" : "don't"}.`,
@@ -867,7 +947,9 @@ function lowerDynamicFallthrough(
 		);
 		return false;
 	});
-	if (!passed.length) return [];
+	if (!passed.length) {
+		return [];
+	}
 	const passing = { ...opening, attributes: passed };
 	const mark = render.reporter.diagnostics.length;
 	// Taken before the first tag lowers, so each later one starts from the same context.
@@ -882,7 +964,9 @@ function lowerDynamicFallthrough(
 			fallthrough: { own: api.fallthroughOwn },
 		}).attributes;
 	const lowered = check(tags[0]!, render);
-	for (const [index, tag] of tags.slice(1).entries()) check(tag, probes[index]!);
+	for (const [index, tag] of tags.slice(1).entries()) {
+		check(tag, probes[index]!);
+	}
 	merge(render, mark, probes);
 	return passedAttributes(lowered, render);
 }
@@ -892,10 +976,10 @@ function lowerDynamicFallthrough(
  * static `class` is one class, and a listener option is not supported yet.
  */
 function passedAttributes(
-	attributes: readonly Attribute[],
+	attributes: ReadonlyArray<Attribute>,
 	render: RenderContext,
-): ComponentAttribute[] {
-	return attributes.flatMap((attribute): ComponentAttribute[] => {
+): Array<ComponentAttribute> {
+	return attributes.flatMap((attribute): Array<ComponentAttribute> => {
 		switch (attribute.kind) {
 			case "Class":
 			case "Style":
@@ -903,7 +987,9 @@ function passedAttributes(
 				return [attribute];
 			// A static `class` lowers to a static attribute on an element, and is one class here.
 			case "Static":
-				if (attribute.name !== "class") return [attribute];
+				if (attribute.name !== "class") {
+					return [attribute];
+				}
 				return attribute.value === true
 					? []
 					: [
@@ -930,7 +1016,9 @@ function passedAttributes(
 
 /** Whether a spread spreads the props' rest, `{...rest}` (ADR-0118). */
 export function isRestSpread(item: AST.JSXSpreadAttribute, render: RenderContext): boolean {
-	if (item.argument.type !== "Identifier" || !render.restProps) return false;
+	if (item.argument.type !== "Identifier" || !render.restProps) {
+		return false;
+	}
 	const resolution = render.scopes.resolve(item.argument);
 	return resolution.kind === "parameter" && resolution.declaration === render.restProps.declaration;
 }
@@ -946,10 +1034,12 @@ function lowerFills(
 	info: ComponentInfo,
 	render: RenderContext,
 	fixable: boolean,
-): SlotFill[] | undefined {
+): Array<SlotFill> | undefined {
 	const { reporter } = render;
 	const content = node.children.filter((child) => hasContent([child]));
-	if (!content.length) return [];
+	if (!content.length) {
+		return [];
+	}
 	const [only] = content;
 	const object =
 		content.length === 1 &&
@@ -970,7 +1060,9 @@ function lowerFills(
 		);
 		return undefined;
 	}
-	if (object) return lowerSlotObject(object, api, info, render, fixable);
+	if (object) {
+		return lowerSlotObject(object, api, info, render, fixable);
+	}
 	if (!declares(api, "default")) {
 		reporter.report(
 			"UF3038",
@@ -984,7 +1076,9 @@ function lowerFills(
 	}
 	const at = { start: content[0]!.start, end: content.at(-1)!.end };
 	const forwarded = forwardedDefault(content, render);
-	if (forwarded) return [createSlotFill("default", [], at, { forward: "default" })];
+	if (forwarded) {
+		return [createSlotFill("default", [], at, { forward: "default" })];
+	}
 	const children = lowerChildren(node.children, FILL, inFill(render));
 	return children.length ? [createSlotFill("default", children, at)] : [];
 }
@@ -998,12 +1092,18 @@ function declares(api: ComponentApi, slot: string): boolean {
  * Children that are only `{slots.default?.()}`, with no fallback: the parent's default slot
  * forwarded (ADR-0054), which lowers to the fill `{{ default: slots.default }}` lowers to.
  */
-function forwardedDefault(content: readonly AST.JSXChild[], render: RenderContext): boolean {
+function forwardedDefault(content: ReadonlyArray<AST.JSXChild>, render: RenderContext): boolean {
 	const [only] = content;
-	if (content.length !== 1 || only?.type !== "JSXExpressionContainer") return false;
-	if (only.expression.type === "JSXEmptyExpression") return false;
+	if (content.length !== 1 || only?.type !== "JSXExpressionContainer") {
+		return false;
+	}
+	if (only.expression.type === "JSXEmptyExpression") {
+		return false;
+	}
 	const call = slotCall(only.expression, render);
-	if (call?.slot !== "default" || call.node.arguments.length || !call.optional) return false;
+	if (call?.slot !== "default" || call.node.arguments.length || !call.optional) {
+		return false;
+	}
 	// Forwarding the default slot needs one to forward, as a slot object's `slots.default` does.
 	if (!render.slots?.slots.some((each) => each.name === "default")) {
 		render.reporter.report(
@@ -1034,9 +1134,9 @@ function lowerSlotObject(
 	info: ComponentInfo,
 	render: RenderContext,
 	fixable: boolean,
-): SlotFill[] | undefined {
+): Array<SlotFill> | undefined {
 	const { reporter } = render;
-	const fills: SlotFill[] = [];
+	const fills: Array<SlotFill> = [];
 	let valid = true;
 	const invalid = (at: { start: number; end: number }, message: string) => {
 		reporter.report("UF3040", at, message, {
@@ -1138,7 +1238,7 @@ function lowerSlotObject(
 			invalid(param, `The slot \`${slot}\` passes no props, so its fill takes no parameter.`);
 			continue;
 		}
-		const variables: LoopVariable[] = [];
+		const variables: Array<LoopVariable> = [];
 		let parameter: Parameter | undefined;
 		if (param) {
 			const read = fillParameter(param, render);
@@ -1149,23 +1249,35 @@ function lowerSlotObject(
 			({ parameter } = read);
 			variables.push(...read.variables);
 		}
-		for (const variable of variables) render.loopVariables.set(variable.declaration, variable);
+		for (const variable of variables) {
+			render.loopVariables.set(variable.declaration, variable);
+		}
 		const children = lowerContent(value.body, FILL, inFill(render));
 		fills.push(createSlotFill(slot, children, at, parameter ? { parameter } : {}));
 	}
-	if (!valid) return undefined;
+	if (!valid) {
+		return undefined;
+	}
 	// The default slot's fill comes first, as the children's would (ADR-0055).
 	return fills.toSorted((a, b) => Number(b.slot === "default") - Number(a.slot === "default"));
 }
 
 /** The slot of this component a member expression forwards: `slots.title`. */
 function forwardedSlot(node: AST.MemberExpression, render: RenderContext): string | undefined {
-	if (node.object.type !== "Identifier" || node.computed || node.optional) return undefined;
-	if (node.property.type !== "Identifier") return undefined;
+	if (node.object.type !== "Identifier" || node.computed || node.optional) {
+		return undefined;
+	}
+	if (node.property.type !== "Identifier") {
+		return undefined;
+	}
 	const binding = setupBindingOf(node.object, render);
-	if (binding?.kind !== "slots") return undefined;
+	if (binding?.kind !== "slots") {
+		return undefined;
+	}
 	const slot = node.property.name;
-	if (render.slots?.slots.some((each) => each.name === slot)) return slot;
+	if (render.slots?.slots.some((each) => each.name === slot)) {
+		return slot;
+	}
 	render.reporter.report(
 		"UF3041",
 		node,
@@ -1182,7 +1294,7 @@ function forwardedSlot(node: AST.MemberExpression, render: RenderContext): strin
 function fillParameter(
 	param: AST.ParamPattern,
 	render: RenderContext,
-): { parameter: Parameter; variables: LoopVariable[] } | undefined {
+): { parameter: Parameter; variables: Array<LoopVariable> } | undefined {
 	const { reporter, source } = render;
 	const invalid = (at: { start: number; end: number }) => {
 		reporter.report(
@@ -1193,11 +1305,16 @@ function fillParameter(
 		);
 		return undefined;
 	};
-	if (param.type !== "Identifier" && param.type !== "ObjectPattern") return invalid(param);
-	if (param.typeAnnotation || param.optional) return invalid(param.typeAnnotation ?? param);
-	const identifiers: AST.BindingIdentifier[] = [];
-	if (param.type === "Identifier") identifiers.push(param);
-	else {
+	if (param.type !== "Identifier" && param.type !== "ObjectPattern") {
+		return invalid(param);
+	}
+	if (param.typeAnnotation || param.optional) {
+		return invalid(param.typeAnnotation ?? param);
+	}
+	const identifiers: Array<AST.BindingIdentifier> = [];
+	if (param.type === "Identifier") {
+		identifiers.push(param);
+	} else {
 		for (const property of param.properties) {
 			if (
 				property.type !== "Property" ||
@@ -1209,9 +1326,11 @@ function fillParameter(
 			identifiers.push(property.value);
 		}
 	}
-	const variables: LoopVariable[] = [];
+	const variables: Array<LoopVariable> = [];
 	for (const identifier of identifiers) {
-		if (shadowing(identifier, render)) return undefined;
+		if (shadowing(identifier, render)) {
+			return undefined;
+		}
 		const binding = createBinding(identifier.name, "slotScope", {
 			start: identifier.start,
 			end: identifier.start + identifier.name.length,
@@ -1261,7 +1380,9 @@ export function slotCall(
 	) {
 		return undefined;
 	}
-	if (setupBindingOf(callee.object, render)?.kind !== "slots") return undefined;
+	if (setupBindingOf(callee.object, render)?.kind !== "slots") {
+		return undefined;
+	}
 	return { slot: callee.property.name, node: call, optional: call.optional };
 }
 
@@ -1283,7 +1404,9 @@ export function lowerSlotOutlet(
 		fallbackNode ? (expression as AST.LogicalExpression).left : expression,
 		render,
 	);
-	if (!called) return undefined;
+	if (!called) {
+		return undefined;
+	}
 	const { reporter } = render;
 	const { slot, node, optional } = called;
 	const declared = render.slots?.slots.find((each) => each.name === slot);
@@ -1339,7 +1462,9 @@ export function lowerSlotOutlet(
 	const mark = reporter.diagnostics.length;
 	const props = argument ? checkExpression(argument, render) : undefined;
 	const fallback = fallbackNode ? lowerContent(fallbackNode, place, render) : [];
-	if ((props && !props.clean) || reporter.hasErrorsSince(mark)) return { node: undefined };
+	if ((props && !props.clean) || reporter.hasErrorsSince(mark)) {
+		return { node: undefined };
+	}
 	return {
 		node: createSlotOutlet(slot, fallback, at, props?.expression),
 	};

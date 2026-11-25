@@ -80,18 +80,22 @@ export function consumersDir(target: string): string {
 }
 
 /** The cases a target has consumer fixtures for, as `area/name`, sorted. */
-export function consumerCases(target: string): string[] {
+export function consumerCases(target: string): Array<string> {
 	const root = consumersDir(target);
-	if (!existsSync(root)) return [];
+	if (!existsSync(root)) {
+		return [];
+	}
 	return directories(root).flatMap((area) =>
 		directories(join(root, area)).map((name) => `${area}/${name}`),
 	);
 }
 
 /** A case's consumer fixtures for a target (absolute paths, sorted): none without a tree. */
-export function consumerFixtures(target: string, caseId: string): string[] {
+export function consumerFixtures(target: string, caseId: string): Array<string> {
 	const directory = join(consumersDir(target), ...caseId.split("/"));
-	if (!existsSync(directory)) return [];
+	if (!existsSync(directory)) {
+		return [];
+	}
 	return readdirSync(directory)
 		.toSorted()
 		.map((entry) => join(directory, entry))
@@ -103,7 +107,11 @@ export function consumerFixtures(target: string, caseId: string): string[] {
  * canary's fresh compile, `<root>/cases/<case>/__output__/`, instead of the golden outputs: the
  * relative path to the cases directory is the one thing a copy changes, so its lines stay put.
  */
-export function copyFixtures(fixtures: readonly string[], root: string, caseId: string): Fixture[] {
+export function copyFixtures(
+	fixtures: ReadonlyArray<string>,
+	root: string,
+	caseId: string,
+): Array<Fixture> {
 	return fixtures.map((path) => {
 		const checked = join(root, "consumers", ...caseId.split("/"), basename(path));
 		const from = posix(relative(dirname(path), CASES_DIR));
@@ -116,13 +124,15 @@ export function copyFixtures(fixtures: readonly string[], root: string, caseId: 
 
 /** A fixture's directives, and the lines of every `@uf-expect` that does not read as one. */
 export function readExpectations(contents: string): {
-	expectations: Expectation[];
-	malformed: number[];
+	expectations: Array<Expectation>;
+	malformed: Array<number>;
 } {
-	const expectations: Expectation[] = [];
-	const malformed: number[] = [];
+	const expectations: Array<Expectation> = [];
+	const malformed: Array<number> = [];
 	contents.split(/\r?\n/).forEach((text, index) => {
-		if (!text.includes("@uf-expect")) return;
+		if (!text.includes("@uf-expect")) {
+			return;
+		}
 		// One directive a line: a second would claim the same misuse line.
 		const match = text.split("@uf-expect").length === 2 ? DIRECTIVE.exec(text) : null;
 		if (!match) {
@@ -148,16 +158,20 @@ export function readExpectations(contents: string): {
 export function consumerProblems(
 	target: string,
 	info: Pick<CaseInfo, "id" | "dir">,
-	fixtures: readonly Fixture[],
-	results: ReadonlyMap<string, readonly ToolchainMessage[]>,
+	fixtures: ReadonlyArray<Fixture>,
+	results: ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>,
 	gaps: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = CONSUMER_GAPS,
-): string[] {
-	if (!fixtures.length) return [];
+): Array<string> {
+	if (!fixtures.length) {
+		return [];
+	}
 	const declarations = caseDeclarations(info);
 	return fixtures.flatMap(({ path, checked }) => {
 		const shown = posix(relative(REPO_ROOT, path));
 		const messages = results.get(checked);
-		if (!messages) return [`${shown}: the checker reported nothing for this file.`];
+		if (!messages) {
+			return [`${shown}: the checker reported nothing for this file.`];
+		}
 		const { expectations, malformed } = readExpectations(readFileSync(path, "utf8"));
 		const problems = malformed.map(
 			(line) =>
@@ -226,7 +240,9 @@ function caseDeclarations(
 				declarations.set(`${component.name}.event:${event.name}`, { at: at(event.span.start) });
 			}
 			for (const item of component.setup) {
-				if (item.kind !== "Model") continue;
+				if (item.kind !== "Model") {
+					continue;
+				}
 				declarations.set(`${component.name}.model:${item.name}`, { at: at(item.span.start) });
 			}
 			const typeParameters = new Set(component.typeParameters?.map(({ name }) => name));
@@ -258,7 +274,9 @@ function exportedTypes(
 ): Map<string, string> {
 	const types = new Map<string, string>();
 	for (const declaration of module.types) {
-		if (declaration.exported) types.set(declaration.name, at(declaration.span.start));
+		if (declaration.exported) {
+			types.set(declaration.name, at(declaration.span.start));
+		}
 	}
 	for (const typeExport of module.typeExports ?? []) {
 		if (typeExport.kind === "Declaration") {
@@ -286,7 +304,7 @@ function exportedTypes(
 	return types;
 }
 
-function directories(path: string): string[] {
+function directories(path: string): Array<string> {
 	return readdirSync(path)
 		.filter((entry) => statSync(join(path, entry)).isDirectory())
 		.toSorted();

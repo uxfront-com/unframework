@@ -59,7 +59,7 @@ const geometry = (width = 100): GeometrySnapshot => ({
 });
 
 /** The browser projects of a run, as the reference-not-run check reads them. */
-const projects = (...targets: string[]) =>
+const projects = (...targets: Array<string>) =>
 	targets.map((target) => ({
 		name: `browser:${target}`,
 		config: { browser: { enabled: true } },
@@ -82,8 +82,9 @@ function context(
 	};
 	const cdp = {
 		async send(method: string) {
-			if (method === "DOM.getDocument")
+			if (method === "DOM.getDocument") {
 				return { root: { nodeId: 1, nodeType: 9, children: [container] } };
+			}
 			if (method === "CSS.getPlatformFontsForNode") {
 				return { fonts: [{ familyName: "Inter", isCustomFont: true, glyphCount: 5 }] };
 			}
@@ -220,7 +221,7 @@ describe("ufExampleCapture with live pixels", () => {
 	});
 
 	it("fails a follower whose reference finished without capturing", async () => {
-		ufSpecFinished(context("vue", png(20, 10)) as never, { case: CASE });
+		ufSpecFinished(context("vue", png(20, 10)), { case: CASE });
 		const result = await ufExampleCapture(context("react", png(20, 10)), request());
 		expect(result).toMatchObject({ pass: false, outcome: "missing-reference-capture" });
 	});

@@ -30,7 +30,9 @@ export function createProject(files: Record<string, string> = {}): Project {
 		writeFileSync(file, contents);
 		return file;
 	};
-	for (const [path, contents] of Object.entries(files)) write(path, contents);
+	for (const [path, contents] of Object.entries(files)) {
+		write(path, contents);
+	}
 	return { root, write, remove: () => rmSync(root, { recursive: true, force: true }) };
 }
 
@@ -38,12 +40,12 @@ export function createProject(files: Record<string, string> = {}): Project {
 export interface TestServer {
 	server: ViteDevServer;
 	client: DevEnvironment;
-	warnings: string[];
+	warnings: Array<string>;
 	close(): Promise<void>;
 }
 
-export async function startServer(root: string, plugins: PluginOption[]): Promise<TestServer> {
-	const warnings: string[] = [];
+export async function startServer(root: string, plugins: Array<PluginOption>): Promise<TestServer> {
+	const warnings: Array<string> = [];
 	const logger = createLogger("warn", { allowClearScreen: false });
 	const warn = (message: string) => void warnings.push(message);
 	logger.warn = warn;
@@ -71,7 +73,9 @@ export function apiOf(server: ViteDevServer): UnframeworkApi {
 	const plugin = server.config.plugins.find(
 		(candidate): candidate is Plugin<UnframeworkApi> => candidate.name === "unframework",
 	);
-	if (!plugin?.api) throw new Error("the unframework plugin is not installed");
+	if (!plugin?.api) {
+		throw new Error("the unframework plugin is not installed");
+	}
 	return plugin.api;
 }
 
@@ -86,7 +90,9 @@ export const fakeVue: Plugin = {
 
 /** The code a load result holds. */
 export function codeOf(result: unknown): string {
-	if (typeof result === "string") return result;
+	if (typeof result === "string") {
+		return result;
+	}
 	if (result && typeof result === "object" && "code" in result && typeof result.code === "string") {
 		return result.code;
 	}

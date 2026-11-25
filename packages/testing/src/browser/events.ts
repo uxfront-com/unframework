@@ -8,7 +8,7 @@ import { renameGeneratedIds } from "../normalize/rules/generated-ids.ts";
 /** One emit: the event's source name and its arguments, as plain data. */
 export interface EmittedEvent {
 	name: string;
-	args: unknown[];
+	args: Array<unknown>;
 }
 
 /** A payload no trace can record, refused with the event's name and where in it the value was. */
@@ -23,9 +23,11 @@ export class PayloadError extends Error {
  * `undefined` on its immediate first run (semantics contract, watch semantics). An `undefined`
  * before a given argument is still refused.
  */
-export function copyPayload(event: string, args: readonly unknown[]): unknown[] {
+export function copyPayload(event: string, args: ReadonlyArray<unknown>): Array<unknown> {
 	let length = args.length;
-	while (length > 0 && args[length - 1] === undefined) length -= 1;
+	while (length > 0 && args[length - 1] === undefined) {
+		length -= 1;
+	}
 	return args.slice(0, length).map((arg, index) => copyValue(arg, `argument ${index + 1}`, event));
 }
 
@@ -35,21 +37,37 @@ function copyValue(value: unknown, path: string, event: string): unknown {
 			`The payload of "${event}" holds ${what} at ${path}: an emit's arguments are plain data (strings, finite numbers, booleans, null, arrays and plain objects), which every target's listener receives alike and a trace records.`,
 		);
 	};
-	if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+	if (value === null || typeof value === "string" || typeof value === "boolean") {
+		return value;
+	}
 	if (typeof value === "number") {
-		if (!Number.isFinite(value)) refuse(String(value));
+		if (!Number.isFinite(value)) {
+			refuse(String(value));
+		}
 		// JSON has one zero.
 		return value === 0 ? 0 : value;
 	}
 	if (value === undefined) {
 		return refuse("undefined (leave the argument out, or pass null)");
 	}
-	if (typeof value === "function") return refuse("a function");
-	if (typeof value !== "object") return refuse(`a ${typeof value}`);
-	if (typeof Event !== "undefined" && value instanceof Event) return refuse("a DOM event");
-	if (typeof Node !== "undefined" && value instanceof Node) return refuse("a DOM node");
-	if (value instanceof Map) return refuse("a Map");
-	if (value instanceof Set) return refuse("a Set");
+	if (typeof value === "function") {
+		return refuse("a function");
+	}
+	if (typeof value !== "object") {
+		return refuse(`a ${typeof value}`);
+	}
+	if (typeof Event !== "undefined" && value instanceof Event) {
+		return refuse("a DOM event");
+	}
+	if (typeof Node !== "undefined" && value instanceof Node) {
+		return refuse("a DOM node");
+	}
+	if (value instanceof Map) {
+		return refuse("a Map");
+	}
+	if (value instanceof Set) {
+		return refuse("a Set");
+	}
 	if (Array.isArray(value)) {
 		return Array.from(value, (item, index) => copyValue(item, `${path}[${index}]`, event));
 	}
@@ -72,8 +90,12 @@ function copyValue(value: unknown, path: string, event: string): unknown {
  * does not hold takes the next number.
  */
 export function renumberIds(value: unknown, names: Map<string, string>): unknown {
-	if (typeof value === "string") return renameGeneratedIds(value, names);
-	if (Array.isArray(value)) return value.map((item) => renumberIds(item, names));
+	if (typeof value === "string") {
+		return renameGeneratedIds(value, names);
+	}
+	if (Array.isArray(value)) {
+		return value.map((item) => renumberIds(item, names));
+	}
 	if (value !== null && typeof value === "object") {
 		return Object.fromEntries(
 			Object.entries(value).map(([key, item]) => [key, renumberIds(item, names)]),
@@ -87,8 +109,12 @@ export function renumberIds(value: unknown, names: Map<string, string>): unknown
  * the relative order of different effects that one run triggers is not part of the contract
  * (Vue orders by trigger, Svelte and React by declaration), so a trace never records it.
  */
-export function groupEvents(events: readonly EmittedEvent[]): Record<string, unknown[][]> {
-	const groups = new Map<string, unknown[][]>();
-	for (const { name, args } of events) groups.set(name, [...(groups.get(name) ?? []), args]);
+export function groupEvents(
+	events: ReadonlyArray<EmittedEvent>,
+): Record<string, Array<Array<unknown>>> {
+	const groups = new Map<string, Array<Array<unknown>>>();
+	for (const { name, args } of events) {
+		groups.set(name, [...(groups.get(name) ?? []), args]);
+	}
 	return Object.fromEntries([...groups.keys()].sort().map((name) => [name, groups.get(name)!]));
 }

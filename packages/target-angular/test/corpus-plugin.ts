@@ -29,11 +29,15 @@ function sourceOf(name: string): { file: string; source: string } {
 	if (name.startsWith(PROBE)) {
 		const file = `${name.slice(PROBE.length)}.uf.tsx`;
 		const source = M2_SOURCES[file];
-		if (source === undefined) throw new Error(`M2_SOURCES has no ${file}.`);
+		if (source === undefined) {
+			throw new Error(`M2_SOURCES has no ${file}.`);
+		}
 		return { file, source };
 	}
 	const file = readdirSync(join(casesDir, name)).find((each) => each.endsWith(".uf.tsx"));
-	if (!file) throw new Error(`The case ${name} has no source.`);
+	if (!file) {
+		throw new Error(`The case ${name} has no source.`);
+	}
 	return { file, source: readFileSync(join(casesDir, name, file), "utf8") };
 }
 
@@ -54,7 +58,9 @@ export function corpusOutputs(): Plugin {
 			root = config.root;
 		},
 		resolveId(source) {
-			if (source.startsWith(EVENTS)) return `${EVENTS_ID}${source.slice(EVENTS.length)}`;
+			if (source.startsWith(EVENTS)) {
+				return `${EVENTS_ID}${source.slice(EVENTS.length)}`;
+			}
 			return source.startsWith(PREFIX) ? idOf(source.slice(PREFIX.length)) : null;
 		},
 		async load(id) {
@@ -67,15 +73,21 @@ export function corpusOutputs(): Plugin {
 				}));
 				return `export default ${JSON.stringify(events)};\n`;
 			}
-			if (!id.includes(DIRECTORY)) return null;
+			if (!id.includes(DIRECTORY)) {
+				return null;
+			}
 			const name = id.slice(id.indexOf(DIRECTORY) + DIRECTORY.length, id.lastIndexOf("/"));
 			const { file, source } = sourceOf(name);
 			// A case may show a warning on purpose (`semantics/setup-once`'s UF2007).
 			const module = lower(source, file, true);
 			const [output, ...more] = emitModule(module);
-			if (!output || more.length) throw new Error(`${name} does not emit one file.`);
+			if (!output || more.length) {
+				throw new Error(`${name} does not emit one file.`);
+			}
 			const { file: formatted, error } = await formatOutput(output);
-			if (error) throw new Error(`${name} does not format: ${error}`);
+			if (error) {
+				throw new Error(`${name} does not format: ${error}`);
+			}
 			compiled.set(id, formatted.contents);
 			return formatted.contents;
 		},

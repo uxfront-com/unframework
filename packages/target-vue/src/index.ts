@@ -104,12 +104,12 @@ export const vue: Target = defineTarget({
 		// Top-level `await` in `<script setup>`, under a `<Suspense>` the parent prints (ADR-0101).
 		"async-setup": { support: "native" },
 	},
-	emit(component: UfComponent, context: EmitContext): OutputFile[] {
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
 		const { block, rewrite, listeners, components, keys, textCaret, mounted, instanceRefs, rest } =
 			scriptSetup(component, context.module);
 		const root = asyncRootChild(component, context.module);
 		/** Each piece of an async child, inside a `<Suspense>` that takes the piece's directives. */
-		const suspended = (pieces: readonly MarkupPiece[]): MarkupPiece[] =>
+		const suspended = (pieces: ReadonlyArray<MarkupPiece>): Array<MarkupPiece> =>
 			pieces.map((piece) => {
 				if (
 					piece.kind !== "component" ||
@@ -117,7 +117,7 @@ export const vue: Target = defineTarget({
 				) {
 					return piece;
 				}
-				const attrs: PrintedAttribute[] =
+				const attrs: Array<PrintedAttribute> =
 					piece.component === root ? [{ name: "v-bind", text: 'v-bind="$attrs"' }] : [];
 				return {
 					kind: "tag",
@@ -150,7 +150,9 @@ export const vue: Target = defineTarget({
 						restAttribute: () => [spread],
 						orderAttributes: (attributes) => {
 							const ordered = vueDialect.orderAttributes!(attributes);
-							if (!ordered.includes(spread)) return ordered;
+							if (!ordered.includes(spread)) {
+								return ordered;
+							}
 							const others = ordered.filter((attribute) => attribute !== spread);
 							const content = others.findIndex((attribute) => attribute.name === "v-html");
 							others.splice(content === -1 ? others.length : content, 0, spread);
@@ -243,7 +245,7 @@ export default vue;
 function directiveAttribute(name: string): { name: string; text: string } {
 	const attribute = `v-${name
 		.slice(1)
-		.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
+		.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
 		.replace(/^-/, "")}`;
 	return { name: attribute, text: attribute };
 }

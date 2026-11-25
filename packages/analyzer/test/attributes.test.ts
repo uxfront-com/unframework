@@ -700,8 +700,12 @@ describe("names a prototype has", () => {
 function markupWith(name: string, value: string): string {
 	const owner = isHtmlAttribute("div", name) ? "div" : (ownerOf(name) ?? "div");
 	const element = `<${owner} ${name}="${value}">a</${owner}>`;
-	if (owner === "td") return `<table><tbody><tr>${element}</tr></tbody></table>`;
-	if (owner === "input" || owner === "img") return `<div><${owner} ${name}="${value}" /></div>`;
+	if (owner === "td") {
+		return `<table><tbody><tr>${element}</tr></tbody></table>`;
+	}
+	if (owner === "input" || owner === "img") {
+		return `<div><${owner} ${name}="${value}" /></div>`;
+	}
 	return `<div>${element}</div>`;
 }
 
@@ -797,7 +801,7 @@ describe("fixes", () => {
 			' formaction="/x"',
 			' type="button"',
 		];
-		const combinations: string[] = [];
+		const combinations: Array<string> = [];
 		for (const tag of elements) {
 			for (const name of names) {
 				for (const value of values) {
@@ -826,13 +830,17 @@ describe("fixes", () => {
 	// `type=""` did for a submit button's overrides (r3-analyzer-2).
 	it("for a bare attribute recompile clean beside every other attribute of its element", () => {
 		const values = [null, "", "x", "submit", "button", "1", "true"];
-		const combinations: string[] = [];
+		const combinations: Array<string> = [];
 		for (const [tag, own] of ELEMENT_ATTRIBUTES) {
-			if (UNRENDERABLE_ELEMENTS.has(tag)) continue;
+			if (UNRENDERABLE_ELEMENTS.has(tag)) {
+				continue;
+			}
 			const names = [...own, "id", "title", "class", "tabindex", "popover"];
 			for (const bare of names) {
 				for (const other of names) {
-					if (other === bare) continue;
+					if (other === bare) {
+						continue;
+					}
 					for (const value of isBooleanAttribute(other) ? [null] : values) {
 						const attributes = `${bare} ${value === null ? other : `${other}="${value}"`}`;
 						const element = VOID_ELEMENTS.has(tag)
@@ -844,11 +852,13 @@ describe("fixes", () => {
 			}
 		}
 		replayable(propertyRun(combinations.length, 0), (run) => {
-			const failures: string[] = [];
+			const failures: Array<string> = [];
 			let fixed = 0;
 			for (const jsx of sampleOf(combinations, run)) {
 				const { source, diagnostics } = component(jsx);
-				if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+				if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) {
+					continue;
+				}
 				try {
 					applyAndRecheck(source, diagnostics);
 					fixed++;
@@ -857,7 +867,7 @@ describe("fixes", () => {
 				}
 			}
 			expect(failures).toEqual([]);
-			expect(fixed).toBeGreaterThan(scaledBound(5_000, run));
+			expect(fixed).toBeGreaterThan(scaledBound(5000, run));
 		});
 	}, 60_000);
 

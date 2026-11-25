@@ -25,7 +25,7 @@ beforeAll(() => mkdirSync(scratch, { recursive: true }));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Every committed Solid golden; the corpus has at least the two `basics` cases. */
-function solidGoldens(): ToolchainFile[] {
+function solidGoldens(): Array<ToolchainFile> {
 	const files = goldens("solid");
 	expect(files.map((file) => file.path.split("/").at(-1))).toEqual(
 		expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),
@@ -35,7 +35,9 @@ function solidGoldens(): ToolchainFile[] {
 
 function golden(name: string): ToolchainFile {
 	const file = solidGoldens().find((entry) => entry.path.endsWith(`/${name}`));
-	if (!file) throw new Error(`No Solid golden named ${name}`);
+	if (!file) {
+		throw new Error(`No Solid golden named ${name}`);
+	}
 	return file;
 }
 
@@ -49,7 +51,7 @@ function scratchFile(name: string, contents: string): string {
 /** Runs the toolchain's own vite-plugin-solid over a golden, as a dev server would. */
 async function transformed(mode: "browser" | "ssr", consumer: "client" | "server") {
 	const config = await toolchain.vite(mode, context);
-	const plugin = (config.plugins as Plugin[]).find((entry) => entry.name === "solid")!;
+	const plugin = (config.plugins as Array<Plugin>).find((entry) => entry.name === "solid")!;
 	const configResolved = plugin.configResolved as (config: object) => void;
 	configResolved({ command: "serve", mode: "test" });
 	const transform = plugin.transform as (
@@ -240,7 +242,7 @@ describe("solid renderToString (SSR)", () => {
 		const html = await renderToString(ProfileCard, {});
 		// A root that spreads what falls through renders through Solid's \`ssrElement\` (ADR-0063,
 		// ADR-0118), which writes a space after a class.
-		expect(html.replace(/ data-hk="[^"]*"/g, "")).toBe(
+		expect(html.replaceAll(/ data-hk="[^"]*"/g, "")).toBe(
 			[
 				'<article class="profile " aria-labelledby="profile-name">',
 				'<header class="profile-header">',

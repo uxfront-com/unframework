@@ -12,7 +12,7 @@ import { DOM_EVENTS } from "@unframework.dev/ir";
  * takes a capital first letter only (`onScrollend$`, `onBeforeinput$`), as Qwik's
  * `Capitalize<T>` does.
  */
-const QWIK_PASCAL_CASE_NAMES: readonly string[] = [
+const QWIK_PASCAL_CASE_NAMES: ReadonlyArray<string> = [
 	"AnimationEnd",
 	"AnimationIteration",
 	"AnimationStart",
@@ -99,7 +99,9 @@ export const QWIK_EVENT_PROPS: ReadonlyMap<string, string> = new Map(
 /** The listener prop of a DOM event (`QWIK_EVENT_PROPS`), in a scope: `window:onClick$`. */
 export function qwikListenerProp(event: string, scope: "element" | "window" = "element"): string {
 	const prop = QWIK_EVENT_PROPS.get(event);
-	if (prop === undefined) throw new Error(`"${event}" is not an event a listener may take.`);
+	if (prop === undefined) {
+		throw new Error(`"${event}" is not an event a listener may take.`);
+	}
 	return scope === "window" ? `window:${prop}` : prop;
 }
 

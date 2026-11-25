@@ -90,7 +90,7 @@ const setup = [
 	),
 ];
 
-function component(listeners: EventAttribute[]): UfComponent {
+function component(listeners: Array<EventAttribute>): UfComponent {
 	return createComponent(
 		"Search",
 		createElement("input", listeners, [], span(500, 501)),
@@ -323,7 +323,7 @@ describe("conditional-event-control", () => {
 			span(at, at + 1),
 			options,
 		);
-	const derived = (listeners: EventAttribute[]) =>
+	const derived = (listeners: Array<EventAttribute>) =>
 		requiredCapabilities(createModule("Search.uf.tsx", [component(listeners)])).get(
 			"conditional-event-control",
 		);
@@ -408,8 +408,10 @@ describe("on an analysed source", () => {
 	const { module, diagnostics } = analyze(parseModule("Keys.uf.tsx", source));
 	const keys = module!.components[0]!;
 	const listeners = (keys.render as ElementNode).children.flatMap((child) =>
-		child.kind === "Element" ? child.attributes.filter((each) => each.kind === "Event") : [],
-	) as EventAttribute[];
+		child.kind === "Element"
+			? child.attributes.filter((each): each is EventAttribute => each.kind === "Event")
+			: [],
+	);
 	const fnOf = (listener: EventAttribute): FunctionCode =>
 		listener.handler.kind === "Inline"
 			? listener.handler.function
@@ -441,18 +443,24 @@ describe("on an analysed source", () => {
 });
 
 /** An analysed source's first component, with its listeners and functions by name. */
-function analysed(name: string, lines: string[]) {
+function analysed(name: string, lines: Array<string>) {
 	const source = lines.join("\n");
 	const { module, diagnostics } = analyze(parseModule(`${name}.uf.tsx`, source));
 	const found = module!.components[0]!;
-	const listeners: EventAttribute[] = [];
+	const listeners: Array<EventAttribute> = [];
 	const visit = (node: { kind: string }) => {
-		if (node.kind !== "Element") return;
+		if (node.kind !== "Element") {
+			return;
+		}
 		const element = node as ElementNode;
 		for (const attribute of element.attributes) {
-			if (attribute.kind === "Event") listeners.push(attribute);
+			if (attribute.kind === "Event") {
+				listeners.push(attribute);
+			}
 		}
-		for (const child of element.children) visit(child);
+		for (const child of element.children) {
+			visit(child);
+		}
 	};
 	visit(found.render);
 	const named = (binding: string) =>

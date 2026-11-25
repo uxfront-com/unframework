@@ -17,7 +17,7 @@ export interface LoadFailure {
 	/** The module, relative to the root, such as `cases/basics/hello/hello.test.ts`. */
 	file: string;
 	/** Each error's message, with its causes' (Vitest wraps a failed import in its own error). */
-	errors: string[];
+	errors: Array<string>;
 }
 
 /** An error as Vitest serialises it for reporters. */
@@ -31,7 +31,7 @@ interface ReportedModule {
 	project: { name: string };
 	moduleId: string;
 	/** Errors outside any test, such as a failed import. */
-	errors(): readonly ReportedError[];
+	errors(): ReadonlyArray<ReportedError>;
 }
 
 /** Writes every module that failed to load to `file`, as JSON (an empty list when none did). */
@@ -45,8 +45,8 @@ export class LoadFailureReporter {
 		this.#root = options.root;
 	}
 
-	onTestRunEnd(modules: readonly ReportedModule[]): void {
-		const failures: LoadFailure[] = modules
+	onTestRunEnd(modules: ReadonlyArray<ReportedModule>): void {
+		const failures: Array<LoadFailure> = modules
 			.map((module) => ({
 				project: module.project.name,
 				file: relative(this.#root, module.moduleId).split(sep).join("/"),
@@ -66,6 +66,8 @@ function describe(error: ReportedError): string {
 }
 
 /** The load failures a run wrote, or `undefined` when it wrote none (it did not finish). */
-export function readLoadFailures(file: string): LoadFailure[] | undefined {
-	return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as LoadFailure[]) : undefined;
+export function readLoadFailures(file: string): Array<LoadFailure> | undefined {
+	return existsSync(file)
+		? (JSON.parse(readFileSync(file, "utf8")) as Array<LoadFailure>)
+		: undefined;
 }

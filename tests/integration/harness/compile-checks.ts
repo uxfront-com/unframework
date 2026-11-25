@@ -16,9 +16,9 @@ import { diffLines } from "@unframework.dev/testing/node";
 
 /** The diagnostics that concern a target: its own, and those of every target. */
 export const forTarget = <T extends { target?: string | undefined }>(
-	list: readonly T[],
+	list: ReadonlyArray<T>,
 	target: string,
-): T[] =>
+): Array<T> =>
 	list.filter((diagnostic) => diagnostic.target === undefined || diagnostic.target === target);
 
 /** The built-in targets by any name: a name that is no target has no capability matrix. */
@@ -42,11 +42,11 @@ export interface ExpectedDiagnosticText {
  * without output, and every later layer would skip the case for it.
  */
 export function expectationProblems(
-	expected: readonly ExpectedDiagnosticText[],
+	expected: ReadonlyArray<ExpectedDiagnosticText>,
 	target: string,
 	hasSpec: boolean,
 	capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
-): string[] {
+): Array<string> {
 	const own = forTarget(expected, target);
 	const problems = own
 		.filter((diagnostic) => /^UF9\d{3}$/.test(diagnostic.code))
@@ -54,11 +54,17 @@ export function expectationProblems(
 			(diagnostic) =>
 				`The case expects the internal error ${diagnostic.code} (${diagnostic.message}): an internal error is a compiler bug to fix, never an expectation.`,
 		);
-	if (!hasSpec) return problems;
+	if (!hasSpec) {
+		return problems;
+	}
 	const declared = capabilityCellDiagnostics(target, capabilities);
 	for (const diagnostic of own) {
-		if (diagnostic.severity !== "error" || /^UF9\d{3}$/.test(diagnostic.code)) continue;
-		if (declared.has(cellKey(diagnostic))) continue;
+		if (diagnostic.severity !== "error" || /^UF9\d{3}$/.test(diagnostic.code)) {
+			continue;
+		}
+		if (declared.has(cellKey(diagnostic))) {
+			continue;
+		}
 		problems.push(
 			`The case has a spec, yet expects the error ${diagnostic.code} for ${target} (${diagnostic.message}), which is not the error the ${target} target declares for a capability it lacks: a feature case compiles on every target, or the target declares the difference (a UF4xxx capability cell).`,
 		);
@@ -74,11 +80,11 @@ export function expectationProblems(
  * no target would write its expectations.
  */
 export function referenceProblems(
-	expected: readonly ExpectedDiagnosticText[],
+	expected: ReadonlyArray<ExpectedDiagnosticText>,
 	hasSpec: boolean,
 	runReference: string,
 	reference: string | undefined,
-): string[] {
+): Array<string> {
 	if (!hasSpec) {
 		return reference === undefined
 			? []
@@ -154,14 +160,16 @@ function cellKey(diagnostic: { code: string; severity: string; message: string }
  */
 export async function checkFixes(
 	source: string,
-	diagnostics: readonly Diagnostic[],
+	diagnostics: ReadonlyArray<Diagnostic>,
 	target: string,
-	recompile: (source: string) => Promise<readonly Diagnostic[]>,
+	recompile: (source: string) => Promise<ReadonlyArray<Diagnostic>>,
 	capabilities: Capabilities | undefined = targetsByName[target]?.capabilities,
 ): Promise<void> {
 	const own = forTarget(diagnostics, target);
 	const fixable = own.filter((diagnostic) => diagnostic.fixes?.length);
-	if (!fixable.length) return;
+	if (!fixable.length) {
+		return;
+	}
 	const fixed = applyFixes(
 		source,
 		fixable.flatMap((diagnostic) => diagnostic.fixes ?? []),
@@ -200,7 +208,9 @@ export function nondeterminism(
 			diagnostics: result.diagnostics,
 			files: result.outputs[target],
 		});
-	if (stable(first) === stable(second)) return undefined;
+	if (stable(first) === stable(second)) {
+		return undefined;
+	}
 	return `Compiling twice gave different results:\n${diffLines(stable(first).replaceAll(",", ",\n"), stable(second).replaceAll(",", ",\n"))}`;
 }
 
@@ -209,7 +219,10 @@ export function nondeterminism(
  * at-rule it does not know: the check that stands in for L3 on sheets, which no framework
  * compiler reads (ADR-0063, closing ADR-0025's open item).
  */
-export function stylesheetProblems(target: string, files: readonly OutputFile[]): string[] {
+export function stylesheetProblems(
+	target: string,
+	files: ReadonlyArray<OutputFile>,
+): Array<string> {
 	return files
 		.filter((file) => file.path.endsWith(".css"))
 		.flatMap((file) =>
@@ -228,11 +241,13 @@ export function stylesheetProblems(target: string, files: readonly OutputFile[])
 export function moduleCopyProblems(
 	target: string,
 	outputs: ReadonlyMap<string, string>,
-	modules: readonly OutputFile[],
-): string[] {
+	modules: ReadonlyArray<OutputFile>,
+): Array<string> {
 	return modules.flatMap(({ path, contents }) => {
 		const copy = outputs.get(path);
-		if (copy === undefined || copy === contents) return [];
+		if (copy === undefined || copy === contents) {
+			return [];
+		}
 		return [`${target}/${path} is not the case's ${path} unchanged:\n${diffLines(contents, copy)}`];
 	});
 }
@@ -240,9 +255,9 @@ export function moduleCopyProblems(
 /** L2: every output file that formatting again would change, or that no longer parses. */
 export async function formattingProblems(
 	target: string,
-	files: readonly OutputFile[],
-): Promise<string[]> {
-	const problems: string[] = [];
+	files: ReadonlyArray<OutputFile>,
+): Promise<Array<string>> {
+	const problems: Array<string> = [];
 	for (const file of files) {
 		const again = await formatOutput(file);
 		if (again.error) {
@@ -291,10 +306,10 @@ export interface MapSource {
  */
 export function sourceMapProblems(
 	target: string,
-	files: readonly OutputFile[],
+	files: ReadonlyArray<OutputFile>,
 	source: MapSource,
 	modules: ReadonlySet<string>,
-): string[] {
+): Array<string> {
 	return files.flatMap((file) => fileMapProblems(`${target}/${file.path}`, file, source, modules));
 }
 
@@ -303,9 +318,11 @@ function fileMapProblems(
 	file: OutputFile,
 	source: MapSource,
 	modules: ReadonlySet<string>,
-): string[] {
+): Array<string> {
 	const { map } = file;
-	if (!map) return [`${where} has no source map.`];
+	if (!map) {
+		return [`${where} has no source map.`];
+	}
 	const copy = modules.has(file.path);
 	// A copy, or a helper module (ADR-0121), names itself, at its own path in the tree.
 	const expected = copy ? file.path : posix.basename(source.filename);
@@ -320,7 +337,9 @@ function fileMapProblems(
 		return [`${where}'s map does not hold the content of its source ${expected}.`];
 	}
 	// The decoder reads a character outside the alphabet as zero rather than throw on it.
-	if (!VLQ.test(map.mappings)) return [`${where}'s map does not decode: its mappings are not VLQ.`];
+	if (!VLQ.test(map.mappings)) {
+		return [`${where}'s map does not decode: its mappings are not VLQ.`];
+	}
 	const lines = decodedMappings(new TraceMap(map));
 	const segments = lines.reduce((count, line) => count + line.length, 0);
 	if (file.path.endsWith(".css")) {
@@ -328,10 +347,12 @@ function fileMapProblems(
 	}
 	const outputLines = file.contents.split("\n");
 	const sourceLines = text.split("\n");
-	const wrong: string[] = [];
+	const wrong: Array<string> = [];
 	for (const [line, row] of lines.entries()) {
 		for (const segment of row) {
-			if (segment.length === 1) continue;
+			if (segment.length === 1) {
+				continue;
+			}
 			const [column, index, fromLine, fromColumn] = segment;
 			const output = outputLines[line];
 			const original = sourceLines[fromLine];
@@ -345,7 +366,9 @@ function fileMapProblems(
 				wrong.push(`${line + 1}:${column} points outside its files`);
 				continue;
 			}
-			if (segment.length === 5) continue;
+			if (segment.length === 5) {
+				continue;
+			}
 			const token = sourceTokenAt(original, fromColumn);
 			const reads = output.slice(column, column + token.length);
 			if (!token || reads !== token) {
@@ -355,7 +378,9 @@ function fileMapProblems(
 			}
 		}
 	}
-	if (!wrong.length) return [];
+	if (!wrong.length) {
+		return [];
+	}
 	// One map can hold thousands of wrong tokens, so the first says what the rest would.
 	return [`${where}'s map has ${wrong.length} wrong segment(s), the first at ${wrong[0]}.`];
 }
@@ -366,7 +391,9 @@ function fileMapProblems(
  * how the compiler maps a source.
  */
 export function comparedSegments(file: OutputFile): number {
-	if (!file.map || file.map.sources[0] === posix.basename(file.path)) return 0;
+	if (!file.map || file.map.sources[0] === posix.basename(file.path)) {
+		return 0;
+	}
 	return decodedMappings(new TraceMap(file.map))
 		.flat()
 		.filter((segment) => segment.length === 4).length;

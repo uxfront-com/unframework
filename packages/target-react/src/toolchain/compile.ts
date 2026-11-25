@@ -33,7 +33,7 @@ type Location = Babel.types.SourceLocation | symbol | null | undefined;
  *   nothing to compile. A composable's module declares its hook (ADR-0069).
  */
 export async function compileWithReactCompiler(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
 	assertFilesToCompile(files);
 	const babel: typeof Babel = await import("@babel/core");
@@ -54,8 +54,8 @@ export async function compileWithReactCompiler(
  * bundler, as a React build runs it before the JSX transform.
  */
 export async function emitWithReactCompiler(
-	files: readonly ToolchainFile[],
-): Promise<Map<string, ToolchainFile[]>> {
+	files: ReadonlyArray<ToolchainFile>,
+): Promise<Map<string, Array<ToolchainFile>>> {
 	assertFilesToCompile(files);
 	const babel: typeof Babel = await import("@babel/core");
 	const require = createRequire(import.meta.url);
@@ -89,8 +89,8 @@ function compileFile(
 	typescript: string,
 	file: ToolchainFile,
 ): FrameworkCompileResult {
-	const errors: ToolchainMessage[] = [];
-	const warnings: ToolchainMessage[] = [];
+	const errors: Array<ToolchainMessage> = [];
+	const warnings: Array<ToolchainMessage> = [];
 	let compiled = 0;
 	// The functions that opt out, by where they start, and those React Compiler cannot compile.
 	const optedOut = optOuts(babel, typescript, file);
@@ -124,8 +124,11 @@ function compileFile(
 					code: "react-compiler/skip",
 				};
 				const fn = optedOut.get(key(event.fnLoc) ?? "");
-				if (fn) skipped.set(fn, message);
-				else warnings.push(message);
+				if (fn) {
+					skipped.set(fn, message);
+				} else {
+					warnings.push(message);
+				}
 				break;
 			}
 			case "PipelineError":
@@ -166,7 +169,9 @@ function compileFile(
 		return { errors: [...errors, fromBabelError(error, file.path)], warnings };
 	}
 	for (const [fn, message] of skipped) {
-		if (needed.has(fn)) continue;
+		if (needed.has(fn)) {
+			continue;
+		}
 		warnings.push({
 			...message,
 			message: `${message.message} React Compiler compiles this function: it needs no opt-out.`,
@@ -222,7 +227,9 @@ function optOuts(
 	file: ToolchainFile,
 ): Map<string, string> {
 	const found = new Map<string, string>();
-	if (![...OPT_OUT].some((directive) => file.contents.includes(directive))) return found;
+	if (![...OPT_OUT].some((directive) => file.contents.includes(directive))) {
+		return found;
+	}
 	let ast: Babel.types.File | null;
 	try {
 		ast = babel.parseSync(file.contents, {
@@ -242,22 +249,30 @@ function optOuts(
 	}
 	const visit = (node: unknown): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
-		if (typeof node !== "object" || node === null) return;
+		if (typeof node !== "object" || node === null) {
+			return;
+		}
 		const { body, loc } = node as {
-			body?: { directives?: { value: { value: string } }[]; loc?: Location };
+			body?: { directives?: Array<{ value: { value: string } }>; loc?: Location };
 			loc?: Location;
 		};
 		const start = key(loc);
 		if (start && body?.directives?.some(({ value }) => OPT_OUT.has(value.value))) {
 			found.set(start, start);
 			const inner = key(body.loc);
-			if (inner) found.set(inner, start);
+			if (inner) {
+				found.set(inner, start);
+			}
 		}
 		for (const [field, value] of Object.entries(node)) {
-			if (field !== "loc" && typeof value === "object") visit(value);
+			if (field !== "loc" && typeof value === "object") {
+				visit(value);
+			}
 		}
 	};
 	visit(ast?.program);
@@ -265,7 +280,7 @@ function optOuts(
 }
 
 /** The 1-based line and column of the first usable location (Babel's columns are 0-based). */
-function at(...locations: Location[]): { line?: number; column?: number } {
+function at(...locations: Array<Location>): { line?: number; column?: number } {
 	const location = locations.find(isSourceLocation);
 	return location ? { line: location.start.line, column: location.start.column + 1 } : {};
 }
@@ -279,7 +294,9 @@ function isSourceLocation(location: Location): location is Babel.types.SourceLoc
  * source text back, so the message names it.
  */
 function skipReason(reason: string, location: Location, source: string): string {
-	if (!reason.includes("'[object Object]'") || !isSourceLocation(location)) return reason;
+	if (!reason.includes("'[object Object]'") || !isSourceLocation(location)) {
+		return reason;
+	}
 	const directive = source.slice(location.start.index, location.end.index).replace(/;$/, "");
 	return reason.replace("'[object Object]'", directive);
 }
@@ -289,15 +306,21 @@ function skipReason(reason: string, location: Location, source: string): string 
  * `(line:column)` Babel appends, which the message's own 1-based position replaces.
  */
 function fromBabelError(error: unknown, filename: string): ToolchainMessage {
-	if (!(error instanceof Error)) return { message: String(error) };
+	if (!(error instanceof Error)) {
+		return { message: String(error) };
+	}
 	const { loc, reasonCode, code } = error as Error & {
 		loc?: { line: number; column: number };
 		reasonCode?: string;
 		code?: string;
 	};
 	let message = error.message.split("\n")[0] ?? error.message;
-	if (message.startsWith(`${filename}: `)) message = message.slice(filename.length + 2);
-	if (loc) message = message.replace(` (${loc.line}:${loc.column})`, "");
+	if (message.startsWith(`${filename}: `)) {
+		message = message.slice(filename.length + 2);
+	}
+	if (loc) {
+		message = message.replace(` (${loc.line}:${loc.column})`, "");
+	}
 	return {
 		message,
 		...(loc ? { line: loc.line, column: loc.column + 1 } : {}),

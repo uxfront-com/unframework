@@ -35,7 +35,7 @@ import { spellingOf } from "./spelling.ts";
  * on }; }`, preceded by what it reads of its module: the value imports, the type imports and
  * declarations its kept code names, and the module's constants.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
 	const { module } = context;
 	const owner = serverOwner(composable);
 	const view = serverView(owner, module);
@@ -53,12 +53,16 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
 	addTypeImports(view, module, imports, (name) => `${name}.astro`, { live: SERVER });
 	const setup = setupCode(owner, live, spelling, () => "unknown");
 	const returned = composable.returns.flatMap(({ name, binding }) => {
-		if (!live.has(binding)) return [];
+		if (!live.has(binding)) {
+			return [];
+		}
 		const local = spelling.name(binding);
 		return [local === name ? local : `${name}: ${local}`];
 	});
 	const parameters = composable.parameters.flatMap((parameter) => {
-		if (parameter.kind === "callback") return [];
+		if (parameter.kind === "callback") {
+			return [];
+		}
 		const name = live.has(parameter.binding)
 			? spelling.name(parameter.binding)
 			: spelling.scope.claim(`_${parameter.name}`);
@@ -108,7 +112,7 @@ function serverOwner(composable: UfComposable): UfComponent {
 		const { kind } = bindingOf(owner, binding);
 		return kind !== "localFn" || functions.has(binding);
 	});
-	const props = composable.parameters.flatMap((parameter): Prop[] =>
+	const props = composable.parameters.flatMap((parameter): Array<Prop> =>
 		parameter.kind === "callback"
 			? []
 			: [
@@ -148,7 +152,9 @@ function serverFunctions(owner: UfComponent, composable: UfComposable): Set<Bind
 	for (let size = -1; size !== client.size;) {
 		size = client.size;
 		for (const { binding, function: fn } of functions) {
-			if (client.has(binding)) continue;
+			if (client.has(binding)) {
+				continue;
+			}
 			const reads = [fn.body, ...fn.parameters.flatMap(({ default: value }) => value ?? [])];
 			const clientOnly =
 				fn.async ||
@@ -173,7 +179,9 @@ function serverFunctions(owner: UfComponent, composable: UfComposable): Set<Bind
 						}
 					}),
 				);
-			if (clientOnly) client.add(binding);
+			if (clientOnly) {
+				client.add(binding);
+			}
 		}
 	}
 	return new Set(functions.flatMap(({ binding }) => (client.has(binding) ? [] : [binding])));

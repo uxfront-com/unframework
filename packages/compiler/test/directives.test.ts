@@ -25,7 +25,7 @@ export const vFocusTrap = defineDirective<boolean>({
  */
 const MODULES: Record<
 	TargetName,
-	{ path: string; export: string; helpers?: string[] } | undefined
+	{ path: string; export: string; helpers?: Array<string> } | undefined
 > = {
 	vue: {
 		path: "vFocusTrap.ts",
@@ -280,7 +280,7 @@ export default function Panel() {
 			expected: string;
 		} | null,
 	) => {
-		const calls: { file: string; source: string; queries: DirectiveValueQuery[] }[] = [];
+		const calls: Array<{ file: string; source: string; queries: Array<DirectiveValueQuery> }> = [];
 		const syntactic = createSyntacticOracle({
 			root: "/project",
 			readFile: (path) =>

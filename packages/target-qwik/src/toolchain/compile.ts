@@ -28,7 +28,7 @@ let optimizer: Promise<Optimizer> | undefined;
  * the optimizer throws on gets that error, so one bad file never hides the others.
  */
 export async function compileWithOptimizer(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 ): Promise<Map<string, FrameworkCompileResult>> {
 	assertFilesToCompile(files);
 	optimizer ??= loadOptimizer();
@@ -49,7 +49,7 @@ export async function compileWithOptimizer(
 				mode: "dev",
 				isServer,
 			};
-			let diagnostics: readonly Diagnostic[];
+			let diagnostics: ReadonlyArray<Diagnostic>;
 			try {
 				({ diagnostics } = await qwik.transformModules(options));
 			} catch (error) {
@@ -62,7 +62,9 @@ export async function compileWithOptimizer(
 			for (const diagnostic of diagnostics) {
 				const message = toMessage(diagnostic);
 				const key = `${diagnostic.category}|${message.code}|${message.line}|${message.column}|${message.message}`;
-				if (seen.has(key)) continue;
+				if (seen.has(key)) {
+					continue;
+				}
 				seen.add(key);
 				(diagnostic.category === "warning" ? result.warnings : result.errors).push(message);
 			}
@@ -78,13 +80,13 @@ export async function compileWithOptimizer(
  * optimizer folds `isDev` to `true`, as Qwik's Vite plugin does in a dev build (ADR-0117).
  */
 export async function emitWithOptimizer(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 	mode: "production" | "development" = "production",
-): Promise<Map<string, ToolchainFile[]>> {
+): Promise<Map<string, Array<ToolchainFile>>> {
 	assertFilesToCompile(files);
 	optimizer ??= loadOptimizer();
 	const qwik = await optimizer;
-	const emitted = new Map<string, ToolchainFile[]>();
+	const emitted = new Map<string, Array<ToolchainFile>>();
 	for (const file of files) {
 		const { modules } = await qwik.transformModules({
 			input: [{ path: basename(file.path), code: file.contents }],
@@ -136,7 +138,7 @@ function versionOf(name: string, from: NodeJS.Require): string {
  * Parses a file strictly as TSX, or a `.ts` module (a composable's, ADR-0069, or a shared one,
  * ADR-0070) as TypeScript, and returns its syntax errors with 1-based positions.
  */
-function syntaxErrors(file: ToolchainFile): ToolchainMessage[] {
+function syntaxErrors(file: ToolchainFile): Array<ToolchainMessage> {
 	const lang = file.path.endsWith(".ts") ? "ts" : "tsx";
 	const { errors } = parseSync(file.path, file.contents, { lang, sourceType: "module" });
 	return errors.map((error) => {

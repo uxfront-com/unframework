@@ -14,7 +14,9 @@ function listOf(children: string, props = PROPS) {
 	const { source, module, diagnostics } = component(`<ul>${children}</ul>`, { props });
 	expect(diagnostics).toEqual([]);
 	const [list] = root(module).children;
-	if (list?.kind !== "For") throw new Error("Expected a list.");
+	if (list?.kind !== "For") {
+		throw new Error("Expected a list.");
+	}
 	return { source, list, component: only(module) };
 }
 

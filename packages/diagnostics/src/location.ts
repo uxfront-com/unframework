@@ -7,16 +7,19 @@ export interface Position {
 
 /** Maps offsets to lines and columns for one source text. */
 export class LineIndex {
-	readonly #starts: number[] = [0];
+	readonly #starts: Array<number> = [0];
 	readonly source: string;
 
 	constructor(source: string) {
 		this.source = source;
 		for (let index = 0; index < source.length; index++) {
 			const char = source.charCodeAt(index);
-			if (char === 10 /* \n */) this.#starts.push(index + 1);
-			else if (char === 13 /* \r */) {
-				if (source.charCodeAt(index + 1) === 10) index++;
+			if (char === 10 /* \n */) {
+				this.#starts.push(index + 1);
+			} else if (char === 13 /* \r */) {
+				if (source.charCodeAt(index + 1) === 10) {
+					index++;
+				}
 				this.#starts.push(index + 1);
 			}
 		}
@@ -34,8 +37,11 @@ export class LineIndex {
 		let high = this.#starts.length - 1;
 		while (low < high) {
 			const middle = (low + high + 1) >> 1;
-			if (this.#starts[middle]! <= clamped) low = middle;
-			else high = middle - 1;
+			if (this.#starts[middle]! <= clamped) {
+				low = middle;
+			} else {
+				high = middle - 1;
+			}
 		}
 		return { line: low + 1, column: clamped - this.#starts[low]! + 1, offset: clamped };
 	}
@@ -43,7 +49,9 @@ export class LineIndex {
 	/** The text of a 1-based line, without its line break. */
 	line(line: number): string {
 		const start = this.#starts[line - 1];
-		if (start === undefined) return "";
+		if (start === undefined) {
+			return "";
+		}
 		const next = this.#starts[line];
 		const end = next === undefined ? this.source.length : next;
 		return this.source.slice(start, end).replace(/\r?\n$|\r$/, "");

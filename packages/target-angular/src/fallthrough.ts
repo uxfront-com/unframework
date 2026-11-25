@@ -38,7 +38,7 @@ export const FALLTHROUGH_ATTRIBUTE = "ufFallthrough";
  * a prop, an event or an exposed function of one of them is UF2003, and a setup binding of one
  * is renamed.
  */
-export const FALLTHROUGH_MEMBERS: readonly string[] = [
+export const FALLTHROUGH_MEMBERS: ReadonlyArray<string> = [
 	"class",
 	"style",
 	ATTRIBUTES_INPUT,
@@ -55,10 +55,16 @@ export const FALLTHROUGH_MEMBERS: readonly string[] = [
 export function fallthroughRoot(
 	render: ElementNode | FragmentNode,
 ): ElementNode | ComponentNode | DynamicNode | undefined {
-	if (render.kind === "Element") return render;
+	if (render.kind === "Element") {
+		return render;
+	}
 	const [only] = render.children;
-	if (render.children.length !== 1) return undefined;
-	if (only?.kind === "Element" || only?.kind === "Component") return only;
+	if (render.children.length !== 1) {
+		return undefined;
+	}
+	if (only?.kind === "Element" || only?.kind === "Component") {
+		return only;
+	}
 	return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
 		? only
 		: undefined;
@@ -109,13 +115,17 @@ export function childApi(
 ): ChildApi | undefined {
 	for (const entry of module.imports ?? []) {
 		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-		if (!imported) continue;
+		if (!imported) {
+			continue;
+		}
 		const api = entry.api.components.find((each: ComponentApi) =>
 			imported.imported === "default"
 				? each.export === "default"
 				: each.export === "named" && each.name === imported.imported,
 		);
-		if (!api) return undefined;
+		if (!api) {
+			return undefined;
+		}
 		// A `<component is>` root's first tag stands for them all: every tag takes what falls
 		// through, and a ref holds whichever renders (ADR-0122).
 		const refTag = api.refTag ?? api.refTags?.[0];
@@ -141,7 +151,9 @@ export function childApi(
 		};
 	}
 	const own = module.components.find((each) => each.name === local);
-	if (!own || seen.has(local)) return undefined;
+	if (!own || seen.has(local)) {
+		return undefined;
+	}
 	const next = new Set([...seen, local]);
 	const exposes = (own.exposes?.functions.length ?? 0) > 0;
 	const root = fallthroughRoot(own.render);
@@ -179,7 +191,7 @@ export function childApi(
 }
 
 /** Each tag of a `<component is>` over tags as the element its `@case` writes. */
-function tagElements(root: DynamicNode): ElementNode[] {
+function tagElements(root: DynamicNode): Array<ElementNode> {
 	return root.candidates.flatMap((candidate) =>
 		candidate.kind === "Tag"
 			? [
@@ -196,14 +208,18 @@ function tagElements(root: DynamicNode): ElementNode[] {
 }
 
 /** The static attribute holding `{{` that puts one of `elements` in a literal region (ADR-0037). */
-function literalAttribute(elements: readonly ElementNode[]): string | undefined {
+function literalAttribute(elements: ReadonlyArray<ElementNode>): string | undefined {
 	for (const element of elements) {
-		if (angularDialect.literalRegion?.(element) === undefined) continue;
+		if (angularDialect.literalRegion?.(element) === undefined) {
+			continue;
+		}
 		const found = element.attributes.find(
 			(attribute) =>
 				attribute.kind === "Static" && attribute.value !== true && attribute.value.includes("{{"),
 		);
-		if (found?.kind === "Static") return found.name;
+		if (found?.kind === "Static") {
+			return found.name;
+		}
 	}
 	return undefined;
 }
@@ -220,7 +236,9 @@ export function planFallthrough(
 ): FallthroughPlan | undefined {
 	if (component.inheritAttrs === false) {
 		const found = restElement(component.render);
-		if (!found || angularDialect.literalRegion?.(found.element) !== undefined) return undefined;
+		if (!found || angularDialect.literalRegion?.(found.element) !== undefined) {
+			return undefined;
+		}
 		return {
 			target: found.element,
 			rest: true,
@@ -229,9 +247,13 @@ export function planFallthrough(
 		};
 	}
 	const root = fallthroughRoot(component.render);
-	if (!root) return undefined;
+	if (!root) {
+		return undefined;
+	}
 	if (root.kind === "Element") {
-		if (angularDialect.literalRegion?.(root) !== undefined) return undefined;
+		if (angularDialect.literalRegion?.(root) !== undefined) {
+			return undefined;
+		}
 		return { target: root, rest: false, passes: true, events: eventsOf(root.tag) };
 	}
 	if (root.kind === "Dynamic") {
@@ -248,7 +270,9 @@ export function planFallthrough(
 					span: root.span,
 				}) === undefined,
 		);
-		if (!bindable) return undefined;
+		if (!bindable) {
+			return undefined;
+		}
 		return { target: root, rest: false, passes: true, events: "HTMLElementEventMap" };
 	}
 	const child = childApi(module, root.component);
@@ -286,20 +310,28 @@ export function planRootElement(
 	component: UfComponent,
 	module: UfModule,
 ): RootElementPlan | undefined {
-	if (component.exposes?.functions.length) return undefined;
+	if (component.exposes?.functions.length) {
+		return undefined;
+	}
 	const root = fallthroughRoot(component.render);
-	if (!root) return undefined;
+	if (!root) {
+		return undefined;
+	}
 	// Whichever tag renders, in its `@case` (ADR-0122).
 	if (root.kind === "Dynamic") {
 		const types = root.candidates.map((candidate) =>
 			candidate.kind === "Tag" ? ELEMENT_INTERFACES.get(candidate.tag) : undefined,
 		);
-		if (types.some((type) => type === undefined)) return undefined;
+		if (types.some((type) => type === undefined)) {
+			return undefined;
+		}
 		return { root, type: [...new Set(types)].join(" | ") };
 	}
 	if (root.kind === "Element") {
 		const type = ELEMENT_INTERFACES.get(root.tag);
-		if (type === undefined || angularDialect.literalRegion?.(root) !== undefined) return undefined;
+		if (type === undefined || angularDialect.literalRegion?.(root) !== undefined) {
+			return undefined;
+		}
 		return { root, type };
 	}
 	const child = childApi(module, root.component, new Set([component.name]));
@@ -311,17 +343,21 @@ function restElement(
 	render: UfComponent["render"],
 ): { element: ElementNode; svg: boolean } | undefined {
 	let found: { element: ElementNode; svg: boolean } | undefined;
-	const svg: boolean[] = [];
+	const svg: Array<boolean> = [];
 	walk(render, {
 		enter(node) {
-			if (found || node.kind !== "Element") return;
+			if (found || node.kind !== "Element") {
+				return;
+			}
 			svg.push(node.tag === "svg" || svg.at(-1) === true);
 			if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
 				found = { element: node, svg: svg.at(-1)! };
 			}
 		},
 		leave(node) {
-			if (node.kind === "Element") svg.pop();
+			if (node.kind === "Element") {
+				svg.pop();
+			}
 		},
 	});
 	return found;
@@ -347,7 +383,9 @@ export function fallthroughDirectiveCode(
 ): string {
 	const { directive: className, listeners } = names;
 	const type = listenersTypeCode(listeners, events);
-	if (className === undefined) return type;
+	if (className === undefined) {
+		return type;
+	}
 	return `${type}\n${fallthroughClassCode(className, listeners, core, common)}`;
 }
 

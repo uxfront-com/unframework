@@ -34,7 +34,7 @@ const next = () => ({ start: offset, end: ++offset });
 export function el(
 	tag: string,
 	attributes: Record<string, string | true> = {},
-	...children: (RenderNode | string)[]
+	...children: Array<RenderNode | string>
 ): ElementNode {
 	return createElement(
 		tag,
@@ -76,10 +76,10 @@ export const AVATAR =
 export function emit(
 	render: ElementNode,
 	{ name = "Fixture", kind = "default" }: { name?: string; kind?: "default" | "named" } = {},
-): { files: OutputFile[]; reported: Omit<Diagnostic, "file" | "target">[] } {
+): { files: Array<OutputFile>; reported: Array<Omit<Diagnostic, "file" | "target">> } {
 	const component = createComponent(name, render, next());
 	const module = createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, next())]);
-	const reported: Omit<Diagnostic, "file" | "target">[] = [];
+	const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
 	const context: EmitContext = {
 		module,
 		options: undefined,
@@ -93,7 +93,7 @@ export function emit(
  * sheets (`<source>.css`), which no framework compiler or checker reads: the compile project
  * parses them instead (ADR-0063).
  */
-export function goldens(targetName: string): ToolchainFile[] {
+export function goldens(targetName: string): Array<ToolchainFile> {
 	// A tree's shared helper modules too, in `_unframework/` (ADR-0121).
 	const pattern = new RegExp(`(?:^|/)__output__/${targetName}/(?:_unframework/)?[^/]+$`);
 	return readdirSync(cases, { recursive: true })
@@ -134,7 +134,7 @@ export async function emitSource(source: string, name?: string): Promise<string>
 	const component = name
 		? module.components.find((each) => each.name === name)!
 		: module.components[0]!;
-	const reported: Omit<Diagnostic, "file" | "target">[] = [];
+	const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
 	const context: EmitContext = {
 		module,
 		options: undefined,
@@ -145,6 +145,8 @@ export async function emitSource(source: string, name?: string): Promise<string>
 		throw new Error(`The Solid target reported ${JSON.stringify(reported)}.`);
 	}
 	const outcome = await formatOutput(files[0]!);
-	if (outcome.error) throw new Error(`oxfmt rejects the output: ${outcome.error}`);
+	if (outcome.error) {
+		throw new Error(`oxfmt rejects the output: ${outcome.error}`);
+	}
 	return outcome.file.contents;
 }

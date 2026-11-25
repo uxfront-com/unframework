@@ -4,7 +4,7 @@
 // R2), and so does the `createState` of a file that has them, whose write requests their flush.
 // `Teleport` keeps its queue in its module (R2), and `textCaret`, `toggle` and `selectedValues`
 // are too small to share (R4).
-export const SHARED_HELPER_NAMES: readonly string[] = [
+export const SHARED_HELPER_NAMES: ReadonlyArray<string> = [
 	"clearedRef",
 	"createState",
 	"cx",
@@ -36,8 +36,10 @@ export function printHelper(
 	name: string,
 	local: string,
 	code: (local: string) => string,
-): string[] {
-	if (!shared || !SHARED_HELPER_NAMES.includes(name)) return [code(local)];
+): Array<string> {
+	if (!shared || !SHARED_HELPER_NAMES.includes(name)) {
+		return [code(local)];
+	}
 	shared.used.set(name, local);
 	return [];
 }
@@ -49,11 +51,17 @@ export function printHelper(
  */
 export function reserveSharedNames(
 	names: Set<string>,
-	reserved: readonly Iterable<string>[],
+	reserved: ReadonlyArray<Iterable<string>>,
 ): void {
 	for (const helper of SHARED_HELPER_NAMES) {
 		const own = new RegExp(`^${helper}(?:_\\d+)*$`);
-		for (const each of reserved) for (const name of each) if (own.test(name)) names.add(name);
+		for (const each of reserved) {
+			for (const name of each) {
+				if (own.test(name)) {
+					names.add(name);
+				}
+			}
+		}
 	}
 }
 
@@ -64,12 +72,18 @@ export function reserveSharedNames(
  */
 export function sharedName(
 	helper: string,
-	reserved: readonly Iterable<string>[],
+	reserved: ReadonlyArray<Iterable<string>>,
 	moduleNames: Iterable<string>,
 ): string {
 	const taken = new Set(moduleNames);
-	for (const each of reserved) for (const name of each) taken.add(name);
+	for (const each of reserved) {
+		for (const name of each) {
+			taken.add(name);
+		}
+	}
 	let name = helper;
-	for (let suffix = 1; taken.has(name); suffix++) name = `${helper}_${suffix}`;
+	for (let suffix = 1; taken.has(name); suffix++) {
+		name = `${helper}_${suffix}`;
+	}
 	return name;
 }

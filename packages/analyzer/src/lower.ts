@@ -58,7 +58,7 @@ import type { Kinds } from "./types/kinds.ts";
 
 /** Where nodes are lowered: the open elements around them, the parent last. */
 export interface Place {
-	readonly ancestors: readonly OpenElement[];
+	readonly ancestors: ReadonlyArray<OpenElement>;
 	/** The namespace of the nodes here: an `<svg>` and everything inside it are SVG. */
 	readonly namespace: Namespace;
 	/** Whether the nodes here start a conditional's branch, which Solid creates on its own. */
@@ -180,7 +180,7 @@ export function lowerElement(
 		listBody,
 		render,
 	});
-	let children: RenderNode[] = [];
+	let children: Array<RenderNode> = [];
 	let childrenBind = false;
 	if (namespace === "svg" || !isVoidElement(tag)) {
 		const list = new Children(inside(place, tag, name, namespace), render);
@@ -204,7 +204,9 @@ export function lowerElement(
 		);
 	}
 	const result = { key, binds: binds || childrenBind };
-	if (!check.accepted) return { element: undefined, ...result };
+	if (!check.accepted) {
+		return { element: undefined, ...result };
+	}
 	return { element: createElement(tag, attributes, children, span(node)), ...result };
 }
 
@@ -227,7 +229,7 @@ interface TextPart {
 }
 
 /** The pieces each lowered text was joined from, for the checks that point into them. */
-const PARTS = new WeakMap<TextNode, readonly TextPart[]>();
+const PARTS = new WeakMap<TextNode, ReadonlyArray<TextPart>>();
 
 /**
  * A child that was reported and left out, in its place: whether it can render nothing, as what
@@ -246,7 +248,7 @@ type Slot = RenderNode | LeftOut;
  * which text can come first is read from what the source writes, so a fix that lets a reported
  * child lower changes no other diagnostic.
  */
-const SLOTS = new WeakMap<readonly RenderNode[], readonly Slot[]>();
+const SLOTS = new WeakMap<ReadonlyArray<RenderNode>, ReadonlyArray<Slot>>();
 
 /**
  * Whether each conditional can render nothing, as the source writes it: the branches whose
@@ -260,12 +262,12 @@ const CAN_BE_EMPTY = new WeakMap<IfNode, boolean>();
  * added, or the list ends, and checked where they sit then.
  */
 class Children {
-	readonly nodes: RenderNode[] = [];
+	readonly nodes: Array<RenderNode> = [];
 	/** Whether a child binds anything, as written (`LoweredElement.binds`). */
 	binds = false;
 	/** The nodes, and where each child that was reported and left out sits. */
-	readonly #slots: Slot[] = [];
-	#pending: TextPart[] = [];
+	readonly #slots: Array<Slot> = [];
+	#pending: Array<TextPart> = [];
 	readonly #place: Place;
 	readonly #render: RenderContext;
 
@@ -282,9 +284,13 @@ class Children {
 	flush(): void {
 		const parts = this.#pending;
 		this.#pending = [];
-		if (!parts.length) return;
+		if (!parts.length) {
+			return;
+		}
 		const value = parts.map((part) => part.value).join("");
-		if (!value) return;
+		if (!value) {
+			return;
+		}
 		const at = { start: parts[0]!.container.start, end: parts.at(-1)!.container.end };
 		const placed = checkTextPlacement(value, at, parts, this.#place, this.#render);
 		if (!placed || parts.some((part) => !part.lowered)) {
@@ -303,7 +309,9 @@ class Children {
 	 */
 	node(node: RenderNode | undefined, empty = false): void {
 		this.flush();
-		if (node) this.nodes.push(node);
+		if (node) {
+			this.nodes.push(node);
+		}
 		this.#slots.push(node ?? { kind: "LeftOut", empty });
 	}
 
@@ -315,15 +323,19 @@ class Children {
 		const { reporter } = this.#render;
 		const mark = reporter.diagnostics.length;
 		const { node, empty } = lower();
-		if (!node && !reporter.hasErrorsSince(mark)) return;
+		if (!node && !reporter.hasErrorsSince(mark)) {
+			return;
+		}
 		const later = reporter.diagnostics.splice(mark);
 		this.flush();
 		reporter.diagnostics.push(...later);
-		if (node) this.nodes.push(node);
+		if (node) {
+			this.nodes.push(node);
+		}
 		this.#slots.push(node ?? { kind: "LeftOut", empty });
 	}
 
-	finish(): RenderNode[] {
+	finish(): Array<RenderNode> {
 		this.flush();
 		SLOTS.set(this.nodes, this.#slots);
 		return this.nodes;
@@ -338,7 +350,7 @@ export function lowerContent(
 	expression: AST.Expression,
 	place: Place,
 	render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
 	const children = new Children(place, render);
 	lowerChild(expression, span(expression), children, place, render);
 	return children.finish();
@@ -346,17 +358,17 @@ export function lowerContent(
 
 /** Lowers JSX children in a place. */
 export function lowerChildren(
-	items: readonly AST.JSXChild[],
+	items: ReadonlyArray<AST.JSXChild>,
 	place: Place,
 	render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
 	const children = new Children(place, render);
 	collect(items, children, place, render);
 	return children.finish();
 }
 
 function collect(
-	items: readonly AST.JSXChild[],
+	items: ReadonlyArray<AST.JSXChild>,
 	children: Children,
 	place: Place,
 	render: RenderContext,
@@ -386,7 +398,9 @@ function collect(
 			case "JSXElement": {
 				children.flush();
 				const lowered = lowerElement(item, place, render);
-				if (lowered.binds) children.binds = true;
+				if (lowered.binds) {
+					children.binds = true;
+				}
 				children.node(lowered.element);
 				break;
 			}
@@ -457,7 +471,9 @@ function lowerChild(
 		case "JSXElement": {
 			children.flush();
 			const lowered = lowerElement(expression, place, render);
-			if (lowered.binds) children.binds = true;
+			if (lowered.binds) {
+				children.binds = true;
+			}
 			children.node(lowered.element);
 			return;
 		}
@@ -515,6 +531,8 @@ function lowerChild(
 			}
 			break;
 		}
+		default:
+			break;
 	}
 	children.flush();
 	children.binds = true;
@@ -536,9 +554,12 @@ function lowerChild(
 			},
 		);
 	}
-	if (problem) problem("An expression", at);
-	if (!kinds.length && !problem && checked.clean)
+	if (problem) {
+		problem("An expression", at);
+	}
+	if (!kinds.length && !problem && checked.clean) {
 		node = createInterpolation(checked.expression, at);
+	}
 	children.node(node);
 }
 
@@ -551,7 +572,7 @@ function conditionalFix(
 	expression: AST.LogicalExpression,
 	kinds: Kinds,
 	render: RenderContext,
-): Fix[] {
+): Array<Fix> {
 	const { left, right, operator } = expression;
 	const { source } = render;
 	const between = { start: left.end, end: right.start };
@@ -583,10 +604,16 @@ function conditionalFix(
 
 /** Whether an expression holds JSX anywhere in it. */
 export function containsJsx(node: unknown): boolean {
-	if (!node || typeof node !== "object") return false;
-	if (Array.isArray(node)) return node.some(containsJsx);
+	if (!node || typeof node !== "object") {
+		return false;
+	}
+	if (Array.isArray(node)) {
+		return node.some(containsJsx);
+	}
 	const type = (node as { type?: string }).type ?? "";
-	if (type === "JSXElement" || type === "JSXFragment") return true;
+	if (type === "JSXElement" || type === "JSXFragment") {
+		return true;
+	}
 	return (visitorKeys[type] ?? []).some((key) =>
 		containsJsx((node as Record<string, unknown>)[key]),
 	);
@@ -599,7 +626,9 @@ export function containsJsx(node: unknown): boolean {
  */
 function listCall(node: AST.CallExpression | AST.ChainExpression): AST.CallExpression | undefined {
 	const call = node.type === "ChainExpression" ? node.expression : node;
-	if (call.type !== "CallExpression") return undefined;
+	if (call.type !== "CallExpression") {
+		return undefined;
+	}
 	const { callee } = call;
 	return callee.type === "MemberExpression" &&
 		!callee.computed &&
@@ -615,7 +644,7 @@ function lowerBranch(
 	expression: AST.Expression,
 	place: Place,
 	render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
 	const at: Place = { ...place, branch: true };
 	const children = new Children(at, render);
 	lowerChild(expression, span(expression), children, at, render);
@@ -633,7 +662,7 @@ function lowerIf(
 	place: Place,
 	render: RenderContext,
 ): { node: IfNode | undefined; empty: boolean } {
-	const branches: IfBranch[] = [];
+	const branches: Array<IfBranch> = [];
 	let current: AST.Expression = node;
 	for (;;) {
 		if (current.type === "LogicalExpression" && current.operator === "&&") {
@@ -642,7 +671,9 @@ function lowerIf(
 			branches.push(createBranch(condition.expression, children, span(current)));
 			break;
 		}
-		if (current.type !== "ConditionalExpression") break;
+		if (current.type !== "ConditionalExpression") {
+			break;
+		}
 		const condition = checkExpression(current.test, { ...render, presence: true });
 		const children = lowerBranch(current.consequent, place, render);
 		branches.push(
@@ -668,8 +699,12 @@ function lowerIf(
 	const empty =
 		branches.at(-1)!.condition !== undefined ||
 		branches.some((branch) => leading(branch.children).empty);
-	while (branches.length && !branches.at(-1)!.children.length) branches.pop();
-	if (!branches.length) return { node: undefined, empty };
+	while (branches.length && !branches.at(-1)!.children.length) {
+		branches.pop();
+	}
+	if (!branches.length) {
+		return { node: undefined, empty };
+	}
 	const problem = textPlacementProblem(place, render);
 	if (problem) {
 		// A <textarea>'s and a raw-text element's content is text, where the comments that mark a
@@ -701,11 +736,15 @@ export function textPlacementProblem(
 	render: RenderContext,
 ): ((what: string, at: Span) => void) | undefined {
 	const parent = place.ancestors.at(-1);
-	if (!parent) return undefined;
+	if (!parent) {
+		return undefined;
+	}
 	const { reporter } = render;
 	const related = [{ span: parent.name, message: `The <${parent.tag}>` }];
 	if (place.namespace === "svg") {
-		if (SVG_TEXT_ELEMENTS.has(parent.tag)) return undefined;
+		if (SVG_TEXT_ELEMENTS.has(parent.tag)) {
+			return undefined;
+		}
 		return (what, at) =>
 			reporter.report(
 				"UF3003",
@@ -715,7 +754,9 @@ export function textPlacementProblem(
 			);
 	}
 	const reason = UNINTERPOLATED_ELEMENTS.get(parent.tag);
-	if (!reason) return undefined;
+	if (!reason) {
+		return undefined;
+	}
 	if (parent.tag === "textarea") {
 		return (what, at) =>
 			reporter.unsupported(at, `${what} cannot be inside a <textarea>: ${reason}`);
@@ -750,7 +791,9 @@ function checkJsxText(
 		start: item.start + range.start,
 		end: item.start + range.end,
 	});
-	for (const divergence of reading.divergences) reportDivergence(divergence, at, reporter);
+	for (const divergence of reading.divergences) {
+		reportDivergence(divergence, at, reporter);
+	}
 	for (const reference of htmlOnlyReferences(item.value)) {
 		// Its numeric reference reads alike everywhere, except as a tab or a line break, which
 		// Babel reads as whitespace (UF3009); and where the text is read differently already, the
@@ -760,7 +803,9 @@ function checkJsxText(
 		reportHtmlOnlyReference(reference, at, fixable, reporter);
 	}
 	const characters = unportableCharacters(item.value, reading.kept, reading.divergences);
-	for (const character of characters) reportCharacter(character, at, reporter);
+	for (const character of characters) {
+		reportCharacter(character, at, reporter);
+	}
 	return {
 		lowered: !reading.divergences.length && !characters.length,
 		edited: reading.divergences.length > 0,
@@ -776,12 +821,14 @@ function checkJsxText(
 function checkTextPlacement(
 	value: string,
 	at: Span,
-	parts: readonly TextPart[],
+	parts: ReadonlyArray<TextPart>,
 	place: Place,
 	render: RenderContext,
 ): boolean {
 	const parent = place.ancestors.at(-1);
-	if (!parent) return true;
+	if (!parent) {
+		return true;
+	}
 	const { reporter } = render;
 	const related = [{ span: parent.name, message: `The <${parent.tag}>` }];
 	const whitespace = isWhitespaceText(value);
@@ -879,11 +926,13 @@ function checkTextPlacement(
  */
 function checkLeadingLineFeed(
 	tag: string,
-	children: readonly RenderNode[],
+	children: ReadonlyArray<RenderNode>,
 	render: RenderContext,
 ): void {
 	for (const { text, after } of leading(children).texts) {
-		if (!text.value.startsWith("\n")) continue;
+		if (!text.value.startsWith("\n")) {
+			continue;
+		}
 		const first = PARTS.get(text)?.find((part) => part.value !== "") ?? { span: text.span };
 		render.reporter.report(
 			"UF3017",
@@ -902,10 +951,10 @@ function checkLeadingLineFeed(
  * node; and whether the list can render nothing.
  */
 function leading(
-	children: readonly RenderNode[],
+	children: ReadonlyArray<RenderNode>,
 	after = false,
-): { texts: { text: TextNode; after: boolean }[]; empty: boolean } {
-	const texts: { text: TextNode; after: boolean }[] = [];
+): { texts: Array<{ text: TextNode; after: boolean }>; empty: boolean } {
+	const texts: Array<{ text: TextNode; after: boolean }> = [];
 	for (const slot of SLOTS.get(children) ?? children) {
 		if (slot.kind === "Text") {
 			texts.push({ text: slot, after });
@@ -916,21 +965,25 @@ function leading(
 			after = true;
 			continue;
 		}
-		if (slot.kind !== "If") return { texts, empty: false };
+		if (slot.kind !== "If") {
+			return { texts, empty: false };
+		}
 		let empty = CAN_BE_EMPTY.get(slot) ?? slot.branches.at(-1)?.condition !== undefined;
 		for (const branch of slot.branches) {
 			const inner = leading(branch.children, after);
 			texts.push(...inner.texts);
 			empty ||= inner.empty;
 		}
-		if (!empty) return { texts, empty: false };
+		if (!empty) {
+			return { texts, empty: false };
+		}
 		after = true;
 	}
 	return { texts, empty: true };
 }
 
 /** Whether JSX children have content: an element, an expression, or text some JSX reads. */
-export function hasContent(items: readonly AST.JSXChild[]): boolean {
+export function hasContent(items: ReadonlyArray<AST.JSXChild>): boolean {
 	return items.some((item) => {
 		if (item.type !== "JSXText") {
 			return (
@@ -946,9 +999,12 @@ export function hasContent(items: readonly AST.JSXChild[]): boolean {
 export function lowerRootChildren(
 	node: AST.JSXFragment | AST.Expression,
 	render: RenderContext,
-): RenderNode[] {
+): Array<RenderNode> {
 	const children = new Children(ROOT, render);
-	if (node.type === "JSXFragment") collect(node.children, children, ROOT, render);
-	else lowerChild(node, span(node), children, ROOT, render);
+	if (node.type === "JSXFragment") {
+		collect(node.children, children, ROOT, render);
+	} else {
+		lowerChild(node, span(node), children, ROOT, render);
+	}
 	return children.finish();
 }

@@ -193,7 +193,9 @@ describe("lifecycle", () => {
 		await expect.poll(() => view.emitted("refresh").length).toBeGreaterThanOrEqual(2);
 		await view.unmount();
 		const ticks = view.emitted("refresh").length;
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 100);
+		});
 		expect(view.emitted("refresh")).toHaveLength(ticks);
 	});
 
@@ -285,7 +287,9 @@ describe("callbacks that return", () => {
 	it("run as the source's, and every `onUnmounted` runs whatever an earlier one returned", async () => {
 		const view = await render(Teardowns, TeardownsEvents);
 		expect(view.get("p").textContent).toBe("1");
-		for (let click = 0; click < 3; click++) await view.click("button", "More");
+		for (let click = 0; click < 3; click++) {
+			await view.click("button", "More");
+		}
 		expect(view.emitted("counted")).toEqual([[1], [2]]);
 		expect(view.get("p").textContent).toBe("2");
 		await view.unmount();
@@ -304,7 +308,9 @@ const marks = () =>
 
 describe("async setup (ADR-0101)", () => {
 	afterEach(() => {
-		for (const name of Object.keys(marks())) document.body.removeAttribute(name);
+		for (const name of Object.keys(marks())) {
+			document.body.removeAttribute(name);
+		}
 		vi.restoreAllMocks();
 	});
 
@@ -324,7 +330,7 @@ describe("async setup (ADR-0101)", () => {
 	it("runs none of the rest, and no `onUnmounted`, when destroyed before the setup resolves", async () => {
 		const errors = vi.spyOn(console, "error");
 		// What the rest of the setup would throw, run against a destroyed injector (NG0205).
-		const thrown: unknown[] = [];
+		const thrown: Array<unknown> = [];
 		const caught = (event: ErrorEvent | PromiseRejectionEvent) =>
 			thrown.push("reason" in event ? event.reason : event.error);
 		window.addEventListener("error", caught);
@@ -344,7 +350,9 @@ describe("async setup (ADR-0101)", () => {
 		host.remove();
 		// The setup's continuation runs in a microtask, and Angular reports what a pending task
 		// throws in a later task: nothing may happen by then.
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 50);
+		});
 		window.removeEventListener("error", caught);
 		window.removeEventListener("unhandledrejection", caught);
 		expect(thrown).toEqual([]);

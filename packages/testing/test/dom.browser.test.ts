@@ -12,7 +12,7 @@ function container(html = ""): HTMLDivElement {
 	return root;
 }
 
-const lines = (...text: string[]) => `${text.join("\n")}\n`;
+const lines = (...text: Array<string>) => `${text.join("\n")}\n`;
 
 afterEach(() => {
 	document.body.replaceChildren();
@@ -38,7 +38,7 @@ describe("serializeDom", () => {
 		p.textContent = "a < b & c > d";
 		root.append(p);
 		expect(normalizeDom(root)).toBe(
-			lines('<p title="say \\"hi\\" & <bye>">', '  "a < b & c > d"', "</p>"),
+			lines(String.raw`<p title="say \"hi\" & <bye>">`, '  "a < b & c > d"', "</p>"),
 		);
 	});
 
@@ -60,10 +60,10 @@ describe("serializeDom", () => {
 		expect(normalizeDom(root)).toBe(
 			lines(
 				"<pre>",
-				'  "\\nindented"',
+				String.raw`  "\nindented"`,
 				"</pre>",
 				// Its text is its value, which rule 4d keeps in `uf:value` alone.
-				'<textarea uf:value="\\nline"></textarea>',
+				String.raw`<textarea uf:value="\nline"></textarea>`,
 			),
 		);
 	});
@@ -74,7 +74,7 @@ describe("serializeDom", () => {
 		pre.append(document.createTextNode(""), document.createTextNode("\nindented"));
 		root.append(pre);
 		expect(pre.innerText).toBe("\nindented");
-		expect(normalizeDom(root)).toBe(lines("<pre>", '  "\\nindented"', "</pre>"));
+		expect(normalizeDom(root)).toBe(lines("<pre>", String.raw`  "\nindented"`, "</pre>"));
 		expect(normalizeDom(root)).not.toBe(normalizeDom(container("<pre>indented</pre>")));
 	});
 
@@ -344,7 +344,8 @@ describe("normalizeDom: what HTML text cannot carry", () => {
 	it("accepts SVG built in its namespace, with its attributes' names and namespaces", () => {
 		const { root, width } = svgWith((svg) => {
 			svg.setAttribute("viewBox", "0 0 10 10");
-			const rect = svg.appendChild(document.createElementNS(SVG, "rect"));
+			const rect = document.createElementNS(SVG, "rect");
+			svg.append(rect);
 			rect.setAttribute("id", "r");
 			rect.setAttribute("width", "10");
 			rect.setAttribute("height", "10");
@@ -414,7 +415,9 @@ describe("normalizeDom: what HTML text cannot carry", () => {
 	it("rejects a carriage return in text, which the parser reads back as a line feed", () => {
 		const pre = (text: string) => {
 			const root = container();
-			root.appendChild(document.createElement("pre")).append(text);
+			const element = document.createElement("pre");
+			element.append(text);
+			root.append(element);
 			return root;
 		};
 		const height = (root: HTMLElement) => root.querySelector("pre")!.getBoundingClientRect().height;
@@ -427,7 +430,9 @@ describe("normalizeDom: what HTML text cannot carry", () => {
 
 	it("rejects a carriage return in an attribute value", () => {
 		const root = container();
-		root.appendChild(document.createElement("p")).title = "a\r\nb";
+		const p = document.createElement("p");
+		p.title = "a\r\nb";
+		root.append(p);
 		expect(() => normalizeDom(root)).toThrow(
 			/the title of p is "a\\r\\nb" live and reads back as "a\\nb"/,
 		);
@@ -436,8 +441,11 @@ describe("normalizeDom: what HTML text cannot carry", () => {
 	it("rejects a table row without the <tbody> the parser inserts", () => {
 		const root = container();
 		const table = document.createElement("table");
-		const row = table.appendChild(document.createElement("tr"));
-		row.appendChild(document.createElement("td")).textContent = "x";
+		const row = document.createElement("tr");
+		const cell = document.createElement("td");
+		cell.textContent = "x";
+		row.append(cell);
+		table.append(row);
 		root.append(table);
 		expect(root.querySelector("table > tr")).not.toBeNull();
 		expect(() => normalizeDom(root)).toThrow(/the live <tr> at table > tr parses as <tbody>/);

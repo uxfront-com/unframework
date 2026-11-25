@@ -14,7 +14,7 @@ const require = createRequire(import.meta.url);
 /** solid-js 1.9's JSX types, as the output's L4 reads them. */
 const jsxTypes = readFileSync(require.resolve("solid-js/types/jsx.d.ts"), "utf8");
 /** The members of one of the JSX types' interfaces. */
-function members(name: string): string[] {
+function members(name: string): Array<string> {
 	const start = jsxTypes.indexOf(`interface ${name}<T> {`);
 	const end = jsxTypes.indexOf("\n  }\n", start);
 	return [...jsxTypes.slice(start, end).matchAll(/^\s+"?([\w:]+)"?\?:/gm)].map(
@@ -46,8 +46,11 @@ describe("solid's event table", () => {
 	it("has a native listener's type for every DOM event, `encrypted` on media elements", () => {
 		const namespaced = members("CustomEventHandlersNamespaced");
 		for (const event of DOM_EVENTS.keys()) {
-			if (event === "encrypted") expect(jsxTypes).toContain('"on:encrypted"?:');
-			else expect(namespaced, event).toContain(`on:${event}`);
+			if (event === "encrypted") {
+				expect(jsxTypes).toContain('"on:encrypted"?:');
+			} else {
+				expect(namespaced, event).toContain(`on:${event}`);
+			}
 		}
 	});
 

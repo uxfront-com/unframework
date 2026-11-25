@@ -28,7 +28,7 @@ const API_MACROS = new Set(["defineEmits", "defineModel", "defineSlots"]);
  * declarations. What `compile()` asks the type
  * oracle for before the module is analysed.
  */
-export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
+export function shapeQueries(parsed: ParsedModule): Array<ShapeQuery> {
 	const imported = typeImportNames(parsed.program);
 	const found = new Map<string, ShapeQuery>();
 	const add = (type: AST.TSType) => {
@@ -49,12 +49,18 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
 	const inBody = (node: AST.Node) => {
 		visit(node, (each) => {
 			// A member's annotation inside a type is the type's, queried with it.
-			if (each.type === "TSTypeLiteral") return false;
-			if (each.type === "TSTypeAnnotation" && names(each.typeAnnotation)) add(each.typeAnnotation);
+			if (each.type === "TSTypeLiteral") {
+				return false;
+			}
+			if (each.type === "TSTypeAnnotation" && names(each.typeAnnotation)) {
+				add(each.typeAnnotation);
+			}
 			if (each.type === "CallExpression" && each.typeArguments) {
 				const callee = each.callee.type === "Identifier" ? each.callee.name : undefined;
 				for (const argument of each.typeArguments.params) {
-					if ((callee && API_MACROS.has(callee)) || names(argument)) add(argument);
+					if ((callee && API_MACROS.has(callee)) || names(argument)) {
+						add(argument);
+					}
 				}
 			}
 			if (
@@ -62,7 +68,9 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
 				each.typeName.type === "Identifier" &&
 				each.typeName.name === "InjectionKey"
 			) {
-				for (const argument of each.typeArguments?.params ?? []) add(argument);
+				for (const argument of each.typeArguments?.params ?? []) {
+					add(argument);
+				}
 			}
 			return true;
 		});
@@ -71,12 +79,18 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
 		const [parameter] = fn.params;
 		const annotation =
 			parameter && "typeAnnotation" in parameter ? parameter.typeAnnotation : undefined;
-		if (annotation) add(annotation.typeAnnotation);
-		if (fn.body) inBody(fn.body);
+		if (annotation) {
+			add(annotation.typeAnnotation);
+		}
+		if (fn.body) {
+			inBody(fn.body);
+		}
 	}
 	// A key declared at the module's top level (ADR-0054).
 	for (const statement of parsed.program.body) {
-		if (statement.type !== "FunctionDeclaration") inBody(statement);
+		if (statement.type !== "FunctionDeclaration") {
+			inBody(statement);
+		}
 	}
 	return [...found.values()].toSorted((a, b) => a.span.start - b.span.start);
 }
@@ -126,8 +140,8 @@ export function typeImportNames(program: AST.Program): Set<string> {
 }
 
 /** The functions a module declares at its top level, exported or not, written as values too. */
-function functions(program: AST.Program): AST.Function[] {
-	const found: (AST.Function | AST.ArrowFunctionExpression)[] = [];
+function functions(program: AST.Program): Array<AST.Function> {
+	const found: Array<AST.Function | AST.ArrowFunctionExpression> = [];
 	for (const statement of program.body) {
 		const declaration =
 			(statement.type === "ExportNamedDeclaration" ||
@@ -135,7 +149,9 @@ function functions(program: AST.Program): AST.Function[] {
 			statement.declaration
 				? statement.declaration
 				: statement;
-		if (declaration.type === "FunctionDeclaration") found.push(declaration);
+		if (declaration.type === "FunctionDeclaration") {
+			found.push(declaration);
+		}
 		if (declaration.type === "VariableDeclaration") {
 			for (const declarator of declaration.declarations) {
 				const init = declarator.init;
@@ -145,19 +161,27 @@ function functions(program: AST.Program): AST.Function[] {
 			}
 		}
 	}
-	return found as AST.Function[];
+	return found as Array<AST.Function>;
 }
 
 /** Walks a node's tree, entering each node's children when `enter` returns true. */
 export function visit(node: unknown, enter: (node: AST.Node) => boolean): void {
-	if (!node || typeof node !== "object") return;
+	if (!node || typeof node !== "object") {
+		return;
+	}
 	if (Array.isArray(node)) {
-		for (const item of node) visit(item, enter);
+		for (const item of node) {
+			visit(item, enter);
+		}
 		return;
 	}
 	const typed = node as AST.Node;
-	if (typeof typed.type !== "string") return;
-	if (!enter(typed)) return;
+	if (typeof typed.type !== "string") {
+		return;
+	}
+	if (!enter(typed)) {
+		return;
+	}
 	for (const key of visitorKeys[typed.type] ?? []) {
 		visit((node as Record<string, unknown>)[key], enter);
 	}

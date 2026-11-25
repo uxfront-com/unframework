@@ -39,7 +39,9 @@ beforeEach(() => {
 
 afterEach(() => {
 	// A static list: removing an element as a live one is walked would skip the next.
-	for (const element of document.body.querySelectorAll(":scope > :not(script)")) element.remove();
+	for (const element of document.body.querySelectorAll(":scope > :not(script)")) {
+		element.remove();
+	}
 });
 
 it("claims what body gained, but mount roots, for the first owner that reads it", () => {

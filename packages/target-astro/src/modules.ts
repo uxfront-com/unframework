@@ -24,12 +24,12 @@ import type {
 /** What an owner's output declares of its module. */
 export interface ModuleReads {
 	/** The constants, in source order, each as written but for the module names it reads. */
-	constants: string[];
+	constants: Array<string>;
 	/**
 	 * The module's type declarations its constants name, transitively, that the owner's own types
 	 * leave out, to declare beside them.
 	 */
-	types: TypeDeclaration[];
+	types: Array<TypeDeclaration>;
 	/** Rewrites the `typeof` of a module name declared under another name in copied type text. */
 	renamed: (text: string, kind: CodeKind | "type") => string;
 }
@@ -85,10 +85,15 @@ export function moduleReads(
 	scope.reserve(...locals.values());
 	for (const entry of module.moduleImports ?? []) {
 		for (const name of entry.names) {
-			if (!imported.has(name.local)) continue;
+			if (!imported.has(name.local)) {
+				continue;
+			}
 			const as = locals.get(name.local)!;
-			if (name.imported === "default") imports.addDefault(entry.specifier, as, { exact: true });
-			else imports.add(entry.specifier, name.imported, { local: as, exact: true });
+			if (name.imported === "default") {
+				imports.addDefault(entry.specifier, as, { exact: true });
+			} else {
+				imports.add(entry.specifier, name.imported, { local: as, exact: true });
+			}
 		}
 	}
 	const renamed = (text: string, kind: CodeKind | "type") => renamedQueries(text, kind, locals);
@@ -109,22 +114,34 @@ export function moduleReads(
 function constantTypes(
 	owner: UfComponent,
 	module: UfModule,
-	constants: readonly ModuleConstant[],
-): TypeDeclaration[] {
+	constants: ReadonlyArray<ModuleConstant>,
+): Array<TypeDeclaration> {
 	const read = new Set<string>();
 	for (const constant of constants) {
-		if (constant.type) for (const name of typeNames(constant.type)) read.add(name);
-		for (const name of codeNames(constant.value.code)) read.add(name);
+		if (constant.type) {
+			for (const name of typeNames(constant.type)) {
+				read.add(name);
+			}
+		}
+		for (const name of codeNames(constant.value.code)) {
+			read.add(name);
+		}
 	}
 	const own = new Set(owner.types);
 	const found = new Set<string>();
 	for (let size = -1; size !== found.size;) {
 		size = found.size;
 		for (const declaration of module.types) {
-			if (own.has(declaration.name) || found.has(declaration.name)) continue;
-			if (!read.has(declaration.name)) continue;
+			if (own.has(declaration.name) || found.has(declaration.name)) {
+				continue;
+			}
+			if (!read.has(declaration.name)) {
+				continue;
+			}
 			found.add(declaration.name);
-			for (const name of codeNames(declaration.code, "statements")) read.add(name);
+			for (const name of codeNames(declaration.code, "statements")) {
+				read.add(name);
+			}
 		}
 	}
 	return module.types.filter(({ name }) => found.has(name));
@@ -135,13 +152,17 @@ function constantTypes(
  * shorthand property expanded (`{ LIMITS: LIMITS_1 }`), and each `typeof` of one too.
  */
 function renamedValue(value: Code, locals: ReadonlyMap<string, string>): string {
-	const edits: Edit[] = [];
+	const edits: Array<Edit> = [];
 	let shorthand: ReadonlySet<number> | undefined;
 	for (const reference of value.refs) {
-		if (reference.kind !== "Binding") continue;
+		if (reference.kind !== "Binding") {
+			continue;
+		}
 		const name = nameOf(reference.binding);
 		const local = locals.get(name) ?? name;
-		if (local === name) continue;
+		if (local === name) {
+			continue;
+		}
 		const start = reference.span.start - value.span.start;
 		shorthand ??= shorthandValues(value.code);
 		const key = reference.shorthand || shorthand.has(start) ? `${name}: ` : "";
@@ -149,7 +170,9 @@ function renamedValue(value: Code, locals: ReadonlyMap<string, string>): string 
 	}
 	for (const { name, start, end } of typeQueries(value.code, "expression")) {
 		const local = locals.get(name) ?? name;
-		if (local !== name) edits.push({ start, end, text: local });
+		if (local !== name) {
+			edits.push({ start, end, text: local });
+		}
 	}
 	return applied(value.code, edits);
 }
@@ -160,7 +183,9 @@ function renamedQueries(
 	kind: CodeKind | "type",
 	locals: ReadonlyMap<string, string>,
 ): string {
-	if (![...locals].some(([name, local]) => name !== local)) return text;
+	if (![...locals].some(([name, local]) => name !== local)) {
+		return text;
+	}
 	const edits = typeQueries(text, kind).flatMap(({ name, start, end }) => {
 		const local = locals.get(name) ?? name;
 		return local === name ? [] : [{ start, end, text: local }];
@@ -174,7 +199,7 @@ interface Edit {
 	text: string;
 }
 
-function applied(text: string, edits: readonly Edit[]): string {
+function applied(text: string, edits: ReadonlyArray<Edit>): string {
 	let written = "";
 	let last = 0;
 	for (const edit of edits.toSorted((a, b) => a.start - b.start)) {
@@ -195,13 +220,19 @@ interface AstNode {
 /** Calls `visit` on every node of a tree, parents first. */
 function visit(root: unknown, each: (node: AstNode) => void): void {
 	if (Array.isArray(root)) {
-		for (const item of root) visit(item, each);
+		for (const item of root) {
+			visit(item, each);
+		}
 		return;
 	}
-	if (!root || typeof root !== "object" || typeof (root as AstNode).type !== "string") return;
+	if (!root || typeof root !== "object" || typeof (root as AstNode).type !== "string") {
+		return;
+	}
 	each(root as AstNode);
 	for (const [key, value] of Object.entries(root)) {
-		if (key !== "parent" && typeof value === "object") visit(value, each);
+		if (key !== "parent" && typeof value === "object") {
+			visit(value, each);
+		}
 	}
 }
 
@@ -212,18 +243,22 @@ function visit(root: unknown, each: (node: AstNode) => void): void {
 function typeQueries(
 	text: string,
 	kind: CodeKind | "type",
-): { name: string; start: number; end: number }[] {
+): Array<{ name: string; start: number; end: number }> {
 	// Type text parses as the type of an assertion, whose offsets the prefix shifts.
 	const prefix = kind === "type" ? "null as " : "";
 	const root =
 		kind === "type"
 			? parseExpressionSource(`${prefix}${text}`).expression
 			: parseCodeSource(text, kind).root;
-	const found: { name: string; start: number; end: number }[] = [];
+	const found: Array<{ name: string; start: number; end: number }> = [];
 	visit(root, (node) => {
-		if (node.type !== "TSTypeQuery") return;
+		if (node.type !== "TSTypeQuery") {
+			return;
+		}
 		let name = node["exprName"] as AstNode | undefined;
-		while (name?.type === "TSQualifiedName") name = name["left"] as AstNode;
+		while (name?.type === "TSQualifiedName") {
+			name = name["left"] as AstNode;
+		}
 		if (name?.type === "Identifier" && typeof name["name"] === "string") {
 			found.push({
 				name: name["name"],
@@ -243,7 +278,9 @@ function shorthandValues(code: string): Set<number> {
 	const found = new Set<number>();
 	visit(parseExpressionSource(code).expression, (node) => {
 		const value = node["value"] as AstNode | undefined;
-		if (node.type === "Property" && node["shorthand"] === true && value) found.add(value.start);
+		if (node.type === "Property" && node["shorthand"] === true && value) {
+			found.add(value.start);
+		}
 	});
 	return found;
 }

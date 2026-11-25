@@ -106,17 +106,17 @@ export interface CodeFacts {
 	 * them at once: Qwik's output calls a local function that touches state as a QRL, which such
 	 * a callback or call cannot await (UF2024).
 	 */
-	readonly nestedCalls: {
+	readonly nestedCalls: Array<{
 		binding: BindingId;
 		span: { start: number; end: number };
 		/** For a function passed as a value, the call it is passed to, and whether an array's. */
 		passedTo?: string | undefined;
 		arrayMethod?: boolean;
-	}[];
+	}>;
 	/** The kinds each watcher's getter returns, by its IR (UF2015 judges the object ones). */
 	readonly getterKinds: Map<object, Kinds>;
 	/** The calls of `nextTick` in client code given a callback (UF2025), with their fix. */
-	readonly tickCallbacks: AST.CallExpression[];
+	readonly tickCallbacks: Array<AST.CallExpression>;
 	/**
 	 * The functions client code passes to a call that runs them later (the timers,
 	 * `queueMicrotask`, `requestAnimationFrame`, `requestIdleCallback`, a promise's `then`,
@@ -135,7 +135,7 @@ export interface EventParameter {
 	/** Its interface: `KeyboardEvent`, or `Event` for one any event fits (ADR-0047). */
 	readonly interface: string;
 	/** The DOM events it receives, by their names (`click`): what its members must be portable for. */
-	readonly events: readonly string[];
+	readonly events: ReadonlyArray<string>;
 }
 
 /** An event's payload, as the walks check an emit of it (UF2017, UF3031). */
@@ -143,7 +143,7 @@ export interface EventPayload {
 	readonly required: number;
 	readonly total: number;
 	/** For each member, whether it admits `null` or `undefined`. */
-	readonly nullable: readonly boolean[];
+	readonly nullable: ReadonlyArray<boolean>;
 }
 
 /** What the setup declares, as every walk of the component's code reads it (ADR-0045). */
@@ -201,7 +201,7 @@ export interface RenderContext {
 	/** The loop variables of the lists lowered so far, by the parameter that declares each. */
 	readonly loopVariables: Map<object, LoopVariable>;
 	/** The loop variables of the lists around the node being lowered, outermost first. */
-	readonly enclosing: LoopVariable[];
+	readonly enclosing: Array<LoopVariable>;
 	/**
 	 * Set while a slot's fill is lowered (ADR-0054): a function the child may call many times, so
 	 * what renders once cannot be in it, as in a list.
@@ -212,9 +212,9 @@ export interface RenderContext {
 	/** The `ref` attribute that attaches each template ref, by the identifier that declares it. */
 	readonly attached: Map<object, { start: number; end: number }>;
 	/** The bindings the component declares: the props', the setup's, then each list's. */
-	readonly bindings: Binding[];
+	readonly bindings: Array<Binding>;
 	/** The module's comments: lint directives must not reach an output. */
-	readonly comments: readonly AST.Comment[];
+	readonly comments: ReadonlyArray<AST.Comment>;
 	/** What the walks note for the rules judged once everything is lowered. */
 	readonly facts: CodeFacts;
 	/**

@@ -24,7 +24,7 @@ export const casesDir: string = join(repoRoot, "tests/integration/cases");
 export const toolchainDir: string = join(repoRoot, "tests/toolchains/vue");
 
 /** Every file under a directory, recursively, as absolute paths. */
-function filesUnder(directory: string): string[] {
+function filesUnder(directory: string): Array<string> {
 	return readdirSync(directory, { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile())
 		.map((entry) => join(entry.parentPath, entry.name))
@@ -32,7 +32,7 @@ function filesUnder(directory: string): string[] {
 }
 
 /** The committed Vue golden outputs of the integration corpus. */
-export function goldenFiles(): string[] {
+export function goldenFiles(): Array<string> {
 	return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.vue$/.test(path));
 }
 
@@ -40,7 +40,7 @@ export function goldenFiles(): string[] {
  * The `.ts` modules beside the Vue golden outputs: the shared modules `compile()` copies into the
  * output tree (ADR-0070), whose types a `defineProps<X>()` imports (ADR-0067).
  */
-export function goldenModules(): string[] {
+export function goldenModules(): Array<string> {
 	return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.ts$/.test(path));
 }
 
@@ -48,7 +48,7 @@ export function goldenModules(): string[] {
  * Each IR snapshot of the corpus, a case's sources each (`ir.json`, and `ir.<Stem>.json` for a
  * case of several, ADR-0057), with the directory its golden outputs live in.
  */
-export function corpus(): { name: string; module: UfModule; outputDir: string }[] {
+export function corpus(): Array<{ name: string; module: UfModule; outputDir: string }> {
 	return filesUnder(casesDir)
 		.filter((path) => /\/__output__\/ir(?:\.[^./]+)?\.json$/.test(path))
 		.map((path) => {
@@ -63,7 +63,7 @@ export function corpus(): { name: string; module: UfModule; outputDir: string }[
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */
-export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
+export async function emitFormatted(module: UfModule): Promise<Array<OutputFile>> {
 	const context: EmitContext = {
 		module,
 		options: undefined,
@@ -75,7 +75,9 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
 	return Promise.all(
 		files.map(async (file) => {
 			const outcome = await formatOutput(file);
-			if (outcome.error) throw new Error(`${file.path} does not format: ${outcome.error}`);
+			if (outcome.error) {
+				throw new Error(`${file.path} does not format: ${outcome.error}`);
+			}
 			return outcome.file;
 		}),
 	);
@@ -92,7 +94,9 @@ export function lower(source: string, file = "Case.uf.tsx"): UfModule {
 		throw new Error(`the analyser rejects the source: ${errors.map((e) => e.message).join("; ")}`);
 	}
 	const broken = checkInvariants(module);
-	if (broken.length) throw new Error(`invalid IR: ${JSON.stringify(broken)}`);
+	if (broken.length) {
+		throw new Error(`invalid IR: ${JSON.stringify(broken)}`);
+	}
 	return module;
 }
 
@@ -104,7 +108,9 @@ export async function emitSource(source: string, format = true): Promise<string>
 		: module.components.flatMap((component) =>
 				target.emit(component, { module, options: undefined, report: () => {} }),
 			);
-	if (files.length !== 1) throw new Error(`expected one file, got ${files.length}`);
+	if (files.length !== 1) {
+		throw new Error(`expected one file, got ${files.length}`);
+	}
 	return files[0]!.contents;
 }
 
@@ -125,10 +131,12 @@ export async function renderSfc(
 	const id = `sfc-${compiled++}`;
 	const filename = `${id}.vue`;
 	const { descriptor, errors } = parse(contents, { filename });
-	if (errors.length) throw new Error(`parse: ${errors.map(String).join("; ")}`);
-	const warnings: string[] = [];
+	if (errors.length) {
+		throw new Error(`parse: ${errors.map(String).join("; ")}`);
+	}
+	const warnings: Array<string> = [];
 	const warn = console.warn;
-	console.warn = (...args: unknown[]) => void warnings.push(args.join(" "));
+	console.warn = (...args: Array<unknown>) => void warnings.push(args.join(" "));
 	let code: string;
 	try {
 		const onWarn = (warning: { message: string }) => void warnings.push(warning.message);
@@ -144,8 +152,9 @@ export async function renderSfc(
 					},
 				})
 			: undefined;
-		if (script && inline) code = script.content;
-		else {
+		if (script && inline) {
+			code = script.content;
+		} else {
 			const template = compileTemplate({
 				source: descriptor.template!.content,
 				ast: descriptor.template!.ast,
@@ -161,7 +170,9 @@ export async function renderSfc(
 						: {}),
 				},
 			});
-			if (template.errors.length) throw new Error(`template: ${template.errors.join("; ")}`);
+			if (template.errors.length) {
+				throw new Error(`template: ${template.errors.join("; ")}`);
+			}
 			const component = script
 				? script.content.replace("export default ", "const component = ")
 				: "const component = {};";
@@ -175,11 +186,13 @@ export async function renderSfc(
 	const app = createSSRApp(component, props);
 	app.config.warnHandler = (message) => void warnings.push(message);
 	const html = await renderToString(app);
-	if (warnings.length) throw new Error(`warnings: ${warnings.join("\n")}`);
+	if (warnings.length) {
+		throw new Error(`warnings: ${warnings.join("\n")}`);
+	}
 	return html;
 }
 
-const scratch: string[] = [];
+const scratch: Array<string> = [];
 
 /**
  * A fresh directory inside this package (gitignored `.uf-tmp/`), so files written there resolve
@@ -194,7 +207,9 @@ export function scratchDir(): string {
 
 /** Deletes every scratch directory this test file created. */
 export function removeScratch(): void {
-	for (const directory of scratch.splice(0)) rmSync(directory, { recursive: true, force: true });
+	for (const directory of scratch.splice(0)) {
+		rmSync(directory, { recursive: true, force: true });
+	}
 }
 
 /** Writes files into a fresh scratch directory and returns their absolute paths by name. */

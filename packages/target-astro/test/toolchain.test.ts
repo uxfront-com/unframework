@@ -9,7 +9,7 @@ import { astroComponentRef, isAstroComponentRef, splitQuery } from "../src/toolc
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const context = { toolchainDir, root: integrationRoot };
-const pluginNames = (plugins: unknown): string[] =>
+const pluginNames = (plugins: unknown): Array<string> =>
 	[plugins]
 		.flat(Number.POSITIVE_INFINITY)
 		.filter((plugin): plugin is Plugin => typeof plugin === "object" && plugin !== null)

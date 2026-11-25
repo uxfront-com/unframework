@@ -59,7 +59,7 @@ export interface ControlKit {
 	propList(
 		id: string,
 		title: string,
-		items: readonly (string | Node)[][],
+		items: ReadonlyArray<Array<string | Node>>,
 	): [HTMLElement, HTMLElement];
 	/** A prop's name as code. */
 	code(text: string): HTMLElement;
@@ -67,15 +67,15 @@ export interface ControlKit {
 	 * An example's control groups (ADR-0113): one group per component it renders, headed by the
 	 * component's name, and its id too where two groups share a name.
 	 */
-	exampleGroups(groups: readonly ExampleControlGroup[]): HTMLElement[];
+	exampleGroups(groups: ReadonlyArray<ExampleControlGroup>): Array<HTMLElement>;
 	/** A component's props from its fields, each under the prop's name. */
 	componentProps(
-		controls: readonly PropControl[],
+		controls: ReadonlyArray<PropControl>,
 		field: (name: string) => ControlField,
 	): Record<string, unknown>;
 	/** An example's props from its fields, each under its control's key. */
 	exampleProps(
-		controls: readonly ExampleControl[],
+		controls: ReadonlyArray<ExampleControl>,
 		field: (key: string) => ControlField,
 	): Record<string, unknown>;
 }
@@ -97,17 +97,24 @@ export function controlKit(): ControlKit {
 		if (control.kind === "boolean" && !control.optional) {
 			next[name] = Boolean(field.checked);
 		} else if (control.kind === "boolean") {
-			if (field.value !== "") next[name] = field.value === "true";
+			if (field.value !== "") {
+				next[name] = field.value === "true";
+			}
 		} else if (control.kind === "number") {
-			if (field.value !== "") next[name] = Number(field.value);
-			else if (!control.optional) next[name] = control.initial;
+			if (field.value !== "") {
+				next[name] = Number(field.value);
+			} else if (!control.optional) {
+				next[name] = control.initial;
+			}
 		} else if (field.value !== "" || !control.optional) {
 			next[name] = field.value;
 		}
 	};
 	const componentProps: ControlKit["componentProps"] = (controls, field) => {
 		const next: Record<string, unknown> = {};
-		for (const control of controls) assign(next, control.name, control, field(control.name));
+		for (const control of controls) {
+			assign(next, control.name, control, field(control.name));
+		}
 		return next;
 	};
 	// An example takes each control under its key, which names one component's prop. Every control
@@ -117,9 +124,17 @@ export function controlKit(): ControlKit {
 	// props for an example that had none as a new instance, which then has them all.
 	const exampleProps: ControlKit["exampleProps"] = (controls, field) => {
 		const next: Record<string, unknown> = {};
-		for (const control of controls) assign(next, control.key, control, field(control.key));
-		if (!Object.keys(next).length) return next;
-		for (const control of controls) if (!(control.key in next)) next[control.key] = undefined;
+		for (const control of controls) {
+			assign(next, control.key, control, field(control.key));
+		}
+		if (!Object.keys(next).length) {
+			return next;
+		}
+		for (const control of controls) {
+			if (!(control.key in next)) {
+				next[control.key] = undefined;
+			}
+		}
 		return next;
 	};
 
@@ -136,16 +151,23 @@ export function controlKit(): ControlKit {
 		let field: HTMLInputElement | HTMLSelectElement;
 		if (control.kind === "select" || (control.kind === "boolean" && control.optional)) {
 			const select = document.createElement("select");
-			if (control.optional) select.append(option("", "(default)"));
+			if (control.optional) {
+				select.append(option("", "(default)"));
+			}
 			const values = control.kind === "select" ? control.options : ["true", "false"];
-			for (const value of values) select.append(option(value, value));
+			for (const value of values) {
+				select.append(option(value, value));
+			}
 			field = select;
 		} else {
 			const input = document.createElement("input");
 			input.type =
 				control.kind === "boolean" ? "checkbox" : control.kind === "number" ? "number" : "text";
-			if (control.kind === "boolean") input.checked = control.initial;
-			else if (!control.optional) input.value = String(control.initial);
+			if (control.kind === "boolean") {
+				input.checked = control.initial;
+			} else if (!control.optional) {
+				input.value = String(control.initial);
+			}
 			field = input;
 		}
 		field.id = id;

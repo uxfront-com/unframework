@@ -8,7 +8,7 @@ import { hookQueueCode } from "../src/index.ts";
 
 /** An element of a tree, with what the queue reads of one. */
 class FakeElement {
-	readonly children: FakeElement[] = [];
+	readonly children: Array<FakeElement> = [];
 	readonly name: string;
 	readonly parent: FakeElement | undefined;
 
@@ -19,21 +19,28 @@ class FakeElement {
 	}
 
 	contains(other: FakeElement): boolean {
-		for (let at: FakeElement | undefined = other; at; at = at.parent) if (at === this) return true;
+		for (let at: FakeElement | undefined = other; at; at = at.parent) {
+			if (at === this) {
+				return true;
+			}
+		}
 		return false;
 	}
 
 	/** `DOCUMENT_POSITION_FOLLOWING` (4) where `other` comes after this one in document order. */
 	compareDocumentPosition(other: FakeElement): number {
-		const order = (element: FakeElement): number[] => {
-			const path: number[] = [];
-			for (let at = element; at.parent; at = at.parent)
+		const order = (element: FakeElement): Array<number> => {
+			const path: Array<number> = [];
+			for (let at = element; at.parent; at = at.parent) {
 				path.unshift(at.parent.children.indexOf(at));
+			}
 			return path;
 		};
 		const [a, b] = [order(this), order(other)];
 		for (let index = 0; index < Math.min(a.length, b.length); index++) {
-			if (a[index] !== b[index]) return a[index]! < b[index]! ? 4 : 2;
+			if (a[index] !== b[index]) {
+				return a[index]! < b[index]! ? 4 : 2;
+			}
 		}
 		return a.length < b.length ? 4 : 2;
 	}
@@ -45,6 +52,7 @@ type Queue = (element: FakeElement, run: () => void, hook: Hook) => void;
 /** The queue's code, with its types stripped, as a function of the globals it reads. */
 function queue(): Queue {
 	const code = stripTypeScriptTypes(hookQueueCode("queueHook"));
+	// oxlint-disable-next-line typescript/no-implied-eval -- runs the emitted helper, which is what the test checks
 	const make = new Function("Node", "reportError", `${code}\nreturn queueHook;`) as (
 		node: { DOCUMENT_POSITION_FOLLOWING: number },
 		report: (error: unknown) => void,
@@ -55,8 +63,8 @@ function queue(): Queue {
 }
 
 /** Queues the hooks in order, and gives the order they ran in once the turn ends. */
-async function run(hooks: [FakeElement, Hook][]): Promise<string[]> {
-	const ran: string[] = [];
+async function run(hooks: Array<[FakeElement, Hook]>): Promise<Array<string>> {
+	const ran: Array<string> = [];
 	const queueHook = queue();
 	for (const [element, hook] of hooks) {
 		queueHook(element, () => ran.push(`${hook} ${element.name}`), hook);

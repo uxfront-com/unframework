@@ -1,6 +1,7 @@
 import { queryCollection } from "@nuxt/content/server";
 
-import { rawMarkdown, type DocsPage } from "../utils/raw-markdown";
+import { rawMarkdown } from "../utils/raw-markdown";
+import type { DocsPage } from "../utils/raw-markdown";
 
 /**
  * Serves `/llms-full.txt` in place of nuxt-llms's route, from the same source
@@ -13,8 +14,7 @@ import { rawMarkdown, type DocsPage } from "../utils/raw-markdown";
  * prerendered ones.
  */
 export default defineEventHandler(async (event) => {
-	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
-	const pages = (await queryCollection(event, "docs" as never).all()) as DocsPage[];
+	const pages = (await queryCollection(event, "docs" as never).all()) as Array<DocsPage>;
 	const documents = await Promise.all(
 		pages.filter((page) => !isNavigationPath(page.path)).map((page) => rawMarkdown(page)),
 	);

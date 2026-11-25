@@ -23,9 +23,9 @@ export type TextPart = string | AST.Expression;
  * expression. Texts are escaped for a template literal's raw text: backslashes, backticks and
  * `${`, and control characters (a line feed, a tab) as the escapes a string literal writes.
  */
-export function textTemplate(parts: readonly TextPart[]): AST.TemplateLiteral | string {
+export function textTemplate(parts: ReadonlyArray<TextPart>): AST.TemplateLiteral | string {
 	const texts = [""];
-	const expressions: AST.Expression[] = [];
+	const expressions: Array<AST.Expression> = [];
 	for (const part of parts) {
 		if (typeof part === "string") {
 			texts[texts.length - 1] += part;
@@ -34,7 +34,9 @@ export function textTemplate(parts: readonly TextPart[]): AST.TemplateLiteral | 
 			texts.push("");
 		}
 	}
-	if (!expressions.length) return texts[0]!;
+	if (!expressions.length) {
+		return texts[0]!;
+	}
 	const quasis = texts.map((cooked, index): AST.TemplateElement => ({
 		type: "TemplateElement",
 		value: { raw: templateRaw(cooked), cooked },
@@ -46,7 +48,7 @@ export function textTemplate(parts: readonly TextPart[]): AST.TemplateLiteral | 
 }
 
 function templateRaw(cooked: string): string {
-	return cooked.replace(/[\\`]|\$\{|\p{Cc}/gu, (match) =>
+	return cooked.replaceAll(/[\\`]|\$\{|\p{Cc}/gu, (match) =>
 		match.length > 1 || match === "\\" || match === "`"
 			? `\\${match}`
 			: JSON.stringify(match).slice(1, -1),
@@ -67,9 +69,13 @@ export function nullishText(code: string, placeholders: Placeholders): AST.Expre
 	const source = (node: AST.Expression) =>
 		node === root ? code : code.slice(node.start, node.end);
 	const guarded = (node: AST.Expression): AST.Expression | undefined => {
-		if (isAlwaysNullish(node)) return undefined;
+		if (isAlwaysNullish(node)) {
+			return undefined;
+		}
 		const reading = syntacticNullishness(node);
-		if (reading === "never") return placeholders.expression(source(node));
+		if (reading === "never") {
+			return placeholders.expression(source(node));
+		}
 		if (reading === "sometimes") {
 			return logicalExpression(
 				"??",
@@ -79,7 +85,9 @@ export function nullishText(code: string, placeholders: Placeholders): AST.Expre
 		}
 		const inner = unwrapped(node);
 		if (inner.type === "LogicalExpression" && inner.operator === "??") {
-			if (isAlwaysNullish(inner.right)) return guarded(inner.left);
+			if (isAlwaysNullish(inner.right)) {
+				return guarded(inner.left);
+			}
 			const left = placeholders.expression(source(inner.left), "operand");
 			return logicalExpression("??", left, guarded(inner.right)!);
 		}

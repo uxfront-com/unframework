@@ -45,7 +45,7 @@ export interface ModeInput {
 	platform: NodeJS.Platform;
 	/** The CPU architecture, `process.arch` by default: the baseline environment is x64. */
 	arch?: NodeJS.Architecture;
-	argv: readonly string[];
+	argv: ReadonlyArray<string>;
 	/**
 	 * The run has no committed visual baselines (the testing package's own fixture, whose one
 	 * target is its own reference): pixels are always live, in CI too, and `UF_PIXELS` is refused.
@@ -171,8 +171,12 @@ function flag(
 	options: { allowAny?: boolean } = {},
 ): boolean {
 	const value = env[name]?.trim();
-	if (!value || value === "0" || value === "false") return false;
-	if (value === "1" || value === "true" || options.allowAny) return true;
+	if (!value || value === "0" || value === "false") {
+		return false;
+	}
+	if (value === "1" || value === "true" || options.allowAny) {
+		return true;
+	}
 	throw new Error(`[uf] ${name} must be 1 or 0, not "${value}".`);
 }
 
@@ -212,17 +216,23 @@ export function groupOrder(
 	target: string | undefined,
 	mode: Pick<HarnessMode, "update" | "pixels" | "browser">,
 	reference: string,
-	caseReferences: readonly string[] = [],
-	targets: readonly string[] = [],
+	caseReferences: ReadonlyArray<string> = [],
+	targets: ReadonlyArray<string> = [],
 ): number {
 	const isReference = target === reference;
 	// A group for the targets some case names runs only where a case names one.
 	const named = caseReferences.length ? 1 : 0;
 	const namedByCase = target !== undefined && caseReferences.includes(target);
 	if (mode.update) {
-		if (kind === "compile" || kind === "harness" || kind === "bench") return 0;
-		if (kind === "hydrate") return 2 + named;
-		if (kind === "toolchain" || isReference) return 1;
+		if (kind === "compile" || kind === "harness" || kind === "bench") {
+			return 0;
+		}
+		if (kind === "hydrate") {
+			return 2 + named;
+		}
+		if (kind === "toolchain" || isReference) {
+			return 1;
+		}
 		return namedByCase ? 2 : 2 + named;
 	}
 	if (mode.pixels === "live" && kind === "hydrate") {
@@ -256,12 +266,12 @@ export interface HarnessRunOptions {
 	casesDir: string;
 	reference: string;
 	mode: HarnessMode;
-	quarantine: QuarantineEntry[];
+	quarantine: Array<QuarantineEntry>;
 	cases: Record<string, CaseConfig>;
 	/** The command a failure names to write the artefacts (`HarnessContext.updateCommand`). */
 	updateCommand?: string;
 	/** The font families a live capture may take (`HarnessContext.liveFonts`, ADR-0105). */
-	liveFonts?: readonly string[];
+	liveFonts?: ReadonlyArray<string>;
 }
 
 const RUN = Symbol.for("unframework.harness.run");
@@ -281,8 +291,11 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
 		// A re-evaluated config (watch mode) may have new cases or quarantine entries.
 		existing.cases = options.cases;
 		existing.quarantine = quarantine;
-		if (options.liveFonts === undefined) delete existing.liveFonts;
-		else existing.liveFonts = options.liveFonts;
+		if (options.liveFonts === undefined) {
+			delete existing.liveFonts;
+		} else {
+			existing.liveFonts = options.liveFonts;
+		}
 		return existing;
 	}
 	const runId = `${Date.now().toString(36)}-${process.pid}`;
@@ -291,7 +304,9 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
 		live: join(options.root, ".live"),
 		diffs: join(options.root, ".reports", "diffs"),
 	};
-	for (const directory of Object.values(scratch)) removeEndedRuns(directory);
+	for (const directory of Object.values(scratch)) {
+		removeEndedRuns(directory);
+	}
 	const run: HarnessContext = {
 		runId,
 		casesDir: options.casesDir,
@@ -318,11 +333,13 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
  * other mode. Throws on an entry that names a pixel mode for a layer that has none.
  */
 function applicableQuarantine(
-	entries: readonly QuarantineEntry[],
+	entries: ReadonlyArray<QuarantineEntry>,
 	pixels: PixelMode,
-): QuarantineEntry[] {
+): Array<QuarantineEntry> {
 	for (const entry of entries) {
-		if (entry.pixels === undefined) continue;
+		if (entry.pixels === undefined) {
+			continue;
+		}
 		if (entry.layer !== "L10" || (entry.pixels !== "baseline" && entry.pixels !== "live")) {
 			throw new Error(
 				`[uf] The quarantine entry ${entry.case} › ${entry.target} › ${entry.layer} names pixels: ${JSON.stringify(entry.pixels)}: only L10 depends on the pixel mode, which is "baseline" or "live".`,
@@ -334,10 +351,14 @@ function applicableQuarantine(
 
 /** Removes the run directories under `directory` whose process has ended (`<time>-<pid>`). */
 function removeEndedRuns(directory: string): void {
-	if (!existsSync(directory)) return;
+	if (!existsSync(directory)) {
+		return;
+	}
 	for (const name of readdirSync(directory)) {
 		const pid = /^[0-9a-z]+-(\d+)$/.exec(name)?.[1];
-		if (pid !== undefined && isRunning(Number(pid))) continue;
+		if (pid !== undefined && isRunning(Number(pid))) {
+			continue;
+		}
 		rmSync(join(directory, name), { recursive: true, force: true });
 	}
 }

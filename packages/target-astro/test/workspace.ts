@@ -13,7 +13,7 @@ export const integrationRoot: string = join(repo, "tests", "integration");
 export const toolchainDir: string = join(repo, "tests", "toolchains", "astro");
 
 /** Every committed golden Astro output in the corpus. */
-export function goldenAstroFiles(): ToolchainFile[] {
+export function goldenAstroFiles(): Array<ToolchainFile> {
 	return globSync("cases/**/__output__/astro/*.astro", { cwd: integrationRoot })
 		.toSorted()
 		.map((file) => {

@@ -245,7 +245,7 @@ describe("checkLayers", () => {
 
 	it("runs every check, then fails with every message in layer order", async () => {
 		const t = task();
-		const ran: string[] = [];
+		const ran: Array<string> = [];
 		const error = await checkLayers(t, subject, {
 			L11: () => {
 				ran.push("L11");

@@ -36,13 +36,19 @@ export function buildDom(
 			? document.createElementNS(SVG_NAMESPACE, node.tag)
 			: document.createElement(node.tag);
 	for (const attribute of node.attributes) {
-		if (attribute.kind !== "Static") throw new Error(`a ${attribute.kind} attribute is not static`);
+		if (attribute.kind !== "Static") {
+			throw new Error(`a ${attribute.kind} attribute is not static`);
+		}
 		element.setAttribute(attribute.name, attribute.value === true ? "" : attribute.value);
 	}
 	for (const child of node.children) {
-		if (child.kind === "Element") element.append(buildDom(child, document, namespace));
-		else if (child.kind === "Text") element.append(document.createTextNode(child.value));
-		else throw new Error(`a ${child.kind} node is not static`);
+		if (child.kind === "Element") {
+			element.append(buildDom(child, document, namespace));
+		} else if (child.kind === "Text") {
+			element.append(document.createTextNode(child.value));
+		} else {
+			throw new Error(`a ${child.kind} node is not static`);
+		}
 	}
 	return element;
 }
@@ -65,20 +71,26 @@ export function readDom(element: Element): DomElement {
 				? (element as HTMLElement).style.cssText
 				: attribute.value;
 		const value = comparableValue(attribute.name, text, html ? "html" : "svg");
-		if (value !== undefined) attributes[attribute.name] = value;
+		if (value !== undefined) {
+			attributes[attribute.name] = value;
+		}
 	}
-	const children: DomNode[] = [];
+	const children: Array<DomNode> = [];
 	for (const child of element.childNodes) {
-		if (child instanceof Element) children.push(readDom(child));
-		else if (child instanceof Text) pushText(children, child.data);
-		else if (!(child instanceof Comment)) {
+		if (child instanceof Element) {
+			children.push(readDom(child));
+		} else if (child instanceof Text) {
+			pushText(children, child.data);
+		} else if (!(child instanceof Comment)) {
 			throw new Error(`unexpected ${child.nodeName} node in <${element.localName}>`);
 		}
 	}
 	const tag = html ? element.localName : `${element.namespaceURI}:${element.localName}`;
 	const read: DomElement = { tag, attributes, children };
 	const state = formState(element);
-	if (state) read.state = state;
+	if (state) {
+		read.state = state;
+	}
 	return read;
 }
 
@@ -87,11 +99,15 @@ function formState(element: Element): Record<string, string> | undefined {
 	if (element instanceof HTMLInputElement) {
 		return { value: element.value, checked: String(element.checked) };
 	}
-	if (element instanceof HTMLTextAreaElement) return { value: element.value };
+	if (element instanceof HTMLTextAreaElement) {
+		return { value: element.value };
+	}
 	if (element instanceof HTMLSelectElement) {
 		return { value: element.value, selectedIndex: String(element.selectedIndex) };
 	}
-	if (element instanceof HTMLOptionElement) return { selected: String(element.selected) };
+	if (element instanceof HTMLOptionElement) {
+		return { selected: String(element.selected) };
+	}
 	return undefined;
 }
 
@@ -99,13 +115,19 @@ function formState(element: Element): Record<string, string> | undefined {
  * The DOM nodes a static tree describes, as {@link readDom} reads them: an element, or a root
  * fragment's nodes, built in a container as a component's roots are mounted in one.
  */
-export function expectedDom(tree: ElementNode | FragmentNode): DomNode[] {
-	if (tree.kind === "Element") return [readDom(buildDom(tree))];
+export function expectedDom(tree: ElementNode | FragmentNode): Array<DomNode> {
+	if (tree.kind === "Element") {
+		return [readDom(buildDom(tree))];
+	}
 	const container = document.createElement("div");
 	for (const child of tree.children) {
-		if (child.kind === "Element") container.append(buildDom(child));
-		else if (child.kind === "Text") container.append(document.createTextNode(child.value));
-		else throw new Error(`a ${child.kind} node is not static`);
+		if (child.kind === "Element") {
+			container.append(buildDom(child));
+		} else if (child.kind === "Text") {
+			container.append(document.createTextNode(child.value));
+		} else {
+			throw new Error(`a ${child.kind} node is not static`);
+		}
 	}
 	return readDom(container).children;
 }
@@ -127,15 +149,15 @@ export interface ClientCase {
 	/** What it renders, as a static tree (`expectedTree`). */
 	expected: ElementNode | FragmentNode;
 	/** The capabilities it uses that the target's matrix marks unsupported. */
-	unsupported: readonly CapabilityName[];
+	unsupported: ReadonlyArray<CapabilityName>;
 }
 
 /** One suite ./render-parity-manifest.ts lists. */
 export interface ClientSuite {
 	title: string;
 	root: SuiteRoot;
-	cases: readonly ClientCase[];
-	components: readonly ClientComponent[];
+	cases: ReadonlyArray<ClientCase>;
+	components: ReadonlyArray<ClientComponent>;
 }
 
 /**
@@ -148,7 +170,7 @@ export interface ClientSuite {
  */
 export function describeClientParity(
 	target: string,
-	suites: readonly ClientSuite[],
+	suites: ReadonlyArray<ClientSuite>,
 	mount: MountAdapter,
 ): void {
 	describe.each(suites)(`${target} client render of $title`, ({ root, cases, components }) => {
@@ -165,7 +187,7 @@ export function describeClientParity(
 				`${target}: the plugin served ${components.length} components for ${cases.length} cases${cases.some(unsupported) ? ", some of which use a capability its matrix marks unsupported (serve each case alone)" : ""}.`,
 			);
 		}
-		let expected: ExpectedCase[] | undefined;
+		let expected: Array<ExpectedCase> | undefined;
 		/** What each case renders, read from a DOM built for it: once per suite. */
 		const expectations = () =>
 			(expected ??= cases.map(({ name, expected: tree }) => ({ name, nodes: expectedDom(tree) })));
@@ -178,18 +200,24 @@ export function describeClientParity(
 				const [outline, ...results] = compareRendered(rendered, root, expectations());
 				expect.soft(outline!.actual, outline!.name).toEqual(outline!.expected);
 				results.forEach(({ name, expected: tree, actual }, index) => {
-					if (!unsupported(cases[index]!)) expect.soft(actual, name).toEqual(tree);
+					if (!unsupported(cases[index]!)) {
+						expect.soft(actual, name).toEqual(tree);
+					}
 				});
 			},
 		);
 
-		if (!alone.length) return;
+		if (!alone.length) {
+			return;
+		}
 		// Vite compiles each case's component when it is first imported: a sweep of a hundred
 		// cases takes seconds, and many times that on CI, where every package's tests run at once.
 		it("renders each case alone as the reference describes", { timeout: 120_000 }, async () => {
 			for (const component of alone) {
 				const only = cases[component.only!]!;
-				if (unsupported(only)) continue;
+				if (unsupported(only)) {
+					continue;
+				}
 				const { rendered, logged } = await renderComponent(component, mount);
 				expect.soft(logged, only.name).toEqual([]);
 				const results = compareRendered(rendered, root, [expectations()[component.only!]!]);
@@ -200,7 +228,9 @@ export function describeClientParity(
 		});
 
 		const declared = alone.filter((component) => unsupported(cases[component.only!]!));
-		if (!declared.length) return;
+		if (!declared.length) {
+			return;
+		}
 		it("still renders differently alone each case its matrix marks unsupported", async () => {
 			for (const component of declared) {
 				const only = cases[component.only!]!;
@@ -229,12 +259,12 @@ function unsupported(parityCase: ClientCase): boolean {
 async function renderComponent(
 	component: ClientComponent,
 	mount: MountAdapter,
-): Promise<{ rendered: DomNode[]; logged: string[] }> {
+): Promise<{ rendered: Array<DomNode>; logged: Array<string> }> {
 	const { default: loaded } = await component.load();
 	const container = document.createElement("div");
 	document.body.append(container);
-	const logged: string[] = [];
-	const capture = (...args: unknown[]) => void logged.push(args.map(String).join(" "));
+	const logged: Array<string> = [];
+	const capture = (...args: Array<unknown>) => void logged.push(args.map(String).join(" "));
 	const spies = [
 		vi.spyOn(console, "error").mockImplementation(capture),
 		vi.spyOn(console, "warn").mockImplementation(capture),
@@ -246,7 +276,9 @@ async function renderComponent(
 		await view.unmount();
 		return { rendered, logged };
 	} finally {
-		for (const spy of spies) spy.mockRestore();
+		for (const spy of spies) {
+			spy.mockRestore();
+		}
 		container.remove();
 	}
 }

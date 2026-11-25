@@ -290,7 +290,7 @@ export const qwik: Target = defineTarget({
 		// component runs no setup again, which the `hydration` cell covers.
 		"async-setup": { support: "native" },
 	},
-	emit(component: UfComponent, context: EmitContext): OutputFile[] {
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
 		const { module } = context;
 		// A composable's functions are QRLs (./composable.ts): a call outside client code would give
 		// a promise, so it is reported, never emitted (P2).
@@ -322,16 +322,22 @@ export const qwik: Target = defineTarget({
 				help: "Do the work in the composable, or have the argument write state the component declares, which a watcher of it reads.",
 			});
 		}
-		if (renderCalls.length || selfReads.length) return [];
+		if (renderCalls.length || selfReads.length) {
+			return [];
+		}
 		// Every name the source declares or reads is taken before the output names its own, but for
 		// the authoring APIs code calls (`nextTick`), which the output replaces with its own.
 		const ownNames = (each: UfComponent) => {
 			const names = sourceNames(each, module);
-			for (const name of apiNames(each)) names.delete(name);
+			for (const name of apiNames(each)) {
+				names.delete(name);
+			}
 			return names;
 		};
 		const reserved = ownNames(component);
-		for (const name of typeNamesOf(component, module)) reserved.add(name);
+		for (const name of typeNamesOf(component, module)) {
+			reserved.add(name);
+		}
 		const imports = new ImportSet(reserved);
 		// With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
 		const shared = context.helper ? new Map<string, string>() : undefined;
@@ -356,7 +362,9 @@ export const qwik: Target = defineTarget({
 		// `const`.
 		const children = childImports(component, module, (name) => name);
 		for (const child of children) {
-			if (child.self) continue;
+			if (child.self) {
+				continue;
+			}
 			if (child.export === "default") {
 				imports.addDefault(child.specifier, child.local, { exact: true });
 			} else {
@@ -364,7 +372,9 @@ export const qwik: Target = defineTarget({
 			}
 		}
 		for (const key of keyImports(component, module, (name) => name)) {
-			if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
+			if (key.specifier) {
+				imports.add(key.specifier, key.name, { local: key.local, exact: true });
+			}
 		}
 		// The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
 		addTypeImports(component, module, imports, (name) => name);
@@ -419,12 +429,16 @@ export const qwik: Target = defineTarget({
 				// On the root, a consumer's ref fills beside the directive's list (ADR-0118).
 				directiveAttribute: (attribute, element, context) => {
 					const root = passed?.rootRef && isRoot(component, element);
-					if (root) printed.merged = true;
+					if (root) {
+						printed.merged = true;
+					}
 					return directives.attribute(attribute, context, root ? passed.ref() : undefined);
 				},
 				// The props' rest (ADR-0118), which the element spreads last once printed.
 				restAttribute: () => {
-					if (passed?.rest === undefined) throw new Error("A rest spread on no rest's element.");
+					if (passed?.rest === undefined) {
+						throw new Error("A rest spread on no rest's element.");
+					}
 					const rest = js.identifier(passed.rest);
 					printed.rest = js.jsxSpreadAttribute(
 						restHelper ? js.callExpression(js.identifier(restHelper), [rest]) : rest,
@@ -440,8 +454,9 @@ export const qwik: Target = defineTarget({
 			rules: plan.rules(),
 		});
 		const render = qwikTitles(component.render, jsx, module);
-		for (const [element, namespace] of elementNamespaces(render))
+		for (const [element, namespace] of elementNamespaces(render)) {
 			namespaces.set(element, namespace);
+		}
 		for (const [option, model] of modelOptions(render)) {
 			options.set(option, model);
 			// An option without a `value` is selected by its text.
@@ -450,10 +465,16 @@ export const qwik: Target = defineTarget({
 					(attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
 			);
 			const selected = valued ? undefined : textOptionSelected(option, model, jsx, plan, locals);
-			if (selected) option.attributes = [selected, ...option.attributes];
+			if (selected) {
+				option.attributes = [selected, ...option.attributes];
+			}
 		}
-		for (const node of replacedBeforeSiblings(render)) followed.add(node);
-		for (const attribute of listsInFills(render)) listeners.explicit.add(attribute);
+		for (const node of replacedBeforeSiblings(render)) {
+			followed.add(node);
+		}
+		for (const attribute of listsInFills(render)) {
+			listeners.explicit.add(attribute);
+		}
 		const setup = printSetup(plan);
 		const root = jsxNode(render, jsx);
 		if (passed) {
@@ -467,7 +488,9 @@ export const qwik: Target = defineTarget({
 		// over tags does, merges them into each element it may render (ADR-0119).
 		const { fallthrough } = plan.composition;
 		if (fallthrough && passed?.rest === undefined) {
-			for (const element of rootElements(root)) mergeFallthrough(element, fallthrough);
+			for (const element of rootElements(root)) {
+				mergeFallthrough(element, fallthrough);
+			}
 		}
 		const returned = js.returnStatement(root);
 		// The sheet `compile()` emits beside the source, already scoped (ADR-0063), as a string
@@ -501,7 +524,9 @@ export const qwik: Target = defineTarget({
 			ownProps(component, plan),
 		].filter((type) => type !== undefined);
 		// The rest the root picks the scope attributes out of needs a props type to destructure.
-		if (scope && !propsType.length) propsType.push("object");
+		if (scope && !propsType.length) {
+			propsType.push("object");
+		}
 		const propsTypeNode = propsType.length
 			? jsx.placeholders.type(propsType.join(" & "))
 			: undefined;
@@ -541,20 +566,31 @@ export const qwik: Target = defineTarget({
 		// A component that renders itself refers to its own `const` (ADR-0053).
 		const helperCode = helpers(plan, listeners, shared);
 		if (scope) {
-			if (shared) shared.set(SCOPE_HELPER, scope.helper);
-			else helperCode.push(scopeAttributesHelper(scope.helper));
+			if (shared) {
+				shared.set(SCOPE_HELPER, scope.helper);
+			} else {
+				helperCode.push(scopeAttributesHelper(scope.helper));
+			}
 		}
 		if (restHelper && passed?.tag !== undefined) {
 			const type = `${names.core("PropsOf", { type: true })}<${JSON.stringify(passed.tag)}>`;
 			helperCode.push(restAttributesHelper(restHelper, type));
 		}
 		if (teleport) {
-			if (shared) shared.set("teleport", teleport.helper);
-			else helperCode.push(teleportHelper(teleport));
+			if (shared) {
+				shared.set("teleport", teleport.helper);
+			} else {
+				helperCode.push(teleportHelper(teleport));
+			}
 		}
 		if (transitions) {
-			if (shared) for (const [name, local] of transitions.shared()) shared.set(name, local);
-			else helperCode.push(transitions.helpers());
+			if (shared) {
+				for (const [name, local] of transitions.shared()) {
+					shared.set(name, local);
+				}
+			} else {
+				helperCode.push(transitions.helpers());
+			}
 		}
 		helperCode.push(...directives.helpers(names, shared));
 		if (context.helper && shared) {
@@ -620,16 +656,20 @@ export default qwik;
  * captures (./composable.ts), and what it returns as the source returns it, each function by its
  * QRL.
  */
-function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
 	const { module } = context;
 	const owner = setupOwner(composable);
 	const ownNames = (each: UfComponent) => {
 		const names = sourceNames(each, module);
-		for (const name of apiNames(each)) names.delete(name);
+		for (const name of apiNames(each)) {
+			names.delete(name);
+		}
 		return names;
 	};
 	const reserved = ownNames(owner);
-	for (const name of typeNamesOf(owner, module)) reserved.add(name);
+	for (const name of typeNamesOf(owner, module)) {
+		reserved.add(name);
+	}
 	const imports = new ImportSet(reserved);
 	// With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
 	const shared = context.helper ? new Map<string, string>() : undefined;
@@ -643,7 +683,9 @@ function emitComposable(composable: UfComposable, context: EmitContext): OutputF
 	for (const { span, message, help } of problems) {
 		context.report({ code: "UF1002", severity: "error", message, span, help });
 	}
-	if (problems.length) return [];
+	if (problems.length) {
+		return [];
+	}
 	const setup = printSetup(plan);
 	const returned = composable.returns.map((member) => {
 		const local = plan.functions.get(member.binding)?.qrl ?? member.name;
@@ -692,7 +734,7 @@ function emitComposable(composable: UfComposable, context: EmitContext): OutputF
  * one import (ADR-0053, ADR-0121).
  */
 function reserveShared(
-	reserved: readonly Iterable<string>[],
+	reserved: ReadonlyArray<Iterable<string>>,
 	module: UfModule,
 	imports: ImportSet,
 ): void {
@@ -700,7 +742,11 @@ function reserveShared(
 	for (const helper of SHARED_HELPER_NAMES) {
 		const own = new RegExp(`^${helper}(?:_\\d+)*$`);
 		for (const each of [...reserved, imported]) {
-			for (const name of each) if (own.test(name)) imports.reserve(name);
+			for (const name of each) {
+				if (own.test(name)) {
+					imports.reserve(name);
+				}
+			}
 		}
 	}
 }
@@ -714,7 +760,7 @@ function addParameterTypeImports(
 	module: UfModule,
 	imports: ImportSet,
 ): void {
-	const texts: TypeText[] = [
+	const texts: Array<TypeText> = [
 		...composable.parameters.map(({ type }) => type),
 		...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
 			[constraint, fallback].filter((type): type is TypeText => type !== undefined),
@@ -723,7 +769,9 @@ function addParameterTypeImports(
 	const read = new Set(texts.flatMap((type) => [...typeNames(type)]));
 	for (const entry of module.typeImports ?? []) {
 		for (const name of entry.names) {
-			if (!read.has(name.local)) continue;
+			if (!read.has(name.local)) {
+				continue;
+			}
 			const specifier = typeSpecifier(entry.specifier, module, (each) => each);
 			imports.add(specifier, name.imported, { type: true, local: name.local, exact: true });
 		}
@@ -767,8 +815,12 @@ function scopePlan(
 		(span) => !(passed?.onRoot && passed.isTarget({ span })),
 	);
 	const root = singleRoot(component);
-	if (passed?.rest !== undefined && !passed.onRoot && root) roots.push(root.span);
-	if (!roots.length) return undefined;
+	if (passed?.rest !== undefined && !passed.onRoot && root) {
+		roots.push(root.span);
+	}
+	if (!roots.length) {
+		return undefined;
+	}
 	const parameter = component.propsParameter;
 	return {
 		pending: new Set(roots.map(spanKey)),
@@ -856,8 +908,8 @@ function propsParameter(
 function unreadProps(
 	component: UfComponent,
 	plan: SetupPlan,
-	read: readonly Prop[],
-): [prop: string, local: string][] {
+	read: ReadonlyArray<Prop>,
+): Array<[prop: string, local: string]> {
 	const unused = (prop: string): [string, string] => [prop, plan.names.fresh(`_${prop}`)];
 	const { composition } = plan;
 	return [
@@ -879,9 +931,11 @@ function unreadProps(
  * locals (./fallthrough.ts): the fallthrough element runs each listener after its own, and the
  * root fills the ref beside its own.
  */
-function passedProps(plan: SetupPlan): [prop: string, local: string][] {
+function passedProps(plan: SetupPlan): Array<[prop: string, local: string]> {
 	const { passed } = plan.composition;
-	if (!passed) return [];
+	if (!passed) {
+		return [];
+	}
 	return [
 		...passed.listeners,
 		...(passed.refLocal === undefined ? [] : [["ref", passed.refLocal] as [string, string]]),
@@ -897,7 +951,9 @@ function passedProps(plan: SetupPlan): [prop: string, local: string][] {
 function restOfProps(component: UfComponent, plan: SetupPlan): string {
 	const parameter = component.propsParameter;
 	const { passed } = plan.composition;
-	if (parameter?.form !== "object" || !passed) return "";
+	if (parameter?.form !== "object" || !passed) {
+		return "";
+	}
 	const entries = [
 		...(passed.rest === undefined
 			? []
@@ -915,27 +971,43 @@ function restOfProps(component: UfComponent, plan: SetupPlan): string {
  */
 function elementProps(plan: SetupPlan): string | undefined {
 	const { passed } = plan.composition;
-	if (passed?.rest === undefined || passed.tag === undefined) return undefined;
+	if (passed?.rest === undefined || passed.tag === undefined) {
+		return undefined;
+	}
 	const omitted = new Set(passed.declared);
 	// The ref the component takes apart from the rest is a signal (see `ownProps`), and a
 	// component whose root holds no element for a ref (a root component that exposes) takes none.
-	if (passed.refLocal !== undefined || !passed.rootRef) omitted.add("ref");
+	if (passed.refLocal !== undefined || !passed.rootRef) {
+		omitted.add("ref");
+	}
 	const props = plan.names.core("PropsOf", { type: true });
 	// A root component takes what it declares as its props type has it, `value: number` where the
 	// tag's would be `string | number | readonly string[]`, and passes the rest on to its own
 	// element: `PropsOf<typeof Base>`, without the props the root sets itself, which a consumer
 	// then need not pass.
 	const root = passed.rootComponent;
-	if (root) for (const name of setByRoot(root)) omitted.add(name);
+	if (root) {
+		for (const name of setByRoot(root)) {
+			omitted.add(name);
+		}
+	}
 	// A generic root component's props `PropsOf` cannot infer, so the rest takes its tag's
 	// attributes, without what that component declares, whose types are its own.
 	const generic = passed.genericRoot;
 	if (generic) {
-		for (const name of setByRoot(generic)) omitted.add(name);
+		for (const name of setByRoot(generic)) {
+			omitted.add(name);
+		}
 		const declared = declaredBy(plan.module, generic.component);
-		for (const name of declared.props) omitted.add(name);
-		for (const name of declared.models) omitted.add(name).add(modelCallback(name));
-		for (const name of declared.events) omitted.add(qwikEventProp(name));
+		for (const name of declared.props) {
+			omitted.add(name);
+		}
+		for (const name of declared.models) {
+			omitted.add(name).add(modelCallback(name));
+		}
+		for (const name of declared.events) {
+			omitted.add(qwikEventProp(name));
+		}
 	}
 	const names = [...omitted].map((name) => JSON.stringify(name)).join(" | ");
 	// A `<component is>` root's are what every tag takes (ADR-0122). Its listeners are each
@@ -952,7 +1024,7 @@ function elementProps(plan: SetupPlan): string | undefined {
  * slots. The attributes and listeners it passes on to its own element are left in, as a
  * consumer's win over them (ADR-0118).
  */
-function setByRoot(root: ComponentNode): string[] {
+function setByRoot(root: ComponentNode): Array<string> {
 	const names = root.attributes.flatMap((attribute) => {
 		switch (attribute.kind) {
 			case "Prop":
@@ -967,7 +1039,9 @@ function setByRoot(root: ComponentNode): string[] {
 	});
 	// A default fill without a parameter is the projected children, and any other a render prop.
 	for (const fill of root.fills) {
-		if (fill.slot !== "default" || fill.parameter) names.push(slotProp(fill.slot));
+		if (fill.slot !== "default" || fill.parameter) {
+			names.push(slotProp(fill.slot));
+		}
 	}
 	return names;
 }
@@ -977,19 +1051,27 @@ function setByRoot(root: ComponentNode): string[] {
  * their callbacks, its render-prop slots, the `class` and `style` that fall through, and the
  * `ref` it exposes through (./composition.ts).
  */
-function compositionProps(plan: SetupPlan): [prop: string, local: string][] {
+function compositionProps(plan: SetupPlan): Array<[prop: string, local: string]> {
 	const { composition } = plan;
-	const found: [string, string][] = [];
+	const found: Array<[string, string]> = [];
 	for (const model of composition.models.values()) {
 		found.push([model.name, model.prop]);
-		if (model.written) found.push([model.callbackProp, model.callback]);
+		if (model.written) {
+			found.push([model.callbackProp, model.callback]);
+		}
 	}
-	for (const [slot, local] of composition.slots) found.push([slotProp(slot), local]);
+	for (const [slot, local] of composition.slots) {
+		found.push([slotProp(slot), local]);
+	}
 	if (composition.fallthrough) {
-		found.push(["class", composition.fallthrough.className]);
-		found.push(["style", composition.fallthrough.style]);
+		found.push(
+			["class", composition.fallthrough.className],
+			["style", composition.fallthrough.style],
+		);
 	}
-	if (composition.expose) found.push(["ref", composition.expose.ref]);
+	if (composition.expose) {
+		found.push(["ref", composition.expose.ref]);
+	}
 	return found;
 }
 
@@ -1003,7 +1085,9 @@ function slotsInterface(component: UfComponent, plan: SetupPlan): GeneratedInter
 	const declared = (component.slots?.slots ?? []).filter((slot) =>
 		isRenderProp(component, slot.name),
 	);
-	if (!declared.length) return undefined;
+	if (!declared.length) {
+		return undefined;
+	}
 	const name = plan.names.fresh(`${component.name}Slots`);
 	const qrl = plan.names.core("QRL", { type: true });
 	const output = plan.names.core("JSXOutput", { type: true });
@@ -1023,7 +1107,9 @@ function slotsInterface(component: UfComponent, plan: SetupPlan): GeneratedInter
 function modelsInterface(component: UfComponent, plan: SetupPlan): GeneratedInterface | undefined {
 	const models = [...plan.composition.models.values()];
 	const [first] = models;
-	if (!first) return undefined;
+	if (!first) {
+		return undefined;
+	}
 	const name = plan.names.fresh(`${component.name}Models`);
 	const qrl = plan.names.core("QRL", { type: true });
 	const members = models.flatMap(({ item, name: model, callbackProp }) => {
@@ -1041,7 +1127,7 @@ function modelsInterface(component: UfComponent, plan: SetupPlan): GeneratedInte
  * they fall through, and the `ref` a component that exposes functions fills.
  */
 function ownProps(component: UfComponent, plan: SetupPlan): string | undefined {
-	const members: string[] = [];
+	const members: Array<string> = [];
 	if (plan.composition.fallthrough) {
 		members.push(
 			`class?: ${plan.names.core("ClassList", { type: true })}`,
@@ -1051,8 +1137,9 @@ function ownProps(component: UfComponent, plan: SetupPlan): string | undefined {
 	// The signal of a consumer's component ref, which the component fills (`exposeRef`): of
 	// `object`, as Qwik's lint (`qwik/valid-lexical-scope`) refuses a captured signal whose type
 	// holds functions, and the consumer's ref type names the exposed functions as plain ones.
-	if (component.exposes)
+	if (component.exposes) {
 		members.push(`ref?: ${plan.names.core("Signal", { type: true })}<object | undefined>`);
+	}
 	// A consumer's ref of the root element, which the root fills beside its own (ADR-0118): the
 	// signal Qwik's `ref` on an element takes. Where a root component takes it in place of the
 	// root's own, it is of the own one's element, which the visible task fills from it.
@@ -1116,26 +1203,36 @@ function passThrough(
 ): { message: string; span: Span; help: string } | undefined {
 	const { fallthrough } = plan.composition;
 	// A `<component is>` root's branches each take it, one of which shows (ADR-0122).
-	const roots = (): JsxElementNode[] => {
-		if (passed.tags) return rootElements(root);
+	const roots = (): Array<JsxElementNode> => {
+		if (passed.tags) {
+			return rootElements(root);
+		}
 		const element = rootElement(root);
 		return element ? [element] : [];
 	};
 	if (passed.rest !== undefined) {
 		const found = printed.rest ? elementHolding(root, printed.rest) : undefined;
 		for (const target of found ? [found] : roots()) {
-			if (fallthrough) mergeFallthrough(target, fallthrough);
+			if (fallthrough) {
+				mergeFallthrough(target, fallthrough);
+			}
 			const attributes = target.openingElement.attributes;
 			const spread = printed.rest ?? js.jsxSpreadAttribute(js.identifier(passed.rest));
 			const at = attributes.indexOf(spread);
-			if (at >= 0) attributes.splice(at, 1);
+			if (at >= 0) {
+				attributes.splice(at, 1);
+			}
 			attributes.push(spread);
 		}
 	}
-	if (!passed.rootRef) return undefined;
+	if (!passed.rootRef) {
+		return undefined;
+	}
 	for (const element of roots()) {
 		const problem = passRef(element, plan, passed, printed);
-		if (problem) return problem;
+		if (problem) {
+			return problem;
+		}
 	}
 	return undefined;
 }
@@ -1166,7 +1263,9 @@ function passRef(
 		}
 		return undefined;
 	}
-	if (printed.merged) return undefined;
+	if (printed.merged) {
+		return undefined;
+	}
 	const value = attributeValue(own);
 	// A template ref is its signal, by name; anything else is printed code (a placeholder).
 	if (value?.type !== "Identifier" || value.name === "") {
@@ -1222,13 +1321,17 @@ function rootElement(root: AstExpression): JsxElementNode | undefined {
 
 /** The printed element whose attributes hold `item`, anywhere in a printed render. */
 function elementHolding(node: unknown, item: object): JsxElementNode | undefined {
-	if (!node || typeof node !== "object") return undefined;
+	if (!node || typeof node !== "object") {
+		return undefined;
+	}
 	if (isJsxElement(node) && node.openingElement.attributes.some((each) => each === item)) {
 		return node;
 	}
 	for (const value of Array.isArray(node) ? node : Object.values(node)) {
 		const found = elementHolding(value, item);
-		if (found) return found;
+		if (found) {
+			return found;
+		}
 	}
 	return undefined;
 }
@@ -1244,7 +1347,7 @@ function isJsxElement(node: object): node is JsxElementNode {
  * branch of the ternary a `<component is>` with listeners writes, one element per tag
  * (`candidateBranches`, ADR-0119).
  */
-function rootElements(node: AstExpression | JsxChild): JsxElementNode[] {
+function rootElements(node: AstExpression | JsxChild): Array<JsxElementNode> {
 	switch (node.type) {
 		case "JSXElement":
 			return [node];
@@ -1300,8 +1403,11 @@ function mergeFallthrough(
 				] as Parameters<typeof js.objectExpression>[0]);
 	const replace = (attribute: JsxAttributeNode | undefined, name: string, value: AstExpression) => {
 		const next = js.jsxAttribute(name, js.jsxExpressionContainer(value));
-		if (attribute) attributes.splice(attributes.indexOf(attribute), 1, next);
-		else attributes.push(next);
+		if (attribute) {
+			attributes.splice(attributes.indexOf(attribute), 1, next);
+		} else {
+			attributes.push(next);
+		}
 	};
 	replace(classAttribute, "class", merged);
 	replace(styleAttribute, "style", styled);
@@ -1310,7 +1416,9 @@ function mergeFallthrough(
 /** An attribute's value as an expression: a string for a quoted one. */
 function attributeValue(attribute: JsxAttributeNode): AstExpression | undefined {
 	const { value } = attribute;
-	if (value?.type === "Literal") return js.stringLiteral(value.value);
+	if (value?.type === "Literal") {
+		return js.stringLiteral(value.value);
+	}
 	if (value?.type === "JSXExpressionContainer" && value.expression.type !== "JSXEmptyExpression") {
 		return value.expression;
 	}
@@ -1325,7 +1433,9 @@ function attributeValue(attribute: JsxAttributeNode): AstExpression | undefined 
  */
 function eventsInterface(component: UfComponent, plan: SetupPlan): GeneratedInterface | undefined {
 	const declared = component.emits?.events ?? [];
-	if (!declared.length) return undefined;
+	if (!declared.length) {
+		return undefined;
+	}
 	const name = plan.names.fresh(`${component.name}Events`);
 	const qrl = plan.names.core("QRL", { type: true });
 	const members = declared.map(
@@ -1346,7 +1456,7 @@ function eventParameters(event: EventDeclaration): string {
  * the output of the module's main component the module's type exports (ADR-0068), each a
  * statement of its own, `export type { Tone } from "./types";`, that the module prints as it is.
  */
-function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
+function moduleTypes(component: UfComponent, module: UfModule): Array<TypeDeclaration> {
 	const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
 		name: "",
 		exported: false,
@@ -1366,13 +1476,22 @@ function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[
 function typeNamesOf(component: UfComponent, module: UfModule): Set<string> {
 	const names = new Set<string>();
 	for (const entry of module.typeImports ?? []) {
-		for (const name of entry.names) names.add(name.local);
+		for (const name of entry.names) {
+			names.add(name.local);
+		}
 	}
 	for (const entry of module.typeExports ?? []) {
-		if (entry.kind === "Declaration") names.add(entry.name);
-		else for (const name of entry.names) names.add(name.exported);
+		if (entry.kind === "Declaration") {
+			names.add(entry.name);
+		} else {
+			for (const name of entry.names) {
+				names.add(name.exported);
+			}
+		}
 	}
-	for (const parameter of component.typeParameters ?? []) names.add(parameter.name);
+	for (const parameter of component.typeParameters ?? []) {
+		names.add(parameter.name);
+	}
 	return names;
 }
 
@@ -1381,7 +1500,9 @@ function apiNames(component: UfComponent): Set<string> {
 	const found = new Set<string>();
 	for (const { code } of codeOf(component)) {
 		for (const reference of code.refs) {
-			if (reference.kind !== "Api") continue;
+			if (reference.kind !== "Api") {
+				continue;
+			}
 			found.add(
 				code.code.slice(
 					reference.span.start - code.span.start,
@@ -1394,11 +1515,12 @@ function apiNames(component: UfComponent): Set<string> {
 }
 
 /** Module-level declarations, one-line `const`s together, a blank line around anything else. */
-function joinHoisted(declarations: readonly string[]): string {
+function joinHoisted(declarations: ReadonlyArray<string>): string {
 	let text = "";
 	declarations.forEach((code, index) => {
-		if (index > 0)
+		if (index > 0) {
 			text += oneLineConst(declarations[index - 1]!) && oneLineConst(code) ? "\n" : "\n\n";
+		}
 		text += code;
 	});
 	return text;
@@ -1415,9 +1537,13 @@ function oneLineConst(code: string): boolean {
  * `styleObject`, `nextTick` and `modelText` inline too unless `shared` is given, which then takes
  * each by the name the output claimed, to import from its module (ADR-0121).
  */
-function helpers(plan: SetupPlan, listeners: Listeners, shared?: Map<string, string>): string[] {
+function helpers(
+	plan: SetupPlan,
+	listeners: Listeners,
+	shared?: Map<string, string>,
+): Array<string> {
 	const { names } = plan;
-	const found: string[] = [];
+	const found: Array<string> = [];
 	if (listeners.helpers.length) {
 		found.push(
 			[
@@ -1427,12 +1553,18 @@ function helpers(plan: SetupPlan, listeners: Listeners, shared?: Map<string, str
 		);
 	}
 	if (names.has("styleObject")) {
-		if (shared) shared.set("styleObject", names.once("styleObject"));
-		else found.push(styleObjectHelper(names.once("styleObject")));
+		if (shared) {
+			shared.set("styleObject", names.once("styleObject"));
+		} else {
+			found.push(styleObjectHelper(names.once("styleObject")));
+		}
 	}
 	if (names.has("nextTick")) {
-		if (shared) shared.set("nextTick", names.once("nextTick"));
-		else found.push(nextTickHelper(names.once("nextTick")));
+		if (shared) {
+			shared.set("nextTick", names.once("nextTick"));
+		} else {
+			found.push(nextTickHelper(names.once("nextTick")));
+		}
 	}
 	if (names.has("rendered")) {
 		found.push(
@@ -1486,8 +1618,11 @@ function helpers(plan: SetupPlan, listeners: Listeners, shared?: Map<string, str
 		);
 	}
 	if (names.has("modelText")) {
-		if (shared) shared.set("modelText", names.once("modelText"));
-		else found.push(modelTextHelper(names.once("modelText"), names.once("TextModifiers")));
+		if (shared) {
+			shared.set("modelText", names.once("modelText"));
+		} else {
+			found.push(modelTextHelper(names.once("modelText"), names.once("TextModifiers")));
+		}
 	}
 	return found;
 }
@@ -1516,9 +1651,13 @@ function qwikDialect(
 	const passedTo = new Map<string, string>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component") return;
+			if (node.kind !== "Component") {
+				return;
+			}
 			const tag = childFallthroughTag(module, node.component);
-			if (tag !== undefined) passedTo.set(spanKey(node.span), tag);
+			if (tag !== undefined) {
+				passedTo.set(spanKey(node.span), tag);
+			}
 		},
 	});
 	/** The element an attribute is printed on: a component's passes it on to its child's. */
@@ -1567,9 +1706,13 @@ function qwikDialect(
 			locals.enter(false);
 			const call = mapCall(node, context);
 			const scope = locals.leave();
-			if (call.type !== "CallExpression") return call;
+			if (call.type !== "CallExpression") {
+				return call;
+			}
 			const [arrow] = call.arguments;
-			if (arrow?.type !== "ArrowFunctionExpression") return call;
+			if (arrow?.type !== "ArrowFunctionExpression") {
+				return call;
+			}
 			return { ...call, arguments: [withLocals(arrow, scope, context)] };
 		},
 		// A fill's code runs as a `$` scope, which captures no plain function: a setup function it
@@ -1584,9 +1727,13 @@ function qwikDialect(
 			}
 			const copies = new Map<BindingId, string>();
 			for (const reference of expression.refs) {
-				if (reference.kind !== "Binding" || !reference.call) continue;
+				if (reference.kind !== "Binding" || !reference.call) {
+					continue;
+				}
 				const fn = plan.functions.get(reference.binding);
-				if (!fn || fn.form === "module") continue;
+				if (!fn || fn.form === "module") {
+					continue;
+				}
 				const id = fn.item.binding;
 				let name = fillCopies.get(id);
 				if (name === undefined) {
@@ -1637,7 +1784,9 @@ function qwikDialect(
 			const root = scope?.pending.has(spanKey(node.span)) ?? false;
 			const element = node.attributes.some((attribute) => attribute.kind === "Event")
 				? candidateBranches(node, name, context, listeners, () => {
-						if (root) scope!.pending.add(spanKey(node.span));
+						if (root) {
+							scope!.pending.add(spanKey(node.span));
+						}
 					})
 				: jsxDynamic(node, name, context);
 			return followed.has(node)
@@ -1675,7 +1824,9 @@ function qwikDialect(
 		staticAttribute(attribute, printedOn, context) {
 			const element = asElement(printedOn);
 			// A static `class` beside a spread that carries one merges with it.
-			if (attribute.name === "class") return staticJsxAttribute(attribute, element, context);
+			if (attribute.name === "class") {
+				return staticJsxAttribute(attribute, element, context);
+			}
 			const namespace = namespaceOf(element);
 			const { name, value: written } = attribute;
 			if (isUntypedAttribute(element.tag, namespace, name, written)) {
@@ -1721,7 +1872,9 @@ function qwikDialect(
 				.map((key) => {
 					const value = spreadRead(attribute, key, context);
 					// A `style` key is the element's style (ADR-0065).
-					if (key.name === "style") return wholeStyle(value, element);
+					if (key.name === "style") {
+						return wholeStyle(value, element);
+					}
 					return isUntypedAttribute(element.tag, namespace, key.name)
 						? untypedSpread(key.name, value)
 						: js.jsxAttribute(
@@ -1745,7 +1898,9 @@ function qwikDialect(
 		// root takes them once: the first node printed with its span, which is the root itself,
 		// printed before what it holds.
 		scopeRootAttributes(element, context) {
-			if (!scope?.pending.delete(spanKey(element.span))) return [];
+			if (!scope?.pending.delete(spanKey(element.span))) {
+				return [];
+			}
 			return [
 				js.jsxSpreadAttribute(
 					context.placeholders.expression(`${scope.helper}(${scope.props})`, "argument"),
@@ -1815,7 +1970,9 @@ function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | Mo
 			list
 		) {
 			for (const attribute of node.attributes) {
-				if (attribute.kind === "Event" || attribute.kind === "Model") found.add(attribute);
+				if (attribute.kind === "Event" || attribute.kind === "Model") {
+					found.add(attribute);
+				}
 			}
 		}
 		if (node.kind === "Component" || node.kind === "Dynamic") {
@@ -1823,15 +1980,27 @@ function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | Mo
 			for (const each of fills) {
 				// The default slot's plain fill is projected: it renders in the component's own segment.
 				const own = each.slot === "default" && !each.parameter;
-				for (const child of each.children) visit(child, own ? fill : true, list);
+				for (const child of each.children) {
+					visit(child, own ? fill : true, list);
+				}
 			}
-			if (node.kind === "Dynamic") for (const child of node.children) visit(child, fill, list);
+			if (node.kind === "Dynamic") {
+				for (const child of node.children) {
+					visit(child, fill, list);
+				}
+			}
 			return;
 		}
-		if (node.kind === "For") return visit(node.body, fill, true);
-		for (const child of childrenOf(node)) visit(child, fill, list);
+		if (node.kind === "For") {
+			return visit(node.body, fill, true);
+		}
+		for (const child of childrenOf(node)) {
+			visit(child, fill, list);
+		}
 	};
-	for (const child of root.kind === "Fragment" ? root.children : [root]) visit(child, false, false);
+	for (const child of root.kind === "Fragment" ? root.children : [root]) {
+		visit(child, false, false);
+	}
 	return found;
 }
 
@@ -1846,7 +2015,7 @@ function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | Mo
  */
 function replacedBeforeSiblings(root: ElementNode | FragmentNode): Set<RenderNode> {
 	const found = new Set<RenderNode>();
-	const visit = (children: readonly RenderNode[]) => {
+	const visit = (children: ReadonlyArray<RenderNode>) => {
 		children.forEach((child, index) => {
 			if ((child.kind === "If" || child.kind === "Dynamic") && index < children.length - 1) {
 				found.add(child);
@@ -1856,13 +2025,27 @@ function replacedBeforeSiblings(root: ElementNode | FragmentNode): Set<RenderNod
 	visit(root.kind === "Fragment" ? root.children : [root]);
 	walk(root, {
 		enter(node) {
-			if (node.kind === "Element") visit(node.children);
-			if (node.kind === "If") for (const branch of node.branches) visit(branch.children);
-			if (node.kind === "Component") for (const fill of node.fills) visit(fill.children);
-			if (node.kind === "SlotOutlet") visit(node.fallback);
+			if (node.kind === "Element") {
+				visit(node.children);
+			}
+			if (node.kind === "If") {
+				for (const branch of node.branches) {
+					visit(branch.children);
+				}
+			}
+			if (node.kind === "Component") {
+				for (const fill of node.fills) {
+					visit(fill.children);
+				}
+			}
+			if (node.kind === "SlotOutlet") {
+				visit(node.fallback);
+			}
 			if (node.kind === "Dynamic") {
 				visit(node.children);
-				for (const fill of node.fills ?? []) visit(fill.children);
+				for (const fill of node.fills ?? []) {
+					visit(fill.children);
+				}
 			}
 		},
 	});

@@ -12,7 +12,7 @@ assertSolid2();
 
 /** What Solid's hydration script (`generateHydrationScript`) puts on the page. */
 interface HydrationGlobal {
-	events: unknown[];
+	events: Array<unknown>;
 	completed: WeakSet<Node>;
 	r: Record<string, unknown>;
 	fe(): void;
@@ -38,6 +38,7 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
 	// Markup runs no script: run the server's, which record what its async setups awaited in
 	// `_$HY.r` (the bootstrap one finds the record there already), then take them out of the DOM.
 	for (const script of container.querySelectorAll("script")) {
+		// oxlint-disable-next-line typescript/no-implied-eval, typescript/no-unsafe-call -- runs the server render's own scripts, as a page would
 		new Function(script.textContent ?? "")();
 		script.remove();
 	}

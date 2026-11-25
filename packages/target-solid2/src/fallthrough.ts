@@ -53,7 +53,7 @@ export interface FallthroughPlan {
 	 * What `omit` leaves out of the others: the names the component declares, and what the
 	 * target merges itself. Empty where the target spreads the props as they are.
 	 */
-	split: string[];
+	split: Array<string>;
 	/** The target's own listeners that call the consumer's after them, with the prop of each. */
 	composed: ReadonlyMap<EventAttribute, string>;
 	/** The event props of the target's `v-model` that call the consumer's after them. */
@@ -93,7 +93,9 @@ export interface FallthroughNames {
 /** The component's root, where it is one `<component is>` over tags (ADR-0119). */
 function dynamicRoot(component: UfComponent): DynamicNode | undefined {
 	const { render } = component;
-	if (render.kind !== "Fragment" || render.children.length !== 1) return undefined;
+	if (render.kind !== "Fragment" || render.children.length !== 1) {
+		return undefined;
+	}
 	const [only] = render.children;
 	return only?.kind === "Dynamic" && only.candidates.every((each) => each.kind === "Tag")
 		? only
@@ -101,7 +103,7 @@ function dynamicRoot(component: UfComponent): DynamicNode | undefined {
 }
 
 /** The tags a `<component is>` over tags may render. */
-function dynamicTags(node: DynamicNode): string[] {
+function dynamicTags(node: DynamicNode): Array<string> {
 	return node.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
 }
 
@@ -120,7 +122,7 @@ export function planFallthrough(
 	const exposes = Boolean(component.exposes);
 	const declared = declaredNames(component);
 	const exposedRef = exposes ? [`ref?: (api: ${names.exposed()}) => void`] : [];
-	const omitted = (base: string, extra: readonly string[], members: readonly string[]) => {
+	const omitted = (base: string, extra: ReadonlyArray<string>, members: ReadonlyArray<string>) => {
 		// A listener prop of no DOM event (`onPick`) is no attribute an element's type declares; a
 		// root component's may declare it.
 		const element = base.endsWith('">');
@@ -136,7 +138,9 @@ export function planFallthrough(
 		// A root `<component is>` over tags takes what falls through as a root element does, on
 		// whichever tag renders (ADR-0122).
 		const root = single ?? dynamicRoot(component);
-		if (!root) return { type: exposedType(exposedRef), plan: undefined };
+		if (!root) {
+			return { type: exposedType(exposedRef), plan: undefined };
+		}
 		const base = rootBase(root, component, module, names);
 		if (base === undefined) {
 			// A root component whose own root takes nothing: `class` and `style` alone, as before.
@@ -203,7 +207,9 @@ export function planFallthrough(
 	const refType = (target: ElementNode | ComponentNode) =>
 		`Pick<${rootBase(target, component, module, names) ?? `${names.componentProps()}<"div">`}, "ref">`;
 	if (!element) {
-		if (!ref) return { type: exposedType(exposedRef), plan: undefined };
+		if (!ref) {
+			return { type: exposedType(exposedRef), plan: undefined };
+		}
 		return {
 			type: refType(ref),
 			plan: {
@@ -258,7 +264,7 @@ export function planFallthrough(
 }
 
 /** The exposed `ref`'s type alone, or none. */
-function exposedType(members: readonly string[]): string | undefined {
+function exposedType(members: ReadonlyArray<string>): string | undefined {
 	return members.length ? `{ ${members.join("; ")} }` : undefined;
 }
 
@@ -274,7 +280,9 @@ function rootBase(
 	module: UfModule,
 	names: FallthroughNames,
 ): string | undefined {
-	if (root.kind === "Element") return `${names.componentProps()}<${JSON.stringify(root.tag)}>`;
+	if (root.kind === "Element") {
+		return `${names.componentProps()}<${JSON.stringify(root.tag)}>`;
+	}
 	// What every tag takes, with the listeners and the `ref` of whichever renders, so a listener
 	// the root calls after its own takes that element's event (ADR-0122).
 	if (root.kind === "Dynamic") {
@@ -285,7 +293,9 @@ function rootBase(
 		return `Omit<${each.join(" & ")}, keyof ${dom}> & ${dom}`;
 	}
 	// Imported only where the type names it.
-	if (childFallthroughTag(module, root.component, component) === undefined) return undefined;
+	if (childFallthroughTag(module, root.component, component) === undefined) {
+		return undefined;
+	}
 	return `${names.componentProps()}<typeof ${root.component}>`;
 }
 
@@ -302,7 +312,7 @@ function handlerType(base: string, prop: string): string {
  * The names a component declares, which never fall through: its props, its events' listeners
  * (`onPick`), its slots (`children`, `title`) and its models' value and listener.
  */
-export function declaredNames(component: UfComponent): string[] {
+export function declaredNames(component: UfComponent): Array<string> {
 	return [
 		...component.props.map((prop) => prop.name),
 		...(component.emits?.events ?? []).map((event) => eventProp(event.name)),
@@ -318,7 +328,9 @@ export function declaredNames(component: UfComponent): string[] {
 /** The root a component renders, where it is one element or one component. */
 export function singleRoot(component: UfComponent): ElementNode | ComponentNode | undefined {
 	const { render } = component;
-	if (render.kind === "Element") return render;
+	if (render.kind === "Element") {
+		return render;
+	}
 	const [only] = render.children;
 	return render.children.length === 1 && only?.kind === "Component" ? only : undefined;
 }
@@ -328,16 +340,20 @@ export function restElement(component: UfComponent): ElementNode | undefined {
 	let found: ElementNode | undefined;
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element" || found) return;
-			if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+			if (node.kind !== "Element" || found) {
+				return;
+			}
+			if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+				found = node;
+			}
 		},
 	});
 	return found;
 }
 
 /** What the target merges with the consumer's itself: its `class` and its `style`. */
-function mergedNames(target: ElementNode | ComponentNode | DynamicNode): string[] {
-	const attributes: readonly { kind: string; name?: string; keys?: { name: string }[] }[] =
+function mergedNames(target: ElementNode | ComponentNode | DynamicNode): Array<string> {
+	const attributes: ReadonlyArray<{ kind: string; name?: string; keys?: Array<{ name: string }> }> =
 		target.attributes;
 	const has = (name: "class" | "style") =>
 		attributes.some(
@@ -358,9 +374,9 @@ function mergedNames(target: ElementNode | ComponentNode | DynamicNode): string[
 function composedListeners(
 	target: ElementNode | ComponentNode | DynamicNode,
 	component: UfComponent,
-	declared: readonly string[],
+	declared: ReadonlyArray<string>,
 ): Map<EventAttribute, string> {
-	const attributes: readonly (Attribute | ComponentAttribute)[] = target.attributes;
+	const attributes: ReadonlyArray<Attribute | ComponentAttribute> = target.attributes;
 	const listeners =
 		target.kind === "Element"
 			? eventProps(target, component)
@@ -379,9 +395,11 @@ function composedListeners(
 /** The event props a target's `v-model` writes (src/models.ts), which the consumer's would replace. */
 function modelEvents(
 	target: ElementNode | ComponentNode | DynamicNode,
-	declared: readonly string[],
-): string[] {
-	if (target.kind !== "Element") return [];
+	declared: ReadonlyArray<string>,
+): Array<string> {
+	if (target.kind !== "Element") {
+		return [];
+	}
 	return target.attributes.flatMap((attribute) => {
 		const prop = attribute.kind === "Model" ? modelEvent(attribute) : undefined;
 		return prop === undefined || declared.includes(prop) ? [] : [prop];
@@ -397,13 +415,13 @@ function modelEvent(attribute: ModelAttribute): string | undefined {
 }
 
 /** The names a root component's own attributes and fills set on it: not its consumer's to pass. */
-function passedNames(node: ComponentNode): string[] {
+function passedNames(node: ComponentNode): Array<string> {
 	const fills = node.fills.map((fill) => (fill.slot === "default" ? "children" : fill.slot));
 	return [...fills, ...attributeNames(node)];
 }
 
 /** The names a root component's own attributes set on it. */
-function attributeNames(node: ComponentNode): string[] {
+function attributeNames(node: ComponentNode): Array<string> {
 	return node.attributes.flatMap((attribute) => {
 		switch (attribute.kind) {
 			case "Prop":
@@ -431,9 +449,13 @@ function childFallthroughTag(
 	from: UfComponent,
 ): string | undefined {
 	const api = importedApi(module, local);
-	if (api) return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+	if (api) {
+		return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+	}
 	const own = module.components.find((each) => each.name === local);
-	if (!own || own === from) return undefined;
+	if (!own || own === from) {
+		return undefined;
+	}
 	return ownFallthroughTag(own, module, new Set([from.name]));
 }
 
@@ -441,7 +463,9 @@ function childFallthroughTag(
 export function importedApi(module: UfModule, local: string): ComponentApi | undefined {
 	for (const entry of module.imports ?? []) {
 		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-		if (!imported) continue;
+		if (!imported) {
+			continue;
+		}
 		return entry.api.components.find((each) =>
 			imported.imported === "default"
 				? each.export === "default"
@@ -457,17 +481,25 @@ function ownFallthroughTag(
 	module: UfModule,
 	seen: Set<string>,
 ): string | undefined {
-	if (component.inheritAttrs === false) return restElement(component)?.tag;
+	if (component.inheritAttrs === false) {
+		return restElement(component)?.tag;
+	}
 	const root = singleRoot(component);
 	if (!root) {
 		const dynamic = dynamicRoot(component);
 		return dynamic && dynamicTags(dynamic)[0];
 	}
-	if (root.kind === "Element") return root.tag;
-	if (seen.has(component.name)) return undefined;
+	if (root.kind === "Element") {
+		return root.tag;
+	}
+	if (seen.has(component.name)) {
+		return undefined;
+	}
 	seen.add(component.name);
 	const api = importedApi(module, root.component);
-	if (api) return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+	if (api) {
+		return api.fallthroughTag ?? (api.inheritAttrs ? api.rootTags?.[0] : undefined);
+	}
 	const own = module.components.find((each) => each.name === root.component);
 	return own ? ownFallthroughTag(own, module, seen) : undefined;
 }

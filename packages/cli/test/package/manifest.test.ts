@@ -35,7 +35,10 @@ export const made = make();
 };
 
 const manifestOf = (root: string) =>
-	JSON.parse(readFileSync(join(root, "dist", "package", "package.json"), "utf8"));
+	JSON.parse(readFileSync(join(root, "dist", "package", "package.json"), "utf8")) as Record<
+		string,
+		any
+	>;
 
 describe("build --package: the manifest", () => {
 	it("takes the name, version and license from the project, and nothing else", async () => {
@@ -109,7 +112,9 @@ describe("build --package: the manifest", () => {
 			"solid-js": "^1.9.0",
 			vue: "^3.5.0",
 		});
-		expect(Object.values(peerDependenciesMeta)).toEqual(Array(5).fill({ optional: true }));
+		expect(Object.values(peerDependenciesMeta)).toEqual(
+			Array.from({ length: 5 }, () => ({ optional: true })),
+		);
 	});
 
 	it("packages only package.targets, and still builds every target's tree", async () => {

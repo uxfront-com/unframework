@@ -36,7 +36,7 @@ function page({
 	path: string;
 	title: string;
 	description: string;
-	jsonLd: unknown[];
+	jsonLd: Array<unknown>;
 }) {
 	const url = `${SITE}${path}`;
 	const image = `${SITE}/og${path === "/" ? "/home" : path}.png`;
@@ -62,7 +62,7 @@ function payload(url: string, image: string) {
 		{ url: 4, image: 5 },
 		url,
 		image,
-		1763251200000,
+		1_763_251_200_000,
 	]);
 }
 

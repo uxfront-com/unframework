@@ -12,11 +12,13 @@ const repo = fileURLToPath(new URL("../../..", import.meta.url));
 function expectsErrors(golden: string): boolean {
 	const caseDir = golden.slice(0, golden.indexOf("/__output__/"));
 	const path = join(caseDir, "__expected__", "diagnostics.json");
-	if (!existsSync(path)) return false;
-	const diagnostics = JSON.parse(readFileSync(path, "utf8")) as {
+	if (!existsSync(path)) {
+		return false;
+	}
+	const diagnostics = JSON.parse(readFileSync(path, "utf8")) as Array<{
 		severity: string;
 		target?: string;
-	}[];
+	}>;
 	return diagnostics.some(
 		(diagnostic) =>
 			diagnostic.severity === "error" &&
@@ -29,7 +31,7 @@ function expectsErrors(golden: string): boolean {
  * but the scoped sheets (`<source>.css`), which the compile project parses instead (ADR-0063), and
  * the directories the pattern matches, such as a tree's `_unframework/` (ADR-0121).
  */
-export function goldens(pattern: string): string[] {
+export function goldens(pattern: string): Array<string> {
 	return globSync(pattern, { cwd: repo })
 		.toSorted()
 		.map((file) => join(repo, file))

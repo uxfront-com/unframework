@@ -25,7 +25,7 @@ export interface NoAxeViolationsOptions {
 	 * L11: a rule axe reports that is not listed fails, and so does a listed rule it doesn't
 	 * report. None by default.
 	 */
-	expected?: readonly string[];
+	expected?: ReadonlyArray<string>;
 }
 
 declare module "vitest" {
@@ -62,7 +62,9 @@ export function installMatchers(): void {
 			const expected = options.expected ?? [];
 			const { pass, unexpected, missing } = await compareAxe(element, expected);
 			const lines = [...unexpected];
-			if (missing.length) lines.push(`  expected but not reported: ${missing.join(", ")}`);
+			if (missing.length) {
+				lines.push(`  expected but not reported: ${missing.join(", ")}`);
+			}
 			return {
 				pass,
 				message: () =>
@@ -99,7 +101,9 @@ export function installMatchers(): void {
  * passes it as it is.
  */
 function elementOf(received: unknown, matcher: string): Element {
-	if (received instanceof Element) return received;
+	if (received instanceof Element) {
+		return received;
+	}
 	throw new TypeError(
 		`${matcher}: expected an element, as \`expect.element(locator)\` resolves one, but received ${received === null ? "null" : typeof received}.`,
 	);
@@ -129,8 +133,12 @@ async function ariaTree(element: Element, target: string): Promise<string> {
  */
 function asTree(text: string): string {
 	const lines = text.split("\n").map((line) => line.trimEnd());
-	while (lines.length && !lines[0]) lines.shift();
-	while (lines.length && !lines.at(-1)) lines.pop();
+	while (lines.length && !lines[0]) {
+		lines.shift();
+	}
+	while (lines.length && !lines.at(-1)) {
+		lines.pop();
+	}
 	const indent = Math.min(
 		...lines.filter(Boolean).map((line) => line.length - line.trimStart().length),
 	);

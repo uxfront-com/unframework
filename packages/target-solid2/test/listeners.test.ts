@@ -18,7 +18,7 @@ const jsxTypes = readFileSync(
 	"utf8",
 );
 /** The members of one of the JSX types' interfaces. */
-function members(name: string): string[] {
+function members(name: string): Array<string> {
 	const start = jsxTypes.indexOf(`interface ${name}<T>`);
 	const end = jsxTypes.indexOf("\n  }\n", start);
 	return [...jsxTypes.slice(start, end).matchAll(/^\s+"?([\w:]+)"?\?:/gm)].map(

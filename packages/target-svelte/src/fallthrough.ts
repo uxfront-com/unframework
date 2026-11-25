@@ -71,7 +71,9 @@ const ELEMENT_ATTRIBUTES: ReadonlyMap<string, string> = new Map([
  */
 export function attributesType(tag: string, importType: (name: string) => string): string {
 	const own = ELEMENT_ATTRIBUTES.get(tag);
-	if (own !== undefined) return importType(own);
+	if (own !== undefined) {
+		return importType(own);
+	}
 	return `${importType("SvelteHTMLElements")}[${JSON.stringify(tag)}]`;
 }
 
@@ -83,14 +85,16 @@ export function attributesType(tag: string, importType: (name: string) => string
  * Omit<DOMAttributes<HTMLElementTagNameMap["a" | "button"]>, "children">`.
  */
 export function passedType(
-	tags: readonly string[],
-	declared: readonly string[],
+	tags: ReadonlyArray<string>,
+	declared: ReadonlyArray<string>,
 	importType: (name: string) => string,
 ): string {
-	const names = (each: readonly string[]) =>
+	const names = (each: ReadonlyArray<string>) =>
 		[...new Set(each)].map((name) => JSON.stringify(name)).join(" | ");
 	const attributes = tags.map((tag) => attributesType(tag, importType)).join(" & ");
-	if (tags.length === 1) return `Omit<${attributes}, ${names(declared)}>`;
+	if (tags.length === 1) {
+		return `Omit<${attributes}, ${names(declared)}>`;
+	}
 	const dom = `${importType("DOMAttributes")}<${elementType(tags)}>`;
 	// `DOMAttributes` holds the listeners and `children` alone.
 	const listeners = declared.filter((name) => name === "children" || name.startsWith("on"));
@@ -102,7 +106,7 @@ export function passedType(
  * which is `HTMLButtonElement`, and an `<svg>` root's `SVGElementTagNameMap["svg"]`. A
  * `<component is>` root's holds whichever tag renders: `HTMLElementTagNameMap["a" | "button"]`.
  */
-export function elementType(tags: readonly string[]): string {
+export function elementType(tags: ReadonlyArray<string>): string {
 	const map = tags[0] === "svg" ? "SVGElementTagNameMap" : "HTMLElementTagNameMap";
 	return `${map}[${[...new Set(tags)].map((tag) => JSON.stringify(tag)).join(" | ")}]`;
 }
@@ -111,7 +115,9 @@ export function elementType(tags: readonly string[]): string {
 function importedApi(module: UfModule, local: string): ComponentApi | undefined | null {
 	for (const entry of module.imports ?? []) {
 		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-		if (!imported) continue;
+		if (!imported) {
+			continue;
+		}
 		return (
 			entry.api.components.find((each) =>
 				imported.imported === "default"
@@ -126,7 +132,9 @@ function importedApi(module: UfModule, local: string): ComponentApi | undefined 
 /** The root component of a component whose root is one component, as `takesFallthrough` reads it. */
 export function rootComponentNode(component: UfComponent): ComponentNode | undefined {
 	const { render } = component;
-	if (render.kind !== "Fragment") return undefined;
+	if (render.kind !== "Fragment") {
+		return undefined;
+	}
 	const [only, ...others] = render.children;
 	return only?.kind === "Component" &&
 		others.length === 0 &&
@@ -139,7 +147,9 @@ export function rootComponentNode(component: UfComponent): ComponentNode | undef
 /** A component's root `<component is>` over tags (ADR-0119), as `takesFallthrough` reads it. */
 export function rootDynamicNode(component: UfComponent): DynamicNode | undefined {
 	const { render } = component;
-	if (render.kind !== "Fragment") return undefined;
+	if (render.kind !== "Fragment") {
+		return undefined;
+	}
 	const [only, ...others] = render.children;
 	return only?.kind === "Dynamic" &&
 		only.candidates.every((candidate) => candidate.kind === "Tag") &&
@@ -151,7 +161,7 @@ export function rootDynamicNode(component: UfComponent): DynamicNode | undefined
 }
 
 /** The tags a `<component is>` over tags may render. */
-function dynamicTags(node: DynamicNode): string[] {
+function dynamicTags(node: DynamicNode): Array<string> {
 	return node.candidates.flatMap((candidate) => (candidate.kind === "Tag" ? [candidate.tag] : []));
 }
 
@@ -168,11 +178,15 @@ const event = (name: string) => `on${name.toLowerCase()}`;
  * so its props type leaves them out of the root element's attributes, whose `title` or
  * `children` would else meet the root component's own.
  */
-export function rootComponentNames(component: UfComponent, module: UfModule): string[] {
+export function rootComponentNames(component: UfComponent, module: UfModule): Array<string> {
 	const root = rootComponentNode(component);
-	if (!root) return [];
+	if (!root) {
+		return [];
+	}
 	const api = importedApi(module, root.component);
-	if (api === null) return [];
+	if (api === null) {
+		return [];
+	}
 	if (api !== undefined) {
 		return [
 			...api.props.map(({ name }) => name),
@@ -183,7 +197,9 @@ export function rootComponentNames(component: UfComponent, module: UfModule): st
 		];
 	}
 	const own = module.components.find((each) => each.name === root.component);
-	if (!own) return [];
+	if (!own) {
+		return [];
+	}
 	return [
 		...own.props.map(({ name }) => name),
 		...own.setup.flatMap((item) => (item.kind === "Model" ? [item.name] : [])),
@@ -202,9 +218,11 @@ function childTags(
 	module: UfModule,
 	local: string,
 	seen: ReadonlySet<string>,
-): { fallthrough?: readonly string[]; ref?: readonly string[] } {
+): { fallthrough?: ReadonlyArray<string>; ref?: ReadonlyArray<string> } {
 	const api = importedApi(module, local);
-	if (api === null) return {};
+	if (api === null) {
+		return {};
+	}
 	if (api !== undefined) {
 		const fallthrough =
 			api.fallthroughTag !== undefined
@@ -223,7 +241,9 @@ function childTags(
 		};
 	}
 	const own = module.components.find((each) => each.name === local);
-	if (!own || seen.has(own.name)) return {};
+	if (!own || seen.has(own.name)) {
+		return {};
+	}
 	const next = new Set([...seen, own.name]);
 	const fallthrough = ownFallthroughTag(own, module, next);
 	const ref = ownRefTag(own, module, next);
@@ -237,14 +257,18 @@ function ownFallthroughTag(
 	component: UfComponent,
 	module: UfModule,
 	seen: ReadonlySet<string>,
-): readonly string[] | undefined {
+): ReadonlyArray<string> | undefined {
 	if (component.inheritAttrs === false) {
 		const element = restElement(component);
 		return element && [element.tag];
 	}
-	if (component.render.kind === "Element") return [component.render.tag];
+	if (component.render.kind === "Element") {
+		return [component.render.tag];
+	}
 	const dynamic = rootDynamicNode(component);
-	if (dynamic) return dynamicTags(dynamic);
+	if (dynamic) {
+		return dynamicTags(dynamic);
+	}
 	const root = rootComponentNode(component);
 	return root ? childTags(module, root.component, seen).fallthrough : undefined;
 }
@@ -253,11 +277,17 @@ function ownRefTag(
 	component: UfComponent,
 	module: UfModule,
 	seen: ReadonlySet<string>,
-): readonly string[] | undefined {
-	if (component.exposes?.functions.length) return undefined;
-	if (component.render.kind === "Element") return [component.render.tag];
+): ReadonlyArray<string> | undefined {
+	if (component.exposes?.functions.length) {
+		return undefined;
+	}
+	if (component.render.kind === "Element") {
+		return [component.render.tag];
+	}
 	const dynamic = rootDynamicNode(component);
-	if (dynamic) return dynamicTags(dynamic);
+	if (dynamic) {
+		return dynamicTags(dynamic);
+	}
 	const root = rootComponentNode(component);
 	return root ? childTags(module, root.component, seen).ref : undefined;
 }
@@ -271,7 +301,7 @@ function ownRefTag(
 export function fallthroughTags(
 	component: UfComponent,
 	module: UfModule,
-): readonly string[] | undefined {
+): ReadonlyArray<string> | undefined {
 	return ownFallthroughTag(component, module, new Set([component.name]));
 }
 
@@ -280,7 +310,10 @@ export function fallthroughTags(
  * element's, its `<component is>` root's, whichever renders (ADR-0122), or its root component's,
  * where it exposes nothing. `undefined` where a ref holds what it exposes, or no element.
  */
-export function refTags(component: UfComponent, module: UfModule): readonly string[] | undefined {
+export function refTags(
+	component: UfComponent,
+	module: UfModule,
+): ReadonlyArray<string> | undefined {
 	return ownRefTag(component, module, new Set([component.name]));
 }
 
@@ -289,8 +322,12 @@ export function restElement(component: UfComponent): ElementNode | undefined {
 	let found: ElementNode | undefined;
 	walk(component.render, {
 		enter(node) {
-			if (found || node.kind !== "Element") return;
-			if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+			if (found || node.kind !== "Element") {
+				return;
+			}
+			if (node.attributes.some((attribute) => attribute.kind === "Rest")) {
+				found = node;
+			}
 		},
 	});
 	return found;
@@ -305,9 +342,17 @@ export function elementRefs(component: UfComponent, module: UfModule): Set<RefAt
 	const found = new Set<RefAttribute>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component") return;
-			if (childTags(module, node.component, new Set([component.name])).ref === undefined) return;
-			for (const attribute of node.attributes) if (attribute.kind === "Ref") found.add(attribute);
+			if (node.kind !== "Component") {
+				return;
+			}
+			if (childTags(module, node.component, new Set([component.name])).ref === undefined) {
+				return;
+			}
+			for (const attribute of node.attributes) {
+				if (attribute.kind === "Ref") {
+					found.add(attribute);
+				}
+			}
 		},
 	});
 	return found;

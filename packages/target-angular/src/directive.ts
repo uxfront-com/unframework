@@ -49,7 +49,7 @@ export function runnerNames(claim: (base: string) => string): DirectiveRunnerNam
 }
 
 /** The runner and the queue it calls, as a file declares them: the queue unless it is shared. */
-export function runnerCode(names: DirectiveRunnerNames, queue = true): string[] {
+export function runnerCode(names: DirectiveRunnerNames, queue = true): Array<string> {
 	return [...directiveRunnerCode(names), ...(queue ? [hookQueueCode(names.queue)] : [])].map(
 		(code) => `${code}\n`,
 	);
@@ -101,7 +101,7 @@ export function directiveClassCode(
 }
 
 /** `v-focus-trap.ts`: a `.uf.ts` module's directive, as a standalone attribute directive. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
 	const dependencies = directiveDependencies(directive, context.module);
 	// The module's helpers take names apart from everything the copied code declares or reads.
 	const imports = new ImportSet(new NameScope(directiveModuleNames(directive, dependencies)));

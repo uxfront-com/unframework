@@ -38,7 +38,10 @@ export function recordSessions(apiKey: string, options: SessionReplayOptions) {
 function whenIdle() {
 	return new Promise<void>((resolve) => {
 		const schedule = () => requestIdleCallback(() => resolve(), { timeout: 1500 });
-		if (document.readyState === "complete") schedule();
-		else window.addEventListener("load", schedule, { once: true });
+		if (document.readyState === "complete") {
+			schedule();
+		} else {
+			window.addEventListener("load", schedule, { once: true });
+		}
 	});
 }

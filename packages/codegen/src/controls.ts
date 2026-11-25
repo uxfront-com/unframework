@@ -48,7 +48,7 @@ export interface EventCall {
 	/** Whether the call is at the top of the body (see the module comment). */
 	dispatched: boolean;
 	/** For a dispatched call, the tests it runs under, outermost first (absent when none). */
-	tests?: ControlTest[];
+	tests?: Array<ControlTest>;
 }
 
 /** A control a handler makes while its event is dispatched: its own, or a function's it calls. */
@@ -65,15 +65,15 @@ export interface LiftedControl {
 	 * each call it is reached through, then the guard clauses before it. Its `condition` is not
 	 * among them.
 	 */
-	tests: (ControlTest & { fn: FunctionCode })[];
+	tests: Array<ControlTest & { fn: FunctionCode }>;
 }
 
 /** What {@link handlerControls} finds. */
 export interface HandlerControls {
 	/** The controls that run while the event is dispatched, in the order they run. */
-	controls: LiftedControl[];
+	controls: Array<LiftedControl>;
 	/** The controls, and the calls of functions that make one, that cannot run then. */
-	unliftable: Span[];
+	unliftable: Array<Span>;
 }
 
 /** The members of an event that a control changes: a test that reads one is no test of the event. */
@@ -99,9 +99,9 @@ type TopItem =
 			/** The statement to take out of the handler: the control's, or the `if`'s around it. */
 			statement: AST.Node;
 			condition?: AST.Expression;
-			tests: TopTest[];
+			tests: Array<TopTest>;
 	  }
-	| { kind: "call"; callee: AST.Node; tests: TopTest[] };
+	| { kind: "call"; callee: AST.Node; tests: Array<TopTest> };
 
 /** The name of a function's event parameter, as the IR marks it. */
 function eventName(fn: FunctionCode): string | undefined {
@@ -129,13 +129,18 @@ function topOf(
 	fn: FunctionCode,
 	event: string | undefined,
 	topCall: (offset: number) => boolean,
-): TopItem[] {
-	const items: TopItem[] = [];
-	if (event === undefined) return items;
+): Array<TopItem> {
+	const items: Array<TopItem> = [];
+	if (event === undefined) {
+		return items;
+	}
 	const eventOnly = (test: AST.Node) => readsOnly(test, event) && !readsChanged(test, event);
 	// A call form (`f(event)`, `void f(event)`, `test && f(event)`, `test ? f(event) : g()`): its
 	// calls that `topCall` accepts, under their tests, and whether it does nothing else.
-	const form = (node: AST.Node, tests: TopTest[]): { calls: TopItem[]; only: boolean } => {
+	const form = (
+		node: AST.Node,
+		tests: Array<TopTest>,
+	): { calls: Array<TopItem>; only: boolean } => {
 		const inner = unwrapped(node);
 		if (
 			inner.type === "CallExpression" &&
@@ -178,10 +183,12 @@ function topOf(
 		}
 		return items;
 	}
-	const [block] = parseCodeSource(fn.body.code, "statements").root as AST.Statement[];
-	const guards: TopTest[] = [];
+	const [block] = parseCodeSource(fn.body.code, "statements").root as Array<AST.Statement>;
+	const guards: Array<TopTest> = [];
 	for (const statement of block?.type === "BlockStatement" ? block.body : []) {
-		if (statement.type === "EmptyStatement") continue;
+		if (statement.type === "EmptyStatement") {
+			continue;
+		}
 		if (statement.type === "ExpressionStatement") {
 			const own = control(statement.expression);
 			if (own) {
@@ -190,7 +197,9 @@ function topOf(
 			}
 			const { calls, only } = form(statement.expression, [...guards]);
 			items.push(...calls);
-			if (calls.length && only && !awaits(statement)) continue;
+			if (calls.length && only && !awaits(statement)) {
+				continue;
+			}
 			break;
 		}
 		if (statement.type !== "IfStatement" || statement.alternate || !eventOnly(statement.test)) {
@@ -217,10 +226,14 @@ function topOf(
 			}
 			const { calls, only } = form(inner.expression, [...guards, { node: statement.test }]);
 			items.push(...calls);
-			if (calls.length && only && !awaits(statement)) continue;
+			if (calls.length && only && !awaits(statement)) {
+				continue;
+			}
 			break;
 		}
-		if (!alwaysLeaves(consequent)) break;
+		if (!alwaysLeaves(consequent)) {
+			break;
+		}
 		guards.push({ node: statement.test, negated: true });
 	}
 	return items;
@@ -260,7 +273,7 @@ function isInert(node: AST.Node): boolean {
 export function eventCalls(
 	fn: FunctionCode,
 	takesEvent: (binding: BindingId) => boolean,
-): EventCall[] {
+): Array<EventCall> {
 	const base = fn.body.span.start;
 	const references = new Map<number, { binding: BindingId; span: Span }>();
 	for (const reference of fn.body.refs) {
@@ -268,10 +281,14 @@ export function eventCalls(
 			references.set(reference.span.start - base, reference);
 		}
 	}
-	if (!references.size) return [];
-	const top = new Map<number, TopTest[]>();
+	if (!references.size) {
+		return [];
+	}
+	const top = new Map<number, Array<TopTest>>();
 	for (const item of topOf(fn, eventName(fn), (offset) => references.has(offset))) {
-		if (item.kind === "call") top.set(item.callee.start, item.tests);
+		if (item.kind === "call") {
+			top.set(item.callee.start, item.tests);
+		}
 	}
 	return [...references].map(([offset, reference]) => {
 		const tests = top.get(offset);
@@ -293,7 +310,9 @@ function controlTest(fn: FunctionCode, test: TopTest): ControlTest {
 function localFunctions(component: UfComponent): Map<BindingId, FunctionCode> {
 	const functions = new Map<BindingId, FunctionCode>();
 	for (const item of component.setup) {
-		if (item.kind === "Function") functions.set(item.binding, item.function);
+		if (item.kind === "Function") {
+			functions.set(item.binding, item.function);
+		}
 	}
 	return functions;
 }
@@ -307,8 +326,8 @@ function localFunctions(component: UfComponent): Map<BindingId, FunctionCode> {
 export function handlerControls(fn: FunctionCode, component: UfComponent): HandlerControls {
 	const functions = localFunctions(component);
 	const makers = controlMakers(functions);
-	const controls: LiftedControl[] = [];
-	const unliftable: Span[] = [];
+	const controls: Array<LiftedControl> = [];
+	const unliftable: Array<Span> = [];
 	// Whether code before the next control reads what a control changes: it then reads it after
 	// the lifted control, where the handler read it before.
 	let changed = false;
@@ -354,7 +373,9 @@ export function handlerControls(fn: FunctionCode, component: UfComponent): Handl
 			}
 			handled.add(item.callee.start);
 			const callee = functions.get(callees.get(item.callee.start)!.binding)!;
-			if (!seen.has(callee)) visit(callee, written, new Set([...seen, callee]));
+			if (!seen.has(callee)) {
+				visit(callee, written, new Set([...seen, callee]));
+			}
 		}
 		// Every other control, and every other call of a function that makes one, runs apart. A
 		// function whose event the IR does not mark has no top: its controls are read by its
@@ -372,9 +393,13 @@ export function handlerControls(fn: FunctionCode, component: UfComponent): Handl
 			}
 		});
 		for (const [offset, reference] of callees) {
-			if (!handled.has(offset)) unliftable.push(reference.span);
+			if (!handled.has(offset)) {
+				unliftable.push(reference.span);
+			}
 		}
-		if (names.some((name) => readsChanged(body, name))) changed = true;
+		if (names.some((name) => readsChanged(body, name))) {
+			changed = true;
+		}
 	};
 	visit(fn, [], new Set([fn]));
 	return { controls, unliftable: unliftable.toSorted((a, b) => a.start - b.start) };
@@ -385,7 +410,7 @@ export function handlerControls(fn: FunctionCode, component: UfComponent): Handl
  * handler passes its event to (see {@link handlerControls}): the statements a target takes out of
  * its body. Every other control of a function a handler reaches is `unliftable` there.
  */
-export function ownControls(fn: FunctionCode, component: UfComponent): EventControl[] {
+export function ownControls(fn: FunctionCode, component: UfComponent): Array<EventControl> {
 	return handlerControls(fn, component).controls.flatMap((lifted) =>
 		lifted.fn === fn ? [lifted.control] : [],
 	);
@@ -398,15 +423,17 @@ export function ownControls(fn: FunctionCode, component: UfComponent): EventCont
  */
 function controlMakers(functions: ReadonlyMap<BindingId, FunctionCode>): Set<BindingId> {
 	const makers = new Set<BindingId>();
-	const passes = new Map<BindingId, BindingId[]>();
+	const passes = new Map<BindingId, Array<BindingId>>();
 	for (const [id, fn] of functions) {
 		const names = fn.parameters.flatMap((parameter) =>
 			parameter.name === undefined ? [] : [parameter.name],
 		);
-		if (!names.length) continue;
+		if (!names.length) {
+			continue;
+		}
 		const body = parsedBody(fn);
 		let own = false;
-		const callees: BindingId[] = [];
+		const callees: Array<BindingId> = [];
 		const base = fn.body.span.start;
 		const references = new Map<number, BindingId>();
 		for (const reference of fn.body.refs) {
@@ -419,16 +446,24 @@ function controlMakers(functions: ReadonlyMap<BindingId, FunctionCode>): Set<Bin
 			}
 		}
 		visitNodes(body, (node) => {
-			if (names.some((name) => controlOn(node, name))) own = true;
-			if (node.type !== "CallExpression" || node.callee.type !== "Identifier") return;
+			if (names.some((name) => controlOn(node, name))) {
+				own = true;
+			}
+			if (node.type !== "CallExpression" || node.callee.type !== "Identifier") {
+				return;
+			}
 			const callee = references.get(node.callee.start);
 			const passed = node.arguments.some((argument) => {
 				const inner = unwrapped(argument);
 				return inner.type === "Identifier" && names.includes(inner.name);
 			});
-			if (callee !== undefined && passed) callees.push(callee);
+			if (callee !== undefined && passed) {
+				callees.push(callee);
+			}
 		});
-		if (own) makers.add(id);
+		if (own) {
+			makers.add(id);
+		}
 		passes.set(id, callees);
 	}
 	for (let changed = true; changed;) {
@@ -450,16 +485,21 @@ function controlMakers(functions: ReadonlyMap<BindingId, FunctionCode>): Set<Bin
  * handed, at once (Qwik moves it to module scope, ADR-0045).
  */
 function isolatedFunctions(component: UfComponent): Set<BindingId> {
-	const candidates = new Map<BindingId, readonly CodeReference[]>();
+	const candidates = new Map<BindingId, ReadonlyArray<CodeReference>>();
 	for (const item of component.setup) {
-		if (item.kind === "Const") candidates.set(item.binding, item.value.refs);
-		else if (item.kind === "Function") candidates.set(item.binding, item.function.body.refs);
+		if (item.kind === "Const") {
+			candidates.set(item.binding, item.value.refs);
+		} else if (item.kind === "Function") {
+			candidates.set(item.binding, item.function.body.refs);
+		}
 	}
 	const isolated = new Set(candidates.keys());
 	for (let changed = true; changed;) {
 		changed = false;
 		for (const [id, refs] of candidates) {
-			if (!isolated.has(id)) continue;
+			if (!isolated.has(id)) {
+				continue;
+			}
 			const captures = refs.some(
 				(reference) =>
 					reference.kind === "Write" ||
@@ -496,22 +536,28 @@ const NON_CALLING_GLOBALS: ReadonlySet<string> = new Set([
  * on its own parameter after a call of such a local function there, which such a target awaits.
  * In source order.
  */
-export function handedControls(component: UfComponent): Span[] {
+export function handedControls(component: UfComponent): Array<Span> {
 	const functions = localFunctions(component);
 	const isolated = isolatedFunctions(component);
 	const makers = new Set([...controlMakers(functions)].filter((id) => !isolated.has(id)));
-	const found: Span[] = [];
+	const found: Array<Span> = [];
 	for (const { function: fn, context } of functionsOf(component)) {
-		if (context !== "client") continue;
+		if (context !== "client") {
+			continue;
+		}
 		const listener = eventName(fn) !== undefined;
 		const base = fn.body.span.start;
 		const body = parsedBody(fn);
-		const nested: { start: number; end: number }[] = [];
+		const nested: Array<{ start: number; end: number }> = [];
 		// The arguments of the calls that never run what they are given, by their offsets.
 		const forgotten = new Set<number>();
 		visitNodes(body, (node) => {
-			if (isFunction(node)) nested.push(node);
-			if (node.type !== "CallExpression") return;
+			if (isFunction(node)) {
+				nested.push(node);
+			}
+			if (node.type !== "CallExpression") {
+				return;
+			}
 			const { callee } = node;
 			const method =
 				callee.type === "MemberExpression" &&
@@ -523,18 +569,28 @@ export function handedControls(component: UfComponent): Span[] {
 				(callee.type === "Identifier" && NON_CALLING_GLOBALS.has(callee.name)) ||
 				(method !== undefined &&
 					(NON_CALLING_METHODS.has(method) || NON_CALLING_GLOBALS.has(method)));
-			if (never) for (const argument of node.arguments) forgotten.add(unwrapped(argument).start);
+			if (never) {
+				for (const argument of node.arguments) {
+					forgotten.add(unwrapped(argument).start);
+				}
+			}
 		});
 		for (const reference of fn.body.refs) {
-			if (reference.kind !== "Binding" || !makers.has(reference.binding)) continue;
+			if (reference.kind !== "Binding" || !makers.has(reference.binding)) {
+				continue;
+			}
 			const offset = reference.span.start - base;
 			if (reference.call !== true) {
-				if (!forgotten.has(offset)) found.push(reference.span);
+				if (!forgotten.has(offset)) {
+					found.push(reference.span);
+				}
 			} else if (!listener || nested.some((each) => offset > each.start && offset < each.end)) {
 				found.push(reference.span);
 			}
 		}
-		for (const span of lateCallbackControls(fn, functions, isolated)) found.push(span);
+		for (const span of lateCallbackControls(fn, functions, isolated)) {
+			found.push(span);
+		}
 	}
 	return found.toSorted((a, b) => a.start - b.start);
 }
@@ -548,7 +604,7 @@ function lateCallbackControls(
 	fn: FunctionCode,
 	functions: ReadonlyMap<BindingId, FunctionCode>,
 	isolated: ReadonlySet<BindingId>,
-): Span[] {
+): Array<Span> {
 	const base = fn.body.span.start;
 	const calls = fn.body.refs.flatMap((reference) =>
 		reference.kind === "Binding" &&
@@ -558,32 +614,42 @@ function lateCallbackControls(
 			? [reference.span.start - base]
 			: [],
 	);
-	if (!calls.length) return [];
-	const found: Span[] = [];
+	if (!calls.length) {
+		return [];
+	}
+	const found: Array<Span> = [];
 	// Each callback's controls on its parameters, outside the callbacks inside it.
-	const scan = (callback: AST.Node, names: readonly string[]) => {
+	const scan = (callback: AST.Node, names: ReadonlyArray<string>) => {
 		const first = (node: AST.Node) =>
 			calls.some((offset) => offset > callback.start && offset < node.start && !inner(offset));
-		const nestedIn: { start: number; end: number }[] = [];
+		const nestedIn: Array<{ start: number; end: number }> = [];
 		const inner = (offset: number) =>
 			nestedIn.some((each) => offset > each.start && offset < each.end);
 		const body = (callback as unknown as { body: AST.Node }).body;
 		visitNodes(body, (node) => {
-			if (isFunction(node)) nestedIn.push(node);
+			if (isFunction(node)) {
+				nestedIn.push(node);
+			}
 		});
 		visitNodes(body, (node) => {
-			if (inner(node.start)) return;
+			if (inner(node.start)) {
+				return;
+			}
 			if (names.some((name) => controlOn(node, name)) && first(node)) {
 				found.push({ start: base + node.start, end: base + node.end });
 			}
 		});
 	};
 	visitNodes(parsedBody(fn), (node) => {
-		if (!isFunction(node)) return;
-		const names = (node as unknown as { params: AST.Node[] }).params.flatMap((parameter) =>
+		if (!isFunction(node)) {
+			return;
+		}
+		const names = (node as unknown as { params: Array<AST.Node> }).params.flatMap((parameter) =>
 			parameter.type === "Identifier" ? [parameter.name] : [],
 		);
-		if (names.length) scan(node, names);
+		if (names.length) {
+			scan(node, names);
+		}
 	});
 	return found;
 }
@@ -602,10 +668,16 @@ function controlOn(
 	node: AST.Node | null | undefined,
 	event: string,
 ): "preventDefault" | "stopPropagation" | undefined {
-	if (node?.type !== "CallExpression" || node.optional || node.arguments.length) return undefined;
+	if (node?.type !== "CallExpression" || node.optional || node.arguments.length) {
+		return undefined;
+	}
 	const { callee } = node;
-	if (callee.type !== "MemberExpression" || callee.computed || callee.optional) return undefined;
-	if (callee.object.type !== "Identifier" || callee.object.name !== event) return undefined;
+	if (callee.type !== "MemberExpression" || callee.computed || callee.optional) {
+		return undefined;
+	}
+	if (callee.object.type !== "Identifier" || callee.object.name !== event) {
+		return undefined;
+	}
 	const name = callee.property.type === "Identifier" ? callee.property.name : "";
 	return name === "preventDefault" || name === "stopPropagation" ? name : undefined;
 }
@@ -635,13 +707,19 @@ function parsedBody(fn: FunctionCode): unknown {
 
 /** Visits every node in a tree, depth first. */
 function visitNodes(node: unknown, enter: (node: AST.Node) => void): void {
-	if (!node || typeof node !== "object") return;
+	if (!node || typeof node !== "object") {
+		return;
+	}
 	if (Array.isArray(node)) {
-		for (const item of node) visitNodes(item, enter);
+		for (const item of node) {
+			visitNodes(item, enter);
+		}
 		return;
 	}
 	const typed = node as AST.Node;
-	if (typeof typed.type !== "string") return;
+	if (typeof typed.type !== "string") {
+		return;
+	}
 	enter(typed);
 	for (const key of visitorKeys[typed.type] ?? []) {
 		visitNodes((typed as unknown as Record<string, unknown>)[key], enter);
@@ -652,24 +730,36 @@ function visitNodes(node: unknown, enter: (node: AST.Node) => void): void {
 function readsOnly(node: AST.Node, name: string): boolean {
 	let only = true;
 	const visit = (value: unknown): void => {
-		if (!only || !value || typeof value !== "object") return;
+		if (!only || !value || typeof value !== "object") {
+			return;
+		}
 		if (Array.isArray(value)) {
-			for (const item of value) visit(item);
+			for (const item of value) {
+				visit(item);
+			}
 			return;
 		}
 		const typed = value as AST.Node;
 		if (typed.type === "Identifier") {
-			if (typed.name !== name) only = false;
+			if (typed.name !== name) {
+				only = false;
+			}
 			return;
 		}
 		if (typed.type === "MemberExpression") {
 			visit(typed.object);
-			if (typed.computed) visit(typed.property);
+			if (typed.computed) {
+				visit(typed.property);
+			}
 			return;
 		}
 		if (typed.type === "Property") {
-			if (typed.computed || typed.shorthand) visit(typed.key);
-			if (!typed.shorthand) visit(typed.value);
+			if (typed.computed || typed.shorthand) {
+				visit(typed.key);
+			}
+			if (!typed.shorthand) {
+				visit(typed.value);
+			}
 			return;
 		}
 		// A type reads no name (`event.target as HTMLInputElement` reads only `event`).
@@ -677,9 +767,13 @@ function readsOnly(node: AST.Node, name: string): boolean {
 			visit((typed as unknown as { expression: unknown }).expression);
 			return;
 		}
-		if (typed.type.startsWith("TS")) return;
+		if (typed.type.startsWith("TS")) {
+			return;
+		}
 		for (const key of visitorKeys[typed.type] ?? []) {
-			if (!TYPE_KEYS.has(key)) visit((typed as unknown as Record<string, unknown>)[key]);
+			if (!TYPE_KEYS.has(key)) {
+				visit((typed as unknown as Record<string, unknown>)[key]);
+			}
 		}
 	};
 	visit(node);
@@ -705,20 +799,34 @@ const TYPE_KEYS: ReadonlySet<string> = new Set([
 
 /** Whether a statement always leaves the function: a `return`, a `throw`, or a block ending so. */
 function alwaysLeaves(statement: AST.Statement): boolean {
-	if (statement.type === "ReturnStatement" || statement.type === "ThrowStatement") return true;
-	if (statement.type !== "BlockStatement") return false;
+	if (statement.type === "ReturnStatement" || statement.type === "ThrowStatement") {
+		return true;
+	}
+	if (statement.type !== "BlockStatement") {
+		return false;
+	}
 	const last = statement.body.at(-1);
 	return last !== undefined && alwaysLeaves(last);
 }
 
 /** Whether a statement awaits, outside the functions in it. */
 function awaits(node: unknown): boolean {
-	if (!node || typeof node !== "object") return false;
-	if (Array.isArray(node)) return node.some(awaits);
+	if (!node || typeof node !== "object") {
+		return false;
+	}
+	if (Array.isArray(node)) {
+		return node.some(awaits);
+	}
 	const typed = node as AST.Node;
-	if (typed.type === "AwaitExpression") return true;
-	if (isFunction(typed)) return false;
-	if (typed.type === "ForOfStatement" && typed.await) return true;
+	if (typed.type === "AwaitExpression") {
+		return true;
+	}
+	if (isFunction(typed)) {
+		return false;
+	}
+	if (typed.type === "ForOfStatement" && typed.await) {
+		return true;
+	}
 	return (visitorKeys[typed.type] ?? []).some((key) =>
 		awaits((typed as unknown as Record<string, unknown>)[key]),
 	);

@@ -21,6 +21,12 @@ const REFUSED = [
 	"tags",
 ] as const;
 
+/**
+ * Whether a value is an array, for options a JavaScript caller may get wrong. Not a type guard:
+ * `Array.isArray` would narrow a readonly list to `any[]`.
+ */
+const isList = (value: unknown): boolean => Array.isArray(value);
+
 /** A corpus test's options: Vitest's (a timeout, metadata), and the capabilities it requires. */
 export interface SpecOptions extends Omit<TestOptions, (typeof REFUSED)[number]> {
 	/**
@@ -28,7 +34,7 @@ export interface SpecOptions extends Omit<TestOptions, (typeof REFUSED)[number]>
 	 * test is skipped and every browser layer records `requires <capability>: <the reason>`. A
 	 * test whose expectations depend on client code requires `"interactivity"`.
 	 */
-	requires?: readonly CapabilityName[];
+	requires?: ReadonlyArray<CapabilityName>;
 }
 
 /** `it(name, fn)` or `it(name, { requires }, fn)`. */
@@ -45,7 +51,9 @@ export const it: SpecTest = (
 ): void => {
 	const options = typeof optionsOrFn === "function" ? {} : optionsOrFn;
 	const fn = typeof optionsOrFn === "function" ? optionsOrFn : maybeFn;
-	if (!fn) throw new TypeError(`it("${name}"): a test needs a function.`);
+	if (!fn) {
+		throw new TypeError(`it("${name}"): a test needs a function.`);
+	}
 	const refused = REFUSED.filter((key) => Object.hasOwn(options, key));
 	if (refused.length) {
 		throw new TypeError(
@@ -54,11 +62,13 @@ export const it: SpecTest = (
 	}
 	const { requires, meta, ...rest } = options;
 	if (requires !== undefined) {
-		if (!Array.isArray(requires) || !requires.length) {
+		if (!isList(requires) || !requires.length) {
 			throw new TypeError(`it("${name}"): requires names one or more capabilities.`);
 		}
 		// An unknown name throws here, when the tests are collected.
-		for (const capability of requires) capabilityCell(capability);
+		for (const capability of requires) {
+			capabilityCell(capability);
+		}
 	}
 	vitestIt(
 		name,

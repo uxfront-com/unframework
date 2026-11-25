@@ -231,9 +231,13 @@ describe("solid sources beyond the composable cases", () => {
 			expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
 		}
 		const checked = await toolchain.typecheck(paths, context);
-		for (const path of paths) expect(checked.get(path) ?? [], path).toEqual([]);
+		for (const path of paths) {
+			expect(checked.get(path) ?? [], path).toEqual([]);
+		}
 		const linted = await toolchain.lint(paths, context);
-		for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+		for (const [path, messages] of linted) {
+			expect(messages, path).toEqual([]);
+		}
 	});
 
 	it("imports a composable's parameter types", () => {
@@ -319,7 +323,9 @@ async function renderJoined(id: string, main: string): Promise<string> {
 		`${main}.uf.tsx compiles to two files`,
 		files.map(({ path }) => path),
 	);
-	if ("error" in joined) throw new Error(joined.error);
+	if ("error" in joined) {
+		throw new Error(joined.error);
+	}
 	const { code } = transformSync(joined.code, {
 		filename: `${main}.tsx`,
 		babelrc: false,
@@ -332,8 +338,9 @@ async function renderJoined(id: string, main: string): Promise<string> {
 	const directory = join(scratch, "joined", id);
 	mkdirSync(directory, { recursive: true });
 	for (const [name, contents] of Object.entries(CASES[id]!)) {
-		if (name.endsWith(".ts") && !name.endsWith(".uf.ts"))
+		if (name.endsWith(".ts") && !name.endsWith(".uf.ts")) {
 			writeFileSync(join(directory, name), contents);
+		}
 	}
 	writeFileSync(join(directory, `${main}.js`), code!);
 	const loaded = (await import(join(directory, `${main}.js`))) as { default: unknown };
@@ -349,6 +356,8 @@ function outputOf(id: string, path: string): string {
 		.find((each) => each.id === id)!
 		.sources.flatMap(({ outputs }) => outputs)
 		.find((output) => output.path === path);
-	if (!found) throw new Error(`No output ${path} for ${id}.`);
+	if (!found) {
+		throw new Error(`No output ${path} for ${id}.`);
+	}
 	return found.contents;
 }

@@ -23,9 +23,13 @@ export function bindingForms(component: UfComponent): BindingForms {
 	const forms: BindingForms = { wholeStyle: false, classCollection: false };
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") return;
+			if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind === "Style" && attribute.value) forms.wholeStyle = true;
+				if (attribute.kind === "Style" && attribute.value) {
+					forms.wholeStyle = true;
+				}
 				if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
 					forms.wholeStyle = true;
 				}
@@ -57,7 +61,7 @@ export function spreadStyleExpression(attribute: SpreadAttribute): Expression {
 }
 
 /** Whether attributes hold a style bound to one value, or a spread's `style` key. */
-function whole(attributes: readonly (Attribute | ComponentAttribute)[]): boolean {
+function whole(attributes: ReadonlyArray<Attribute | ComponentAttribute>): boolean {
 	return attributes.some(
 		(attribute) =>
 			(attribute.kind === "Style" && attribute.value !== undefined) ||

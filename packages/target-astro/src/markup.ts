@@ -94,7 +94,7 @@ export interface ComposedMarkup {
 	 * `Astro.props`, the scope attributes of the styled parents that render the component
 	 * (`scopeRoots`, ADR-0063).
 	 */
-	scope?: { helper: string; roots: readonly Span[] };
+	scope?: { helper: string; roots: ReadonlyArray<Span> };
 	/** The `styleObject` helper, where a style bound to a value is merged (ADR-0065). */
 	styleObject?: string;
 	/** What the component takes from its consumer beside its props, and where (ADR-0118). */
@@ -161,7 +161,9 @@ function ownAttributes(
 	{ fallthrough, spelling }: ComposedMarkup,
 ): Map<Attribute, string> {
 	const texts = new Map<Attribute, string>();
-	if (!fallthrough || fallthrough.target.kind === "Component") return texts;
+	if (!fallthrough || fallthrough.target.kind === "Component") {
+		return texts;
+	}
 	// A `<component is>` root's own attributes are what every tag takes: its first stands for
 	// them all (ADR-0122).
 	const { target } = fallthrough;
@@ -173,8 +175,9 @@ function ownAttributes(
 	for (const { attribute, local } of fallthrough.own) {
 		const { name } = attribute;
 		let own: string;
-		if (attribute.kind === "Static") own = staticValue(attribute, context);
-		else {
+		if (attribute.kind === "Static") {
+			own = staticValue(attribute, context);
+		} else {
 			// The dialect's value: a boolean attribute Astro's renderer does not know is `""` or
 			// `undefined` already, as the consumer's is.
 			const code = rewriteExpression(attribute.value, component, spelling.rules);
@@ -196,7 +199,9 @@ function ownAttributes(
  * write as `="true"`.
  */
 function staticValue({ name, value }: StaticAttribute, context: AttributeContext): string {
-	if (value !== true) return JSON.stringify(value);
+	if (value !== true) {
+		return JSON.stringify(value);
+	}
 	return isBooleanAttribute(name) && !isUnknownBoolean(name, context) ? "true" : '""';
 }
 
@@ -217,7 +222,9 @@ function composition(
 			if (attribute.kind === "Static" && attribute.name === "value" && attribute.value !== true) {
 				return JSON.stringify(attribute.value);
 			}
-			if (attribute.kind === "Bound" && attribute.name === "value") return code(attribute.value);
+			if (attribute.kind === "Bound" && attribute.name === "value") {
+				return code(attribute.value);
+			}
 		}
 		return JSON.stringify("on");
 	};
@@ -227,7 +234,9 @@ function composition(
 		// but the scope attributes, which the root keeps where the rest is on another element.
 		restAttribute: () => {
 			const { attributes, scopeless } = fallthrough!;
-			if (attributes === undefined) throw new Error("A rest spread with no rest of the props.");
+			if (attributes === undefined) {
+				throw new Error("A rest spread with no rest of the props.");
+			}
 			return [{ name: "", text: `{...${scopeless ? `${scopeless}(${attributes})` : attributes}}` }];
 		},
 		// A scoped fill is a render prop named as the slot, the forwarded one the component's own.
@@ -235,7 +244,9 @@ function composition(
 			const fill = context.component.fills.find((each) =>
 				render.renderProps.get(each)?.includes(prop.name),
 			);
-			if (!fill) return dialect.propAttribute!(prop, context);
+			if (!fill) {
+				return dialect.propAttribute!(prop, context);
+			}
 			const value =
 				fill.forward === undefined
 					? renderFunction(fill, context.slotted)
@@ -261,7 +272,7 @@ function composition(
 		 * checkbox's or a radio's `checked`. A `<textarea>`'s text and a `<select>`'s options are
 		 * written into the tree (`./composition.ts`).
 		 */
-		modelAttribute({ attribute, value }, { element }): PrintedAttribute[] {
+		modelAttribute({ attribute, value }, { element }): Array<PrintedAttribute> {
 			switch (attribute.control) {
 				case "text":
 				case "number":
@@ -292,7 +303,7 @@ function composition(
 		 */
 		dynamic({ node, is }) {
 			const { name, hoisted, candidates } = render.dynamics.get(node)!;
-			const component = (tag: string, attributes: ComponentAttribute[]): MarkupPiece => ({
+			const component = (tag: string, attributes: Array<ComponentAttribute>): MarkupPiece => ({
 				kind: "component",
 				component: {
 					kind: "Component",
@@ -321,7 +332,7 @@ function composition(
 						element: {
 							kind: "Element",
 							tag: name,
-							attributes: node.attributes as Attribute[],
+							attributes: node.attributes as Array<Attribute>,
 							children: node.children,
 							span: node.span,
 						},
@@ -329,8 +340,10 @@ function composition(
 						// An attribute only some tags take renders on those (ADR-0119).
 						...guardsOf(onlyGuards(node, name)),
 					}
-				: component(name, node.attributes as ComponentAttribute[]);
-			if (hoisted) return [piece];
+				: component(name, node.attributes as Array<ComponentAttribute>);
+			if (hoisted) {
+				return [piece];
+			}
 			return [
 				{
 					kind: "block",
@@ -359,7 +372,9 @@ function composition(
 				return dialect.styleAttribute(parts, context);
 			}
 			const own = parts.filter((part) => part !== consumer);
-			if (!own.length) return [{ name: "style", text: `style={${consumer!.value}}` }];
+			if (!own.length) {
+				return [{ name: "style", text: `style={${consumer!.value}}` }];
+			}
 			// The dialect writes an object whenever a declaration is bound: a static value is the
 			// same string literal there.
 			const [object] = dialect.styleAttribute(
@@ -382,11 +397,12 @@ function composition(
 	 * content as Astro markup: one element, a string, or a fragment, which carries the child's
 	 * `-s` attributes (`slotted`, ADR-0063).
 	 */
-	function renderFunction(fill: SlotFill, slotted: readonly string[]): string {
+	function renderFunction(fill: SlotFill, slotted: ReadonlyArray<string>): string {
 		const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code ?? "";
 		const [only, ...more] = fill.children;
-		if (more.length === 0 && only?.kind === "Text")
+		if (more.length === 0 && only?.kind === "Text") {
 			return `(${parameter}) => ${JSON.stringify(only.value)}`;
+		}
 		const root: FragmentNode = { kind: "Fragment", children: fill.children, span: fill.span };
 		const single = more.length === 0 && (only?.kind === "Element" || only?.kind === "Component");
 		const body = printMarkup(root, composed, { ...options, slotted });

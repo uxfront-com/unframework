@@ -39,7 +39,7 @@ const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts
  */
 async function checkWithBrokenToolchain(
 	compilerOptions: object,
-): Promise<{ results: Map<string, ToolchainMessage[]>; tsconfig: string }> {
+): Promise<{ results: Map<string, Array<ToolchainMessage>>; tsconfig: string }> {
 	const broken = join(toolchainDir, ".uf-tmp", `broken-toolchain-${process.pid}`);
 	mkdirSync(broken, { recursive: true });
 	try {
@@ -61,11 +61,13 @@ describe("svelte typecheck", () => {
 		const golden = goldenFiles();
 		expect(golden.length).toBeGreaterThan(0);
 		// Each case in a directory of its own, where its sources' outputs import each other.
-		const fresh: string[] = [];
+		const fresh: Array<string> = [];
 		for (const { modules, outputDir } of corpus()) {
 			const emitted: Record<string, string> = {};
 			for (const module of modules) {
-				for (const file of await emitFormatted(module)) emitted[file.path] = file.contents;
+				for (const file of await emitFormatted(module)) {
+					emitted[file.path] = file.contents;
+				}
 			}
 			// The case's `.ts` modules, which `compile()` copies into the output tree unchanged
 			// (ADR-0070), so the types an output imports from them resolve (ADR-0067); and the
@@ -91,7 +93,9 @@ describe("svelte typecheck", () => {
 		const results = await toolchain.typecheck([...clean, broken!], context);
 
 		expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());
-		for (const path of clean) expect(results.get(path), path).toEqual([]);
+		for (const path of clean) {
+			expect(results.get(path), path).toEqual([]);
+		}
 		// The `<img>` without `alt` is the Svelte compiler's warning, which L3 reports: not a type.
 		expect(results.get(broken!)).toEqual([
 			{

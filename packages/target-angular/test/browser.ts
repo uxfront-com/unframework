@@ -11,9 +11,9 @@ export interface View {
 	container: HTMLElement;
 	mounted: MountedComponent;
 	/** Every emit so far, `[name, ...args]`, in order. */
-	events: unknown[][];
+	events: Array<Array<unknown>>;
 	/** The emits of one event, each its arguments. */
-	emitted(name: string): unknown[][];
+	emitted(name: string): Array<Array<unknown>>;
 	/** The element that holds `text` exactly, among those matching `selector`. */
 	get<T extends HTMLElement = HTMLElement>(selector: string, text?: string): T;
 	/** Clicks an element, as a user does: a trusted-like click event that bubbles. */
@@ -24,19 +24,22 @@ export interface View {
 	unmount(): Promise<void>;
 }
 
-const views: View[] = [];
+const views: Array<View> = [];
 
 /** Mounts a case's component with listeners for every event it declares. */
 export async function render(
 	component: unknown,
-	declared: readonly MountEvent[],
+	declared: ReadonlyArray<MountEvent>,
 	props: Record<string, unknown> = {},
 ): Promise<View> {
 	const container = document.createElement("div");
 	document.body.append(container);
-	const events: unknown[][] = [];
+	const events: Array<Array<unknown>> = [];
 	const on = Object.fromEntries(
-		declared.map(({ name }) => [name, (...args: unknown[]) => void events.push([name, ...args])]),
+		declared.map(({ name }) => [
+			name,
+			(...args: Array<unknown>) => void events.push([name, ...args]),
+		]),
 	);
 	const mounted = await mount(component, container, { props, on, events: declared });
 	const get = <T extends HTMLElement>(selector: string, text?: string): T => {
@@ -76,6 +79,8 @@ export async function render(
 /** Unmounts every view a test left mounted. */
 export async function cleanup(): Promise<void> {
 	for (const view of views.splice(0)) {
-		if (view.container.isConnected) await view.unmount();
+		if (view.container.isConnected) {
+			await view.unmount();
+		}
 	}
 }

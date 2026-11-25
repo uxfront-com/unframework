@@ -38,18 +38,26 @@ export function spreadSource(
 	kinds: Kinds,
 	render: RenderContext,
 ): SpreadSource {
-	if (!mayBeNullish(kinds)) return { kind: "read", nullish: false };
+	if (!mayBeNullish(kinds)) {
+		return { kind: "read", nullish: false };
+	}
 	const source = referencePath(item.argument, render);
 	// TypeScript narrows references only: a conditional, a call or an index keeps its type.
-	if (!source) return { kind: "read", nullish: true };
+	if (!source) {
+		return { kind: "read", nullish: true };
+	}
 	const narrowing = narrowingAt(item, source, render);
-	if (narrowing.kind === "absent") return narrowing;
+	if (narrowing.kind === "absent") {
+		return narrowing;
+	}
 	if (narrowing.kind !== "unfollowed") {
 		return { kind: "read", nullish: narrowing.kind === "declared" };
 	}
 	// Read through `?.`, its keys pass every target where Angular does not check the source (a
 	// prop, a list's item): Angular rejects a needless `?.` only on what it narrows and checks.
-	if (!angularChecks(source, render)) return { kind: "read", nullish: true };
+	if (!angularChecks(source, render)) {
+		return { kind: "read", nullish: true };
+	}
 	const reason = narrowing.reason === "callback" ? "callback" : "form";
 	return { kind: "unfollowed", condition: narrowing.condition, ...UNFOLLOWED[reason] };
 }

@@ -22,8 +22,8 @@ interface Trace {
  * elements `view` mounted: in its container when mounted, and wherever they are once removed.
  * `reset` forgets the calls so far, never which elements are the view's.
  */
-function record(): { calls: (view: View) => string[]; reset: () => void; stop: () => void } {
-	let traces: Trace[] = [];
+function record(): { calls: (view: View) => Array<string>; reset: () => void; stop: () => void } {
+	let traces: Array<Trace> = [];
 	const own = new Set<Element>();
 	const listener = (event: Event) => {
 		const trace = (event as CustomEvent<Trace>).detail;
@@ -33,7 +33,9 @@ function record(): { calls: (view: View) => string[]; reset: () => void; stop: (
 	return {
 		calls: (view) =>
 			traces.flatMap(({ call, el }) => {
-				if (call.startsWith("mounted") && view.container.contains(el)) own.add(el);
+				if (call.startsWith("mounted") && view.container.contains(el)) {
+					own.add(el);
+				}
 				return own.has(el) ? [call] : [];
 			}),
 		reset: () => {

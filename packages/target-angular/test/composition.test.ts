@@ -19,7 +19,9 @@ function lowerWith(source: string, children: Record<string, string>): UfModule {
 		}),
 	);
 	const { module, diagnostics } = analyze(parseModule("Toolbar.uf.tsx", source), { imports });
-	if (!module || diagnostics.length) throw new Error(JSON.stringify(diagnostics));
+	if (!module || diagnostics.length) {
+		throw new Error(JSON.stringify(diagnostics));
+	}
 	return module;
 }
 
@@ -39,7 +41,7 @@ const composedOf = (name: string) =>
 /** What the emitter reports for each component of a source, with the source text at its span. */
 function reportedFor(source: string) {
 	const module = lower(source);
-	const reported: Parameters<EmitContext["report"]>[0][] = [];
+	const reported: Array<Parameters<EmitContext["report"]>[0]> = [];
 	for (const component of module.components) {
 		target.emit(component, {
 			module,
@@ -69,7 +71,7 @@ describe("a select's v-model", () => {
 			`[selected]="this.choice() === optionText('' + ' ' + ((item.label) ?? '') + ' ')"`,
 		);
 		expect(output).toContain(
-			'return text.replace(/^[\\t\\n\\f\\r ]+|[\\t\\n\\f\\r ]+$/g, "").replace(/[\\t\\n\\f\\r ]+/g, " ");',
+			String.raw`return text.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "").replace(/[\t\n\f\r ]+/g, " ");`,
 		);
 	});
 
@@ -403,7 +405,7 @@ export default function Toolbar() {
 			"./a/Button.uf.tsx": button("A"),
 			"./b/Button.uf.tsx": button("B"),
 		});
-		const reported: Parameters<EmitContext["report"]>[0][] = [];
+		const reported: Array<Parameters<EmitContext["report"]>[0]> = [];
 		target.emit(module.components[0]!, {
 			module,
 			options: undefined,

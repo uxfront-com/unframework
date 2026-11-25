@@ -84,8 +84,8 @@ const hasStyle = (element: Element): element is Element & ElementCSSInlineStyle 
 	"style" in element;
 
 const escapeText = (text: string) =>
-	text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const escapeAttribute = (value: string) => value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+	text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+const escapeAttribute = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 
 /**
  * The form-control state an HTML element holds in properties, as `uf:*` pseudo-attributes:
@@ -97,12 +97,12 @@ const escapeAttribute = (value: string) => value.replace(/&/g, "&amp;").replace(
  *   `<select>`'s value;
  * - `uf:focused=""` on the element that has the focus (see `focusState`).
  */
-function formState(element: Element): [string, string][] {
+function formState(element: Element): Array<[string, string]> {
 	return [...controlState(element), ...focusState(element)];
 }
 
 /** The form-control state of `formState`, without the focus. */
-function controlState(element: Element): [string, string][] {
+function controlState(element: Element): Array<[string, string]> {
 	if (isHtml(element, "input")) {
 		if (element.type === "checkbox") {
 			return [
@@ -110,11 +110,17 @@ function controlState(element: Element): [string, string][] {
 				["uf:indeterminate", String(element.indeterminate)],
 			];
 		}
-		if (element.type === "radio") return [["uf:checked", String(element.checked)]];
+		if (element.type === "radio") {
+			return [["uf:checked", String(element.checked)]];
+		}
 		return VALUE_MODE_TYPES.has(element.type) ? [["uf:value", element.value]] : [];
 	}
-	if (isHtml(element, "textarea")) return [["uf:value", element.value]];
-	if (isHtml(element, "option")) return [["uf:selected", String(element.selected)]];
+	if (isHtml(element, "textarea")) {
+		return [["uf:value", element.value]];
+	}
+	if (isHtml(element, "option")) {
+		return [["uf:selected", String(element.selected)]];
+	}
 	return [];
 }
 
@@ -125,7 +131,7 @@ function controlState(element: Element): [string, string][] {
  * target (ADR-0050). It is read whether the page has the focus or not (`hasFocus()` depends on
  * the frame's), and never on the body, which holds the focus when nothing else does.
  */
-function focusState(element: Element): [string, string][] {
+function focusState(element: Element): Array<[string, string]> {
 	const document = element.ownerDocument;
 	return element === document.activeElement && element !== document.body
 		? [["uf:focused", ""]]
@@ -138,7 +144,7 @@ function focusState(element: Element): [string, string][] {
  * `el.style.margin = "0"`, which reads back as `margin: 0px;`) and the same style set as an
  * attribute (`margin:0`) compare equal.
  */
-function attributesOf(element: Element): [string, string][] {
+function attributesOf(element: Element): Array<[string, string]> {
 	return Array.from(element.attributes, (attribute): [string, string] => [
 		attribute.name,
 		attribute.name === "style" && hasStyle(element) ? element.style.cssText : attribute.value,
@@ -155,10 +161,15 @@ function serializeChildren(element: Element): string {
 		element.namespaceURI === HTML_NAMESPACE && RAW_TEXT_ELEMENTS.has(element.localName);
 	let html = "";
 	for (const child of holderOf(element).childNodes) {
-		if (isElement(child)) html += serializeElement(child);
-		else if (isText(child)) html += rawText ? child.data : escapeText(child.data);
-		else if (isComment(child)) html += `<!--${child.data}-->`;
-		else if (isProcessingInstruction(child)) html += `<?${child.target} ${child.data}>`;
+		if (isElement(child)) {
+			html += serializeElement(child);
+		} else if (isText(child)) {
+			html += rawText ? child.data : escapeText(child.data);
+		} else if (isComment(child)) {
+			html += `<!--${child.data}-->`;
+		} else if (isProcessingInstruction(child)) {
+			html += `<?${child.target} ${child.data}>`;
+		}
 	}
 	return html;
 }
@@ -173,7 +184,9 @@ function serializeElement(element: Element): string {
 		.map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
 		.join("");
 	const start = `<${tag}${attributes}>`;
-	if (html && VOID_ELEMENTS.has(tag)) return start;
+	if (html && VOID_ELEMENTS.has(tag)) {
+		return start;
+	}
 	const content = serializeChildren(element);
 	// Decided on the text as written, not on the first child: a framework's empty text node
 	// in front of the line break must not stop the extra one.
@@ -221,7 +234,7 @@ export function normalizeDom(root: Element, options: NormalizeOptions = {}): str
 export function normalizeDomWithIds(
 	root: Element,
 	options: NormalizeOptions = {},
-	teleported: readonly Element[] = [],
+	teleported: ReadonlyArray<Element> = [],
 ): { html: string; ids: Map<string, string> } {
 	checkOptions(options);
 	const markup = teleported
@@ -237,7 +250,7 @@ export function normalizeDomWithIds(
 		);
 	}
 	let mismatch = compareItems(holderOf(root).childNodes, own, "");
-	for (const [index, marker] of (markers as TreeElement[]).entries()) {
+	for (const [index, marker] of (markers as Array<TreeElement>).entries()) {
 		// A box of its own in `body`, as the teleported element is.
 		recordComputedLayout(marker, TELEPORTED_LAYOUT);
 		mismatch ??= compareItems([teleported[index]!], childrenOf(marker), TELEPORTED);
@@ -261,13 +274,16 @@ type Item<E> = { element: E } | { text: string } | { other: string };
 function itemsOf<N, E extends N>(
 	children: Iterable<N>,
 	kind: (node: N) => { element: E } | { text: string } | { other: string },
-): Item<E>[] {
-	const items: Item<E>[] = [];
+): Array<Item<E>> {
+	const items: Array<Item<E>> = [];
 	for (const child of children) {
 		const item = kind(child);
 		const last = items.at(-1);
-		if ("text" in item && last && "text" in last) last.text += item.text;
-		else items.push(item);
+		if ("text" in item && last && "text" in last) {
+			last.text += item.text;
+		} else {
+			items.push(item);
+		}
 	}
 	return items.filter((item) => !("text" in item) || item.text !== "");
 }
@@ -288,34 +304,50 @@ function compareItems(
 	path: string,
 ): string | undefined {
 	const liveItems = itemsOf(live, (node): Item<Element> => {
-		if (isElement(node)) return { element: node };
-		if (isText(node)) return { text: node.data };
+		if (isElement(node)) {
+			return { element: node };
+		}
+		if (isText(node)) {
+			return { text: node.data };
+		}
 		return { other: node.nodeName };
 	});
 	const parsedItems = itemsOf(parsed, (node): Item<TreeElement> => {
-		if (isTreeElement(node)) return { element: node };
-		if (isTreeText(node)) return { text: node.value };
+		if (isTreeElement(node)) {
+			return { element: node };
+		}
+		if (isTreeText(node)) {
+			return { text: node.value };
+		}
 		return { other: node.nodeName };
 	});
 	const where = path || "the root";
 	for (let index = 0; index < Math.max(liveItems.length, parsedItems.length); index++) {
 		const item = liveItems[index];
 		const rebuilt = parsedItems[index];
-		if (!item) return `the parser inserts ${describeItem(rebuilt!)} at ${where}.`;
-		if (!rebuilt) return `the live ${describeItem(item)} at ${where} has no counterpart.`;
+		if (!item) {
+			return `the parser inserts ${describeItem(rebuilt!)} at ${where}.`;
+		}
+		if (!rebuilt) {
+			return `the live ${describeItem(item)} at ${where} has no counterpart.`;
+		}
 		if ("element" in item !== "element" in rebuilt) {
 			return `the live ${describeItem(item)} at ${where} parses as ${describeItem(rebuilt)}.`;
 		}
 		if ("text" in item && "text" in rebuilt && item.text !== rebuilt.text) {
 			return `the text ${JSON.stringify(item.text)} at ${where} reads back as ${JSON.stringify(rebuilt.text)}.`;
 		}
-		if (!("element" in item) || !("element" in rebuilt)) continue;
+		if (!("element" in item) || !("element" in rebuilt)) {
+			continue;
+		}
 		const element = item.element;
 		const here = `${path}${path ? " > " : ""}${element.localName}`;
 		const mismatch =
 			compareElements(element, rebuilt.element, here) ??
 			compareTrees(holderOf(element), rebuilt.element, here);
-		if (mismatch) return mismatch;
+		if (mismatch) {
+			return mismatch;
+		}
 		recordLayout(element, rebuilt.element);
 	}
 	return undefined;
@@ -328,7 +360,9 @@ function compareItems(
  */
 function recordLayout(element: Element, rebuilt: TreeElement): void {
 	const view = element.ownerDocument.defaultView;
-	if (!view || !element.isConnected) return;
+	if (!view || !element.isConnected) {
+		return;
+	}
 	const computed = view.getComputedStyle(element);
 	recordComputedLayout(rebuilt, {
 		display: computed.display,
@@ -377,8 +411,12 @@ function compareElements(element: Element, rebuilt: TreeElement, here: string): 
 
 /** A live or parsed item for a message: an element, text, or a comment. */
 function describeItem(item: Item<Element> | Item<TreeElement>): string {
-	if ("text" in item) return `text ${JSON.stringify(item.text)}`;
-	if ("other" in item) return item.other;
+	if ("text" in item) {
+		return `text ${JSON.stringify(item.text)}`;
+	}
+	if ("other" in item) {
+		return item.other;
+	}
 	const element = item.element;
 	return "localName" in element
 		? describe(element.namespaceURI, element.localName)

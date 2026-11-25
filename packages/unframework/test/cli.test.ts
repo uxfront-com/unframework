@@ -15,7 +15,7 @@ import {
 
 /** Runs a command line, keeping what it prints. */
 async function run(
-	argv: string[],
+	argv: Array<string>,
 	load?: Parameters<typeof main>[2],
 	visual?: Parameters<typeof main>[3],
 	preview?: Parameters<typeof main>[4],
@@ -51,7 +51,7 @@ describe("the umbrella's command line", () => {
 	});
 
 	it("runs test through the testing package, with its arguments and exit code", async () => {
-		const seen: string[][] = [];
+		const seen: Array<Array<string>> = [];
 		const { code } = await run(["test", "--target", "react"], async () => ({
 			run: async (args) => {
 				seen.push(args);
@@ -97,7 +97,7 @@ describe("the umbrella's command line", () => {
 	});
 
 	it("runs visual through the visual package, with its arguments and exit code", async () => {
-		const seen: string[][] = [];
+		const seen: Array<Array<string>> = [];
 		const { code } = await run(
 			["visual", "--target", "vue", "--baseline"],
 			undefined,
@@ -132,7 +132,7 @@ describe("the umbrella's command line", () => {
 	});
 
 	it("runs preview through the visual package's preview, with its arguments and exit code", async () => {
-		const seen: string[][] = [];
+		const seen: Array<Array<string>> = [];
 		const { code } = await run(
 			["preview", "--target", "vue", "--port", "5173"],
 			undefined,
@@ -149,7 +149,7 @@ describe("the umbrella's command line", () => {
 	});
 
 	it("passes preview build and its arguments through to the visual package's preview", async () => {
-		const seen: string[][] = [];
+		const seen: Array<Array<string>> = [];
 		const { code } = await run(
 			["preview", "build", "--target", "astro", "--out", "site"],
 			undefined,

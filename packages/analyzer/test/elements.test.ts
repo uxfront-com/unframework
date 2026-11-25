@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { applyAndRecheck, codes, component, slices } from "./helpers.ts";
 
-function problems(jsx: string): string[] {
+function problems(jsx: string): Array<string> {
 	const { source, diagnostics } = component(jsx);
 	return diagnostics.map(
 		(diagnostic) =>

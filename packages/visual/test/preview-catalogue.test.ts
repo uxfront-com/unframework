@@ -27,7 +27,7 @@ function project(files: Record<string, string>): string {
 	return root;
 }
 
-const member = (type: string, extra: { optional?: boolean; literals?: string[] } = {}) => ({
+const member = (type: string, extra: { optional?: boolean; literals?: Array<string> } = {}) => ({
 	name: "p",
 	optional: extra.optional ?? false,
 	type,

@@ -132,7 +132,7 @@ const GLOBAL_CALLS: ReadonlyMap<string, string> = new Map([
 export function valueType(
 	code: Code,
 	plan: Plan,
-	declarations: readonly TypeDeclaration[],
+	declarations: ReadonlyArray<TypeDeclaration>,
 	seen: ReadonlySet<BindingId> = new Set(),
 ): string | undefined {
 	const text = (node: Node) => code.code.slice(node.start, node.end);
@@ -173,20 +173,28 @@ export function valueType(
 				}
 			case "BinaryExpression": {
 				const operator = node.operator as string;
-				if (BOOLEAN_OPERATORS.has(operator)) return "boolean";
+				if (BOOLEAN_OPERATORS.has(operator)) {
+					return "boolean";
+				}
 				const left = typeOf(node.left as Node);
 				const right = typeOf(node.right as Node);
 				if (operator === "+") {
-					if (left === "string" || right === "string") return "string";
+					if (left === "string" || right === "string") {
+						return "string";
+					}
 					return left === right ? numeric(left) : undefined;
 				}
-				if (operator === ">>>") return left === "number" && right === "number" ? left : undefined;
+				if (operator === ">>>") {
+					return left === "number" && right === "number" ? left : undefined;
+				}
 				return ARITHMETIC.has(operator) && left === right ? numeric(left) : undefined;
 			}
 			case "LogicalExpression": {
 				const left = typeOf(node.left as Node);
 				const right = typeOf(node.right as Node);
-				if (left === undefined || right === undefined) return undefined;
+				if (left === undefined || right === undefined) {
+					return undefined;
+				}
 				const present = withoutNullish(left, declarations);
 				switch (node.operator) {
 					case "??":
@@ -222,7 +230,7 @@ export function valueType(
 			}
 			case "ArrayExpression": {
 				// `[...items]`, `[a, b]`: an array of the one type its elements have.
-				const elements = (node.elements as (Node | null)[]).map((element) =>
+				const elements = (node.elements as Array<Node | null>).map((element) =>
 					element === null
 						? undefined
 						: element.type === "SpreadElement"
@@ -247,9 +255,13 @@ export function valueType(
 				if (reference?.kind === "Binding") {
 					return bindingType(reference.binding, plan, declarations, seen);
 				}
-				if (node.type !== "MemberExpression" || node.optional) return undefined;
+				if (node.type !== "MemberExpression" || node.optional) {
+					return undefined;
+				}
 				const receiver = typeOf(node.object as Node);
-				if (receiver === undefined) return undefined;
+				if (receiver === undefined) {
+					return undefined;
+				}
 				const property = node.property as Node;
 				if (!node.computed) {
 					// `.length` of a string or an array.
@@ -270,7 +282,9 @@ export function valueType(
 	};
 	/** A call's type: a method of a string, a number or an array, or a pure global's. */
 	const callType = (node: Node): string | undefined => {
-		if (node.optional) return undefined;
+		if (node.optional) {
+			return undefined;
+		}
 		const callee = node.callee as Node;
 		const global = GLOBAL_CALLS.get(text(callee));
 		if (global !== undefined) {
@@ -282,13 +296,21 @@ export function valueType(
 				? global
 				: undefined;
 		}
-		if (callee.type !== "MemberExpression" || callee.computed || callee.optional) return undefined;
+		if (callee.type !== "MemberExpression" || callee.computed || callee.optional) {
+			return undefined;
+		}
 		const receiver = typeOf(callee.object as Node);
 		const method = (callee.property as Node).name as string;
-		if (receiver === "string") return STRING_METHODS.get(method);
-		if (receiver === "number") return NUMBER_METHODS.has(method) ? "string" : undefined;
+		if (receiver === "string") {
+			return STRING_METHODS.get(method);
+		}
+		if (receiver === "number") {
+			return NUMBER_METHODS.has(method) ? "string" : undefined;
+		}
 		const element = receiver === undefined ? undefined : arrayElement(receiver);
-		if (element === undefined) return undefined;
+		if (element === undefined) {
+			return undefined;
+		}
 		const result = ARRAY_METHODS.get(method);
 		return result === ARRAY ? `${grouped(element)}[]` : result;
 	};
@@ -312,7 +334,7 @@ function union(first: string, second: string): string {
 
 /** Whether two types are written alike, whitespace apart. */
 function same(first: string, second: string): boolean {
-	return first.replace(/\s+/g, "") === second.replace(/\s+/g, "");
+	return first.replaceAll(/\s+/g, "") === second.replaceAll(/\s+/g, "");
 }
 
 /** A type in parentheses where `[]` would bind into it (a union, a function or a conditional). */
@@ -324,18 +346,24 @@ function grouped(type: string): string {
 function bindingType(
 	id: BindingId,
 	plan: Plan,
-	declarations: readonly TypeDeclaration[],
+	declarations: ReadonlyArray<TypeDeclaration>,
 	seen: ReadonlySet<BindingId>,
 ): string | undefined {
-	if (seen.has(id)) return undefined;
+	if (seen.has(id)) {
+		return undefined;
+	}
 	const next = new Set([...seen, id]);
 	const binding = bindingById(plan, id);
 	const { component } = plan;
 	if (binding.kind === "prop") {
 		const prop = component.props.find((each) => each.binding === id);
-		if (prop === undefined) return undefined;
+		if (prop === undefined) {
+			return undefined;
+		}
 		const type = propType(prop, component);
-		if (!prop.optional) return type;
+		if (!prop.optional) {
+			return type;
+		}
 		// The input's value: a default leaves `undefined` out (./members.ts `inputMember`).
 		return prop.default === undefined
 			? `${parenthesised(type)} | undefined`
@@ -349,7 +377,9 @@ function bindingType(
 			}
 			return item.initial && valueType(item.initial, plan, declarations, next);
 		case "Derived":
-			if (item.type) return item.type.code;
+			if (item.type) {
+				return item.type.code;
+			}
 			return item.getter.expression
 				? valueType(item.getter.body, plan, declarations, next)
 				: undefined;

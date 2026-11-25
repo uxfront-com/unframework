@@ -49,7 +49,9 @@ async function render(
  */
 async function serverModule(path: string, contents: string): Promise<string> {
 	const { code, result } = await transformScriptModule({ path, contents });
-	if (code === undefined) throw new Error(`${path}: ${result.errors[0]?.message ?? ""}`);
+	if (code === undefined) {
+		throw new Error(`${path}: ${result.errors[0]?.message ?? ""}`);
+	}
 	return path.endsWith(".svelte.ts")
 		? compileModule(code, { filename: path, generate: "server" }).js.code
 		: code;
@@ -61,12 +63,12 @@ async function serverModule(path: string, contents: string): Promise<string> {
  */
 function withExtensions(code: string): string {
 	return code
-		.replace(/(from\s+["']\.\.?\/[^"']+)\.svelte(["'])/g, "$1.js$2")
-		.replace(/(from\s+["']\.\.?\/_unframework\/[\w$-]+)(["'])/g, "$1.js$2");
+		.replaceAll(/(from\s+["']\.\.?\/[^"']+)\.svelte(["'])/g, "$1.js$2")
+		.replaceAll(/(from\s+["']\.\.?\/_unframework\/[\w$-]+)(["'])/g, "$1.js$2");
 }
 
 /** svelte-check's messages on every output of the sources, by file name. */
-async function check(sources: Record<string, string>): Promise<Record<string, string[]>> {
+async function check(sources: Record<string, string>): Promise<Record<string, Array<string>>> {
 	const paths = writeScratch(await compileSources(sources));
 	const results = await toolchain.typecheck(Object.values(paths), {
 		toolchainDir,

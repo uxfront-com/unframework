@@ -9,7 +9,7 @@ import { asComponent } from "./component.ts";
 
 /** What Solid's hydration script (`generateHydrationScript`) puts on the page. */
 interface HydrationGlobal {
-	events: unknown[];
+	events: Array<unknown>;
 	completed: WeakSet<Node>;
 	r: Record<string, unknown>;
 	fe(): void;
@@ -42,7 +42,10 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
 		page._$HY.done = true;
 		sharedConfig.done = true;
 	}
-	const settle = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+	const settle = () =>
+		new Promise<void>((resolve) => {
+			queueMicrotask(resolve);
+		});
 	await settle();
 	return {
 		settle,

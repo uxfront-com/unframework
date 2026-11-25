@@ -30,8 +30,12 @@ export const SCRIPT: string = fileURLToPath(new URL("../scripts/measure.ts", imp
 export const KIB_PER_MIB = 1024;
 /** Passes {@link CEILING}: 300 MiB, which the report rounds to 0.293 GiB. */
 export const HOG_KIB: number = 300 * KIB_PER_MIB;
-export const CEILING: string[] = ["--max-rss-gib", "0.2"];
-export const SLEEPER_AND_WAIT: string[] = ["sh", "-c", "sleep 60 >/dev/null 2>&1 & echo $!; wait"];
+export const CEILING: Array<string> = ["--max-rss-gib", "0.2"];
+export const SLEEPER_AND_WAIT: Array<string> = [
+	"sh",
+	"-c",
+	"sleep 60 >/dev/null 2>&1 & echo $!; wait",
+];
 export const DETACHED_SLEEPER = `const { spawn } = require("node:child_process");
     const sleeper = spawn("sleep", ["60"], { detached: true, stdio: "ignore" });
     sleeper.unref();
@@ -54,7 +58,7 @@ export const SLOW_SPAWN = `data:text/javascript,${encodeURIComponent(`
   `)}`;
 
 /** A command that runs a script in this Node. */
-export const node = (script: string): string[] => [process.execPath, "-e", script];
+export const node = (script: string): Array<string> => [process.execPath, "-e", script];
 
 /** `kill(pid, 0)` also succeeds on a zombie. */
 export function isAlive(pid: number): boolean {
@@ -71,7 +75,7 @@ const LIMIT_MS = 30_000;
  * word missing from an empty `stderr`.
  */
 export function runTool(
-	args: readonly string[],
+	args: ReadonlyArray<string>,
 	options: SpawnSyncOptions = {},
 ): { status: number | null; out: string; err: string } {
 	const result = spawnSync(process.execPath, [SCRIPT, ...args], {
@@ -82,7 +86,9 @@ export function runTool(
 	if (result.error) {
 		throw new Error(`The tool did not exit within ${LIMIT_MS / 1000} s: ${result.error.message}`);
 	}
-	if (result.signal) throw new Error(`The tool was ended by ${result.signal}`);
+	if (result.signal) {
+		throw new Error(`The tool was ended by ${result.signal}`);
+	}
 	return { status: result.status, out: result.stdout, err: result.stderr };
 }
 
@@ -164,12 +170,16 @@ NF == 0 { print; next }
 		env = { ...process.env, PATH: `${binDir}${delimiter}${process.env.PATH ?? ""}` };
 	});
 	afterEach(() => {
-		if (!declaredDir) return;
+		if (!declaredDir) {
+			return;
+		}
 		rmSync(declaredDir, { recursive: true, force: true });
 		mkdirSync(declaredDir);
 	});
 	afterAll(() => {
-		if (root) rmSync(root, { recursive: true, force: true });
+		if (root) {
+			rmSync(root, { recursive: true, force: true });
+		}
 	});
 	return {
 		env: () => env,
@@ -193,8 +203,8 @@ export interface ScriptHarness {
 	reportFile: string;
 	/** Runs a command through the tool, and reads the report it leaves. */
 	measure: (
-		command: readonly string[],
-		options?: { flags?: readonly string[]; env?: NodeJS.ProcessEnv },
+		command: ReadonlyArray<string>,
+		options?: { flags?: ReadonlyArray<string>; env?: NodeJS.ProcessEnv },
 	) => { status: number | null; out: string; err: string; report: MeasureReport | undefined };
 	/**
 	 * Runs a command through the tool, and sends the signals once the command has printed a PID,
@@ -202,9 +212,9 @@ export interface ScriptHarness {
 	 * tool failed to stop would hold open.
 	 */
 	interrupt: (
-		command: readonly string[],
-		signals: readonly NodeJS.Signals[],
-		nodeArgs?: readonly string[],
+		command: ReadonlyArray<string>,
+		signals: ReadonlyArray<NodeJS.Signals>,
+		nodeArgs?: ReadonlyArray<string>,
 	) => Promise<{ status: number | null; pid: number }>;
 	/** The first PID the command printed, kept to kill after the test. */
 	sleeperOf: (out: string) => number;
@@ -217,7 +227,7 @@ export interface ScriptHarness {
 export function scriptHarness(label: string): ScriptHarness {
 	// Real reports, in the directory the tool writes.
 	const reportFile = join(REPORTS_DIR, "measure", `${label}.json`);
-	const sleepers: number[] = [];
+	const sleepers: Array<number> = [];
 
 	afterEach(() => {
 		for (const pid of sleepers.splice(0)) {

@@ -10,7 +10,9 @@ import { compile } from "../../compiler/src/index.ts";
 async function compileSource(filename: string, source: string): Promise<Record<string, string>> {
 	const { diagnostics, outputs } = await compile(source, { filename, targets: ["astro"] });
 	const errors = diagnostics.filter(({ severity }) => severity !== "info");
-	if (errors.length) throw new Error(`${filename}: ${JSON.stringify(errors)}`);
+	if (errors.length) {
+		throw new Error(`${filename}: ${JSON.stringify(errors)}`);
+	}
 	return Object.fromEntries((outputs.astro ?? []).map((file) => [file.path, file.contents]));
 }
 

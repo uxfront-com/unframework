@@ -12,13 +12,13 @@ const VOID_ELEMENTS: ReadonlySet<string> = new Set(
 );
 
 const NAMED_ESCAPES: Readonly<Record<string, string>> = {
-	'"': '\\"',
-	"\\": "\\\\",
-	"\b": "\\b",
-	"\f": "\\f",
-	"\n": "\\n",
-	"\r": "\\r",
-	"\t": "\\t",
+	'"': String.raw`\"`,
+	"\\": String.raw`\\`,
+	"\b": String.raw`\b`,
+	"\f": String.raw`\f`,
+	"\n": String.raw`\n`,
+	"\r": String.raw`\r`,
+	"\t": String.raw`\t`,
 };
 
 /**
@@ -87,15 +87,17 @@ export function quote(text: string): string {
  * ```
  */
 export function printTree(root: TreeParent): string {
-	const lines: string[] = [];
+	const lines: Array<string> = [];
 	printChildren(root, "", lines);
 	return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
 }
 
-function printChildren(parent: TreeParent, indent: string, lines: string[]): void {
+function printChildren(parent: TreeParent, indent: string, lines: Array<string>): void {
 	let text: string | undefined;
 	const flush = () => {
-		if (text !== undefined) lines.push(indent + quote(text));
+		if (text !== undefined) {
+			lines.push(indent + quote(text));
+		}
 		text = undefined;
 	};
 	for (const node of childrenOf(parent)) {
@@ -109,7 +111,7 @@ function printChildren(parent: TreeParent, indent: string, lines: string[]): voi
 	flush();
 }
 
-function printElement(element: TreeElement, indent: string, lines: string[]): void {
+function printElement(element: TreeElement, indent: string, lines: Array<string>): void {
 	const attributes = element.attrs
 		.map((attribute) => ` ${attributeName(attribute)}=${quote(attribute.value)}`)
 		.join("");

@@ -21,7 +21,9 @@ describe("shared helper modules: Astro", () => {
 		}
 		// A helper module imports nothing of ours.
 		for (const [path, contents] of Object.entries(written)) {
-			if (!path.startsWith("_unframework/")) continue;
+			if (!path.startsWith("_unframework/")) {
+				continue;
+			}
 			expect(contents, path).not.toMatch(/^import /m);
 		}
 	});

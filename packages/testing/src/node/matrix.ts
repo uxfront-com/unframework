@@ -11,7 +11,7 @@ import type { LayerName, LayerOutcome, QuarantineEntry, UfLayerMeta } from "../l
 export type MatrixCells = Record<string, Record<string, Partial<Record<LayerName, string>>>>;
 
 /** Case → target → the parity scenarios its tests checked (`expectParity` names), sorted. */
-export type MatrixScenarios = Record<string, Record<string, string[]>>;
+export type MatrixScenarios = Record<string, Record<string, Array<string>>>;
 
 /**
  * What the matrix keeps of one test: the scenarios it checked, or why it was skipped or ran
@@ -19,7 +19,7 @@ export type MatrixScenarios = Record<string, Record<string, string[]>>;
  */
 export interface MatrixTest {
 	/** The parity scenarios the test checked, sorted. */
-	scenarios: string[];
+	scenarios: Array<string>;
 	/**
 	 * Why the test was skipped on this target: a capability it requires is unsupported, or the
 	 * target has no output for the case.
@@ -45,7 +45,7 @@ export interface ParityMatrix {
 	/** The run that wrote it: `all`, a project list, or `merged`. */
 	run: string;
 	/** The projects whose tests fed the matrix, sorted. */
-	projects: string[];
+	projects: Array<string>;
 	/** Case → target → layer → cell, merged across projects. */
 	cases: MatrixCells;
 	/**
@@ -94,12 +94,12 @@ export interface RunInfo {
 	 * `count` of one selection, with no other filter, ran every test of its projects.
 	 */
 	shard: Shard | null;
-	projects: string[];
+	projects: Array<string>;
 	/**
 	 * The selected projects that collected no tests. A run nothing narrowed fails on one itself;
 	 * a shard may hold none of a project's files, so the summary judges them once every shard ran.
 	 */
-	empty: string[];
+	empty: Array<string>;
 }
 
 /** Why a run covered only part of its projects' tests, its shard included, or `null`. */
@@ -117,7 +117,7 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
 	 * The quarantine the run applied. A merge judges every record by the newest run's, the one
 	 * `harness/quarantine.ts` held last.
 	 */
-	quarantine: QuarantineEntry[];
+	quarantine: Array<QuarantineEntry>;
 	/**
 	 * The run's reference target (D10), whose parity scenarios every target's must equal, or
 	 * `null` for a run outside the harness. A merge takes the newest run's.
@@ -133,7 +133,7 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
 	 * causes' on one line, such as the closed browser connection that stopped the reference's
 	 * project (ADR-0091). Absent when there were none.
 	 */
-	errors?: string[];
+	errors?: Array<string>;
 	/** Project → its own cells, so a later run of a project replaces exactly its cells. */
 	byProject: Record<string, MatrixCells>;
 	/** Project → its own scenarios, kept and replaced with its cells. */
@@ -145,7 +145,7 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
 /** A merge of partial matrices (`parity-matrix.json`), with what it was merged from. */
 export interface MergedMatrix extends ParityMatrix {
 	/** The partial matrices merged, oldest first. */
-	runs: RunInfo[];
+	runs: Array<RunInfo>;
 }
 
 /** A test's record and the project it ran in. */
@@ -160,19 +160,33 @@ export interface ProjectRecord {
  * canary can require the evidence of each.
  */
 export function cellOf(outcome: LayerOutcome): string {
-	if (outcome.status === "skip") return `skip(${outcome.reason})`;
-	if (outcome.status === "quarantined") return `quarantined(${outcome.issue})`;
-	if (outcome.status === "pass") return "pass";
+	if (outcome.status === "skip") {
+		return `skip(${outcome.reason})`;
+	}
+	if (outcome.status === "quarantined") {
+		return `quarantined(${outcome.issue})`;
+	}
+	if (outcome.status === "pass") {
+		return "pass";
+	}
 	return `fail: ${outcome.message.trim() || "failed"}`;
 }
 
 /** A matrix cell as an outcome. Throws on text that is not a cell, so a corrupt matrix is loud. */
 export function outcomeOfCell(cell: string): LayerOutcome {
-	if (cell === "pass") return { status: "pass" };
-	if (cell.startsWith("fail: ")) return { status: "fail", message: cell.slice("fail: ".length) };
+	if (cell === "pass") {
+		return { status: "pass" };
+	}
+	if (cell.startsWith("fail: ")) {
+		return { status: "fail", message: cell.slice("fail: ".length) };
+	}
 	const match = /^(skip|quarantined)\((.*)\)$/s.exec(cell);
-	if (match?.[1] === "skip") return { status: "skip", reason: match[2]! };
-	if (match?.[1] === "quarantined") return { status: "quarantined", issue: match[2]! };
+	if (match?.[1] === "skip") {
+		return { status: "skip", reason: match[2]! };
+	}
+	if (match?.[1] === "quarantined") {
+		return { status: "quarantined", issue: match[2]! };
+	}
 	throw new Error(`Not a parity matrix cell: ${JSON.stringify(cell)}`);
 }
 
@@ -184,16 +198,24 @@ export function cellHeadline(cell: string): string {
 }
 
 /** Builds cells from test records, merging every record of a cell (fail beats pass). */
-export function buildCells(records: readonly UfLayerMeta[]): MatrixCells {
-	const outcomes = new Map<string, Map<string, Map<LayerName, LayerOutcome[]>>>();
+export function buildCells(records: ReadonlyArray<UfLayerMeta>): MatrixCells {
+	const outcomes = new Map<string, Map<string, Map<LayerName, Array<LayerOutcome>>>>();
 	for (const record of records) {
 		let targets = outcomes.get(record.case);
-		if (!targets) outcomes.set(record.case, (targets = new Map()));
+		if (!targets) {
+			targets = new Map();
+			outcomes.set(record.case, targets);
+		}
 		let layers = targets.get(record.target);
-		if (!layers) targets.set(record.target, (layers = new Map()));
+		if (!layers) {
+			layers = new Map();
+			targets.set(record.target, layers);
+		}
 		for (const layer of LAYERS) {
 			const outcome = record.layers[layer];
-			if (outcome) layers.set(layer, [...(layers.get(layer) ?? []), outcome]);
+			if (outcome) {
+				layers.set(layer, [...(layers.get(layer) ?? []), outcome]);
+			}
 		}
 	}
 	const cells: MatrixCells = {};
@@ -214,7 +236,7 @@ export function buildCells(records: readonly UfLayerMeta[]): MatrixCells {
 }
 
 /** The scenarios of test records: each (case, target)'s names, once each, sorted. */
-export function buildScenarios(records: readonly UfLayerMeta[]): MatrixScenarios {
+export function buildScenarios(records: ReadonlyArray<UfLayerMeta>): MatrixScenarios {
 	return mergeScenarios(
 		records.flatMap((record) =>
 			record.scenarios?.length
@@ -225,15 +247,20 @@ export function buildScenarios(records: readonly UfLayerMeta[]): MatrixScenarios
 }
 
 /** Merges sets of scenarios: the union of each (case, target)'s names, sorted. */
-export function mergeScenarios(sets: readonly MatrixScenarios[]): MatrixScenarios {
+export function mergeScenarios(sets: ReadonlyArray<MatrixScenarios>): MatrixScenarios {
 	const names = new Map<string, Map<string, Set<string>>>();
 	for (const scenarios of sets) {
 		for (const [caseId, targets] of Object.entries(scenarios)) {
 			let byTarget = names.get(caseId);
-			if (!byTarget) names.set(caseId, (byTarget = new Map()));
+			if (!byTarget) {
+				byTarget = new Map();
+				names.set(caseId, byTarget);
+			}
 			for (const [target, list] of Object.entries(targets)) {
 				const set = byTarget.get(target) ?? new Set<string>();
-				for (const name of list) set.add(name);
+				for (const name of list) {
+					set.add(name);
+				}
 				byTarget.set(target, set);
 			}
 		}
@@ -253,14 +280,15 @@ export function mergeScenarios(sets: readonly MatrixScenarios[]): MatrixScenario
  * Records without a test name (a file's own) and tests that checked nothing and were neither
  * skipped nor run against a stand-in are left out: they have nothing to compare.
  */
-export function buildTests(records: readonly UfLayerMeta[]): MatrixTests {
+export function buildTests(records: ReadonlyArray<UfLayerMeta>): MatrixTests {
 	return mergeTests(
 		records.flatMap((record) => {
 			if (
 				record.test === undefined ||
 				(!record.scenarios?.length && record.skipped === undefined && record.standIn === undefined)
-			)
+			) {
 				return [];
+			}
 			const test: MatrixTest = {
 				scenarios: [...new Set(record.scenarios ?? [])].sort(),
 				...(record.skipped === undefined ? {} : { skipped: record.skipped }),
@@ -275,7 +303,7 @@ export function buildTests(records: readonly UfLayerMeta[]): MatrixTests {
  * Merges sets of tests, a later set's record of a test replacing an earlier one's (a newer run
  * of the test). Within one set a test is recorded once: two tests of a case never share a name.
  */
-export function mergeTests(sets: readonly MatrixTests[]): MatrixTests {
+export function mergeTests(sets: ReadonlyArray<MatrixTests>): MatrixTests {
 	const merged: MatrixTests = {};
 	for (const tests of sets) {
 		for (const [caseId, targets] of Object.entries(tests)) {
@@ -309,7 +337,7 @@ export function mergeTests(sets: readonly MatrixTests[]): MatrixTests {
 }
 
 /** Merges several projects' cells into one set, cell by cell (fail beats pass). */
-export function mergeCells(sets: readonly MatrixCells[]): MatrixCells {
+export function mergeCells(sets: ReadonlyArray<MatrixCells>): MatrixCells {
 	return buildCells(
 		sets.flatMap((cells) =>
 			Object.entries(cells).flatMap(([caseId, targets]) =>
@@ -329,21 +357,21 @@ export function mergeCells(sets: readonly MatrixCells[]): MatrixCells {
 export function buildPartialMatrix(input: {
 	run: string;
 	/** Every project the run selected, also those that recorded nothing. */
-	projects: readonly string[];
-	records: readonly ProjectRecord[];
+	projects: ReadonlyArray<string>;
+	records: ReadonlyArray<ProjectRecord>;
 	finishedAt: string;
 	mode: RunMode | null;
 	filtered: string | null;
 	shard: Shard | null;
 	/** The selected projects that collected no tests. */
-	empty: readonly string[];
-	quarantine: readonly QuarantineEntry[];
+	empty: ReadonlyArray<string>;
+	quarantine: ReadonlyArray<QuarantineEntry>;
 	/** The run's reference target; none outside the harness. */
 	reference?: string | null;
 	/** The cases that name their own reference, with it. */
 	references?: Record<string, string>;
 	/** The errors Vitest reported outside every test, one line each. */
-	errors?: readonly string[];
+	errors?: ReadonlyArray<string>;
 }): PartialMatrix {
 	const projects = [...new Set(input.projects)].sort();
 	const byProject: Record<string, MatrixCells> = {};
@@ -415,7 +443,9 @@ export function withoutProjects(
 		const cells = outsideScope(before[0], scope);
 		const scenarios = outsideScope(before[1], scope);
 		const tests = outsideScope(before[2], scope);
-		if (cells !== before[0] || scenarios !== before[1] || tests !== before[2]) dropped = true;
+		if (cells !== before[0] || scenarios !== before[1] || tests !== before[2]) {
+			dropped = true;
+		}
 		if (scope && ![cells, scenarios, tests].some((set) => Object.keys(set).length)) {
 			dropped = true;
 			continue;
@@ -424,9 +454,13 @@ export function withoutProjects(
 		scenariosByProject[project] = scenarios;
 		testsByProject[project] = tests;
 	}
-	if (!dropped) return matrix;
+	if (!dropped) {
+		return matrix;
+	}
 	const kept = matrix.projects.filter((project) => project in byProject);
-	if (!kept.length) return undefined;
+	if (!kept.length) {
+		return undefined;
+	}
 	return {
 		...matrix,
 		projects: kept,
@@ -448,7 +482,9 @@ function outsideScope<T>(
 	byCase: Record<string, Record<string, T>>,
 	scope: ProjectScope | undefined,
 ): Record<string, Record<string, T>> {
-	if (!scope) return byCase;
+	if (!scope) {
+		return byCase;
+	}
 	const kept: Record<string, Record<string, T>> = {};
 	let dropped = false;
 	for (const [caseId, targets] of Object.entries(byCase)) {
@@ -471,9 +507,9 @@ function outsideScope<T>(
  * re-judged (the reporter's `supersede`). The quarantine and the reference are the newest run's:
  * an entry removed since an older run must neither hide that run's failures nor go stale.
  */
-export function mergeMatrices(partials: readonly PartialMatrix[]): {
+export function mergeMatrices(partials: ReadonlyArray<PartialMatrix>): {
 	matrix: MergedMatrix;
-	quarantine: QuarantineEntry[];
+	quarantine: Array<QuarantineEntry>;
 	reference: string | null;
 	references: Record<string, string>;
 } {
@@ -488,9 +524,9 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
 		(a, b) => a.finishedAt.localeCompare(b.finishedAt) || a.run.localeCompare(b.run),
 	);
 	const latest = new Map<string, MatrixCells>();
-	const scenarios: MatrixScenarios[] = [];
+	const scenarios: Array<MatrixScenarios> = [];
 	// Oldest first: a newer run's record of a test replaces an older one's.
-	const tests: MatrixTests[] = [];
+	const tests: Array<MatrixTests> = [];
 	for (const partial of ordered) {
 		scenarios.push(...Object.values(partial.scenariosByProject));
 		tests.push(...Object.values(partial.testsByProject));
@@ -538,20 +574,24 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
  */
 export function settleQuarantine(
 	cells: MatrixCells,
-	quarantine: readonly QuarantineEntry[],
+	quarantine: ReadonlyArray<QuarantineEntry>,
 	options: { stale: boolean },
-): string[] {
-	const problems: string[] = [];
+): Array<string> {
+	const problems: Array<string> = [];
 	for (const [caseId, targets] of Object.entries(cells)) {
 		for (const [target, layers] of Object.entries(targets)) {
 			for (const layer of LAYERS) {
 				const cell = layers[layer];
-				if (cell === undefined) continue;
+				if (cell === undefined) {
+					continue;
+				}
 				const outcome = outcomeOfCell(cell);
 				const entry = quarantineFor(quarantine, { case: caseId, target }, layer);
 				let settled: LayerOutcome;
 				if (!entry) {
-					if (outcome.status !== "quarantined") continue;
+					if (outcome.status !== "quarantined") {
+						continue;
+					}
 					settled = {
 						status: "fail",
 						message: `quarantined for ${outcome.issue} by an older run, but no entry quarantines ${caseId} › ${target} › ${layer} any more: rerun its project to see the failure.`,
@@ -562,7 +602,9 @@ export function settleQuarantine(
 					continue;
 				}
 				layers[layer] = cellOf(settled);
-				if (settled.status === "fail") problems.push(settled.message);
+				if (settled.status === "fail") {
+					problems.push(settled.message);
+				}
 			}
 		}
 	}

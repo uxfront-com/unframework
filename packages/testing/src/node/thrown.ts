@@ -22,7 +22,7 @@ export interface ThrowSite {
  * The one line of a case's sources that holds `throw`: the `.uf.tsx` files of its directory and
  * its main source, wherever that lies. Throws unless there is exactly one.
  */
-export function throwSite(sources: readonly string[]): ThrowSite {
+export function throwSite(sources: ReadonlyArray<string>): ThrowSite {
 	const found = [...new Set(sources)].flatMap((file) =>
 		readFileSync(file, "utf8")
 			.split("\n")
@@ -40,7 +40,7 @@ export function throwSite(sources: readonly string[]): ThrowSite {
 const FRAME = /^\s*at (?:.*\()?(.+?):(\d+):(\d+)\)?\s*$/;
 
 /** A stack's frames, top first, as written. */
-export function stackFrames(stack: string): { url: string; line: number; column: number }[] {
+export function stackFrames(stack: string): Array<{ url: string; line: number; column: number }> {
 	return stack.split("\n").flatMap((text) => {
 		const match = FRAME.exec(text);
 		return match ? [{ url: match[1]!, line: Number(match[2]), column: Number(match[3]) }] : [];

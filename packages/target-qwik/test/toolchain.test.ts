@@ -72,7 +72,7 @@ describe("the toolchain modules Qwik's optimizer compiles", () => {
 	const dir = new URL("../src/toolchain/", import.meta.url);
 	const IMPORT = /^import\s+\{([^}]*)\}\s+from\s+"@qwik\.dev\/core";/gm;
 
-	function dollarImports(source: string): string[] {
+	function dollarImports(source: string): Array<string> {
 		return [...source.matchAll(IMPORT)].flatMap((match) =>
 			match[1]!
 				.split(",")

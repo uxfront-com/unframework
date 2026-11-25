@@ -76,15 +76,21 @@ export function parameterCode(parameter: ComposableParameter, names: OutputNames
  * which is there where the getter is. `getters` are the names the code calls them by.
  */
 export function readGetters(code: string, kind: CodeKind, getters: ReadonlySet<string>): string {
-	if (getters.size === 0 || ![...getters].some((name) => code.includes(name))) return code;
+	if (getters.size === 0 || ![...getters].some((name) => code.includes(name))) {
+		return code;
+	}
 	const { root } = parseCodeSource(code, kind);
-	const edits: { start: number; end: number; text: string }[] = [];
+	const edits: Array<{ start: number; end: number; text: string }> = [];
 	const visit = (node: unknown): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
-		if (!isNode(node)) return;
+		if (!isNode(node)) {
+			return;
+		}
 		const callee = node.callee as Node | undefined;
 		const asserted = callee?.type === "TSNonNullExpression";
 		const named = asserted ? (callee.expression as Node) : callee;
@@ -92,14 +98,16 @@ export function readGetters(code: string, kind: CodeKind, getters: ReadonlySet<s
 			node.type === "CallExpression" &&
 			named?.type === "Identifier" &&
 			getters.has(named.name as string) &&
-			(node.arguments as unknown[]).length === 0
+			(node.arguments as Array<unknown>).length === 0
 		) {
 			const read = node.optional === true ? "?.value" : asserted ? "!.value" : ".value";
 			edits.push({ start: node.start, end: node.end, text: `${named.name as string}${read}` });
 			return;
 		}
 		for (const [key, value] of Object.entries(node)) {
-			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+			if (key !== "type" && key !== "parent" && typeof value === "object") {
+				visit(value);
+			}
 		}
 	};
 	visit(root);
@@ -150,8 +158,11 @@ export interface ComposableProblem {
  * test, `!`, a comparison, or an operand of `&&`, `||` or `??` that is itself in a test, or on
  * the left of `&&`.
  */
-export function composableProblems(composable: UfComposable, plan: SetupPlan): ComposableProblem[] {
-	const problems: ComposableProblem[] = [];
+export function composableProblems(
+	composable: UfComposable,
+	plan: SetupPlan,
+): Array<ComposableProblem> {
+	const problems: Array<ComposableProblem> = [];
 	const functions = new Map(
 		composable.parameters.map((parameter) => [parameter.binding, parameter]),
 	);
@@ -176,9 +187,13 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
 			written.known.set(item.binding, written.ofFunction(item.function));
 			continue;
 		}
-		if (item.kind !== "Const" && item.kind !== "State" && item.kind !== "Variable") continue;
+		if (item.kind !== "Const" && item.kind !== "State" && item.kind !== "Variable") {
+			continue;
+		}
 		const value = item.kind === "Const" ? item.value : item.initial;
-		if (!value) continue;
+		if (!value) {
+			continue;
+		}
 		const reads = value.refs.some(
 			(reference) =>
 				reference.kind === "Binding" &&
@@ -186,12 +201,16 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
 				functions.get(reference.binding)?.kind !== "getter" &&
 				functions.get(reference.binding)?.kind !== "callback",
 		);
-		if (!reads) continue;
+		if (!reads) {
+			continue;
+		}
 		const judged = written.ofCode(value);
 		// A `ref` is read through `.value`, its signal's, which the reads below don't follow: what
 		// its initial value holds is judged here once.
 		written.known.set(item.binding, item.kind === "State" ? FREE : judged);
-		if (!written.holds(judged)) continue;
+		if (!written.holds(judged)) {
+			continue;
+		}
 		if (item.kind === "Const") {
 			holding.add(item.binding);
 			continue;
@@ -209,20 +228,28 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
 				reference.kind === "Binding" &&
 				(functions.has(reference.binding) || holding.has(reference.binding)),
 		);
-		if (!references.length) continue;
+		if (!references.length) {
+			continue;
+		}
 		const uses = identifierUses(code.code, kind);
 		for (const reference of references) {
-			if (reference.kind !== "Binding") continue;
+			if (reference.kind !== "Binding") {
+				continue;
+			}
 			const use = uses.get(reference.span.start - code.span.start);
 			const parameter = functions.get(reference.binding);
 			if (!parameter) {
-				if (captured) problems.push(holdsProblem(reference.span, nameOf(reference.binding)));
+				if (captured) {
+					problems.push(holdsProblem(reference.span, nameOf(reference.binding)));
+				}
 				continue;
 			}
 			const { name } = parameter;
 			switch (parameter.kind) {
 				case "getter":
-					if (use?.called || use?.tested) break;
+					if (use?.called || use?.tested) {
+						break;
+					}
 					problems.push({
 						span: reference.span,
 						message: `\`${name}\` is a getter, which the qwik target takes as the signal its caller computes (\`ReadonlySignal\`): the composable may only call it, never pass it on or keep it as a function.`,
@@ -230,7 +257,9 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
 					});
 					break;
 				case "callback":
-					if ((use?.called && !use.nested) || use?.tested) break;
+					if ((use?.called && !use.nested) || use?.tested) {
+						break;
+					}
 					problems.push({
 						span: reference.span,
 						message: use?.called
@@ -269,10 +298,12 @@ interface ComposableCode {
 }
 
 /** Every piece of a composable's setup code, in source order (see {@link ComposableCode}). */
-function composableCode(composable: UfComposable, plan: SetupPlan): ComposableCode[] {
-	const found: ComposableCode[] = [];
+function composableCode(composable: UfComposable, plan: SetupPlan): Array<ComposableCode> {
+	const found: Array<ComposableCode> = [];
 	const value = (code: Code | undefined) => {
-		if (code) found.push({ code, kind: "expression", captured: false });
+		if (code) {
+			found.push({ code, kind: "expression", captured: false });
+		}
 	};
 	const fn = (each: FunctionCode, captured: boolean) =>
 		found.push({ code: each.body, kind: each.expression ? "expression" : "statements", captured });
@@ -294,7 +325,11 @@ function composableCode(composable: UfComposable, plan: SetupPlan): ComposableCo
 				fn(item.getter, true);
 				break;
 			case "Watch":
-				for (const source of item.sources) if (source.kind === "Getter") fn(source.getter, true);
+				for (const source of item.sources) {
+					if (source.kind === "Getter") {
+						fn(source.getter, true);
+					}
+				}
 				fn(item.callback, true);
 				break;
 			case "WatchEffect":
@@ -342,12 +377,16 @@ interface IdentifierUse {
 function identifierUses(code: string, kind: CodeKind): Map<number, IdentifierUse> {
 	const { root } = parseCodeSource(code, kind);
 	const found = new Map<number, IdentifierUse>();
-	const visit = (node: unknown, ancestors: readonly Node[]): void => {
+	const visit = (node: unknown, ancestors: ReadonlyArray<Node>): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item, ancestors);
+			for (const item of node) {
+				visit(item, ancestors);
+			}
 			return;
 		}
-		if (!isNode(node)) return;
+		if (!isNode(node)) {
+			return;
+		}
 		if (node.type === "Identifier") {
 			const parent = ancestors.at(-1);
 			const asserted = parent?.type === "TSNonNullExpression";
@@ -361,7 +400,9 @@ function identifierUses(code: string, kind: CodeKind): Map<number, IdentifierUse
 		}
 		const next = [...ancestors, node];
 		for (const [key, value] of Object.entries(node)) {
-			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value, next);
+			if (key !== "type" && key !== "parent" && typeof value === "object") {
+				visit(value, next);
+			}
 		}
 	};
 	visit(root, []);
@@ -369,9 +410,11 @@ function identifierUses(code: string, kind: CodeKind): Map<number, IdentifierUse
 }
 
 /** Whether a node is read only as a test (see `composableProblems`), by its ancestors. */
-function isTested(node: Node, ancestors: readonly Node[]): boolean {
+function isTested(node: Node, ancestors: ReadonlyArray<Node>): boolean {
 	const parent = ancestors.at(-1);
-	if (!parent) return false;
+	if (!parent) {
+		return false;
+	}
 	switch (parent.type) {
 		case "IfStatement":
 		case "ConditionalExpression":
@@ -414,7 +457,9 @@ function holdsFunction(type: string, module: UfModule, seen = new Set<string>())
 function nodesHoldFunction(root: unknown, module: UfModule, seen: Set<string>): boolean {
 	let holds = false;
 	visitNodes(root, (node) => {
-		if (holds) return;
+		if (holds) {
+			return;
+		}
 		switch (node.type) {
 			case "TSFunctionType":
 			case "TSConstructorType":
@@ -427,13 +472,17 @@ function nodesHoldFunction(root: unknown, module: UfModule, seen: Set<string>): 
 			case "TSInterfaceHeritage":
 			case "TSTypeReference": {
 				const name = (node.type === "TSTypeReference" ? node.typeName : node.expression) as Node;
-				if (name.type !== "Identifier") return;
+				if (name.type !== "Identifier") {
+					return;
+				}
 				const named = name.name as string;
 				if (["Function", "CallableFunction", "NewableFunction"].includes(named)) {
 					holds = true;
 					return;
 				}
-				if (seen.has(named)) return;
+				if (seen.has(named)) {
+					return;
+				}
 				seen.add(named);
 				const declaration = module.types.find((each) => each.name === named);
 				if (declaration) {
@@ -453,13 +502,19 @@ function nodesHoldFunction(root: unknown, module: UfModule, seen: Set<string>): 
 /** Visits every node of a tree, parents first. */
 function visitNodes(root: unknown, visit: (node: Node) => void): void {
 	if (Array.isArray(root)) {
-		for (const item of root) visitNodes(item, visit);
+		for (const item of root) {
+			visitNodes(item, visit);
+		}
 		return;
 	}
-	if (!isNode(root)) return;
+	if (!isNode(root)) {
+		return;
+	}
 	visit(root);
 	for (const [key, value] of Object.entries(root)) {
-		if (key !== "type" && key !== "parent" && typeof value === "object") visitNodes(value, visit);
+		if (key !== "type" && key !== "parent" && typeof value === "object") {
+			visitNodes(value, visit);
+		}
 	}
 }
 
@@ -476,8 +531,8 @@ const FREE: WrittenType = { free: true };
 
 /** A type as written, `{ format: (value: number) => string }`, as a node. */
 function typeNode(type: string): Node {
-	const [statement] = parseCodeSource(`let value: ${type};`, "statements").root as Node[];
-	const [declarator] = statement!.declarations as Node[];
+	const [statement] = parseCodeSource(`let value: ${type};`, "statements").root as Array<Node>;
+	const [declarator] = statement!.declarations as Array<Node>;
 	return ((declarator!.id as Node).typeAnnotation as Node).typeAnnotation as Node;
 }
 
@@ -561,8 +616,9 @@ class WrittenTypes {
 	ofCode(code: Code): WrittenType {
 		const ids = new Map<number, string>();
 		for (const reference of code.refs) {
-			if (reference.kind === "Binding")
+			if (reference.kind === "Binding") {
 				ids.set(reference.span.start - code.span.start, reference.binding);
+			}
 		}
 		return this.#of(parseCodeSource(code.code, "expression").root as Node, ids);
 	}
@@ -587,12 +643,18 @@ class WrittenTypes {
 	/** Whether a node's code reads a binding that holds a function: what it holds, untyped. */
 	#reads(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
 		for (const [offset, id] of ids) {
-			if (offset < node.start || offset >= node.end) continue;
-			if (this.holds(this.known.get(id) ?? FREE)) return { free: false };
+			if (offset < node.start || offset >= node.end) {
+				continue;
+			}
+			if (this.holds(this.known.get(id) ?? FREE)) {
+				return { free: false };
+			}
 		}
 		for (const local of identifierNames(node)) {
 			const value = this.#locals.get(local);
-			if (value && this.holds(value)) return { free: false };
+			if (value && this.holds(value)) {
+				return { free: false };
+			}
 		}
 		return FREE;
 	}
@@ -602,7 +664,9 @@ class WrittenTypes {
 		switch (node.type) {
 			case "Identifier": {
 				const id = ids.get(node.start);
-				if (id) return this.known.get(id) ?? FREE;
+				if (id) {
+					return this.known.get(id) ?? FREE;
+				}
 				return this.#locals.get(node.name as string) ?? FREE;
 			}
 			case "ParenthesizedExpression":
@@ -625,17 +689,17 @@ class WrittenTypes {
 			case "LogicalExpression":
 				return this.#join([of(node.left as Node), of(node.right as Node)]);
 			case "SequenceExpression":
-				return of((node.expressions as Node[]).at(-1)!);
+				return of((node.expressions as Array<Node>).at(-1)!);
 			case "ArrayExpression":
 				return this.#join(
-					(node.elements as (Node | null)[])
+					(node.elements as Array<Node | null>)
 						.filter((each): each is Node => each !== null)
 						.map((each) => of(each.type === "SpreadElement" ? (each.argument as Node) : each)),
 					false,
 				);
 			case "ObjectExpression":
 				return this.#join(
-					(node.properties as Node[]).map((each) =>
+					(node.properties as Array<Node>).map((each) =>
 						of((each.type === "SpreadElement" ? each.argument : each.value) as Node),
 					),
 					false,
@@ -648,13 +712,16 @@ class WrittenTypes {
 				const awaited = of(node.argument as Node);
 				const type = awaited.type && this.#resolve(awaited.type);
 				const name = type?.type === "TSTypeReference" ? (type.typeName as Node).name : undefined;
-				const [value] = ((type?.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+				const [value] =
+					((type?.typeArguments as Node | null)?.params as Array<Node> | undefined) ?? [];
 				return (name === "Promise" || name === "PromiseLike") && value
 					? { type: value, free: false }
 					: { free: !this.holds(awaited) };
 			}
 			default:
-				if (SCALAR_EXPRESSIONS.has(node.type)) return FREE;
+				if (SCALAR_EXPRESSIONS.has(node.type)) {
+					return FREE;
+				}
 				// Any other expression (`new Map([…])`, a tagged template) by what it reads.
 				return this.#join(childExpressions(node).map(of), false);
 		}
@@ -662,25 +729,35 @@ class WrittenTypes {
 
 	/** What a member of a value holds: `key` is its name, or `undefined` for a computed index. */
 	#member(object: WrittenType, key: string | undefined): WrittenType {
-		if (!object.type) return { free: object.free };
+		if (!object.type) {
+			return { free: object.free };
+		}
 		const type = this.#resolve(object.type);
 		const element = elementType(type);
 		if (element !== undefined) {
-			if (key === "length") return FREE;
+			if (key === "length") {
+				return FREE;
+			}
 			// An index gives an element, and a named member is a method, a function.
 			return key === undefined ? { type: element, free: false } : { free: false };
 		}
-		if (isKeyword(type)) return key === "length" ? FREE : { free: false };
+		if (isKeyword(type)) {
+			return key === "length" ? FREE : { free: false };
+		}
 		// A function's `name` and `length`; any other member is a method of it, a function.
-		if (isFunctionType(type)) return key === "name" || key === "length" ? FREE : { free: false };
+		if (isFunctionType(type)) {
+			return key === "name" || key === "length" ? FREE : { free: false };
+		}
 		const member = key === undefined ? undefined : this.#memberType(type, key);
-		if (member) return { type: member, free: false };
+		if (member) {
+			return { type: member, free: false };
+		}
 		return this.holds(object) ? { free: false } : FREE;
 	}
 
 	#call(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
 		const callee = unwrapped(node.callee as Node);
-		const args = (node.arguments as Node[]).map((each) =>
+		const args = (node.arguments as Array<Node>).map((each) =>
 			each.type === "SpreadElement" ? (each.argument as Node) : each,
 		);
 		// Where no written type gives its result, a call holds what its receiver or its arguments
@@ -695,17 +772,31 @@ class WrittenTypes {
 			const name = memberKey(callee)!;
 			const type = receiver.type && this.#resolve(receiver.type);
 			// No method of a string, a number, a boolean or a bigint gives a function.
-			if (type && isKeyword(type)) return FREE;
+			if (type && isKeyword(type)) {
+				return FREE;
+			}
 			if (type && isFunctionType(type)) {
-				if (name === "bind") return receiver;
-				if (name === "call" || name === "apply") return this.#returned(type, node, ids);
-				if (name === "toString") return FREE;
+				if (name === "bind") {
+					return receiver;
+				}
+				if (name === "call" || name === "apply") {
+					return this.#returned(type, node, ids);
+				}
+				if (name === "toString") {
+					return FREE;
+				}
 			}
 			const element = type && elementType(type);
 			if (element !== undefined) {
-				if (ARRAY_COPIES.has(name)) return receiver;
-				if (ARRAY_ELEMENTS.has(name)) return { type: element, free: false };
-				if (ARRAY_SCALARS.has(name)) return FREE;
+				if (ARRAY_COPIES.has(name)) {
+					return receiver;
+				}
+				if (ARRAY_ELEMENTS.has(name)) {
+					return { type: element, free: false };
+				}
+				if (ARRAY_SCALARS.has(name)) {
+					return FREE;
+				}
 				if (ARRAY_RESULTS.has(name)) {
 					return this.#callbackResult(name, element, type!, args, node, ids);
 				}
@@ -724,7 +815,7 @@ class WrittenTypes {
 	 */
 	#callOf(type: Node, node: Node, ids: ReadonlyMap<number, string>): WrittenType {
 		const resolved = this.#resolve(type);
-		const parts = resolved.type === "TSUnionType" ? (resolved.types as Node[]) : [resolved];
+		const parts = resolved.type === "TSUnionType" ? (resolved.types as Array<Node>) : [resolved];
 		const functions = parts.map((each) => this.#resolve(each)).filter((each) => !isNullish(each));
 		if (functions.length && functions.every(isFunctionType)) {
 			return this.#join(functions.map((each) => this.#returned(each, node, ids)));
@@ -738,9 +829,11 @@ class WrittenTypes {
 	 */
 	#returned(type: Node, node: Node, ids: ReadonlyMap<number, string>): WrittenType {
 		const parameters = (type.typeParameters as Node | null | undefined)?.params as
-			| Node[]
+			| Array<Node>
 			| undefined;
-		if (parameters?.length) return this.#reads(node, ids);
+		if (parameters?.length) {
+			return this.#reads(node, ids);
+		}
 		return returned(type);
 	}
 
@@ -755,25 +848,29 @@ class WrittenTypes {
 		name: string,
 		element: Node,
 		array: Node,
-		args: readonly Node[],
+		args: ReadonlyArray<Node>,
 		node: Node,
 		ids: ReadonlyMap<number, string>,
 	): WrittenType {
 		const [callback, initial] = args;
-		if (!callback) return FREE;
+		if (!callback) {
+			return FREE;
+		}
 		const inPlace =
 			(callback.type === "ArrowFunctionExpression" || callback.type === "FunctionExpression") &&
 			(callback.body as Node).type !== "BlockStatement" &&
-			(callback.params as Node[]).every((each) => each.type === "Identifier");
-		if (!inPlace) return this.#reads(node, ids);
+			(callback.params as Array<Node>).every((each) => each.type === "Identifier");
+		if (!inPlace) {
+			return this.#reads(node, ids);
+		}
 		const reduces = name === "reduce" || name === "reduceRight";
 		const item: WrittenType = { type: element, free: false };
 		const start = initial ? this.#join([this.#of(initial, ids), item], false) : item;
-		const values: WrittenType[] = reduces
+		const values: Array<WrittenType> = reduces
 			? [start, item, FREE, { type: array, free: false }]
 			: [item, FREE, { type: array, free: false }];
 		const saved = new Map<string, WrittenType | undefined>();
-		for (const [index, parameter] of (callback.params as Node[]).entries()) {
+		for (const [index, parameter] of (callback.params as Array<Node>).entries()) {
 			const local = parameter.name as string;
 			saved.set(local, this.#locals.get(local));
 			this.#locals.set(local, values[index] ?? FREE);
@@ -783,14 +880,17 @@ class WrittenTypes {
 			return this.#join(reduces ? [start, result] : [result], false);
 		} finally {
 			for (const [local, value] of saved) {
-				if (value === undefined) this.#locals.delete(local);
-				else this.#locals.set(local, value);
+				if (value === undefined) {
+					this.#locals.delete(local);
+				} else {
+					this.#locals.set(local, value);
+				}
 			}
 		}
 	}
 
 	/** Several values, any of which a value may be: a type where each has one. */
-	#join(values: readonly WrittenType[], typed = true): WrittenType {
+	#join(values: ReadonlyArray<WrittenType>, typed = true): WrittenType {
 		if (typed && values.length && values.every((each) => each.type)) {
 			return {
 				type: { type: "TSUnionType", types: values.map((each) => each.type), start: 0, end: 0 },
@@ -814,7 +914,7 @@ class WrittenTypes {
 					? this.#resolve(type.typeAnnotation as Node, seen)
 					: type;
 			case "TSUnionType": {
-				const present = (type.types as Node[]).filter(
+				const present = (type.types as Array<Node>).filter(
 					(each) => !isNullish(this.#resolve(each, seen)),
 				);
 				return present.length === 1 ? this.#resolve(present[0]!, seen) : type;
@@ -822,26 +922,32 @@ class WrittenTypes {
 			case "TSTypeReference": {
 				const name = (type.typeName as Node).name as string | undefined;
 				const typeArguments =
-					((type.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+					((type.typeArguments as Node | null)?.params as Array<Node> | undefined) ?? [];
 				if (name !== undefined && WRAPPERS.has(name) && typeArguments.length === 1) {
 					return this.#resolve(typeArguments[0]!, seen);
 				}
-				if (name === undefined || seen.has(name)) return type;
+				if (name === undefined || seen.has(name)) {
+					return type;
+				}
 				const declaration = this.#module.types.find((each) => each.name === name);
-				if (!declaration) return type;
-				const [statement] = parseCodeSource(declaration.code, "statements").root as Node[];
+				if (!declaration) {
+					return type;
+				}
+				const [statement] = parseCodeSource(declaration.code, "statements").root as Array<Node>;
 				let declared = (
 					statement!.type === "ExportNamedDeclaration" ? statement!.declaration : statement
 				) as Node;
 				// A generic declaration with its type arguments in place of its parameters.
 				const parameters =
-					((declared.typeParameters as Node | null)?.params as Node[] | undefined) ?? [];
+					((declared.typeParameters as Node | null)?.params as Array<Node> | undefined) ?? [];
 				if (parameters.length) {
 					const substitutes = new Map<string, Node>();
 					for (const [index, parameter] of parameters.entries()) {
 						const argument =
 							typeArguments[index] ?? (parameter.default as Node | null | undefined) ?? undefined;
-						if (argument) substitutes.set((parameter.name as Node).name as string, argument);
+						if (argument) {
+							substitutes.set((parameter.name as Node).name as string, argument);
+						}
 					}
 					declared = substituted(declared, substitutes);
 				}
@@ -849,10 +955,12 @@ class WrittenTypes {
 				if (declared.type === "TSTypeAliasDeclaration") {
 					return this.#resolve(declared.typeAnnotation as Node, next);
 				}
-				if (declared.type !== "TSInterfaceDeclaration") return type;
+				if (declared.type !== "TSInterfaceDeclaration") {
+					return type;
+				}
 				// An interface as an object type of its members and those it inherits.
-				const members = [...((declared.body as Node).body as Node[])];
-				for (const heritage of (declared.extends as Node[] | undefined) ?? []) {
+				const members = [...((declared.body as Node).body as Array<Node>)];
+				for (const heritage of (declared.extends as Array<Node> | undefined) ?? []) {
 					const inherited = this.#resolve(
 						{
 							type: "TSTypeReference",
@@ -863,7 +971,9 @@ class WrittenTypes {
 						},
 						next,
 					);
-					if (inherited.type === "TSTypeLiteral") members.push(...(inherited.members as Node[]));
+					if (inherited.type === "TSTypeLiteral") {
+						members.push(...(inherited.members as Array<Node>));
+					}
 				}
 				return { type: "TSTypeLiteral", members, start: 0, end: 0 };
 			}
@@ -876,21 +986,27 @@ class WrittenTypes {
 	#memberType(type: Node, key: string): Node | undefined {
 		switch (type.type) {
 			case "TSTypeLiteral": {
-				const member = (type.members as Node[]).find(
+				const member = (type.members as Array<Node>).find(
 					(each) => propertyName(each.key as Node | undefined) === key,
 				);
-				if (!member) return undefined;
-				if (member.type === "TSMethodSignature") return member;
+				if (!member) {
+					return undefined;
+				}
+				if (member.type === "TSMethodSignature") {
+					return member;
+				}
 				return (
 					((member.typeAnnotation as Node | null)?.typeAnnotation as Node | undefined) ?? undefined
 				);
 			}
 			case "TSUnionType":
 			case "TSIntersectionType": {
-				const found = (type.types as Node[])
+				const found = (type.types as Array<Node>)
 					.map((each) => this.#memberType(this.#resolve(each), key))
 					.filter((each): each is Node => each !== undefined);
-				if (!found.length) return undefined;
+				if (!found.length) {
+					return undefined;
+				}
 				return found.length === 1
 					? found[0]
 					: { type: "TSUnionType", types: found, start: 0, end: 0 };
@@ -912,12 +1028,18 @@ function isNullish(type: Node): boolean {
 /** A declaration with each reference to one of `substitutes`' names replaced by its type. */
 function substituted(node: Node, substitutes: ReadonlyMap<string, Node>): Node {
 	const copy = (value: unknown): unknown => {
-		if (Array.isArray(value)) return value.map(copy);
-		if (!isNode(value)) return value;
+		if (Array.isArray(value)) {
+			return value.map(copy);
+		}
+		if (!isNode(value)) {
+			return value;
+		}
 		if (value.type === "TSTypeReference" && !value.typeArguments) {
 			const name = (value.typeName as Node).name as string | undefined;
 			const substitute = name === undefined ? undefined : substitutes.get(name);
-			if (substitute) return substitute;
+			if (substitute) {
+				return substitute;
+			}
 		}
 		const result: Record<string, unknown> = {};
 		for (const [key, each] of Object.entries(value)) {
@@ -932,20 +1054,29 @@ function substituted(node: Node, substitutes: ReadonlyMap<string, Node>): Node {
 function identifierNames(node: Node): Set<string> {
 	const names = new Set<string>();
 	visitNodes(node, (each) => {
-		if (each.type === "Identifier") names.add(each.name as string);
+		if (each.type === "Identifier") {
+			names.add(each.name as string);
+		}
 	});
 	return names;
 }
 
 /** The expressions directly in an expression: its operands, its callee, its arguments. */
-function childExpressions(node: Node): Node[] {
-	const found: Node[] = [];
+function childExpressions(node: Node): Array<Node> {
+	const found: Array<Node> = [];
 	for (const [key, value] of Object.entries(node)) {
-		if (key === "type" || key === "parent" || key === "typeArguments") continue;
+		if (key === "type" || key === "parent" || key === "typeArguments") {
+			continue;
+		}
 		for (const each of Array.isArray(value) ? value : [value]) {
-			if (!isNode(each)) continue;
-			if (each.type === "SpreadElement") found.push(each.argument as Node);
-			else if (!each.type.startsWith("TS")) found.push(each);
+			if (!isNode(each)) {
+				continue;
+			}
+			if (each.type === "SpreadElement") {
+				found.push(each.argument as Node);
+			} else if (!each.type.startsWith("TS")) {
+				found.push(each);
+			}
 		}
 	}
 	return found;
@@ -954,7 +1085,9 @@ function childExpressions(node: Node): Node[] {
 /** A member expression's key: its name, a literal's value, or `undefined` for any other index. */
 function memberKey(node: Node): string | undefined {
 	const property = node.property as Node;
-	if (!node.computed) return property.name as string;
+	if (!node.computed) {
+		return property.name as string;
+	}
 	return property.type === "Literal" && typeof property.value === "string"
 		? property.value
 		: undefined;
@@ -962,8 +1095,12 @@ function memberKey(node: Node): string | undefined {
 
 /** A property key's name: an identifier's or a string literal's. */
 function propertyName(key: Node | undefined): string | undefined {
-	if (key?.type === "Identifier") return key.name as string;
-	if (key?.type === "Literal") return String(key.value);
+	if (key?.type === "Identifier") {
+		return key.name as string;
+	}
+	if (key?.type === "Literal") {
+		return String(key.value);
+	}
 	return undefined;
 }
 
@@ -984,15 +1121,18 @@ function elementType(type: Node): Node | undefined {
 		case "TSArrayType":
 			return type.elementType as Node;
 		case "TSTupleType": {
-			const elements = (type.elementTypes as Node[]).map((each) =>
+			const elements = (type.elementTypes as Array<Node>).map((each) =>
 				each.type === "TSNamedTupleMember" ? (each.elementType as Node) : each,
 			);
 			return { type: "TSUnionType", types: elements, start: 0, end: 0 };
 		}
 		case "TSTypeReference": {
 			const name = (type.typeName as Node).name;
-			if (name !== "Array" && name !== "ReadonlyArray") return undefined;
-			const [element] = ((type.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+			if (name !== "Array" && name !== "ReadonlyArray") {
+				return undefined;
+			}
+			const [element] =
+				((type.typeArguments as Node | null)?.params as Array<Node> | undefined) ?? [];
 			return element ?? { type: "TSUnknownKeyword", start: 0, end: 0 };
 		}
 		default:

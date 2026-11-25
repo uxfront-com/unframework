@@ -22,10 +22,10 @@ interface Trace {
  */
 function record(): {
 	mark: () => number;
-	since: (view: View, mark: number) => { name: string | null; calls: string[] }[];
+	since: (view: View, mark: number) => Array<{ name: string | null; calls: Array<string> }>;
 	stop: () => void;
 } {
-	const traces: Trace[] = [];
+	const traces: Array<Trace> = [];
 	const own = new Set<Element>();
 	const listener = (event: Event) => void traces.push((event as CustomEvent<Trace>).detail);
 	document.addEventListener("directive-trace", listener);
@@ -33,11 +33,15 @@ function record(): {
 		mark: () => traces.length,
 		since: (view, mark) => {
 			for (const { call, el } of traces) {
-				if (call.includes(" mounted ") && view.container.contains(el)) own.add(el);
+				if (call.includes(" mounted ") && view.container.contains(el)) {
+					own.add(el);
+				}
 			}
-			const found = new Map<Element, string[]>();
+			const found = new Map<Element, Array<string>>();
 			for (const { call, el } of traces.slice(mark)) {
-				if (!own.has(el)) continue;
+				if (!own.has(el)) {
+					continue;
+				}
 				found.set(el, [...(found.get(el) ?? []), call]);
 			}
 			return [...found].map(([el, calls]) => ({ name: el.getAttribute("data-name"), calls }));
@@ -51,10 +55,10 @@ function record(): {
  * a count depends neither on which target runs first nor on the order two directives of one
  * element run in, which Vue's attribute order gives and Solid and Angular don't keep.
  */
-function sorted(found: { name: string | null; calls: string[] }[]): string[] {
+function sorted(found: Array<{ name: string | null; calls: Array<string> }>): Array<string> {
 	return found
 		.flatMap(({ name, calls }) => {
-			const byDirective = new Map<string, string[]>();
+			const byDirective = new Map<string, Array<string>>();
 			for (const call of calls) {
 				const [directive = "", ...rest] = call.split(" ");
 				byDirective.set(directive, [...(byDirective.get(directive) ?? []), rest.join(" ")]);
@@ -65,7 +69,7 @@ function sorted(found: { name: string | null; calls: string[] }[]): string[] {
 }
 
 /** The view's elements that carry a directive, by their names. */
-function elements(view: View, names: string[]): (Element | null)[] {
+function elements(view: View, names: Array<string>): Array<Element | null> {
 	return names.map((name) => view.container.querySelector(`[data-name="${name}"]`));
 }
 
@@ -139,7 +143,9 @@ describeTargets("directives/rows", () => {
 				await view.expectParity("reversed");
 				expect(trace.since(view, mark)).toEqual([]);
 				const after = elements(view, names);
-				for (const [index, element] of before.entries()) expect(after[index]).toBe(element);
+				for (const [index, element] of before.entries()) {
+					expect(after[index]).toBe(element);
+				}
 
 				mark = trace.mark();
 				await view.user.click(view.getByRole("button", { name: "Remove second" }));
@@ -184,7 +190,9 @@ describeTargets("directives/rows", () => {
 				expect(firstOption(view)).toBe("option-y");
 				expect(trace.since(view, mark)).toEqual([]);
 				const reversed = elements(view, ["option-x", "option-y"]);
-				for (const [index, element] of options.entries()) expect(reversed[index]).toBe(element);
+				for (const [index, element] of options.entries()) {
+					expect(reversed[index]).toBe(element);
+				}
 				mark = trace.mark();
 				await view.user.click(view.getByRole("button", { name: "Remove option" }));
 				await view.expectParity("options-removed");

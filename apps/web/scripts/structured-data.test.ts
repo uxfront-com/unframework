@@ -11,7 +11,7 @@ const sections = {
 
 await test("homeGraph", async (t) => {
 	await t.test("describes the site and the software, published by UXFront, not Unframework", () => {
-		const graph = homeGraph("The compiler.")["@graph"] as Record<string, unknown>[];
+		const graph = homeGraph("The compiler.")["@graph"] as Array<Record<string, unknown>>;
 		assert.deepEqual(
 			graph.map((node) => [node["@type"], node.name]),
 			[
@@ -59,7 +59,7 @@ await test("techArticle", async (t) => {
 });
 
 await test("breadcrumbList", async (t) => {
-	const list = (...items: [string, string][]) => ({
+	const list = (...items: Array<[string, string]>) => ({
 		"@type": "BreadcrumbList",
 		itemListElement: items.map(([name, path], index) => ({
 			"@type": "ListItem",
@@ -69,7 +69,7 @@ await test("breadcrumbList", async (t) => {
 		})),
 	});
 	const items = (result: Record<string, unknown>) =>
-		(result.itemListElement as { position: number; name: string; item: string }[]).map(
+		(result.itemListElement as Array<{ position: number; name: string; item: string }>).map(
 			({ position, name, item }) => `${position} ${name} ${item.slice(SITE.length)}`,
 		);
 

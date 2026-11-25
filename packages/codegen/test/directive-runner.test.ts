@@ -18,7 +18,7 @@ type Run = (directive: object, element: FakeElement, value: string, follow?: Fol
 
 /** The runner's code with its types stripped, its globals faked, and what a test reads of it. */
 function runner() {
-	const observers: { callback: () => void; disconnected: boolean }[] = [];
+	const observers: Array<{ callback: () => void; disconnected: boolean }> = [];
 	class FakeObserver {
 		readonly #entry: { callback: () => void; disconnected: boolean };
 		constructor(callback: () => void) {
@@ -41,7 +41,7 @@ function runner() {
 			return collected.now ? undefined : this.#value;
 		}
 	}
-	const calls: string[] = [];
+	const calls: Array<string> = [];
 	const queueHook = (element: FakeElement, run: () => void, hook: string) => {
 		calls.push(`${hook} ${element.name}`);
 		run();
@@ -58,6 +58,7 @@ function runner() {
 			queue: "queueHook",
 		}).join("\n\n"),
 	);
+	// oxlint-disable-next-line typescript/no-implied-eval -- runs the emitted helpers, which is what the test checks
 	const make = new Function(
 		"MutationObserver",
 		"WeakRef",
@@ -73,7 +74,11 @@ function runner() {
 	const made = make(FakeObserver, FakeWeakRef, {}, queueHook);
 	/** A change of the document: every observer's callback runs. */
 	const mutate = () => {
-		for (const observer of observers) if (!observer.disconnected) observer.callback();
+		for (const observer of observers) {
+			if (!observer.disconnected) {
+				observer.callback();
+			}
+		}
 	};
 	return { ...made, calls, collected, mutate, observers };
 }
@@ -83,7 +88,7 @@ describe("the directive runner", () => {
 
 	it("takes a left element out of its caller's list, and back in when it returns", () => {
 		const { runDirective, calls, mutate } = runner();
-		const listed: string[] = [];
+		const listed: Array<string> = [];
 		const follow: Follow = {
 			leave: (element) => listed.push(`leave ${element.name}`),
 			back: (element) => listed.push(`back ${element.name}`),
@@ -103,7 +108,7 @@ describe("the directive runner", () => {
 
 	it("mounts a left element that comes back after its owner's task ran again without it", async () => {
 		const { runDirective, calls, mutate } = runner();
-		let listed: FakeElement[] = [];
+		let listed: Array<FakeElement> = [];
 		const follow: Follow = {
 			leave: (element) => (listed = listed.filter((each) => each !== element)),
 			back: (element) => void listed.push(element),
@@ -115,15 +120,21 @@ describe("the directive runner", () => {
 		// run's elements, and runs the list, which no longer holds it.
 		body.isConnected = false;
 		mutate();
-		for (const stop of stops) stop();
+		for (const stop of stops) {
+			stop();
+		}
 		stops = listed.map((element) => runDirective(hooks, element, "b", follow));
 		await Promise.resolve();
 		body.isConnected = true;
 		mutate();
 		expect(listed).toEqual([body]);
 		// The list changed, so Qwik runs the task again, which mounts it.
-		for (const stop of stops) stop();
-		stops = listed.map((element) => runDirective(hooks, element, "b", follow));
+		for (const stop of stops) {
+			stop();
+		}
+		for (const element of listed) {
+			runDirective(hooks, element, "b", follow);
+		}
 		await Promise.resolve();
 		expect(calls).toEqual(["mounted body", "unmounted body", "mounted body"]);
 	});
@@ -132,9 +143,13 @@ describe("the directive runner", () => {
 		const { runDirective, documentWatches, collected, mutate, observers } = runner();
 		const follow: Follow = { leave() {}, back() {} };
 		const rows = [1, 2, 3].map((index) => ({ name: `row ${index}`, isConnected: true }));
-		for (const row of rows) runDirective(hooks, row, "a", follow);
+		for (const row of rows) {
+			runDirective(hooks, row, "a", follow);
+		}
 		expect(documentWatches.checks.size).toBe(3);
-		for (const row of rows) row.isConnected = false;
+		for (const row of rows) {
+			row.isConnected = false;
+		}
 		mutate();
 		// Gone from the document, each is watched weakly until it is collected.
 		expect(documentWatches.checks.size).toBe(3);

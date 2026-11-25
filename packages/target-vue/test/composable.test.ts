@@ -36,8 +36,12 @@ describe("vue composable cases", () => {
 			expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
 		}
 		const checked = await toolchain.typecheck(Object.values(paths), context);
-		for (const path of Object.values(paths)) expect(checked.get(path) ?? [], path).toEqual([]);
+		for (const path of Object.values(paths)) {
+			expect(checked.get(path) ?? [], path).toEqual([]);
+		}
 		const linted = await toolchain.lint(Object.values(paths), context);
-		for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+		for (const [path, messages] of linted) {
+			expect(messages, path).toEqual([]);
+		}
 	});
 });

@@ -7,14 +7,15 @@
 import { describeTargets, it, mount, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
-import Checklist, { type Entry } from "./Checklist.uf.tsx";
+import Checklist from "./Checklist.uf.tsx";
+import type { Entry } from "./Checklist.uf.tsx";
 
 const milk: Entry = { id: "milk", label: "Milk" };
 const bread: Entry = { id: "bread", label: "Bread" };
 const eggs: Entry = { id: "eggs", label: "Eggs" };
 
 /** Copies, as a parent that fetched the list again would pass. */
-function copies(...entries: Entry[]): Entry[] {
+function copies(...entries: Array<Entry>): Array<Entry> {
 	return entries.map((entry) => ({ ...entry }));
 }
 

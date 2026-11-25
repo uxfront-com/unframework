@@ -134,7 +134,7 @@ export interface Plan {
 	 * The names a function the emitter writes around one of the source's must leave alone: those
 	 * the source's function reads or declares, Angular's imports and `Object`.
 	 */
-	reserved(fn: FunctionCode): string[];
+	reserved(fn: FunctionCode): Array<string>;
 	/** How each binding is declared. */
 	forms: ReadonlyMap<BindingId, MemberForm>;
 	/**
@@ -152,7 +152,7 @@ export interface Plan {
 	 */
 	recipes: ReadonlyMap<string, string>;
 	/** Each composable's call, in source order (ADR-0069). */
-	calls: readonly ComposableCall[];
+	calls: ReadonlyArray<ComposableCall>;
 	/**
 	 * What a composable returns, read through its call's holder, by the `used*` binding:
 	 * `toggle_1.on` (ADR-0069).
@@ -192,7 +192,7 @@ export interface Plan {
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
-export const ANGULAR_MEMBERS: readonly string[] = [
+export const ANGULAR_MEMBERS: ReadonlyArray<string> = [
 	"constructor",
 	"ngOnInit",
 	"ngOnDestroy",
@@ -201,7 +201,7 @@ export const ANGULAR_MEMBERS: readonly string[] = [
 ];
 
 /** Every name the output may import from Angular: no local the emitter declares takes one. */
-export const ANGULAR_IMPORTS: readonly string[] = [
+export const ANGULAR_IMPORTS: ReadonlyArray<string> = [
 	"Component",
 	"AfterRenderRef",
 	"ApplicationRef",
@@ -276,7 +276,9 @@ export function planComponent(declared: UfComponent, module: UfModule, shares = 
 	for (const { names } of passThroughImports(component, module)) {
 		for (const { local } of names) {
 			let member = composition.claim(local);
-			while (loopNames.has(member)) member = composition.claim(local);
+			while (loopNames.has(member)) {
+				member = composition.claim(local);
+			}
 			members.reserve(member);
 			recipes.set(local, member);
 		}
@@ -284,7 +286,9 @@ export function planComponent(declared: UfComponent, module: UfModule, shares = 
 	// A member the template reads takes no name composition declares, nor a list variable's.
 	const claimMember = (name: string) => {
 		let member = composition.claim(name);
-		while (loopNames.has(member)) member = composition.claim(name);
+		while (loopNames.has(member)) {
+			member = composition.claim(name);
+		}
 		members.reserve(member);
 		return member;
 	};
@@ -305,8 +309,10 @@ export function planComponent(declared: UfComponent, module: UfModule, shares = 
 	const { forms, seeded, placements, late } = formsOf(component, elementRefs);
 	// Each call's result is held by a member named for its composable (`useMediaQuery` →
 	// `mediaQuery`), past every name of the class, the fallthrough inputs included (ADR-0069).
-	const calls = component.setup.flatMap((item): ComposableCall[] => {
-		if (item.kind !== "Use") return [];
+	const calls = component.setup.flatMap((item): Array<ComposableCall> => {
+		if (item.kind !== "Use") {
+			return [];
+		}
 		const holder = claimMember(holderName(item.composable));
 		const injector = item.hasEffects
 			? claimMember(`${holderName(item.composable)}Injector`)
@@ -337,11 +343,15 @@ export function planComponent(declared: UfComponent, module: UfModule, shares = 
 		"Object",
 	]);
 	const shared = shares ? new Map<string, string>() : undefined;
-	let declaredInSource: string[] | undefined;
+	let declaredInSource: Array<string> | undefined;
 	const helper = (base: string): string => {
-		if (!shared) return imports.claim(base);
+		if (!shared) {
+			return imports.claim(base);
+		}
 		const known = shared.get(base);
-		if (known !== undefined) return known;
+		if (known !== undefined) {
+			return known;
+		}
 		// Every name of the helper's that a component of the source declares, or a child it imports
 		// binds, is left, so that each component claims the same name.
 		declaredInSource ??= [
@@ -426,7 +436,9 @@ function withOutputNames(component: UfComponent, module: UfModule): UfComponent 
 			!isModuleBinding(kind) &&
 			!isLoopVariable(kind),
 	);
-	if (clashing.length === 0) return component;
+	if (clashing.length === 0) {
+		return component;
+	}
 	const taken = new NameScope([
 		...sourceNames(component, module),
 		...events,
@@ -581,7 +593,9 @@ function formsOf(
 			case "State": {
 				const linked = item.initial !== undefined && readsLazily(item.initial);
 				forms.set(item.binding, linked ? "linked" : "signal");
-				if (linked) lazy.add(item.binding);
+				if (linked) {
+					lazy.add(item.binding);
+				}
 				break;
 			}
 			case "Derived":
@@ -599,7 +613,9 @@ function formsOf(
 			case "Const": {
 				const once = readsLazily(item.value);
 				forms.set(item.binding, once ? "once" : "value");
-				if (once) lazy.add(item.binding);
+				if (once) {
+					lazy.add(item.binding);
+				}
 				break;
 			}
 			case "Variable":
@@ -615,13 +631,21 @@ function formsOf(
 				forms.set(item.binding, escaping.has(item.binding) ? "arrow" : "method");
 				break;
 			case "WatchEffect":
-				if (defers) late.add(item);
-				else constructs = true;
+				if (defers) {
+					late.add(item);
+				} else {
+					constructs = true;
+				}
 				break;
 			case "Lifecycle":
-				if (item.hook !== "mounted") break;
-				if (defers) late.add(item);
-				else constructs = true;
+				if (item.hook !== "mounted") {
+					break;
+				}
+				if (defers) {
+					late.add(item);
+				} else {
+					constructs = true;
+				}
 				break;
 			case "Watch":
 				watches = true;
@@ -653,8 +677,12 @@ function formsOf(
 							? "constructor"
 							: "field";
 				placements.set(item, placement);
-				if (placement === "constructor") constructs = true;
-				if (placement === "init" && item.hasEffects) defers = true;
+				if (placement === "constructor") {
+					constructs = true;
+				}
+				if (placement === "init" && item.hasEffects) {
+					defers = true;
+				}
 				for (const { binding } of item.members) {
 					const kind = kinds.get(binding);
 					forms.set(
@@ -687,7 +715,9 @@ function componentRefs(
 	const found = new Set<BindingId>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+			if (node.kind !== "Component" && node.kind !== "Dynamic") {
+				return;
+			}
 			for (const attribute of node.attributes) {
 				if (attribute.kind === "Ref" && !elementRefs.has(attribute.binding)) {
 					found.add(attribute.binding);
@@ -706,11 +736,17 @@ function rootElementRefs(component: UfComponent, module: UfModule): Map<BindingI
 	const found = new Map<BindingId, string>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component") return;
+			if (node.kind !== "Component") {
+				return;
+			}
 			const child = childApi(module, node.component);
-			if (!child || child.exposes || child.refTag === undefined) return;
+			if (!child || child.exposes || child.refTag === undefined) {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind === "Ref") found.set(attribute.binding, node.component);
+				if (attribute.kind === "Ref") {
+					found.set(attribute.binding, node.component);
+				}
 			}
 		},
 	});
@@ -734,7 +770,9 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
 		switch (item.kind) {
 			case "State":
 			case "Variable":
-				if (item.initial) visit(item.initial);
+				if (item.initial) {
+					visit(item.initial);
+				}
 				break;
 			case "Const":
 			case "Await":
@@ -747,7 +785,11 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
 				visit(item.function.body);
 				break;
 			case "Watch":
-				for (const source of item.sources) if (source.kind === "Getter") visit(source.getter.body);
+				for (const source of item.sources) {
+					if (source.kind === "Getter") {
+						visit(source.getter.body);
+					}
+				}
 				visit(item.callback.body);
 				break;
 			case "WatchEffect":
@@ -760,12 +802,17 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
 				visit(item.value);
 				break;
 			case "Inject":
-				if (item.fallback) visit(item.fallback);
+				if (item.fallback) {
+					visit(item.fallback);
+				}
 				break;
 			case "Use":
 				for (const argument of item.arguments) {
-					if (argument.kind === "Value") visit(argument.value);
-					else visit((argument.kind === "Getter" ? argument.getter : argument.callback).body);
+					if (argument.kind === "Value") {
+						visit(argument.value);
+					} else {
+						visit((argument.kind === "Getter" ? argument.getter : argument.callback).body);
+					}
 				}
 				break;
 			case "DevCheck":
@@ -782,9 +829,13 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
 	// A directive's value that is a function by its name, which its hooks call (ADR-0099).
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element") return;
+			if (node.kind !== "Element") {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind === "Directive") visit(attribute.value as Code);
+				if (attribute.kind === "Directive") {
+					visit(attribute.value);
+				}
 			}
 		},
 	});
@@ -895,7 +946,9 @@ function readLazily(kind: BindingKind): boolean {
 /** The binding a component declares under `id`. */
 export function bindingById(plan: Plan, id: BindingId): Binding {
 	const binding = plan.component.bindings.find((each) => each.id === id);
-	if (!binding) throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
+	if (!binding) {
+		throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
+	}
 	return binding;
 }
 
@@ -911,14 +964,18 @@ export function memberOf(plan: Plan, binding: Binding): string {
 export function resultApi(plan: Plan, id: BindingId): ComposableMemberApi {
 	for (const { item } of plan.calls) {
 		const used = item.members.find(({ binding }) => binding === id);
-		if (used === undefined) continue;
+		if (used === undefined) {
+			continue;
+		}
 		for (const entry of plan.module.imports ?? []) {
 			const name = entry.names.find(
 				(each) => each.kind === "Composable" && each.local === item.composable,
 			);
 			const api = name && entry.api.composables?.find((each) => each.name === name.imported);
 			const member = api?.members.find((each) => each.name === used.member);
-			if (member) return member;
+			if (member) {
+				return member;
+			}
 		}
 	}
 	throw new Error(`No composable's API declares the member ${id} reads.`);
@@ -927,7 +984,9 @@ export function resultApi(plan: Plan, id: BindingId): ComposableMemberApi {
 /** A binding's form. */
 export function formOf(plan: Plan, binding: Binding): MemberForm {
 	const form = plan.forms.get(binding.id);
-	if (form === undefined) throw new Error(`No form for the binding ${binding.id}.`);
+	if (form === undefined) {
+		throw new Error(`No form for the binding ${binding.id}.`);
+	}
 	return form;
 }
 

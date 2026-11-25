@@ -25,8 +25,9 @@ const ctx = {
 	cache: { getFileTestResults: () => undefined, getFileStats: () => undefined },
 } as unknown as Vitest;
 
-const names = (specs: readonly { project: { name: string }; moduleId: string }[]): string[] =>
-	specs.map((s) => `${s.project.name} ${s.moduleId.slice(CASES_DIR.length + 1)}`);
+const names = (
+	specs: ReadonlyArray<{ project: { name: string }; moduleId: string }>,
+): Array<string> => specs.map((s) => `${s.project.name} ${s.moduleId.slice(CASES_DIR.length + 1)}`);
 
 describe("the harness's sequencer (ADR-0106)", () => {
 	it("runs Vue's leaking spec last in its hydrate project, and moves nothing else", () => {
@@ -75,7 +76,7 @@ describe("the harness's sequencer (ADR-0106)", () => {
 			fake("browser:vue", spec("state/counter"), 1, true),
 			fake("hydrate:vue", spec("state/counter"), 4),
 			fake("browser:react", LEAKING, 2),
-		] as unknown as TestSpecification[];
+		] as unknown as Array<TestSpecification>;
 		const base = await new BaseSequencer(ctx).sort(files);
 		const sorted = await new Sequencer(ctx).sort(files);
 		expect(names(base)).toEqual([

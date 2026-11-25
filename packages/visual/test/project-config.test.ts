@@ -62,7 +62,7 @@ describe("a project's Vite config", () => {
 	});
 
 	it("is called for the preview's server, and merges its other keys in", async () => {
-		const seen: ViteContext[] = [];
+		const seen: Array<ViteContext> = [];
 		const { config: server } = await targetServerConfig({
 			root: fixture("project-plugins"),
 			target: "vue",
@@ -138,14 +138,14 @@ const visual = (name: string, pixels?: "live" | "baseline") =>
 		...(pixels ? { pixels } : {}),
 	});
 
-let systemFonts: Promise<string[]> | undefined;
+let systemFonts: Promise<Array<string>> | undefined;
 
 /**
  * The families Chromium drew the example's system font with on this machine, as the
  * `font-fallback` message of a run that lists none names them: they differ from one machine to
  * the next, so the fixtures that list them read them from `UF_FIXTURE_FONTS`.
  */
-function drawnFonts(): Promise<string[]> {
+function drawnFonts(): Promise<Array<string>> {
 	systemFonts ??= visual("live-fonts-bundled").then((result) => {
 		const [cell] = result.report!.examples[0]!.cells;
 		expect(cell).toMatchObject({ target: "vue", status: "failed", outcome: "font-fallback" });

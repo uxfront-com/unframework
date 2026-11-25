@@ -68,7 +68,9 @@ function workflowJob(file: string, id: string): string {
 		.slice(workflow.indexOf("\njobs:\n"))
 		.split(/^ {2}(?=[a-z0-9-]+:\n)/m)
 		.find((block) => block.startsWith(`${id}:\n`));
-	if (!job) throw new Error(`${file} has no ${id} job.`);
+	if (!job) {
+		throw new Error(`${file} has no ${id} job.`);
+	}
 	return job;
 }
 
@@ -114,7 +116,7 @@ function compileWith(
 	id: string | null,
 	target?: TargetName,
 	input: string = source,
-	targets: readonly TargetName[] = target ? [target] : TARGET_NAMES,
+	targets: ReadonlyArray<TargetName> = target ? [target] : TARGET_NAMES,
 ): Promise<CompileResult> {
 	return compile(canarySource(id, input), {
 		filename,
@@ -125,7 +127,7 @@ function compileWith(
 }
 
 /** Code's lines without their indentation, and without blank ones. */
-function trimmedLines(code: string): string[] {
+function trimmedLines(code: string): Array<string> {
 	return code
 		.split("\n")
 		.map((line) => line.trim())
@@ -133,7 +135,7 @@ function trimmedLines(code: string): string[] {
 }
 
 /** The kinds of project that verify each live layer (plan §7.3). */
-const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
+const VERIFIED_BY: Record<string, ReadonlyArray<ProjectKind>> = {
 	L1: ["compile"],
 	L2: ["compile"],
 	L3: ["toolchain"],
@@ -168,11 +170,17 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
 });
 
 /** The elements of a render tree, in document order, through branches and list bodies. */
-function elementsOf(nodes: readonly RenderNode[]): ElementNode[] {
-	return nodes.flatMap((node): ElementNode[] => {
-		if (node.kind === "Element") return [node, ...elementsOf(node.children)];
-		if (node.kind === "If") return node.branches.flatMap((branch) => elementsOf(branch.children));
-		if (node.kind === "For") return elementsOf([node.body]);
+function elementsOf(nodes: ReadonlyArray<RenderNode>): Array<ElementNode> {
+	return nodes.flatMap((node): Array<ElementNode> => {
+		if (node.kind === "Element") {
+			return [node, ...elementsOf(node.children)];
+		}
+		if (node.kind === "If") {
+			return node.branches.flatMap((branch) => elementsOf(branch.children));
+		}
+		if (node.kind === "For") {
+			return elementsOf([node.body]);
+		}
 		return [];
 	});
 }
@@ -180,7 +188,9 @@ function elementsOf(nodes: readonly RenderNode[]): ElementNode[] {
 /** The root element of a module's first component. */
 function rootElement(ir: UfModule | undefined): ElementNode {
 	const render = ir?.components[0]?.render;
-	if (render?.kind !== "Element") throw new Error("The component's root is no element.");
+	if (render?.kind !== "Element") {
+		throw new Error("The component's root is no element.");
+	}
 	return render;
 }
 
@@ -192,7 +202,7 @@ async function corruptedRoot(id: string, input: string): Promise<ElementNode> {
 }
 
 /** An element's style declarations, as `property: value` (`…` for a bound value). */
-function declarationsOf(element: ElementNode): string[] {
+function declarationsOf(element: ElementNode): Array<string> {
 	return element.attributes.flatMap((attribute) =>
 		attribute.kind === "Style"
 			? attribute.declarations.map(
@@ -204,7 +214,7 @@ function declarationsOf(element: ElementNode): string[] {
 }
 
 /** The tags of the elements that hold the text canaries' marker, under L7-wrong-text. */
-async function markedElements(input: string): Promise<string[]> {
+async function markedElements(input: string): Promise<Array<string>> {
 	const render = (await compileWith("L7-wrong-text", "vue", input)).ir!.components[0]!.render;
 	return elementsOf(render.kind === "Element" ? [render] : render.children)
 		.filter(({ children }) =>
@@ -263,7 +273,9 @@ describe("canaries", () => {
 			"L2-unformatted",
 			"L14-map-shifted",
 		]);
-		for (const canary of compileOnly) expect(canaryProjects(canary)).toEqual(["compile"]);
+		for (const canary of compileOnly) {
+			expect(canaryProjects(canary)).toEqual(["compile"]);
+		}
 		expect(canarySource(null, source)).toBe(source);
 		expect(canaryFormats(null)).toBe(true);
 		expect(canaryFormats("L2-output-edited")).toBe(true);
@@ -322,10 +334,12 @@ describe("canaries", () => {
 		// Every entry read: one in another shape would drop out of the checks below.
 		expect(entries.length).toBe(include.match(/^ {10}- /gm)?.length);
 		// Each canary runs once on every case, or in shards 1 to n of one count.
-		const runs = new Map<string, string[]>();
+		const runs = new Map<string, Array<string>>();
 		for (const { canaries, shard } of entries) {
 			const part = shard ? `${shard.index}/${shard.count}` : "all";
-			for (const { id } of canaries) runs.set(id, [...(runs.get(id) ?? []), part]);
+			for (const { id } of canaries) {
+				runs.set(id, [...(runs.get(id) ?? []), part]);
+			}
 		}
 		expect([...runs.keys()].toSorted()).toEqual(CANARIES.map(({ id }) => id).toSorted());
 		for (const [id, parts] of runs) {
@@ -413,7 +427,7 @@ describe("canaries", () => {
 		for (const id of gated) {
 			const job = workflowJob("ci.yml", id);
 			const needs = /^ {4}needs:\s*(\[[^\]]*\]|\S+)/m.exec(job)?.[1] ?? "";
-			expect(needs.replace(/[[\]\s]/g, "").split(","), id).toContain("changes");
+			expect(needs.replaceAll(/[[\]\s]/g, "").split(","), id).toContain("changes");
 			const condition = /^ {4}if: \$\{\{ (.*) \}\}$/m.exec(job)?.[1] ?? "";
 			expect(condition, id).toMatch(/^!cancelled\(\) && /);
 			expect(condition, id).toContain("needs.changes.outputs.tests != 'false'");
@@ -479,8 +493,9 @@ describe("canaries", () => {
 		expect(shardFilters(shardCases(cases, shard), shard)).toEqual(["harness/", ...specs]);
 		expect(shardFilters(cases, undefined)).toEqual([]);
 		// No spec path holds the filter the other projects' files match.
-		for (const info of listCases().map(canaryCase))
+		for (const info of listCases().map(canaryCase)) {
 			expect(info.spec ?? "").not.toContain("harness/");
+		}
 	});
 
 	it("run each project whose specs fail to load in a Vitest run of its own, named for it", () => {
@@ -630,18 +645,19 @@ describe("canaries", () => {
 		const result = await compileWith("L2-unformatted");
 		// Without the format step, Angular's shared fallthrough modules print as the target writes
 		// them, whose import and type lines run past the formatter's width (ADR-0121).
-		const helpers: Partial<Record<TargetName, string[]>> = {
+		const helpers: Partial<Record<TargetName, Array<string>>> = {
 			angular: ["Fallthrough.ts", "Listeners.ts"],
 		};
 		for (const target of TARGET_NAMES) {
 			expect(await formattingProblems(target, result.outputs[target]!), target).toEqual([
 				expect.stringMatching(/ is not formatted idempotently:/),
-				...(helpers[target] ?? []).map((file) =>
-					expect.stringMatching(
-						new RegExp(
-							`^${target}/_unframework/${file.replace(".", "\\.")} is not formatted idempotently:`,
-						),
-					),
+				...(helpers[target] ?? []).map(
+					(file) =>
+						expect.stringMatching(
+							new RegExp(
+								`^${target}/_unframework/${file.replace(".", String.raw`\.`)} is not formatted idempotently:`,
+							),
+						) as unknown,
 				),
 			]);
 		}
@@ -759,8 +775,12 @@ describe("canaries", () => {
 					expect(part(corrupted, false), where).toEqual(part(clean, false));
 					const [sheet, ...more] = part(clean, true);
 					expect(more, where).toEqual([]);
-					if (!sheet) continue;
-					if (target === REFERENCE) sheets.add(info.id);
+					if (!sheet) {
+						continue;
+					}
+					if (target === REFERENCE) {
+						sheets.add(info.id);
+					}
 					const [dropped] = part(corrupted, true);
 					if (target === REFERENCE) {
 						expect(dropped, where).toEqual(sheet);
@@ -863,7 +883,7 @@ describe("canaries", () => {
 		const names = (code: string) =>
 			qwikImport
 				.exec(code)![0]
-				.replace(/^import \{|\} from[\s\S]*$/g, "")
+				.replaceAll(/^import \{|\} from[\s\S]*$/g, "")
 				.split(",")
 				.map((name) => name.trim())
 				.filter(Boolean);
@@ -1143,9 +1163,9 @@ describe("canaries", () => {
 			// Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054).
 			const spread =
 				target === "react" || target === "qwik"
-					? ", \\.\\.\\.style"
+					? String.raw`, \.\.\.style`
 					: target === "astro"
-						? "(?:, \\.\\.\\.\\w+)?"
+						? String.raw`(?:, \.\.\.\w+)?`
 						: "";
 			expect(contents, target).toMatch(
 				target === "angular"
@@ -1190,7 +1210,7 @@ describe("canaries", () => {
 		expect(after!.contents.length).toBeGreaterThan(before!.contents.length * 1.9);
 		// Every file of the compile, its shared helper modules included (ADR-0121), as L15 bundles
 		// a case's tree.
-		const size = (files: readonly OutputFile[]) =>
+		const size = (files: ReadonlyArray<OutputFile>) =>
 			bundleSize(files.map((file) => [{ path: `/case/${file.path}`, contents: file.contents }]));
 		const [grown, base] = await Promise.all([
 			size(corrupted.outputs.react!),
@@ -1211,7 +1231,9 @@ describe("canaries", () => {
 		const amount = Number(/^filter: invert\(([\d.]+)\)$/.exec(filter!)![1]);
 		// The filter's per-channel function (Filter Effects 1, `invert()`).
 		const invert = (channel: number) => amount * (1 - channel) + (1 - amount) * channel;
-		for (const channel of [0, 1]) expect(invert(invert(channel))).not.toBeCloseTo(channel, 2);
+		for (const channel of [0, 1]) {
+			expect(invert(invert(channel))).not.toBeCloseTo(channel, 2);
+		}
 	});
 
 	describe("on roots that already set what they set", () => {
@@ -1356,7 +1378,7 @@ describe("canaries", () => {
 			handler: { kind: "Function", binding: "add@3", span: { start: 0, end: 1 } },
 			span: { start: 0, end: 1 },
 		});
-		const element = (tag: string, attributes: unknown[], children: unknown[] = []) => ({
+		const element = (tag: string, attributes: Array<unknown>, children: Array<unknown> = []) => ({
 			kind: "Element",
 			tag,
 			attributes,
@@ -1490,7 +1512,9 @@ describe("canaries", () => {
 		expect(Object.keys(ssr.evidence)).toEqual(["ssr"]);
 		expect(Object.keys(browser.evidence)).toEqual(["browser"]);
 		// The compile and its output stay as they were: only the served map moves.
-		for (const id of [ssr.id, browser.id]) expect(canaryPlugins(id, "react")).toEqual([]);
+		for (const id of [ssr.id, browser.id]) {
+			expect(canaryPlugins(id, "react")).toEqual([]);
+		}
 	});
 
 	it("shift a served module's map down one line, column for column", () => {

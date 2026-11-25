@@ -21,7 +21,7 @@ function emitShared(source: string, file = "Fixture.uf.tsx") {
 		},
 		helper: modules.helper,
 	};
-	const files: OutputFile[] = [
+	const files: Array<OutputFile> = [
 		...module.components.flatMap((component) => target.emit(component, context)),
 		...(module.directives ?? []).flatMap((directive) => target.emitDirective!(directive, context)),
 	];
@@ -29,11 +29,11 @@ function emitShared(source: string, file = "Fixture.uf.tsx") {
 }
 
 /** The file of a component's output, by its path. */
-const fileAt = (files: readonly OutputFile[], path: string) =>
+const fileAt = (files: ReadonlyArray<OutputFile>, path: string) =>
 	files.find((file) => file.path === path)!.contents;
 
 /** The text of the `ClickCapture` module among a compile's helper modules. */
-const clickCapture = (helpers: readonly OutputFile[]) =>
+const clickCapture = (helpers: ReadonlyArray<OutputFile>) =>
 	helpers.find(({ path }) => path === "_unframework/ClickCapture.ts")!.contents;
 
 const importsOf = (contents: string) => contents.match(/^import .*_unframework.*$/gm) ?? [];

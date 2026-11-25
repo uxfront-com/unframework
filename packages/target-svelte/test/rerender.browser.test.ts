@@ -21,7 +21,7 @@ function read(container: HTMLElement) {
 	};
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

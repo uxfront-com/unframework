@@ -53,12 +53,14 @@ function excerpt(text: string): string {
  * `treeRepairs`).
  */
 export function parseHtml(source: string): TreeFragment {
-	const errors: ParserError[] = [];
+	const errors: Array<ParserError> = [];
 	const context = defaultTreeAdapter.createElement("body", spec.NS.HTML, []);
 	const fragment = parseFragment(context, source, {
 		sourceCodeLocationInfo: true,
 		onParseError: (error) => {
-			if (!CHARACTER_ERRORS.has(error.code)) errors.push(error);
+			if (!CHARACTER_ERRORS.has(error.code)) {
+				errors.push(error);
+			}
 		},
 	});
 	const problems = [
@@ -83,15 +85,17 @@ export function parseHtml(source: string): TreeFragment {
  * - `inserted`: an element with no tag in the source (a formatting element reopened after
  *   misnested tags, a `<tr>` around cells), apart from `IMPLIED_ELEMENTS`.
  */
-function treeRepairs(source: string, fragment: TreeFragment): Problem[] {
-	const problems: Problem[] = [];
+function treeRepairs(source: string, fragment: TreeFragment): Array<Problem> {
+	const problems: Array<Problem> = [];
 	const covered = new Uint8Array(source.length);
 	const quoted = (location: Token.Location) =>
 		excerpt(source.slice(location.startOffset, location.endOffset));
 	// The located node furthest into the source so far, in tree order.
 	let furthest: Token.Location | undefined;
 	const locate = (location: Token.Location | null | undefined) => {
-		if (!location) return;
+		if (!location) {
+			return;
+		}
 		covered.fill(1, location.startOffset, location.endOffset);
 		if (furthest && location.startOffset < furthest.startOffset) {
 			problems.push({
@@ -125,10 +129,14 @@ function treeRepairs(source: string, fragment: TreeFragment): Problem[] {
 	let start = -1;
 	for (let index = 0; index <= source.length; index++) {
 		if (index < source.length && covered[index] === 0) {
-			if (start < 0) start = index;
+			if (start < 0) {
+				start = index;
+			}
 		} else if (start >= 0) {
 			const text = source.slice(start, index);
-			if (text.trim() !== "") problems.push({ offset: start, message: `dropped ${excerpt(text)}` });
+			if (text.trim() !== "") {
+				problems.push({ offset: start, message: `dropped ${excerpt(text)}` });
+			}
 			start = -1;
 		}
 	}
@@ -155,12 +163,12 @@ function holderOf(node: TreeParent): TreeParent {
 }
 
 /** The children of a node; a `<template>`'s are those of its content fragment. */
-export function childrenOf(node: TreeParent): TreeChild[] {
+export function childrenOf(node: TreeParent): Array<TreeChild> {
 	return holderOf(node).childNodes;
 }
 
 /** Replaces a node's children (a `<template>`'s content) with `children`, in place. */
-export function replaceChildren(node: TreeParent, children: readonly TreeChild[]): void {
+export function replaceChildren(node: TreeParent, children: ReadonlyArray<TreeChild>): void {
 	const holder = holderOf(node);
 	holder.childNodes.length = 0;
 	for (const child of children) {

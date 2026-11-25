@@ -40,7 +40,7 @@ export interface ReactCode {
 
 /** A write of state, as the statements it expands to once the code around it is spelled. */
 interface Expansion {
-	statements: string[];
+	statements: Array<string>;
 	/** Whether the statements need a block: an arrow's body, or an `if`'s or a loop's. */
 	block: boolean;
 	/** Whether a `;` after the marker ends a statement the expansion replaces. */
@@ -56,7 +56,9 @@ export function reactCode(plan: ReactPlan): ReactCode {
 	const sources = component.bindings.map((binding) => binding.name).join(" ");
 	let prefix = "__ufWrite";
 	const all = [component, ...plan.module.types].map((part) => JSON.stringify(part)).join("");
-	while (all.includes(prefix) || sources.includes(prefix)) prefix = `_${prefix}`;
+	while (all.includes(prefix) || sources.includes(prefix)) {
+		prefix = `_${prefix}`;
+	}
 	const expansions = new Map<string, Expansion>();
 	let overrides: ReadonlyMap<BindingId, string> | undefined;
 	// Where the code being printed has each position in the source: client code is printed with
@@ -136,7 +138,9 @@ export function reactCode(plan: ReactPlan): ReactCode {
 			const client = site === "client" && !plan.narrowedReads.has(start);
 			// A read in what the effect hands on to run later reads the value then, not the run's.
 			const override = overridden(reference);
-			if (override !== undefined) return override;
+			if (override !== undefined) {
+				return override;
+			}
 			const spelled = spelling(binding, written, client);
 			// A read React's spelling does not narrow asserts what the source's condition shows.
 			const asserted =
@@ -195,17 +199,21 @@ export function reactCode(plan: ReactPlan): ReactCode {
 	 * seconds.value += 1; })`).
 	 */
 	const expand = (text: string): string => {
-		if (!text.includes(prefix)) return text;
+		if (!text.includes(prefix)) {
+			return text;
+		}
 		const marker = `${escape(prefix)}\\d+__`;
 		const pattern = new RegExp(`(?:\\(\\s*(${marker})\\s*\\)|(${marker}))(\\s*;)?`, "g");
-		const expanded = text.replace(
+		const expanded = text.replaceAll(
 			pattern,
 			(_match, wrapped: string | undefined, bare: string | undefined, end: string | undefined) => {
 				const found = expansions.get((wrapped ?? bare)!)!;
 				const { block, ownsSemicolon } = found;
 				const statements = found.statements.map(expand);
 				const semicolon = end ?? "";
-				if (!block) return `${statements.join(";\n")}${semicolon}`;
+				if (!block) {
+					return `${statements.join(";\n")}${semicolon}`;
+				}
 				const body = `{\n${statements.map((statement) => `${statement};`).join("\n")}\n}`;
 				return ownsSemicolon ? body : `${body}${semicolon}`;
 			},
@@ -228,7 +236,9 @@ export function reactCode(plan: ReactPlan): ReactCode {
 
 	/** Code `print` prints, with its narrowed paths asserted in client code (`assertedCode`). */
 	const asserting = <T>(code: Code, site: RewriteSite, print: (code: Code) => T): T => {
-		if (site !== "client") return print(code);
+		if (site !== "client") {
+			return print(code);
+		}
 		const asserted = assertedCode(code, (reference) =>
 			overridden(reference) === undefined
 				? assertedPaths(plan, reference, plan.bindings.get(reference.binding)!)
@@ -246,7 +256,9 @@ export function reactCode(plan: ReactPlan): ReactCode {
 	/** A function's body as statements: see {@link ReactCode.statements}. */
 	const statementsOf = (fn: FunctionCode, site: RewriteSite): string => {
 		const body = rewriteCode(fn.body, component, rules, site).trim();
-		if (!fn.expression) return forReactCompiler(expand(body)).trim().slice(1, -1).trim();
+		if (!fn.expression) {
+			return forReactCompiler(expand(body)).trim().slice(1, -1).trim();
+		}
 		// A write that is the whole body is its statements, never a block in parentheses.
 		const write = expansions.get(body.replace(/^\(\s*(.*?)\s*\)$/s, "$1"));
 		if (write) {
@@ -296,7 +308,9 @@ const LOGICAL = new Set(["&&=", "||=", "??="]);
  * for `++count`). Everything else is as written.
  */
 function forReactCompiler(code: string): string {
-	if (!/\+\+|--|&&=|\|\|=|\?\?=/.test(code)) return code;
+	if (!/\+\+|--|&&=|\|\|=|\?\?=/.test(code)) {
+		return code;
+	}
 	// The updates first: a logical assignment's value may hold one, which its rewrite copies.
 	return rewriteLogical(rewriteUpdates(code));
 }
@@ -310,14 +324,17 @@ function parseCode(code: string): { root: unknown; base: number } {
 		root = parseStatementsSource(code).statements;
 	}
 	// Code that is a function (a handler, a setup function) is not nested in itself.
-	const top = Array.isArray(root) ? (root.length === 1 ? root[0] : undefined) : root;
+	const top: unknown = Array.isArray(root) ? (root.length === 1 ? root[0] : undefined) : root;
 	return { root, base: isNode(top) && FUNCTIONS.has(top.type) ? 1 : 0 };
 }
 
 const FUNCTIONS = new Set(["ArrowFunctionExpression", "FunctionExpression", "FunctionDeclaration"]);
 
 /** Applies edits, none overlapping another, to code. */
-function applyEdits(code: string, edits: readonly { start: number; end: number; text: string }[]) {
+function applyEdits(
+	code: string,
+	edits: ReadonlyArray<{ start: number; end: number; text: string }>,
+) {
 	let result = code;
 	for (const edit of edits.toSorted((a, b) => b.start - a.start)) {
 		result = `${result.slice(0, edit.start)}${edit.text}${result.slice(edit.end)}`;
@@ -327,15 +344,21 @@ function applyEdits(code: string, edits: readonly { start: number; end: number; 
 
 /** `x ??= y` (and `||=`, `&&=`) as `x = x ?? (y)`. */
 function rewriteLogical(code: string): string {
-	if (!/&&=|\|\|=|\?\?=/.test(code)) return code;
+	if (!/&&=|\|\|=|\?\?=/.test(code)) {
+		return code;
+	}
 	const { root } = parseCode(code);
-	const edits: { start: number; end: number; text: string }[] = [];
+	const edits: Array<{ start: number; end: number; text: string }> = [];
 	const visit = (node: unknown): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
-		if (!isNode(node)) return;
+		if (!isNode(node)) {
+			return;
+		}
 		const fields = node as unknown as Record<string, unknown>;
 		if (node.type === "AssignmentExpression" && LOGICAL.has(fields.operator as string)) {
 			const left = fields.left as Node;
@@ -351,7 +374,9 @@ function rewriteLogical(code: string): string {
 			return;
 		}
 		for (const [key, value] of Object.entries(fields)) {
-			if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+			if (key !== "type" && key !== "parent" && typeof value === "object") {
+				visit(value);
+			}
 		}
 	};
 	visit(root);
@@ -392,7 +417,7 @@ const IGNORED_RETURNS = new WeakSet<Node>();
 
 /** Records the callback of a `forEach` call: what it returns is ignored. */
 function noteIgnoredReturn(node: Node): void {
-	const call = node as unknown as { type: string; callee?: Node; arguments?: Node[] };
+	const call = node as unknown as { type: string; callee?: Node; arguments?: Array<Node> };
 	const callee = call.callee as unknown as
 		| { type: string; computed?: boolean; property?: { type: string; name?: string } }
 		| undefined;
@@ -453,15 +478,21 @@ function levelAt(parent: Node, key: string): Level {
 
 /** Updates of a variable a nested function captures, as compound assignments of the same value. */
 function rewriteUpdates(code: string): string {
-	if (!/\+\+|--/.test(code)) return code;
+	if (!/\+\+|--/.test(code)) {
+		return code;
+	}
 	const { root, base } = parseCode(code);
 	const captured = new Set<string>();
-	const updates: { node: Node; name: string; text: string }[] = [];
+	const updates: Array<{ node: Node; name: string; text: string }> = [];
 	const visit = (node: unknown, depth: number, dropped: boolean, level: Level): void => {
-		if (!isNode(node)) return;
+		if (!isNode(node)) {
+			return;
+		}
 		const fields = node as unknown as Record<string, unknown>;
 		const inner = FUNCTIONS.has(node.type) ? depth + 1 : depth;
-		if (node.type === "Identifier" && depth > base) captured.add(fields.name as string);
+		if (node.type === "Identifier" && depth > base) {
+			captured.add(fields.name as string);
+		}
 		noteIgnoredReturn(node);
 		const argument = fields.argument as (Node & { name?: string }) | undefined;
 		if (node.type === "UpdateExpression" && argument?.type === "Identifier") {
@@ -480,15 +511,19 @@ function rewriteUpdates(code: string): string {
 			updates.push({ node, name, text });
 		}
 		for (const [key, value] of Object.entries(fields)) {
-			if (key === "type" || key === "parent" || typeof value !== "object") continue;
-			const items: unknown[] = Array.isArray(value) ? value : [value];
+			if (key === "type" || key === "parent" || typeof value !== "object") {
+				continue;
+			}
+			const items: Array<unknown> = Array.isArray(value) ? value : [value];
 			for (const [index, item] of items.entries()) {
 				const last = index === items.length - 1;
 				visit(item, inner, dropsValue(node, key, dropped, last), levelAt(node, key));
 			}
 		}
 	};
-	for (const item of Array.isArray(root) ? root : [root]) visit(item, 0, false, "assignment");
+	for (const item of Array.isArray(root) ? root : [root]) {
+		visit(item, 0, false, "assignment");
+	}
 	return applyEdits(
 		code,
 		updates
@@ -514,5 +549,5 @@ function isNode(value: unknown): value is Node {
 }
 
 function escape(text: string): string {
-	return text.replace(/[$]/g, "\\$");
+	return text.replaceAll(/[$]/g, String.raw`\$`);
 }

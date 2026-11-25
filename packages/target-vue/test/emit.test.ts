@@ -30,7 +30,7 @@ function emit(kind: "default" | "named" = "default") {
 	);
 	const component = createComponent("Hello", render, at);
 	const module = createModule("Hello.uf.tsx", [component], [createExport(kind, "Hello", at)]);
-	const reported: unknown[] = [];
+	const reported: Array<unknown> = [];
 	const context: EmitContext = {
 		module,
 		options: undefined,
@@ -112,7 +112,7 @@ describe("vue target", () => {
 });
 
 /** A component's file, with `script` and `template` in the shape this target prints them. */
-const sfc = (script: string[], template: string[]) =>
+const sfc = (script: Array<string>, template: Array<string>) =>
 	[
 		...(script.length ? ['<script setup lang="ts">', ...script, "</script>", ""] : []),
 		"<template>",
@@ -321,7 +321,9 @@ export default function Quote({ text = "x" }: { text?: string }) {
 			props: [{ ...prop!, default: { ...prop!.default!, code: '"</script><SCRIPT>"' } }],
 		};
 		const [file] = target.emit(changed, { module, options: undefined, report: () => {} });
-		expect(file!.contents).toContain('const { text = "<\\/script><SCRIPT>" } = defineProps');
+		expect(file!.contents).toContain(
+			String.raw`const { text = "<\/script><SCRIPT>" } = defineProps`,
+		);
 		expect(file!.contents.match(/<\/script/gi)).toHaveLength(1);
 	});
 

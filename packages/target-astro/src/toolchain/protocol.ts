@@ -32,7 +32,7 @@ export interface AstroRenderResult {
 	/** The component's HTML, preceded by its own `<style>` elements. */
 	html: string;
 	/** `console.warn` and `console.error` calls made while rendering (layer L13). */
-	console: CapturedConsoleMessage[];
+	console: Array<CapturedConsoleMessage>;
 }
 
 /** A compiled Astro component, as the Container API renders it. */
@@ -62,7 +62,9 @@ export function astroComponentRef(id: string): AstroComponentRef {
 
 /** Whether a value is what a browser project's `.uf.tsx` import yields. */
 export function isAstroComponentRef(value: unknown): value is AstroComponentRef {
-	if (typeof value !== "object" || value === null) return false;
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
 	const ref = value as Partial<AstroComponentRef>;
 	return (
 		ref.__ufTarget === "astro" &&

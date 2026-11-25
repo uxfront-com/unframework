@@ -2,7 +2,7 @@
 // every component of a source names alike. `./shared.ts` prints their modules. The watchers and
 // their scheduler stay inline, since each output tailors them and their queue is the file's (R1,
 // R2), and so do `restAttributes`, `textCaret`, `toggle` and `selectedValues`.
-export const SHARED_HELPER_NAMES: readonly string[] = [
+export const SHARED_HELPER_NAMES: ReadonlyArray<string> = [
 	"cx",
 	"KeyedFor",
 	"modelText",
@@ -32,8 +32,10 @@ export function printHelper(
 	name: string,
 	local: string,
 	code: (local: string) => string,
-): string[] {
-	if (!shared || !SHARED_HELPER_NAMES.includes(name)) return [code(local)];
+): Array<string> {
+	if (!shared || !SHARED_HELPER_NAMES.includes(name)) {
+		return [code(local)];
+	}
 	shared.used.set(name, local);
 	return [];
 }
@@ -45,10 +47,16 @@ export function printHelper(
  */
 export function reserveSharedNames(
 	names: Set<string>,
-	reserved: readonly Iterable<string>[],
+	reserved: ReadonlyArray<Iterable<string>>,
 ): void {
 	for (const helper of SHARED_HELPER_NAMES) {
 		const own = new RegExp(`^${helper}(?:_\\d+)*$`);
-		for (const each of reserved) for (const name of each) if (own.test(name)) names.add(name);
+		for (const each of reserved) {
+			for (const name of each) {
+				if (own.test(name)) {
+					names.add(name);
+				}
+			}
+		}
 	}
 }

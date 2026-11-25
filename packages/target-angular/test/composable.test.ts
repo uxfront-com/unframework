@@ -36,7 +36,7 @@ async function expectClean({ sources }: CompiledCase): Promise<Map<string, strin
 	}
 	// Two sources that import one module each copy it, the same.
 	const files = new Map<string, string>();
-	for (const output of sources.flatMap(({ outputs }): OutputFile[] => outputs)) {
+	for (const output of sources.flatMap(({ outputs }): Array<OutputFile> => outputs)) {
 		expect(files.get(output.path) ?? output.contents, output.path).toBe(output.contents);
 		files.set(output.path, output.contents);
 	}
@@ -49,9 +49,13 @@ async function expectClean({ sources }: CompiledCase): Promise<Map<string, strin
 		expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
 	}
 	const checked = await toolchain.typecheck(Object.values(paths), context);
-	for (const [path, messages] of checked) expect(messages, path).toEqual([]);
+	for (const [path, messages] of checked) {
+		expect(messages, path).toEqual([]);
+	}
 	const linted = await toolchain.lint(Object.values(paths), context);
-	for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+	for (const [path, messages] of linted) {
+		expect(messages, path).toEqual([]);
+	}
 	return files;
 }
 
@@ -450,7 +454,9 @@ const CALLS: Record<string, Record<string, string>> = {
  */
 function methodBody(code: string, head: string): string {
 	const start = code.lastIndexOf(`  ${head} {\n`);
-	if (start === -1) return "";
+	if (start === -1) {
+		return "";
+	}
 	const end = code.indexOf("\n  }\n", start);
 	return code.slice(start, end);
 }
@@ -587,7 +593,9 @@ describe("angular composable call sites", () => {
 			const effects = [...init.matchAll(/afterRenderEffect\(/g)].map(({ index }) => index);
 			expect(call).toBeGreaterThan(-1);
 			expect(effects).toHaveLength(2);
-			for (const at of effects) expect(at).toBeGreaterThan(call);
+			for (const at of effects) {
+				expect(at).toBeGreaterThan(call);
+			}
 			expect([...init.matchAll(/\{ injector: this\.injector \}/g)]).toHaveLength(2);
 			// The cleanup's ref is assigned in `ngOnInit`: optional and writable.
 			expect(code).toMatch(/private renderEffect\?: AfterRenderRef;/);

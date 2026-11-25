@@ -26,7 +26,9 @@ vi.mock("@unframework.dev/compiler", async (importActual) => {
 				...created,
 				compile: async (file: string) => {
 					const result = await created.compile(file);
-					if (!stub.dropMaps) return result;
+					if (!stub.dropMaps) {
+						return result;
+					}
 					return {
 						...result,
 						outputs: Object.fromEntries(

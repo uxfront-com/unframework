@@ -1,6 +1,7 @@
-import Button, {
-	type ButtonProps,
-	type ButtonSize,
+import Button from "../../../../../integration/cases/types/exported-types/__output__/react/Button";
+import type {
+	ButtonProps,
+	ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/react/Button";
 
 export function Consumer() {

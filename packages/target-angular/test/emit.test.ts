@@ -62,7 +62,9 @@ async function compiled(contents: string, consumer: Record<string, unknown>): Pr
 	tsProgram.emit(
 		tsProgram.getSourceFile(file),
 		(name, output) => {
-			if (name.endsWith(".js")) code = output;
+			if (name.endsWith(".js")) {
+				code = output;
+			}
 		},
 		undefined,
 		false,
@@ -411,7 +413,7 @@ describe("angular target", () => {
  * The component class's body of an emitted file, one member per line, as the compiler formats
  * it: the class after `@Component(`, past a directive the file declares before it.
  */
-function classBody(contents: string): string[] {
+function classBody(contents: string): Array<string> {
 	const component = contents.slice(Math.max(contents.indexOf("@Component("), 0));
 	const body =
 		/\n(?:export (?:default )?)?class \w+(?: implements [\w, ]+)? \{\n([\s\S]*?)\n\}\n/.exec(
@@ -421,7 +423,7 @@ function classBody(contents: string): string[] {
 }
 
 /** The messages of Angular's L3 check (ngtsc) on an emitted file, alone in a scratch directory. */
-async function l3Errors(file: { path: string; contents: string }): Promise<string[]> {
+async function l3Errors(file: { path: string; contents: string }): Promise<Array<string>> {
 	const path = join(scratchDir(), file.path);
 	const results = await toolchain.frameworkCompile([{ path, contents: file.contents }], context);
 	const { errors, warnings } = results.get(path)!;
@@ -429,7 +431,7 @@ async function l3Errors(file: { path: string; contents: string }): Promise<strin
 }
 
 /** The lines of an emitted file's template, without their indentation, formatted or not. */
-function templateLines(contents: string): string[] {
+function templateLines(contents: string): Array<string> {
 	return /template: `([\s\S]*)`,?\n/
 		.exec(contents)![1]!
 		.split("\n")
@@ -1004,7 +1006,7 @@ export default function Gap({ on, names }: GapProps) {
 			"#ufElement",
 			">",
 			'@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
-			'@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
+			String.raw`@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\u00a0" }}<b>c</b>&ngsp;<i>d</i>`,
 			"</p>",
 		]);
 	});
@@ -1034,20 +1036,20 @@ export default function Match({ label, on }: MatchProps) {
 			"@let label = this.label();",
 			"@let on = this.on();",
 			"<div",
-			"[attr.title]=\"'title' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['title'] : /\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
+			String.raw`[attr.title]="'title' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['title'] : /\\x27/.test(label) ? 'quoted' : 'plain'"`,
 			'[class]="this.class()"',
 			'[style]="this.style()"',
 			PASSED,
 			'[ufScope]="this.host"',
 			"#ufElement",
 			">",
-			"@if (/^\\\\x2f/.test(label)) {",
+			String.raw`@if (/^\\x2f/.test(label)) {`,
 			"<b>slash</b>",
 			"}",
-			"@for (part of label.split(/[\\\\x3b\\\\x29]/); track part) {",
+			String.raw`@for (part of label.split(/[\\x3b\\x29]/); track part) {`,
 			"<i>{{ part }}</i>",
 			"}",
-			'<p>{{ "x\\\\ue500y" }}{{ label + label }}@if (/(?<x>a)/.test(label)) {named}</p>',
+			String.raw`<p>{{ "x\\ue500y" }}{{ label + label }}@if (/(?<x>a)/.test(label)) {named}</p>`,
 			'<svg viewBox="0 0 2 2">',
 			"<svg:title>{{ label }}@if (on) { on}</svg:title>",
 			"</svg>",
@@ -1281,9 +1283,13 @@ export default async function Card({ id }: { id: string }) {
 			expect(await l3Errors(file)).toEqual([]);
 			const [path] = Object.values(writeFiles(scratchDir(), { [file.path]: file.contents }));
 			const checked = await toolchain.typecheck([path!], context);
-			for (const [each, messages] of checked) expect(messages, each).toEqual([]);
+			for (const [each, messages] of checked) {
+				expect(messages, each).toEqual([]);
+			}
 			const linted = await toolchain.lint([path!], context);
-			for (const [each, messages] of linted) expect(messages, each).toEqual([]);
+			for (const [each, messages] of linted) {
+				expect(messages, each).toEqual([]);
+			}
 		}
 	});
 });

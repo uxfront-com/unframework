@@ -32,7 +32,7 @@ import { REFERENCE } from "./targets.ts";
 const MAP_CANARY = "L14-map-shifted";
 
 /** The targets a canary corrupts: every one, the followers, or the ones it names. */
-export function corruptedTargets(canary: Canary): TargetName[] {
+export function corruptedTargets(canary: Canary): Array<TargetName> {
 	return (
 		canary.followersOnly ? TARGET_NAMES.filter((name) => name !== REFERENCE) : [...TARGET_NAMES]
 	).filter((name) => corrupts(canary, name));
@@ -44,7 +44,7 @@ export function corruptedTargets(canary: Canary): TargetName[] {
  * That test compiles the corpus on its own, so it comes last, which puts it in a shard without
  * the slowest plugin canaries while their order stays as it is.
  */
-export function corpusChecks(canaries: readonly Canary[] = CANARIES): string[] {
+export function corpusChecks(canaries: ReadonlyArray<Canary> = CANARIES): Array<string> {
 	return [
 		...canaries
 			.filter(
@@ -72,7 +72,7 @@ export function describeCorpusShard(
 				const evidence = canary.evidence.compile!["round trip"]!;
 				const pattern = (target: string) =>
 					typeof evidence === "function" ? evidence(target) : evidence;
-				const problems: string[] = [];
+				const problems: Array<string> = [];
 				let corrupted = 0;
 				for (const info of cases) {
 					const modules = new Set(info.modules.map(({ source }) => basename(source)));
@@ -112,7 +112,9 @@ export function describeCorpusShard(
 							const input = { filename: source.filename, text };
 							// A source a target writes no file for has no map to corrupt: a `.uf.ts` module's
 							// directives on Astro, which runs no hook (ADR-0099).
-							if (!files.length) return { before: [], after: [] };
+							if (!files.length) {
+								return { before: [], after: [] };
+							}
 							// A helper module maps onto itself, as a copy does (ADR-0121).
 							const own = new Set([...modules, ...(result.helpers[target] ?? [])]);
 							return {
@@ -121,10 +123,15 @@ export function describeCorpusShard(
 							};
 						});
 						const before = reports.flatMap((report) => report.before);
-						if (before.length) problems.push(`${where}: clean maps fail: ${before.join("; ")}`);
+						if (before.length) {
+							problems.push(`${where}: clean maps fail: ${before.join("; ")}`);
+						}
 						const after = reports.flatMap((report) => report.after);
-						if (after.some((message) => pattern(target).test(message))) corrupted += 1;
-						else problems.push(`${where}: not caught: ${after.join("; ") || "no problem"}`);
+						if (after.some((message) => pattern(target).test(message))) {
+							corrupted += 1;
+						} else {
+							problems.push(`${where}: not caught: ${after.join("; ") || "no problem"}`);
+						}
 					}
 				}
 				expect(problems).toEqual([]);
@@ -147,11 +154,13 @@ export function describeCorpusShard(
 		};
 
 		const plugins = CANARIES.filter((canary) => canary.id !== MAP_CANARY && ids.has(canary.id));
-		if (!plugins.length) return;
+		if (!plugins.length) {
+			return;
+		}
 		it.each(plugins)(
 			"$id corrupts every case with output on every target it corrupts, keeping the IR valid",
 			async (canary) => {
-				const problems: string[] = [];
+				const problems: Array<string> = [];
 				for (const info of cases) {
 					const { input, result } = await clean(info);
 					// Only the cases it applies to on each target: the verdict judges no other.
@@ -166,7 +175,9 @@ export function describeCorpusShard(
 									(diagnostic.target === undefined || diagnostic.target === target),
 							),
 					);
-					if (!targets.length) continue;
+					if (!targets.length) {
+						continue;
+					}
 					const after = await compile(input, {
 						filename: info.filename,
 						targets,

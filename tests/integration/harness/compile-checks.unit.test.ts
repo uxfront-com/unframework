@@ -33,7 +33,7 @@ const filename = "fixture/badge/Badge.uf.tsx";
 /** `className` is UF3004, with a safe fix that renames it to `class`. */
 const fixable = 'export default function Badge() {\n  return <p className="badge">New</p>;\n}\n';
 
-function compileWith(source: string, plugins: CompilerPlugin[] = []): Promise<CompileResult> {
+function compileWith(source: string, plugins: Array<CompilerPlugin> = []): Promise<CompileResult> {
 	return compile(source, { filename, targets: TARGET_NAMES, plugins });
 }
 
@@ -110,7 +110,7 @@ describe("checkFixes (L1)", () => {
 	it("fails a fix that does not remove its diagnostic", async () => {
 		const { diagnostics } = await compileWith(fixable);
 		// The fix rewrites the attribute's name as it was: the source does not change.
-		const broken: Diagnostic[] = diagnostics.map((diagnostic) => ({
+		const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
 			...diagnostic,
 			fixes: diagnostic.fixes?.map((fix) => ({
 				...fix,
@@ -125,7 +125,7 @@ describe("checkFixes (L1)", () => {
 	it("fails a fix that brings another diagnostic", async () => {
 		const { diagnostics } = await compileWith(fixable);
 		// `<p id="uf-id-1" class="badge">`: the reserved id prefix is UF3005.
-		const broken: Diagnostic[] = diagnostics.map((diagnostic) => ({
+		const broken: Array<Diagnostic> = diagnostics.map((diagnostic) => ({
 			...diagnostic,
 			fixes: diagnostic.fixes?.map((fix) => ({
 				...fix,
@@ -141,8 +141,9 @@ describe("checkFixes (L1)", () => {
 describe("nondeterminism (L2)", () => {
 	it("passes two compiles of one source", async () => {
 		const [first, second] = await Promise.all([compileWith(fixable), compileWith(fixable)]);
-		for (const target of TARGET_NAMES)
+		for (const target of TARGET_NAMES) {
 			expect(nondeterminism(first, second, target)).toBe(undefined);
+		}
 	});
 
 	it("names the difference between two compiles that differ", async () => {
@@ -363,7 +364,7 @@ describe("sourceMapProblems (L14)", () => {
 	const none = new Set<string>();
 	const compiled = (target: TargetName = "react") =>
 		compile(card, { filename: source.filename, targets: [target], sourceMap: true });
-	const mapped = async (target: TargetName = "react"): Promise<OutputFile[]> =>
+	const mapped = async (target: TargetName = "react"): Promise<Array<OutputFile>> =>
 		(await compiled(target)).outputs[target]!;
 	/** The shared helper modules of a compile, which map onto themselves (ADR-0121). */
 	const helpers = async (target: TargetName = "react") =>
@@ -440,7 +441,7 @@ describe("sourceMapProblems (L14)", () => {
 
 	it("fails mappings that point outside the output or the source", async () => {
 		const [file] = await mapped();
-		const beyond = encodedMappings(new TraceMap({ ...file!.map!, mappings: [[[0, 0, 9_999, 0]]] }));
+		const beyond = encodedMappings(new TraceMap({ ...file!.map!, mappings: [[[0, 0, 9999, 0]]] }));
 		expect(
 			sourceMapProblems("react", [withMap(file!, { mappings: beyond })], source, none)[0],
 		).toMatch(/1 wrong segment\(s\), the first at 1:0 points outside its files/);
@@ -463,7 +464,7 @@ describe("sourceMapProblems (L14)", () => {
 
 	it("counts only the segments that compare text", async () => {
 		const [file] = await mapped();
-		const encoded = (lines: SourceMapSegment[][]) =>
+		const encoded = (lines: Array<Array<SourceMapSegment>>) =>
 			encodedMappings(new TraceMap({ ...file!.map!, names: ["label"], mappings: lines }));
 		expect(
 			comparedSegments(
@@ -574,7 +575,9 @@ async function copyWithIdentityMap(contents: string): Promise<OutputFile> {
 		}),
 	});
 	const copy = result.outputs.react!.find(({ path }) => path === "size.ts");
-	if (!copy) throw new Error(JSON.stringify(result.diagnostics));
+	if (!copy) {
+		throw new Error(JSON.stringify(result.diagnostics));
+	}
 	return copy;
 }
 
@@ -591,6 +594,8 @@ async function styledSheet(): Promise<OutputFile> {
 		}),
 	});
 	const sheet = result.outputs.react!.find(({ path }) => path.endsWith(".css"));
-	if (!sheet) throw new Error(JSON.stringify(result.diagnostics));
+	if (!sheet) {
+		throw new Error(JSON.stringify(result.diagnostics));
+	}
 	return sheet;
 }

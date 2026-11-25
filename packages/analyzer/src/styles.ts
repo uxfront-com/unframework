@@ -39,7 +39,7 @@ const SHEET = /^\.\.?\/.*\.css$/;
  * "./Card.css"`, in source order, each once: what `compile()` asks its resolver to read before
  * the module is analysed.
  */
-export function stylesheetImports(parsed: ParsedModule): string[] {
+export function stylesheetImports(parsed: ParsedModule): Array<string> {
 	const found = new Set<string>();
 	for (const statement of parsed.program.body) {
 		if (statement.type === "ImportDeclaration" && isSheetImport(statement)) {
@@ -64,7 +64,7 @@ const encoder = new TextEncoder();
  * NUL, and each sheet's text in import order, each followed by a NUL, as 8 lower-case hex digits.
  * No path goes into it, so it is the same on every machine and in every target (P8).
  */
-export function scopeIdOf(name: string, sources: readonly string[]): string {
+export function scopeIdOf(name: string, sources: ReadonlyArray<string>): string {
 	let hash = 0x811c9dc5;
 	for (const byte of encoder.encode(`${[name, ...sources].join("\0")}\0`)) {
 		hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
@@ -82,7 +82,7 @@ export function stylesheetImport(
 	stylesheets: ReadonlyMap<string, StylesheetSource | undefined>,
 	components: number,
 	reporter: Reporter,
-	sheets: LoweredSheet[],
+	sheets: Array<LoweredSheet>,
 ): void {
 	const specifier = statement.source.value;
 	if (PREPROCESSOR.test(specifier)) {
@@ -134,7 +134,9 @@ export function stylesheetImport(
 			}),
 		);
 	}
-	if (errors.length) return;
+	if (errors.length) {
+		return;
+	}
 	sheets.push({
 		sheet: createStyleSheet(specifier, read.source, {
 			start: statement.start,

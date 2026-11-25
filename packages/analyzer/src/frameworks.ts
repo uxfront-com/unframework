@@ -1,7 +1,7 @@
 import { AUTHORING_PACKAGE } from "@unframework.dev/diagnostics";
 
 /** Module specifiers that belong to a UI framework, which a component may never import. */
-const FRAMEWORK_MODULES: readonly (readonly [RegExp, string])[] = [
+const FRAMEWORK_MODULES: ReadonlyArray<readonly [RegExp, string]> = [
 	[/^(react|react-dom|react-native|next)(\/.*)?$/, "React"],
 	[/^(preact)(\/.*)?$|^@preact\//, "Preact"],
 	[/^(vue|nuxt|vue-router|pinia)(\/.*)?$|^@vue\/|^@nuxt\/|^#app(\/.*)?$/, "Vue"],
@@ -18,7 +18,9 @@ const FRAMEWORK_MODULES: readonly (readonly [RegExp, string])[] = [
 /** The framework a module specifier belongs to, if any. */
 export function frameworkOf(specifier: string): string | undefined {
 	for (const [pattern, framework] of FRAMEWORK_MODULES) {
-		if (pattern.test(specifier)) return framework;
+		if (pattern.test(specifier)) {
+			return framework;
+		}
 	}
 	return undefined;
 }

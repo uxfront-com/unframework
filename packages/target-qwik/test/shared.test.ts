@@ -11,7 +11,9 @@ import { lower } from "./lower.ts";
 /** Every component's and composable's files of a source, and its helper modules. */
 function emitShared(source: string, file = "Fixture.uf.tsx") {
 	const module = lower(source, file);
-	for (const component of module.components) component.inheritAttrs = false;
+	for (const component of module.components) {
+		component.inheritAttrs = false;
+	}
 	const modules = createHelperModules();
 	const context: EmitContext = {
 		module,
@@ -21,7 +23,7 @@ function emitShared(source: string, file = "Fixture.uf.tsx") {
 		},
 		helper: modules.helper,
 	};
-	const files: OutputFile[] = [
+	const files: Array<OutputFile> = [
 		...module.components.flatMap((component) => target.emit(component, context)),
 		...(module.composables ?? []).flatMap((composable) =>
 			target.emitComposable!(composable, context),
@@ -33,7 +35,7 @@ function emitShared(source: string, file = "Fixture.uf.tsx") {
 /** The import lines of a file's shared helpers, each on one line. */
 const importsOf = (contents: string) =>
 	contents
-		.replace(/\{[^}]*\}/g, (names) => names.replace(/\s+/g, " ").replace(/,? \}$/, " }"))
+		.replaceAll(/\{[^}]*\}/g, (names) => names.replaceAll(/\s+/g, " ").replace(/,? \}$/, " }"))
 		.match(/^import .*_unframework.*$/gm) ?? [];
 
 /** Whether a file declares `name` itself. */

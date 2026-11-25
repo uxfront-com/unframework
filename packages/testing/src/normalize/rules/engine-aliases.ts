@@ -24,10 +24,14 @@ const ENGINE_ALIASES: Readonly<Partial<Record<BrowserEngine, Readonly<Record<str
  */
 export function renameEngineAliases(root: TreeParent, engine?: BrowserEngine): void {
 	const aliases = engine === undefined ? undefined : ENGINE_ALIASES[engine];
-	if (!aliases) return;
+	if (!aliases) {
+		return;
+	}
 	forEachElement(root, (element) => {
 		for (const attribute of element.attrs) {
-			if (attributeName(attribute) !== "style") continue;
+			if (attributeName(attribute) !== "style") {
+				continue;
+			}
 			const declarations = parseStyle(attribute.value);
 			if (!declarations.some((declaration) => Object.hasOwn(aliases, declaration.property))) {
 				continue;

@@ -33,7 +33,7 @@ export function throwSite(caseDir: string): ThrowSite {
 const FRAME = /^\s*at (?:.*\()?(.+?):(\d+):(\d+)\)?\s*$/;
 
 /** A stack's frames, top first, as written. */
-export function stackFrames(stack: string): { url: string; line: number; column: number }[] {
+export function stackFrames(stack: string): Array<{ url: string; line: number; column: number }> {
 	return stack.split("\n").flatMap((text) => {
 		const match = FRAME.exec(text);
 		return match ? [{ url: match[1]!, line: Number(match[2]), column: Number(match[3]) }] : [];
@@ -67,7 +67,9 @@ export async function ufMapStack(
 	request: MapStackRequest,
 ): Promise<MapStackResult> {
 	const graph = context.project.browser?.vite?.environments.client.moduleGraph;
-	if (!graph) return { message: "The browser project has no Vite server to map the stack on." };
+	if (!graph) {
+		return { message: "The browser project has no Vite server to map the stack on." };
+	}
 	const site = throwSite(join(CASES_DIR, request.case));
 	const expected = `${site.file}:${site.line}`;
 	const marker = `/cases/${request.case}/`;

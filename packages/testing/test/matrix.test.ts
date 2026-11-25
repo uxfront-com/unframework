@@ -25,7 +25,11 @@ const record = (target: string, layers: UfLayerMeta["layers"], caseId = "basics/
 });
 
 /** A browser test's record: it checked these parity scenarios. */
-const checked = (target: string, scenarios: string[], caseId = "basics/hello"): UfLayerMeta => ({
+const checked = (
+	target: string,
+	scenarios: Array<string>,
+	caseId = "basics/hello",
+): UfLayerMeta => ({
 	...record(target, { L7: { status: "pass" } }, caseId),
 	scenarios,
 });
@@ -33,9 +37,9 @@ const checked = (target: string, scenarios: string[], caseId = "basics/hello"): 
 const partial = (
 	run: string,
 	finishedAt: string,
-	records: ProjectRecord[],
+	records: Array<ProjectRecord>,
 	projects = [...new Set(records.map((entry) => entry.project))],
-	quarantine: QuarantineEntry[] = [],
+	quarantine: Array<QuarantineEntry> = [],
 	reference: string | null = "vue",
 ): PartialMatrix =>
 	buildPartialMatrix({

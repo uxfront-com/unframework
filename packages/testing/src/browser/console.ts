@@ -27,8 +27,8 @@ interface Allowance {
 	reason: string;
 }
 
-const entries: ConsoleEntry[] = [];
-const allowances: Allowance[] = [];
+const entries: Array<ConsoleEntry> = [];
+const allowances: Array<Allowance> = [];
 let installed = false;
 let errorWatcher: ((value: unknown) => void) | undefined;
 let endedFile: string | undefined;
@@ -43,13 +43,17 @@ function capture(entry: ConsoleEntry): void {
  * keeps the messages.
  */
 export function installConsoleCapture(): void {
-	if (installed) return;
+	if (installed) {
+		return;
+	}
 	installed = true;
 	for (const level of ["warn", "error"] as const) {
 		const original = console[level].bind(console);
-		console[level] = (...args: unknown[]) => {
+		console[level] = (...args: Array<unknown>) => {
 			capture({ level, message: formatConsoleArgs(args), source: "page" });
-			for (const arg of args) errorWatcher?.(arg);
+			for (const arg of args) {
+				errorWatcher?.(arg);
+			}
 			original(...args);
 		};
 	}
@@ -57,9 +61,11 @@ export function installConsoleCapture(): void {
 
 /** Records messages an adapter captured outside the page. */
 export function captureExternalConsole(
-	messages: readonly { level: "warn" | "error"; message: string }[],
+	messages: ReadonlyArray<{ level: "warn" | "error"; message: string }>,
 ): void {
-	for (const { level, message } of messages) capture({ level, message, source: "server" });
+	for (const { level, message } of messages) {
+		capture({ level, message, source: "server" });
+	}
 }
 
 /**
@@ -67,11 +73,13 @@ export function captureExternalConsole(
  * the only record of why the message is acceptable.
  */
 export function allowConsole(pattern: RegExp, reason: string): void {
-	if (!reason.trim()) throw new Error("allowConsole needs a reason.");
+	if (!reason.trim()) {
+		throw new Error("allowConsole needs a reason.");
+	}
 	// Without `g` and `y`: their `test()` carries `lastIndex` from one message to the next, so a
 	// second matching message would not match.
 	allowances.push({
-		pattern: new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, "")),
+		pattern: new RegExp(pattern.source, pattern.flags.replaceAll(/[gy]/g, "")),
 		reason,
 	});
 }
@@ -81,7 +89,9 @@ export function allowConsole(pattern: RegExp, reason: string): void {
  * and are judged with this one. The previous test's allowances end here.
  */
 export function beginTestConsole(): void {
-	for (const entry of entries) entry.beforeTest = true;
+	for (const entry of entries) {
+		entry.beforeTest = true;
+	}
 	allowances.length = 0;
 }
 
@@ -122,17 +132,21 @@ export function consoleMark(): number {
  * pattern would hold for the rest of the test.
  */
 export function excuseConsoleSince(mark: number, reason: string): void {
-	if (!reason.trim()) throw new Error("excuseConsoleSince needs a reason.");
-	for (const entry of entries.slice(mark)) entry.excused = reason;
+	if (!reason.trim()) {
+		throw new Error("excuseConsoleSince needs a reason.");
+	}
+	for (const entry of entries.slice(mark)) {
+		entry.excused = reason;
+	}
 }
 
 /** Every message the current test will be judged on, those logged before it began first. */
-export function capturedConsole(): readonly ConsoleEntry[] {
+export function capturedConsole(): ReadonlyArray<ConsoleEntry> {
 	return entries;
 }
 
 /** The captured messages no allowance covers. */
-export function unexpectedConsole(): ConsoleEntry[] {
+export function unexpectedConsole(): Array<ConsoleEntry> {
 	return entries.filter(
 		(entry) =>
 			entry.excused === undefined && !allowances.some(({ pattern }) => pattern.test(entry.message)),
@@ -140,7 +154,7 @@ export function unexpectedConsole(): ConsoleEntry[] {
 }
 
 /** Describes unexpected messages for a failure: one line each, the first line of the message. */
-export function describeConsole(unexpected: readonly ConsoleEntry[]): string {
+export function describeConsole(unexpected: ReadonlyArray<ConsoleEntry>): string {
 	const lines = unexpected.map((entry) => {
 		const where = [
 			...(entry.source === "server" ? ["server render"] : []),
@@ -160,7 +174,7 @@ export function describeConsole(unexpected: readonly ConsoleEntry[]): string {
  * Formats console arguments as the console prints them, including printf-style substitutions,
  * which React uses (`console.error("…%s", name)`), so allowlist patterns match the real text.
  */
-export function formatConsoleArgs(args: readonly unknown[]): string {
+export function formatConsoleArgs(args: ReadonlyArray<unknown>): string {
 	const text = (value: unknown) =>
 		value instanceof Error
 			? value.message
@@ -170,10 +184,14 @@ export function formatConsoleArgs(args: readonly unknown[]): string {
 					? safeJson(value)
 					: String(value);
 	const [first, ...rest] = args;
-	if (typeof first !== "string") return args.map(text).join(" ");
+	if (typeof first !== "string") {
+		return args.map(text).join(" ");
+	}
 	let index = 0;
-	const head = first.replace(/%[sdifoOc%]/g, (token) => {
-		if (token === "%%") return "%";
+	const head = first.replaceAll(/%[sdifoOc%]/g, (token) => {
+		if (token === "%%") {
+			return "%";
+		}
 		if (token === "%c") {
 			index += 1;
 			return "";

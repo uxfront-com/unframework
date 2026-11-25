@@ -33,7 +33,7 @@ export interface ResolvedModule {
 	 * The module, then each module it reaches, in the order the resolver first reached them: each
 	 * file named as `compile()`'s `filename` is, and its text.
 	 */
-	files: { file: string; source: string }[];
+	files: Array<{ file: string; source: string }>;
 	/** The first import of a framework or `@uxfront/unframework` they make, and its file (UF1204). */
 	framework?: { specifier: string; file: string };
 	/**
@@ -58,7 +58,7 @@ export interface Resolver {
 	(request: ResolveRequest): Promise<ModuleApi | undefined>;
 	stylesheet?(request: ResolveRequest): Promise<ResolvedStylesheet | undefined>;
 	module?(request: ResolveRequest): Promise<ResolvedModule | undefined>;
-	cycle?(request: ResolveRequest): Promise<string[] | undefined>;
+	cycle?(request: ResolveRequest): Promise<Array<string> | undefined>;
 }
 
 /** Options for `createFileResolver`, and the files of `createProject` (ADR-0071). */
@@ -113,12 +113,19 @@ export function directoryOf(path: string): string {
  * not relative. A `..` that leaves the root stays (`../b`), and one after it adds another.
  */
 export function joinPath(directory: string, specifier: string): string | undefined {
-	if (!specifier.startsWith("./") && !specifier.startsWith("../")) return undefined;
+	if (!specifier.startsWith("./") && !specifier.startsWith("../")) {
+		return undefined;
+	}
 	const parts = directory ? directory.split("/") : [];
 	for (const part of specifier.split("/")) {
-		if (part === "." || part === "") continue;
-		if (part === ".." && parts.length && parts.at(-1) !== "..") parts.pop();
-		else parts.push(part);
+		if (part === "." || part === "") {
+			continue;
+		}
+		if (part === ".." && parts.length && parts.at(-1) !== "..") {
+			parts.pop();
+		} else {
+			parts.push(part);
+		}
 	}
 	return parts.join("/");
 }
@@ -128,7 +135,9 @@ export function relativePath(directory: string, path: string): string {
 	const from = directory ? directory.split("/") : [];
 	const to = path.split("/");
 	let shared = 0;
-	while (shared < from.length && shared < to.length - 1 && from[shared] === to[shared]) shared++;
+	while (shared < from.length && shared < to.length - 1 && from[shared] === to[shared]) {
+		shared++;
+	}
 	return [...from.slice(shared).map(() => ".."), ...to.slice(shared)].join("/");
 }
 
@@ -140,31 +149,41 @@ export function relativePath(directory: string, path: string): string {
  */
 export function componentImportNames(
 	parsed: ParsedModule,
-): { specifier: string; span: Span; names: string[] }[] {
-	const found = new Map<string, { span: Span; names: string[] }>();
+): Array<{ specifier: string; span: Span; names: Array<string> }> {
+	const found = new Map<string, { span: Span; names: Array<string> }>();
 	for (const statement of parsed.program.body) {
-		if (statement.type !== "ImportDeclaration" || statement.importKind === "type") continue;
+		if (statement.type !== "ImportDeclaration" || statement.importKind === "type") {
+			continue;
+		}
 		const specifier = statement.source.value;
-		if (!COMPONENT_MODULE.test(specifier)) continue;
+		if (!COMPONENT_MODULE.test(specifier)) {
+			continue;
+		}
 		const names = statement.specifiers.flatMap((imported) => {
-			if (imported.type === "ImportDefaultSpecifier") return ["default"];
-			if (imported.type !== "ImportSpecifier" || imported.importKind === "type") return [];
+			if (imported.type === "ImportDefaultSpecifier") {
+				return ["default"];
+			}
+			if (imported.type !== "ImportSpecifier" || imported.importKind === "type") {
+				return [];
+			}
 			const name = imported.imported;
 			return [name.type === "Identifier" ? name.name : String(name.value)];
 		});
 		const entry = found.get(specifier);
-		if (entry) entry.names.push(...names);
-		else
+		if (entry) {
+			entry.names.push(...names);
+		} else {
 			found.set(specifier, {
 				span: { start: statement.source.start, end: statement.source.end },
 				names,
 			});
+		}
 	}
 	return [...found].map(([specifier, entry]) => ({ specifier, ...entry }));
 }
 
 /** Whether a module's API exports a component under one of the names an import takes. */
-export function takesComponent(api: ModuleApi | undefined, names: readonly string[]): boolean {
+export function takesComponent(api: ModuleApi | undefined, names: ReadonlyArray<string>): boolean {
 	return names.some((name) =>
 		api?.components.some((component) =>
 			name === "default"

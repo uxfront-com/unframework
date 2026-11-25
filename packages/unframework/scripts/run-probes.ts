@@ -62,7 +62,7 @@ export interface ProbeReport {
 	/** How many directives' lines report exactly one error, with the code the directive names. */
 	pinned: number;
 	/** One line per problem, prefixed with the step that found it. */
-	problems: string[];
+	problems: Array<string>;
 }
 
 interface Diagnostic {
@@ -81,8 +81,10 @@ interface Directive {
 }
 
 /** The checker: an explicit executable, or the `tsc` of the TypeScript this package depends on. */
-function tscCommand(tsc: string | undefined): { command: string; args: string[] } {
-	if (tsc) return { command: tsc, args: [] };
+function tscCommand(tsc: string | undefined): { command: string; args: Array<string> } {
+	if (tsc) {
+		return { command: tsc, args: [] };
+	}
 	const require = createRequire(import.meta.url);
 	const manifestPath = require.resolve("typescript/package.json");
 	const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { bin: { tsc: string } };
@@ -91,9 +93,9 @@ function tscCommand(tsc: string | undefined): { command: string; args: string[] 
 
 /** Runs `tsc -p` in `cwd` and parses its diagnostics. Throws when the checker cannot run at all. */
 function check(
-	tsc: { command: string; args: string[] },
+	tsc: { command: string; args: Array<string> },
 	cwd: string,
-): { status: number; diagnostics: Diagnostic[]; global: string[]; output: string } {
+): { status: number; diagnostics: Array<Diagnostic>; global: Array<string>; output: string } {
 	const result = spawnSync(
 		tsc.command,
 		[...tsc.args, "-p", join(cwd, "tsconfig.json"), "--noEmit", "--pretty", "false"],
@@ -108,8 +110,8 @@ function check(
 		throw new Error(`probes: tsc was stopped by ${result.signal ?? "a signal"}`);
 	}
 	const output = `${result.stdout}${result.stderr}`;
-	const diagnostics: Diagnostic[] = [];
-	const global: string[] = [];
+	const diagnostics: Array<Diagnostic> = [];
+	const global: Array<string> = [];
 	for (const line of output.split("\n")) {
 		const match = DIAGNOSTIC.exec(line);
 		if (match) {
@@ -127,7 +129,7 @@ function check(
 }
 
 /** Every file under a folder of the tree, relative to the tree, with `/` separators. */
-function filesOf(directory: string, folder: string): string[] {
+function filesOf(directory: string, folder: string): Array<string> {
 	return readdirSync(join(directory, folder), { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile())
 		.map((entry) => relative(directory, join(entry.parentPath, entry.name)).split(sep).join("/"))
@@ -137,12 +139,14 @@ function filesOf(directory: string, folder: string): string[] {
 /** Reads the directives of every file, reporting the ones the layout does not allow. */
 function readLayout(
 	directory: string,
-	files: string[],
-): { directives: Directive[]; problems: string[] } {
-	const directives: Directive[] = [];
-	const problems: string[] = [];
+	files: Array<string>,
+): { directives: Array<Directive>; problems: Array<string> } {
+	const directives: Array<Directive> = [];
+	const problems: Array<string> = [];
 	for (const file of files) {
-		if (!/\.[cm]?tsx?$/.test(file)) continue;
+		if (!/\.[cm]?tsx?$/.test(file)) {
+			continue;
+		}
 		const inCaught = file.startsWith("caught/");
 		let count = 0;
 		readFileSync(join(directory, file), "utf8")
@@ -155,7 +159,9 @@ function readLayout(
 						`layout: ${where}: @ts-ignore and @ts-nocheck hide errors; pin them with @ts-expect-error`,
 					);
 				}
-				if (!DIRECTIVE.test(trimmed)) return;
+				if (!DIRECTIVE.test(trimmed)) {
+					return;
+				}
 				count++;
 				const pinned = PINNED_DIRECTIVE.exec(trimmed);
 				if (!inCaught) {
@@ -228,18 +234,20 @@ export function runProbes(options: ProbeOptions = {}): ProbeReport {
 		const unpinned = check(tsc, scratch);
 		problems.push(...unpinned.global.map((line) => `pin: ${line}`));
 
-		const actual = new Map<string, Diagnostic[]>();
+		const actual = new Map<string, Array<Diagnostic>>();
 		for (const diagnostic of unpinned.diagnostics) {
 			const key = `${diagnostic.file}:${diagnostic.line}`;
 			actual.set(key, [...(actual.get(key) ?? []), diagnostic]);
 		}
 		for (const { target, code, text } of directives) {
 			const codes = (actual.get(target) ?? []).map((diagnostic) => diagnostic.code);
-			if (codes.length === 1 && codes[0] === code) pinned++;
-			else
+			if (codes.length === 1 && codes[0] === code) {
+				pinned++;
+			} else {
 				problems.push(
 					`pin: ${target}: expected ${code}, got ${codes.join(", ") || "nothing"} (${text})`,
 				);
+			}
 			actual.delete(target);
 		}
 		for (const [key, diagnostics] of actual) {
@@ -268,7 +276,9 @@ if (import.meta.main) {
 		?.slice("--tsc=".length);
 	const report = runProbes({ tsc });
 	if (!report.ok) {
-		for (const problem of report.problems) console.error(problem);
+		for (const problem of report.problems) {
+			console.error(problem);
+		}
 		console.error(`probes: FAIL, ${report.problems.length} problem(s)`);
 		process.exit(1);
 	}

@@ -164,11 +164,15 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
 		if (!child.self && !VUE_BUILT_INS.has(child.local)) {
 			// A child the source imports under two names is imported once, and written by that name.
 			const local = imports.addDefault(child.specifier, child.local, { exact: true });
-			if (local !== child.local) components.set(child.local, local);
+			if (local !== child.local) {
+				components.set(child.local, local);
+			}
 		}
 	}
 	for (const child of children) {
-		if (!VUE_BUILT_INS.has(child.local)) continue;
+		if (!VUE_BUILT_INS.has(child.local)) {
+			continue;
+		}
 		const local = `${child.local}Component`;
 		components.set(
 			child.local,
@@ -176,7 +180,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
 		);
 	}
 	for (const key of keyImports(component, module, (name) => `${name}.vue`)) {
-		if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
+		if (key.specifier) {
+			imports.add(key.specifier, key.name, { local: key.local, exact: true });
+		}
 	}
 	// The imports that pass through, which the template reads as written (ADR-0064).
 	addPassThroughImports(component, module, imports);
@@ -203,11 +209,13 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
 	// `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
 	for (const binding of component.bindings) {
 		const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
-		if (alias) names.rename(binding.id, alias);
+		if (alias) {
+			names.rename(binding.id, alias);
+		}
 	}
 	const self = children.find((child) => child.self);
 	const recursive = self && (components.get(self.local) ?? self.local);
-	const statements: Statement[] = [];
+	const statements: Array<Statement> = [];
 	const parameter = component.propsParameter;
 	if (parameter) {
 		const read = referencedBindings(component);
@@ -267,7 +275,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
 	// An async setup exposes before its first await, or the parent's ref keeps the bare proxy
 	// (ADR-0101): the functions it names are then declarations, which hoist.
 	const awaits = component.setup.some((item) => item.kind === "Await");
-	if (expose && awaits) statements.push({ code: expose, layout: "block" });
+	if (expose && awaits) {
+		statements.push({ code: expose, layout: "block" });
+	}
 	const hoisted = new Set(awaits ? component.exposes?.functions : []);
 	for (const item of component.setup) {
 		const code =
@@ -281,9 +291,13 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
 	for (const code of listeners.functions) {
 		statements.push({ code: names.ownQueries(code), layout: "block" });
 	}
-	for (const code of rest?.functions ?? []) statements.push({ code, layout: "block" });
+	for (const code of rest?.functions ?? []) {
+		statements.push({ code, layout: "block" });
+	}
 	// Last, once every function it names is declared (ADR-0054).
-	if (expose && !awaits) statements.push({ code: expose, layout: "block" });
+	if (expose && !awaits) {
+		statements.push({ code: expose, layout: "block" });
+	}
 	// A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
 	// before it, where a client render's `vModelText` sets the text of an empty field and leaves the
 	// caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
@@ -298,11 +312,13 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
 	if (mounted !== undefined) {
 		const ref = imports.add("vue", "ref");
 		const onMounted = imports.add("vue", "onMounted");
-		statements.push({ code: `const ${mounted} = ${ref}(false);`, layout: "line" });
-		statements.push({
-			code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
-			layout: "block",
-		});
+		statements.push(
+			{ code: `const ${mounted} = ${ref}(false);`, layout: "line" },
+			{
+				code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
+				layout: "block",
+			},
+		);
 	}
 	// The module's type exports, which consumers import by name (ADR-0068), exported from
 	// `<script setup>` as its own exported types are.
@@ -366,7 +382,9 @@ export function asyncRootChild(
 	module: UfModule,
 ): ComponentNode | undefined {
 	const { render } = component;
-	if (component.inheritAttrs === false || render.kind !== "Fragment") return undefined;
+	if (component.inheritAttrs === false || render.kind !== "Fragment") {
+		return undefined;
+	}
 	const [child] = render.children;
 	return render.children.length === 1 &&
 		child?.kind === "Component" &&
@@ -380,7 +398,9 @@ function holdsTeleport(component: UfComponent): boolean {
 	let found = false;
 	walk(component.render, {
 		enter(node) {
-			if (node.kind === "Teleport") found = true;
+			if (node.kind === "Teleport") {
+				found = true;
+			}
 		},
 	});
 	return found;
@@ -391,8 +411,12 @@ function bindsTextarea(component: UfComponent): boolean {
 	let found = false;
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element" || node.tag !== "textarea") return;
-			if (node.attributes.some((attribute) => attribute.kind === "Model")) found = true;
+			if (node.kind !== "Element" || node.tag !== "textarea") {
+				return;
+			}
+			if (node.attributes.some((attribute) => attribute.kind === "Model")) {
+				found = true;
+			}
 		},
 	});
 	return found;
@@ -435,9 +459,11 @@ function keyBlock(
 		let type = key.type.code;
 		for (const name of REF_TYPES) {
 			const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
-			if (!reference.test(type)) continue;
+			if (!reference.test(type)) {
+				continue;
+			}
 			const local = imports.add("vue", name, { type: true });
-			type = type.replace(reference, local);
+			type = type.replaceAll(reference, local);
 		}
 		return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
 	});
@@ -461,7 +487,7 @@ function moduleTypes(
 	module: UfModule,
 	reads: ModuleReads,
 	names: VueNames,
-): string[] {
+): Array<string> {
 	// An exported type a sibling's output declares is re-exported from it (`typeExportsCode`), so
 	// a constant that names it declares it here unexported: the export is the sibling's.
 	const sibling = (name: string) =>
@@ -469,11 +495,13 @@ function moduleTypes(
 	// The main output re-exports an exported type only a sibling's constants reach, from that
 	// sibling's output, which declares it (ADR-0068): `typeExportsCode` knows only components'
 	// own types.
-	const reExports: { code: string; span: TypeDeclaration["span"] }[] = [];
+	const reExports: Array<{ code: string; span: TypeDeclaration["span"] }> = [];
 	if (keyOwner(module.components, module.exports) === component.name) {
 		const written = new Set([...component.types, ...reads.types.map(({ name }) => name)]);
 		for (const other of module.components) {
-			if (other === component) continue;
+			if (other === component) {
+				continue;
+			}
 			const { types } = constantTypes(other, module, moduleReach(other, module).values);
 			for (const declaration of types) {
 				if (!declaration.exported || written.has(declaration.name) || sibling(declaration.name)) {
@@ -509,7 +537,9 @@ function moduleTypes(
  * text holds no `'` (`withoutSingleQuotes`), and is single-quoted where it holds a `"`.
  */
 function genericAttribute(component: UfComponent): string {
-	if (!component.typeParameters?.length) return "";
+	if (!component.typeParameters?.length) {
+		return "";
+	}
 	const text = withoutSingleQuotes(typeParametersList(component.typeParameters));
 	return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
 }
@@ -524,14 +554,14 @@ function withoutSingleQuotes(text: string): string {
 	let written = "";
 	// The template literals and holes the text is inside, innermost last: "`" for a literal's
 	// text, a number for a hole's code, counting the braces open inside it.
-	const nested: ("`" | number)[] = [];
+	const nested: Array<"`" | number> = [];
 	for (let index = 0; index < text.length; index++) {
 		const char = text[index]!;
 		const inside = nested.at(-1);
 		if (inside === "`") {
 			if (char === "\\") {
 				const next = text[++index] ?? "";
-				written += next === "'" ? "\\u0027" : `\\${next}`;
+				written += next === "'" ? String.raw`\u0027` : `\\${next}`;
 			} else if (char === "`") {
 				nested.pop();
 				written += char;
@@ -540,13 +570,13 @@ function withoutSingleQuotes(text: string): string {
 				written += "${";
 				index++;
 			} else {
-				written += char === "'" ? "\\u0027" : char;
+				written += char === "'" ? String.raw`\u0027` : char;
 			}
 		} else if (text.startsWith("//", index) || text.startsWith("/*", index)) {
 			const close = text.startsWith("//", index) ? "\n" : "*/";
 			const end = text.indexOf(close, index + 2);
 			const stop = end === -1 ? text.length : end + close.length;
-			written += text.slice(index, stop).replaceAll("'", "\\u0027");
+			written += text.slice(index, stop).replaceAll("'", String.raw`\u0027`);
 			index = stop - 1;
 		} else if (char === "'" || char === '"') {
 			// A string literal, to its closing quote, double-quoted.
@@ -555,9 +585,9 @@ function withoutSingleQuotes(text: string): string {
 				const each = text[index]!;
 				if (each === "\\") {
 					const next = text[++index] ?? "";
-					written += next === "'" ? "\\u0027" : `\\${next}`;
+					written += next === "'" ? String.raw`\u0027` : `\\${next}`;
 				} else {
-					written += each === "'" ? "\\u0027" : each === '"' ? '\\"' : each;
+					written += each === "'" ? String.raw`\u0027` : each === '"' ? String.raw`\"` : each;
 				}
 			}
 			written += '"';
@@ -565,8 +595,11 @@ function withoutSingleQuotes(text: string): string {
 			nested.push("`");
 			written += char;
 		} else if (typeof inside === "number" && (char === "{" || char === "}")) {
-			if (char === "}" && inside === 0) nested.pop();
-			else nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+			if (char === "}" && inside === 0) {
+				nested.pop();
+			} else {
+				nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+			}
 			written += char;
 		} else {
 			written += char;
@@ -576,7 +609,7 @@ function withoutSingleQuotes(text: string): string {
 }
 
 /** Type parameters as written, `T extends Item = Item, K`. */
-function typeParametersList(parameters: readonly TypeParameter[]): string {
+function typeParametersList(parameters: ReadonlyArray<TypeParameter>): string {
 	return parameters
 		.map(
 			(parameter) =>
@@ -588,7 +621,7 @@ function typeParametersList(parameters: readonly TypeParameter[]): string {
 }
 
 /** A generic function's type parameters, `<T extends Item>`, or nothing (ADR-0068). */
-export function typeParametersText(parameters: readonly TypeParameter[] | undefined): string {
+export function typeParametersText(parameters: ReadonlyArray<TypeParameter> | undefined): string {
 	return parameters?.length ? `<${typeParametersList(parameters)}>` : "";
 }
 
@@ -603,7 +636,9 @@ function addComposableImports(component: UfComponent, module: UfModule, imports:
 	for (const entry of module.imports ?? []) {
 		const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
 		for (const name of entry.names) {
-			if (name.kind !== "Composable" || !called.has(name.local)) continue;
+			if (name.kind !== "Composable" || !called.has(name.local)) {
+				continue;
+			}
 			imports.add(`${directory}${name.imported}`, name.imported, {
 				local: name.local,
 				exact: true,
@@ -684,11 +719,13 @@ function readsSlots(component: UfComponent): boolean {
 }
 
 /** The statements, a blank line between two unless both are macros, or both one-line declarations. */
-export function laidOut(statements: readonly Statement[]): string {
+export function laidOut(statements: ReadonlyArray<Statement>): string {
 	return statements
 		.map((statement, index) => {
 			const previous = statements[index - 1];
-			if (previous === undefined) return statement.code;
+			if (previous === undefined) {
+				return statement.code;
+			}
 			const together = previous.layout === statement.layout && statement.layout !== "block";
 			return `${together ? "\n" : "\n\n"}${statement.code}`;
 		})
@@ -697,7 +734,9 @@ export function laidOut(statements: readonly Statement[]): string {
 
 /** How a setup item sits in the script: a model is a macro, which stays with `defineProps`. */
 export function itemLayout(item: SetupItem, code: string): Statement["layout"] {
-	if (item.kind === "Model") return "macro";
+	if (item.kind === "Model") {
+		return "macro";
+	}
 	return declares(item) && !code.includes("\n") ? "line" : "block";
 }
 
@@ -957,17 +996,23 @@ function destructuredDeclaration(
 ): string {
 	const macro = `defineProps<${type}>()`;
 	const isRead = (prop: Prop) => prop.binding !== undefined && read.has(prop.binding);
-	if (!component.props.some(isRead)) return `${macro};`;
+	if (!component.props.some(isRead)) {
+		return `${macro};`;
+	}
 	const entries = component.props
 		.filter((prop) => isRead(prop) || prop.optional)
 		.map((prop) => {
 			const value = prop.default?.code ?? (prop.optional ? "undefined" : undefined);
 			// In the pattern for its default alone: the filter keeps only optional unread props.
-			if (!isRead(prop)) return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
+			if (!isRead(prop)) {
+				return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
+			}
 			// Vue 3.5 destructures a prop under another name too (`{ Map: Map_1 }`), and every
 			// reference reads the local.
 			const local = VUE_RESERVED.has(prop.name) ? names.scope.claim(prop.name) : prop.name;
-			if (local !== prop.name && prop.binding !== undefined) names.rename(prop.binding, local);
+			if (local !== prop.name && prop.binding !== undefined) {
+				names.rename(prop.binding, local);
+			}
 			const target = local === prop.name ? prop.name : `${prop.name}: ${local}`;
 			return value === undefined ? target : `${target} = ${value}`;
 		});
@@ -1000,7 +1045,9 @@ function objectDeclaration(
 		: /^[_$]/.test(name)
 			? names.scope.claim("props")
 			: name;
-	if (local !== name) names.renamePropsObject(name, local);
+	if (local !== name) {
+		names.renamePropsObject(name, local);
+	}
 	return `const ${local} = ${call};`;
 }
 
@@ -1011,5 +1058,5 @@ function objectDeclaration(
  * could hold it; the target escapes it anyway, as a guard.
  */
 function escapeScriptEnd(code: string): string {
-	return code.replace(/<\/(script)/gi, "<\\/$1");
+	return code.replaceAll(/<\/(script)/gi, String.raw`<\/$1`);
 }

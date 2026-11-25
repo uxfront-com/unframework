@@ -9,12 +9,12 @@ import { userEvent } from "vitest/browser";
 import { mount } from "../src/toolchain/client.ts";
 import { components } from "./behaviour-manifest.ts";
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 let unmounted = false;
 /** Every emit the test listened to, in order, as `[event, ...args]`. */
-let events: unknown[][] = [];
+let events: Array<Array<unknown>> = [];
 
 beforeEach(() => {
 	logged.length = 0;
@@ -27,7 +27,9 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-	if (!unmounted) await mounted?.unmount();
+	if (!unmounted) {
+		await mounted?.unmount();
+	}
 	mounted = undefined;
 	container.remove();
 	vi.restoreAllMocks();
@@ -37,14 +39,17 @@ afterEach(async () => {
 /** Mounts a behaviour component, listening to `names`; returns what its events log. */
 async function render(
 	name: string,
-	names: readonly string[],
+	names: ReadonlyArray<string>,
 	props: Record<string, unknown> = {},
 ): Promise<MountedComponent> {
 	const { default: component } = await components[name]!();
 	mounted = await mount(component, container, {
 		props,
 		on: Object.fromEntries(
-			names.map((event) => [event, (...args: unknown[]) => void events.push([event, ...args])]),
+			names.map((event) => [
+				event,
+				(...args: Array<unknown>) => void events.push([event, ...args]),
+			]),
 		),
 	});
 	return mounted;
@@ -55,7 +60,9 @@ async function click(name: string): Promise<void> {
 	const button = [...container.querySelectorAll("button")].find(
 		(each) => each.textContent === name,
 	);
-	if (!button) throw new Error(`No button is named ${name}.`);
+	if (!button) {
+		throw new Error(`No button is named ${name}.`);
+	}
 	await userEvent.click(button);
 	await mounted!.settle();
 }
@@ -66,7 +73,7 @@ function text(): string | null | undefined {
 }
 
 /** The events logged since the last call. */
-function taken(): unknown[][] {
+function taken(): Array<Array<unknown>> {
 	return events.splice(0);
 }
 
@@ -74,7 +81,7 @@ function taken(): unknown[][] {
  * Events in a stable order, for the runs whose order across watchers is not part of the
  * contract (ADR-0048).
  */
-function sorted(run: readonly unknown[][]): unknown[][] {
+function sorted(run: ReadonlyArray<Array<unknown>>): Array<Array<unknown>> {
 	return run.toSorted((a, b) => (JSON.stringify(a) < JSON.stringify(b) ? -1 : 1));
 }
 
@@ -174,7 +181,9 @@ describe("lifecycle (Lifecycle)", () => {
 		expect(run.at(-1)).toEqual(["unmounted"]);
 		expect(run.slice(0, -1).map(([name]) => name)).toEqual(run.slice(0, -1).map(() => "ticked"));
 		// Only proves that nothing more comes once the interval is cleared.
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 100);
+		});
 		expect(taken()).toEqual([]);
 	});
 });

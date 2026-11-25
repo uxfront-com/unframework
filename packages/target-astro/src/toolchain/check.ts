@@ -20,14 +20,14 @@ interface LanguageServer {
 		workspacePath: string,
 		typescriptPath: string,
 		tsconfigPath: string,
-	) => { lint(options: { fileNames: string[] }): Promise<CheckResult> };
+	) => { lint(options: { fileNames: Array<string> }): Promise<CheckResult> };
 	DiagnosticSeverity: { Error: number; Warning: number };
 }
 
 interface CheckResult {
 	status: "completed" | "cancelled" | undefined;
 	fileChecked: number;
-	fileResult: { fileUrl: URL; errors: CheckDiagnostic[] }[];
+	fileResult: Array<{ fileUrl: URL; errors: Array<CheckDiagnostic> }>;
 }
 
 /** An LSP diagnostic: 0-based positions. */
@@ -60,8 +60,8 @@ interface TypeScriptConfigApi {
 		host: object,
 		extendedConfigCache: undefined,
 		watchOptions: undefined,
-		extraFileExtensions: { extension: string; isMixedContent: boolean; scriptKind: number }[],
-	): { errors: ConfigDiagnostic[] } | undefined;
+		extraFileExtensions: Array<{ extension: string; isMixedContent: boolean; scriptKind: number }>,
+	): { errors: Array<ConfigDiagnostic> } | undefined;
 	flattenDiagnosticMessageText(text: unknown, newLine: string): string;
 }
 
@@ -81,9 +81,9 @@ let runs = 0;
  * or when a file is missing, because `AstroCheck` would report a missing file as clean.
  */
 export async function astroTypecheck(
-	files: readonly string[],
+	files: ReadonlyArray<string>,
 	context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
 	assertFilesToCheck(files);
 	const { toolchainDir } = context;
 	const baseConfig = join(toolchainDir, "tsconfig.json");
@@ -120,7 +120,9 @@ export async function astroTypecheck(
 			for (const diagnostic of errors) {
 				// LSP leaves the severity out when it is an error.
 				const severity = diagnostic.severity ?? error;
-				if (severity !== error && severity !== warning) continue;
+				if (severity !== error && severity !== warning) {
+					continue;
+				}
 				diagnostics.add(file, fromDiagnostic(diagnostic, severity === warning));
 			}
 		}
@@ -167,7 +169,7 @@ function addConfigDiagnostics(
 	const astroFiles = [
 		{ extension: ".astro", isMixedContent: true, scriptKind: typescript.ScriptKind.Deferred },
 	];
-	const fatal: ConfigDiagnostic[] = [];
+	const fatal: Array<ConfigDiagnostic> = [];
 	const parsed = typescript.getParsedCommandLineOfConfigFile(
 		tsconfig,
 		undefined,

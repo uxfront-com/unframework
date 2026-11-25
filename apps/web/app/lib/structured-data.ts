@@ -88,10 +88,14 @@ interface ListItem {
  * section's path to its first page's.
  */
 export function breadcrumbList(list: Node, sections: Record<string, string>): Node {
-	const items = (Array.isArray(list.itemListElement) ? list.itemListElement : []) as ListItem[];
+	const items = (
+		Array.isArray(list.itemListElement) ? list.itemListElement : []
+	) as Array<ListItem>;
 	const home = { "@type": "ListItem", name: "Unframework", item: `${SITE_URL}/` };
 	const linked = [home, ...items].map((entry) => {
-		if (!entry.item?.startsWith(SITE_URL)) return entry;
+		if (!entry.item?.startsWith(SITE_URL)) {
+			return entry;
+		}
 		const first = sections[entry.item.slice(SITE_URL.length)];
 		return first ? { ...entry, item: `${SITE_URL}${first}` } : entry;
 	});

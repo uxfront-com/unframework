@@ -14,7 +14,7 @@ import { PROBES_DIRECTORY, runProbes } from "../scripts/run-probes.ts";
 const PINNED_PROBES = 97;
 
 const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
-const copies: string[] = [];
+const copies: Array<string> = [];
 
 /**
  * A copy of the probe tree beside the original, so `@uxfront/unframework` and the base tsconfig resolve
@@ -33,7 +33,9 @@ function probeCopy(file: string, edit: (source: string) => string): string {
 }
 
 afterEach(() => {
-	for (const directory of copies.splice(0)) rmSync(directory, { recursive: true, force: true });
+	for (const directory of copies.splice(0)) {
+		rmSync(directory, { recursive: true, force: true });
+	}
 });
 
 /** Each test runs the type checker over the probe tree: seconds on a loaded CI runner. */

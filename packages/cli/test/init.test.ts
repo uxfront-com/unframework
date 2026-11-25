@@ -29,7 +29,9 @@ describe("init", () => {
 		expect(stderr).toBe("");
 		const files = tree(root);
 		expect(Object.keys(files)).toEqual(SCAFFOLD);
-		for (const file of SCAFFOLD) expect(stdout).toContain(`Wrote ${file}\n`);
+		for (const file of SCAFFOLD) {
+			expect(stdout).toContain(`Wrote ${file}\n`);
+		}
 		expect(files["src/Button.uf.tsx"]).toContain('import "./Button.css";');
 		expect(files["unframework.config.ts"]).toContain('from "@uxfront/unframework/config"');
 		for (const target of ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"]) {
@@ -72,7 +74,7 @@ describe("init", () => {
 		rmSync(join(root, "unframework.config.ts"));
 		const { code, stdout } = await run(root, "check", "--format", "json");
 		expect(code).toBe(0);
-		const notes = JSON.parse(stdout) as { code: string; severity: string; target: string }[];
+		const notes = JSON.parse(stdout) as Array<{ code: string; severity: string; target: string }>;
 		expect(notes.map(({ code: id, severity, target }) => [id, severity, target])).toEqual([
 			["UF4002", "info", "angular"],
 			["UF4002", "info", "qwik"],

@@ -39,7 +39,9 @@ export function resolveInstalled(directory: string, specifier: string): string |
  */
 export function findInstalled(directory: string, name: string): InstalledPackage | undefined {
 	const from = installedFrom(directory, name);
-	if (from === undefined) return undefined;
+	if (from === undefined) {
+		return undefined;
+	}
 	const manifestPath = join(from, "node_modules", name, "package.json");
 	const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as PackageManifest;
 	return { manifestPath, manifest };
@@ -59,14 +61,20 @@ export function resolveToolBin(toolchainDir: string, pkg: string, bin: string): 
 	}
 	const { manifestPath, manifest } = installed;
 	const relative = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.[bin];
-	if (!relative) throw new Error(`${pkg} at ${dirname(manifestPath)} has no "${bin}" bin.`);
+	if (!relative) {
+		throw new Error(`${pkg} at ${dirname(manifestPath)} has no "${bin}" bin.`);
+	}
 	return join(dirname(manifestPath), relative);
 }
 
 /** The nearest directory, from `directory` upwards, whose `node_modules` holds package `name`. */
 function installedFrom(directory: string, name: string): string | undefined {
 	for (let current = resolve(directory); ; current = dirname(current)) {
-		if (existsSync(join(current, "node_modules", name, "package.json"))) return current;
-		if (dirname(current) === current) return undefined;
+		if (existsSync(join(current, "node_modules", name, "package.json"))) {
+			return current;
+		}
+		if (dirname(current) === current) {
+			return undefined;
+		}
 	}
 }

@@ -40,7 +40,7 @@ async function serverHtml(name: string, props: Record<string, unknown>): Promise
 		default: Component<Record<string, unknown>>;
 	};
 	const html = await renderToStringAsync(() => createComponent(component, props));
-	return html.replace(/<!--[^>]*-->/g, "").replace(/ data-hk="[^"]*"/g, "");
+	return html.replaceAll(/<!--[^>]*-->/g, "").replaceAll(/ data-hk="[^"]*"/g, "");
 }
 
 describe("solid slots", () => {

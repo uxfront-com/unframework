@@ -18,7 +18,7 @@ import Stepper from "./fixtures/Stepper.svelte";
 import Ticker from "./fixtures/Ticker.svelte";
 import WatchEdges from "./fixtures/WatchEdges.svelte";
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -39,21 +39,21 @@ afterEach(async () => {
 });
 
 /** Listeners for the given events, each recording its argument lists, and every emit in order. */
-function listen<Name extends string>(...names: Name[]) {
+function listen<Name extends string>(...names: Array<Name>) {
 	const emitted = Object.fromEntries(names.map((name) => [name, []])) as unknown as Record<
 		Name,
-		unknown[][]
+		Array<Array<unknown>>
 	>;
-	const order: Name[] = [];
+	const order: Array<Name> = [];
 	const on = Object.fromEntries(
 		names.map((name) => [
 			name,
-			(...args: unknown[]) => {
+			(...args: Array<unknown>) => {
 				emitted[name].push(args);
 				order.push(name);
 			},
 		]),
-	) as Record<Name, (...args: unknown[]) => void>;
+	) as Record<Name, (...args: Array<unknown>) => void>;
 	return { emitted, order, on };
 }
 
@@ -62,7 +62,9 @@ async function click(text: string): Promise<void> {
 	const button = [...container.querySelectorAll("button")].find(
 		(each) => each.textContent === text,
 	);
-	if (!button) throw new Error(`No button "${text}".`);
+	if (!button) {
+		throw new Error(`No button "${text}".`);
+	}
 	await userEvent.click(button);
 	await mounted!.settle();
 }
@@ -109,7 +111,7 @@ describe("watchers", () => {
 		// What the page shows when the post watcher calls back.
 		let rendered: string | null | undefined;
 		const range = on.range;
-		on.range = (...args: unknown[]) => {
+		on.range = (...args: Array<unknown>) => {
 			range(...args);
 			rendered = text("p");
 		};
@@ -203,7 +205,9 @@ describe("effects and lifecycle", () => {
 		expect(emitted.stopped).toEqual([[]]);
 		const titles = emitted.title.length;
 		// The interval is cleared: no tick comes after unmount.
-		await new Promise((resolve) => setTimeout(resolve, 1500));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 1500);
+		});
 		expect(emitted.title).toHaveLength(titles);
 	});
 

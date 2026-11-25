@@ -5,17 +5,22 @@ import { describe, expect, it, vi } from "vitest";
 import { chainQwikSegments, chainSvelteOnce } from "../src/chain.ts";
 
 /** Calls a hook as Vite would, with a context holding only what the steps read. */
-function call(plugin: Plugin, hook: "transform" | "load", context: object, ...args: unknown[]) {
+function call(
+	plugin: Plugin,
+	hook: "transform" | "load",
+	context: object,
+	...args: Array<unknown>
+) {
 	const declared = plugin[hook] as unknown;
 	const handler = (
 		typeof declared === "function" ? declared : (declared as { handler: unknown }).handler
-	) as (this: object, ...rest: unknown[]) => unknown;
+	) as (this: object, ...rest: Array<unknown>) => unknown;
 	return handler.apply(context, args);
 }
 
 describe("chainSvelteOnce", () => {
 	function compile() {
-		const seen: unknown[] = [];
+		const seen: Array<unknown> = [];
 		const plugin: Plugin = {
 			name: "vite-plugin-svelte:compile",
 			transform: {
@@ -65,7 +70,7 @@ describe("chainQwikSegments", () => {
 		};
 		chainQwikSegments([plugin], () => parent);
 		const result = (await call(plugin, "load", {}, "m.uf.tsx_a.js")) as {
-			map: { sources: string[] };
+			map: { sources: Array<string> };
 		};
 		expect(result.map.sources).toEqual(["m.uf.tsx"]);
 	});

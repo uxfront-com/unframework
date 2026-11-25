@@ -25,7 +25,7 @@ function emitShared(source: string, file = "Fixture.uf.tsx", share = true) {
 		},
 		...(share ? { helper: modules.helper } : {}),
 	};
-	const files: OutputFile[] = [
+	const files: Array<OutputFile> = [
 		...module.components.flatMap((component) => target.emit(component, context)),
 		...(module.composables ?? []).flatMap((composable) =>
 			target.emitComposable!(composable, context),

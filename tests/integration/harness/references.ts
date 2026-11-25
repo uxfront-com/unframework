@@ -5,16 +5,16 @@ import type { CaseInfo } from "./cases.ts";
 
 /** The cases a project renders: every one, or those `only` names (`ufOnly`). */
 export function onlyCases<T extends Pick<CaseInfo, "id">>(
-	cases: readonly T[],
-	only: readonly string[] | undefined,
-): T[] {
+	cases: ReadonlyArray<T>,
+	only: ReadonlyArray<string> | undefined,
+): Array<T> {
 	return only ? cases.filter((info) => only.includes(info.id)) : [...cases];
 }
 
 /** One target's baseline pass: the arguments `scripts/run.ts` takes after its project. */
 export interface ReferencePass {
 	target: string;
-	args: string[];
+	args: Array<string>;
 }
 
 /**
@@ -24,14 +24,17 @@ export interface ReferencePass {
  * caller's file filters and options.
  */
 export function referencePasses(
-	cases: readonly Pick<CaseInfo, "config">[],
-	argv: readonly string[],
-): ReferencePass[] {
-	const args: string[] = [];
+	cases: ReadonlyArray<Pick<CaseInfo, "config">>,
+	argv: ReadonlyArray<string>,
+): Array<ReferencePass> {
+	const args: Array<string> = [];
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index]!;
-		if (arg === "--project" || arg === "-p") index += 1;
-		else if (!arg.startsWith("--project=") && !arg.startsWith("-p=")) args.push(arg);
+		if (arg === "--project" || arg === "-p") {
+			index += 1;
+		} else if (!arg.startsWith("--project=") && !arg.startsWith("-p=")) {
+			args.push(arg);
+		}
 	}
 	const targets = new Set(cases.flatMap(({ config }) => config.reference ?? []));
 	return [...targets].sort().map((target) => ({ target, args: [...args] }));

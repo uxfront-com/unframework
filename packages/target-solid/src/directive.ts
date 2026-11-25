@@ -54,7 +54,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
 	const element = directiveElement(directive);
 	const run = (call: string, hook: "mounted" | "updated" | "unmounted") =>
 		`${queue}(${own.element}, () => ${call}, "${hook}");`;
-	const body: string[] = [`let ${own.target}: ${element} | undefined;`];
+	const body: Array<string> = [`let ${own.target}: ${element} | undefined;`];
 	if (mounted || updated) {
 		body.push(
 			`${updated ? "let" : "const"} ${own.current} = ${solid("untrack")}(${own.getValue});`,
@@ -101,7 +101,7 @@ export function factoryCode(directive: UfDirective, names: FactoryNames, exporte
 }
 
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, as a ref factory. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
 	const dependencies = directiveDependencies(directive, context.module);
 	// Solid's names and the queue's, apart from everything the copied code declares or reads.
 	const scope = new NameScope(directiveModuleNames(directive, dependencies));

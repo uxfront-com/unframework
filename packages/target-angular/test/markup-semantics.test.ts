@@ -7,7 +7,6 @@
 // variables instead (src/template.ts), whose output test/output.test.ts and the corpus render.
 // Angular's own packages ship partially compiled; in this plain-Node project the JIT compiler
 // finishes them as they load (see render-parity.test.ts).
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -35,7 +34,7 @@ afterAll(removeScratch);
 
 /** Text inside a JavaScript template literal, as `js.templateLiteral` writes it. */
 const templateText = (text: string) =>
-	text.replace(/[\\`]/g, (character) => `\\${character}`).replace(/\$\{/g, "\\${");
+	text.replaceAll(/[\\`]/g, (character) => `\\${character}`).replaceAll("${", "\\${");
 
 /**
  * A component around the markup: a required input for each prop a case passes, an optional one
@@ -64,7 +63,7 @@ function wrap(markup: string, { props, globals }: Suite): string {
 }
 
 /** The suite's component and each root case's, printed with `layout`. */
-function components(layout: MarkupOptions): { cases: Suite; source: string }[] {
+function components(layout: MarkupOptions): Array<{ cases: Suite; source: string }> {
 	return [suite(MARKUP_CASES), ...ROOT_CASES.map((each) => suite([each], "self"))].map((cases) => ({
 		cases,
 		source: wrap(
@@ -97,8 +96,8 @@ async function render(source: string, props: Record<string, unknown>): Promise<s
 		throw new Error(`${file} has no default export.`);
 	}
 	const component = loaded.default;
-	const logged: string[] = [];
-	const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+	const logged: Array<string> = [];
+	const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
 	const spies = [
 		vi.spyOn(console, "error").mockImplementation(capture),
 		vi.spyOn(console, "warn").mockImplementation(capture),
@@ -107,7 +106,9 @@ async function render(source: string, props: Record<string, unknown>): Promise<s
 	try {
 		html = await renderToString(component, { props });
 	} finally {
-		for (const spy of spies) spy.mockRestore();
+		for (const spy of spies) {
+			spy.mockRestore();
+		}
 	}
 	expect([...warnings, ...logged]).toEqual([]);
 	const host = /^<uf-cases style="display: contents;">([\s\S]*)<\/uf-cases>$/.exec(html);

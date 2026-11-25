@@ -38,7 +38,9 @@ const FLAG_MODULES: ReadonlySet<string> = new Set([
 /** The warning each case logs: the text of its source's `console.warn`. */
 function warningOf(source: string): string {
 	const match = /console\.warn\("([^"]+)"\)/.exec(readFileSync(source, "utf8"));
-	if (!match) throw new Error(`${source} logs no warning to look for.`);
+	if (!match) {
+		throw new Error(`${source} logs no warning to look for.`);
+	}
 	return match[1]!;
 }
 
@@ -49,7 +51,9 @@ function warningOf(source: string): string {
  */
 function rendered(source: string): string {
 	const match = / d="([^"]+)"/.exec(readFileSync(source, "utf8"));
-	if (!match) throw new Error(`${source} renders no path to look for.`);
+	if (!match) {
+		throw new Error(`${source} renders no path to look for.`);
+	}
 	return match[1]!;
 }
 
@@ -57,7 +61,7 @@ function rendered(source: string): string {
 function inert(dir: string): boolean {
 	const expected = JSON.parse(
 		readFileSync(join(dir, "__expected__", "diagnostics.json"), "utf8"),
-	) as { code: string; target?: string }[];
+	) as Array<{ code: string; target?: string }>;
 	return expected.some((each) => each.code === "UF4001" && each.target === target);
 }
 
@@ -88,14 +92,16 @@ const DEVELOPMENT: Build = {
 const moduleKey = (path: string) => path.replace(/\.[cm]?[jt]sx?$/, "");
 
 /** The code of one build of a case's compiled modules. */
-async function bundled(modules: readonly ToolchainFile[], build: Build): Promise<string> {
+async function bundled(modules: ReadonlyArray<ToolchainFile>, build: Build): Promise<string> {
 	const byKey = new Map(modules.map((module) => [moduleKey(module.path), module] as const));
 	// `@solidjs/web` is installed only beside the Solid 2 toolchain (ADR-0102).
 	const base = join(target === "solid2" ? toolchainDir(target) : ROOT, "index.js");
 	const memory: Plugin = {
 		name: "uf-dev-only:memory",
 		async resolveId(source, importer) {
-			if (!importer && byKey.has(moduleKey(source))) return moduleKey(source);
+			if (!importer && byKey.has(moduleKey(source))) {
+				return moduleKey(source);
+			}
 			if (FLAG_MODULES.has(source)) {
 				return this.resolve(source, base, { skipSelf: true });
 			}
@@ -104,12 +110,16 @@ async function bundled(modules: readonly ToolchainFile[], build: Build): Promise
 				return byKey.has(key) ? key : { id: source, external: true };
 			}
 			// A flag module's own relative imports resolve; every package stays external.
-			if (/^\.\.?\//.test(source) || source.startsWith("/")) return null;
+			if (/^\.\.?\//.test(source) || source.startsWith("/")) {
+				return null;
+			}
 			return { id: source, external: true };
 		},
 		load(id) {
 			const module = byKey.get(id);
-			if (!module) return undefined;
+			if (!module) {
+				return undefined;
+			}
 			return { code: module.contents, moduleType: /\.[jt]sx$/.test(module.path) ? "tsx" : "ts" };
 		},
 	};
@@ -132,11 +142,11 @@ async function bundled(modules: readonly ToolchainFile[], build: Build): Promise
 
 describe(`dev-only production build › ${target}`, () => {
 	/** Each case's compiled modules, by build: a compiler may decide the build itself (Qwik's). */
-	const compiled = new Map<string, Record<Build["condition"], ToolchainFile[]>>();
+	const compiled = new Map<string, Record<Build["condition"], Array<ToolchainFile>>>();
 
 	beforeAll(async () => {
 		const toolchain = await loadToolchain(target);
-		const emit = async (paths: readonly string[], mode: Build["condition"]) => {
+		const emit = async (paths: ReadonlyArray<string>, mode: Build["condition"]) => {
 			const contents = paths.map((path) => ({ path, contents: readFileSync(path, "utf8") }));
 			const emitted = await toolchain.frameworkEmit(contents, {
 				toolchainDir: toolchainDir(target),

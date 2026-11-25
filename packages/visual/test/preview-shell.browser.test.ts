@@ -12,7 +12,7 @@ const DARK_BACKGROUND = "rgb(22, 23, 27)";
 const LIGHT_BACKGROUND = "rgb(255, 255, 255)";
 
 /** Opens a fixture's shell in this document, as a fresh load of the page, at `hash`, would. */
-async function open(name: ShellFixture, targets?: string[], hash = ""): Promise<void> {
+async function open(name: ShellFixture, targets?: Array<string>, hash = ""): Promise<void> {
 	const { html } = await commands.ufShellFixture(name, targets);
 	const shell = new DOMParser().parseFromString(html, "text/html");
 	history.replaceState(null, "", location.pathname + location.search + hash);
@@ -28,19 +28,23 @@ async function open(name: ShellFixture, targets?: string[], hash = ""): Promise<
 		...shell.head.querySelectorAll("script"),
 		...document.body.querySelectorAll("script"),
 	]) {
-		if (parsed.type === "application/json") continue;
+		if (parsed.type === "application/json") {
+			continue;
+		}
 		const script = document.createElement("script");
 		script.textContent = parsed.textContent;
 		document.body.append(script);
-		if (parsed.isConnected) parsed.remove();
+		if (parsed.isConnected) {
+			parsed.remove();
+		}
 	}
 }
 
 /** The names of a tree's or a group's own items, in order. */
-function names(list: Element): string[] {
+function names(list: Element): Array<string> {
 	return [...list.querySelectorAll(":scope > [role='treeitem']")].map((item) => {
 		const label = item.getAttribute("aria-labelledby");
-		return (label ? document.getElementById(label)! : item).textContent!.trim();
+		return (label ? document.getElementById(label)! : item).textContent.trim();
 	});
 }
 
@@ -55,10 +59,12 @@ const item = (name: string) => page.getByRole("treeitem", { name, exact: true })
 const focused = () => document.activeElement;
 
 /** Each render a frame answered: the stub frame gives back the entry and the props it was sent. */
-const renders: { entry: unknown; props: unknown }[] = [];
+const renders: Array<{ entry: unknown; props: unknown }> = [];
 addEventListener("message", (event) => {
 	const data = event.data as { kind?: unknown; entry?: unknown; props?: unknown } | null;
-	if (data?.kind === "rendered") renders.push({ entry: data.entry, props: data.props });
+	if (data?.kind === "rendered") {
+		renders.push({ entry: data.entry, props: data.props });
+	}
 });
 
 /** The heading text of each control group, in order. */
@@ -152,11 +158,11 @@ describe("the layout", () => {
 		const style = getComputedStyle(frames);
 		const box = figure.getBoundingClientRect();
 		expect(box.width).toBeCloseTo(
-			canvas.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+			canvas.width - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight),
 			0,
 		);
 		expect(box.height).toBeCloseTo(
-			canvas.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
+			canvas.height - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom),
 			0,
 		);
 	});
@@ -339,11 +345,15 @@ describe("the Open link", () => {
 			.toBeVisible();
 		// A component takes props, which no URL holds: no caption links it.
 		(item("src/Button").element() as HTMLElement).click();
-		for (const link of links()) expect(link!.checkVisibility()).toBe(false);
+		for (const link of links()) {
+			expect(link!.checkVisibility()).toBe(false);
+		}
 		expect(page.getByRole("link").query()).toBeNull();
 		// An example again brings them back.
 		(item("Card").element() as HTMLElement).click();
-		for (const link of links()) expect(link!.checkVisibility()).toBe(true);
+		for (const link of links()) {
+			expect(link!.checkVisibility()).toBe(true);
+		}
 	});
 
 	it("keeps each caption on one line in the grid's narrowest cell", async () => {

@@ -10,7 +10,7 @@ import type { Command, Io, RunCommand } from "@unframework.dev/cli";
 export type { Io } from "@unframework.dev/cli";
 
 /** What `unframework test` needs besides the umbrella: the testing package and its runner. */
-export const TEST_PACKAGES: readonly string[] = [
+export const TEST_PACKAGES: ReadonlyArray<string> = [
 	"@unframework.dev/testing",
 	"vitest",
 	"@vitest/browser-playwright",
@@ -18,14 +18,14 @@ export const TEST_PACKAGES: readonly string[] = [
 ];
 
 /** What `unframework visual` needs besides the umbrella: the visual package and the test runner. */
-export const VISUAL_PACKAGES: readonly string[] = ["@unframework.dev/visual", ...TEST_PACKAGES];
+export const VISUAL_PACKAGES: ReadonlyArray<string> = ["@unframework.dev/visual", ...TEST_PACKAGES];
 
 /**
  * What each target's tests need in the project: its framework and the framework's Vite plugin, which
  * the target packages keep as development dependencies. Angular's compiler stack resolves from
  * `package.resolveFrom` (ADR-0086).
  */
-export const TARGET_TEST_PACKAGES: Readonly<Record<string, readonly string[]>> = {
+export const TARGET_TEST_PACKAGES: Readonly<Record<string, ReadonlyArray<string>>> = {
 	react: [
 		"react",
 		"react-dom",
@@ -85,7 +85,7 @@ export function visualCommand(load: TestLoader = loadVisual): Command {
  * What `unframework preview` needs besides the umbrella: what `visual` needs, since it loads from
  * the same entry, and Vite, whose dev servers it runs and whose `build` writes its static site.
  */
-export const PREVIEW_PACKAGES: readonly string[] = [...VISUAL_PACKAGES, "vite"];
+export const PREVIEW_PACKAGES: ReadonlyArray<string> = [...VISUAL_PACKAGES, "vite"];
 
 /**
  * The `preview` command (ADR-0088), which loads and fails as `test` does. It runs until it is
@@ -102,13 +102,15 @@ export function previewCommand(load: TestLoader = loadPreview): Command {
 
 async function loadOrExplain(
 	name: string,
-	packages: readonly string[],
+	packages: ReadonlyArray<string>,
 	load: TestLoader,
 ): Promise<{ run: RunCommand }> {
 	try {
 		return await load();
 	} catch (error) {
-		if (!isMissingModule(error)) throw error;
+		if (!isMissingModule(error)) {
+			throw error;
+		}
 		return { run: (_args, io) => Promise.resolve(missing(name, packages, error, io)) };
 	}
 }
@@ -118,7 +120,7 @@ function isMissingModule(error: unknown): error is Error {
 	return code === "ERR_MODULE_NOT_FOUND" || code === "MODULE_NOT_FOUND";
 }
 
-function missing(name: string, packages: readonly string[], error: Error, io: Io): number {
+function missing(name: string, packages: ReadonlyArray<string>, error: Error, io: Io): number {
 	const targets = Object.entries(TARGET_TEST_PACKAGES)
 		.map(([target, names]) => `  ${target}: ${names.join(", ")}`)
 		.join("\n");
@@ -136,7 +138,7 @@ function missing(name: string, packages: readonly string[], error: Error, io: Io
  * 1 for error diagnostics or failed tests, 2 for a usage or configuration error.
  */
 export function main(
-	argv: readonly string[],
+	argv: ReadonlyArray<string>,
 	io?: Io,
 	load: TestLoader = loadTesting,
 	visual: TestLoader = loadVisual,

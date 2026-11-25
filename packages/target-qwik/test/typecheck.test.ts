@@ -78,7 +78,9 @@ describe("typecheck (L4, tsgo)", () => {
 		expect(results.get(template)).toEqual([
 			{ message: "Cannot find name 'greet'.", line: 4, column: 14, code: "TS2304" },
 		]);
-		for (const golden of goldens) expect(results.get(golden)).toEqual([]);
+		for (const golden of goldens) {
+			expect(results.get(golden)).toEqual([]);
+		}
 		expect(results.size).toBe(goldens.length + 6);
 	}, 60_000);
 
@@ -218,7 +220,7 @@ describe("Qwik's attribute spellings", () => {
 	// the table for its value (Qwik types its HTML name as the DOM's boolean property).
 	const values: Record<string, string> = { autocorrect: '"on"' };
 	const entries = Object.entries(QWIK_ATTRIBUTE_NAMES);
-	const usage = (names: readonly string[]) =>
+	const usage = (names: ReadonlyArray<string>) =>
 		component(
 			`  return (\n    <>\n${entries.map(([html], index) => `      <${elements[html] ?? "div"} ${names[index]}=${values[html] ?? "{undefined}"} />`).join("\n")}\n    </>\n  );`,
 		);

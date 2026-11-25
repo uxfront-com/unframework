@@ -40,7 +40,7 @@ export interface ListenerName {
 	/** The DOM event, in lower case: `click`. */
 	event: string;
 	/** The options its suffixes ask for, in order: one at most is valid. */
-	options: ("capture" | "once" | "passive")[];
+	options: Array<"capture" | "once" | "passive">;
 	/** How the name is written canonically: `onDblclick`, `onKeydownCapture`. */
 	canonical: string;
 }
@@ -51,10 +51,12 @@ export interface ListenerName {
  * vocabulary (`onclick`), so `one` and `onion` stay attributes.
  */
 export function listenerName(authored: string): ListenerName | undefined {
-	if (!/^on/i.test(authored)) return undefined;
+	if (!/^on/i.test(authored)) {
+		return undefined;
+	}
 	let rest = authored.slice(2);
 	const options: ListenerName["options"] = [];
-	const suffixes: string[] = [];
+	const suffixes: Array<string> = [];
 	for (let found = true; found;) {
 		found = false;
 		for (const suffix of SUFFIXES) {
@@ -62,7 +64,9 @@ export function listenerName(authored: string): ListenerName | undefined {
 			if (rest.length > suffix.length && lower.endsWith(suffix.toLowerCase())) {
 				const candidate = rest.slice(0, -suffix.length);
 				// A suffix written in another case counts where what is left is an event.
-				if (!rest.endsWith(suffix) && !known(eventOf(candidate))) continue;
+				if (!rest.endsWith(suffix) && !known(eventOf(candidate))) {
+					continue;
+				}
 				options.unshift(suffix.toLowerCase() as ListenerName["options"][number]);
 				suffixes.unshift(suffix);
 				rest = candidate;
@@ -72,7 +76,9 @@ export function listenerName(authored: string): ListenerName | undefined {
 		}
 	}
 	const event = eventOf(rest);
-	if (!/^on[A-Z]/.test(authored) && !known(event)) return undefined;
+	if (!/^on[A-Z]/.test(authored) && !known(event)) {
+		return undefined;
+	}
 	const canonical = `on${event.charAt(0).toUpperCase()}${event.slice(1)}${suffixes.join("")}`;
 	return { event, options, canonical };
 }
@@ -181,7 +187,9 @@ export function lowerListener(
 		);
 	}
 	const handler = lowerHandler(item, event, context);
-	if (!handler || reporter.hasErrorsSince(mark)) return { attribute: undefined, key };
+	if (!handler || reporter.hasErrorsSince(mark)) {
+		return { attribute: undefined, key };
+	}
 	const [option] = options;
 	return {
 		attribute: createEventAttribute(event, handler, span(item), {
@@ -202,10 +210,12 @@ export function lowerListener(
 export function annotatedInterface(parameter: AST.ParamPattern | undefined): {
 	interface?: string;
 	/** The interfaces the annotation names: one, or each of a union's. */
-	members?: readonly string[];
+	members?: ReadonlyArray<string>;
 	annotated: boolean;
 } {
-	if (parameter?.type !== "Identifier" || !parameter.typeAnnotation) return { annotated: false };
+	if (parameter?.type !== "Identifier" || !parameter.typeAnnotation) {
+		return { annotated: false };
+	}
 	const type = parameter.typeAnnotation.typeAnnotation;
 	const named = (node: AST.TSType) =>
 		node.type === "TSTypeReference" &&
@@ -218,21 +228,23 @@ export function annotatedInterface(parameter: AST.ParamPattern | undefined): {
 	if (!members.length || members.some((member) => member === undefined)) {
 		return { annotated: true };
 	}
-	const names = members as string[];
+	const names = members as Array<string>;
 	return { interface: commonInterface(names), members: names, annotated: true };
 }
 
 /** The nearest event interface every one of `names` is or extends: `Event` at worst. */
-function commonInterface(names: readonly string[]): string {
+function commonInterface(names: ReadonlyArray<string>): string {
 	for (let current: string | null | undefined = names[0]; current;) {
-		if (names.every((name) => extendsEventInterface(name, current!))) return current;
+		if (names.every((name) => extendsEventInterface(name, current!))) {
+			return current;
+		}
 		current = EVENT_INTERFACES.get(current);
 	}
 	return "Event";
 }
 
 /** Whether an event's interface fits a parameter that takes `members`: it extends one of them. */
-function takesEvent(dom: string, members: readonly string[]): boolean {
+function takesEvent(dom: string, members: ReadonlyArray<string>): boolean {
 	return members.some((member) => extendsEventInterface(dom, member));
 }
 
@@ -275,8 +287,9 @@ function lowerHandler(
 	const expression = value.expression;
 	if (expression.type === "Identifier") {
 		const binding = setupBindingOf(expression, render);
-		if (binding?.kind === "localFn")
+		if (binding?.kind === "localFn") {
 			return functionHandler(expression, binding, event, dom, render);
+		}
 		if (binding?.kind === "emit") {
 			return invalid(
 				expression,
@@ -320,7 +333,9 @@ function lowerHandler(
 		});
 		// Checked whatever else the handler reports, so that fixing that reveals nothing new.
 		const fits = capturable(expression, lowered.function.body.refs, render);
-		if (!lowered.clean || !fits) return undefined;
+		if (!lowered.clean || !fits) {
+			return undefined;
+		}
 		return createInlineHandler(lowered.function, span(expression));
 	}
 	if (expression.type === "CallExpression") {
@@ -368,7 +383,9 @@ export function lowerComponentHandler(
 	const expression = value.expression;
 	if (expression.type === "Identifier") {
 		const binding = setupBindingOf(expression, render);
-		if (binding?.kind === "localFn") return createFunctionHandler(binding.id, span(expression));
+		if (binding?.kind === "localFn") {
+			return createFunctionHandler(binding.id, span(expression));
+		}
 		return invalid(
 			expression,
 			`\`${expression.name}\` is not a local function: a handler is a function the component's setup declares, or an arrow function.`,
@@ -384,7 +401,9 @@ export function lowerComponentHandler(
 	checkDirectives(span(expression), render.comments, reporter);
 	const lowered = lowerFunction(expression, render, { role: "handler" });
 	const fits = capturable(expression, lowered.function.body.refs, render);
-	if (!lowered.clean || !fits) return undefined;
+	if (!lowered.clean || !fits) {
+		return undefined;
+	}
 	return createInlineHandler(lowered.function, span(expression));
 }
 
@@ -428,13 +447,15 @@ function functionHandler(
  */
 function capturable(
 	fn: AST.ArrowFunctionExpression,
-	refs: readonly CodeReference[],
+	refs: ReadonlyArray<CodeReference>,
 	render: RenderContext,
 ): boolean {
 	const loops = new Set([...render.loopVariables.values()].map((variable) => variable.id));
 	const inList = refs.some((ref) => ref.kind === "Binding" && loops.has(ref.binding));
 	const narrowed = inList ? undefined : narrowedRead(fn, render);
-	if (!inList && !narrowed) return true;
+	if (!inList && !narrowed) {
+		return true;
+	}
 	const { body } = fn;
 	const callee =
 		body.type === "CallExpression" && body.callee.type === "Identifier"
@@ -481,7 +502,7 @@ function capturable(
 		const probe = new Reporter(render.reporter.file);
 		checkExpression(argument, { ...render, reporter: probe });
 		const [found] = probe.diagnostics;
-		if (found)
+		if (found) {
 			fits =
 				reportArgument(
 					argument,
@@ -490,6 +511,7 @@ function capturable(
 					render,
 					found.message,
 				) && fits;
+		}
 	}
 	return fits;
 }
@@ -505,13 +527,19 @@ function narrowedRead(
 ): { start: number; end: number; condition: AST.Expression } | undefined {
 	let found: { start: number; end: number; condition: AST.Expression } | undefined;
 	const visit = (node: unknown): void => {
-		if (found || !node || typeof node !== "object") return;
+		if (found || !node || typeof node !== "object") {
+			return;
+		}
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
 		const typed = node as AST.Node;
-		if (typeof typed.type !== "string") return;
+		if (typeof typed.type !== "string") {
+			return;
+		}
 		// A plain assignment's target is written, not read: writing the value a condition tests
 		// (`() => (open.value = false)` in the branch `open.value` opens) needs no narrowing. A
 		// compound assignment's and an update's target is read too.
@@ -519,7 +547,9 @@ function narrowedRead(
 			const target = typed.left;
 			if (target.type === "MemberExpression") {
 				visit(target.object);
-				if (target.computed) visit(target.property);
+				if (target.computed) {
+					visit(target.property);
+				}
 			} else if (target.type !== "Identifier") {
 				visit(target);
 			}
@@ -540,7 +570,9 @@ function narrowedRead(
 		}
 		if (typed.type === "MemberExpression") {
 			visit(typed.object);
-			if (typed.computed) visit(typed.property);
+			if (typed.computed) {
+				visit(typed.property);
+			}
 			return;
 		}
 		if (typed.type === "Property" && !typed.computed) {
@@ -640,7 +672,9 @@ export function lowerRef(
 		);
 	}
 	const first = attached.get(binding.declaration);
-	if (!first) attached.set(binding.declaration, span(item));
+	if (!first) {
+		attached.set(binding.declaration, span(item));
+	}
 	if (render.enclosing.length) {
 		return invalid(
 			item,
@@ -660,6 +694,8 @@ export function lowerRef(
 		);
 		return undefined;
 	}
-	if (reporter.hasErrorsSince(mark)) return undefined;
+	if (reporter.hasErrorsSince(mark)) {
+		return undefined;
+	}
 	return createRefAttribute(binding.id, span(item));
 }

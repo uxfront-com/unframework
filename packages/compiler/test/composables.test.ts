@@ -10,7 +10,7 @@ import { builtinTargets, compile, createFileResolver } from "../src/index.ts";
 import type { TargetName } from "../src/index.ts";
 
 function emit(name: TargetName, module: UfModule) {
-	const reported: Omit<Diagnostic, "file" | "target">[] = [];
+	const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
 	const files = builtinTargets[name].emit(module.components[0]!, {
 		module,
 		options: undefined,
@@ -196,7 +196,7 @@ describe("a module of composables", () => {
 	});
 
 	it("calls each target's `emitComposable`, and formats what it emits", async () => {
-		const seen: string[] = [];
+		const seen: Array<string> = [];
 		const target = {
 			...builtinTargets.vue,
 			name: "fake",
@@ -224,7 +224,7 @@ describe("a module of composables", () => {
 		const target = {
 			...builtinTargets.vue,
 			name: "broken",
-			emitComposable(): OutputFile[] {
+			emitComposable(): Array<OutputFile> {
 				throw new Error("boom");
 			},
 		};

@@ -31,7 +31,7 @@ import {
 afterAll(removeScratch);
 
 /** Node resolves a relative import by its full name, which a bundler finds without it. */
-const linked = (code: string) => code.replace(/(from "\.\/(?:_unframework\/)?\w+)"/g, '$1.js"');
+const linked = (code: string) => code.replaceAll(/(from "\.\/(?:_unframework\/)?\w+)"/g, '$1.js"');
 
 /**
  * Compiles Angular source with the ngtsc plugin and imports the component it exports. A golden
@@ -63,10 +63,10 @@ async function load(name: string, source: string, golden?: string): Promise<unkn
 
 const at = { start: 0, end: 0 };
 const text = (value: string) => createText(value, at);
-const element = (tag: string, children: RenderNode[]) => createElement(tag, [], children, at);
+const element = (tag: string, children: Array<RenderNode>) => createElement(tag, [], children, at);
 
 /** Emits a component rendering `<div>{children}</div>` and returns the div's server HTML. */
-async function renderEmitted(children: RenderNode[]): Promise<string> {
+async function renderEmitted(children: Array<RenderNode>): Promise<string> {
 	const render = element("div", children);
 	const module = createModule(
 		"Text.uf.tsx",
@@ -163,7 +163,7 @@ describe("effects on the server", () => {
 	});
 
 	it("runs no immediate watcher, `watchEffect` or `onUnmounted` there", async () => {
-		const logged: unknown[][] = [];
+		const logged: Array<Array<unknown>> = [];
 		const spies = (["log", "warn", "error"] as const).map((level) =>
 			vi.spyOn(console, level).mockImplementation((...args) => void logged.push(args)),
 		);
@@ -172,7 +172,9 @@ describe("effects on the server", () => {
 			expect(await serverHtml("effects/watch-effect", { appName: "Inbox" })).toContain("0 unread");
 			expect(await serverHtml("lifecycle/unmount-timers", { interval: 1000 })).toContain("Paused");
 		} finally {
-			for (const spy of spies) spy.mockRestore();
+			for (const spy of spies) {
+				spy.mockRestore();
+			}
 		}
 		expect(logged).toEqual([]);
 	});

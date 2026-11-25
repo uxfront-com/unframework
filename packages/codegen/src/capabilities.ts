@@ -97,28 +97,29 @@ const INTERACTIVE_ATTRIBUTES: ReadonlySet<(Attribute | ComponentAttribute)["kind
  * of their own: only what changes them in the browser does, and that is a listener, a watcher, an
  * effect or a hook.
  */
-const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly CapabilityName[]>> = {
-	Await: ["async-setup"],
-	State: [],
-	Derived: [],
-	TemplateRef: [],
-	Id: ["use-id"],
-	Const: [],
-	Variable: [],
-	Function: [],
-	Watch: ["interactivity"],
-	WatchEffect: ["interactivity"],
-	Lifecycle: ["interactivity"],
-	// A child that declares a model renders its value (ADR-0055).
-	Model: ["model"],
-	Provide: ["context"],
-	Inject: ["context"],
-	// One whose composable runs code in the browser also needs `composable-effect-order`
-	// (ADR-0069), added at the same span.
-	Use: ["composables"],
-	// Every target checks its build natively (ADR-0117).
-	DevCheck: [],
-};
+const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], ReadonlyArray<CapabilityName>>> =
+	{
+		Await: ["async-setup"],
+		State: [],
+		Derived: [],
+		TemplateRef: [],
+		Id: ["use-id"],
+		Const: [],
+		Variable: [],
+		Function: [],
+		Watch: ["interactivity"],
+		WatchEffect: ["interactivity"],
+		Lifecycle: ["interactivity"],
+		// A child that declares a model renders its value (ADR-0055).
+		Model: ["model"],
+		Provide: ["context"],
+		Inject: ["context"],
+		// One whose composable runs code in the browser also needs `composable-effect-order`
+		// (ADR-0069), added at the same span.
+		Use: ["composables"],
+		// Every target checks its build natively (ADR-0117).
+		DevCheck: [],
+	};
 /**
  * What each kind of reference in code needs: `nextTick` its own capability, and the others
  * nothing of their own. A pass-through import needs none: every target keeps it as written, and
@@ -187,39 +188,61 @@ const OPTION_CAPABILITIES = {
 export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityName, Span> {
 	const required = new Map<CapabilityName, Span>();
 	const use = (capability: CapabilityName, span: Span) => {
-		if (!required.has(capability)) required.set(capability, span);
+		if (!required.has(capability)) {
+			required.set(capability, span);
+		}
 	};
 	const scan = (code: Code) => {
 		for (const reference of code.refs) {
 			const capability = REFERENCE_CAPABILITIES[reference.kind];
-			if (capability) use(capability, reference.span);
+			if (capability) {
+				use(capability, reference.span);
+			}
 		}
 	};
 	for (const component of module.components) {
 		const functions = new Map<BindingId, FunctionCode>();
 		for (const item of component.setup) {
-			if (item.kind === "Function") functions.set(item.binding, item.function);
+			if (item.kind === "Function") {
+				functions.set(item.binding, item.function);
+			}
 		}
 		const [parameter] = component.typeParameters ?? [];
-		if (parameter) use("generic-components", parameter.span);
+		if (parameter) {
+			use("generic-components", parameter.span);
+		}
 		const [first] = component.props;
-		if (first) use("props", component.propsParameter?.span ?? first.span);
+		if (first) {
+			use("props", component.propsParameter?.span ?? first.span);
+		}
 		const optional = new Set(
 			component.props.flatMap((prop) =>
 				prop.optional && prop.binding !== undefined ? [prop.binding] : [],
 			),
 		);
 		for (const item of component.setup) {
-			for (const capability of SETUP_ITEM_CAPABILITIES[item.kind]) use(capability, item.span);
-			if (item.kind === "Use" && item.hasEffects) use("composable-effect-order", item.span);
-			for (const code of itemCode(item)) scan(code);
+			for (const capability of SETUP_ITEM_CAPABILITIES[item.kind]) {
+				use(capability, item.span);
+			}
+			if (item.kind === "Use" && item.hasEffects) {
+				use("composable-effect-order", item.span);
+			}
+			for (const code of itemCode(item)) {
+				scan(code);
+			}
 			for (const code of trackedCode(item)) {
 				const read = optionalRead(code, component, optional);
-				if (read) use("late-prop", read);
+				if (read) {
+					use("late-prop", read);
+				}
 			}
 		}
-		for (const span of handedControls(component)) use("conditional-event-control", span);
-		if (component.exposes) use("expose", component.exposes.span);
+		for (const span of handedControls(component)) {
+			use("conditional-event-control", span);
+		}
+		if (component.exposes) {
+			use("expose", component.exposes.span);
+		}
 		const reactive = new Set(
 			component.bindings.flatMap(({ id, kind }) =>
 				kind === "state" || kind === "derived" || kind === "model" ? [id] : [],
@@ -241,7 +264,9 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
 		}
 		for (const { expression } of expressionsOf(component)) {
 			for (const ref of expression.refs) {
-				if (ref.kind !== "Slot") continue;
+				if (ref.kind !== "Slot") {
+					continue;
+				}
 				use(ref.slot === "default" ? "default-slot-presence" : "named-slot", ref.span);
 			}
 		}
@@ -257,21 +282,35 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
 			use("sheet-order", sheet.span);
 		}
 		const mixed = bothPhaseEvents(component);
-		const fills = (list: readonly SlotFill[], slotted: boolean, generic: ReadonlySet<string>) => {
+		const fills = (
+			list: ReadonlyArray<SlotFill>,
+			slotted: boolean,
+			generic: ReadonlySet<string>,
+		) => {
 			for (const fill of list) {
-				if (slotted) use("slotted-styles", fill.span);
+				if (slotted) {
+					use("slotted-styles", fill.span);
+				}
 				use(slotCapability(fill.slot, fill.parameter !== undefined), fill.span);
-				if (fill.parameter && generic.has(fill.slot)) use("generic-slot-props", fill.span);
-				if (fill.forward === undefined) continue;
+				if (fill.parameter && generic.has(fill.slot)) {
+					use("generic-slot-props", fill.span);
+				}
+				if (fill.forward === undefined) {
+					continue;
+				}
 				use("slot-forwarding", fill.span);
-				if (fill.forward === "default") use("default-slot-presence", fill.span);
+				if (fill.forward === "default") {
+					use("default-slot-presence", fill.span);
+				}
 			}
 		};
 		walk(component.render, {
 			enter(node) {
 				if (node.kind === "SlotOutlet") {
 					use(slotCapability(node.slot, node.props !== undefined), node.span);
-					if (node.fallback.length) use("slot-fallback", node.span);
+					if (node.fallback.length) {
+						use("slot-fallback", node.span);
+					}
 					return;
 				}
 				use(NODE_CAPABILITIES[node.kind], node.span);
@@ -284,8 +323,12 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
 								);
 					const onComponent =
 						node.kind === "Component" || children.length === node.candidates.length;
-					if (sheet && children.length) use("child-root-scope", node.span);
-					for (const attribute of node.attributes) componentAttribute(attribute, onComponent, use);
+					if (sheet && children.length) {
+						use("child-root-scope", node.span);
+					}
+					for (const attribute of node.attributes) {
+						componentAttribute(attribute, onComponent, use);
+					}
 					fills(
 						node.kind === "Component" ? node.fills : (node.fills ?? []),
 						children.some((child) => usesSlotted(module, child)),
@@ -293,18 +336,30 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
 					);
 					return;
 				}
-				if (node.kind !== "Element") return;
-				if (node.tag === "svg") use("svg", node.span);
+				if (node.kind !== "Element") {
+					return;
+				}
+				if (node.tag === "svg") {
+					use("svg", node.span);
+				}
 				for (const attribute of node.attributes) {
 					use(ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
-					if (attribute.kind === "Model") modelCapabilities(attribute, use);
-					if (attribute.kind !== "Event") continue;
+					if (attribute.kind === "Model") {
+						modelCapabilities(attribute, use);
+					}
+					if (attribute.kind !== "Event") {
+						continue;
+					}
 					use("event-semantics", attribute.span);
 					for (const option of ["capture", "once", "passive"] as const) {
-						if (attribute[option]) use(OPTION_CAPABILITIES[option], attribute.span);
+						if (attribute[option]) {
+							use(OPTION_CAPABILITIES[option], attribute.span);
+						}
 					}
 					if (attribute.handler.kind === "Inline") {
-						for (const code of functionCode(attribute.handler.function)) scan(code);
+						for (const code of functionCode(attribute.handler.function)) {
+							scan(code);
+						}
 					}
 					const handler =
 						attribute.handler.kind === "Inline"
@@ -312,7 +367,9 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
 							: functions.get(attribute.handler.binding);
 					if (handler) {
 						const { controls, unliftable } = handlerControls(handler, component);
-						for (const span of unliftable) use("conditional-event-control", span);
+						for (const span of unliftable) {
+							use("conditional-event-control", span);
+						}
 						// A `once` listener's control runs on its first event only: under a condition, or
 						// on an element that listens to the event in both phases, a target that runs it
 						// apart from the handler cannot tell which event that is. Where an element of the
@@ -331,7 +388,9 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
 					}
 				}
 				const size = listBoxSize(node);
-				if (size) use("listbox", size.span);
+				if (size) {
+					use("listbox", size.span);
+				}
 			},
 		});
 	}
@@ -342,10 +401,12 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
  * The slots of an imported generic child whose props' type names one of its type parameters
  * (ADR-0068), as its API says.
  */
-function genericSlots(module: UfModule, local: string): string[] {
+function genericSlots(module: UfModule, local: string): Array<string> {
 	for (const entry of module.imports ?? []) {
 		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-		if (!imported) continue;
+		if (!imported) {
+			continue;
+		}
 		const api = entry.api.components.find((each) =>
 			imported.imported === "default"
 				? each.export === "default"
@@ -403,16 +464,22 @@ export function compositionUse(
 	module: UfModule,
 	component: UfComponent,
 ): { what: string; span: Span } | undefined {
-	const uses: { what: string; span: Span }[] = [];
+	const uses: Array<{ what: string; span: Span }> = [];
 	for (const [capability, span] of requiredCapabilities({ ...module, components: [component] })) {
-		if (COMPOSITION_CAPABILITIES.has(capability)) uses.push({ what: capability, span });
+		if (COMPOSITION_CAPABILITIES.has(capability)) {
+			uses.push({ what: capability, span });
+		}
 	}
-	if (component.slots) uses.push({ what: "`defineSlots`", span: component.slots.span });
-	if (component.inheritAttrs === false)
+	if (component.slots) {
+		uses.push({ what: "`defineSlots`", span: component.slots.span });
+	}
+	if (component.inheritAttrs === false) {
 		uses.push({ what: "`defineOptions`", span: component.span });
+	}
 	const [key] = module.keys ?? [];
-	if (key && module.components[0] === component)
+	if (key && module.components[0] === component) {
 		uses.push({ what: "an injection key", span: key.span });
+	}
 	return uses.reduce<{ what: string; span: Span } | undefined>(
 		(first, use) => (first && first.span.start <= use.span.start ? first : use),
 		undefined,
@@ -421,7 +488,9 @@ export function compositionUse(
 
 /** The capability of a slot's form: the default slot, a named one, or one with props. */
 function slotCapability(slot: string, scoped: boolean): CapabilityName {
-	if (scoped) return "scoped-slot";
+	if (scoped) {
+		return "scoped-slot";
+	}
 	return slot === "default" ? "default-slot" : "named-slot";
 }
 
@@ -470,11 +539,15 @@ function componentAttribute(
 		case "Event":
 			// A native listener on a component falls through to its root (ADR-0118), and still needs
 			// code running in the browser.
-			if (onComponent) use(COMPONENT_ATTRIBUTE_CAPABILITIES.Event, attribute.span);
+			if (onComponent) {
+				use(COMPONENT_ATTRIBUTE_CAPABILITIES.Event, attribute.span);
+			}
 			use(ATTRIBUTE_CAPABILITIES.Event, attribute.span);
 			use("event-semantics", attribute.span);
 			for (const option of ["capture", "once", "passive"] as const) {
-				if (attribute[option]) use(OPTION_CAPABILITIES[option], attribute.span);
+				if (attribute[option]) {
+					use(OPTION_CAPABILITIES[option], attribute.span);
+				}
 			}
 			break;
 		case "Model":
@@ -484,7 +557,9 @@ function componentAttribute(
 		default:
 			unreachable(attribute);
 	}
-	if (INTERACTIVE_ATTRIBUTES.has(attribute.kind)) use("interactivity", attribute.span);
+	if (INTERACTIVE_ATTRIBUTES.has(attribute.kind)) {
+		use("interactivity", attribute.span);
+	}
 }
 
 /** What an element's `v-model` needs besides `two-way-binding`: an array, or a modifier. */
@@ -506,7 +581,9 @@ function bothPhaseEvents(component: UfComponent): Set<string> {
 	const events = new Set<string>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Element") return;
+			if (node.kind !== "Element") {
+				return;
+			}
 			for (const attribute of node.attributes) {
 				if (attribute.kind === "Event" && bothPhases(node, attribute.event)) {
 					events.add(attribute.event);
@@ -531,7 +608,7 @@ function bothPhases(element: ElementNode, event: string): boolean {
  * The code of a setup item whose reads a framework subscribes to as it runs, which runs again
  * when they change: a derived value's getter, a watch's getter sources, a `watchEffect`.
  */
-function trackedCode(item: SetupItem): Code[] {
+function trackedCode(item: SetupItem): Array<Code> {
 	switch (item.kind) {
 		case "Derived":
 			return [item.getter.body];
@@ -570,17 +647,21 @@ function optionalRead(
 	component: UfComponent,
 	optional: ReadonlySet<BindingId>,
 ): Span | undefined {
-	if (!optional.size) return undefined;
+	if (!optional.size) {
+		return undefined;
+	}
 	const direct = code.refs.find(
 		(reference) => reference.kind === "Binding" && optional.has(reference.binding),
 	);
-	if (direct) return direct.span;
+	if (direct) {
+		return direct.span;
+	}
 	const { reads } = summarizeCode(code, component);
 	return [...reads].some((id) => optional.has(id)) ? code.span : undefined;
 }
 
 /** The code of a setup item, in source order. */
-function itemCode(item: SetupItem): Code[] {
+function itemCode(item: SetupItem): Array<Code> {
 	switch (item.kind) {
 		case "State":
 		case "Variable":
@@ -652,13 +733,17 @@ const MODULE_BINDING_KINDS: Readonly<Partial<Record<BindingKind, string>>> = {
  * nothing (P2).
  */
 export function composableUse(component: UfComponent): { what: string; span: Span } | undefined {
-	const uses: { what: string; span: Span }[] = [];
+	const uses: Array<{ what: string; span: Span }> = [];
 	for (const item of component.setup) {
-		if (item.kind === "Use") uses.push({ what: "a composable's call", span: item.span });
+		if (item.kind === "Use") {
+			uses.push({ what: "a composable's call", span: item.span });
+		}
 	}
 	for (const binding of component.bindings) {
 		const what = MODULE_BINDING_KINDS[binding.kind];
-		if (what) uses.push({ what, span: binding.span });
+		if (what) {
+			uses.push({ what, span: binding.span });
+		}
 	}
 	return uses.reduce<{ what: string; span: Span } | undefined>(
 		(first, use) => (first && first.span.start <= use.span.start ? first : use),
@@ -667,7 +752,7 @@ export function composableUse(component: UfComponent): { what: string; span: Spa
 }
 
 /** A function's code: its body. Its event controls' conditions repeat a part of it. */
-function functionCode(fn: FunctionCode): Code[] {
+function functionCode(fn: FunctionCode): Array<Code> {
 	return [fn.body];
 }
 

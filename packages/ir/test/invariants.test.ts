@@ -110,7 +110,7 @@ const code = (text: string) => createExpression(text, span(0, text.length));
 
 const element = (
 	tag: string,
-	attributes: [string, string | true][] = [],
+	attributes: Array<[string, string | true]> = [],
 	children: ElementNode["children"] = [],
 ) =>
 	createElement(
@@ -373,17 +373,17 @@ describe("checkInvariants", () => {
 	});
 });
 
-const svg = (...children: RenderNode[]) =>
+const svg = (...children: Array<RenderNode>) =>
 	createElement("svg", [createStaticAttribute("viewBox", "0 0 24 24", at)], children, at);
-const node = (tag: string, attributes: Attribute[] = [], children: RenderNode[] = []) =>
+const node = (tag: string, attributes: Array<Attribute> = [], children: Array<RenderNode> = []) =>
 	createElement(tag, attributes, children, at);
 const bound = (name: string) => createBoundAttribute(name, label(), at);
-const style = (...declarations: StyleDeclaration[]) => createStyleAttribute(declarations, at);
+const style = (...declarations: Array<StyleDeclaration>) => createStyleAttribute(declarations, at);
 const text = (value: string) => createText(value, at);
 const interpolation = () => createInterpolation(label(), at);
 /** The item of a list over `label`, which keys it. */
 const item = () => expression("item", 0, [["item", ids.item]]);
-const branch = (children: RenderNode[], condition = true) =>
+const branch = (children: Array<RenderNode>, condition = true) =>
 	createBranch(condition ? label() : undefined, children, at);
 
 // M1's render nodes and attribute kinds (ADR-0034–ADR-0040): what the analyser lowers, and the
@@ -930,7 +930,7 @@ describe("checkInvariants on M1's IR", () => {
 		],
 		[
 			"a value with an escaped quote of its own kind",
-			node("p", [style(createStaticStyle("content", '"a\\";b"', at))]),
+			node("p", [style(createStaticStyle("content", String.raw`"a\";b"`, at))]),
 			"/declarations/0/value",
 			"Angular's style parser",
 		],
@@ -1433,7 +1433,7 @@ function nestedList(name: string, id: string, key: Expression): UfModule {
  * A module declaring `interface Props`, with two components: each takes the props type named
  * first, and its props reach the types listed (`Props` among them, or not).
  */
-function twoComponents(...components: [annotation: string, types: string[]][]): UfModule {
+function twoComponents(...components: Array<[annotation: string, types: Array<string>]>): UfModule {
 	const declarations = [
 		createTypeDeclaration("Props", false, "interface Props {}", span(0, 18)),
 		createTypeDeclaration("BadgeProps", false, "interface BadgeProps {}", span(20, 43)),
@@ -1469,7 +1469,10 @@ function twoComponents(...components: [annotation: string, types: string[]][]): 
 }
 
 /** A module whose component takes the props named, each with its own binding, and renders `<p>`. */
-function withProps(names: string[], form: "destructured" | "object" = "destructured"): UfModule {
+function withProps(
+	names: Array<string>,
+	form: "destructured" | "object" = "destructured",
+): UfModule {
 	const type = createTypeText("P", span(0, 1));
 	const props = names.map((name, index) =>
 		createProp(
@@ -1556,7 +1559,7 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
 			"references out of order",
 			() =>
 				changed((module) => {
-					const { value } = card(module).children[1] as { value: { refs: unknown[] } };
+					const { value } = card(module).children[1] as { value: { refs: Array<unknown> } };
 					value.refs = value.refs.toReversed();
 				}),
 			"/children/0/children/1/value/refs/1/span",
@@ -1568,7 +1571,7 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
 				changed(
 					(module) =>
 						void ((
-							card(module).attributes[2] as { value: { refs: { span: unknown }[] } }
+							card(module).attributes[2] as { value: { refs: Array<{ span: unknown }> } }
 						).value.refs[0]!.span = span(240, 245)),
 				),
 			"/attributes/2/value/refs/0/span",
@@ -1580,7 +1583,7 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
 				changed(
 					(module) =>
 						void ((
-							card(module).attributes[2] as { value: { refs: { binding: string }[] } }
+							card(module).attributes[2] as { value: { refs: Array<{ binding: string }> } }
 						).value.refs[0]!.binding = "nope@1"),
 				),
 			"/attributes/2/value/refs/0/binding",
@@ -2112,20 +2115,31 @@ const shown = (counter: UfComponent) => childAt(counter, 4).children[0] as Inter
 function codeAt(
 	text: string,
 	start: number,
-	refs: (locate: (part: string, nth?: number) => Span, whole: Span) => CodeReference[] = () => [],
+	refs: (
+		locate: (part: string, nth?: number) => Span,
+		whole: Span,
+	) => Array<CodeReference> = () => [],
 ): Code {
 	const whole = span(start, start + text.length);
 	const locate = (part: string, nth = 0): Span => {
 		let offset = -1;
-		for (let found = 0; found <= nth; found++) offset = text.indexOf(part, offset + 1);
-		if (offset === -1) throw new Error(`"${part}" is not in "${text}"`);
+		for (let found = 0; found <= nth; found++) {
+			offset = text.indexOf(part, offset + 1);
+		}
+		if (offset === -1) {
+			throw new Error(`"${part}" is not in "${text}"`);
+		}
 		return span(start + offset, start + offset + part.length);
 	};
 	return createCode(text, whole, refs(locate, whole));
 }
 
 /** An expression at `start` reading the bindings `[text, binding, call?]` at their first occurrence. */
-function expressionAt(text: string, start: number, refs: [string, string, boolean?][]): Expression {
+function expressionAt(
+	text: string,
+	start: number,
+	refs: Array<[string, string, boolean?]>,
+): Expression {
 	const code = codeAt(text, start, (locate) =>
 		refs.map(([part, binding, call]) => createBindingReference(binding, locate(part), false, call)),
 	);
@@ -2712,7 +2726,7 @@ describe("checkInvariants on the setup, events and template refs", () => {
 				counterChanged((counter) => {
 					const emit = inlineAt(counter.render as ElementNode, 0).body.refs[0] as {
 						span: Span;
-						arguments: Span[];
+						arguments: Array<Span>;
 					};
 					emit.arguments = [span(emit.span.start + 5, emit.span.end - 1)];
 				}),
@@ -3213,7 +3227,9 @@ describe("checkInvariants on the setup, events and template refs", () => {
 			() =>
 				counterChanged((counter) => {
 					const [ref] = setupItem(counter, 1, "Derived").getter.body.refs;
-					if (ref?.kind === "Binding") ref.later = true;
+					if (ref?.kind === "Binding") {
+						ref.later = true;
+					}
 				}),
 			"/components/1/setup/1/getter/body/refs/0/later",
 			"must be absent in a getter, which runs nothing later",
@@ -3351,11 +3367,15 @@ describe("checkInvariants on a composable's narrowed result", () => {
 		const read = findInModule("on.value");
 		walk(module.components[0]!.render, {
 			enter(entered) {
-				if (entered.kind !== "Interpolation") return;
+				if (entered.kind !== "Interpolation") {
+					return;
+				}
 				const ref = entered.value.refs.find(
 					(each) => each.kind === "Binding" && each.span.start === read.start,
 				);
-				if (ref?.kind === "Binding") ref.narrowed = [createNarrowedPath(read, "local")];
+				if (ref?.kind === "Binding") {
+					ref.narrowed = [createNarrowedPath(read, "local")];
+				}
 			},
 		});
 		expect(JSON.stringify(module.components[0]!.render)).toContain('"narrowed"');
@@ -3369,7 +3389,7 @@ describe("checkInvariants on narrowed reads", () => {
 	/** The counter's `select` with `text` for its body, and the references `refs` builds. */
 	const selectBody = (
 		text: string,
-		refs: (locate: (part: string, nth?: number) => Span) => CodeReference[],
+		refs: (locate: (part: string, nth?: number) => Span) => Array<CodeReference>,
 	) =>
 		counterChanged((counter) => withBody(fnAt(counter, 13), (start) => codeAt(text, start, refs)));
 
@@ -3730,7 +3750,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
 		[
 			"a pass-through import of a module on a drive",
 			changedModule(node("p"), (module) => {
-				module.passThroughImports = [createPassThroughImport("C:\\theme.css", [], at)];
+				module.passThroughImports = [createPassThroughImport(String.raw`C:\theme.css`, [], at)];
 			}),
 			"/passThroughImports/0/specifier",
 			"neither relative nor absolute",
@@ -3882,7 +3902,9 @@ describe("checkInvariants on styles (ADR-0063)", () => {
 		const module = extraConst("styled");
 		module.passThroughImports = [recipes()];
 		const extra = module.components[1]!.setup.at(-1);
-		if (extra?.kind !== "Const") throw new Error("Expected the extra const.");
+		if (extra?.kind !== "Const") {
+			throw new Error("Expected the extra const.");
+		}
 		const { start } = extra.value.span;
 		extra.value = createCode("button", span(start, start + 6), [
 			createImportReference("button", span(start, start + 6)),

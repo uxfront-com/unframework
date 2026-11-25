@@ -148,7 +148,9 @@ describe("settleArtefactDirectory", () => {
 	]);
 
 	it("passes when the directory holds exactly the files", () => {
-		for (const [file, contents] of files) write(join(directory(), file), contents);
+		for (const [file, contents] of files) {
+			write(join(directory(), file), contents);
+		}
 		expect(settleArtefactDirectory(directory(), files, { update: false, root }).pass).toBe(true);
 	});
 

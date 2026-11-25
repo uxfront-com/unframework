@@ -35,11 +35,11 @@ export interface ContractCase {
 	expected: string;
 	/** For an object, where each member is declared. */
 	members?: Record<string, MemberOrigin>;
-	dependencies: string[];
+	dependencies: Array<string>;
 	/** Constructs `construction` must list; it may list more. */
-	construction?: string[];
+	construction?: Array<string>;
 	/** The unresolved spans, each by its file, its text and the reason. */
-	unresolved?: { file: string; text: string; reason: UnresolvedType["reason"] }[];
+	unresolved?: Array<{ file: string; text: string; reason: UnresolvedType["reason"] }>;
 	/**
 	 * What an adapter backed by a type-checker gives instead, where it evaluates a construct the
 	 * syntactic adapter leaves unresolved: a conditional or a mapped type (plan §5.5).
@@ -60,7 +60,7 @@ const pkg = (path: string) => `pkg:${path}`;
 const exported = (file: string, declaration: string) => ({ file, declaration, exported: true });
 const local = (file: string, declaration: string) => ({ file, declaration, exported: false });
 
-const CONTRACT_CASES: readonly ContractCase[] = [
+const CONTRACT_CASES: ReadonlyArray<ContractCase> = [
 	{
 		name: "a type literal",
 		project: "local",
@@ -768,7 +768,9 @@ export function typeOracleContract(
 			}
 		});
 		afterAll(async () => {
-			for (const oracle of oracles.values()) await oracle.dispose();
+			for (const oracle of oracles.values()) {
+				await oracle.dispose();
+			}
 		});
 
 		it.each(CONTRACT_CASES.map((testCase) => [testCase.name, testCase] as const))(
@@ -780,7 +782,9 @@ export function typeOracleContract(
 				const observed = observe(shape, testCase.project);
 				expect(JSON.parse(JSON.stringify(shape))).toEqual(shape);
 				expect(observed.expected).toBe(testCase.expected);
-				if (testCase.members) expect(observed.members).toEqual(testCase.members);
+				if (testCase.members) {
+					expect(observed.members).toEqual(testCase.members);
+				}
 				expect(observed.dependencies).toEqual(testCase.dependencies);
 				expect(observed.unresolved).toEqual(testCase.unresolved ?? []);
 				expect(shape.construction).toEqual(expect.arrayContaining(testCase.construction ?? []));

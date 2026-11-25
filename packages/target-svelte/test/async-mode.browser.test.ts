@@ -11,8 +11,8 @@ import Badge from "./fixtures/Badge.svelte";
 import Greeting from "./fixtures/Greeting.svelte";
 import Heading from "./fixtures/Heading.svelte";
 
-const logged: unknown[][] = [];
-const mounted: MountedComponent[] = [];
+const logged: Array<Array<unknown>> = [];
+const mounted: Array<MountedComponent> = [];
 
 beforeEach(() => {
 	logged.length = 0;
@@ -21,7 +21,9 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-	for (const view of mounted.splice(0)) await view.unmount();
+	for (const view of mounted.splice(0)) {
+		await view.unmount();
+	}
 	document.body.replaceChildren();
 	vi.restoreAllMocks();
 });

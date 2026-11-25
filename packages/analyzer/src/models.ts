@@ -79,7 +79,7 @@ function invalid(
 	at: { start: number; end: number },
 	message: string,
 	help = "Bind a ref's value to a form control, `<input v-model={text.value} />`, or a model a component declares, `<Field v-model:value={text.value} />`.",
-	fixes?: Fix[],
+	fixes?: Array<Fix>,
 ): undefined {
 	render.reporter.report("UF3042", at, message, { help, ...(fixes ? { fixes } : {}) });
 	return undefined;
@@ -125,9 +125,13 @@ export function lowerControlModel(
 ): ModelAttribute | undefined {
 	const { tag, type, multiple, render } = context;
 	const checked = boundValue(item, render);
-	if (!checked) return undefined;
+	if (!checked) {
+		return undefined;
+	}
 	const control = controlOf(item, name, checked.kinds, context);
-	if (!control) return undefined;
+	if (!control) {
+		return undefined;
+	}
 	if (modifier && control !== "text" && control !== "number" && control !== "textarea") {
 		return invalid(
 			render,
@@ -137,7 +141,7 @@ export function lowerControlModel(
 		);
 	}
 	const numeric = control === "number" || modifier === "number";
-	const expected: Primitive[] =
+	const expected: Array<Primitive> =
 		control === "checkbox"
 			? ["boolean"]
 			: control === "checkbox-group" || control === "select-multiple"
@@ -214,8 +218,12 @@ function controlOf(
 			"Write the `type` as it is.",
 		);
 	}
-	if (type === undefined || TEXT_TYPES.has(type)) return "text";
-	if (type === "number" || type === "range") return "number";
+	if (type === undefined || TEXT_TYPES.has(type)) {
+		return "text";
+	}
+	if (type === "number" || type === "range") {
+		return "number";
+	}
 	if (type === "checkbox") {
 		if (unknown(kinds)) {
 			return invalid(
@@ -225,7 +233,9 @@ function controlOf(
 				"Type the ref: `ref<boolean>(false)` or `ref<string[]>([])`.",
 			);
 		}
-		if (!has(kinds, "array")) return "checkbox";
+		if (!has(kinds, "array")) {
+			return "checkbox";
+		}
 		if (!value) {
 			return invalid(
 				render,
@@ -278,7 +288,7 @@ export function lowerModelBinding(
 	api: ComponentApi,
 	info: ComponentInfo,
 	render: RenderContext,
-	items: readonly AST.JSXAttributeItem[] | undefined,
+	items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): ModelBindingAttribute | undefined {
 	const written = `${name.namespace.name}:${name.name.name}`;
 	if (name.namespace.name !== "v-model") {
@@ -317,7 +327,9 @@ export function lowerModelBinding(
 		return undefined;
 	}
 	const checked = boundValue(item, render);
-	if (!checked) return undefined;
+	if (!checked) {
+		return undefined;
+	}
 	const { type } = api.models.find((each) => each.name === model)!;
 	if (mayBeUndefined(type) && !unknown(checked.kinds) && !has(checked.kinds, "undefined")) {
 		render.reporter.report(
@@ -340,7 +352,9 @@ export function lowerModelBinding(
 function mayBeUndefined(type: string): boolean {
 	const parsed = parseModule("type.ts", `type T = ${type};`);
 	const [statement] = parsed.program.body;
-	if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") return false;
+	if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") {
+		return false;
+	}
 	const annotation = statement.typeAnnotation;
 	const members = annotation.type === "TSUnionType" ? annotation.types : [annotation];
 	return members.some((member) => member.type === "TSUndefinedKeyword");

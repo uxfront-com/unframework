@@ -10,9 +10,9 @@ import type { Binding, TypeDeclaration, UfModule } from "@unframework.dev/ir";
 /** What an output reads of its module. */
 export interface ModuleReads {
 	/** The constants it declares, in source order, each as the source writes it. */
-	constants: string[];
+	constants: Array<string>;
 	/** The module's type declarations its constants name, transitively. */
-	types: TypeDeclaration[];
+	types: Array<TypeDeclaration>;
 }
 
 /**
@@ -22,7 +22,7 @@ export interface ModuleReads {
  * name keeps its name in every Angular output.
  */
 export function moduleReads(
-	bindings: readonly Binding[],
+	bindings: ReadonlyArray<Binding>,
 	module: UfModule,
 	imports: ImportSet,
 	file: (name: string) => string,
@@ -37,39 +37,59 @@ export function moduleReads(
 	for (let size = -1; size !== values.size;) {
 		size = values.size;
 		for (const constant of constants) {
-			if (!values.has(constant.name)) continue;
+			if (!values.has(constant.name)) {
+				continue;
+			}
 			for (const reference of constant.value.refs) {
-				if (reference.kind === "Binding") values.add(reference.binding.split("@")[0]!);
+				if (reference.kind === "Binding") {
+					values.add(reference.binding.split("@")[0]!);
+				}
 			}
 		}
 	}
 	for (const entry of module.moduleImports ?? []) {
 		for (const name of entry.names) {
-			if (!values.has(name.local)) continue;
-			if (name.imported === "default")
+			if (!values.has(name.local)) {
+				continue;
+			}
+			if (name.imported === "default") {
 				imports.addDefault(entry.specifier, name.local, { exact: true });
-			else imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
+			} else {
+				imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
+			}
 		}
 	}
 	const declared = constants.filter((constant) => values.has(constant.name));
 	// The types they name: the module's declarations, transitively, and the type imports.
 	const named = new Set<string>();
 	for (const constant of declared) {
-		if (constant.type) for (const name of typeNames(constant.type)) named.add(name);
-		for (const name of codeNames(constant.value.code)) named.add(name);
+		if (constant.type) {
+			for (const name of typeNames(constant.type)) {
+				named.add(name);
+			}
+		}
+		for (const name of codeNames(constant.value.code)) {
+			named.add(name);
+		}
 	}
 	const types = new Map<string, TypeDeclaration>();
 	for (let size = -1; size !== types.size;) {
 		size = types.size;
 		for (const declaration of module.types) {
-			if (types.has(declaration.name) || !named.has(declaration.name)) continue;
+			if (types.has(declaration.name) || !named.has(declaration.name)) {
+				continue;
+			}
 			types.set(declaration.name, declaration);
-			for (const name of codeNames(declaration.code, "statements")) named.add(name);
+			for (const name of codeNames(declaration.code, "statements")) {
+				named.add(name);
+			}
 		}
 	}
 	for (const entry of module.typeImports ?? []) {
 		for (const name of entry.names) {
-			if (!named.has(name.local)) continue;
+			if (!named.has(name.local)) {
+				continue;
+			}
 			imports.add(typeSpecifier(entry.specifier, module, file), name.imported, {
 				type: true,
 				local: name.local,

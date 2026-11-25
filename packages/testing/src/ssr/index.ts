@@ -27,7 +27,7 @@ export type { SsrCase } from "../harness.ts";
  * `describeTargets` titles its own. It reads the project's provided `target`, `ufHarness` and
  * `ufServer`, and throws in a project that lacks them.
  */
-export function describeServerRender(cases: readonly SsrCase[]): void {
+export function describeServerRender(cases: ReadonlyArray<SsrCase>): void {
 	const target = inject("target");
 	// The normaliser removes only this target's framework noise, so it must know the target.
 	if (!isNormalizeTarget(target)) {
@@ -51,19 +51,20 @@ export function describeServerRender(cases: readonly SsrCase[]): void {
 	async function render(
 		component: unknown,
 		props: Record<string, unknown>,
-		messages: string[],
+		messages: Array<string>,
 	): Promise<string> {
 		const originals = { warn: console.warn, error: console.error };
 		for (const level of ["warn", "error"] as const) {
-			console[level] = (...args: unknown[]) => {
+			console[level] = (...args: Array<unknown>) => {
 				messages.push(`console.${level}: ${formatConsoleArgs(args)}`);
 				originals[level].apply(console, args);
 			};
 		}
 		try {
 			const html = await (await loadRenderer())(component, { props });
-			if (typeof html !== "string")
+			if (typeof html !== "string") {
 				throw new Error(`The ${target} renderer returned ${typeof html}, not HTML.`);
+			}
 			return html;
 		} finally {
 			console.warn = originals.warn;
@@ -85,15 +86,19 @@ export function describeServerRender(cases: readonly SsrCase[]): void {
 			const config = harness.cases[info.id] ?? {};
 			for (const [scenario, { props = {} }] of Object.entries(ssrScenarios(config))) {
 				it(`${info.id} › ${scenario}`, async ({ task }) => {
-					if (info.failure !== undefined) throw new Error(info.failure);
-					const messages: string[] = [];
+					if (info.failure !== undefined) {
+						throw new Error(info.failure);
+					}
+					const messages: Array<string> = [];
 					let rendered = false;
 					await checkLayers(
 						task,
 						{ case: info.id, target, quarantine: harness.quarantine },
 						{
 							async L6() {
-								if (info.skip !== undefined) return { skip: info.skip };
+								if (info.skip !== undefined) {
+									return { skip: info.skip };
+								}
 								const component = (
 									(await import(/* @vite-ignore */ info.source)) as { default: unknown }
 								).default;
@@ -112,10 +117,14 @@ export function describeServerRender(cases: readonly SsrCase[]): void {
 									html,
 									sharedArtefactContext(harness, target, info.id),
 								);
-								if (!outcome.pass) throw new Error(outcome.message);
+								if (!outcome.pass) {
+									throw new Error(outcome.message);
+								}
 							},
 							L13: () => {
-								if (!messages.length && !rendered) return { skip: info.skip ?? NOT_RENDERED_SKIP };
+								if (!messages.length && !rendered) {
+									return { skip: info.skip ?? NOT_RENDERED_SKIP };
+								}
 								if (messages.length) {
 									throw new Error(
 										`${messages.length} console message(s) during the server render:\n  ${messages.join("\n  ")}`,

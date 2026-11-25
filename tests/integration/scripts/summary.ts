@@ -54,7 +54,7 @@ export interface SummaryRun {
  * step in `view.expectThrown`, and the `compile` project records it for every case, so a run of
  * the browser projects alone leaves it out (a browser test's L14 is still judged where it ran).
  */
-export const BROWSER_ONLY_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter(
+export const BROWSER_ONLY_LAYERS: ReadonlyArray<LayerName> = BROWSER_LAYERS.filter(
 	(layer) => layer !== "L14" && LIVE_LAYERS.includes(layer),
 );
 
@@ -120,9 +120,11 @@ export function runSummary(env: NodeJS.ProcessEnv, run: SummaryRun): number {
  * How the script itself summarises: it is CI's parity job, which merges the partial matrices
  * of every job, so in CI every project must have reported.
  */
-export function parityJob(env: NodeJS.ProcessEnv, args: readonly string[] = []): SummaryRun {
+export function parityJob(env: NodeJS.ProcessEnv, args: ReadonlyArray<string> = []): SummaryRun {
 	const unknown = args.filter((arg) => arg !== "--" && arg !== "--browser-only");
-	if (unknown.length) throw new Error(`[uf:summary] Unknown argument: ${unknown.join(" ")}.`);
+	if (unknown.length) {
+		throw new Error(`[uf:summary] Unknown argument: ${unknown.join(" ")}.`);
+	}
 	return { requireComplete: isCI(env), browserOnly: args.includes("--browser-only") };
 }
 

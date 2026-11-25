@@ -23,7 +23,7 @@ export interface SequencedSpec {
  * or has no spec, throws: the list would otherwise keep nothing last, silently.
  */
 export function lastSpecs(
-	cases: readonly Pick<CaseInfo, "id" | "spec">[],
+	cases: ReadonlyArray<Pick<CaseInfo, "id" | "spec">>,
 	leaves: Readonly<Record<string, { case: string }>> = LEAVES_PAGE_UNUSABLE,
 ): Map<string, string> {
 	const last = new Map<string, string>();
@@ -45,17 +45,19 @@ export function lastSpecs(
  * where it is.
  */
 export function runLast<T extends SequencedSpec>(
-	specs: readonly T[],
+	specs: ReadonlyArray<T>,
 	last: ReadonlyMap<string, string>,
-): T[] {
+): Array<T> {
 	const runsLast = (spec: T): boolean => last.get(spec.project.name) === resolve(spec.moduleId);
 	// Where each project's last file that is not held back sits.
 	const end = new Map<string, number>();
 	specs.forEach((spec, index) => {
-		if (!runsLast(spec)) end.set(spec.project.name, index);
+		if (!runsLast(spec)) {
+			end.set(spec.project.name, index);
+		}
 	});
-	const held = new Map<string, T[]>();
-	const sorted: T[] = [];
+	const held = new Map<string, Array<T>>();
+	const sorted: Array<T> = [];
 	specs.forEach((spec, index) => {
 		const project = spec.project.name;
 		const projectEnd = end.get(project);
@@ -64,18 +66,20 @@ export function runLast<T extends SequencedSpec>(
 		} else {
 			sorted.push(spec);
 		}
-		if (index === projectEnd) sorted.push(...(held.get(project) ?? []));
+		if (index === projectEnd) {
+			sorted.push(...(held.get(project) ?? []));
+		}
 	});
 	return sorted;
 }
 
 /** The sequencer `vitest.config.ts` sets: `BaseSequencer`'s order, then `runLast`. */
 export function harnessSequencer(
-	cases: readonly Pick<CaseInfo, "id" | "spec">[],
+	cases: ReadonlyArray<Pick<CaseInfo, "id" | "spec">>,
 ): typeof BaseSequencer {
 	const last = lastSpecs(cases);
 	return class HarnessSequencer extends BaseSequencer {
-		override async sort(files: TestSpecification[]): Promise<TestSpecification[]> {
+		override async sort(files: Array<TestSpecification>): Promise<Array<TestSpecification>> {
 			return runLast(await super.sort(files), last);
 		}
 	};

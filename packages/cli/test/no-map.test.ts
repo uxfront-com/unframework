@@ -12,8 +12,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { project, run, tree } from "./helpers.ts";
 
-const compiles = vi.hoisted((): string[] => []);
-const projects = vi.hoisted((): unknown[] => []);
+const compiles = vi.hoisted((): Array<string> => []);
+const projects = vi.hoisted((): Array<unknown> => []);
 const disposals = vi.hoisted(() => ({ count: 0 }));
 const lent = vi.hoisted((): { targetOptions: Record<string, unknown> | undefined } => ({
 	targetOptions: undefined,
@@ -23,9 +23,11 @@ vi.mock("node:fs/promises", async (original) => {
 	const actual = await original<typeof FsPromises>();
 	return {
 		...actual,
-		glob: async function* (...args: Parameters<typeof actual.glob>) {
+		async *glob(...args: Parameters<typeof actual.glob>) {
 			const entries = [];
-			for await (const entry of actual.glob(...args)) entries.push(entry);
+			for await (const entry of actual.glob(...args)) {
+				entries.push(entry);
+			}
 			yield* entries.toReversed();
 		},
 	};
@@ -97,7 +99,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
 							helpers: { react: [] },
 							owners: { react: {} },
 							dependencies: [],
-						} as never;
+						};
 					}
 					if (file === "src/copy-clash.uf.tsx" || file === "src/copy-case.uf.tsx") {
 						return {
@@ -113,7 +115,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
 							helpers: { react: [] },
 							owners: { react: {} },
 							dependencies: [],
-						} as never;
+						};
 					}
 					if (file === "src/case.uf.tsx") {
 						const same = { contents: "export default 3;\n" };
@@ -130,7 +132,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
 							helpers: { react: [] },
 							owners: { react: {} },
 							dependencies: [],
-						} as never;
+						};
 					}
 					return {
 						filename: "src/A.uf.tsx",
@@ -158,8 +160,12 @@ vi.mock("@unframework.dev/compiler", async (original) => {
 				},
 				copies: (file: string) => {
 					const contents = "export const shared = 1;\n";
-					if (file === "src/copy-clash.uf.tsx") return [{ path: "C.ts", contents }];
-					if (file === "src/a-copy.uf.tsx") return [{ path: "E.ts", contents }];
+					if (file === "src/copy-clash.uf.tsx") {
+						return [{ path: "C.ts", contents }];
+					}
+					if (file === "src/a-copy.uf.tsx") {
+						return [{ path: "E.ts", contents }];
+					}
 					if (file === "src/copy-case.uf.tsx") {
 						return [
 							{ path: "d.ts", contents },

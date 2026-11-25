@@ -76,8 +76,12 @@ describe("qwik composable cases", () => {
 			// Each source's own output, and each `.ts` of the case as its copy, and nothing else.
 			const expected = readdirSync(dir)
 				.flatMap((name) => {
-					if (name.endsWith(".uf.ts")) return [`${name.slice(0, -6)}.ts`];
-					if (name.endsWith(".uf.tsx")) return [`${name.slice(0, -7)}.tsx`];
+					if (name.endsWith(".uf.ts")) {
+						return [`${name.slice(0, -6)}.ts`];
+					}
+					if (name.endsWith(".uf.tsx")) {
+						return [`${name.slice(0, -7)}.tsx`];
+					}
 					return name.endsWith(".ts") && !name.endsWith(".test.ts") ? [name] : [];
 				})
 				.toSorted();
@@ -91,7 +95,10 @@ describe("qwik composable cases", () => {
  * Writes outputs into a scratch directory of their own and expects the optimizer (L3), tsgo (L4)
  * and the lint rules (L5) to accept each with no message.
  */
-async function expectToolchainClean(name: string, outputs: readonly OutputFile[]): Promise<void> {
+async function expectToolchainClean(
+	name: string,
+	outputs: ReadonlyArray<OutputFile>,
+): Promise<void> {
 	const directory = join(scratch, name);
 	mkdirSync(directory, { recursive: true });
 	const files = outputs.map(({ path, contents }) => {
@@ -105,9 +112,13 @@ async function expectToolchainClean(name: string, outputs: readonly OutputFile[]
 	}
 	const paths = files.map(({ path }) => path);
 	const checked = await toolchain.typecheck(paths, context);
-	for (const path of paths) expect(checked.get(path) ?? [], path).toEqual([]);
+	for (const path of paths) {
+		expect(checked.get(path) ?? [], path).toEqual([]);
+	}
 	const linted = await toolchain.lint(paths, context);
-	for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+	for (const [path, messages] of linted) {
+		expect(messages, path).toEqual([]);
+	}
 }
 
 /** A composable module's source compiled for Qwik, its diagnostics' codes and spans with it. */
@@ -732,7 +743,9 @@ async function compileProject(files: Record<string, string>) {
 				text: source.slice(span.start, span.end),
 			})),
 		);
-		for (const file of result.outputs.qwik ?? []) outputs.set(file.path, file.contents);
+		for (const file of result.outputs.qwik ?? []) {
+			outputs.set(file.path, file.contents);
+		}
 	}
 	return {
 		diagnostics,
@@ -1136,7 +1149,7 @@ ${relay}  return (
 				),
 			);
 			expect(probe.indexOf("const counter_1 =")).toBeLessThan(probe.indexOf("const counter ="));
-			await expectToolchainClean(`calls/same-hook-${how.replace(/\W+/g, "-")}`, project.outputs);
+			await expectToolchainClean(`calls/same-hook-${how.replaceAll(/\W+/g, "-")}`, project.outputs);
 			// The server's build hoists every segment into the module (Qwik's Vite plugin runs the
 			// optimizer with `hoist` for every server transform), where two calls the optimizer named
 			// alike would be declared twice.
@@ -1153,8 +1166,9 @@ ${relay}  return (
 				isServer: true,
 			});
 			expect(modules.length).toBeGreaterThan(0);
-			for (const { code } of modules)
+			for (const { code } of modules) {
 				expect(() => parseCodeSource(code, "statements")).not.toThrow();
+			}
 		},
 	);
 });

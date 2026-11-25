@@ -38,7 +38,9 @@ export function teleportNames(
 	let found = false;
 	walk(component.render, {
 		enter(node) {
-			if (node.kind === "Teleport") found = true;
+			if (node.kind === "Teleport") {
+				found = true;
+			}
 		},
 	});
 	return found

@@ -139,7 +139,7 @@ export const svelte: Target = defineTarget({
 		// option, which the host sets (ADR-0101).
 		"async-setup": { support: "native" },
 	},
-	emit(component: UfComponent, context: EmitContext): OutputFile[] {
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
 		// `setContext` after an await throws `set_context_after_init`, and a `provide` that reads what
 		// the awaits or a later item set cannot move above them (ADR-0101).
 		const late = lateProvides(component);
@@ -152,7 +152,9 @@ export const svelte: Target = defineTarget({
 				span: item.span,
 			});
 		}
-		if (late.length) return [];
+		if (late.length) {
+			return [];
+		}
 		// With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
 		const script = instanceScript(
 			component,
@@ -181,7 +183,9 @@ export const svelte: Target = defineTarget({
 			// (`DECLARED_ONLY_ON`): the child's spread listens to it all the same.
 			eventAttribute: (event, attributeContext) => {
 				const composed = fallthrough.listeners.get(event.attribute);
-				if (composed !== undefined) return [{ name: `on${event.attribute.event}`, text: composed }];
+				if (composed !== undefined) {
+					return [{ name: `on${event.attribute.event}`, text: composed }];
+				}
 				const name = `on${event.attribute.event}`;
 				if (
 					isComponentTag(attributeContext.element.tag) &&
@@ -272,7 +276,7 @@ export const svelte: Target = defineTarget({
 	},
 	emitDirective,
 	// A composable is a `.svelte.ts` module, whose runes vite-plugin-svelte compiles (ADR-0069).
-	emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+	emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
 		return [
 			{
 				path: `${composable.name}.svelte.ts`,

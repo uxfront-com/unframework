@@ -60,7 +60,7 @@ const neverWritten = (tag: string, namespace: "html" | "svg", name: string) =>
 	(namespace === "html" && isStateAttribute(tag, name, undefined));
 
 /** Every (element, attribute) pair of the IR's vocabulary, HTML and SVG apart. */
-function vocabulary(): { html: Pair[]; svg: Pair[] } {
+function vocabulary(): { html: Array<Pair>; svg: Array<Pair> } {
 	const pairs = (
 		namespace: "html" | "svg",
 		tags: Iterable<string>,
@@ -89,7 +89,7 @@ function vocabulary(): { html: Pair[]; svg: Pair[] } {
 }
 
 /** Some elements by name, or every element that has the attribute but some. */
-type Elements = { readonly on: readonly string[] } | { readonly except: readonly string[] };
+type Elements = { readonly on: ReadonlyArray<string> } | { readonly except: ReadonlyArray<string> };
 
 /**
  * Attributes the IR holds that @types/react 19.3 does not declare on some elements: no React
@@ -104,11 +104,13 @@ const REACT_NAME_GAPS: Readonly<Record<"html" | "svg", Readonly<Record<string, E
 };
 
 /** The pinned gaps as (element → attributes), for the pairs given. */
-function gapsOf(pairs: readonly Pair[], gaps: Readonly<Record<string, Elements>>) {
-	const found = new Map<string, string[]>();
+function gapsOf(pairs: ReadonlyArray<Pair>, gaps: Readonly<Record<string, Elements>>) {
+	const found = new Map<string, Array<string>>();
 	for (const [tag, name] of pairs) {
 		const elements = gaps[name];
-		if (!elements) continue;
+		if (!elements) {
+			continue;
+		}
 		if ("on" in elements ? elements.on.includes(tag) : !elements.except.includes(tag)) {
 			found.set(name, [...(found.get(name) ?? []), tag]);
 		}
@@ -124,7 +126,7 @@ function gapsOf(pairs: readonly Pair[], gaps: Readonly<Record<string, Elements>>
 async function typecheck(
 	name: string,
 	root: "div" | "svg",
-	pairs: readonly Pair[],
+	pairs: ReadonlyArray<Pair>,
 	value: (pair: Pair) => string | true,
 	edit: (contents: string) => string = (contents) => contents,
 ): Promise<Map<number, string>> {
@@ -171,7 +173,7 @@ const anyValue = ([tag, name]: Pair): string | true =>
 const NUMBER_ONLY = /not assignable to type 'number(?: \| undefined)?'/;
 
 /** Writes every quoted value as `{undefined}`, so only the attribute's name is checked. */
-const namesOnly = (contents: string) => contents.replace(/="x"/g, "={undefined}");
+const namesOnly = (contents: string) => contents.replaceAll('="x"', "={undefined}");
 
 describe("React's attribute types", { timeout: 120_000 }, () => {
 	const { html, svg } = vocabulary();
@@ -184,7 +186,7 @@ describe("React's attribute types", { timeout: 120_000 }, () => {
 		async (namespace, root, pairs) => {
 			expect(pairs.length).toBeGreaterThan(1000);
 			const failing = await typecheck(`Names_${namespace}`, root, pairs, anyValue, namesOnly);
-			const gaps = new Map<string, string[]>();
+			const gaps = new Map<string, Array<string>>();
 			for (const index of failing.keys()) {
 				const [tag, name] = pairs[index]!;
 				gaps.set(name, [...(gaps.get(name) ?? []), tag]);
@@ -215,10 +217,12 @@ describe("React's attribute types", { timeout: 120_000 }, () => {
 			"div",
 			pairs,
 			() => "1",
-			(contents) => contents.replace(/=\{1\}/g, '="1"'),
+			(contents) => contents.replaceAll("={1}", '="1"'),
 		);
 		// Every message says so, as the next test reads them.
-		for (const message of strings.values()) expect(message).toMatch(NUMBER_ONLY);
+		for (const message of strings.values()) {
+			expect(message).toMatch(NUMBER_ONLY);
+		}
 		const taken = pairs.filter((_, index) => !strings.has(index)).map((pair) => pair.join(" "));
 		expect(taken).toEqual([
 			"img height",

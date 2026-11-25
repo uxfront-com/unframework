@@ -22,16 +22,24 @@ const API =
 /** The first node of a kind in a render tree, depth first. */
 function find<T>(value: unknown, kind: string): T {
 	const visit = (item: unknown): unknown => {
-		if (!item || typeof item !== "object") return undefined;
-		if (!Array.isArray(item) && (item as { kind?: string }).kind === kind) return item;
+		if (!item || typeof item !== "object") {
+			return undefined;
+		}
+		if (!Array.isArray(item) && (item as { kind?: string }).kind === kind) {
+			return item;
+		}
 		for (const child of Object.values(item)) {
 			const found = visit(child);
-			if (found) return found;
+			if (found) {
+				return found;
+			}
 		}
 		return undefined;
 	};
 	const found = visit(value);
-	if (!found) throw new Error(`no ${kind}`);
+	if (!found) {
+		throw new Error(`no ${kind}`);
+	}
 	return found as T;
 }
 
@@ -88,7 +96,7 @@ describe("defineModel", () => {
 	});
 
 	it("reports a name, an option or a clash it cannot take (UF2028)", () => {
-		const cases: [string, string][] = [
+		const cases: Array<[string, string]> = [
 			["const v = defineModel<string>(name);", "name"],
 			['const v = defineModel<string>("my-value");', '"my-value"'],
 			['const v = defineModel<string>("v", { get: () => "" });', 'get: () => ""'],
@@ -162,7 +170,7 @@ describe("v-model on a form control", () => {
 	});
 
 	it("reports what no control binds (UF3042)", () => {
-		const cases: [string, string, string][] = [
+		const cases: Array<[string, string, string]> = [
 			['const t = ref("");', "<div v-model={t.value} />", "v-model"],
 			['const t = ref("");', '<input type="file" v-model={t.value} />', "v-model"],
 			['const t = ref("");', '<input type="radio" v-model={t.value} />', "v-model"],
@@ -337,7 +345,7 @@ describe("provide and inject", () => {
 	it("reports what provide and inject cannot take (UF2032)", () => {
 		const key = 'export const K: InjectionKey<string> = Symbol("k");\n';
 		const refKey = 'export const R: InjectionKey<Ref<number>> = Symbol("r");\n';
-		const cases: [string, string, string][] = [
+		const cases: Array<[string, string, string]> = [
 			['provide(K, "a");\n  const v = inject(K, "b");', key, 'inject(K, "b")'],
 			['provide(K, "a");\n  provide(K, "b");', key, 'provide(K, "b")'],
 			['const v = inject(Other, "b");', key, "Other"],
@@ -355,7 +363,7 @@ describe("provide and inject", () => {
 	});
 
 	it("reports a key that is not one every target can write (UF2033), and nothing more", () => {
-		const cases: [string, string][] = [
+		const cases: Array<[string, string]> = [
 			['const K: InjectionKey<string> = Symbol("k");\n', "K"],
 			["export const K: InjectionKey<string> = Symbol();\n", "Symbol()"],
 			['export const K = Symbol("k");\n', "K"],
@@ -392,7 +400,9 @@ describe("provide and inject", () => {
 			),
 		).api!;
 		const imports = new Map<string, ModuleApi | undefined>();
-		for (const specifier of componentImports(parsed)) imports.set(specifier, provider);
+		for (const specifier of componentImports(parsed)) {
+			imports.set(specifier, provider);
+		}
 		const { module, diagnostics } = analyze(parsed, { imports });
 		expect(diagnostics).toEqual([]);
 		expect(module!.imports![0]!.names.map(({ kind, imported }) => [kind, imported])).toEqual([

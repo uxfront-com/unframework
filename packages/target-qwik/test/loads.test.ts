@@ -22,7 +22,9 @@ function register(load: () => Promise<unknown>): () => Promise<unknown> {
 	const hook = (globalThis as Record<string, unknown>)[TRACKER] as
 		| ((load: () => Promise<unknown>) => () => Promise<unknown>)
 		| undefined;
-	if (!hook) throw new Error("No registry is installed.");
+	if (!hook) {
+		throw new Error("No registry is installed.");
+	}
 	return hook(load);
 }
 
@@ -40,7 +42,9 @@ function deferred<T = unknown>() {
 /** What an instrumented module does with each QRL it creates: hands it to the registry. */
 function created<T>(qrl: T): T {
 	const hook = (globalThis as Record<string, unknown>)[QRLS] as ((qrl: T) => T) | undefined;
-	if (!hook) throw new Error("No registry is installed.");
+	if (!hook) {
+		throw new Error("No registry is installed.");
+	}
 	return hook(qrl);
 }
 
@@ -95,7 +99,7 @@ describe("the segment registry", () => {
 	it("preloads every segment the QRLs reference, and those their segments' QRLs reference", async () => {
 		const loads = new SegmentLoads();
 		loads.install();
-		const imported: string[] = [];
+		const imported: Array<string> = [];
 		// The component's module creates the component's QRL; its segment, once evaluated, creates
 		// a handler's and a local function's, whose segments create none.
 		register(async () => {
@@ -117,7 +121,7 @@ describe("the segment registry", () => {
 	it("resolves every QRL the page created, and those the segments it loads create", async () => {
 		const loads = new SegmentLoads();
 		loads.install();
-		const resolved: string[] = [];
+		const resolved: Array<string> = [];
 		/** A QRL as Qwik's `resolve()` sees it: loading its segment may create more QRLs. */
 		const qrl = (name: string, then?: () => void) => ({
 			resolve: async () => {
@@ -160,7 +164,7 @@ describe("the segment registry", () => {
 		const second = deferred<string>();
 		const loadFirst = register(() => first.promise.then((name) => ({ name })));
 		const loadSecond = register(() => second.promise.then((name) => ({ name })));
-		const arrived: string[] = [];
+		const arrived: Array<string> = [];
 		// The QRLs of two events of one action, asked for in dispatch order.
 		const handlers = [
 			loadFirst().then((module) => void arrived.push((module as { name: string }).name)),
@@ -189,7 +193,9 @@ describe("the segment registry", () => {
 		void loading();
 		let idle = false;
 		const waiting = loads.idle().then(() => (idle = true));
-		await new Promise((resolve) => setTimeout(resolve, 5));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 5);
+		});
 		expect(idle).toBe(false);
 		pending.resolve(undefined);
 		await waiting;
@@ -211,7 +217,9 @@ describe("Qwik's error reports in the test builds", () => {
 			{ ...fragment, root, configFile: false, logLevel: "silent" },
 			"serve",
 		).finally(() => {
-			for (const [name, value] of flags) Reflect.set(globalThis, name, value);
+			for (const [name, value] of flags) {
+				Reflect.set(globalThis, name, value);
+			}
 		});
 		expect(config.define?.["globalThis.qTest"]).toBe(false);
 		const names = config.plugins.map((plugin: Plugin) => plugin.name);

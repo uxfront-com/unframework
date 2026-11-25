@@ -13,18 +13,21 @@ import { mount } from "../src/toolchain/client.ts";
 const load = async (name: string): Promise<unknown> =>
 	((await import(`./behaviour/${name}.uf.tsx`)) as { default: unknown }).default;
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
-let events: unknown[][] = [];
+let events: Array<Array<unknown>> = [];
 
 /** Listeners that record each emit as `[name, ...args]`. */
-const listening = (...names: string[]) =>
+const listening = (...names: Array<string>) =>
 	Object.fromEntries(
-		names.map((name) => [name, (...args: unknown[]) => void events.push([name, ...args])]),
+		names.map((name) => [name, (...args: Array<unknown>) => void events.push([name, ...args])]),
 	);
 
-const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+const frame = () =>
+	new Promise((resolve) => {
+		requestAnimationFrame(resolve);
+	});
 
 /** Settles as the testing API does: the adapter's settle and two frames, until quiet. */
 async function settle(): Promise<void> {
@@ -33,7 +36,9 @@ async function settle(): Promise<void> {
 		await frame();
 		await frame();
 		const snapshot = `${container.innerHTML}|${events.length}`;
-		if (snapshot === previous) return;
+		if (snapshot === previous) {
+			return;
+		}
 		previous = snapshot;
 	}
 }
@@ -257,7 +262,9 @@ describe("listener order across elements (ADR-0047)", () => {
 		// The container reads "saving": it waits for the listener's synchronous part, not for the
 		// rest, which runs half a second later.
 		expect(logEntries()).toEqual(["draft saving"]);
-		await new Promise((resolve) => setTimeout(resolve, 600));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 600);
+		});
 		await settle();
 		expect(container.querySelector("output")?.textContent).toBe("saved");
 	});
@@ -282,7 +289,7 @@ describe("listener order across elements (ADR-0047)", () => {
 		await start("Order", { on: listening("welcomed", "submitted") });
 		// After Qwik's loader, which listens in the capture phase; it prevents what it saw, so the
 		// page stays.
-		const prevented: boolean[] = [];
+		const prevented: Array<boolean> = [];
 		const guard = (event: Event) => {
 			prevented.push(event.defaultPrevented);
 			event.preventDefault();
@@ -368,7 +375,7 @@ describe("controls at dispatch and calls where another listener follows (ADR-004
 
 	it("keeps a listener whose handler only prevents: the form is not submitted, the focus stays", async () => {
 		await start("Bare");
-		const submitted: boolean[] = [];
+		const submitted: Array<boolean> = [];
 		const guard = (event: Event) => {
 			submitted.push(event.defaultPrevented);
 			event.preventDefault();
@@ -394,7 +401,7 @@ describe("controls at dispatch and calls where another listener follows (ADR-004
 		await act(() => userEvent.click(page.getByTestId("backdrop"), { position: { x: 2, y: 2 } }));
 		expect(container.querySelector("[data-testid=backdrop]")).toBeNull();
 		expect(logEntries()).toEqual(["kept", "page"]);
-		const prevented: boolean[] = [];
+		const prevented: Array<boolean> = [];
 		const guard = (event: Event) => {
 			prevented.push(event.defaultPrevented);
 			event.preventDefault();
@@ -422,7 +429,9 @@ describe("controls at dispatch and calls where another listener follows (ADR-004
 		// The container ran after the call's synchronous part, not after the whole of it.
 		expect(logEntries()).toEqual(["page"]);
 		expect(status()).toBe("saving inner");
-		await new Promise((resolve) => setTimeout(resolve, 400));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 400);
+		});
 		await settle();
 		expect(status()).toBe("saved inner");
 	});

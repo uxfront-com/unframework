@@ -78,7 +78,7 @@ const HEADER = [
 ];
 
 /** Runs `tsc` over probe lines, each of which must type-check: the messages of those that fail. */
-function failures(lines: readonly string[]): Map<number, string> {
+function failures(lines: ReadonlyArray<string>): Map<number, string> {
 	const require = createRequire(new URL("packages/target-react/package.json", ROOT));
 	const react = dirname(require.resolve("@types/react/package.json"));
 	writeFileSync(
@@ -113,12 +113,17 @@ function failures(lines: readonly string[]): Map<number, string> {
 		],
 		{ cwd: folder, encoding: "utf8" },
 	);
-	if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);
+	if (result.error) {
+		throw new Error(`could not start tsc: ${result.error.message}`);
+	}
 	const found = new Map<number, string>();
 	for (const line of `${result.stdout}${result.stderr}`.split("\n")) {
 		const match = /probe\.ts\((\d+),\d+\): (.*)$/.exec(line);
-		if (match) found.set(Number(match[1]) - HEADER.length - 1, match[2]!);
-		else if (line.trim()) throw new Error(`tsc reported more than the probe: ${line}`);
+		if (match) {
+			found.set(Number(match[1]) - HEADER.length - 1, match[2]!);
+		} else if (line.trim()) {
+			throw new Error(`tsc reported more than the probe: ${line}`);
+		}
 	}
 	return found;
 }
@@ -127,7 +132,9 @@ describe("the event vocabulary", () => {
 	it("is the authoring types' listeners, without `dragexit`, with the dialog's events", () => {
 		const vue = vueEvents();
 		const declared = new Set([...vue].filter((event) => event !== "dragexit"));
-		for (const event of ["cancel", "close", "command"]) declared.add(event);
+		for (const event of ["cancel", "close", "command"]) {
+			declared.add(event);
+		}
 		expect([...DOM_EVENTS.keys()].toSorted()).toEqual([...declared].toSorted());
 		expect(UNSUPPORTED_EVENTS.has("dragexit")).toBe(true);
 	});
@@ -148,7 +155,7 @@ describe("the event vocabulary", () => {
 		"names the interfaces lib.dom dispatches with, and members both the DOM's and React's events carry",
 		{ timeout: 60_000 },
 		() => {
-			const checks: { what: string; line: string }[] = [];
+			const checks: Array<{ what: string; line: string }> = [];
 			for (const [event, name] of DOM_EVENTS) {
 				checks.push({
 					what: `${event} is a ${name}`,
@@ -162,7 +169,9 @@ describe("the event vocabulary", () => {
 				});
 			}
 			for (const [name, parent] of EVENT_INTERFACES) {
-				if (!parent) continue;
+				if (!parent) {
+					continue;
+				}
 				checks.push({
 					what: `${name} extends ${parent}`,
 					line: `const e${checks.length}: ${name} extends ${parent} ? true : false = true;`,
@@ -175,7 +184,9 @@ describe("the event vocabulary", () => {
 						what: `${name} has ${member}`,
 						line: `const e${checks.length}: Has<${name}, ${JSON.stringify(member)}> = true;`,
 					});
-					if (!synthetic) continue;
+					if (!synthetic) {
+						continue;
+					}
 					checks.push({
 						what: `React's ${synthetic} has ${member}`,
 						line: `const e${checks.length}: Has<React.${synthetic}, ${JSON.stringify(member)}> = true;`,

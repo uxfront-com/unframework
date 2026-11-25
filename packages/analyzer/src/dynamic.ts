@@ -106,9 +106,11 @@ export function lowerDynamic(
 		lowerChildren(node.children, place, render);
 		return undefined;
 	}
-	const refs: Reference[] = [];
+	const refs: Array<Reference> = [];
 	const leaves = leavesOf(expression, render, refs);
-	if (!leaves) return undefined;
+	if (!leaves) {
+		return undefined;
+	}
 	const tags = leaves.every((leaf) => leaf.kind === "Tag");
 	if (!tags && leaves.some((leaf) => leaf.kind === "Tag")) {
 		open(
@@ -121,7 +123,9 @@ export function lowerDynamic(
 	// A generic child infers its type arguments from the props its own tag passes (ADR-0068).
 	let generic = false;
 	for (const leaf of leaves) {
-		if (leaf.kind !== "Component" || !leaf.info.api.typeParameters?.length) continue;
+		if (leaf.kind !== "Component" || !leaf.info.api.typeParameters?.length) {
+			continue;
+		}
 		generic = true;
 		reporter.report(
 			"UF6006",
@@ -135,7 +139,9 @@ export function lowerDynamic(
 	// Vue renders an async candidate only under `<Suspense :timeout="0">`, which a later part
 	// brings (ADR-0101).
 	for (const leaf of leaves) {
-		if (leaf.kind !== "Component" || !leaf.info.api.async) continue;
+		if (leaf.kind !== "Component" || !leaf.info.api.async) {
+			continue;
+		}
 		generic = true;
 		reporter.unsupported(
 			leaf.node,
@@ -143,8 +149,10 @@ export function lowerDynamic(
 			{ help: `Render \`${leaf.info.name}\` by its own tag.` },
 		);
 	}
-	if (generic) return undefined;
-	const candidates: DynamicCandidate[] = [];
+	if (generic) {
+		return undefined;
+	}
+	const candidates: Array<DynamicCandidate> = [];
 	for (const leaf of leaves) {
 		const candidate: DynamicCandidate =
 			leaf.kind === "Tag"
@@ -170,7 +178,9 @@ export function lowerDynamic(
 	const lowered = tags
 		? lowerTags(node, name, candidates, place, render, isAttribute)
 		: lowerComponents(node, name, leaves, place, render, isAttribute);
-	if (!lowered || reporter.hasErrorsSince(mark)) return undefined;
+	if (!lowered || reporter.hasErrorsSince(mark)) {
+		return undefined;
+	}
 	return createDynamicNode(
 		is,
 		candidates,
@@ -190,20 +200,26 @@ export function lowerDynamic(
 function leavesOf(
 	node: AST.Expression | AST.StringLiteral,
 	render: RenderContext,
-	refs: Reference[],
-): Leaf[] | undefined {
+	refs: Array<Reference>,
+): Array<Leaf> | undefined {
 	switch (node.type) {
 		case "ParenthesizedExpression":
 			return leavesOf(node.expression, render, refs);
 		case "Literal":
-			if (typeof node.value === "string") return tag(node.value, node, render);
+			if (typeof node.value === "string") {
+				return tag(node.value, node, render);
+			}
 			break;
 		case "TemplateLiteral":
-			if (!node.expressions.length) return tag(node.quasis[0]!.value.cooked ?? "", node, render);
+			if (!node.expressions.length) {
+				return tag(node.quasis[0]!.value.cooked ?? "", node, render);
+			}
 			break;
 		case "ConditionalExpression": {
 			const test = checkExpression(node.test, { ...render, presence: true });
-			if (!test.clean) return undefined;
+			if (!test.clean) {
+				return undefined;
+			}
 			refs.push(...test.expression.refs);
 			const consequent = leavesOf(node.consequent, render, refs);
 			const alternate = leavesOf(node.alternate, render, refs);
@@ -211,7 +227,9 @@ function leavesOf(
 		}
 		case "Identifier": {
 			const info = componentOf(node, render);
-			if (info === null) return undefined;
+			if (info === null) {
+				return undefined;
+			}
 			if (info) {
 				refs.push(createBindingReference(componentBinding(info, node, render), span(node)));
 				return [{ kind: "Component", info, node }];
@@ -222,8 +240,10 @@ function leavesOf(
 			break;
 	}
 	// A value whose type allows only some strings: a prop of `"h2" | "h3"`.
-	const checked = checkExpression(node as AST.Expression, render);
-	if (!checked.clean) return undefined;
+	const checked = checkExpression(node, render);
+	if (!checked.clean) {
+		return undefined;
+	}
 	const { kinds } = checked;
 	if (
 		kinds.strings?.size &&
@@ -242,8 +262,10 @@ function leavesOf(
 }
 
 /** A tag leaf: an HTML element's name (UF3044 otherwise). */
-function tag(value: string, node: AST.Node, render: RenderContext): Leaf[] | undefined {
-	if (isHtmlElement(value)) return [{ kind: "Tag", tag: value, node }];
+function tag(value: string, node: AST.Node, render: RenderContext): Array<Leaf> | undefined {
+	if (isHtmlElement(value)) {
+		return [{ kind: "Tag", tag: value, node }];
+	}
 	open(render, node, `\`"${value}"\` names no HTML element: \`is\` renders an element by its tag.`);
 	return undefined;
 }
@@ -266,7 +288,9 @@ function componentBinding(
 		(binding) =>
 			binding.kind === "component" && binding.name === info.name && binding.span.start === at.start,
 	);
-	if (existing) return existing.id;
+	if (existing) {
+		return existing.id;
+	}
 	const binding = createBinding(info.name, "component", at);
 	render.bindings.push(binding);
 	return binding.id;
@@ -274,10 +298,10 @@ function componentBinding(
 
 /** What a dynamic node holds once lowered. */
 interface Lowered {
-	attributes: (Attribute | ComponentAttribute)[];
+	attributes: Array<Attribute | ComponentAttribute>;
 	children: DynamicNode["children"];
-	fills?: SlotFill[];
-	only?: DynamicOnly[];
+	fills?: Array<SlotFill>;
+	only?: Array<DynamicOnly>;
 }
 
 /**
@@ -287,10 +311,15 @@ interface Lowered {
  */
 function adopt(render: RenderContext, probe: RenderContext): void {
 	for (const binding of probe.bindings) {
-		if (!render.bindings.some((each) => each.id === binding.id)) render.bindings.push(binding);
+		if (!render.bindings.some((each) => each.id === binding.id)) {
+			render.bindings.push(binding);
+		}
 	}
-	for (const [key, value] of probe.attached)
-		if (!render.attached.has(key)) render.attached.set(key, value);
+	for (const [key, value] of probe.attached) {
+		if (!render.attached.has(key)) {
+			render.attached.set(key, value);
+		}
+	}
 	const { facts } = render;
 	for (const call of probe.facts.nestedCalls) {
 		const known = facts.nestedCalls.some(
@@ -299,16 +328,25 @@ function adopt(render: RenderContext, probe: RenderContext): void {
 				each.span.start === call.span.start &&
 				each.span.end === call.span.end,
 		);
-		if (!known) facts.nestedCalls.push(call);
+		if (!known) {
+			facts.nestedCalls.push(call);
+		}
 	}
 	for (const [key, value] of probe.facts.getterKinds) {
-		if (!facts.getterKinds.has(key)) facts.getterKinds.set(key, value);
+		if (!facts.getterKinds.has(key)) {
+			facts.getterKinds.set(key, value);
+		}
 	}
 	for (const call of probe.facts.tickCallbacks) {
-		if (!facts.tickCallbacks.includes(call)) facts.tickCallbacks.push(call);
+		if (!facts.tickCallbacks.includes(call)) {
+			facts.tickCallbacks.push(call);
+		}
 	}
-	for (const [key, value] of probe.facts.passed)
-		if (!facts.passed.has(key)) facts.passed.set(key, value);
+	for (const [key, value] of probe.facts.passed) {
+		if (!facts.passed.has(key)) {
+			facts.passed.set(key, value);
+		}
+	}
 }
 
 /**
@@ -324,7 +362,7 @@ function adopt(render: RenderContext, probe: RenderContext): void {
 function lowerTags(
 	node: AST.JSXElement,
 	name: AST.JSXIdentifier,
-	candidates: readonly DynamicCandidate[],
+	candidates: ReadonlyArray<DynamicCandidate>,
 	place: Place,
 	render: RenderContext,
 	isAttribute: AST.JSXAttribute,
@@ -395,14 +433,22 @@ function lowerTags(
 	const mark = render.reporter.diagnostics.length;
 	// An attribute only some tags take renders on those alone, and one none takes is UF3006, once
 	// for them all (ADR-0119). Each tag lowers the attributes it takes.
-	const only: DynamicOnly[] = [];
+	const only: Array<DynamicOnly> = [];
 	const skipped = new Map(tags.map((each) => [each, new Set<AST.JSXAttributeItem>()]));
 	for (const item of opening.attributes) {
-		if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") continue;
+		if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") {
+			continue;
+		}
 		const authored = item.name.name;
 		const takers = tags.filter((each) => takesByName(each, authored));
-		if (takers.length === tags.length) continue;
-		for (const each of tags) if (!takers.includes(each)) skipped.get(each)!.add(item);
+		if (takers.length === tags.length) {
+			continue;
+		}
+		for (const each of tags) {
+			if (!takers.includes(each)) {
+				skipped.get(each)!.add(item);
+			}
+		}
 		if (takers.length) {
 			only.push({ name: canonicalName(takers[0]!, "html", authored), tags: takers });
 			continue;
@@ -452,7 +498,9 @@ function lowerTags(
 	);
 	for (const [index, each] of later.entries()) {
 		const taken = each.attributes.filter((attribute) => rest.has(attribute.span.start));
-		if (!taken.length) continue;
+		if (!taken.length) {
+			continue;
+		}
 		for (const attribute of taken) {
 			rest.delete(attribute.span.start);
 			const at = lowered.attributes.findIndex((other) => other.span.start > attribute.span.start);
@@ -479,12 +527,12 @@ function lowerTags(
 function lowerComponents(
 	node: AST.JSXElement,
 	name: AST.JSXIdentifier,
-	leaves: readonly Leaf[],
+	leaves: ReadonlyArray<Leaf>,
 	place: Place,
 	render: RenderContext,
 	isAttribute: AST.JSXAttribute,
 ): Lowered | undefined {
-	const infos: ComponentInfo[] = [];
+	const infos: Array<ComponentInfo> = [];
 	for (const leaf of leaves) {
 		if (leaf.kind === "Component" && !infos.some((each) => each.name === leaf.info.name)) {
 			infos.push(leaf.info);
@@ -498,6 +546,8 @@ function lowerComponents(
 		lowerComponentAs(node, name, info, place, probes[index]!, false, isAttribute);
 	}
 	merge(render, mark, probes);
-	if (!first.node) return undefined;
+	if (!first.node) {
+		return undefined;
+	}
 	return { attributes: first.node.attributes, children: [], fills: first.node.fills };
 }

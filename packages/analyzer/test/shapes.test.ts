@@ -24,7 +24,9 @@ async function analyzeWith(files: Record<string, string>): Promise<AnalyzeResult
 		shapes.set(`${query.span.start}:${query.span.end}`, await oracle.resolveShape(query));
 	}
 	const result = analyze(parsed, { shapes: (span) => shapes.get(`${span.start}:${span.end}`) });
-	if (result.module) expect(checkInvariants(result.module)).toEqual([]);
+	if (result.module) {
+		expect(checkInvariants(result.module)).toEqual([]);
+	}
 	return result;
 }
 
@@ -213,7 +215,7 @@ describe("props types read through the type oracle", () => {
 			"`item`'s type names `Item`, which `types.ts` declares without `export`: an output that writes the prop's type cannot import it.",
 		],
 	])("reports %s", async (_, files, problem, message) => {
-		const { module, diagnostics } = await analyzeWith(files as Record<string, string>);
+		const { module, diagnostics } = await analyzeWith(files);
 		expect(problems(files["A.uf.tsx"], diagnostics)).toEqual([problem].flat());
 		expect(diagnostics[0]!.message).toBe(message);
 		expect(module?.components ?? []).toEqual([]);

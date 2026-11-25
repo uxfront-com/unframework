@@ -26,7 +26,9 @@ export const run: RunCommand = async (args, io) => {
 		compilation;
 	io.stderr(printable(formatDiagnostics(diagnostics, sources)));
 	// A failed build leaves the last good one in place: nothing is cleaned or written.
-	if (status !== 0 || !config) return status;
+	if (status !== 0 || !config) {
+		return status;
+	}
 	const plan = values.package
 		? await planPackage({ root, config, trees, authored, configFile })
 		: undefined;
@@ -38,8 +40,9 @@ export const run: RunCommand = async (args, io) => {
 		const directory = join(config.outDir, target);
 		await rm(directory, { recursive: true, force: true });
 		const shared = helpers.get(target) ?? new Set<string>();
-		for (const file of files)
+		for (const file of files) {
 			await writeOutput(directory, file, config.srcDir, shared.has(file.path));
+		}
 	}
 	const failed = (await plan?.run()) ?? [];
 	io.stderr(printable(formatDiagnostics(failed, sources)));

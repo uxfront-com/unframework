@@ -8,7 +8,6 @@
 // command's comparisons are unit-tested in Node (test/visual-command.test.ts).
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
 import type { Capabilities, CapabilityCell } from "@unframework.dev/codegen";
@@ -17,7 +16,7 @@ import type { TestProjectInlineConfiguration } from "vitest/config";
 import type { CaseConfig, HarnessContext } from "../../src/harness.ts";
 import { createHarnessRun, parityBrowser, resolveHarnessMode } from "../../src/node/index.ts";
 
-const here = fileURLToPath(new URL(".", import.meta.url));
+const here = import.meta.dirname;
 const casesDir = join(here, "cases");
 /** The testing package, the parity project's root. */
 export const packageRoot: string = join(here, "..", "..");
@@ -40,7 +39,7 @@ function fixtureCases(): Record<string, CaseConfig> {
 /** The harness context of the fixture run. */
 export function fixtureHarness(
 	env: Readonly<Record<string, string | undefined>>,
-	argv: readonly string[] = process.argv,
+	argv: ReadonlyArray<string> = process.argv,
 ): HarnessContext {
 	return createHarnessRun({
 		root: scratch,
@@ -100,7 +99,7 @@ export const STUB_CAPABILITIES: Capabilities = Object.fromEntries(
  */
 export function parityProject(
 	env: Readonly<Record<string, string | undefined>> = process.env,
-	include: readonly string[] = ["test/parity/cases/**/*.parity.spec.ts"],
+	include: ReadonlyArray<string> = ["test/parity/cases/**/*.parity.spec.ts"],
 ): TestProjectInlineConfiguration {
 	return {
 		extends: false,
@@ -114,7 +113,7 @@ export function parityProject(
 				ufCapabilities: STUB_CAPABILITIES,
 			},
 			// The harness's: the setup bounds `expect.element` by the poll timeout, and requires one.
-			expect: { requireAssertions: true, poll: { timeout: 5_000 } },
+			expect: { requireAssertions: true, poll: { timeout: 5000 } },
 			browser: parityBrowser({ name: "parity" }),
 		},
 	};
@@ -129,8 +128,9 @@ function stubHydrationRender(
 	request: { case: string; props: Record<string, unknown> },
 ): { html: string; console: []; module: string } {
 	const html = request.props.server;
-	if (typeof html !== "string")
+	if (typeof html !== "string") {
 		throw new Error("A hydrate fixture passes its server HTML as `server`.");
+	}
 	return { html, console: [], module: `/test/parity/cases/${request.case}/component.ts` };
 }
 
@@ -154,7 +154,7 @@ export function hydrateParityProject(
 				ufCapabilities: STUB_CAPABILITIES,
 				ufHydrate: true,
 			},
-			expect: { requireAssertions: true, poll: { timeout: 5_000 } },
+			expect: { requireAssertions: true, poll: { timeout: 5000 } },
 			browser: parityBrowser({
 				name: "parity-hydrate",
 				commands: { ufHydrationRender: stubHydrationRender },

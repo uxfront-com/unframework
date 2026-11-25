@@ -41,7 +41,7 @@ export function useToggle(initial: boolean) {
 `,
 };
 
-export const SOURCE_TREE: readonly string[] = [
+export const SOURCE_TREE: ReadonlyArray<string> = [
 	"source/Card.css",
 	"source/Card.uf.tsx",
 	"source/CardTitle.uf.tsx",
@@ -53,7 +53,7 @@ export interface DesignSystem {
 	/** `unframework.config.ts`'s fields, as JSON. */
 	config: Record<string, unknown>;
 	/** Packages `node_modules` links to, each by its path in `tests/integration/node_modules`. */
-	frameworks?: readonly string[];
+	frameworks?: ReadonlyArray<string>;
 	/** Files beside or over the sources. */
 	files?: Readonly<Record<string, string>>;
 	/** A directory to put the project in, for what its path does. */
@@ -100,10 +100,12 @@ export function designSystem(options: DesignSystem): string {
 	return root;
 }
 
-const consumers: string[] = [];
+const consumers: Array<string> = [];
 
 afterEach(() => {
-	for (const directory of consumers.splice(0)) rmSync(directory, { recursive: true, force: true });
+	for (const directory of consumers.splice(0)) {
+		rmSync(directory, { recursive: true, force: true });
+	}
 });
 
 /**
@@ -141,7 +143,7 @@ export function consumer(
 export function check(
 	from: string,
 	bin: string,
-	args: readonly string[],
+	args: ReadonlyArray<string>,
 ): { code: number | null; output: string } {
 	const result = spawnSync(join(inRepository(from), "node_modules", ".bin", bin), [...args], {
 		cwd: inRepository(from),

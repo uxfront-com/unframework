@@ -77,7 +77,7 @@ export function watcherCode(
 ): EffectCode {
 	const { locals } = plan;
 	const [valueParameter, previousParameter, cleanupParameter] = item.callback.parameters;
-	const lines: string[] = [];
+	const lines: Array<string> = [];
 	// The value the effect watches: one signal, whose value changes only when it differs.
 	let read: string;
 	let hint: string;
@@ -96,7 +96,9 @@ export function watcherCode(
 		hint = "values";
 	} else {
 		const [source] = item.sources;
-		if (!source) throw new Error("A watcher has no source.");
+		if (!source) {
+			throw new Error("A watcher has no source.");
+		}
 		const watched = watchedSignal(source, plan);
 		if (watched !== undefined) {
 			// An input or a `computed` already changes only when its value differs.
@@ -131,9 +133,13 @@ export function watcherCode(
 	// immediate one, which runs then, keeps it only to give the next run its previous value.
 	const last =
 		!item.immediate || readsPrevious ? locals.claim(`last${pascalCase(hint)}`) : undefined;
-	if (last !== undefined) lines.push(`let ${last} = ${read};`);
+	if (last !== undefined) {
+		lines.push(`let ${last} = ${read};`);
+	}
 	const first = item.immediate && readsPrevious ? locals.claim("first") : undefined;
-	if (first !== undefined) lines.push(`let ${first} = true;`);
+	if (first !== undefined) {
+		lines.push(`let ${first} = true;`);
+	}
 
 	// The effect's own locals live in its function: they take none of the names its code reads,
 	// `ngOnInit`'s locals and Angular's imports included.
@@ -145,7 +151,7 @@ export function watcherCode(
 	// annotated, `current`, which the parameter takes (the last values keep the sources' tuple).
 	const own = item.array && valueParameter?.type ? undefined : valueParameter?.name;
 	const value = own ?? inner.claim(item.array ? "current" : "value");
-	const body: string[] = [
+	const body: Array<string> = [
 		`const ${value}${own !== undefined && !item.array ? annotation(valueParameter) : ""} = ${read};`,
 	];
 	if (!item.immediate) {
@@ -168,8 +174,12 @@ export function watcherCode(
 			`const ${parameterBinding(previousParameter)}${annotation(previousParameter)} = ${defaulted(previousParameter, previous)};`,
 		);
 	}
-	if (first !== undefined) body.push(`${first} = false;`);
-	if (last !== undefined) body.push(`${last} = ${value};`);
+	if (first !== undefined) {
+		body.push(`${first} = false;`);
+	}
+	if (last !== undefined) {
+		body.push(`${last} = ${value};`);
+	}
 	if (item.immediate) {
 		// An immediate callback runs when the setup does, in the browser only (ADR-0048).
 		body.push(
@@ -210,7 +220,9 @@ function watchedSignal(source: WatchSource, plan: Plan): Binding | undefined {
 				  source.getter.body.refs[0]!.span.end === source.getter.body.span.end
 				? bindingById(plan, source.getter.body.refs[0]!.binding)
 				: undefined;
-	if (binding === undefined) return undefined;
+	if (binding === undefined) {
+		return undefined;
+	}
 	const form = formOf(plan, binding);
 	switch (form) {
 		case "input":
@@ -268,7 +280,9 @@ export function arrow(code: string): string {
 function callbackFunction(fn: FunctionCode, plan: Plan, rules: RewriteRules): string {
 	const head = fn.async ? "async () => " : "() => ";
 	// A block body's `return`s give no value, which nothing reads (`noImplicitReturns`).
-	if (!fn.expression) return `${head}{\n${bodyStatements(fn, plan, rules)}\n}`;
+	if (!fn.expression) {
+		return `${head}{\n${bodyStatements(fn, plan, rules)}\n}`;
+	}
 	const body = tidied(rewriteCode(fn.body, plan.component, rules, "client"), "expression");
 	return `${head}${/^\s*\{/.test(body) ? `(${body})` : body}`;
 }
@@ -309,7 +323,9 @@ export function watchEffectCode(
 	// a later phase, stays `undefined`.
 	const body = item.effect.async ? `void (async () => {\n${statements}\n})();` : statements;
 	const effect = `${names.core("afterRenderEffect")}((${cleanup?.name ?? ""}) => {\n${body}\n}${injectorOption(names, late)});`;
-	if (!cleanup) return { code: effect };
+	if (!cleanup) {
+		return { code: effect };
+	}
 	// A late one is assigned in `ngOnInit`, so its ref is optional and writable, as a watcher's.
 	const ref = {
 		name: plan.members.claim("renderEffect"),

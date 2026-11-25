@@ -33,7 +33,10 @@ export default function Icon({ label, note, n, count, on, xs }: P) {
 }`;
 
 /** Two sets of props for {@link TITLES}, with the text of each title they render, in order. */
-export const TITLE_RENDERS: readonly { props: Record<string, unknown>; titles: string[] }[] = [
+export const TITLE_RENDERS: ReadonlyArray<{
+	props: Record<string, unknown>;
+	titles: Array<string>;
+}> = [
 	{
 		props: { label: "Star <&>", n: null, count: 0, on: true, xs: ["a"] },
 		titles: [

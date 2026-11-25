@@ -3,7 +3,7 @@
 // code: UF2037 for a definition outside the canonical form, UF3055 for a name no directive has,
 // UF3056 for a use without an element or with a value built in place, and UF1002 for what is not
 // supported yet (arguments, modifiers, a spread's key, a list's body).
-import type { DirectiveAttribute, ElementNode, ModuleApi } from "@unframework.dev/ir";
+import type { DirectiveAttribute, ModuleApi } from "@unframework.dev/ir";
 import { parseModule } from "@unframework.dev/parser";
 import type { DirectiveValueCheck } from "@unframework.dev/type-oracle";
 import { describe, expect, it } from "vitest";
@@ -23,7 +23,11 @@ function source(jsx: string, setup = "", directives = MARK): string {
 }
 
 /** The diagnostics a source gets, as `code text-at-span`. */
-function reported(text: string, file = "Test.uf.tsx", imports?: Map<string, ModuleApi>): string[] {
+function reported(
+	text: string,
+	file = "Test.uf.tsx",
+	imports?: Map<string, ModuleApi>,
+): Array<string> {
 	return problems(text, run(text, file, imports ? { imports } : {}).diagnostics);
 }
 
@@ -49,7 +53,7 @@ describe("a module's own directive", () => {
 		expect(directive!.hooks.map((hook) => [hook.name, hook.parameters])).toEqual([
 			["mounted", ["el", "value"]],
 		]);
-		const [attribute] = root(module).attributes as DirectiveAttribute[];
+		const [attribute] = root(module).attributes as Array<DirectiveAttribute>;
 		expect(attribute).toMatchObject({ kind: "Directive", name: "vMark" });
 		expect(attribute!.value.code).toBe('"title"');
 	});
@@ -72,7 +76,7 @@ describe("a module's own directive", () => {
 		);
 		const { module, diagnostics } = run(text);
 		expect(diagnostics).toEqual([]);
-		const [attribute] = root(module).attributes as DirectiveAttribute[];
+		const [attribute] = root(module).attributes as Array<DirectiveAttribute>;
 		expect(attribute!.value.refs).toEqual([
 			expect.objectContaining({ kind: "Binding", binding: expect.stringMatching(/^close@/) }),
 		]);
@@ -434,7 +438,7 @@ describe("the codes it shares", () => {
 
 	it("lowers the element's other attributes beside it", () => {
 		const { module } = run(source('<p class="note" v-mark="a" title="t">a</p>'));
-		expect((root(module) as ElementNode).attributes.map(({ kind }) => kind)).toEqual([
+		expect(root(module).attributes.map(({ kind }) => kind)).toEqual([
 			"Static",
 			"Directive",
 			"Static",
@@ -465,7 +469,7 @@ describe("UF6007 directive-value-type", () => {
 
 	it("leaves out a static value the analyser rejects, which reads otherwise in JavaScript", () => {
 		const text = source(
-			'<div><p v-mark="a\\" title="b">a</p><p v-mark="a &amp; b">c</p><p v-mark="ok">d</p></div>',
+			String.raw`<div><p v-mark="a\" title="b">a</p><p v-mark="a &amp; b">c</p><p v-mark="ok">d</p></div>`,
 		);
 		expect(queried(text)).toEqual([['"ok"', "string", "vMark"]]);
 	});

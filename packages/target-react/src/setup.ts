@@ -36,8 +36,8 @@ import type { ReactCode } from "./rules.ts";
 
 /** The setup's statements: at module scope, and in the component's body before its return. */
 export interface PrintedSetup {
-	module: string[];
-	body: BodyStatement[];
+	module: Array<string>;
+	body: Array<BodyStatement>;
 }
 
 /**
@@ -66,18 +66,24 @@ export function printSetup(plan: ReactPlan, code: ReactCode): PrintedSetup {
 	let group = 0;
 
 	// Props deferred code reads: a mirror each, synced after every render, before any effect.
-	const mirrors: [string, string][] = [];
+	const mirrors: Array<[string, string]> = [];
 	for (const prop of plan.owner.props) {
 		const mirror = prop.binding && plan.propMirrors.get(prop.binding);
-		if (mirror) mirrors.push([mirror, propRead(plan, prop.binding!)]);
+		if (mirror) {
+			mirrors.push([mirror, propRead(plan, prop.binding!)]);
+		}
 	}
 	// A composable's getter and callback arguments, as its caller passes them at each render.
 	for (const parameter of plan.composable?.parameters ?? []) {
 		const mirror = plan.propMirrors.get(parameter.binding);
-		if (mirror) mirrors.push([mirror, plan.bindings.get(parameter.binding)!.name]);
+		if (mirror) {
+			mirrors.push([mirror, plan.bindings.get(parameter.binding)!.name]);
+		}
 	}
 	for (const event of plan.events.values()) {
-		if (event.mirror) mirrors.push([event.mirror, event.local]);
+		if (event.mirror) {
+			mirrors.push([event.mirror, event.local]);
+		}
 	}
 	if (mirrors.length) {
 		const useRef = hook("useRef");
@@ -117,7 +123,9 @@ export function printSetup(plan: ReactPlan, code: ReactCode): PrintedSetup {
 				printed.module.push(text);
 				continue;
 			}
-			if (part !== previous) group++;
+			if (part !== previous) {
+				group++;
+			}
 			previous = part;
 			printed.body.push({ text, group, compact: COMPACT.has(item.kind) && part === "main" });
 		}
@@ -132,13 +140,19 @@ export function printSetup(plan: ReactPlan, code: ReactCode): PrintedSetup {
  * Compiler and `react/immutability` reject a read before the declaration, in a nested
  * function too. Watchers, effects and hooks keep their source order among themselves.
  */
-function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
+function declarationOrder(plan: ReactPlan): Array<SetupItem | typeof NEXT_TICK> {
 	const items = plan.owner.setup;
 	// What moves to module scope is declared before the component.
 	const declared = new Map<BindingId, number>();
 	for (const [index, item] of items.entries()) {
-		if ("binding" in item && !plan.hoisted.has(item.binding)) declared.set(item.binding, index);
-		if (item.kind === "Use") for (const { binding } of item.members) declared.set(binding, index);
+		if ("binding" in item && !plan.hoisted.has(item.binding)) {
+			declared.set(item.binding, index);
+		}
+		if (item.kind === "Use") {
+			for (const { binding } of item.members) {
+				declared.set(binding, index);
+			}
+		}
 	}
 	// `nextTick`'s declaration is one more item: it reads the state its `settled` compares, and
 	// every item that calls it reads it.
@@ -146,12 +160,18 @@ function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
 	const needs = [...items, undefined].map(() => new Set<number>());
 	const need = (index: number, binding: BindingId) => {
 		const at = declared.get(binding);
-		if (at !== undefined && at !== index) needs[index]!.add(at);
+		if (at !== undefined && at !== index) {
+			needs[index]!.add(at);
+		}
 	};
-	for (const id of tickStates(plan)) need(tick, id);
+	for (const id of tickStates(plan)) {
+		need(tick, id);
+	}
 	for (const { code, path } of codeOf(plan.owner)) {
 		const index = /^\/setup\/(\d+)\//.exec(path)?.[1];
-		if (index === undefined) continue;
+		if (index === undefined) {
+			continue;
+		}
 		for (const reference of code.refs) {
 			if (reference.kind === "Binding" || reference.kind === "Write") {
 				need(Number(index), reference.binding);
@@ -174,38 +194,58 @@ function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
 			item.kind === "WatchEffect" ||
 			(item.kind === "Lifecycle" && !unmounted(item)));
 	const chains = new Map<string, number>();
-	const pre: number[] = [];
-	const effects: number[] = [];
+	const pre: Array<number> = [];
+	const effects: Array<number> = [];
 	for (const [index, item] of items.entries()) {
 		if (item.kind === "Watch") {
-			for (const source of item.sources) if (source.kind === "Ref") need(index, source.binding);
+			for (const source of item.sources) {
+				if (source.kind === "Ref") {
+					need(index, source.binding);
+				}
+			}
 		}
 		if (item.kind === "Watch" || item.kind === "WatchEffect" || item.kind === "Lifecycle") {
 			const chain = unmounted(item) ? "unmounted" : post(item) ? "post" : "pre";
 			const after = chains.get(chain);
-			if (after !== undefined) needs[index]!.add(after);
+			if (after !== undefined) {
+				needs[index]!.add(after);
+			}
 			chains.set(chain, index);
-			if (item.kind === "Watch" && !post(item)) pre.push(index);
-			if (!unmounted(item)) effects.push(index);
+			if (item.kind === "Watch" && !post(item)) {
+				pre.push(index);
+			}
+			if (!unmounted(item)) {
+				effects.push(index);
+			}
 		}
 	}
 	for (const [index, item] of items.entries()) {
-		if (post(item)) for (const other of pre) needs[index]!.add(other);
-		if (unmounted(item)) for (const other of effects) needs[index]!.add(other);
+		if (post(item)) {
+			for (const other of pre) {
+				needs[index]!.add(other);
+			}
+		}
+		if (unmounted(item)) {
+			for (const other of effects) {
+				needs[index]!.add(other);
+			}
+		}
 	}
 	// The functions of a cycle are declared together (`functionCycles`): after what any of them
 	// reads, and before what reads any of them.
-	const groups = new Map<number, number[]>();
+	const groups = new Map<number, Array<number>>();
 	for (const members of new Set(functionCycles(plan).values())) {
 		const indices = members.map((id) => declared.get(id)!);
 		const combined = new Set(indices.flatMap((index) => [...needs[index]!]));
-		for (const index of indices) combined.delete(index);
+		for (const index of indices) {
+			combined.delete(index);
+		}
 		for (const index of indices) {
 			needs[index] = new Set(combined);
 			groups.set(index, indices);
 		}
 	}
-	const order: (SetupItem | typeof NEXT_TICK)[] = [];
+	const order: Array<SetupItem | typeof NEXT_TICK> = [];
 	const done = new Set<number>();
 	// `nextTick` as early as it can be, then the items in source order.
 	const candidates = [...(plan.nextTick ? [tick] : []), ...items.keys()];
@@ -215,7 +255,9 @@ function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
 		// A cycle (local functions do not call each other in a loop, UF2024) keeps the source's order.
 		next ??= candidates.find((index) => !done.has(index))!;
 		const group = groups.get(next) ?? [next];
-		for (const index of group) done.add(index);
+		for (const index of group) {
+			done.add(index);
+		}
 		order.push(next === tick ? NEXT_TICK : items[Math.min(...group)]!);
 	}
 	return order;
@@ -231,14 +273,14 @@ function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
  * them, so they read what changes through mirrors already (ADR-0046), and keeping the first
  * render's is right. A cycle with a function a template calls keeps its order.
  */
-function functionCycles(plan: ReactPlan): Map<BindingId, BindingId[]> {
+function functionCycles(plan: ReactPlan): Map<BindingId, Array<BindingId>> {
 	const functions = new Map<BindingId, FunctionItem>();
 	for (const item of plan.owner.setup) {
 		if (item.kind === "Function" && !plan.hoisted.has(item.binding)) {
 			functions.set(item.binding, item);
 		}
 	}
-	const edges = new Map<BindingId, BindingId[]>();
+	const edges = new Map<BindingId, Array<BindingId>>();
 	for (const [id, item] of functions) {
 		const fn = item.function;
 		const refs = [fn.body, ...fn.parameters.flatMap((parameter) => parameter.default ?? [])];
@@ -255,10 +297,10 @@ function functionCycles(plan: ReactPlan): Map<BindingId, BindingId[]> {
 		]);
 	}
 	// Tarjan's strongly connected components, visited in source order (P8).
-	const found = new Map<BindingId, BindingId[]>();
+	const found = new Map<BindingId, Array<BindingId>>();
 	const index = new Map<BindingId, number>();
 	const low = new Map<BindingId, number>();
-	const stack: BindingId[] = [];
+	const stack: Array<BindingId> = [];
 	const connect = (id: BindingId): void => {
 		index.set(id, index.size);
 		low.set(id, index.get(id)!);
@@ -271,20 +313,32 @@ function functionCycles(plan: ReactPlan): Map<BindingId, BindingId[]> {
 				low.set(id, Math.min(low.get(id)!, index.get(next)!));
 			}
 		}
-		if (low.get(id) !== index.get(id)) return;
-		const members: BindingId[] = [];
+		if (low.get(id) !== index.get(id)) {
+			return;
+		}
+		const members: Array<BindingId> = [];
 		for (let member = stack.pop()!; ; member = stack.pop()!) {
 			members.push(member);
-			if (member === id) break;
+			if (member === id) {
+				break;
+			}
 		}
 		const kept = members.every(
 			(member) => !plan.renderFunctions.has(member) && !plan.clientVariants.has(member),
 		);
-		if (members.length < 2 || !kept) return;
+		if (members.length < 2 || !kept) {
+			return;
+		}
 		const ordered = [...functions.keys()].filter((member) => members.includes(member));
-		for (const member of ordered) found.set(member, ordered);
+		for (const member of ordered) {
+			found.set(member, ordered);
+		}
 	};
-	for (const id of functions.keys()) if (!index.has(id)) connect(id);
+	for (const id of functions.keys()) {
+		if (!index.has(id)) {
+			connect(id);
+		}
+	}
 	return found;
 }
 
@@ -296,8 +350,10 @@ const NEXT_TICK = Symbol("nextTick");
  * functions they call), which client code writes through a mirror: React renders such a write in
  * a later task than the code that triggered the effect, and `nextTick` waits for it.
  */
-function tickStates(plan: ReactPlan): BindingId[] {
-	if (!plan.nextTick) return [];
+function tickStates(plan: ReactPlan): Array<BindingId> {
+	if (!plan.nextTick) {
+		return [];
+	}
 	const written = new Set<BindingId>();
 	for (const item of plan.owner.setup) {
 		const fn =
@@ -306,9 +362,13 @@ function tickStates(plan: ReactPlan): BindingId[] {
 				: item.kind === "WatchEffect"
 					? item.effect
 					: undefined;
-		if (!fn) continue;
+		if (!fn) {
+			continue;
+		}
 		for (const id of summarizeCode(fn.body, plan.owner).writes) {
-			if (plan.state.get(id)?.mirror) written.add(id);
+			if (plan.state.get(id)?.mirror) {
+				written.add(id);
+			}
 		}
 	}
 	return plan.owner.bindings.flatMap((binding) => (written.has(binding.id) ? [binding.id] : []));
@@ -331,16 +391,20 @@ function nextTickDeclaration(plan: ReactPlan): string {
  * The state pre watchers write, themselves or through the functions they call: a post watcher
  * or a `watchEffect` waits while one of their mirrors holds a value React has not rendered.
  */
-function unrenderedWrites(plan: ReactPlan): BindingId[] {
+function unrenderedWrites(plan: ReactPlan): Array<BindingId> {
 	const items = plan.owner.setup;
 	if (!items.some((item) => (item.kind === "Watch" && item.post) || item.kind === "WatchEffect")) {
 		return [];
 	}
 	const written = new Set<BindingId>();
 	for (const item of items) {
-		if (item.kind !== "Watch" || item.post) continue;
+		if (item.kind !== "Watch" || item.post) {
+			continue;
+		}
 		for (const id of summarizeCode(item.callback.body, plan.owner).writes) {
-			if (plan.state.get(id)?.mirror) written.add(id);
+			if (plan.state.get(id)?.mirror) {
+				written.add(id);
+			}
 		}
 	}
 	return plan.owner.bindings.flatMap((binding) => (written.has(binding.id) ? [binding.id] : []));
@@ -360,9 +424,11 @@ function unrenderedWrites(plan: ReactPlan): BindingId[] {
 function settled(
 	plan: ReactPlan,
 	printed: Printed,
-): { lines: string[]; deps: string[] } | undefined {
+): { lines: Array<string>; deps: Array<string> } | undefined {
 	const written = unrenderedWrites(plan);
-	if (!written.length) return undefined;
+	if (!written.length) {
+		return undefined;
+	}
 	let waits = WAITS.get(plan);
 	if (!waits) {
 		waits = { value: plan.names.claim("waits"), setter: plan.names.claim("setWaits") };
@@ -400,7 +466,7 @@ const COMPACT = new Set<SetupItem["kind"]>([
  * Where a printed statement goes, its text, and the part of its item it is: a live getter or a
  * client variant stands apart from the declaration it goes with.
  */
-type Printed = ["module" | "body", string, string?][];
+type Printed = Array<["module" | "body", string, string?]>;
 
 function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
 	const hook = (name: string) => plan.names.add("react", name);
@@ -478,7 +544,9 @@ function useCall(plan: ReactPlan, code: ReactCode, item: UseItem): string {
 		const name = entry.names.find(
 			(each) => each.kind === "Composable" && each.local === item.composable,
 		);
-		if (!name) continue;
+		if (!name) {
+			continue;
+		}
 		const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
 		plan.names.add(`${directory}${name.imported}`, name.imported, {
 			local: item.composable,
@@ -526,7 +594,10 @@ function property(key: string, local: string): string {
  * once every other statement and the render are printed (ADR-0069): an unread member would fail
  * L5.
  */
-export function resolveUses(plan: ReactPlan, body: readonly BodyStatement[]): BodyStatement[] {
+export function resolveUses(
+	plan: ReactPlan,
+	body: ReadonlyArray<BodyStatement>,
+): Array<BodyStatement> {
 	return body.map((statement) =>
 		statement.use
 			? { ...statement, text: `${usePattern(plan, statement.use.item)}${statement.use.call}` }
@@ -581,12 +652,14 @@ function printModel(plan: ReactPlan, item: ModelItem): Printed {
 		);
 	}
 	if (model.mirror) {
-		printed.push(["body", `const ${model.mirror} = ${hook("useRef")}(${model.name});`]);
-		printed.push([
-			"body",
-			`${hook("useLayoutEffect")}(() => {\n${model.mirror}.current = ${model.name};\n});`,
-			"mirror",
-		]);
+		printed.push(
+			["body", `const ${model.mirror} = ${hook("useRef")}(${model.name});`],
+			[
+				"body",
+				`${hook("useLayoutEffect")}(() => {\n${model.mirror}.current = ${model.name};\n});`,
+				"mirror",
+			],
+		);
 	}
 	return printed;
 }
@@ -609,7 +682,9 @@ function printProvide(plan: ReactPlan, code: ReactCode, item: ProvideItem): Prin
 function printInject(plan: ReactPlan, code: ReactCode, item: InjectItem): Printed {
 	const { name } = plan.bindings.get(item.binding)!;
 	const read = `${plan.names.add("react", "use")}(${item.key})`;
-	if (!item.fallback) return [["body", `const ${name} = ${read};`]];
+	if (!item.fallback) {
+		return [["body", `const ${name} = ${read};`]];
+	}
 	const fallback = code.code(item.fallback, "pure");
 	const value =
 		keyRef(plan.module, item.key) && wholeReference(item.fallback)
@@ -690,7 +765,9 @@ function printFunction(plan: ReactPlan, code: ReactCode, item: FunctionItem): Pr
 				? code.fn(fn, at, { name: local })
 				: `const ${local} = ${code.fn(fn, at)};`;
 	const printed: Printed = [[scope, print(name, site, once && !variant)]];
-	if (variant) printed.push(["body", print(variant, "client", once), "variant"]);
+	if (variant) {
+		printed.push(["body", print(variant, "client", once), "variant"]);
+	}
 	return printed;
 }
 
@@ -699,7 +776,7 @@ function printFunction(plan: ReactPlan, code: ReactCode, item: FunctionItem): Pr
  * instance's life: `const [{ close, onEscape }] = useState(() => { … return { close, onEscape };
  * });`.
  */
-function printCycle(plan: ReactPlan, code: ReactCode, members: readonly BindingId[]): Printed {
+function printCycle(plan: ReactPlan, code: ReactCode, members: ReadonlyArray<BindingId>): Printed {
 	const names = members.map((id) => plan.bindings.get(id)!.name);
 	const declarations = members.map((id, at) => {
 		const item = plan.owner.setup.find(
@@ -762,7 +839,9 @@ function printWatch(plan: ReactPlan, code: ReactCode, item: WatchItem): Printed 
 		printed.push(["body", `const ${previousRef} = ${hook("useRef")}${type}(${initial});`]);
 	}
 	const cleanupsRef = settle && count >= 3 ? plan.names.claim(`${camel(base)}Cleanups`) : undefined;
-	if (cleanupsRef) printed.push(["body", cleanupsDeclaration(plan, cleanupsRef)]);
+	if (cleanupsRef) {
+		printed.push(["body", cleanupsDeclaration(plan, cleanupsRef)]);
+	}
 	const event = plan.names.claim(`on${base}Change`);
 	printed.push([
 		"body",
@@ -773,8 +852,10 @@ function printWatch(plan: ReactPlan, code: ReactCode, item: WatchItem): Printed 
 		[...values, event, previousRef ?? "", cleanupsRef ?? "", "Object"],
 		["previous", "cleanups", "cleanup"],
 	);
-	const lines: string[] = [];
-	if (settle) lines.push(...settle.lines);
+	const lines: Array<string> = [];
+	if (settle) {
+		lines.push(...settle.lines);
+	}
 	if (previousRef) {
 		lines.push(`const ${local.previous} = ${previousRef}.current;`);
 		if (!item.immediate) {
@@ -791,8 +872,10 @@ function printWatch(plan: ReactPlan, code: ReactCode, item: WatchItem): Printed 
 	const deps = `, [${[...new Set([...values, ...(settle?.deps ?? [])])].join(", ")}]`;
 	if (cleanupsRef) {
 		lines.push(...gatedCall(event, [value, local.previous, ""], cleanupsRef, local));
-		printed.push(["body", `${hook("useEffect")}(() => {\n${lines.join("\n")}\n}${deps});`]);
-		printed.push(["body", unmountEffect(plan, [], cleanupsRef, local)]);
+		printed.push(
+			["body", `${hook("useEffect")}(() => {\n${lines.join("\n")}\n}${deps});`],
+			["body", unmountEffect(plan, [], cleanupsRef, local)],
+		);
 		return printed;
 	}
 	const args = [
@@ -863,10 +946,12 @@ function printWatchEffect(plan: ReactPlan, code: ReactCode, item: WatchEffectIte
 	// a dependency the effect does not read), under a name that says the body leaves it (`_unit`).
 	const own = ownReads(plan, effect.body);
 	const overrides = new Map<BindingId, string>();
-	const parameters: Parameter[] = reads.map((id) => {
+	const parameters: Array<Parameter> = reads.map((id) => {
 		const { name } = plan.bindings.get(id)!;
 		const local = plan.names.claim(own.has(id) ? `${name}Value` : `_${name}`);
-		if (own.has(id)) overrides.set(id, local);
+		if (own.has(id)) {
+			overrides.set(id, local);
+		}
 		return {
 			name: local,
 			type: { code: `typeof ${renderRead(plan, id)}`, span: effect.span },
@@ -899,7 +984,9 @@ function printWatchEffect(plan: ReactPlan, code: ReactCode, item: WatchEffectIte
 		printed.push(["body", `const ${previousRef} = ${hook("useRef")}<${type}>(undefined);`]);
 	}
 	const cleanupsRef = settle && cleanup ? plan.names.claim(`${camel(name)}Cleanups`) : undefined;
-	if (cleanupsRef) printed.push(["body", cleanupsDeclaration(plan, cleanupsRef)]);
+	if (cleanupsRef) {
+		printed.push(["body", cleanupsDeclaration(plan, cleanupsRef)]);
+	}
 	printed.push([
 		"body",
 		`const ${event} = ${hook("useEffectEvent")}(${code.fn(typed, "client", {}, overrides)});`,
@@ -954,11 +1041,13 @@ function printLifecycle(plan: ReactPlan, code: ReactCode, item: LifecycleItem): 
  */
 function callWithCleanup(
 	event: string,
-	args: string[],
+	args: Array<string>,
 	cleans: boolean,
 	local: Record<"cleanups" | "cleanup", string>,
-): string[] {
-	if (!cleans) return [`${event}(${args.join(", ")});`];
+): Array<string> {
+	if (!cleans) {
+		return [`${event}(${args.join(", ")});`];
+	}
 	return [
 		`const ${local.cleanups}: (() => void)[] = [];`,
 		`${event}(${args.join(", ")});`,
@@ -973,11 +1062,13 @@ function callWithCleanup(
  */
 function gatedCall(
 	event: string,
-	args: string[],
+	args: Array<string>,
 	cleanups: string | undefined,
 	local: Record<"cleanups" | "cleanup", string>,
-): string[] {
-	if (!cleanups) return [`${event}(${args.join(", ")});`];
+): Array<string> {
+	if (!cleanups) {
+		return [`${event}(${args.join(", ")});`];
+	}
 	const onCleanup = `(${local.cleanup}) => void ${cleanups}.current.push(${local.cleanup})`;
 	return [
 		`for (const ${local.cleanup} of ${cleanups}.current.splice(0)) ${local.cleanup}();`,
@@ -996,7 +1087,7 @@ function cleanupsDeclaration(plan: ReactPlan, name: string): string {
  */
 function unmountEffect(
 	plan: ReactPlan,
-	resets: string[],
+	resets: Array<string>,
 	cleanups: string,
 	local: Record<"cleanup", string>,
 ): string {
@@ -1014,7 +1105,7 @@ function camel(base: string): string {
 }
 
 /** The callback's parameters, each the source leaves untyped typed with `types` in order. */
-function typedParameters(fn: FunctionCode, types: readonly string[]): FunctionCode {
+function typedParameters(fn: FunctionCode, types: ReadonlyArray<string>): FunctionCode {
 	return {
 		...fn,
 		parameters: fn.parameters.map((parameter, index) => {
@@ -1039,11 +1130,15 @@ export function withEventTypes(
 ): FunctionCode {
 	// A handler written in place is typed by its prop, or by `listen`, where the source leaves it.
 	const typed = (parameter: Parameter) => parameter.event && !(inline && !parameter.type);
-	if (!fn.parameters.some(typed)) return fn;
+	if (!fn.parameters.some(typed)) {
+		return fn;
+	}
 	return {
 		...fn,
 		parameters: fn.parameters.map((parameter) => {
-			if (!typed(parameter)) return parameter;
+			if (!typed(parameter)) {
+				return parameter;
+			}
 			const type = eventParameterType(plan, parameter, modes ?? new Set(["synthetic"]));
 			const span = parameter.type?.span ?? parameter.span;
 			return type === parameter.type?.code
@@ -1066,8 +1161,12 @@ export function eventParameterType(
 		const local = plan.names.scope.has(name) ? `React${name}` : name;
 		return plan.names.add("react", name, { type: true, local });
 	};
-	if (!modes.has("native")) return react();
-	if (!modes.has("synthetic")) return dom;
+	if (!modes.has("native")) {
+		return react();
+	}
+	if (!modes.has("synthetic")) {
+		return dom;
+	}
 	return `${dom} | ${react()}`;
 }
 
@@ -1124,10 +1223,12 @@ function propRead(plan: ReactPlan, id: BindingId): string {
  * The dependencies of a memo over code a template's site evaluates: the props, state, derived
  * values and setup values it reads (not those at module scope), in the order it reads them.
  */
-function dependencies(plan: ReactPlan, body: Code): string[] {
-	const found: string[] = [];
+function dependencies(plan: ReactPlan, body: Code): Array<string> {
+	const found: Array<string> = [];
 	for (const reference of body.refs) {
-		if (reference.kind !== "Binding") continue;
+		if (reference.kind !== "Binding") {
+			continue;
+		}
 		const binding = plan.bindings.get(reference.binding)!;
 		switch (binding.kind) {
 			case "prop":
@@ -1153,7 +1254,9 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
 				break;
 			case "localConst":
 			case "localFn":
-				if (!plan.hoisted.has(reference.binding)) found.push(binding.name);
+				if (!plan.hoisted.has(reference.binding)) {
+					found.push(binding.name);
+				}
 				break;
 			// What `use` read of the setup: a local of the render, which React's lint cannot tell is
 			// stable (ADR-0101).
@@ -1181,7 +1284,7 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
  * The props, state and derived values `watchEffect` reads, itself and through the functions it
  * calls: in the order its own code reads them, then the others in declaration order.
  */
-function reactiveReads(plan: ReactPlan, body: Code): BindingId[] {
+function reactiveReads(plan: ReactPlan, body: Code): Array<BindingId> {
 	const own = ownReads(plan, body);
 	// What the effect hands on to run later (a timer's callback, marked `later`) is no dependency.
 	const all = summarizeTracked(body, plan.owner).reads;
@@ -1213,8 +1316,14 @@ export function templateRefType(plan: ReactPlan, id: BindingId): string {
 	const item = plan.owner.setup.find(
 		(entry) => entry.kind === "TemplateRef" && entry.binding === id,
 	);
-	if (item?.kind === "TemplateRef" && item.type) return item.type.code;
-	for (const [attribute, type] of plan.refInterfaces) if (attribute.binding === id) return type;
+	if (item?.kind === "TemplateRef" && item.type) {
+		return item.type.code;
+	}
+	for (const [attribute, type] of plan.refInterfaces) {
+		if (attribute.binding === id) {
+			return type;
+		}
+	}
 	return "Element";
 }
 
@@ -1226,9 +1335,13 @@ function once(value: string): string {
 	const { root } = parseCodeSource(value, "expression");
 	let works = false;
 	const visit = (node: unknown): void => {
-		if (works || typeof node !== "object" || node === null) return;
+		if (works || typeof node !== "object" || node === null) {
+			return;
+		}
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
 		const type = (node as { type?: unknown }).type;
@@ -1236,10 +1349,16 @@ function once(value: string): string {
 			works = true;
 			return;
 		}
-		for (const [key, child] of Object.entries(node)) if (key !== "parent") visit(child);
+		for (const [key, child] of Object.entries(node)) {
+			if (key !== "parent") {
+				visit(child);
+			}
+		}
 	};
 	visit(root);
-	if (!works) return value;
+	if (!works) {
+		return value;
+	}
 	return value.trimStart().startsWith("{") ? `() => (${value})` : `() => ${value}`;
 }
 
@@ -1248,14 +1367,16 @@ function once(value: string): string {
  * of `name`, `name_1`… that the code around it does not read, so it captures nothing.
  */
 export function locals<const K extends string>(
-	reads: readonly string[],
-	bases: readonly K[],
+	reads: ReadonlyArray<string>,
+	bases: ReadonlyArray<K>,
 ): Record<K, string> {
 	const taken = new Set(reads.flatMap((code) => code.match(/[A-Za-z_$][\w$]*/g) ?? []));
 	const result = {} as Record<K, string>;
 	for (const base of bases) {
 		let local: string = base;
-		for (let suffix = 1; taken.has(local); suffix++) local = `${base}_${suffix}`;
+		for (let suffix = 1; taken.has(local); suffix++) {
+			local = `${base}_${suffix}`;
+		}
 		taken.add(local);
 		result[base] = local;
 	}

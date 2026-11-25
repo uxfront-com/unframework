@@ -19,9 +19,9 @@ export interface CssDeclaration {
 export interface ParsedDeclarations {
 	source: string;
 	/** The declarations, in source order; empty ones (`;;`) are not listed. */
-	declarations: CssDeclaration[];
+	declarations: Array<CssDeclaration>;
 	/** Syntax errors: lightningcss's, and declarations without a property or a colon. */
-	errors: { message: string; span: Span }[];
+	errors: Array<{ message: string; span: Span }>;
 }
 
 const encoder = new TextEncoder();
@@ -33,8 +33,8 @@ const encoder = new TextEncoder();
  * lightningcss checks the syntax. Spans are UTF-16 offsets into `source`. Never throws.
  */
 export function parseDeclarations(source: string): ParsedDeclarations {
-	const declarations: CssDeclaration[] = [];
-	const errors: { message: string; span: Span }[] = [];
+	const declarations: Array<CssDeclaration> = [];
+	const errors: Array<{ message: string; span: Span }> = [];
 	for (const chunk of split(source, ";")) {
 		const colon = split(source.slice(chunk.start, chunk.end), ":")[0]!;
 		const before = trim(source, { start: chunk.start, end: chunk.start + colon.end });
@@ -74,16 +74,19 @@ export function parseDeclarations(source: string): ParsedDeclarations {
  * The ranges of `text` between the `separator`s that are outside strings, comments and
  * brackets: CSS's own nesting, so a `;` in `url("a;b")` does not end a declaration.
  */
-function split(text: string, separator: string): Span[] {
-	const ranges: Span[] = [];
-	const closing: string[] = [];
+function split(text: string, separator: string): Array<Span> {
+	const ranges: Array<Span> = [];
+	const closing: Array<string> = [];
 	let quote: string | undefined;
 	let start = 0;
 	for (let index = 0; index < text.length; index++) {
 		const character = text[index]!;
 		if (quote) {
-			if (character === "\\") index++;
-			else if (character === quote) quote = undefined;
+			if (character === "\\") {
+				index++;
+			} else if (character === quote) {
+				quote = undefined;
+			}
 		} else if (character === "\\") {
 			index++;
 		} else if (character === '"' || character === "'") {
@@ -108,7 +111,9 @@ function split(text: string, separator: string): Span[] {
 function trim(text: string, range: Span): Span {
 	let { start, end } = range;
 	for (;;) {
-		while (start < end && /\s/.test(text[start]!)) start++;
+		while (start < end && /\s/.test(text[start]!)) {
+			start++;
+		}
 		if (text.startsWith("/*", start)) {
 			const close = text.indexOf("*/", start + 2);
 			if (close !== -1 && close + 2 <= end) {
@@ -119,7 +124,9 @@ function trim(text: string, range: Span): Span {
 		break;
 	}
 	for (;;) {
-		while (end > start && /\s/.test(text[end - 1]!)) end--;
+		while (end > start && /\s/.test(text[end - 1]!)) {
+			end--;
+		}
 		if (text.endsWith("*/", end) && end - 2 >= start) {
 			const open = text.lastIndexOf("/*", end - 3);
 			if (open >= start) {

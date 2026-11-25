@@ -47,14 +47,16 @@ const FILES: Record<string, string> = {
 	"src/types.ts": TYPES,
 };
 
-let roots: string[] = [];
+let roots: Array<string> = [];
 
 function createRoot(files: Record<string, string>): string {
 	const here = fileURLToPath(new URL("..", import.meta.url));
 	mkdirSync(join(here, ".uf-tmp"), { recursive: true });
 	const root = realpathSync(mkdtempSync(join(here, ".uf-tmp", "hot-")));
 	roots.push(root);
-	for (const [path, contents] of Object.entries(files)) write(root, path, contents);
+	for (const [path, contents] of Object.entries(files)) {
+		write(root, path, contents);
+	}
 	return root;
 }
 
@@ -65,7 +67,9 @@ function write(root: string, path: string, contents: string): void {
 }
 
 afterEach(() => {
-	for (const root of roots) rmSync(root, { recursive: true, force: true });
+	for (const root of roots) {
+		rmSync(root, { recursive: true, force: true });
+	}
 	roots = [];
 });
 
@@ -73,9 +77,9 @@ afterEach(() => {
 interface HotServer {
 	server: ViteDevServer;
 	/** What the server sent the client since the last {@link HotServer.edit}. */
-	sent: HotPayload[];
+	sent: Array<HotPayload>;
 	/** The modules the unframework plugin left in the ssr environment's list, by id. */
-	ssrModules: string[];
+	ssrModules: Array<string>;
 	/** How many compiles the project has run, from a compiler plugin that sees every one. */
 	compiles(): number;
 	/** Runs an edit and resolves once Vite has finished the hot update it causes. */
@@ -95,7 +99,7 @@ async function startHot(
 	let compiles = 0;
 	const counter: CompilerPlugin = { name: "count", output: () => void (compiles += 1) };
 	const framework = await toolchain.vite(mode, { root, toolchainDir: root });
-	const ssrModules: string[] = [];
+	const ssrModules: Array<string> = [];
 	const probe: Plugin = {
 		name: "probe",
 		enforce: "post",
@@ -128,7 +132,11 @@ async function startHot(
 			async hotUpdateEnvironments(viteServer, hmr) {
 				await Promise.all(Object.values(viteServer.environments).map((each) => hmr(each)));
 				inFlight -= 1;
-				if (inFlight === 0) for (const file of started) settle?.(file);
+				if (inFlight === 0) {
+					for (const file of started) {
+						settle?.(file);
+					}
+				}
 			},
 		},
 		optimizeDeps: { noDiscovery: true, include: [] },
@@ -149,7 +157,7 @@ async function startHot(
 	// directory before it starts polling it, so a file created between the two is in neither: the
 	// read missed it, and the poll's first look already includes it. Rewriting that file never
 	// changes its directory again, so each attempt creates a new file, which does.
-	const sentinels: string[] = [];
+	const sentinels: Array<string> = [];
 	await vi.waitFor(() => {
 		const sentinel = `src/.watching-${sentinels.length}`;
 		write(root, sentinel, "");
@@ -159,10 +167,12 @@ async function startHot(
 	const client = server.environments.client;
 	// The environment the page's modules load in: Qwik and Astro render on the server.
 	const environment = mode === "ssr" ? server.environments.ssr : client;
-	const sent: HotPayload[] = [];
+	const sent: Array<HotPayload> = [];
 	const send = client.hot.send.bind(client.hot);
 	vi.spyOn(client.hot, "send").mockImplementation((...args: Parameters<typeof send>) => {
-		if (typeof args[0] === "object") sent.push(args[0]);
+		if (typeof args[0] === "object") {
+			sent.push(args[0]);
+		}
 		send(...args);
 	});
 	return {
@@ -173,7 +183,9 @@ async function startHot(
 		edit: async (path, change) => {
 			const wanted = join(root, path);
 			const elapsed = performance.now() - (reported.get(wanted) ?? Number.NEGATIVE_INFINITY);
-			if (elapsed <= CHANGE_THROTTLE) await delay(CHANGE_THROTTLE - elapsed + 1);
+			if (elapsed <= CHANGE_THROTTLE) {
+				await delay(CHANGE_THROTTLE - elapsed + 1);
+			}
 			sent.length = 0;
 			ssrModules.length = 0;
 			started.clear();
@@ -184,7 +196,9 @@ async function startHot(
 					HOT.timeout,
 				);
 				settle = (file) => {
-					if (file === wanted) resolve();
+					if (file === wanted) {
+						resolve();
+					}
 				};
 			});
 			try {
@@ -197,7 +211,9 @@ async function startHot(
 		fetchAll: async () => {
 			const seen = new Map<string, string>();
 			const visit = async (url: string): Promise<void> => {
-				if (seen.has(url)) return;
+				if (seen.has(url)) {
+					return;
+				}
 				const result = await environment.transformRequest(url);
 				seen.set(url, result?.code ?? "");
 				// Only the imports its code names: a watch edge is in the graph, but no browser asks for it.
@@ -205,7 +221,9 @@ async function startHot(
 					/(?:from|import|__vite_ssr_import__\()\s*"([^"]+)"/g,
 				) ?? []) {
 					const plain = imported!.replace(/\bt=\d+&?/, "").replace(/[?&]$/, "");
-					if (plain.startsWith("/") && !/node_modules|^\/@/.test(plain)) await visit(plain);
+					if (plain.startsWith("/") && !/node_modules|^\/@/.test(plain)) {
+						await visit(plain);
+					}
 				}
 			};
 			await visit("/main.ts");
@@ -215,12 +233,14 @@ async function startHot(
 	};
 }
 
-const updates = (sent: readonly HotPayload[]) =>
+const updates = (sent: ReadonlyArray<HotPayload>) =>
 	sent.flatMap((payload) => (payload.type === "update" ? payload.updates.map((u) => u.path) : []));
 
 const contentsOf = (modules: ReadonlyMap<string, string>, part: string): string => {
 	const entry = [...modules].find(([url]) => url.includes(part));
-	if (!entry) throw new Error(`no fetched module holds ${part}: ${[...modules.keys()].join(", ")}`);
+	if (!entry) {
+		throw new Error(`no fetched module holds ${part}: ${[...modules.keys()].join(", ")}`);
+	}
 	return entry[1];
 };
 
@@ -235,7 +255,7 @@ const solidWithHmr: Toolchain = {
 //
 // plugin-vue tracks the type files its own compiler read, and updates what imports them whatever
 // changed there. That is Vue's own HMR: the project still compiles nothing.
-const HMR_TARGETS: [TargetName, Toolchain, string, string, string[]][] = [
+const HMR_TARGETS: Array<[TargetName, Toolchain, string, string, Array<string>]> = [
 	["react", react, "", "Card.uf.tsx", []],
 	["vue", vue, ".vue", "Card.uf.tsx.vue", ["/src/Card.uf.tsx.vue"]],
 	["svelte", svelte, ".svelte", "Card.uf.tsx.css", []],
@@ -485,7 +505,9 @@ describe("what a change reaches", () => {
 		const parent = realpathSync(mkdtempSync(join(here, ".uf-tmp", "hot-")));
 		roots.push(parent);
 		const root = join(parent, "R&D app");
-		for (const [path, contents] of Object.entries(FILES)) write(root, path, contents);
+		for (const [path, contents] of Object.entries(FILES)) {
+			write(root, path, contents);
+		}
 		const hot = await startHot(root, "vue", vue);
 		try {
 			await hot.fetchAll();
@@ -543,7 +565,7 @@ describe("transformSource", () => {
 					'import Card from "./src/Card.uf.tsx";\nimport Other from "./src/Other.uf.tsx";\n\nexport { Card, Other };\n',
 				"src/Other.uf.tsx": "export default function Other() {\n  return <p>Other Hello</p>;\n}\n",
 			});
-			const calls: string[] = [];
+			const calls: Array<string> = [];
 			const hot = await startHot(root, "vue", vue, "browser", (file, source) => {
 				calls.push(file);
 				return file.endsWith("/src/Card.uf.tsx")
@@ -611,7 +633,9 @@ describe("a framework with no hot update of its own", () => {
 			const seen = new Map<string, string>();
 			const visit = async (url: string): Promise<void> => {
 				const plain = url.replace(/\bt=\d+&?/, "").replace(/[?&]$/, "");
-				if (seen.has(plain)) return;
+				if (seen.has(plain)) {
+					return;
+				}
 				seen.set(plain, "");
 				const result = await client.transformRequest(plain);
 				seen.set(plain, result?.code ?? "");
@@ -619,14 +643,16 @@ describe("a framework with no hot update of its own", () => {
 					[]) {
 					const resolved = new URL(imported!, `http://host${plain}`);
 					const next = `${resolved.pathname}${resolved.search}`;
-					if (!/node_modules|^\/@/.test(next)) await visit(next);
+					if (!/node_modules|^\/@/.test(next)) {
+						await visit(next);
+					}
 				}
 			};
 			await visit("/src/Card.uf.tsx");
 			return [...seen.values()].join("\n");
 		};
 
-		const reloads = (sent: readonly HotPayload[]) =>
+		const reloads = (sent: ReadonlyArray<HotPayload>) =>
 			sent.filter((payload) => payload.type === "full-reload").length;
 
 		it(

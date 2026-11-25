@@ -13,7 +13,9 @@ const SVG = "http://www.w3.org/2000/svg";
 
 /** A read element without the live state of its form controls, as {@link domOf} describes it. */
 function withoutState(node: unknown): unknown {
-	return JSON.parse(JSON.stringify(node, (key, value) => (key === "state" ? undefined : value)));
+	return JSON.parse(
+		JSON.stringify(node, (key, value: unknown) => (key === "state" ? undefined : value)),
+	);
 }
 
 describe("buildDom", () => {
@@ -180,7 +182,7 @@ describe("readDom", () => {
 });
 
 /** The properties some read nodes' `style` attributes declare, element by element. */
-function declaredProperties(nodes: readonly DomNode[]): string[] {
+function declaredProperties(nodes: ReadonlyArray<DomNode>): Array<string> {
 	return [...elementsOf(nodes)].flatMap((element) =>
 		element.attributes.style === undefined
 			? []
@@ -189,9 +191,11 @@ function declaredProperties(nodes: readonly DomNode[]): string[] {
 }
 
 /** Every element of some read nodes, outermost first. */
-function* elementsOf(nodes: readonly DomNode[]): Generator<Exclude<DomNode, string>> {
+function* elementsOf(nodes: ReadonlyArray<DomNode>): Generator<Exclude<DomNode, string>> {
 	for (const node of nodes) {
-		if (typeof node === "string") continue;
+		if (typeof node === "string") {
+			continue;
+		}
 		yield node;
 		yield* elementsOf(node.children);
 	}

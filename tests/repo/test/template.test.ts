@@ -9,17 +9,21 @@ import { packages, root } from "./workspace.ts";
 interface PackageFiles {
 	directory: string;
 	read(path: string): string | undefined;
-	list(path: string): string[];
+	list(path: string): Array<string>;
 }
 
 /** The rules of the package template (plan §5.2); returns the problems found. */
-function checkPackage(pkg: PackageFiles): string[] {
-	const problems: string[] = [];
+function checkPackage(pkg: PackageFiles): Array<string> {
+	const problems: Array<string> = [];
 	const raw = pkg.read("package.json");
-	if (!raw) return ["has no package.json"];
+	if (!raw) {
+		return ["has no package.json"];
+	}
 	const manifest = JSON.parse(raw);
 	const expect = (condition: unknown, problem: string) => {
-		if (!condition) problems.push(problem);
+		if (!condition) {
+			problems.push(problem);
+		}
 	};
 
 	expect(manifest.type === "module", "is not an ES module package");
@@ -29,7 +33,7 @@ function checkPackage(pkg: PackageFiles): string[] {
 		manifest.repository?.directory === `packages/${pkg.directory}`,
 		"has a wrong repository.directory",
 	);
-	expect(manifest.files?.includes("dist"), "does not publish dist");
+	expect((manifest.files as Array<string> | undefined)?.includes("dist"), "does not publish dist");
 	expect(manifest.publishConfig?.access === "public", "has no public publishConfig");
 
 	const exportsMap: Record<string, unknown> = manifest.exports ?? {};
@@ -40,8 +44,9 @@ function checkPackage(pkg: PackageFiles): string[] {
 		"publishes different subpaths than it exports in the workspace",
 	);
 	for (const [subpath, target] of Object.entries(exportsMap)) {
-		if (subpath === "./package.json" || (typeof target === "string" && target.endsWith(".json")))
+		if (subpath === "./package.json" || (typeof target === "string" && target.endsWith(".json"))) {
 			continue;
+		}
 		expect(
 			typeof target === "string" && /^\.\/src\/.+\.tsx?$/.test(target),
 			`exports ${subpath} from somewhere other than src`,
@@ -58,7 +63,10 @@ function checkPackage(pkg: PackageFiles): string[] {
 
 	expect(manifest.scripts?.build === "tsdown", "does not build with tsdown");
 	expect(manifest.scripts?.["check-types"], "has no check-types script");
-	expect(manifest.scripts?.test?.startsWith("vitest run"), "does not test with vitest run");
+	expect(
+		(manifest.scripts as { test?: string } | undefined)?.test?.startsWith("vitest run"),
+		"does not test with vitest run",
+	);
 
 	const tsconfig = pkg.read("tsconfig.json");
 	expect(

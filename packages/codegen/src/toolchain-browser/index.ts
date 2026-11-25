@@ -12,17 +12,23 @@ export function assertSerialisableProps(
 	props: Readonly<Record<string, unknown>>,
 	why: string,
 ): void {
-	for (const [key, value] of Object.entries(props)) assertJsonValue(value, key, why);
+	for (const [key, value] of Object.entries(props)) {
+		assertJsonValue(value, key, why);
+	}
 }
 
 function assertJsonValue(value: unknown, path: string, why: string): void {
-	if (value === null || value === undefined) return;
+	if (value === null || value === undefined) {
+		return;
+	}
 	switch (typeof value) {
 		case "string":
 		case "boolean":
 			return;
 		case "number":
-			if (Number.isFinite(value)) return;
+			if (Number.isFinite(value)) {
+				return;
+			}
 			break;
 		case "object": {
 			if (Array.isArray(value)) {
@@ -38,12 +44,18 @@ function assertJsonValue(value: unknown, path: string, why: string): void {
 			}
 			break;
 		}
+		default:
+			break;
 	}
 	throw new TypeError(`${why}, so props must be JSON values; \`${path}\` is ${describe(value)}.`);
 }
 
 function describe(value: unknown): string {
-	if (typeof value === "number") return String(value);
-	if (typeof value === "object" && value !== null) return `a ${value.constructor.name} instance`;
+	if (typeof value === "number") {
+		return String(value);
+	}
+	if (typeof value === "object" && value !== null) {
+		return `a ${value.constructor.name} instance`;
+	}
 	return `a ${typeof value}`;
 }

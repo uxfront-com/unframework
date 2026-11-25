@@ -53,12 +53,12 @@ function setupOwner(composable: UfComposable): UfComponent {
  * primitive is a `shallowRef`, `watchEffect` is `watchPostEffect`), its parameters as written,
  * since Vue reads a getter and calls a callback as the source does.
  */
-export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+export function emitComposable(composable: UfComposable, context: EmitContext): Array<OutputFile> {
 	const { module } = context;
 	const owner = setupOwner(composable);
 	// The types its parameters and type parameters name, which its IR as a setup owner holds no
 	// trace of (ADR-0067).
-	const parameterTexts: TypeText[] = [
+	const parameterTexts: Array<TypeText> = [
 		...composable.parameters.map(({ type }) => type),
 		...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
 			[constraint, fallback].filter((type): type is TypeText => type !== undefined),
@@ -69,7 +69,7 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
 	const imports = new ImportSet(names.scope);
 	const rules = names.scriptRules(() => imports.add("vue", "nextTick"));
 	const reads = moduleBindings(owner, module, imports, names);
-	const statements: Statement[] = composable.setup.map((item) => {
+	const statements: Array<Statement> = composable.setup.map((item) => {
 		const code = names.ownQueries(itemCode(item, owner, module, names, imports, rules));
 		return { code, layout: itemLayout(item, code) };
 	});
@@ -87,7 +87,9 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
 	});
 	// What its setup prints names, beside its parameters' and its constants' types.
 	const read = liveTypeNames(owner, module, { client: true });
-	for (const name of [...parameterTypes, ...reads.typeNames]) read.add(name);
+	for (const name of [...parameterTypes, ...reads.typeNames]) {
+		read.add(name);
+	}
 	addReadTypeImports(module, imports, read);
 	const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
 	const body = laidOut(statements).replaceAll("\n", "\n  ");
@@ -118,12 +120,12 @@ export function declarationCode(
 /** What a component or a composable reads of its module (ADR-0070). */
 export interface ModuleReads {
 	/** The constants it declares, in source order, each as written but for a renamed name. */
-	constants: string[];
+	constants: Array<string>;
 	/**
 	 * The module's type declarations its constants name, transitively, that its own types leave
 	 * out, to declare beside them.
 	 */
-	types: TypeDeclaration[];
+	types: Array<TypeDeclaration>;
 	/** The type names its constants and those declarations name, which its output imports. */
 	typeNames: Set<string>;
 }
@@ -146,10 +148,15 @@ export function moduleBindings(
 	const constants = module.constants ?? [];
 	for (const entry of module.moduleImports ?? []) {
 		for (const name of entry.names) {
-			if (!reached.has(name.local)) continue;
+			if (!reached.has(name.local)) {
+				continue;
+			}
 			const local = names.moduleLocal(name.local);
-			if (name.imported === "default") imports.addDefault(entry.specifier, local, { exact: true });
-			else imports.add(entry.specifier, name.imported, { local, exact: true });
+			if (name.imported === "default") {
+				imports.addDefault(entry.specifier, local, { exact: true });
+			} else {
+				imports.add(entry.specifier, name.imported, { local, exact: true });
+			}
 		}
 	}
 	const declared = constants.filter((constant) => reached.has(constant.name));
@@ -173,9 +180,17 @@ export function constantTypes(
 ): Pick<ModuleReads, "types" | "typeNames"> {
 	const read = new Set<string>();
 	for (const constant of module.constants ?? []) {
-		if (!reached.has(constant.name)) continue;
-		if (constant.type) for (const name of typeNames(constant.type)) read.add(name);
-		for (const name of codeNames(constant.value.code)) read.add(name);
+		if (!reached.has(constant.name)) {
+			continue;
+		}
+		if (constant.type) {
+			for (const name of typeNames(constant.type)) {
+				read.add(name);
+			}
+		}
+		for (const name of codeNames(constant.value.code)) {
+			read.add(name);
+		}
 	}
 	// The module's declarations those names reach, and the names they read in turn.
 	const own = new Set(owner.types);
@@ -183,10 +198,16 @@ export function constantTypes(
 	for (let size = -1; size !== types.size;) {
 		size = types.size;
 		for (const declaration of module.types) {
-			if (own.has(declaration.name) || types.has(declaration.name)) continue;
-			if (!read.has(declaration.name)) continue;
+			if (own.has(declaration.name) || types.has(declaration.name)) {
+				continue;
+			}
+			if (!read.has(declaration.name)) {
+				continue;
+			}
 			types.set(declaration.name, declaration);
-			for (const name of codeNames(declaration.code, "statements")) read.add(name);
+			for (const name of codeNames(declaration.code, "statements")) {
+				read.add(name);
+			}
 		}
 	}
 	return {
@@ -203,7 +224,9 @@ export function addReadTypeImports(
 ): void {
 	for (const entry of module.typeImports ?? []) {
 		for (const name of entry.names) {
-			if (!read.has(name.local)) continue;
+			if (!read.has(name.local)) {
+				continue;
+			}
 			const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.vue`);
 			imports.add(specifier, name.imported, { type: true, local: name.local, exact: true });
 		}
@@ -216,13 +239,17 @@ export function addReadTypeImports(
  */
 function renamed(value: Code, names: VueNames): string {
 	// Its references, and the roots of the `typeof`s in it (`as typeof step`), which are none.
-	const edits: { start: number; end: number; text: string }[] = [];
+	const edits: Array<{ start: number; end: number; text: string }> = [];
 	let shorthand: ReadonlySet<number> | undefined;
 	for (const reference of value.refs) {
-		if (reference.kind !== "Binding") continue;
+		if (reference.kind !== "Binding") {
+			continue;
+		}
 		const name = nameOf(reference.binding);
 		const local = names.moduleLocal(name);
-		if (local === name) continue;
+		if (local === name) {
+			continue;
+		}
 		const start = reference.span.start - value.span.start;
 		shorthand ??= shorthandValues(value.code);
 		const key = reference.shorthand || shorthand.has(start) ? `${name}: ` : "";
@@ -230,7 +257,9 @@ function renamed(value: Code, names: VueNames): string {
 	}
 	for (const { name, start, end } of typeQueries(value.code, "expression")) {
 		const local = names.moduleLocal(name);
-		if (local !== name) edits.push({ start, end, text: local });
+		if (local !== name) {
+			edits.push({ start, end, text: local });
+		}
 	}
 	let written = "";
 	let last = 0;
@@ -249,10 +278,14 @@ function shorthandValues(code: string): Set<number> {
 	const found = new Set<number>();
 	const visit = (node: unknown): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
-		if (!node || typeof node !== "object") return;
+		if (!node || typeof node !== "object") {
+			return;
+		}
 		const each = node as { type?: unknown; shorthand?: unknown; value?: { start?: unknown } };
 		if (
 			each.type === "Property" &&
@@ -261,7 +294,11 @@ function shorthandValues(code: string): Set<number> {
 		) {
 			found.add(each.value.start);
 		}
-		for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value);
+		for (const [key, value] of Object.entries(node)) {
+			if (key !== "parent") {
+				visit(value);
+			}
+		}
 	};
 	visit(parseExpressionSource(code).expression);
 	return found;

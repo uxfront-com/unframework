@@ -55,7 +55,9 @@ export function reviveReactivity(): void {
  */
 export async function settle(): Promise<void> {
 	flush();
-	await new Promise<void>((resolve) => queueMicrotask(resolve));
+	await new Promise<void>((resolve) => {
+		queueMicrotask(resolve);
+	});
 	flush();
 }
 
@@ -79,12 +81,18 @@ export function reactiveProps(initial: Record<string, unknown>): {
 		}
 		return signal;
 	};
-	const [keys, setKeys] = createSignal<readonly string[]>([], {
+	const [keys, setKeys] = createSignal<ReadonlyArray<string>>([], {
 		equals: (a, b) => a.length === b.length && a.every((key, index) => key === b[index]),
 	});
 	const assign = (next: Record<string, unknown>) => {
-		for (const key of values.keys()) if (!Object.hasOwn(next, key)) entry(key)[1](undefined);
-		for (const [key, value] of Object.entries(next)) entry(key)[1](value);
+		for (const key of values.keys()) {
+			if (!Object.hasOwn(next, key)) {
+				entry(key)[1](undefined);
+			}
+		}
+		for (const [key, value] of Object.entries(next)) {
+			entry(key)[1](value);
+		}
 		setKeys(Object.keys(next));
 		flush();
 	};

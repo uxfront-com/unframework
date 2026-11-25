@@ -18,11 +18,11 @@ async function fixture(name: string): Promise<unknown> {
 	return component;
 }
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 /** Every emit, in order, as `[event, ...payload]`. */
-let events: unknown[][] = [];
+let events: Array<Array<unknown>> = [];
 
 beforeEach(() => {
 	logged.length = 0;
@@ -41,14 +41,14 @@ afterEach(async () => {
 });
 
 /** Listeners that record every one of `names`' emits. */
-function listeners(...names: string[]) {
+function listeners(...names: Array<string>) {
 	return Object.fromEntries(
-		names.map((name) => [name, (...args: unknown[]) => void events.push([name, ...args])]),
+		names.map((name) => [name, (...args: Array<unknown>) => void events.push([name, ...args])]),
 	);
 }
 
 /** The emits since the last call, and clears them. */
-function drain(): unknown[][] {
+function drain(): Array<Array<unknown>> {
 	const drained = events;
 	events = [];
 	return drained;
@@ -176,7 +176,10 @@ it("keeps the DOM's order, phases and options for every listener", async () => {
 });
 
 /** Waits for timers and promise continuations the component started. */
-const tasks = () => new Promise((resolve) => setTimeout(resolve, 20));
+const tasks = () =>
+	new Promise((resolve) => {
+		setTimeout(resolve, 20);
+	});
 
 it("coalesces each synchronous run where it runs, and runs a post watcher after a pre watcher's render", async () => {
 	mounted = await mount(await fixture("Runs"), container, {
@@ -420,7 +423,9 @@ it("runs lifecycle hooks in the browser, empties a template ref with its element
 	await mounted.unmount();
 	mounted = undefined;
 	drain();
-	await new Promise((resolve) => setTimeout(resolve, 100));
+	await new Promise((resolve) => {
+		setTimeout(resolve, 100);
+	});
 	expect(events).toEqual([]);
 	expect(logged).toEqual([]);
 });

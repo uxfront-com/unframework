@@ -54,7 +54,7 @@ afterEach(() => {
 
 /** What Astro's logger prints at `warn` and below goes to stdout, so a test reads it from there. */
 const captureOutput = () => {
-	const printed: string[] = [];
+	const printed: Array<string> = [];
 	vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
 		printed.push(String(chunk));
 		return true;
@@ -64,7 +64,7 @@ const captureOutput = () => {
 
 /** What Astro's logger prints at `error` goes to stderr. */
 const captureErrors = () => {
-	const printed: string[] = [];
+	const printed: Array<string> = [];
 	vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
 		printed.push(String(chunk));
 		return true;
@@ -214,7 +214,7 @@ describe("the Astro integration", () => {
 	it(
 		"hands its options to the plugin",
 		async () => {
-			const compiled: string[] = [];
+			const compiled: Array<string> = [];
 			await build(
 				configOf("options", {
 					integrations: [

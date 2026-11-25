@@ -46,7 +46,7 @@ export type DomNode = string | DomElement;
 export interface DomElement {
 	tag: string;
 	attributes: Record<string, string>;
-	children: DomNode[];
+	children: Array<DomNode>;
 	/**
 	 * A live form control's state (`value`, `checked`, `selected`), which renderers may set as
 	 * DOM properties rather than attributes. Only a live DOM has it (./render-parity-client.ts).
@@ -117,7 +117,7 @@ export interface LoweredCase {
  */
 export interface ParitySuite {
 	title: string;
-	cases: readonly ParityCase[];
+	cases: ReadonlyArray<ParityCase>;
 	root?: SuiteRoot;
 	form?: "destructured" | "object";
 }
@@ -131,7 +131,7 @@ const at = { start: 0, end: 0 };
 export function el(
 	tag: string,
 	attributes: Record<string, string | true> = {},
-	...children: (RenderNode | string)[]
+	...children: Array<RenderNode | string>
 ): ElementNode {
 	return createElement(
 		tag,
@@ -180,7 +180,7 @@ const ZERO_WIDTH = ["\u200b", "\u200c", "\u200d", "\u2060", "\u00ad", "\u180e"];
  * zero-width characters and line separators, entity look-alikes, delimiters, carriage returns,
  * lines long enough for a formatter to wrap, and the attributes renderers set as properties.
  */
-export const TRICKY_CASES: readonly StaticCase[] = [
+export const TRICKY_CASES: ReadonlyArray<StaticCase> = [
 	{ name: "runs of spaces", render: el("p", {}, "a  b   c") },
 	// A form feed, which HTML keeps; not a vertical tab, which it does not (the IR holds none).
 	{ name: "tabs and line breaks", render: el("p", {}, "a\tb\nc\n\nd\fe\t\tf") },
@@ -508,7 +508,7 @@ export const TRICKY_CASES: readonly StaticCase[] = [
  * attributes into JavaScript template literals, which do the same. JSX can only write one as
  * `&#13;`.
  */
-export const CARRIAGE_RETURN_CASES: readonly StaticCase[] = [
+export const CARRIAGE_RETURN_CASES: ReadonlyArray<StaticCase> = [
 	{ name: "carriage returns in text", render: el("p", {}, "a\rb\r\nc") },
 	{ name: "carriage returns in preformatted text", render: el("pre", {}, "a\rb\r\nc") },
 	{
@@ -525,12 +525,12 @@ export function random(seed: number): () => number {
 		let t = state;
 		t = Math.imul(t ^ (t >>> 15), t | 1);
 		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
 	};
 }
 
 /** The pieces random text is made of: the characters and sequences printers must guard. */
-export const TEXT_PIECES: readonly string[] = [
+export const TEXT_PIECES: ReadonlyArray<string> = [
 	"a",
 	"b",
 	"word",
@@ -585,9 +585,11 @@ const FIXED_VALUE_TYPES = [...FIXED_VALUE_INPUT_TYPES];
  * M0 (JSX trims a raw one, and `&#10;` is UF3009); M1's expressions can (`{"\nx"}`), and must
  * report it until every target renders it.
  */
-function withoutLeadingLineFeed(children: RenderNode[]): RenderNode[] {
+function withoutLeadingLineFeed(children: Array<RenderNode>): Array<RenderNode> {
 	const [first, ...rest] = children;
-	if (first?.kind !== "Text" || !first.value.startsWith("\n")) return children;
+	if (first?.kind !== "Text" || !first.value.startsWith("\n")) {
+		return children;
+	}
 	const value = first.value.replace(/^\n+/, "");
 	return value ? [createText(value, at), ...rest] : rest;
 }
@@ -609,7 +611,7 @@ interface Context {
  */
 export function fuzzCase(seed: number): StaticCase {
 	const next = random(seed);
-	const pick = <T>(items: readonly T[]): T => items[Math.floor(next() * items.length)]!;
+	const pick = <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!;
 	const chance = (probability: number) => next() < probability;
 	const text = () =>
 		Array.from({ length: 1 + Math.floor(next() * 4) }, () => pick(TEXT_PIECES)).join("");
@@ -620,7 +622,9 @@ export function fuzzCase(seed: number): StaticCase {
 		const long = chance(0.1);
 		const attributes: Record<string, string | true> = {};
 		const add = (probability: number, name: string, value: () => string | true) => {
-			if (chance(long ? 0.7 : probability)) attributes[name] = value();
+			if (chance(long ? 0.7 : probability)) {
+				attributes[name] = value();
+			}
 		};
 		const longText = () => (long ? `${text()} and some words to make it long ${text()}` : text());
 		add(0.3, "title", longText);
@@ -723,8 +727,8 @@ export function fuzzCase(seed: number): StaticCase {
 	}
 
 	/** Text and elements in a random order, never two texts in a row. */
-	function mixed(allowed: readonly string[], context: Context, max: number): RenderNode[] {
-		const children: RenderNode[] = [];
+	function mixed(allowed: ReadonlyArray<string>, context: Context, max: number): Array<RenderNode> {
+		const children: Array<RenderNode> = [];
 		const count = Math.floor(next() * (context.depth >= 3 ? 2 : max + 1));
 		const candidates = allowed.filter((tag) => !(context.interactive && INTERACTIVE.has(tag)));
 		for (let index = 0; index < count; index++) {
@@ -747,7 +751,7 @@ export function fuzzCase(seed: number): StaticCase {
 	const repeat = (min: number, max: number, child: () => ElementNode) =>
 		Array.from({ length: min + Math.floor(next() * (max - min + 1)) }, child);
 
-	function content(tag: string, context: Context): RenderNode[] {
+	function content(tag: string, context: Context): Array<RenderNode> {
 		const deeper = { ...context, depth: context.depth + 1 };
 		switch (tag) {
 			case "div":
@@ -807,12 +811,12 @@ export function fuzzCase(seed: number): StaticCase {
 }
 
 /** The seeded random trees every target renders: the same seeds everywhere, so a failure reproduces. */
-export const FUZZ_CASES: readonly StaticCase[] = Array.from({ length: 80 }, (_, index) =>
+export const FUZZ_CASES: ReadonlyArray<StaticCase> = Array.from({ length: 80 }, (_, index) =>
 	fuzzCase(index + 1),
 );
 
 /** The M0 suites every target's render-parity tests run, besides the attribute sweeps and M1's. */
-export const PARITY_SUITES: readonly ParitySuite[] = [
+export const PARITY_SUITES: ReadonlyArray<ParitySuite> = [
 	{ title: "the tricky cases", cases: TRICKY_CASES },
 	{ title: "seeded random trees", cases: FUZZ_CASES },
 	{ title: "carriage returns", cases: CARRIAGE_RETURN_CASES },
@@ -824,7 +828,9 @@ export const PARITY_SUITES: readonly ParitySuite[] = [
  */
 export function expectedTree(parityCase: ParityCase): ElementNode | FragmentNode {
 	const { lowered } = parityCase;
-	if (!lowered) return parityCase.render;
+	if (!lowered) {
+		return parityCase.render;
+	}
 	let tree = expectedTrees.get(parityCase);
 	if (!tree) {
 		tree = instantiate(lowered.component, lowered.props);
@@ -836,18 +842,24 @@ export function expectedTree(parityCase: ParityCase): ElementNode | FragmentNode
 const expectedTrees = new WeakMap<ParityCase, ElementNode | FragmentNode>();
 
 /** The DOM nodes a case renders: one element, or a root fragment's nodes. */
-export function expectedNodes(parityCase: ParityCase): DomNode[] {
+export function expectedNodes(parityCase: ParityCase): Array<DomNode> {
 	return domNodesOf(expectedTree(parityCase));
 }
 
 /** The DOM nodes a static tree describes: an element, or a fragment's nodes. */
-export function domNodesOf(tree: ElementNode | FragmentNode): DomNode[] {
-	if (tree.kind === "Element") return [domOf(tree)];
-	const nodes: DomNode[] = [];
+export function domNodesOf(tree: ElementNode | FragmentNode): Array<DomNode> {
+	if (tree.kind === "Element") {
+		return [domOf(tree)];
+	}
+	const nodes: Array<DomNode> = [];
 	for (const child of tree.children) {
-		if (child.kind === "Element") nodes.push(domOf(child));
-		else if (child.kind === "Text") pushText(nodes, child.value);
-		else throw new Error(`a ${child.kind} node is not static`);
+		if (child.kind === "Element") {
+			nodes.push(domOf(child));
+		} else if (child.kind === "Text") {
+			pushText(nodes, child.value);
+		} else {
+			throw new Error(`a ${child.kind} node is not static`);
+		}
 	}
 	return nodes;
 }
@@ -862,16 +874,24 @@ export function domOf(node: ElementNode, parent: Namespace = "html"): DomElement
 	const namespace = elementNamespace(node.tag, parent);
 	const attributes: Record<string, string> = {};
 	for (const attribute of node.attributes) {
-		if (attribute.kind !== "Static") throw new Error(`a ${attribute.kind} attribute is not static`);
+		if (attribute.kind !== "Static") {
+			throw new Error(`a ${attribute.kind} attribute is not static`);
+		}
 		const name = namespace === "html" ? attribute.name.toLowerCase() : attribute.name;
 		const value = comparableValue(name, attribute.value === true ? "" : attribute.value, namespace);
-		if (value !== undefined) attributes[name] = value;
+		if (value !== undefined) {
+			attributes[name] = value;
+		}
 	}
-	const children: DomNode[] = [];
+	const children: Array<DomNode> = [];
 	for (const child of node.children) {
-		if (child.kind === "Element") children.push(domOf(child, namespace));
-		else if (child.kind === "Text") pushText(children, child.value);
-		else throw new Error(`a ${child.kind} node is not static`);
+		if (child.kind === "Element") {
+			children.push(domOf(child, namespace));
+		} else if (child.kind === "Text") {
+			pushText(children, child.value);
+		} else {
+			throw new Error(`a ${child.kind} node is not static`);
+		}
 	}
 	return { tag: node.tag, attributes, children };
 }
@@ -910,7 +930,9 @@ export function comparableValue(
 					.join(" ")
 			: undefined;
 	}
-	if (namespace !== "html") return value;
+	if (namespace !== "html") {
+		return value;
+	}
 	const enumerated = name === "hidden" && value.toLowerCase() === "until-found";
 	return isBooleanAttribute(name) && !enumerated ? "" : value;
 }
@@ -936,13 +958,15 @@ interface Declaration {
  * target renders the source's values and only their spacing differs. A chunk without a colon is
  * kept whole as a property with no value, so a broken declaration still differs.
  */
-export function styleDeclarations(text: string): Declaration[] {
-	const declarations: Declaration[] = [];
+export function styleDeclarations(text: string): Array<Declaration> {
+	const declarations: Array<Declaration> = [];
 	for (const chunk of splitTopLevel(text, ";")) {
 		const colon = splitTopLevel(chunk, ":", 2);
 		const property = collapseSpaces(colon[0]!);
 		if (colon.length < 2) {
-			if (property !== "") declarations.push({ property });
+			if (property !== "") {
+				declarations.push({ property });
+			}
 			continue;
 		}
 		declarations.push({
@@ -954,8 +978,8 @@ export function styleDeclarations(text: string): Declaration[] {
 }
 
 /** Splits text at top-level separators (outside strings, parentheses and comments). */
-function splitTopLevel(text: string, separator: string, limit = Infinity): string[] {
-	const parts: string[] = [];
+function splitTopLevel(text: string, separator: string, limit = Infinity): Array<string> {
+	const parts: Array<string> = [];
 	let current = "";
 	let quote = "";
 	let depth = 0;
@@ -965,7 +989,9 @@ function splitTopLevel(text: string, separator: string, limit = Infinity): strin
 			current += char + text[++index];
 		} else if (quote) {
 			current += char;
-			if (char === quote) quote = "";
+			if (char === quote) {
+				quote = "";
+			}
 		} else if (char === "/" && text[index + 1] === "*") {
 			const end = text.indexOf("*/", index + 2);
 			index = end < 0 ? text.length : end + 1;
@@ -974,9 +1000,13 @@ function splitTopLevel(text: string, separator: string, limit = Infinity): strin
 			parts.push(current);
 			current = "";
 		} else {
-			if (char === '"' || char === "'") quote = char;
-			else if (char === "(") depth++;
-			else if (char === ")" && depth > 0) depth--;
+			if (char === '"' || char === "'") {
+				quote = char;
+			} else if (char === "(") {
+				depth++;
+			} else if (char === ")" && depth > 0) {
+				depth--;
+			}
 			current += char;
 		}
 	}
@@ -986,7 +1016,7 @@ function splitTopLevel(text: string, separator: string, limit = Infinity): strin
 
 /** Collapses CSS whitespace (not U+00A0, which belongs to a value) to one space, and trims. */
 function collapseSpaces(text: string): string {
-	return text.replace(/[ \t\n\r\f]+/g, " ").trim();
+	return text.replaceAll(/[ \t\n\r\f]+/g, " ").trim();
 }
 
 /**
@@ -996,7 +1026,7 @@ function collapseSpaces(text: string): string {
  * never matters, and each target writes its own (an object's key order, the CSSOM's, Angular's
  * static declarations first).
  */
-function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
+function sortDeclarations(declarations: ReadonlyArray<Declaration>): Array<Declaration> {
 	const ordered = declarations.some((declaration, index) =>
 		declarations
 			.slice(index + 1)
@@ -1008,11 +1038,16 @@ function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
 }
 
 /** Appends text to a node list, merging it into a text node before it. */
-export function pushText(nodes: DomNode[], data: string): void {
-	if (data === "") return;
+export function pushText(nodes: Array<DomNode>, data: string): void {
+	if (data === "") {
+		return;
+	}
 	const last = nodes.length - 1;
-	if (typeof nodes[last] === "string") nodes[last] += data;
-	else nodes.push(data);
+	if (typeof nodes[last] === "string") {
+		nodes[last] += data;
+	} else {
+		nodes.push(data);
+	}
 }
 
 /** Options for {@link parseHtml}. */
@@ -1072,7 +1107,9 @@ function caseTable(names: string): ReadonlyMap<string, string> {
 /** A name as the HTML parser reads it in a namespace: lower case, then SVG's case restored. */
 export function parsedName(name: string, namespace: Namespace, table: "tag" | "attribute"): string {
 	const lower = name.toLowerCase();
-	if (namespace !== "svg") return lower;
+	if (namespace !== "svg") {
+		return lower;
+	}
 	return (table === "tag" ? SVG_TAG_NAMES : SVG_ATTRIBUTE_NAMES).get(lower) ?? lower;
 }
 
@@ -1087,9 +1124,9 @@ export function parsedName(name: string, namespace: Namespace, table: "tag" | "a
  * `<pre>` or `<textarea>` is not content. A raw carriage return is kept: every serialiser writes
  * the one it holds as it is, so keeping it compares what each framework rendered.
  */
-export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
+export function parseHtml(html: string, options: ParseOptions = {}): Array<DomNode> {
 	const root: DomElement = { tag: "#root", attributes: {}, children: [] };
-	const stack: { element: DomElement; namespace: Namespace }[] = [
+	const stack: Array<{ element: DomElement; namespace: Namespace }> = [
 		{ element: root, namespace: "html" },
 	];
 	let index = 0;
@@ -1100,13 +1137,19 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
 		const parent = stack.at(-1)!;
 		if (html.startsWith("<!--", index)) {
 			const end = html.indexOf("-->", index + 4);
-			if (end < 0) fail("unterminated comment");
+			if (end < 0) {
+				fail("unterminated comment");
+			}
 			index = end + 3;
 		} else if (html.startsWith("</", index)) {
 			const match = /^<\/([a-zA-Z][^\s/>]*)\s*>/.exec(html.slice(index));
-			if (!match) fail("malformed end tag");
+			if (!match) {
+				fail("malformed end tag");
+			}
 			const tag = parsedName(match![1]!, parent.namespace, "tag");
-			if (tag !== parent.element.tag) fail(`</${tag}> closes <${parent.element.tag}>`);
+			if (tag !== parent.element.tag) {
+				fail(`</${tag}> closes <${parent.element.tag}>`);
+			}
 			stack.pop();
 			index += match![0].length;
 		} else if (html[index] === "<") {
@@ -1118,12 +1161,16 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
 			index = stop;
 		}
 	}
-	if (stack.length > 1) fail(`<${stack.at(-1)!.element.tag}> is never closed`);
+	if (stack.length > 1) {
+		fail(`<${stack.at(-1)!.element.tag}> is never closed`);
+	}
 	return root.children;
 
 	function startTag(parent: { element: DomElement; namespace: Namespace }): number {
 		const name = /^<([a-zA-Z][^\s/>]*)/.exec(html.slice(index));
-		if (!name) fail("a stray <");
+		if (!name) {
+			fail("a stray <");
+		}
 		// In SVG, these tags make the HTML parser leave foreign content: no IR holds one there.
 		if (parent.namespace === "svg" && FOREIGN_CONTENT_BREAKERS.has(name![1]!.toLowerCase())) {
 			fail(`<${name![1]}> inside <svg>`);
@@ -1137,11 +1184,15 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
 		index += name![0].length;
 		for (;;) {
 			index += /^\s*/.exec(html.slice(index))![0].length;
-			if (html.startsWith("/>", index) || html[index] === ">") break;
+			if (html.startsWith("/>", index) || html[index] === ">") {
+				break;
+			}
 			const attribute = /^([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/.exec(
 				html.slice(index),
 			);
-			if (!attribute) fail("malformed attribute");
+			if (!attribute) {
+				fail("malformed attribute");
+			}
 			const [source, rawName, double, single, unquoted] = attribute!;
 			const attributeName = parsedName(rawName!, namespace, "attribute");
 			if (!options.ignoreAttribute?.(attributeName)) {
@@ -1150,34 +1201,51 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
 					decode(double ?? single ?? unquoted ?? ""),
 					namespace,
 				);
-				if (value !== undefined) element.attributes[attributeName] = value;
+				if (value !== undefined) {
+					element.attributes[attributeName] = value;
+				}
 			}
 			index += source.length;
 		}
 		const selfClosing = html.startsWith("/>", index);
 		index += selfClosing ? 2 : 1;
 		parent.element.children.push(element);
-		if (namespace === "html" && isVoidElement(element.tag)) return index;
+		if (namespace === "html" && isVoidElement(element.tag)) {
+			return index;
+		}
 		// A foreign element may close itself; an HTML element that is not void may not.
 		if (selfClosing) {
-			if (namespace === "html") fail(`<${element.tag}/> is not a void element`);
+			if (namespace === "html") {
+				fail(`<${element.tag}/> is not a void element`);
+			}
 			return index;
 		}
 		stack.push({ element, namespace });
 		if (namespace === "html" && /^(?:pre|textarea|listing)$/.test(element.tag)) {
-			if (html[index] === "\n") index++;
+			if (html[index] === "\n") {
+				index++;
+			}
 		}
 		return index;
 	}
 
 	function decode(text: string): string {
-		return text.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);?/g, (reference, body) => {
-			if (body.startsWith("#x")) return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
-			if (body.startsWith("#")) return String.fromCodePoint(Number.parseInt(body.slice(1), 10));
-			const named = NAMED_REFERENCES[body];
-			if (named === undefined || !reference.endsWith(";")) fail(`unexpected entity ${reference}`);
-			return named!;
-		});
+		return text.replaceAll(
+			/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);?/g,
+			(reference, body: string) => {
+				if (body.startsWith("#x")) {
+					return String.fromCodePoint(Number.parseInt(body.slice(2), 16));
+				}
+				if (body.startsWith("#")) {
+					return String.fromCodePoint(Number.parseInt(body.slice(1), 10));
+				}
+				const named = NAMED_REFERENCES[body];
+				if (named === undefined || !reference.endsWith(";")) {
+					fail(`unexpected entity ${reference}`);
+				}
+				return named!;
+			},
+		);
 	}
 }
 
@@ -1201,14 +1269,17 @@ export interface ParityResult {
 /** What one case must render, as DOM nodes: one element, or a root case's nodes. */
 export interface ExpectedCase {
 	name: string;
-	nodes: DomNode[];
+	nodes: Array<DomNode>;
 }
 
 /**
  * Pairs each case of a suite with what the framework rendered for it, from the parsed output of
  * the suite's component (`compareRendered`), against what the case renders (`expectedNodes`).
  */
-export function compareCases(rendered: readonly DomNode[], suite: ParitySuite): ParityResult[] {
+export function compareCases(
+	rendered: ReadonlyArray<DomNode>,
+	suite: ParitySuite,
+): Array<ParityResult> {
 	return compareRendered(
 		rendered,
 		suite.root ?? "div",
@@ -1224,14 +1295,16 @@ export function compareCases(rendered: readonly DomNode[], suite: ParitySuite): 
  * in a `"self"` suite, the one case is the whole output.
  */
 export function compareRendered(
-	rendered: readonly DomNode[],
+	rendered: ReadonlyArray<DomNode>,
 	root: SuiteRoot,
-	cases: readonly ExpectedCase[],
-): ParityResult[] {
+	cases: ReadonlyArray<ExpectedCase>,
+): Array<ParityResult> {
 	const outline = (node: DomNode) =>
 		typeof node === "string" ? JSON.stringify(node) : `<${node.tag}>`;
 	if (root === "self") {
-		if (cases.length !== 1) throw new Error(`a "self" suite has one case, not ${cases.length}`);
+		if (cases.length !== 1) {
+			throw new Error(`a "self" suite has one case, not ${cases.length}`);
+		}
 		const [only] = cases;
 		return [
 			{
@@ -1253,7 +1326,9 @@ export function compareRendered(
 			actual: container.children.map(outline),
 		},
 		...cases.map(({ name, nodes }, index) => {
-			if (nodes.length !== 1) throw new Error(`${name}: a "div" suite's case is one element`);
+			if (nodes.length !== 1) {
+				throw new Error(`${name}: a "div" suite's case is one element`);
+			}
 			return { name, expected: nodes[0], actual: container.children[index] };
 		}),
 	];

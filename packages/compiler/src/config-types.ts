@@ -24,7 +24,7 @@ export type TargetSelector = TargetName | "solid@1" | "solid@2";
 
 /** The targets packaging covers, and where each packager resolves from (ADR-0076). */
 export interface PackageConfig {
-	targets?: readonly TargetSelector[];
+	targets?: ReadonlyArray<TargetSelector>;
 	/** One directory, or one per target. */
 	resolveFrom?: string | Partial<Record<TargetName, string>>;
 }
@@ -39,7 +39,7 @@ export type VitePluginOption =
 	| false
 	| null
 	| undefined
-	| readonly VitePluginOption[]
+	| ReadonlyArray<VitePluginOption>
 	| PromiseLike<VitePluginOption>;
 
 /** The kind of Vite server a project's `vite` config is for (ADR-0104). */
@@ -57,7 +57,7 @@ export interface ViteContext {
  * `UserConfig` has passes, whether the function returns an object literal or Vite's own type
  * (ADR-0104).
  */
-export type ProjectViteConfig = { plugins?: readonly VitePluginOption[] } & object;
+export type ProjectViteConfig = { plugins?: ReadonlyArray<VitePluginOption> } & object;
 
 /** The configuration as a project writes it, with `defineConfig` from `@uxfront/unframework/config`. */
 export interface UnframeworkConfig {
@@ -65,7 +65,7 @@ export interface UnframeworkConfig {
 	 * Defaults to the seven targets of `DEFAULT_TARGETS`. `solid@2` is opt-in, since a project that
 	 * selects both Solid majors needs two Solid installs (ADR-0102).
 	 */
-	targets?: readonly TargetSelector[];
+	targets?: ReadonlyArray<TargetSelector>;
 	/** Defaults to `src`, relative to the config's directory. */
 	srcDir?: string;
 	/** Defaults to `dist`, relative to the config's directory. */
@@ -89,5 +89,5 @@ export interface UnframeworkConfig {
 	 * The font families that may draw text when pixels compare live, besides the bundled Inter, as
 	 * the `font-fallback` message names them. Committed baselines take Inter alone (ADR-0105).
 	 */
-	liveFonts?: readonly string[];
+	liveFonts?: ReadonlyArray<string>;
 }

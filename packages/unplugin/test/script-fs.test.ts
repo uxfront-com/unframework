@@ -39,14 +39,14 @@ interface Options {
 interface StandIn {
 	plugin: Plugin;
 	/** Each value the setter was given, in order. */
-	sets: Options[];
+	sets: Array<Options>;
 	current(): Options;
 }
 
 /** plugin-vue's stand-in, whose options start as `raw`, as `vue(raw)` gives them. */
 function vueStandIn(raw: Options): StandIn {
 	let options: Options = { ...raw };
-	const sets: Options[] = [];
+	const sets: Array<Options> = [];
 	const plugin: Plugin = {
 		name: "vite:vue",
 		api: {
@@ -67,7 +67,7 @@ function vueStandIn(raw: Options): StandIn {
 }
 
 /** Starts and closes a server whose plugins are `plugins`, and gives back its warnings. */
-async function run(plugins: Plugin[]): Promise<string[]> {
+async function run(plugins: Array<Plugin>): Promise<Array<string>> {
 	const server = await startServer(project.root, plugins);
 	await server.close();
 	return server.warnings;

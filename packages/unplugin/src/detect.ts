@@ -57,7 +57,7 @@ export function solidMajor(root: string): number | undefined {
  * was before `solid@2` (ADR-0102).
  */
 export function detectTarget(
-	plugins: readonly NamedPlugin[],
+	plugins: ReadonlyArray<NamedPlugin>,
 	file: string,
 	root: string = process.cwd(),
 ): { target: TargetName } | { error: string } {
@@ -65,14 +65,20 @@ export function detectTarget(
 	let solid: TargetName | undefined;
 	const found = Object.entries(FRAMEWORK_PLUGINS).flatMap(([target, belongs]) => {
 		const plugin = names.find((name) => belongs(name));
-		if (!plugin) return [];
+		if (!plugin) {
+			return [];
+		}
 		if (target === "solid" || target === "solid2") {
 			solid ??= solidMajor(root) === 2 ? "solid2" : "solid";
-			if (target !== solid) return [];
+			if (target !== solid) {
+				return [];
+			}
 		}
 		return [{ target: target as TargetName, plugin }];
 	});
-	if (found.length === 1) return { target: found[0]!.target };
+	if (found.length === 1) {
+		return { target: found[0]!.target };
+	}
 	const diagnostic = found.length
 		? createDiagnostic("UF7006", {
 				file,
@@ -104,7 +110,7 @@ interface VueApi {
 }
 
 /** plugin-vue's `api`, found by the name it registers. */
-const vueApiOf = (plugins: readonly NamedPlugin[]): VueApi | undefined =>
+const vueApiOf = (plugins: ReadonlyArray<NamedPlugin>): VueApi | undefined =>
 	plugins.find(({ name }) => name === VUE_PLUGIN)?.api as VueApi | undefined;
 
 /**
@@ -112,11 +118,13 @@ const vueApiOf = (plugins: readonly NamedPlugin[]): VueApi | undefined =>
  * a template out for `"condense"`, and the option can't be set per file (ADR-0026).
  */
 export function hostOptionWarning(
-	plugins: readonly NamedPlugin[],
+	plugins: ReadonlyArray<NamedPlugin>,
 	file: string,
 ): string | undefined {
 	const whitespace = vueApiOf(plugins)?.options?.template?.compilerOptions?.whitespace;
-	if (whitespace !== "preserve") return undefined;
+	if (whitespace !== "preserve") {
+		return undefined;
+	}
 	const diagnostic = createDiagnostic("UF7010", {
 		file,
 		span: NO_SPAN,
@@ -151,7 +159,9 @@ export const NODE_SCRIPT_FS: ScriptFs = {
 		try {
 			return readFileSync(file, "utf8");
 		} catch (error) {
-			if (isNoFile(error)) return undefined;
+			if (isNoFile(error)) {
+				return undefined;
+			}
 			throw error;
 		}
 	},
@@ -159,7 +169,9 @@ export const NODE_SCRIPT_FS: ScriptFs = {
 		try {
 			return realpathSync(file);
 		} catch (error) {
-			if (isNoFile(error)) return file;
+			if (isNoFile(error)) {
+				return file;
+			}
 			throw error;
 		}
 	},
@@ -175,9 +187,12 @@ export const NODE_SCRIPT_FS: ScriptFs = {
  * plugin-vue's `configResolved` rebuilds its options from the current ones, so the fill holds
  * whichever of the two plugins' hooks runs first.
  */
-export function fillVueScriptFs(plugins: readonly NamedPlugin[]): void {
+export function fillVueScriptFs(plugins: ReadonlyArray<NamedPlugin>): void {
 	const api = vueApiOf(plugins);
 	const options = api?.options;
-	if (!api || !options || options.script?.fs != null) return;
+	const fs = options?.script?.fs;
+	if (!api || !options || (fs !== undefined && fs !== null)) {
+		return;
+	}
 	api.options = { ...options, script: { ...options.script, fs: NODE_SCRIPT_FS } };
 }

@@ -246,7 +246,7 @@ export const react: Target = defineTarget({
 	// A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
 	// declarations and the events' props, the setup's hooks in source order, and the render tree in
 	// React's JSX.
-	emit(component: UfComponent, context: EmitContext): OutputFile[] {
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
 		const { module } = context;
 		// Every name the source declares or reads is taken before the output claims its own
 		// (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).
@@ -382,7 +382,9 @@ export const react: Target = defineTarget({
 		// The exported component starts the setup and renders the resolved one, which is today's
 		// whole component, after it (ADR-0101).
 		const exported = outer ? outerComponent(plan, jsx, propsType(plan)) : fn;
-		if (outer) exported.typeParameters = typeParameters(component, jsx);
+		if (outer) {
+			exported.typeParameters = typeParameters(component, jsx);
+		}
 		// The types it imports, by name, from where the source imports them, a child's from its
 		// output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
 		addTypeImports(component, module, plan.names, (name) => name);
@@ -478,9 +480,13 @@ function passedListeners(component: UfComponent): Set<EventAttribute> {
 	const found = new Set<EventAttribute>();
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component") return;
+			if (node.kind !== "Component") {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (attribute.kind === "Event") found.add(attribute);
+				if (attribute.kind === "Event") {
+					found.add(attribute);
+				}
 			}
 		},
 	});
@@ -504,7 +510,7 @@ function isFunctionValue(attribute: DirectiveAttribute, plan: ReactPlan): boolea
  * copied as written, and in the output of the module's main component the module's type exports
  * (ADR-0068), each written as its own declaration.
  */
-function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
+function moduleTypes(component: UfComponent, module: UfModule): Array<TypeDeclaration> {
 	const exported = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
 		name: "",
 		exported: false,
@@ -522,7 +528,9 @@ function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[
  * component without them.
  */
 function typeParameters(component: UfComponent, context: JsxContext): TypeParameters {
-	if (!component.typeParameters?.length) return null;
+	if (!component.typeParameters?.length) {
+		return null;
+	}
 	const type = (text: TypeText | undefined) => (text ? context.placeholders.type(text.code) : null);
 	const params = component.typeParameters.map((parameter) => ({
 		type: "TSTypeParameter" as const,
@@ -546,12 +554,19 @@ function typeParameters(component: UfComponent, context: JsxContext): TypeParame
 function importChildren(plan: ReactPlan): void {
 	const { names, composition } = plan;
 	for (const child of composition.children) {
-		if (child.self) continue;
-		if (child.export === "default") names.addDefault(child.specifier, child.local, { exact: true });
-		else names.add(child.specifier, child.name, { local: child.local, exact: true });
+		if (child.self) {
+			continue;
+		}
+		if (child.export === "default") {
+			names.addDefault(child.specifier, child.local, { exact: true });
+		} else {
+			names.add(child.specifier, child.name, { local: child.local, exact: true });
+		}
 	}
 	for (const key of composition.keys) {
-		if (key.specifier) names.add(key.specifier, key.name, { local: key.local, exact: true });
+		if (key.specifier) {
+			names.add(key.specifier, key.name, { local: key.local, exact: true });
+		}
 	}
 }
 
@@ -560,8 +575,10 @@ function importChildren(plan: ReactPlan): void {
  * React context of the key's type, `undefined` where nothing provides it; a ref the key holds is
  * passed as `{ value }` (`refObject`).
  */
-function keyDeclarations(plan: ReactPlan): string[] {
-	if (!plan.composition.ownsKeys) return [];
+function keyDeclarations(plan: ReactPlan): Array<string> {
+	if (!plan.composition.ownsKeys) {
+		return [];
+	}
 	const createContext = plan.names.add("react", "createContext");
 	return plan.module.keys!.map((key) => {
 		const value = refValueType(key.type.code);
@@ -575,7 +592,7 @@ function keyDeclarations(plan: ReactPlan): string[] {
  * attributes and what they take from a consumer, which {@link forReact} gives it as it reaches it
  * (ADR-0118).
  */
-const restTargets = new WeakMap<ReactPlan, { node: ElementNode; attributes: Attribute[] }>();
+const restTargets = new WeakMap<ReactPlan, { node: ElementNode; attributes: Array<Attribute> }>();
 
 /**
  * The root with what it takes from a consumer (ADR-0054): the `className` prop joined to its
@@ -588,7 +605,9 @@ function withFallthrough(
 	composer: ReactComposer,
 ): ElementNode | FragmentNode {
 	const { fallthrough } = plan.composition;
-	if (!fallthrough) return root;
+	if (!fallthrough) {
+		return root;
+	}
 	const target = fallthrough.root;
 	const consumer: Expression = { code: fallthrough.className, span: target.span, refs: [] };
 	if (target.kind === "Element" && target !== root) {
@@ -619,12 +638,12 @@ function withFallthrough(
  * take the consumer's last: added where it has none.
  */
 function fallthroughAttributes<T extends Attribute | ComponentAttribute>(
-	target: { attributes: readonly T[]; span: ElementNode["span"] },
+	target: { attributes: ReadonlyArray<T>; span: ElementNode["span"] },
 	consumer: Expression,
 	composer: ReactComposer,
-): (T | ClassAttribute | StyleAttribute)[] {
+): Array<T | ClassAttribute | StyleAttribute> {
 	const { span } = target;
-	const attributes: (T | ClassAttribute | StyleAttribute)[] = [];
+	const attributes: Array<T | ClassAttribute | StyleAttribute> = [];
 	let classed = false;
 	let styled = false;
 	for (const attribute of target.attributes) {
@@ -706,7 +725,9 @@ function provided(plan: ReactPlan, tree: ReturnType<typeof jsxNode>): ReturnType
 function exposeHandle(plan: ReactPlan): string | undefined {
 	const { expose } = plan.composition;
 	const exposes = plan.owner.exposes;
-	if (!expose || !exposes) return undefined;
+	if (!expose || !exposes) {
+		return undefined;
+	}
 	const useImperativeHandle = plan.names.add("react", "useImperativeHandle");
 	const members = exposes.functions.map((id) => {
 		const { name } = plan.bindings.get(id)!;
@@ -721,11 +742,11 @@ function exposeHandle(plan: ReactPlan): string | undefined {
  * render prop for a scoped one), the models (each with its change callback), and the root's
  * `className`, `style` and the `ref` that holds the handle; and the handle's own interface.
  */
-function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
+function compositionInterfaces(plan: ReactPlan): Array<TypeDeclaration> {
 	const { composition, owner: component } = plan;
 	const type = (name: string) => plan.names.add("react", name, { type: true });
-	const declarations: TypeDeclaration[] = [];
-	const declare = (name: string, members: string[], parameters = "") => {
+	const declarations: Array<TypeDeclaration> = [];
+	const declare = (name: string, members: Array<string>, parameters = "") => {
 		const text = `interface ${name}${parameters} {\n${members.map((member) => `  ${member}`).join("\n")}\n}`;
 		declarations.push({ name, exported: true, code: text, span: component.span });
 	};
@@ -836,7 +857,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
 			span: component.span,
 		});
 	} else if (interfaces.attributes) {
-		const members: string[] = [];
+		const members: Array<string> = [];
 		if (composition.fallthrough) {
 			members.push("className?: string;", `style?: ${type("CSSProperties")};`);
 		}
@@ -856,7 +877,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
  * The names a `<component is>` root's `DOMAttributes` leave out (ADR-0122): its content, which
  * a component takes as `children` or not at all, and the listener props it declares as events.
  */
-function domOmitted(declared: readonly string[]): string {
+function domOmitted(declared: ReadonlyArray<string>): string {
 	return [
 		...new Set([
 			"children",
@@ -872,7 +893,7 @@ function domOmitted(declared: readonly string[]): string {
  * The DOM interface of the element a ref holds, or the union of the interfaces of a `<component
  * is>`'s tags, each once, where it holds whichever renders (ADR-0122).
  */
-function elementUnion(tags: readonly string[]): string {
+function elementUnion(tags: ReadonlyArray<string>): string {
 	return [...new Set(tags.map(elementInterface))].join(" | ");
 }
 
@@ -902,11 +923,13 @@ function shareHelpers(
 	from: string,
 	plan: ReactPlan,
 	names: ReactNames,
-): string[] {
+): Array<string> {
 	const { helpers } = plan;
 	const used = new Map<string, string>();
 	const use = (name: string, local: string | undefined) => {
-		if (local !== undefined) used.set(name, local);
+		if (local !== undefined) {
+			used.set(name, local);
+		}
 	};
 	use("cx", names.cx);
 	use("styleObject", names.styleObject);
@@ -930,7 +953,7 @@ function shareHelpers(
  * The helpers composition keeps inline beside shared ones (R4, ADR-0121). `restAttributes` stays
  * inline too, until its sharing is decided.
  */
-function inlineCompositionHelpers(plan: ReactPlan): string[] {
+function inlineCompositionHelpers(plan: ReactPlan): Array<string> {
 	const { helpers } = plan;
 	return [
 		...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
@@ -940,7 +963,7 @@ function inlineCompositionHelpers(plan: ReactPlan): string[] {
 }
 
 /** The inline helpers composition needs, after the component (ADR-0055). */
-function compositionHelpers(plan: ReactPlan): string[] {
+function compositionHelpers(plan: ReactPlan): Array<string> {
 	const { helpers, names } = plan;
 	return [
 		...(plan.composition.scope ? [scopeAttributesHelper(plan.composition.scope.helper)] : []),
@@ -960,7 +983,7 @@ function compositionHelpers(plan: ReactPlan): string[] {
 }
 
 /** The hooks the listeners call, after the setup's: one guard per listener that runs once. */
-function hookCalls(plan: ReactPlan): string[] {
+function hookCalls(plan: ReactPlan): Array<string> {
 	const { teleport } = plan.helpers;
 	return [
 		...[...plan.onceGuards.values()].map((guard) => `const ${guard} = ${plan.helpers.once!}();`),
@@ -983,25 +1006,33 @@ function compilerOptOut(
 	component: UfComponent,
 	plan: ReactPlan,
 	context: JsxContext,
-	code: ComponentCode[],
+	code: Array<ComponentCode>,
 ): string | undefined {
 	const parameter = component.propsParameter;
 	const read = (parameter ? component.props : []).filter(
 		(prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
 	);
-	const defaults: ComponentCode[] = [];
+	const defaults: Array<ComponentCode> = [];
 	const locals = declaredNames(code);
 	if (parameter?.form === "object") {
 		locals.add(parameter.name!);
 	} else {
 		for (const prop of read) {
 			locals.add(prop.name);
-			if (prop.default) defaults.push({ code: prop.default.code, kind: "default" });
+			if (prop.default) {
+				defaults.push({ code: prop.default.code, kind: "default" });
+			}
 		}
-		for (const event of plan.events.values()) if (event.emitted) locals.add(event.local);
+		for (const event of plan.events.values()) {
+			if (event.emitted) {
+				locals.add(event.local);
+			}
+		}
 	}
 	const reason = compilerBailout([...defaults, ...code], locals);
-	if (!reason) return undefined;
+	if (!reason) {
+		return undefined;
+	}
 	return `// React Compiler 1.0 cannot compile ${reason} yet: the component opts out of it.\n"use no memo";`;
 }
 
@@ -1019,9 +1050,11 @@ function nextTickHooks(plan: ReactPlan): NextTickHooks {
  * component declares, `onChange?: (value: number) => void`, with the payload's named members as
  * the listener's parameters. The component's parameter is typed with the props' type and it.
  */
-function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
+function eventsInterface(plan: ReactPlan): Array<TypeDeclaration> {
 	const { emits } = plan.owner;
-	if (!emits || !plan.eventsInterface) return [];
+	if (!emits || !plan.eventsInterface) {
+		return [];
+	}
 	const members = emits.events.map((event) => {
 		const parameters = event.parameters
 			.map(
@@ -1047,24 +1080,34 @@ function interfaceParameters(
 ): Partial<Record<"events" | "models" | "slots" | "expose", { declared: string; passed: string }>> {
 	const { owner: component, composition } = plan;
 	const parameters = component.typeParameters ?? [];
-	if (!parameters.length) return {};
-	const written = (texts: readonly (TypeText | undefined)[]) => {
+	if (!parameters.length) {
+		return {};
+	}
+	const written = (texts: ReadonlyArray<TypeText | undefined>) => {
 		const named = new Set<string>();
 		const read = (text: TypeText | undefined) => {
-			if (text) for (const name of typeNames(text)) named.add(name);
+			if (text) {
+				for (const name of typeNames(text)) {
+					named.add(name);
+				}
+			}
 		};
 		texts.forEach(read);
-		let kept: TypeParameter[] = [];
+		let kept: Array<TypeParameter> = [];
 		while (true) {
 			const next = parameters.filter(({ name }) => named.has(name));
-			if (next.length === kept.length) break;
+			if (next.length === kept.length) {
+				break;
+			}
 			kept = next;
 			for (const parameter of kept) {
 				read(parameter.constraint);
 				read(parameter.default);
 			}
 		}
-		if (!kept.length) return undefined;
+		if (!kept.length) {
+			return undefined;
+		}
 		return {
 			declared: `<${kept.map(typeParameterText).join(", ")}>`,
 			passed: `<${kept.map(({ name }) => name).join(", ")}>`,
@@ -1072,7 +1115,9 @@ function interfaceParameters(
 	};
 	const exposed = component.exposes?.functions.flatMap((id) => {
 		const item = component.setup.find((entry) => entry.kind === "Function" && entry.binding === id);
-		if (item?.kind !== "Function") return [];
+		if (item?.kind !== "Function") {
+			return [];
+		}
 		return [...item.function.parameters.map(({ type }) => type), item.function.returnType];
 	});
 	return {
@@ -1103,7 +1148,7 @@ function propsParameters(
 	context: JsxContext,
 	plan: ReactPlan,
 	composer: ReactComposer,
-): Parameter[] {
+): Array<Parameter> {
 	const parameter = component.propsParameter;
 	const { names, composition } = plan;
 	const own = propsType(plan);
@@ -1111,7 +1156,9 @@ function propsParameters(
 	// A component without props still takes the scope attributes of the styled parents that
 	// render it, as an object (ADR-0063).
 	const outer = plan.helpers.async;
-	if (own === undefined && !outer) return [];
+	if (own === undefined && !outer) {
+		return [];
+	}
 	// The resolved component of a setup that awaits takes its setup's promise too (ADR-0101).
 	const typeCode = outer
 		? [own === "object" ? undefined : own, resolvedPropsType(plan)]
@@ -1123,21 +1170,32 @@ function propsParameters(
 		(prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
 	);
 	// What composition reads of the props (ADR-0054), each as `[prop, local, default]`.
-	const composed: [string, string, Expression?][] = [];
+	const composed: Array<[string, string, Expression?]> = [];
 	for (const model of composition.models.values()) {
-		if (!model.local && !context.referenced.has(model.item.binding)) continue;
+		if (!model.local && !context.referenced.has(model.item.binding)) {
+			continue;
+		}
 		composed.push([model.prop, model.propLocal, model.local ? undefined : model.item.default]);
-		if (model.calls) composed.push([model.event, model.eventLocal]);
+		if (model.calls) {
+			composed.push([model.event, model.eventLocal]);
+		}
 	}
 	for (const slot of composition.slots.values()) {
-		if (slot.read) composed.push([slot.prop, slot.local]);
+		if (slot.read) {
+			composed.push([slot.prop, slot.local]);
+		}
 	}
 	const { fallthrough, expose, passing } = composition;
-	if (fallthrough)
+	if (fallthrough) {
 		composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
-	if (expose) composed.push(["ref", expose.ref]);
+	}
+	if (expose) {
+		composed.push(["ref", expose.ref]);
+	}
 	// The consumer's `ref` the root takes where nothing passes through (ADR-0118).
-	if (!passing && composer.consumerRef !== undefined) composed.push(["ref", composer.consumerRef]);
+	if (!passing && composer.consumerRef !== undefined) {
+		composed.push(["ref", composer.consumerRef]);
+	}
 	if (passing && parameter?.form !== "object") {
 		const taken = new Set([
 			...read.map((prop) => prop.name),
@@ -1161,7 +1219,7 @@ function propsParameters(
 		return [js.bindingIdentifier(name, type)];
 	}
 	const start = (binding: string) => bindingOf(component, binding).span.start;
-	const properties: BindingProperty[] = read
+	const properties: Array<BindingProperty> = read
 		.toSorted((a, b) => start(a.binding!) - start(b.binding!))
 		.map((prop) =>
 			js.bindingProperty(
@@ -1170,7 +1228,9 @@ function propsParameters(
 			),
 		);
 	for (const event of plan.events.values()) {
-		if (event.emitted) properties.push(renamedProperty(event.prop, event.local));
+		if (event.emitted) {
+			properties.push(renamedProperty(event.prop, event.local));
+		}
 	}
 	for (const [prop, local, initial] of composed) {
 		properties.push(
@@ -1181,9 +1241,13 @@ function propsParameters(
 	// the scope attributes are picked from (ADR-0101).
 	if (outer) {
 		properties.push(js.bindingProperty(outer.promise));
-		if (rest) properties.push(renamedProperty(outer.settled, names.claim(`_${outer.settled}`)));
+		if (rest) {
+			properties.push(renamedProperty(outer.settled, names.claim(`_${outer.settled}`)));
+		}
 	}
-	if (!properties.length) return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
+	if (!properties.length) {
+		return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
+	}
 	return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
 }
 
@@ -1199,21 +1263,25 @@ function passedProps(
 	plan: ReactPlan,
 	composer: ReactComposer,
 	taken: ReadonlySet<string>,
-): [string, string][] {
+): Array<[string, string]> {
 	const { passing, slots } = plan.composition;
-	if (!passing) return [];
+	if (!passing) {
+		return [];
+	}
 	// `children` is never passed but as a slot's: the type leaves it out.
 	const children = [...slots.values()].some((slot) => slot.prop === "children");
 	const unread = new Set(passing.declared.filter((name) => name !== "children" || children));
 	const { target } = passing;
 	if (target.kind === "Element") {
 		for (const attribute of target.attributes) {
-			if (attribute.kind !== "Model") continue;
+			if (attribute.kind !== "Model") {
+				continue;
+			}
 			const box = ["checkbox", "checkbox-group", "radio"].includes(attribute.control);
 			unread.add(box ? "checked" : "value");
 		}
 	}
-	const unused: [string, string][] = [...unread]
+	const unused: Array<[string, string]> = [...unread]
 		.filter((name) => !taken.has(name) && !composer.consumerListeners.has(name))
 		.map((name) => [name, plan.names.claim(`_${name}`)]);
 	return [
@@ -1250,7 +1318,9 @@ function mergedRefDeclaration(plan: ReactPlan, composer: ReactComposer): string 
 function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | undefined {
 	const { passing, fallthrough, expose } = plan.composition;
 	const parameter = plan.owner.propsParameter;
-	if (parameter?.form !== "object") return undefined;
+	if (parameter?.form !== "object") {
+		return undefined;
+	}
 	// Where nothing else passes, the consumer's `ref` alone: React Compiler reads `props.ref` as
 	// a ref's value read during render.
 	if (!passing) {
@@ -1259,16 +1329,18 @@ function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | u
 			? undefined
 			: `const { ${ref === "ref" ? ref : `ref: ${ref}`} } = ${parameter.name!};`;
 	}
-	const entries: [string, string][] = [
+	const entries: Array<[string, string]> = [
 		...(fallthrough
 			? ([
 					["className", fallthrough.className],
 					["style", fallthrough.style],
-				] as [string, string][])
+				] as Array<[string, string]>)
 			: []),
 		...passedProps(plan, composer, new Set(["className", "style"])),
 	];
-	if (expose) entries.push(["ref", plan.names.claim("_ref")]);
+	if (expose) {
+		entries.push(["ref", plan.names.claim("_ref")]);
+	}
 	// The setup's promise and the flag the resolved component of an async setup takes (ADR-0101).
 	const outer = plan.helpers.async;
 	if (outer) {
@@ -1311,7 +1383,9 @@ function renamedProperty(
 	local: string,
 	initial?: ReturnType<typeof js.identifier>,
 ): BindingProperty {
-	if (key === local) return js.bindingProperty(key, initial);
+	if (key === local) {
+		return js.bindingProperty(key, initial);
+	}
 	const property = js.bindingProperty(key);
 	const value = js.bindingIdentifier(local);
 	return {
@@ -1327,7 +1401,9 @@ function rootForReact(
 	context: JsxContext,
 	plan: ReactPlan,
 ): ElementNode | FragmentNode {
-	if (root.kind === "Element") return forReact(root, context, plan);
+	if (root.kind === "Element") {
+		return forReact(root, context, plan);
+	}
 	return {
 		...root,
 		children: placed(
@@ -1338,14 +1414,14 @@ function rootForReact(
 }
 
 /** Children as their parent prints them, their keyed conditionals placed (`placeConditionals`). */
-function placed(children: RenderNode[], context: JsxContext): RenderNode[] {
+function placed(children: Array<RenderNode>, context: JsxContext): Array<RenderNode> {
 	placeConditionals(children, context.module);
 	return children;
 }
 
 /** {@link forReact} over a node, inside conditionals, lists, and composition's content too. */
 function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): RenderNode {
-	const children = (nodes: readonly RenderNode[]) =>
+	const children = (nodes: ReadonlyArray<RenderNode>) =>
 		placed(
 			nodes.map((child) => childForReact(child, context, plan)),
 			context,
@@ -1398,7 +1474,7 @@ function componentForReact(
 	context: JsxContext,
 	plan: ReactPlan,
 ): ComponentNode {
-	const children = (nodes: readonly RenderNode[]) =>
+	const children = (nodes: ReadonlyArray<RenderNode>) =>
 		placed(
 			nodes.map((child) => childForReact(child, context, plan)),
 			context,
@@ -1419,7 +1495,7 @@ function fillForReact(
 	node: ComponentNode | DynamicNode,
 	context: JsxContext,
 	plan: ReactPlan,
-	children: (nodes: readonly RenderNode[]) => RenderNode[],
+	children: (nodes: ReadonlyArray<RenderNode>) => Array<RenderNode>,
 ): SlotFill {
 	const own =
 		fill.forward && context.component.slots?.slots.find((slot) => slot.name === fill.forward);
@@ -1461,7 +1537,9 @@ function fillForReact(
 function forReact(original: ElementNode, context: JsxContext, plan: ReactPlan): ElementNode {
 	const rest = restTargets.get(plan);
 	const node = rest?.node === original ? { ...original, attributes: rest.attributes } : original;
-	if (node.tag === "title") return { ...node, children: titleChildren(node.children, context) };
+	if (node.tag === "title") {
+		return { ...node, children: titleChildren(node.children, context) };
+	}
 	if (node.tag !== "textarea" || node.children.length === 0) {
 		return {
 			...node,

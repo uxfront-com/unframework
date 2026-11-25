@@ -18,22 +18,26 @@ const MAX_CELLS = 4_000_000;
  * actual. Returns an empty string when the texts are equal.
  */
 export function diffLines(expected: string, actual: string, options: DiffOptions = {}): string {
-	if (expected === actual) return "";
+	if (expected === actual) {
+		return "";
+	}
 	const context = options.context ?? 3;
 	const maxLines = options.maxLines ?? 80;
 	const a = expected.split("\n");
 	const b = actual.split("\n");
 	const ops = a.length * b.length > MAX_CELLS ? firstChange(a, b) : lcsOps(a, b);
 
-	const lines: string[] = [];
+	const lines: Array<string> = [];
 	let lastPrinted = -1;
 	const changed = ops.map((op) => op.kind !== " ");
 	for (let index = 0; index < ops.length; index += 1) {
-		const near = changed
-			.slice(Math.max(0, index - context), index + context + 1)
-			.some((isChange) => isChange);
-		if (!near) continue;
-		if (lastPrinted !== -1 && index > lastPrinted + 1) lines.push("  …");
+		const near = changed.slice(Math.max(0, index - context), index + context + 1).some(Boolean);
+		if (!near) {
+			continue;
+		}
+		if (lastPrinted !== -1 && index > lastPrinted + 1) {
+			lines.push("  …");
+		}
 		const op = ops[index]!;
 		lines.push(`${op.kind} ${visible(op.text)}`);
 		lastPrinted = index;
@@ -50,7 +54,7 @@ interface Op {
 	text: string;
 }
 
-function lcsOps(a: readonly string[], b: readonly string[]): Op[] {
+function lcsOps(a: ReadonlyArray<string>, b: ReadonlyArray<string>): Array<Op> {
 	const width = b.length + 1;
 	const table = new Uint32Array((a.length + 1) * width);
 	for (let i = a.length - 1; i >= 0; i -= 1) {
@@ -61,7 +65,7 @@ function lcsOps(a: readonly string[], b: readonly string[]): Op[] {
 					: Math.max(table[(i + 1) * width + j]!, table[i * width + j + 1]!);
 		}
 	}
-	const ops: Op[] = [];
+	const ops: Array<Op> = [];
 	let i = 0;
 	let j = 0;
 	while (i < a.length && j < b.length) {
@@ -77,15 +81,21 @@ function lcsOps(a: readonly string[], b: readonly string[]): Op[] {
 			j += 1;
 		}
 	}
-	while (i < a.length) ops.push({ kind: "-", text: a[i++]! });
-	while (j < b.length) ops.push({ kind: "+", text: b[j++]! });
+	while (i < a.length) {
+		ops.push({ kind: "-", text: a[i++]! });
+	}
+	while (j < b.length) {
+		ops.push({ kind: "+", text: b[j++]! });
+	}
 	return ops;
 }
 
 /** For very large inputs: everything up to the first differing line is shared, the rest differs. */
-function firstChange(a: readonly string[], b: readonly string[]): Op[] {
+function firstChange(a: ReadonlyArray<string>, b: ReadonlyArray<string>): Array<Op> {
 	let start = 0;
-	while (start < a.length && start < b.length && a[start] === b[start]) start += 1;
+	while (start < a.length && start < b.length && a[start] === b[start]) {
+		start += 1;
+	}
 	return [
 		...a.slice(0, start).map((text): Op => ({ kind: " ", text })),
 		...a.slice(start).map((text): Op => ({ kind: "-", text })),
@@ -95,5 +105,7 @@ function firstChange(a: readonly string[], b: readonly string[]): Op[] {
 
 /** Makes trailing whitespace and carriage returns visible, since they are often the difference. */
 function visible(text: string): string {
-	return text.replace(/\r/g, "\\r").replace(/[ \t]+$/, (spaces) => spaces.replace(/ /g, "·"));
+	return text
+		.replaceAll("\r", String.raw`\r`)
+		.replace(/[ \t]+$/, (spaces) => spaces.replaceAll(" ", "·"));
 }

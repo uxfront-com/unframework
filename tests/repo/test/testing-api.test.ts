@@ -11,7 +11,7 @@ import { exportsOf, root } from "./workspace.ts";
  * to code this repository cannot see. It changes here and in the ADR, or not at all; the
  * harness's machinery goes in the `./harness` subpath.
  */
-const RUNTIME: readonly string[] = [
+const RUNTIME: ReadonlyArray<string> = [
 	"allowConsole",
 	"capturedConsole",
 	"currentTarget",
@@ -22,7 +22,7 @@ const RUNTIME: readonly string[] = [
 	"test",
 ];
 
-const TYPES: readonly string[] = [
+const TYPES: ReadonlyArray<string> = [
 	"CaseConfig",
 	"ClickOptions",
 	"ComponentMountOptions",
@@ -46,7 +46,7 @@ const entry = join(root, "packages/testing/src/index.ts");
 const adrs = join(root, "docs/adrs");
 
 /** The names in `actual` that the list lacks, and those the list has that `actual` lacks. */
-function compare(actual: readonly string[], list: readonly string[]) {
+function compare(actual: ReadonlyArray<string>, list: ReadonlyArray<string>) {
 	return {
 		notPublic: actual.filter((name) => !list.includes(name)).toSorted(),
 		missing: list.filter((name) => !actual.includes(name)).toSorted(),

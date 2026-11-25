@@ -104,9 +104,9 @@ export interface View<P = Props> {
 	 * Throws for an event the component does not declare, and on a target that runs no client
 	 * code.
 	 */
-	emitted(name: string): unknown[][];
+	emitted(name: string): Array<Array<unknown>>;
 	/** Every emit, in order, as `[name, ...args]`; as {@link View.emitted}. */
-	events(): unknown[][];
+	events(): Array<Array<unknown>>;
 	/**
 	 * Verifies L7, L9, L10 and L11 for a scenario against the case's shared expectations: L9 the
 	 * steps since the mount or the previous `expectParity`.
@@ -143,7 +143,7 @@ export interface ComponentMountOptions<P> extends ViewOptions {
  * objects only, so a component's props are never checked against `MountOptions` instead of
  * its own type.
  */
-export type NotAFunction<C> = C extends (...args: never[]) => unknown ? never : C;
+export type NotAFunction<C> = C extends (...args: Array<never>) => unknown ? never : C;
 
 /** The rounds of settling after an action before the page counts as never quiet. */
 const SETTLE_ROUNDS = 10;
@@ -216,7 +216,9 @@ export async function mountScenario(
 /** The current test's case. */
 function currentCase(caller: string): string {
 	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-	if (!test) throw new Error(`${caller} must be called inside a test.`);
+	if (!test) {
+		throw new Error(`${caller} must be called inside a test.`);
+	}
 	return caseOfFile(test.file.filepath, inject("ufHarness"));
 }
 
@@ -227,8 +229,10 @@ function currentCase(caller: string): string {
 async function declaredEvents(
 	registration: TargetOptions,
 	component: unknown,
-): Promise<readonly MountEvent[]> {
-	if (registration.events) return registration.events(component);
+): Promise<ReadonlyArray<MountEvent>> {
+	if (registration.events) {
+		return registration.events(component);
+	}
 	const { events } = await commands.ufComponentEvents({ case: currentCase("mount") });
 	return events;
 }
@@ -258,12 +262,12 @@ async function mountWith(
 
 	// What the component emits, copied as it arrives; a payload no trace can hold fails the
 	// test at its next settle, naming the event.
-	const log: EmittedEvent[] = [];
-	const refused: string[] = [];
+	const log: Array<EmittedEvent> = [];
+	const refused: Array<string> = [];
 	const on = Object.fromEntries(
 		declared.map(({ name }) => [
 			name,
-			(...args: unknown[]) => {
+			(...args: Array<unknown>) => {
 				try {
 					log.push({ name, args: copyPayload(name, args) });
 				} catch (error) {
@@ -274,7 +278,9 @@ async function mountWith(
 	);
 
 	// Before the component mounts, so the `setInterval` it calls is the clock's.
-	if (clock) installClock();
+	if (clock) {
+		installClock();
+	}
 	const container = document.createElement("div");
 	const testId = `uf-root-${(roots += 1)}`;
 	container.setAttribute(ROOT_ATTRIBUTE, "");
@@ -318,7 +324,7 @@ async function mountWith(
 	 * teleported element itself, which a query chained from it never matches.
 	 */
 	const query =
-		<A extends unknown[]>(find: (root: LocatorSelectors, ...args: A) => Locator) =>
+		<A extends Array<unknown>>(find: (root: LocatorSelectors, ...args: A) => Locator) =>
 		(...args: A): Locator =>
 			find(locator, ...args)
 				.or(find(teleportedRoots, ...args))
@@ -346,19 +352,23 @@ async function mountWith(
 		const roots = [{ element: container, locator: containerLocator }, ...teleportedLocators()];
 		const restores = roots.map(({ element }) => inlineHosts(element, hostTarget));
 		try {
-			const snapshots: string[] = [];
+			const snapshots: Array<string> = [];
 			for (const root of roots) {
 				snapshots.push((await commands.ufAriaSnapshot(root.locator.serialize())).trimEnd());
 			}
 			return snapshots.filter(Boolean).join("\n");
 		} finally {
-			for (const restore of restores) restore();
+			for (const restore of restores) {
+				restore();
+			}
 		}
 	};
 	/** Fails with what the page or the payloads refused since the last settle. */
 	const raise = () => {
 		const problems = [...takePreventedNavigations(), ...refused.splice(0)];
-		if (problems.length) throw new Error(problems.join("\n"));
+		if (problems.length) {
+			throw new Error(problems.join("\n"));
+		}
 	};
 	/** L12's `mismatch`: what the framework reported since the last settle, in a hydrate project. */
 	const takeMismatches = () => {
@@ -382,7 +392,9 @@ async function mountWith(
 		for (let round = 0; round < SETTLE_ROUNDS; round += 1) {
 			await settleOnce();
 			const snapshot = `${html()}\n${log.length}`;
-			if (snapshot === previous) return true;
+			if (snapshot === previous) {
+				return true;
+			}
 			previous = snapshot;
 		}
 		return false;
@@ -395,7 +407,9 @@ async function mountWith(
 	});
 	/** Settles after a step and records it; a page that never quiets fails L9, which it feeds. */
 	const step = async (action: string) => {
-		if (!(await settleUntilQuiet())) failTrace(target, `did not settle after ${action}`);
+		if (!(await settleUntilQuiet())) {
+			failTrace(target, `did not settle after ${action}`);
+		}
 		await trace.record(action);
 	};
 	let unmounted = false;
@@ -405,7 +419,9 @@ async function mountWith(
 	 * step is recorded.
 	 */
 	const perform = async (action: string, inputs: Iterable<Input>) => {
-		if (unmounted) throw new Error(`${action}: the view is unmounted.`);
+		if (unmounted) {
+			throw new Error(`${action}: the view is unmounted.`);
+		}
 		const pending = inputs[Symbol.iterator]();
 		for (let next = pending.next(); !next.done;) {
 			const input = next.value;
@@ -418,11 +434,11 @@ async function mountWith(
 		await step(action);
 	};
 	const declaredNames = declared.map(({ name }) => name);
-	const emittedArgs = (what: string): EmittedEvent[] => {
+	const emittedArgs = (what: string): Array<EmittedEvent> => {
 		assertInteractive(what);
 		raise();
 		const { ids } = dom();
-		return log.map((event) => ({ ...event, args: renumberIds(event.args, ids) as unknown[] }));
+		return log.map((event) => ({ ...event, args: renumberIds(event.args, ids) as Array<unknown> }));
 	};
 
 	const view: View<never> = {
@@ -487,7 +503,9 @@ async function mountWith(
 		html,
 		settle,
 		async rerender(next) {
-			if (unmounted) throw new Error("rerender: the view is unmounted.");
+			if (unmounted) {
+				throw new Error("rerender: the view is unmounted.");
+			}
 			const props = checkProps("rerender", next) ?? {};
 			report(await instance.rerender(props));
 			await step(`rerender ${JSON.stringify(props)}`);
@@ -519,7 +537,9 @@ async function mountWith(
 				action,
 			),
 		async unmount() {
-			if (unmounted) return;
+			if (unmounted) {
+				return;
+			}
 			unmounted = true;
 			mounted.delete(view);
 			try {
@@ -580,7 +600,9 @@ interface HydratedState {
 async function checkHydrated(state: HydratedState): Promise<void> {
 	const { target } = state;
 	const ids = compareIds(idsOfHtml(state.serverHtml), idsOf(state.container));
-	if (ids) failHydration(target, "ids", ids);
+	if (ids) {
+		failHydration(target, "ids", ids);
+	}
 	if (state.scenario !== undefined) {
 		const dom = await commands.ufArtefact({
 			case: state.caseId,
@@ -588,11 +610,15 @@ async function checkHydrated(state: HydratedState): Promise<void> {
 			contents: `${state.html.replace(/\n+$/, "")}\n`,
 			optional: true,
 		});
-		if (!dom.pass) failHydration(target, "DOM", dom.message);
+		if (!dom.pass) {
+			failHydration(target, "DOM", dom.message);
+		}
 	}
 	try {
 		const agreement = compareClientRender(state.html, await state.client());
-		if (agreement) failHydration(target, "client agreement", agreement);
+		if (agreement) {
+			failHydration(target, "client agreement", agreement);
+		}
 	} catch (error) {
 		failHydration(target, "client agreement", formatError(error));
 	}
@@ -601,7 +627,9 @@ async function checkHydrated(state: HydratedState): Promise<void> {
 /** Records an L9 failure on the current test: a step that never settled cannot be compared. */
 function failTrace(target: string, message: string): void {
 	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-	if (!test) throw new Error(message);
+	if (!test) {
+		throw new Error(message);
+	}
 	const harness = inject("ufHarness");
 	recordLayer(
 		test,
@@ -616,12 +644,16 @@ function failTrace(target: string, message: string): void {
 
 /** Hands what a render logged outside the page (Astro's server render) to the L13 capture. */
 function report(rendered: RenderReport | void): void {
-	if (rendered && rendered.console?.length) captureExternalConsole(rendered.console);
+	if (rendered && rendered.console?.length) {
+		captureExternalConsole(rendered.console);
+	}
 }
 
 /** The props an adapter gets: a plain object, or none. */
 function checkProps(action: string, props: unknown): Props | undefined {
-	if (props === undefined || isProps(props)) return props;
+	if (props === undefined || isProps(props)) {
+		return props;
+	}
 	throw new TypeError(
 		`${action}: props are an object of prop names and values, not ${props === null ? "null" : Array.isArray(props) ? "an array" : typeof props}.`,
 	);
@@ -633,7 +665,7 @@ function isProps(value: unknown): value is Props {
 
 /** Unmounts every view the current test left mounted, newest first. */
 export async function cleanup(): Promise<void> {
-	const errors: unknown[] = [];
+	const errors: Array<unknown> = [];
 	for (const view of [...mounted].reverse()) {
 		try {
 			await view.unmount();
@@ -641,6 +673,10 @@ export async function cleanup(): Promise<void> {
 			errors.push(error);
 		}
 	}
-	if (errors.length === 1) throw errors[0];
-	if (errors.length) throw new AggregateError(errors, `${errors.length} views failed to unmount.`);
+	if (errors.length === 1) {
+		throw errors[0];
+	}
+	if (errors.length) {
+		throw new AggregateError(errors, `${errors.length} views failed to unmount.`);
+	}
 }

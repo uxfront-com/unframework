@@ -17,12 +17,15 @@ const HYDRATION_CODE = /NG050\d/;
 
 /** Records what Angular reports during and after hydration: a hydration error is a mismatch. */
 class RecordingErrorHandler extends ErrorHandler {
-	readonly mismatches: string[] = [];
+	readonly mismatches: Array<string> = [];
 
 	override handleError(error: unknown): void {
 		const message = error instanceof Error ? error.message : String(error);
-		if (HYDRATION_CODE.test(message)) this.mismatches.push(message);
-		else super.handleError(error);
+		if (HYDRATION_CODE.test(message)) {
+			this.mismatches.push(message);
+		} else {
+			super.handleError(error);
+		}
 	}
 }
 
@@ -40,25 +43,34 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
 	const type = angularComponent(component);
 	const template = document.createElement("template");
 	template.innerHTML = html;
-	const moved: ChildNode[] = [];
+	const moved: Array<ChildNode> = [];
 	// A copy: the loop moves nodes out of the live list.
 	for (const node of Array.from(template.content.childNodes)) {
 		const marker = node.nodeType === Node.COMMENT_NODE && node.nodeValue === "nghm";
 		const state = node instanceof HTMLScriptElement && node.id === "ng-state";
-		if (!marker && !state) continue;
+		if (!marker && !state) {
+			continue;
+		}
 		moved.push(node);
 		// The marker first in `<body>`, where Angular looks for it.
-		if (marker) document.body.prepend(node);
-		else document.body.append(node);
+		if (marker) {
+			document.body.prepend(node);
+		} else {
+			document.body.append(node);
+		}
 	}
 	const host = template.content.firstElementChild as HTMLElement | null;
-	if (!host) throw new Error(`Angular hydrate: the server rendered no host element:\n${html}`);
+	if (!host) {
+		throw new Error(`Angular hydrate: the server rendered no host element:\n${html}`);
+	}
 	container.append(template.content);
 	const errors = new RecordingErrorHandler();
 	const { warn } = console;
-	console.warn = (...args: unknown[]) => {
+	console.warn = (...args: Array<unknown>) => {
 		const message = args.map(String).join(" ");
-		if (/NG0505/.test(message)) errors.mismatches.push(message);
+		if (/NG0505/.test(message)) {
+			errors.mismatches.push(message);
+		}
 		warn(...args);
 	};
 	const app = await createApplication({
@@ -85,7 +97,9 @@ export const hydrate: HydrateAdapter = async (component, container, html, option
 		throw error;
 	} finally {
 		console.warn = warn;
-		for (const node of moved) node.remove();
+		for (const node of moved) {
+			node.remove();
+		}
 	}
 	const settle = () => app.whenStable();
 	return {

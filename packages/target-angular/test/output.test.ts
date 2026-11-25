@@ -11,7 +11,6 @@
 // Angular's own packages ship partially compiled; in this plain-Node project the JIT compiler
 // finishes them as they load (see render-parity.test.ts). The components are compiled ahead of
 // time by ngtsc either way.
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -255,16 +254,20 @@ beforeAll(async () => {
  * `styleUrl`s name, which ngtsc reads and which no tool checks (ADR-0063).
  */
 async function toolchainMessages(
-	files: readonly (OutputFile & { prefix?: string })[],
-	sheets: readonly OutputFile[] = [],
-): Promise<Record<string, string[]>> {
+	files: ReadonlyArray<OutputFile & { prefix?: string }>,
+	sheets: ReadonlyArray<OutputFile> = [],
+): Promise<Record<string, Array<string>>> {
 	const directory = scratchDir();
-	for (const sheet of sheets) writeFileSync(join(directory, sheet.path), sheet.contents);
+	for (const sheet of sheets) {
+		writeFileSync(join(directory, sheet.path), sheet.contents);
+	}
 	const written = files.map((file) => ({
 		path: join(directory, `${file.prefix ?? ""}${file.path}`),
 		contents: file.contents,
 	}));
-	for (const file of written) writeFileSync(file.path, file.contents);
+	for (const file of written) {
+		writeFileSync(file.path, file.contents);
+	}
 	const paths = written.map((file) => file.path);
 	const [compiledFiles, checked, linted] = await Promise.all([
 		toolchain.frameworkCompile(written, context),
@@ -384,7 +387,7 @@ describe("angular output", () => {
 			cases.map(async ({ name, file, source }) =>
 				(await emitFormatted(lower(source, file, true))).map((output) => ({
 					...output,
-					prefix: `${name.replace(/\//g, "-")}-`,
+					prefix: `${name.replaceAll("/", "-")}-`,
 				})),
 			),
 		);
@@ -550,8 +553,8 @@ async function render(name: string, props: Record<string, unknown>): Promise<str
 		component = loaded.default ?? loaded[name];
 		rendered.set(name, component);
 	}
-	const logged: string[] = [];
-	const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+	const logged: Array<string> = [];
+	const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
 	const spies = [
 		vi.spyOn(console, "error").mockImplementation(capture),
 		vi.spyOn(console, "warn").mockImplementation(capture),
@@ -560,7 +563,9 @@ async function render(name: string, props: Record<string, unknown>): Promise<str
 	try {
 		html = await renderToString(component, { props });
 	} finally {
-		for (const spy of spies) spy.mockRestore();
+		for (const spy of spies) {
+			spy.mockRestore();
+		}
 	}
 	expect(logged).toEqual([]);
 	const selector = /^<(uf-[a-z-]+) style="display: contents;">([\s\S]*)<\/\1>$/.exec(html);

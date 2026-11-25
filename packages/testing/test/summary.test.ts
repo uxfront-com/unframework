@@ -24,8 +24,8 @@ const check: RunMode = { update: false, pixels: "baseline", canary: null };
 function run(
 	name: string,
 	project: string,
-	records: UfLayerMeta[],
-	options: { at?: string; mode?: RunMode; quarantine?: QuarantineEntry[] } = {},
+	records: Array<UfLayerMeta>,
+	options: { at?: string; mode?: RunMode; quarantine?: Array<QuarantineEntry> } = {},
 ): PartialMatrix {
 	return buildPartialMatrix({
 		run: name,
@@ -42,14 +42,14 @@ function run(
 
 /** A run of every project of `expected` (or of `projects`), filtered, sharded or neither. */
 function everyProject(
-	records: { project: string; record: UfLayerMeta }[],
+	records: Array<{ project: string; record: UfLayerMeta }>,
 	options: {
 		at?: string;
 		filtered?: string;
 		shard?: Shard;
-		projects?: string[];
-		empty?: string[];
-		quarantine?: QuarantineEntry[];
+		projects?: Array<string>;
+		empty?: Array<string>;
+		quarantine?: Array<QuarantineEntry>;
 	} = {},
 ): PartialMatrix {
 	const { shard = null, filtered = null } = options;
@@ -81,7 +81,7 @@ const nested = (layers: UfLayerMeta["layers"]): UfLayerMeta => ({
 	layers,
 });
 /** Passing records of each of `projects` on each case: L1 for compile, L7 for the others. */
-const passing = (cases: readonly UfLayerMeta[], projects = expected.projects) =>
+const passing = (cases: ReadonlyArray<UfLayerMeta>, projects = expected.projects) =>
 	cases.flatMap((record) =>
 		projects.map((project) => ({
 			project,
@@ -101,12 +101,12 @@ describe("summarise", () => {
 	describe("a live layer one project alone records", () => {
 		const withBench = {
 			...expected,
-			liveLayers: ["L1", "L15"] as LayerName[],
+			liveLayers: ["L1", "L15"] as Array<LayerName>,
 			recordedOnlyBy: { L15: "bench" },
 		};
 		const ofRun = (
-			projects: string[],
-			records: { project: string; record: UfLayerMeta }[],
+			projects: Array<string>,
+			records: Array<{ project: string; record: UfLayerMeta }>,
 			filtered: string | null = null,
 		) =>
 			buildPartialMatrix({
@@ -682,7 +682,7 @@ describe("summarise: parity scenarios", () => {
 	};
 
 	/** What one target's test checked: its scenarios, or the reason it was skipped. */
-	type Checked = string[] | { skipped: string } | { standIn: string };
+	type Checked = Array<string> | { skipped: string } | { standIn: string };
 
 	/**
 	 * A run of every project in which each target's browser tests checked these scenarios, by
@@ -971,7 +971,7 @@ describe("summarise: parity scenarios", () => {
 });
 
 describe("summarise: skips on live layers", () => {
-	const skipped = (reason: string, capabilities?: readonly string[]) =>
+	const skipped = (reason: string, capabilities?: ReadonlyArray<string>) =>
 		summarise(
 			[
 				everyProject([
@@ -1048,10 +1048,10 @@ describe("summarise: a reference that did not finish some cases (ADR-0091)", () 
 	 */
 	function dropped(
 		options: {
-			errors?: string[];
+			errors?: Array<string>;
 			filtered?: string;
-			extra?: { project: string; record: UfLayerMeta }[];
-			quarantine?: QuarantineEntry[];
+			extra?: Array<{ project: string; record: UfLayerMeta }>;
+			quarantine?: Array<QuarantineEntry>;
 		} = {},
 	): PartialMatrix {
 		const cases = ["basics/hello", "basics/nested"];
@@ -1140,7 +1140,7 @@ describe("summarise: a reference that did not finish some cases (ADR-0091)", () 
 	});
 
 	it("folds a blocked cell under a quarantine entry, which would otherwise read as stale", () => {
-		const quarantine: QuarantineEntry[] = [
+		const quarantine: Array<QuarantineEntry> = [
 			{ case: "basics/nested", target: "react", layer: "L10", reason: "x", issue: "UXF-1" },
 		];
 		const { problems } = summarise([dropped({ quarantine })], dropExpected);

@@ -5,7 +5,6 @@
 // required member, the tuple's members otherwise; a rerender, which sets inputs, keeps them. An
 // event named like a native DOM event is the output `uf` and its name (`ufChange`, ADR-0056).
 // Like the rerender test, it runs in Node on domino (this package has no browser project).
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -47,7 +46,7 @@ export default class Counter {
 `;
 
 /** The events as the IR declares them, which the adapter reads the payloads' shapes from. */
-const EVENTS: MountEvent[] = [
+const EVENTS: Array<MountEvent> = [
 	{ name: "change", optional: [false] },
 	{ name: "closed", optional: [] },
 	{ name: "moved", optional: [false, false] },
@@ -61,7 +60,9 @@ const saved = new Map<string, PropertyDescriptor | undefined>();
 beforeAll(async () => {
 	DominoAdapter.makeCurrent();
 	const document = new DominoAdapter().createHtmlDocument();
-	for (const name of globals) saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+	for (const name of globals) {
+		saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+	}
 	Object.assign(globalThis, { document, window: document.defaultView });
 
 	const directory = scratchDir();
@@ -75,13 +76,16 @@ beforeAll(async () => {
 afterAll(() => {
 	for (const name of globals) {
 		const descriptor = saved.get(name);
-		if (descriptor) Object.defineProperty(globalThis, name, descriptor);
-		else Reflect.deleteProperty(globalThis, name);
+		if (descriptor) {
+			Object.defineProperty(globalThis, name, descriptor);
+		} else {
+			Reflect.deleteProperty(globalThis, name);
+		}
 	}
 	removeScratch();
 });
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 
@@ -108,9 +112,9 @@ function click(): void {
 }
 
 it("binds each listener to its event's output and gives the payload back by its shape", async () => {
-	const calls: unknown[][] = [];
+	const calls: Array<Array<unknown>> = [];
 	const on = Object.fromEntries(
-		EVENTS.map(({ name }) => [name, (...args: unknown[]) => void calls.push([name, ...args])]),
+		EVENTS.map(({ name }) => [name, (...args: Array<unknown>) => void calls.push([name, ...args])]),
 	);
 	mounted = await mount(Counter, container, { on, events: EVENTS });
 	click();

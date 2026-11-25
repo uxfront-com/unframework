@@ -22,15 +22,19 @@ const ESLINT_HOST = "@unframework.dev/toolchain-qwik-eslint";
  * failure first, so a failure names the same linter whichever run ends first.
  */
 export async function lint(
-	files: readonly string[],
+	files: ReadonlyArray<string>,
 	context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
 	const [oxlint, types] = await Promise.allSettled([
 		lintWithOxlint(files, context),
 		lintTypes(files, context),
 	]);
-	if (oxlint.status === "rejected") throw oxlint.reason;
-	if (types.status === "rejected") throw types.reason;
+	if (oxlint.status === "rejected") {
+		throw oxlint.reason;
+	}
+	if (types.status === "rejected") {
+		throw types.reason;
+	}
 	return mergeLintResults([oxlint.value, types.value]);
 }
 
@@ -41,9 +45,9 @@ export async function lint(
  * L4 proved.
  */
 export async function lintTypes(
-	files: readonly string[],
+	files: ReadonlyArray<string>,
 	context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
+): Promise<Map<string, Array<ToolchainMessage>>> {
 	const manifest = resolveInstalled(context.toolchainDir, `${ESLINT_HOST}/package.json`);
 	if (manifest === undefined) {
 		throw new Error(

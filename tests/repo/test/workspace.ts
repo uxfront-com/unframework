@@ -9,11 +9,13 @@ export const root: string = fileURLToPath(new URL("../../..", import.meta.url));
 export interface WorkspacePackage {
 	directory: string;
 	path: string;
+	// A package.json as JSON.parse gives it, whose fields the invariants read in every shape.
+	// oxlint-disable-next-line typescript/no-explicit-any
 	manifest: Record<string, any>;
 }
 
 /** The packages under packages/, except the v1 reference compiler. */
-export function packages(): WorkspacePackage[] {
+export function packages(): Array<WorkspacePackage> {
 	const base = join(root, "packages");
 	return readdirSync(base)
 		.filter(
@@ -33,15 +35,23 @@ export function packages(): WorkspacePackage[] {
  * dot directory, as Node's `glob` does, so the git-ignored scratch the tests leave (`.canary/`,
  * `.reports/`, `.vitest/`) is never read.
  */
-export function sourceFiles(directory: string): string[] {
-	if (!existsSync(directory)) return [];
-	const files: string[] = [];
+export function sourceFiles(directory: string): Array<string> {
+	if (!existsSync(directory)) {
+		return [];
+	}
+	const files: Array<string> = [];
 	for (const entry of readdirSync(directory)) {
-		if (entry === "node_modules" || entry === "dist") continue;
+		if (entry === "node_modules" || entry === "dist") {
+			continue;
+		}
 		const path = join(directory, entry);
 		if (statSync(path).isDirectory()) {
-			if (!entry.startsWith(".")) files.push(...sourceFiles(path));
-		} else if (/\.(?:[cm]?ts|tsx)$/.test(entry) && !entry.endsWith(".d.ts")) files.push(path);
+			if (!entry.startsWith(".")) {
+				files.push(...sourceFiles(path));
+			}
+		} else if (/\.(?:[cm]?ts|tsx)$/.test(entry) && !entry.endsWith(".d.ts")) {
+			files.push(path);
+		}
 	}
 	return files.sort();
 }
@@ -53,11 +63,11 @@ export interface ImportRecord {
 }
 
 /** The module specifiers a file imports or re-exports, statically or dynamically. */
-export function importsOf(file: string): ImportRecord[] {
+export function importsOf(file: string): Array<ImportRecord> {
 	const source = readFileSync(file, "utf8");
 	const result = parseSync(file, source);
 	const { module } = result;
-	const records: ImportRecord[] = [];
+	const records: Array<ImportRecord> = [];
 	const name = relative(root, file);
 	for (const entry of module.staticImports) {
 		const typeOnly = entry.entries.length > 0 && entry.entries.every((item) => item.isType);
@@ -90,7 +100,9 @@ export function importsOf(file: string): ImportRecord[] {
 	for (const entry of module.dynamicImports) {
 		const literal = source.slice(entry.moduleRequest.start, entry.moduleRequest.end);
 		const match = /^["'`]([^"'`]+)["'`]$/.exec(literal.trim());
-		if (match) records.push({ file: name, specifier: match[1]!, typeOnly: false });
+		if (match) {
+			records.push({ file: name, specifier: match[1]!, typeOnly: false });
+		}
 	}
 	return records;
 }
@@ -115,7 +127,7 @@ export interface ExportRecord {
  * have no name: each is returned as `*` or `default`, so a caller that pins a module's names
  * sees it.
  */
-export function exportsOf(file: string): ExportRecord[] {
+export function exportsOf(file: string): Array<ExportRecord> {
 	const { module } = parseSync(file, readFileSync(file, "utf8"));
 	return module.staticExports.flatMap((entry) =>
 		entry.entries.map((item) => ({

@@ -2,7 +2,7 @@
 // them into one component without changing what any renders, and the seeded fuzz is
 // deterministic and as varied as the printers' hard parts.
 import { walk } from "@unframework.dev/ir";
-import type { Attribute, Expression, RenderNode, UfComponent } from "@unframework.dev/ir";
+import type { Expression, RenderNode, UfComponent } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -115,6 +115,7 @@ describe("jsLiteral", () => {
 		expect(code).toBe(
 			'{ "a": undefined, "b": -0, "c": NaN, "d": [Infinity, -Infinity, 1e+21], "e": null }',
 		);
+		// oxlint-disable-next-line typescript/no-implied-eval, typescript/no-unsafe-call -- reads the printed literal back, as an output would
 		const read = new Function(`return (${code});`)() as typeof value;
 		expect(Object.is(read.b, -0)).toBe(true);
 		expect(read).toEqual(value);
@@ -128,26 +129,41 @@ function holdsList(node: RenderNode): boolean {
 }
 
 /** Every attribute and node of a component, and the expressions they hold, with its props. */
-function features(cases: readonly ParityCase[]): Set<string> {
+function features(cases: ReadonlyArray<ParityCase>): Set<string> {
 	const found = new Set<string>();
 	for (const { lowered } of cases) {
 		const { component, props } = lowered!;
-		const values = Object.values(props).flatMap(function flat(value: unknown): unknown[] {
+		const values = Object.values(props).flatMap(function flat(value: unknown): Array<unknown> {
 			return Array.isArray(value)
 				? [value, ...value.flatMap(flat)]
 				: value && typeof value === "object"
 					? [value, ...Object.values(value).flatMap(flat)]
 					: [value];
 		});
-		if (values.some((value) => Number.isNaN(value))) found.add("NaN");
-		if (values.some((value) => Object.is(value, -0))) found.add("-0");
-		if (values.includes(1e21)) found.add("1e21");
-		if (values.includes(null)) found.add("null");
-		if (values.some((value) => Array.isArray(value) && !value.length)) found.add("an empty list");
+		if (values.some((value) => Number.isNaN(value))) {
+			found.add("NaN");
+		}
+		if (values.some((value) => Object.is(value, -0))) {
+			found.add("-0");
+		}
+		if (values.includes(1e21)) {
+			found.add("1e21");
+		}
+		if (values.includes(null)) {
+			found.add("null");
+		}
+		if (values.some((value) => Array.isArray(value) && !value.length)) {
+			found.add("an empty list");
+		}
 		for (const prop of component.props) {
-			if (prop.default) found.add("a default");
-			if (!(prop.name in props)) found.add("an absent prop");
-			else if (props[prop.name] === undefined) found.add("an explicit undefined");
+			if (prop.default) {
+				found.add("a default");
+			}
+			if (!(prop.name in props)) {
+				found.add("an absent prop");
+			} else if (props[prop.name] === undefined) {
+				found.add("an explicit undefined");
+			}
 		}
 		const falsy = (expression: Expression | undefined) => {
 			const value = expression && props[expression.code];
@@ -155,33 +171,54 @@ function features(cases: readonly ParityCase[]): Set<string> {
 		};
 		walk(component.render, {
 			enter(node) {
-				if (node.kind === "Fragment") found.add("a root fragment");
-				if (node.kind === "Interpolation") found.add("an interpolation");
+				if (node.kind === "Fragment") {
+					found.add("a root fragment");
+				}
+				if (node.kind === "Interpolation") {
+					found.add("an interpolation");
+				}
 				if (node.kind === "If") {
 					found.add("a conditional");
-					if (node.branches.length >= 3) found.add("an else-if chain");
-					if (node.branches.some(({ children }) => !children.length)) found.add("an empty branch");
-					if (node.branches.some(({ children }) => children.length > 1))
+					if (node.branches.length >= 3) {
+						found.add("an else-if chain");
+					}
+					if (node.branches.some(({ children }) => !children.length)) {
+						found.add("an empty branch");
+					}
+					if (node.branches.some(({ children }) => children.length > 1)) {
 						found.add("a multi-node branch");
-					if (node.branches.some(({ children }) => children[0]?.kind === "Text"))
+					}
+					if (node.branches.some(({ children }) => children[0]?.kind === "Text")) {
 						found.add("a text branch");
-					if (node.branches.some(({ condition }) => falsy(condition)))
+					}
+					if (node.branches.some(({ condition }) => falsy(condition))) {
 						found.add("a falsy non-boolean condition");
+					}
 				}
 				if (node.kind === "For") {
 					found.add("a list");
-					if (node.index) found.add("an indexed list");
+					if (node.index) {
+						found.add("an indexed list");
+					}
 					if (node.body.kind === "Element" && node.body.children.some(holdsList)) {
 						found.add("a nested list");
 					}
 				}
-				if (node.kind !== "Element") return;
-				if (node.tag === "svg") found.add("an svg");
-				if (node.tag !== node.tag.toLowerCase()) found.add("a camel-case SVG element");
-				for (const attribute of node.attributes as Attribute[]) {
+				if (node.kind !== "Element") {
+					return;
+				}
+				if (node.tag === "svg") {
+					found.add("an svg");
+				}
+				if (node.tag !== node.tag.toLowerCase()) {
+					found.add("a camel-case SVG element");
+				}
+				for (const attribute of node.attributes) {
 					found.add(`a ${attribute.kind} attribute`);
 					if (attribute.kind === "Class") {
-						for (const item of attribute.items) found.add(`a ${item.kind} class item`);
+						for (const item of attribute.items) {
+							found.add(`a ${item.kind} class item`);
+						}
 					}
 					if (attribute.kind === "Style") {
 						for (const declaration of attribute.declarations) {
@@ -189,8 +226,12 @@ function features(cases: readonly ParityCase[]): Set<string> {
 						}
 					}
 					if (attribute.kind === "Spread") {
-						if (attribute.keys.some(({ name }) => name === "class")) found.add("a spread class");
-						if (!(attribute.value.code in props)) found.add("an absent spread");
+						if (attribute.keys.some(({ name }) => name === "class")) {
+							found.add("a spread class");
+						}
+						if (!(attribute.value.code in props)) {
+							found.add("an absent spread");
+						}
 					}
 				}
 			},
@@ -260,9 +301,11 @@ describe("the seeded random components", () => {
 	it("start no <pre> or <textarea> with a line feed", () => {
 		for (const suite of sourceSuites) {
 			for (const parityCase of suite.cases) {
-				const check = (nodes: readonly unknown[]): void => {
+				const check = (nodes: ReadonlyArray<unknown>): void => {
 					for (const node of nodes) {
-						if (typeof node !== "object" || node === null) continue;
+						if (typeof node !== "object" || node === null) {
+							continue;
+						}
 						const { tag, children } = node as DomElement;
 						if (tag === "pre" || tag === "textarea") {
 							const [first] = children;

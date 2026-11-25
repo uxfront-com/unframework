@@ -15,16 +15,16 @@ import { ROOT } from "./paths.ts";
  * Babel and tsgo would fail on one, and the compile project parses each with lightningcss
  * instead (`stylesheetProblems`).
  */
-export function toolchainFiles(paths: readonly string[]): string[] {
+export function toolchainFiles(paths: ReadonlyArray<string>): Array<string> {
 	return paths.filter((path) => !path.endsWith(".css"));
 }
 
 /** L3: the framework compiler's errors and warnings on a case's files, and outside the outputs. */
 export function frameworkCompileProblems(
 	results: ReadonlyMap<string, FrameworkCompileResult>,
-	caseFiles: readonly string[],
+	caseFiles: ReadonlyArray<string>,
 	outputs: ReadonlySet<string>,
-): string[] {
+): Array<string> {
 	const problems = caseFiles.flatMap((file) => {
 		const result = results.get(file);
 		return result
@@ -41,29 +41,29 @@ export function frameworkCompileProblems(
 
 /** L4: every checker diagnostic on a case's files, and outside the outputs. */
 export function typecheckProblems(
-	results: ReadonlyMap<string, readonly ToolchainMessage[]>,
-	caseFiles: readonly string[],
+	results: ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>,
+	caseFiles: ReadonlyArray<string>,
 	outputs: ReadonlySet<string>,
-): string[] {
+): Array<string> {
 	return messageProblems("checker", results, caseFiles, outputs);
 }
 
 /** L5: every linter message on a case's files, and outside the outputs. */
 export function lintProblems(
-	results: ReadonlyMap<string, readonly ToolchainMessage[]>,
-	caseFiles: readonly string[],
+	results: ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>,
+	caseFiles: ReadonlyArray<string>,
 	outputs: ReadonlySet<string>,
-): string[] {
+): Array<string> {
 	return messageProblems("linter", results, caseFiles, outputs);
 }
 
 /** The problems of a tool that reports messages without a kind: L4 and L5 tolerate none. */
 function messageProblems(
 	tool: "checker" | "linter",
-	results: ReadonlyMap<string, readonly ToolchainMessage[]>,
-	caseFiles: readonly string[],
+	results: ReadonlyMap<string, ReadonlyArray<ToolchainMessage>>,
+	caseFiles: ReadonlyArray<string>,
 	outputs: ReadonlySet<string>,
-): string[] {
+): Array<string> {
 	const problems = caseFiles.flatMap((file) => {
 		const messages = results.get(file);
 		return messages
@@ -83,7 +83,7 @@ export function display(path: string): string {
 	return relative(ROOT, path).split(sep).join("/");
 }
 
-function describeCompile(path: string, result: FrameworkCompileResult): string[] {
+function describeCompile(path: string, result: FrameworkCompileResult): Array<string> {
 	return [
 		...result.errors.map((message) => `${display(path)}: error ${describeMessage(message)}`),
 		...result.warnings.map((message) => `${display(path)}: warning ${describeMessage(message)}`),
@@ -91,7 +91,7 @@ function describeCompile(path: string, result: FrameworkCompileResult): string[]
 }
 
 /** A checker's or a linter's messages carry no kind: L4 and L5 tolerate none of them. */
-function describeCheck(path: string, messages: readonly ToolchainMessage[]): string[] {
+function describeCheck(path: string, messages: ReadonlyArray<ToolchainMessage>): Array<string> {
 	return messages.map((message) => `${display(path)}: ${describeMessage(message)}`);
 }
 

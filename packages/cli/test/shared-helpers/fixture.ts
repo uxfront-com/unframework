@@ -85,8 +85,8 @@ export function declares(contents: string, name: string): boolean {
  */
 export function expectInline(
 	written: Readonly<Record<string, string>>,
-	components: readonly string[],
-	inline: readonly string[],
+	components: ReadonlyArray<string>,
+	inline: ReadonlyArray<string>,
 ): void {
 	expect(Object.keys(written).filter((path) => path.includes("_unframework"))).toEqual([]);
 	for (const component of components) {

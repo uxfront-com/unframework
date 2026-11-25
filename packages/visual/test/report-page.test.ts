@@ -21,7 +21,7 @@ function cell(overrides: Partial<VisualCell> = {}): VisualCell {
 	};
 }
 
-function report(cells: VisualCell[], overrides: Partial<VisualReport> = {}): VisualReport {
+function report(cells: Array<VisualCell>, overrides: Partial<VisualReport> = {}): VisualReport {
 	return {
 		version: 1,
 		pixels: "live",
@@ -48,12 +48,16 @@ describe("renderReport", () => {
 		const { html, report: fixture } = writeReportFixture("report-missing");
 		const named = new Set(
 			fixture.examples.flatMap((example) =>
-				example.cells.flatMap((each) => Object.values(each.images)),
+				example.cells.flatMap((each) =>
+					Object.values(each.images as Readonly<Record<string, string | undefined>>),
+				),
 			),
 		);
 		const linked = [...html.matchAll(/(?:src|href)="([^"#][^"]*)"/g)].map((match) => match[1]);
 		expect(linked.length).toBeGreaterThan(0);
-		for (const path of linked) expect(named).toContain(path);
+		for (const path of linked) {
+			expect(named).toContain(path);
+		}
 	});
 
 	it("escapes every value and encodes every path", () => {

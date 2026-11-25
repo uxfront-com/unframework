@@ -13,13 +13,13 @@ import type {
 import type { CallExpression, Node, SourceFile } from "typescript/ast";
 import { isCallExpression, isIdentifier } from "typescript/ast/is";
 import { SymbolFlags, TypeFlags } from "typescript/sync";
-import type { Checker, Type, TypeReference } from "typescript/sync";
+import type { Checker, Type } from "typescript/sync";
 
 /** The shadow of a source: its text, and where each query's helper call starts in it. */
 export interface Shadow {
 	text: string;
 	/** The offset of each query's call in `text`, in the queries' order. */
-	calls: number[];
+	calls: Array<number>;
 }
 
 /** The helper's name, when the source's text doesn't already hold it. */
@@ -33,29 +33,37 @@ const HELPER = "__ufDirectiveValue";
  * JavaScript. A leading byte order mark is dropped, since the parser's spans count it and the
  * checker's positions don't.
  */
-export function shadowOf(source: string, queries: readonly DirectiveValueQuery[]): Shadow {
+export function shadowOf(source: string, queries: ReadonlyArray<DirectiveValueQuery>): Shadow {
 	const bom = source.startsWith("\uFEFF") ? 1 : 0;
 	let helper = HELPER;
-	for (let suffix = 1; source.includes(helper); suffix++) helper = `${HELPER}${suffix}`;
+	for (let suffix = 1; source.includes(helper); suffix++) {
+		helper = `${HELPER}${suffix}`;
+	}
 	const order = queries
 		.map((query, index) => ({ query, index }))
 		.toSorted((a, b) => a.query.value.start - b.query.value.start);
-	const calls: number[] = Array.from({ length: queries.length }, () => -1);
+	const calls: Array<number> = Array.from({ length: queries.length }, () => -1);
 	let text = "";
 	let at = bom;
 	for (const { query, index } of order) {
 		const { value, directive } = query;
 		// Spans that overlap are no two values the parser gave: the later one is left out.
-		if (value.start < at) continue;
+		if (value.start < at) {
+			continue;
+		}
 		text += source.slice(at, value.start);
 		// The parser says which a value is: a string attribute's literal takes the braces of a
 		// container, which a container's expression already has.
 		const attribute = query.kind === "string";
 		const call = `${helper}(${source.slice(directive.start, directive.end)}, (${source.slice(value.start, value.end)}))`;
-		if (attribute) text += "{";
+		if (attribute) {
+			text += "{";
+		}
 		calls[index] = text.length;
 		text += call;
-		if (attribute) text += "}";
+		if (attribute) {
+			text += "}";
+		}
 		at = value.end;
 	}
 	text += source.slice(at);
@@ -98,7 +106,9 @@ export function checkShadow(shadow: Shadow, context: DirectiveValueContext): Dir
 	const dependencies = new Set<string>();
 	let index = 0;
 	const checks = located.map((call): DirectiveValueCheck | null => {
-		if (!call) return null;
+		if (!call) {
+			return null;
+		}
 		const at = index++;
 		const named = symbols[at];
 		const symbol =
@@ -112,7 +122,9 @@ export function checkShadow(shadow: Shadow, context: DirectiveValueContext): Dir
 		}
 		const expected = directiveType(directiveTypes[at]!, context);
 		const value = valueTypes[at]!;
-		if (!expected || value.isErrorType()) return null;
+		if (!expected || value.isErrorType()) {
+			return null;
+		}
 		return {
 			assignable: checker.isTypeAssignableTo(value, expected),
 			value: checker.typeToString(value),
@@ -128,7 +140,9 @@ export function checkShadow(shadow: Shadow, context: DirectiveValueContext): Dir
  * argument gives.
  */
 function directiveType(type: Type, context: DirectiveValueContext): Type | undefined {
-	if (type.isErrorType() || !type.isTypeReference()) return undefined;
+	if (type.isErrorType() || !type.isTypeReference()) {
+		return undefined;
+	}
 	const target = type.getSymbol();
 	if (!target || target.name !== "Directive" || !(target.flags & SymbolFlags.Interface)) {
 		return undefined;
@@ -138,8 +152,10 @@ function directiveType(type: Type, context: DirectiveValueContext): Type | undef
 	if (!declared.length || !declared.every((file) => file && context.isAuthoring(file))) {
 		return undefined;
 	}
-	const [expected] = context.checker.getTypeArguments(type as TypeReference);
-	if (!expected || expected.isErrorType() || expected.flags & TypeFlags.Never) return undefined;
+	const [expected] = context.checker.getTypeArguments(type);
+	if (!expected || expected.isErrorType() || expected.flags & TypeFlags.Never) {
+		return undefined;
+	}
 	return expected;
 }
 
@@ -147,7 +163,9 @@ function directiveType(type: Type, context: DirectiveValueContext): Type | undef
 function callAt(source: SourceFile, start: number): CallExpression | undefined {
 	let found: CallExpression | undefined;
 	const visit = (node: Node): void => {
-		if (found || node.pos > start || node.end <= start) return;
+		if (found || node.pos > start || node.end <= start) {
+			return;
+		}
 		if (
 			isCallExpression(node) &&
 			node.getStart(source) === start &&

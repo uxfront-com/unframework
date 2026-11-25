@@ -295,8 +295,10 @@ export const angular: Target = defineTarget({
 			note: "A `<Teleport>` is an `<ng-template>` whose inline directive, once the application has rendered, creates its view in its own view container and moves the view's nodes into `to`, as the CDK's `DomPortalOutlet` does, and removes them with the component (ADR-0098).",
 		},
 	},
-	emit(component: UfComponent, context: EmitContext): OutputFile[] {
-		if (reportsLiteralFallthrough(component, context)) return [];
+	emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
+		if (reportsLiteralFallthrough(component, context)) {
+			return [];
+		}
 		return [emitComponent(component, context)];
 	},
 	emitComposable,
@@ -314,11 +316,17 @@ function reportsLiteralFallthrough(component: UfComponent, context: EmitContext)
 	let reported = false;
 	walk(component.render, {
 		enter(node) {
-			if (node.kind !== "Component") return;
+			if (node.kind !== "Component") {
+				return;
+			}
 			const literal = childApi(context.module, node.component)?.literal;
-			if (literal === undefined) return;
+			if (literal === undefined) {
+				return;
+			}
 			for (const attribute of node.attributes) {
-				if (!["Static", "Bound", "Event", "Class", "Style"].includes(attribute.kind)) continue;
+				if (!["Static", "Bound", "Event", "Class", "Style"].includes(attribute.kind)) {
+					continue;
+				}
 				reported = true;
 				context.report({
 					code: "UF1002",
@@ -399,9 +407,15 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
 			.filter((binding) => formOf(plan, binding) === "module")
 			.map((binding) => [binding.name, moduleMember(plan, binding)] as const),
 	);
-	for (const method of listeners.methods) templateMembers.add(method.name);
-	for (const guard of listeners.guards) templateMembers.add(guard);
-	for (const slot of reads.slots) templateMembers.add(slotQuery(slot));
+	for (const method of listeners.methods) {
+		templateMembers.add(method.name);
+	}
+	for (const guard of listeners.guards) {
+		templateMembers.add(guard);
+	}
+	for (const slot of reads.slots) {
+		templateMembers.add(slotQuery(slot));
+	}
 	// A consumer's `class` and `style` fall through to a root element or component, or the
 	// rest's element, through inputs, and so do its other attributes and listeners, through two
 	// records; the host clears `class` and `style` for a component that takes them or opts out
@@ -635,7 +649,9 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
 	]);
 	for (const { slot, exported: name } of composition.slots) {
 		const other = exported.get(name);
-		if (other === undefined) continue;
+		if (other === undefined) {
+			continue;
+		}
 		context.report({
 			code: "UF2003",
 			severity: "error",
@@ -787,7 +803,9 @@ function holdsTeleport(component: UfComponent): boolean {
 	let found = false;
 	walk(component.render, {
 		enter: (node) => {
-			if (node.kind === "Teleport") found = true;
+			if (node.kind === "Teleport") {
+				found = true;
+			}
 			return found ? false : undefined;
 		},
 	});
@@ -911,8 +929,12 @@ function reportApiClashes(
 ): void {
 	const taken = new Map<string, string>();
 	const key = ({ space, name }: ApiName) => `${space} ${name}`;
-	const declare = (names: ApiName[]) => {
-		for (const name of names) if (!taken.has(key(name))) taken.set(key(name), name.what);
+	const declare = (names: Array<ApiName>) => {
+		for (const name of names) {
+			if (!taken.has(key(name))) {
+				taken.set(key(name), name.what);
+			}
+		}
 	};
 	for (const name of ANGULAR_MEMBERS) {
 		const what =
@@ -947,7 +969,7 @@ function reportApiClashes(
 		const what = "the member that holds the root element a ref on the component holds";
 		declare([{ space: "member", name: ELEMENT_MEMBER, what }]);
 	}
-	const source: { kind: string; label: string; span: Span; names: ApiName[] }[] = [
+	const source: Array<{ kind: string; label: string; span: Span; names: Array<ApiName> }> = [
 		...component.props.map(({ name, span }) => {
 			const what = `the prop \`${name}\``;
 			return {
@@ -1033,14 +1055,18 @@ function providers(
 	composition: Composition,
 	className: string,
 	refObject: string | undefined,
-): { code: string[]; external: Set<string> } {
+): { code: Array<string>; external: Set<string> } {
 	const external = new Set<string>();
-	const code: string[] = [];
+	const code: Array<string> = [];
 	const instance = plan.locals.claim(`${className.charAt(0).toLowerCase()}${className.slice(1)}`);
 	for (const item of plan.component.setup) {
-		if (item.kind !== "Provide") continue;
+		if (item.kind !== "Provide") {
+			continue;
+		}
 		for (const reference of item.value.refs) {
-			if (reference.kind === "Binding") external.add(bindingById(plan, reference.binding).name);
+			if (reference.kind === "Binding") {
+				external.add(bindingById(plan, reference.binding).name);
+			}
 		}
 		const written = rewriteCode(item.value, plan.component, rules, "pure");
 		const value = keyOf(plan, item.key).ref ? `${refObject}(${written})` : written;
@@ -1068,7 +1094,9 @@ function providers(
 function typeRoots(component: UfComponent, module: UfModule): Set<string> {
 	const names = new Set<string>();
 	const add = (found: Iterable<string>) => {
-		for (const name of found) names.add(name);
+		for (const name of found) {
+			names.add(name);
+		}
 	};
 	const declared = new Set(module.types.map(({ name }) => name));
 	for (const prop of component.props) {
@@ -1079,19 +1107,35 @@ function typeRoots(component: UfComponent, module: UfModule): Set<string> {
 		);
 	}
 	for (const parameter of component.typeParameters ?? []) {
-		if (parameter.constraint) add(typeNames(parameter.constraint));
-		if (parameter.default) add(typeNames(parameter.default));
+		if (parameter.constraint) {
+			add(typeNames(parameter.constraint));
+		}
+		if (parameter.default) {
+			add(typeNames(parameter.default));
+		}
 	}
 	for (const event of component.emits?.events ?? []) {
-		for (const parameter of event.parameters) add(typeNames(parameter.type));
+		for (const parameter of event.parameters) {
+			add(typeNames(parameter.type));
+		}
 	}
 	for (const item of component.setup) {
-		if ("type" in item && item.type) add(typeNames(item.type));
+		if ("type" in item && item.type) {
+			add(typeNames(item.type));
+		}
 	}
-	for (const { code } of codeOf(component)) add(codeNames(code.code, codeKind(code, component)));
+	for (const { code } of codeOf(component)) {
+		add(codeNames(code.code, codeKind(code, component)));
+	}
 	for (const { function: fn } of functionsOf(component)) {
-		for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
-		if (fn.returnType) add(typeNames(fn.returnType));
+		for (const parameter of fn.parameters) {
+			if (parameter.type) {
+				add(typeNames(parameter.type));
+			}
+		}
+		if (fn.returnType) {
+			add(typeNames(fn.returnType));
+		}
 	}
 	return new Set([...names].filter((name) => declared.has(name)));
 }
@@ -1105,7 +1149,9 @@ function typeParameters(
 	component: UfComponent,
 	placeholders: Placeholders,
 ): ReturnType<typeof js.classDeclaration>["typeParameters"] {
-	if (!component.typeParameters?.length) return null;
+	if (!component.typeParameters?.length) {
+		return null;
+	}
 	const type = (text: TypeText | undefined) => (text ? placeholders.type(text.code) : null);
 	const params = component.typeParameters.map((parameter) => ({
 		type: "TSTypeParameter" as const,

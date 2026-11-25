@@ -77,7 +77,7 @@ const MAIN = [
 	"",
 ].join("\n");
 
-let roots: string[] = [];
+let roots: Array<string> = [];
 
 function write(root: string, path: string, contents: string): void {
 	const file = join(root, path);
@@ -89,7 +89,9 @@ function createRoot(files: Record<string, string>): string {
 	mkdirSync(join(HERE, ".uf-tmp"), { recursive: true });
 	const root = realpathSync(mkdtempSync(join(HERE, ".uf-tmp", "packages-")));
 	roots.push(root);
-	for (const [path, contents] of Object.entries(files)) write(root, path, contents);
+	for (const [path, contents] of Object.entries(files)) {
+		write(root, path, contents);
+	}
 	return root;
 }
 
@@ -108,11 +110,13 @@ const toolchainDir = (target: TargetName, root: string) =>
 	target === "angular" ? ANGULAR_TOOLCHAIN : root;
 
 afterEach(() => {
-	for (const root of roots) rmSync(root, { recursive: true, force: true });
+	for (const root of roots) {
+		rmSync(root, { recursive: true, force: true });
+	}
 	roots = [];
 });
 
-const VITE_TARGETS: [TargetName, Toolchain][] = [
+const VITE_TARGETS: Array<[TargetName, Toolchain]> = [
 	["react", react],
 	["vue", vue],
 	["svelte", svelte],
@@ -153,7 +157,9 @@ async function fetchAll(server: ViteDevServer): Promise<Map<string, string>> {
 	const client = server.environments.client;
 	const seen = new Map<string, string>();
 	const visit = async (url: string): Promise<void> => {
-		if (seen.has(url)) return;
+		if (seen.has(url)) {
+			return;
+		}
 		const result = await client.transformRequest(url);
 		seen.set(url, result?.code ?? "");
 		// `import(` too: Qwik's optimizer moves each component's body into a lazily imported segment.
@@ -163,7 +169,9 @@ async function fetchAll(server: ViteDevServer): Promise<Map<string, string>> {
 				? posix.join(posix.dirname(url), imported!)
 				: imported!;
 			// Only the project's and the package's modules: a framework's runtime is no part of this.
-			if (next.startsWith("/") && /\/@ds\/|^\/main/.test(next)) await visit(next);
+			if (next.startsWith("/") && /\/@ds\/|^\/main/.test(next)) {
+				await visit(next);
+			}
 		}
 	};
 	await visit("/main.ts");
@@ -174,7 +182,7 @@ const joined = (modules: ReadonlyMap<string, string>) => [...modules.values()].j
 
 /** The text of every chunk a build wrote. */
 const chunksOf = (output: unknown): string => {
-	const outputs = (Array.isArray(output) ? output : [output]) as Rollup.RollupOutput[];
+	const outputs = (Array.isArray(output) ? output : [output]) as Array<Rollup.RollupOutput>;
 	return outputs
 		.flatMap((each) => each.output)
 		.map((chunk) => (chunk.type === "chunk" ? chunk.code : String(chunk.source)))

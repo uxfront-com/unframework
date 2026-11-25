@@ -34,7 +34,7 @@ const COMPILER = "@astrojs/compiler-rs";
  * Rejects when the compiler is not the version the project's `astro` depends on.
  */
 export async function astroFrameworkCompile(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 	context: ToolchainContext,
 ): Promise<Map<string, FrameworkCompileResult>> {
 	assertFilesToCompile(files);
@@ -50,7 +50,9 @@ export async function astroFrameworkCompile(
 					fromDiagnostic(diagnostic),
 				);
 			}
-			for (const message of output.styleError) result.errors.push({ message });
+			for (const message of output.styleError) {
+				result.errors.push({ message });
+			}
 		} catch (error) {
 			// The compiler reports bad input as diagnostics; a throw is a compiler failure on this file.
 			result.errors.push({ message: `${COMPILER} failed: ${String(error)}` });
@@ -66,9 +68,9 @@ export async function astroFrameworkCompile(
  * for the bundler's TypeScript transform.
  */
 export async function astroFrameworkEmit(
-	files: readonly ToolchainFile[],
+	files: ReadonlyArray<ToolchainFile>,
 	context: ToolchainContext,
-): Promise<Map<string, ToolchainFile[]>> {
+): Promise<Map<string, Array<ToolchainFile>>> {
 	assertFilesToCompile(files);
 	const { transform } = await import("@astrojs/compiler-rs");
 	return new Map(
@@ -128,7 +130,9 @@ function fromDiagnostic(diagnostic: DiagnosticMessage): ToolchainMessage {
  */
 export function assertCompilerMatchesAstro(root: string): void {
 	const astroManifest = resolveInstalled(root, "astro/package.json");
-	if (!astroManifest) throw new Error(`L3 (astro): astro is not installed in ${root}.`);
+	if (!astroManifest) {
+		throw new Error(`L3 (astro): astro is not installed in ${root}.`);
+	}
 	const theirs = versionOf(createRequire(astroManifest));
 	const ours = versionOf(createRequire(import.meta.url));
 	if (theirs !== ours) {
@@ -139,6 +143,8 @@ export function assertCompilerMatchesAstro(root: string): void {
 }
 
 function versionOf(require: NodeJS.Require): string {
-	const manifest = JSON.parse(readFileSync(require.resolve(`${COMPILER}/package.json`), "utf8"));
-	return (manifest as { version: string }).version;
+	const manifest = JSON.parse(
+		readFileSync(require.resolve(`${COMPILER}/package.json`), "utf8"),
+	) as { version: string };
+	return manifest.version;
 }

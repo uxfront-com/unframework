@@ -1,8 +1,9 @@
 import { component$ } from "@qwik.dev/core";
 
-import Button, {
-	type ButtonProps,
-	type ButtonSize,
+import Button from "../../../../../integration/cases/types/exported-types/__output__/qwik/Button";
+import type {
+	ButtonProps,
+	ButtonSize,
 } from "../../../../../integration/cases/types/exported-types/__output__/qwik/Button";
 
 export const MisuseType = component$(() => {

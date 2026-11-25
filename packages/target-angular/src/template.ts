@@ -67,7 +67,7 @@ export interface TemplateReads {
 	/** The bindings lists' keys read, from the class (`track this.label()`). */
 	keyed: ReadonlySet<BindingId>;
 	/** The allowed globals the expressions read, each a member of its own name. */
-	globals: readonly string[];
+	globals: ReadonlyArray<string>;
 	/** The slots whose templates the template renders or tests, through their queries. */
 	slots: ReadonlySet<string>;
 	/** The `v-model`s' values, which the template writes as the state's signal (`this.name`). */
@@ -106,19 +106,29 @@ export function template(
 	// A setup that awaits renders its template, `@let`s included, once it resolves (ADR-0101).
 	const level = plan.resolved === undefined ? LEVEL : LEVEL + 1;
 	const pad = INDENT.repeat(level);
-	const lets: string[] = [];
+	const lets: Array<string> = [];
 	const declare = (id: BindingId | undefined) => {
-		if (id === undefined || !reads.read.has(id)) return;
+		if (id === undefined || !reads.read.has(id)) {
+			return;
+		}
 		const binding = bindingById(plan, id);
 		if (readThroughLet(plan, binding)) {
 			lets.push(`${pad}@let ${binding.name} = this.${memberOf(plan, binding)}();`);
 		}
 	};
-	for (const prop of component.props) declare(prop.binding);
+	for (const prop of component.props) {
+		declare(prop.binding);
+	}
 	for (const item of component.setup) {
-		if ("binding" in item) declare(item.binding);
+		if ("binding" in item) {
+			declare(item.binding);
+		}
 		// A composable's returned refs, read through its call's holder (ADR-0069).
-		if (item.kind === "Use") for (const member of item.members) declare(member.binding);
+		if (item.kind === "Use") {
+			for (const member of item.members) {
+				declare(member.binding);
+			}
+		}
 	}
 	const dialect: MarkupDialect = {
 		...angularDialect,
@@ -157,7 +167,9 @@ export function template(
 		...(transition && {
 			transition: ({ node, container, branch }) => {
 				const nodes = { kind: "nodes", nodes: node.children, container } as const;
-				if (node.children[0]?.kind !== "If") return [nodes];
+				if (node.children[0]?.kind !== "If") {
+					return [nodes];
+				}
 				return [
 					{
 						kind: "wrapper",
@@ -328,12 +340,15 @@ function takingPassed(
 ): ElementNode | ComponentNode | DynamicNode {
 	const span = root.span;
 	const expression = (code: string): Expression => ({ code, span, refs: [] });
-	const attributes: (Attribute | ComponentAttribute)[] = [...root.attributes];
+	const attributes: Array<Attribute | ComponentAttribute> = [...root.attributes];
 	const item: ClassItem = { kind: "Dynamic", value: expression("this.class()"), span };
 	const classAt = attributes.findIndex((attribute) => attribute.kind === "Class");
 	const found = attributes[classAt];
-	if (found?.kind === "Class") attributes[classAt] = { ...found, items: [...found.items, item] };
-	else attributes.push({ kind: "Class", items: [item], span });
+	if (found?.kind === "Class") {
+		attributes[classAt] = { ...found, items: [...found.items, item] };
+	} else {
+		attributes.push({ kind: "Class", items: [item], span });
+	}
 	const declaration: StyleDeclaration = {
 		kind: "Bound",
 		property: "",
@@ -363,7 +378,9 @@ function takingPassed(
 		attributes[styleAt] = { kind: "Style", declarations: [own, declaration], span: style.span };
 	} else if (style?.kind === "Style") {
 		attributes[styleAt] = { ...style, declarations: [...style.declarations, declaration] };
-	} else attributes.push({ kind: "Style", declarations: [declaration], span });
+	} else {
+		attributes.push({ kind: "Style", declarations: [declaration], span });
+	}
 	if (fallthrough.passes && root.kind !== "Component" && !fallthrough.rest) {
 		// The root takes the records as the rest's element does: through the directive, on the
 		// element of each `@case` of a `<component is>` root (ADR-0122).
@@ -372,15 +389,19 @@ function takingPassed(
 	if (fallthrough.passes && root.kind === "Component") {
 		// A root component takes the consumer's records whole where the component passes it none
 		// of its own, which `fallthroughAttributes` merges with them.
-		const has = (...kinds: string[]) => attributes.some(({ kind }) => kinds.includes(kind));
+		const has = (...kinds: Array<string>) => attributes.some(({ kind }) => kinds.includes(kind));
 		const prop = (name: string, code: string): ComponentAttribute => ({
 			kind: "Prop",
 			name,
 			value: expression(code),
 			span,
 		});
-		if (!has("Static", "Bound")) attributes.push(prop(ATTRIBUTES_INPUT, CONSUMER_ATTRIBUTES));
-		if (!has("Event")) attributes.push(prop(LISTENERS_INPUT, CONSUMER_LISTENERS));
+		if (!has("Static", "Bound")) {
+			attributes.push(prop(ATTRIBUTES_INPUT, CONSUMER_ATTRIBUTES));
+		}
+		if (!has("Event")) {
+			attributes.push(prop(LISTENERS_INPUT, CONSUMER_LISTENERS));
+		}
 	}
 	return { ...root, attributes } as ElementNode | ComponentNode | DynamicNode;
 }
@@ -400,22 +421,30 @@ function mapNodes<T>(
 		let changed = false;
 		const next = value.map((item: unknown) => {
 			const mapped = mapNodes(item, replace);
-			if (mapped !== item) changed = true;
+			if (mapped !== item) {
+				changed = true;
+			}
 			return mapped;
 		});
 		return changed ? (next as T) : value;
 	}
-	if (value === null || typeof value !== "object") return value;
+	if (value === null || typeof value !== "object") {
+		return value;
+	}
 	const { kind } = value as { kind?: unknown };
 	if (kind === "Element" || kind === "Component" || kind === "Dynamic") {
 		const replaced = replace(value as unknown as ElementNode | ComponentNode | DynamicNode);
-		if (replaced) return replaced as unknown as T;
+		if (replaced) {
+			return replaced as unknown as T;
+		}
 	}
 	let changed = false;
 	const next: Record<string, unknown> = {};
-	for (const [key, child] of Object.entries(value)) {
+	for (const [key, child] of Object.entries(value) as Array<[string, unknown]>) {
 		const mapped = key === "attributes" || key === "span" ? child : mapNodes(child, replace);
-		if (mapped !== child) changed = true;
+		if (mapped !== child) {
+			changed = true;
+		}
 		next[key] = mapped;
 	}
 	return changed ? (next as T) : value;
@@ -443,15 +472,15 @@ function fallthroughRecords(
 	context: FallthroughHook[1],
 	plan: Plan,
 	own: FallthroughPlan | undefined,
-): PrintedAttribute[] {
+): Array<PrintedAttribute> {
 	const forwards =
 		own !== undefined &&
 		own.passes &&
 		own.target.kind === "Component" &&
 		sameSpan(own.target.span, context.component.span);
 	const svg = childApi(plan.module, context.component.component)?.fallthroughTag === "svg";
-	const attributes: string[] = [];
-	const listeners: string[] = [];
+	const attributes: Array<string> = [];
+	const listeners: Array<string> = [];
 	for (const entry of passed) {
 		switch (entry.kind) {
 			case "Static": {
@@ -481,9 +510,11 @@ function fallthroughRecords(
 				unreachable(entry);
 		}
 	}
-	const printed: PrintedAttribute[] = [];
-	const record = (input: string, entries: string[], consumer: string) => {
-		if (!entries.length) return;
+	const printed: Array<PrintedAttribute> = [];
+	const record = (input: string, entries: Array<string>, consumer: string) => {
+		if (!entries.length) {
+			return;
+		}
 		// The consumer's attributes win over the component's own; the own listeners' methods run
 		// the consumer's after them.
 		const all = !forwards
@@ -543,10 +574,14 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
 			if (node.kind === "SlotOutlet" && (node.slot !== "default" || node.props)) {
 				slots.add(node.slot);
 			}
-			if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") return;
+			if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") {
+				return;
+			}
 			// A forwarded named slot tests the parent's own template, through its query.
 			for (const fill of node.kind === "Element" ? [] : (node.fills ?? [])) {
-				if (fill.forward !== undefined && fill.forward !== "default") slots.add(fill.forward);
+				if (fill.forward !== undefined && fill.forward !== "default") {
+					slots.add(fill.forward);
+				}
 			}
 			for (const attribute of node.attributes) {
 				if (attribute.kind === "Spread" && attribute.keys.length === 0) {
@@ -564,18 +599,24 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
 	const globals = new Set<string>(listeners.globals);
 	for (const { expression, path } of expressionsOf(component)) {
 		// A model's default is the class's (`model(0)`), not the template's.
-		if (unprinted.has(expression) || path.startsWith("/setup/")) continue;
+		if (unprinted.has(expression) || path.startsWith("/setup/")) {
+			continue;
+		}
 		const key = path.endsWith("/key") || signals.has(expression);
 		for (const reference of expression.refs) {
 			switch (reference.kind) {
 				case "Binding":
 					// A component `<component is>` names is read as its name, from no member.
-					if (bindingById(plan, reference.binding).kind === "component") break;
+					if (bindingById(plan, reference.binding).kind === "component") {
+						break;
+					}
 					(key ? keyed : read).add(reference.binding);
 					break;
 				case "Global":
 					// `undefined` is a keyword of Angular's expression language and needs no member.
-					if (reference.name !== "undefined") globals.add(reference.name);
+					if (reference.name !== "undefined") {
+						globals.add(reference.name);
+					}
 					break;
 				// A template reads a recipe through the member the plan gives it (`recipes`).
 				case "Import":
@@ -593,6 +634,6 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
 
 /** A string literal in a bound attribute's expression: single-quoted, its quotes escaped. */
 function angularString(value: string): string {
-	const quoted = value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-	return `'${quoted.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}'`;
+	const quoted = value.replaceAll("\\", String.raw`\\`).replaceAll("'", String.raw`\'`);
+	return `'${quoted.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}'`;
 }

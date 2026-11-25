@@ -42,18 +42,23 @@ export function teleportNotTag(node: AST.IdentifierReference, reporter: Reporter
 }
 
 /** What a teleport's content is, as written: its children that render something. */
-function contentOf(items: readonly AST.JSXChild[]): AST.JSXChild[] {
+function contentOf(items: ReadonlyArray<AST.JSXChild>): Array<AST.JSXChild> {
 	return items.filter((item) => {
-		if (item.type === "JSXText") return readJsxText(item.value).value !== "";
-		if (item.type === "JSXExpressionContainer")
+		if (item.type === "JSXText") {
+			return readJsxText(item.value).value !== "";
+		}
+		if (item.type === "JSXExpressionContainer") {
 			return item.expression.type !== "JSXEmptyExpression";
+		}
 		return true;
 	});
 }
 
 /** Whether a child is a plain element: a lower-case tag, not `<component is>`. */
 function isPlainElement(item: AST.JSXChild): item is AST.JSXElement {
-	if (item.type !== "JSXElement") return false;
+	if (item.type !== "JSXElement") {
+		return false;
+	}
 	const { name } = item.openingElement;
 	return name.type === "JSXIdentifier" && /^[a-z]/.test(name.name) && name.name !== "component";
 }
@@ -110,7 +115,9 @@ export function lowerTeleport(
 	const checked = reporter.diagnostics.length;
 	const lowered = lowerElement(first, place, render).element;
 	for (const misplaced of reporter.diagnostics.slice(checked)) {
-		if (misplaced.code !== "UF3003") continue;
+		if (misplaced.code !== "UF3003") {
+			continue;
+		}
 		misplaced.related = [
 			...(misplaced.related ?? []),
 			{
@@ -119,7 +126,9 @@ export function lowerTeleport(
 			},
 		];
 	}
-	if (!lowered || to === undefined || reporter.hasErrorsSince(mark)) return undefined;
+	if (!lowered || to === undefined || reporter.hasErrorsSince(mark)) {
+		return undefined;
+	}
 	return createTeleportNode(to, [lowered], span(node));
 }
 
@@ -134,7 +143,9 @@ export function readTo(literal: AST.StringLiteral, reporter: Reporter): string {
 		start: literal.start + 1 + range.start,
 		end: literal.start + 1 + range.end,
 	});
-	for (const divergence of reading.divergences) reportDivergence(divergence, at, reporter);
+	for (const divergence of reading.divergences) {
+		reportDivergence(divergence, at, reporter);
+	}
 	for (const reference of htmlOnlyReferences(literal.value)) {
 		reportHtmlOnlyReference(reference, at, false, reporter);
 	}

@@ -21,9 +21,11 @@ import {
 	toolchainDirOf,
 } from "../src/config/index.ts";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterAll(() => {
-	for (const root of roots) rmSync(root, { recursive: true, force: true });
+	for (const root of roots) {
+		rmSync(root, { recursive: true, force: true });
+	}
 });
 
 /** A throwaway project holding `files`, by path relative to its root. */
@@ -45,22 +47,27 @@ const SAVED = ["UF_TARGETS", "UF_UPDATE", "CI"] as const;
 const env = Object.fromEntries(SAVED.map((name) => [name, process.env[name]]));
 afterEach(() => {
 	for (const name of SAVED) {
-		if (env[name] === undefined) delete process.env[name];
-		else process.env[name] = env[name];
+		if (env[name] === undefined) {
+			delete process.env[name];
+		} else {
+			process.env[name] = env[name];
+		}
 	}
 });
 
 /** A configuration's projects, in order. */
 async function projectsOf(
 	options: Parameters<typeof defineTestConfig>[0],
-): Promise<TestProjectInlineConfiguration[]> {
+): Promise<Array<TestProjectInlineConfiguration>> {
 	const projects = (await defineTestConfig(options)).test?.projects;
-	if (!projects) throw new Error("defineTestConfig gave no projects.");
-	return projects as TestProjectInlineConfiguration[];
+	if (!projects) {
+		throw new Error("defineTestConfig gave no projects.");
+	}
+	return projects as Array<TestProjectInlineConfiguration>;
 }
 
 /** The names of a configuration's projects, in order. */
-async function projectNames(root: string): Promise<string[]> {
+async function projectNames(root: string): Promise<Array<string>> {
 	return (await projectsOf({ root })).map((each) => each.test?.name as string);
 }
 
@@ -75,7 +82,7 @@ function twoTargets(): string {
 }
 
 /** Each project's name and group. */
-async function groups(): Promise<unknown[][]> {
+async function groups(): Promise<Array<Array<unknown>>> {
 	return (await projectsOf({ root: twoTargets() })).map((each) => [
 		each.test?.name,
 		each.test?.sequence?.groupOrder,
@@ -302,7 +309,7 @@ describe("defineTestConfig", () => {
 
 describe("noErrorBroadcast", () => {
 	it("keeps a compile error off every page, and passes every other message on", () => {
-		const sent: unknown[] = [];
+		const sent: Array<unknown> = [];
 		const hot = { send: (payload: unknown) => void sent.push(payload) };
 		const server = { environments: { client: { hot } } } as unknown as ViteDevServer;
 		const hook = noErrorBroadcast().configureServer as (server: ViteDevServer) => void;
@@ -330,7 +337,7 @@ describe("TESTING_PACKAGE", () => {
 		for (const path of [
 			"/p/node_modules/@unframework.dev/testing/dist/ssr/index.js",
 			"/p/node_modules/.pnpm/@unframework.dev+testing@0.1.0/node_modules/@unframework.dev/testing/dist/ssr/index.js",
-			"C:\\p\\node_modules\\@unframework.dev\\testing\\dist\\ssr\\index.js",
+			String.raw`C:\p\node_modules\@unframework.dev\testing\dist\ssr\index.js`,
 		]) {
 			expect(path).toMatch(TESTING_PACKAGE);
 		}
@@ -349,7 +356,7 @@ describe("TARGET_PACKAGES", () => {
 		for (const path of [
 			"/p/node_modules/@unframework.dev/target-angular/dist/toolchain/server.js",
 			"/p/node_modules/.pnpm/@unframework.dev+target-qwik@0.1.0/node_modules/@unframework.dev/target-qwik/dist/toolchain/server.js",
-			"C:\\p\\node_modules\\@unframework.dev\\target-svelte\\dist\\toolchain\\server.js",
+			String.raw`C:\p\node_modules\@unframework.dev\target-svelte\dist\toolchain\server.js`,
 		]) {
 			expect(path).toMatch(TARGET_PACKAGES);
 		}

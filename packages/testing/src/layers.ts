@@ -24,7 +24,7 @@ export type LayerName =
 	| "L15";
 
 /** Every layer, in order. */
-export const LAYERS: readonly LayerName[] = [
+export const LAYERS: ReadonlyArray<LayerName> = [
 	"L1",
 	"L2",
 	"L3",
@@ -60,7 +60,7 @@ export interface UfLayerMeta {
 	 * them. A target that leaves out a scenario the reference checks would otherwise go unseen,
 	 * as a cell merges every test of its case (see `summarise`).
 	 */
-	scenarios?: string[];
+	scenarios?: Array<string>;
 	/**
 	 * The test, by its full name without the target `describeTargets` adds (`state/counter >
 	 * increments`): the same on every target, so the summary compares each target's scenarios of
@@ -85,7 +85,15 @@ export interface UfLayerMeta {
 }
 
 /** The layers a browser test records, which a test skipped by capability records as skipped. */
-export const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13", "L14"];
+export const BROWSER_LAYERS: ReadonlyArray<LayerName> = [
+	"L7",
+	"L8",
+	"L9",
+	"L10",
+	"L11",
+	"L13",
+	"L14",
+];
 
 /** The skip of the layers that need output, on a target a case has compile errors for. */
 export const NO_OUTPUT_SKIP = "compile errors: no output";
@@ -185,7 +193,7 @@ export interface QuarantineEntry {
 export interface LayerSubject {
 	case: string;
 	target: string;
-	quarantine?: readonly QuarantineEntry[];
+	quarantine?: ReadonlyArray<QuarantineEntry>;
 }
 
 /** A layer check returns this to skip the layer, with the reason the matrix shows. */
@@ -209,7 +217,7 @@ declare module "vitest" {
 		 * The capabilities the test requires (`it(name, { requires }, fn)`): the setup skips it on a
 		 * target whose cell for one of them is unsupported.
 		 */
-		ufRequires?: readonly string[];
+		ufRequires?: ReadonlyArray<string>;
 	}
 }
 
@@ -226,14 +234,18 @@ const PRECEDENCE: Record<LayerOutcome["status"], number> = {
  * keeps the message of every record that failed (each distinct one once, in order), so no
  * sub-check's evidence is lost (the canaries require each of them).
  */
-export function mergeOutcomes(...outcomes: readonly LayerOutcome[]): LayerOutcome {
+export function mergeOutcomes(...outcomes: ReadonlyArray<LayerOutcome>): LayerOutcome {
 	const [first, ...rest] = outcomes;
-	if (!first) throw new Error("mergeOutcomes needs at least one outcome.");
+	if (!first) {
+		throw new Error("mergeOutcomes needs at least one outcome.");
+	}
 	const winner = rest.reduce(
 		(best, outcome) => (rank(outcome) > rank(best) ? outcome : best),
 		first,
 	);
-	if (winner.status !== "fail") return winner;
+	if (winner.status !== "fail") {
+		return winner;
+	}
 	const messages = new Set(
 		outcomes.flatMap((outcome) => (outcome.status === "fail" ? [outcome.message] : [])),
 	);
@@ -254,7 +266,7 @@ function rank(outcome: LayerOutcome): number {
 
 /** The quarantine entry for a case, target and layer, if any. */
 export function quarantineFor(
-	quarantine: readonly QuarantineEntry[] | undefined,
+	quarantine: ReadonlyArray<QuarantineEntry> | undefined,
 	subject: { case: string; target: string },
 	layer: LayerName,
 ): QuarantineEntry | undefined {
@@ -270,9 +282,15 @@ export function quarantineFor(
  * is quarantined; one that passes, or is skipped, is a stale entry and fails.
  */
 export function settleOutcome(outcome: LayerOutcome, entry?: QuarantineEntry): LayerOutcome {
-	if (!entry) return outcome;
-	if (outcome.status === "fail") return { status: "quarantined", issue: entry.issue };
-	if (outcome.status === "quarantined") return outcome;
+	if (!entry) {
+		return outcome;
+	}
+	if (outcome.status === "fail") {
+		return { status: "quarantined", issue: entry.issue };
+	}
+	if (outcome.status === "quarantined") {
+		return outcome;
+	}
 	const what = outcome.status === "pass" ? "passes" : `is skipped (${outcome.reason})`;
 	const pixels =
 		entry.layer === "L10" && entry.pixels === undefined
@@ -341,7 +359,9 @@ export function recordStandIn(task: LayerTask, subject: LayerSubject, cause: str
 export function recordScenario(task: LayerTask, subject: LayerSubject, name: string): void {
 	const meta = metaOf(task, subject);
 	const scenarios = (meta.scenarios ??= []);
-	if (!scenarios.includes(name)) scenarios.push(name);
+	if (!scenarios.includes(name)) {
+		scenarios.push(name);
+	}
 }
 
 /** The task's record, created for the subject on first use: a test records one case and target. */
@@ -356,7 +376,7 @@ function metaOf(task: LayerTask, subject: LayerSubject): UfLayerMeta {
 }
 
 /** The messages of every failed layer a task recorded, in layer order. */
-export function layerFailures(task: LayerTask): string[] {
+export function layerFailures(task: LayerTask): Array<string> {
 	const layers = task.meta.uf?.layers ?? {};
 	return LAYERS.flatMap((layer) => {
 		const outcome = layers[layer];
@@ -371,9 +391,13 @@ function isSkipReason(reason: unknown): reason is string {
 
 /** A check's return value as an outcome: nothing passes, `{ skip: reason }` skips. */
 function outcomeOfResult(result: unknown): LayerOutcome {
-	if (result === undefined) return { status: "pass" };
+	if (result === undefined) {
+		return { status: "pass" };
+	}
 	if (typeof result === "object" && result !== null && "skip" in result) {
-		if (isSkipReason(result.skip)) return { status: "skip", reason: result.skip };
+		if (isSkipReason(result.skip)) {
+			return { status: "skip", reason: result.skip };
+		}
 	}
 	return {
 		status: "fail",
@@ -392,11 +416,13 @@ export async function recordLayerChecks(
 	task: LayerTask,
 	subject: LayerSubject,
 	checks: Partial<Record<LayerName, LayerCheck>>,
-): Promise<string[]> {
-	const failures: string[] = [];
+): Promise<Array<string>> {
+	const failures: Array<string> = [];
 	for (const layer of LAYERS) {
 		const check = checks[layer];
-		if (!check) continue;
+		if (!check) {
+			continue;
+		}
 		let outcome: LayerOutcome;
 		try {
 			outcome = outcomeOfResult(await check());
@@ -404,7 +430,9 @@ export async function recordLayerChecks(
 			outcome = { status: "fail", message: formatError(error) };
 		}
 		const recorded = recordLayer(task, subject, layer, outcome);
-		if (recorded.status === "fail") failures.push(`${layer}: ${recorded.message}`);
+		if (recorded.status === "fail") {
+			failures.push(`${layer}: ${recorded.message}`);
+		}
 	}
 	return failures;
 }
@@ -428,9 +456,9 @@ export async function checkLayers(
 /** The error a test fails with when one or more layers failed. */
 export class LayerFailure extends Error {
 	override name = "LayerFailure";
-	readonly failures: readonly string[];
+	readonly failures: ReadonlyArray<string>;
 
-	constructor(subject: { case: string; target: string }, failures: readonly string[]) {
+	constructor(subject: { case: string; target: string }, failures: ReadonlyArray<string>) {
 		super(
 			`${subject.case} › ${subject.target}: ${failures.length} layer(s) failed\n\n${failures.join("\n\n")}`,
 		);

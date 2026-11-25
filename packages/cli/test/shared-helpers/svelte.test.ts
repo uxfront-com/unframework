@@ -34,7 +34,9 @@ describe("shared helper modules: Svelte", () => {
 		expect(transition).toMatch(/^const transitionRuns = /m);
 		// A helper module imports only its framework, and nothing else of ours.
 		for (const [path, contents] of Object.entries(written)) {
-			if (!path.startsWith("_unframework/")) continue;
+			if (!path.startsWith("_unframework/")) {
+				continue;
+			}
 			for (const [, specifier] of contents.matchAll(/from "([^"]+)"/g)) {
 				expect(specifier, path).toMatch(/^(?:svelte(?:\/[\w-]+)?|\.\/\w+)$/);
 			}

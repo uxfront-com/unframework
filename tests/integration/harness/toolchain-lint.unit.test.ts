@@ -22,7 +22,7 @@ import { ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain, selectTargets } from "./targets.ts";
 
 /** What an output may import, besides its siblings (M3): its framework only (P7, D11). */
-const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
+const ALLOWED_IMPORTS: Record<string, ReadonlyArray<string>> = {
 	// `createPortal` lives in react-dom, React's renderer, which a `<Teleport>` needs (ADR-0098).
 	react: ["react", "react/*", "react-dom"],
 	vue: ["vue", "vue/*"],
@@ -37,14 +37,14 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
 };
 
 /** What every output may import as written: the `virtual:` modules (plan §4.4, ADR-0064). */
-const PASS_THROUGH_IMPORTS: readonly string[] = ["virtual:*"];
+const PASS_THROUGH_IMPORTS: ReadonlyArray<string> = ["virtual:*"];
 
 /**
  * The baseline rules a target turns off, each because its framework's own idiom needs it: Svelte
  * writes a recursive component as an import of its own file (ADR-0054), which
  * `import/no-self-import` rejects.
  */
-const BASELINE_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+const BASELINE_EXCEPTIONS: Readonly<Record<string, ReadonlyArray<string>>> = {
 	svelte: ["import/no-self-import"],
 };
 
@@ -69,7 +69,7 @@ const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
  * the TypeScript 7 the toolchain's tsgo needs (L4). Its oxlint turns them off, and the host runs
  * them alone.
  */
-const TYPED_LAYER: Record<string, { host: string; rules: readonly string[] }> = {
+const TYPED_LAYER: Record<string, { host: string; rules: ReadonlyArray<string> }> = {
 	qwik: { host: "qwik-eslint", rules: ["qwik/use-async-top", "qwik/valid-lexical-scope"] },
 };
 
@@ -98,7 +98,7 @@ const UNUSED_RULE: Record<string, string> = {
  * template reads the class, its markup reads a binding beside the unused one, which must not
  * count.
  */
-const PROBES: Record<string, { file: string; contents: string; rules: readonly string[] }> = {
+const PROBES: Record<string, { file: string; contents: string; rules: ReadonlyArray<string> }> = {
 	react: {
 		file: "Probe.tsx",
 		contents: [
@@ -238,13 +238,15 @@ const AUTHOR_RULES = [
 ];
 
 /** A rule's setting as `--print-config` prints it: a severity, or a severity and its options. */
-type RuleSetting = string | [string, unknown[]];
+type RuleSetting = string | [string, Array<unknown>];
 
 /** The parts of oxlint's effective configuration this test reads. */
 interface EffectiveConfig {
 	rules: Record<string, RuleSetting>;
 	/** Absent without overrides. */
-	overrides?: { files: string[]; rules: Record<string, RuleSetting> }[];
+	overrides?: Array<{ files: Array<string>; rules: Record<string, RuleSetting> }>;
+	/** Each plugin's settings, by plugin. */
+	settings?: Record<string, unknown>;
 	[key: string]: unknown;
 }
 
@@ -267,8 +269,9 @@ function effectiveConfig(target: string): EffectiveConfig {
 /** The `group` of each `no-restricted-imports` pattern: what an output may import. */
 function importGroups(config: EffectiveConfig): unknown {
 	const setting = config.rules["no-restricted-imports"];
-	const [options] = Array.isArray(setting) ? setting[1] : [];
-	return (options as { patterns?: { group?: unknown }[] } | undefined)?.patterns?.map(
+	// oxlint prints a rule's severity and then its options object.
+	const options: unknown = Array.isArray(setting) ? setting[1] : undefined;
+	return (options as { patterns?: Array<{ group?: unknown }> } | undefined)?.patterns?.map(
 		(pattern) => pattern.group,
 	);
 }
@@ -289,7 +292,10 @@ describe("every toolchain's oxlint configuration", () => {
 
 	it("holds the same baseline on every target, but for the import allow-list and its exceptions", () => {
 		const baselines = TARGETS.map((target) => {
-			const { overrides: _framework, rules, ...rest } = configs.get(target)!;
+			const { overrides: _framework, rules, settings, ...rest } = configs.get(target)!;
+			// A framework's JS-plugin rules read their own settings, like Solid 2's `settings.solid`
+			// (ADR-0102), which belong to the framework's layer as its overrides do.
+			const { solid: _frameworkSettings, ...baselineSettings } = settings ?? {};
 			const { "no-restricted-imports": _allowList, ...baselineRules } = rules;
 			// An excepted rule is off where it is excepted, and on everywhere else.
 			for (const rule of Object.values(BASELINE_EXCEPTIONS).flat()) {
@@ -297,7 +303,7 @@ describe("every toolchain's oxlint configuration", () => {
 				expect(baselineRules[rule], `${target}: ${rule}`).toBe(off ? "allow" : "deny");
 				delete baselineRules[rule];
 			}
-			return { target, baseline: { ...rest, rules: baselineRules } };
+			return { target, baseline: { ...rest, settings: baselineSettings, rules: baselineRules } };
 		});
 		const [first] = baselines;
 		for (const { target, baseline } of baselines) {
@@ -312,7 +318,9 @@ describe("every toolchain's oxlint configuration", () => {
 		const { rules, overrides = [] } = configs.get(target)!;
 		for (const rule of AUTHOR_RULES) {
 			expect(rules[rule] ?? "allow", rule).toBe("allow");
-			for (const override of overrides) expect(override.rules[rule] ?? "allow", rule).toBe("allow");
+			for (const override of overrides) {
+				expect(override.rules[rule] ?? "allow", rule).toBe("allow");
+			}
 		}
 	});
 
@@ -334,7 +342,9 @@ describe("every toolchain's oxlint configuration", () => {
 			const { host, rules } = TYPED_LAYER[target]!;
 			const directory = join(toolchainDir(target), "..", host);
 			const [framework] = configs.get(target)!.overrides ?? [];
-			for (const rule of rules) expect(framework?.rules[rule], rule).toBe("allow");
+			for (const rule of rules) {
+				expect(framework?.rules[rule], rule).toBe("allow");
+			}
 			expect(eslintRules(directory)).toEqual(rules);
 			// The rules' plugin resolves TypeScript as it is installed for the host, and the
 			// toolchain's checker (tsgo) is TypeScript 7.

@@ -95,7 +95,9 @@ export function renderVendoredJsx(upstream: UpstreamSnapshot): string {
 		.split("\n")
 		.map((line) => line.trim())
 		.find((line) => /^copyright/i.test(line));
-	if (!copyright) throw new Error(`${UPSTREAM.package}: no Copyright line in its LICENSE`);
+	if (!copyright) {
+		throw new Error(`${UPSTREAM.package}: no Copyright line in its LICENSE`);
+	}
 
 	const lines = upstream.declarations.split("\n");
 	const start = lines.findIndex((line) => START.test(line));

@@ -31,10 +31,10 @@ interface Schema {
 	readonly $ref?: string;
 	readonly type?: string;
 	readonly const?: unknown;
-	readonly enum?: readonly unknown[];
-	readonly anyOf?: readonly Schema[];
+	readonly enum?: ReadonlyArray<unknown>;
+	readonly anyOf?: ReadonlyArray<Schema>;
 	readonly properties?: Readonly<Record<string, Schema>>;
-	readonly required?: readonly string[];
+	readonly required?: ReadonlyArray<string>;
 	readonly additionalProperties?: boolean;
 	readonly items?: Schema;
 	readonly pattern?: string;
@@ -53,19 +53,26 @@ const root = irSchema as Schema & { definitions: Readonly<Record<string, Schema>
  * Ajv: a plugin that copies a node with `{ ...node, index: undefined }` hands the targets the
  * same module a JSON round trip of it would.
  */
-export function validateModule(value: unknown): IrValidationError[] {
-	const errors: IrValidationError[] = [];
+export function validateModule(value: unknown): Array<IrValidationError> {
+	const errors: Array<IrValidationError> = [];
 	check(root, value, "", errors);
 	return errors;
 }
 
-function check(schema: Schema, value: unknown, path: string, errors: IrValidationError[]): void {
+function check(
+	schema: Schema,
+	value: unknown,
+	path: string,
+	errors: Array<IrValidationError>,
+): void {
 	for (const keyword of Object.keys(schema)) {
 		if (!KEYWORDS.has(keyword)) {
 			throw new Error(`irSchema uses "${keyword}", which validateModule does not implement.`);
 		}
 	}
-	if (schema.$ref !== undefined) check(resolve(schema.$ref), value, path, errors);
+	if (schema.$ref !== undefined) {
+		check(resolve(schema.$ref), value, path, errors);
+	}
 	if (schema.type !== undefined && !hasType(value, schema.type)) {
 		errors.push({ path, message: `must be ${schema.type}` });
 		return;
@@ -84,18 +91,25 @@ function check(schema: Schema, value: unknown, path: string, errors: IrValidatio
 	if (schema.enum && !schema.enum.includes(value)) {
 		errors.push({ path, message: `must be one of ${JSON.stringify(schema.enum)}` });
 	}
-	if (schema.anyOf) checkAnyOf(schema.anyOf, value, path, errors);
+	if (schema.anyOf) {
+		checkAnyOf(schema.anyOf, value, path, errors);
+	}
 	if (isRecord(value) && schema.properties) {
 		// Own properties only, on both sides: IR is JSON data, and a key such as `constructor`
 		// must not find a schema, or a value, on a prototype.
 		for (const key of schema.required ?? []) {
-			if (!isPresent(value, key)) errors.push({ path, message: `must have "${key}"` });
+			if (!isPresent(value, key)) {
+				errors.push({ path, message: `must have "${key}"` });
+			}
 		}
 		for (const [key, item] of Object.entries(value)) {
-			if (item === undefined) continue;
+			if (item === undefined) {
+				continue;
+			}
 			const property = Object.hasOwn(schema.properties, key) ? schema.properties[key] : undefined;
-			if (property) check(property, item, `${path}/${key}`, errors);
-			else if (schema.additionalProperties === false) {
+			if (property) {
+				check(property, item, `${path}/${key}`, errors);
+			} else if (schema.additionalProperties === false) {
 				errors.push({ path, message: `must not have "${key}"` });
 			}
 		}
@@ -103,14 +117,14 @@ function check(schema: Schema, value: unknown, path: string, errors: IrValidatio
 	if (Array.isArray(value) && schema.items) {
 		// By index, as Ajv does: a hole in a sparse array is checked as `undefined`, where
 		// `forEach` would skip it and hand the targets an array with a missing node.
-		for (const [index, item] of (value as unknown[]).entries()) {
+		for (const [index, item] of (value as Array<unknown>).entries()) {
 			check(schema.items, item, `${path}/${index}`, errors);
 		}
 	}
 }
 
 function matches(schema: Schema, value: unknown, path: string): boolean {
-	const errors: IrValidationError[] = [];
+	const errors: Array<IrValidationError> = [];
 	check(schema, value, path, errors);
 	return errors.length === 0;
 }
@@ -124,10 +138,10 @@ function matches(schema: Schema, value: unknown, path: string): boolean {
  * say where the node is wrong; otherwise the union reports that nothing matched.
  */
 function checkAnyOf(
-	branches: readonly Schema[],
+	branches: ReadonlyArray<Schema>,
 	value: unknown,
 	path: string,
-	errors: IrValidationError[],
+	errors: Array<IrValidationError>,
 ): void {
 	const kind = isRecord(value) && isPresent(value, "kind") ? value.kind : undefined;
 	const candidates = branches.filter((branch) => {
@@ -139,7 +153,9 @@ function checkAnyOf(
 		check(only!, value, path, errors);
 		return;
 	}
-	if (candidates.some((branch) => matches(branch, value, path))) return;
+	if (candidates.some((branch) => matches(branch, value, path))) {
+		return;
+	}
 	const names = branches.map((branch) => branch.$ref?.split("/").at(-1) ?? "a schema");
 	errors.push({ path, message: `must match one of ${names.join(", ")}` });
 }
@@ -151,7 +167,9 @@ function requiredKind(branch: Schema): { const: unknown } | undefined {
 		target.properties && Object.hasOwn(target.properties, "kind")
 			? target.properties.kind
 			: undefined;
-	if (!kind || !("const" in kind) || !target.required?.includes("kind")) return undefined;
+	if (!kind || !("const" in kind) || !target.required?.includes("kind")) {
+		return undefined;
+	}
 	return { const: kind.const };
 }
 
@@ -163,7 +181,9 @@ function isPresent(value: Record<string, unknown>, key: string): boolean {
 function resolve(ref: string): Schema {
 	const name = ref.startsWith("#/definitions/") ? ref.slice("#/definitions/".length) : undefined;
 	const target = name === undefined ? undefined : root.definitions[name];
-	if (!target) throw new Error(`irSchema has no definition for "${ref}".`);
+	if (!target) {
+		throw new Error(`irSchema has no definition for "${ref}".`);
+	}
 	return target;
 }
 

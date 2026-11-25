@@ -41,10 +41,12 @@ export function describeSsrShard(index: number): void {
 	const cases = shardOf(onlyCases(corpus, inject("ufOnly")), index, inject("ufSsrShards"));
 
 	describeServerRender(
-		cases.flatMap((info): SsrCase[] => {
+		cases.flatMap((info): Array<SsrCase> => {
 			const errors = errorState(info, target);
 			// A case with compile errors has no output: the compile project records L6 as skipped.
-			if (errors === true) return [];
+			if (errors === true) {
+				return [];
+			}
 			// A case whose every test requires a capability the target lacks renders differently
 			// there by declaration (`ssr-skip.ts`).
 			const skip = info.spec
@@ -78,31 +80,43 @@ export function describeSsrShard(index: number): void {
 	// purpose and has output on the target, as a reference project's cases may not (ADR-0057). When
 	// no case of the corpus throws on purpose, each shard registers it empty and fails
 	// (`ssr-throws.ts`).
-	if (!registersThrows(cases, corpus, (info) => errorState(info, target) !== true)) return;
+	if (!registersThrows(cases, corpus, (info) => errorState(info, target) !== true)) {
+		return;
+	}
 	describe(`ssr [${target}] throws`, () => {
 		for (const info of cases) {
-			if (!info.config.ssrThrows) continue;
+			if (!info.config.ssrThrows) {
+				continue;
+			}
 			const errors = errorState(info, target);
-			if (errors === true) continue;
+			if (errors === true) {
+				continue;
+			}
 			const key = `../cases/${info.id}/${basename(info.source)}`;
 			const props = info.config.ssrThrows.props ?? {};
 			it(`${info.id} › throws`, async ({ task }) => {
-				if (errors instanceof Error) throw errors;
+				if (errors instanceof Error) {
+					throw errors;
+				}
 				await checkLayers(
 					task,
 					{ case: info.id, target, quarantine: harness.quarantine },
 					{
 						async L14() {
 							const load = components[key];
-							if (!load) throw new Error(`import.meta.glob did not find ${key}.`);
+							if (!load) {
+								throw new Error(`import.meta.glob did not find ${key}.`);
+							}
 							const component = (await load()).default;
 							// The first Error, whichever way it comes: Angular's renderer logs it and resolves.
 							let thrown: Error | undefined;
 							const take = (value: unknown) => {
-								if (value instanceof Error) thrown ??= value;
+								if (value instanceof Error) {
+									thrown ??= value;
+								}
 							};
 							const original = console.error;
-							console.error = (...args: unknown[]) => {
+							console.error = (...args: Array<unknown>) => {
 								args.forEach(take);
 								original.apply(console, args);
 							};
@@ -111,7 +125,9 @@ export function describeSsrShard(index: number): void {
 							} finally {
 								console.error = original;
 							}
-							if (!thrown) throw new Error("The server render threw no Error.");
+							if (!thrown) {
+								throw new Error("The server render threw no Error.");
+							}
 							checkMappedStack(info.dir, info.id, thrown.stack ?? "");
 						},
 					},

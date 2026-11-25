@@ -24,7 +24,7 @@ beforeAll(() => mkdirSync(scratch, { recursive: true }));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /** Every Solid 2 golden; the corpus has at least the two `basics` cases. */
-function solidGoldens(): ToolchainFile[] {
+function solidGoldens(): Array<ToolchainFile> {
 	const files = goldens("solid2");
 	expect(files.map((file) => file.path.split("/").at(-1))).toEqual(
 		expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),
@@ -34,7 +34,9 @@ function solidGoldens(): ToolchainFile[] {
 
 function golden(name: string): ToolchainFile {
 	const file = solidGoldens().find((entry) => entry.path.endsWith(`/${name}`));
-	if (!file) throw new Error(`No Solid 2 golden named ${name}`);
+	if (!file) {
+		throw new Error(`No Solid 2 golden named ${name}`);
+	}
 	return file;
 }
 
@@ -63,7 +65,7 @@ async function transformed(mode: "browser" | "ssr"): Promise<string> {
 	});
 	try {
 		const environment = mode === "ssr" ? server.environments.ssr : server.environments.client;
-		const result = await environment!.transformRequest("/Hello.tsx");
+		const result = await environment.transformRequest("/Hello.tsx");
 		return result!.code;
 	} finally {
 		await server.close();
@@ -83,7 +85,7 @@ describe("solid2 toolchain", () => {
 		const browser = await toolchain.vite("browser", context);
 		// @solidjs/vite-plugin is an array of plugins, `solid` the one that compiles.
 		const names = (browser.plugins ?? [])
-			.flat(2)
+			.flat(2 /* the plugin array, and the array inside it */)
 			.map((plugin) => (plugin && "name" in plugin ? plugin.name : undefined));
 		expect(names).toContain("solid");
 		expect(names).toEqual(
@@ -252,7 +254,7 @@ describe("solid2 renderToString (SSR)", () => {
 		const html = await renderToString(ProfileCard, {});
 		// A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
 		// which, on Solid 2, writes no `style` the key leaves out, and no space after a class.
-		expect(html.replace(/ _hk=[^ >]*/g, "")).toBe(
+		expect(html.replaceAll(/ _hk=[^ >]*/g, "")).toBe(
 			[
 				'<article class="profile" aria-labelledby="profile-name">',
 				'<header class="profile-header">',

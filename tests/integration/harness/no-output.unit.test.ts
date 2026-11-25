@@ -29,7 +29,9 @@ import { QUARANTINE } from "./quarantine.ts";
 
 let corpus: string | undefined;
 afterEach(() => {
-	if (corpus) rmSync(corpus, { recursive: true, force: true });
+	if (corpus) {
+		rmSync(corpus, { recursive: true, force: true });
+	}
 	corpus = undefined;
 });
 
@@ -237,7 +239,7 @@ describe("standInCases", () => {
 
 describe("a test run against a stand-in", () => {
 	const cause = "angular cannot compile this case yet (fixture).";
-	const subject = (quarantine: readonly QuarantineEntry[] = []) => ({
+	const subject = (quarantine: ReadonlyArray<QuarantineEntry> = []) => ({
 		case: "basics/clean",
 		target: "angular",
 		quarantine,

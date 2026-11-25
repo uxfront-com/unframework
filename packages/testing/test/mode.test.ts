@@ -17,7 +17,7 @@ import type { HarnessMode } from "../src/node/mode.ts";
 const resolve = (
 	env: Record<string, string>,
 	platform: NodeJS.Platform = "darwin",
-	argv: string[] = [],
+	argv: Array<string> = [],
 	arch: NodeJS.Architecture = "x64",
 ) => resolveHarnessMode({ env, platform, argv, arch });
 
@@ -29,7 +29,7 @@ describe("resolveHarnessMode", () => {
 			env: Record<string, string>,
 			pixels: "live" | "baseline" = "live",
 			platform: NodeJS.Platform = "darwin",
-			argv: string[] = [],
+			argv: Array<string> = [],
 		) => resolveHarnessMode({ env, platform, argv, arch: "x64", project: { pixels } });
 
 		it("compares live by default, in CI too, on any platform", () => {
@@ -157,7 +157,7 @@ describe("resolveHarnessMode", () => {
 		// The testing package's own fixture launches Chromium alone: its stubs test Chromium's font
 		// audit and switches, so another engine is refused rather than believed (ADR-0066).
 		expect(live({ UF_BROWSER: "chromium" })).toMatchObject({ browser: "chromium" });
-		const others: Record<string, string>[] = [
+		const others: Array<Record<string, string>> = [
 			{ UF_BROWSER: "firefox" },
 			{ UF_BROWSER: "webkit", UF_UPDATE: "1" },
 		];
@@ -325,7 +325,7 @@ const l10 = (pixels?: "baseline" | "live"): QuarantineEntry => ({
 describe("createHarnessRun", () => {
 	it("creates one run per process, clears ended runs' scratch output, and refreshes the cases", () => {
 		const root = mkdtempSync(join(tmpdir(), "uf-run-"));
-		const scratch = (...path: string[]) => {
+		const scratch = (...path: Array<string>) => {
 			const file = join(root, ...path, "basics", "hello", "initial.png");
 			mkdirSync(join(file, ".."), { recursive: true });
 			writeFileSync(file, "png");
@@ -397,7 +397,7 @@ describe("createHarnessRun", () => {
 
 	it("applies an L10 entry only in the pixel mode it names", () => {
 		const root = mkdtempSync(join(tmpdir(), "uf-run-"));
-		const run = (pixels: "baseline" | "live", quarantine: QuarantineEntry[]) =>
+		const run = (pixels: "baseline" | "live", quarantine: Array<QuarantineEntry>) =>
 			createHarnessRun({
 				root,
 				casesDir: join(root, `cases-${pixels}-${quarantine.length}`),

@@ -75,10 +75,10 @@ type Rejected = "throw" | "drop";
  * that is no prop, or a required prop without a value, fails too: the case would test nothing.
  */
 export function lowerSources(
-	specs: readonly SourceCase[],
+	specs: ReadonlyArray<SourceCase>,
 	rejected: Rejected = "throw",
-	codes?: Map<number, string[]>,
-): (ParityCase | undefined)[] {
+	codes?: Map<number, Array<string>>,
+): Array<ParityCase | undefined> {
 	const file = "Cases.uf.tsx";
 	let text = specs.map(({ types }) => (types ? `${types.trim()}\n\n` : "")).join("");
 	const ranges = specs.map((spec, index) => {
@@ -154,13 +154,17 @@ export function lowerSources(
 					)
 					.map(({ code }) => code),
 			);
-			if (rejected === "drop") return undefined;
+			if (rejected === "drop") {
+				return undefined;
+			}
 			throw new Error(`The analyser does not accept the case ${describe(index)}`);
 		}
 		const props = spec.props ?? {};
 		const declared = new Map(component.props.map((prop) => [prop.name, prop]));
 		for (const name of Object.keys(props)) {
-			if (!declared.has(name)) throw new Error(`${spec.name}: \`${name}\` is no prop.`);
+			if (!declared.has(name)) {
+				throw new Error(`${spec.name}: \`${name}\` is no prop.`);
+			}
 		}
 		for (const prop of component.props) {
 			if (!prop.optional && props[prop.name] === undefined) {
@@ -190,8 +194,8 @@ function componentModule(file: string, module: UfModule, component: UfComponent)
 }
 
 /** {@link lowerSources} for cases the analyser must accept. */
-export function sourceCases(specs: readonly SourceCase[]): ParityCase[] {
-	return lowerSources(specs) as ParityCase[];
+export function sourceCases(specs: ReadonlyArray<SourceCase>): Array<ParityCase> {
+	return lowerSources(specs) as Array<ParityCase>;
 }
 
 /** A case's prop as the parity component names it: namespaced by the case's index. */
@@ -212,7 +216,9 @@ const suiteModules = new WeakMap<ParitySuite, UfModule>();
  */
 export function parityModule(suite: ParitySuite): UfModule {
 	let module = suiteModules.get(suite);
-	if (module) return module;
+	if (module) {
+		return module;
+	}
 	const sources = suite.cases.filter((parityCase) => parityCase.lowered).length;
 	if (sources && sources !== suite.cases.length) {
 		throw new Error(`${suite.title}: a suite is all source cases or all static ones.`);
@@ -246,9 +252,9 @@ function staticModule(suite: ParitySuite): UfModule {
 /** A source suite's module: its cases written into one component, and lowered. */
 function sourceModule(suite: ParitySuite): UfModule {
 	const form = suite.form ?? "destructured";
-	const types: string[] = [];
-	const members: string[] = [];
-	const pattern: string[] = [];
+	const types: Array<string> = [];
+	const members: Array<string> = [];
+	const pattern: Array<string> = [];
 	const bodies = suite.cases.map((parityCase, index) => {
 		const lowered = parityCase.lowered!;
 		for (const declaration of lowered.module.types) {
@@ -263,7 +269,9 @@ function sourceModule(suite: ParitySuite): UfModule {
 					`${parityCase.name}: a props object cannot give \`${prop.name}\` a default.`,
 				);
 			}
-			if (prop.binding === undefined) continue;
+			if (prop.binding === undefined) {
+				continue;
+			}
 			pattern.push(prop.default ? `${name} = ${prop.default.code}` : name);
 			spelling.set(prop.binding, form === "object" ? `props.${name}` : name);
 		}
@@ -291,8 +299,9 @@ function sourceModule(suite: ParitySuite): UfModule {
 		throw new Error(`The analyser does not accept ${suite.title}:\n${reported.join("\n")}`);
 	}
 	const broken = checkInvariants(module);
-	if (broken.length)
+	if (broken.length) {
 		throw new Error(`${suite.title} lowers to invalid IR: ${JSON.stringify(broken)}`);
+	}
 	const [component] = module.components as [UfComponent];
 	if (suite.root !== "self") {
 		const { render } = component;
@@ -315,9 +324,13 @@ function respelled(lowered: LoweredCase, spelling: ReadonlyMap<string, string>):
 	const edits = new Map<number, { end: number; replacement: string }>();
 	for (const { expression } of expressionsOf(component)) {
 		for (const reference of expression.refs) {
-			if (reference.kind !== "Binding" || !spelling.has(reference.binding)) continue;
+			if (reference.kind !== "Binding" || !spelling.has(reference.binding)) {
+				continue;
+			}
 			const { start, end } = reference.span;
-			if (start < jsx.start || end > jsx.end) continue;
+			if (start < jsx.start || end > jsx.end) {
+				continue;
+			}
 			const binding = component.bindings.find(({ id }) => id === reference.binding)!;
 			const spelled = spelling.get(reference.binding)!;
 			const shorthand = reference.shorthand || shorthands.has(start);
@@ -339,14 +352,20 @@ const shorthandCache = new Map<string, ReadonlySet<number>>();
 /** Where each shorthand property's value starts in a module's source. */
 function shorthandValues(text: string): ReadonlySet<number> {
 	let found = shorthandCache.get(text);
-	if (found) return found;
+	if (found) {
+		return found;
+	}
 	const starts = new Set<number>();
 	const visit = (node: unknown): void => {
 		if (Array.isArray(node)) {
-			for (const item of node) visit(item);
+			for (const item of node) {
+				visit(item);
+			}
 			return;
 		}
-		if (typeof node !== "object" || node === null) return;
+		if (typeof node !== "object" || node === null) {
+			return;
+		}
 		const record = node as { type?: unknown; shorthand?: unknown; value?: { start?: number } };
 		if (
 			record.type === "Property" &&
@@ -355,7 +374,11 @@ function shorthandValues(text: string): ReadonlySet<number> {
 		) {
 			starts.add(record.value.start);
 		}
-		for (const value of Object.values(node)) if (typeof value === "object") visit(value);
+		for (const value of Object.values(node)) {
+			if (typeof value === "object") {
+				visit(value);
+			}
+		}
 	};
 	visit(parseModule("Cases.uf.tsx", text).program);
 	found = starts;
@@ -387,7 +410,10 @@ export function parityProps(suite: ParitySuite): Record<string, unknown> {
  * it is not one of them (ADR-0033, as amended by ADR-0047): the case still renders exactly,
  * listeners inert, and is compared as any other.
  */
-export function unsupportedCapabilities(target: Target, parityCase: ParityCase): CapabilityName[] {
+export function unsupportedCapabilities(
+	target: Target,
+	parityCase: ParityCase,
+): Array<CapabilityName> {
 	const module =
 		parityCase.lowered?.module ?? parityModule({ title: parityCase.name, cases: [parityCase] });
 	return [...requiredCapabilities(module).keys()].filter(
@@ -407,9 +433,9 @@ export async function emitParity(
 	target: Target,
 	suite: ParitySuite,
 	{ format }: { format: boolean },
-): Promise<OutputFile[]> {
+): Promise<Array<OutputFile>> {
 	const module = parityModule(suite);
-	const reported: Parameters<EmitContext["report"]>[0][] = [];
+	const reported: Array<Parameters<EmitContext["report"]>[0]> = [];
 	const context: EmitContext = {
 		module,
 		options: undefined,
@@ -420,11 +446,15 @@ export async function emitParity(
 		const reports = reported.map(({ code, message }) => `${code} (${message})`).join(", ");
 		throw new Error(`${target.name} reported ${reports} for ${suite.title}.`);
 	}
-	if (!format) return files;
+	if (!format) {
+		return files;
+	}
 	return Promise.all(
 		files.map(async (file) => {
 			const outcome = await formatOutput(file);
-			if (outcome.error) throw new Error(`${file.path} does not format: ${outcome.error}`);
+			if (outcome.error) {
+				throw new Error(`${file.path} does not format: ${outcome.error}`);
+			}
 			return outcome.file;
 		}),
 	);
@@ -470,7 +500,7 @@ const SWEEP_CONTEXT: Readonly<Record<string, string>> = { option: "select", optg
 const FIXED_VALUE_TYPES = [...FIXED_VALUE_INPUT_TYPES];
 
 /** The attributes that override a form's submission, which only submit buttons take. */
-export const SUBMISSION_OVERRIDES: readonly string[] = [
+export const SUBMISSION_OVERRIDES: ReadonlyArray<string> = [
 	"formaction",
 	"formenctype",
 	"formmethod",
@@ -488,8 +518,8 @@ const SVG_SWEEP_ELEMENT = "rect";
  * element once (with `class`), each with its own attributes, and SVG's global attributes on a
  * `<rect>` (ADR-0040). `class` and `style` have kinds of their own, tested by the other suites.
  */
-function sweepCandidates(): SweepCandidate[] {
-	const candidates: SweepCandidate[] = [];
+function sweepCandidates(): Array<SweepCandidate> {
+	const candidates: Array<SweepCandidate> = [];
 	const add = (
 		key: string,
 		tag: string,
@@ -497,7 +527,9 @@ function sweepCandidates(): SweepCandidate[] {
 		namespace: Namespace = "html",
 		extra?: Record<string, string>,
 	) => {
-		if (name === "style") return;
+		if (name === "style") {
+			return;
+		}
 		candidates.push({ key, tag, name, namespace, ...(extra ? { extra } : {}) });
 	};
 	for (const name of [...GLOBAL_ATTRIBUTES, ...ARIA_ATTRIBUTES, "data-x"]) {
@@ -506,7 +538,9 @@ function sweepCandidates(): SweepCandidate[] {
 	for (const tag of HTML_ELEMENTS) {
 		// Every element once, so each renderer creates each one.
 		add(`<${tag}>`, tag, "title");
-		for (const name of ELEMENT_ATTRIBUTES.get(tag) ?? []) add(`<${tag} ${name}>`, tag, name);
+		for (const name of ELEMENT_ATTRIBUTES.get(tag) ?? []) {
+			add(`<${tag} ${name}>`, tag, name);
+		}
 	}
 	for (const type of FIXED_VALUE_TYPES) {
 		add(`<input type="${type}" value>`, "input", "value", "html", { type });
@@ -521,7 +555,9 @@ function sweepCandidates(): SweepCandidate[] {
 		}
 	}
 	for (const name of SVG_GLOBAL_ATTRIBUTES) {
-		if (name !== "class") add(`<svg:${SVG_SWEEP_ELEMENT} ${name}>`, SVG_SWEEP_ELEMENT, name, "svg");
+		if (name !== "class") {
+			add(`<svg:${SVG_SWEEP_ELEMENT} ${name}>`, SVG_SWEEP_ELEMENT, name, "svg");
+		}
 	}
 	return candidates;
 }
@@ -532,15 +568,27 @@ function sweepCandidates(): SweepCandidate[] {
  * target accepts comes first (the analyzer checks static values against them). URLs are `data:`
  * URLs, so nothing a browser renders makes a request.
  */
-function sweepValues({ tag, name, namespace }: SweepCandidate): (string | true)[] {
+function sweepValues({ tag, name, namespace }: SweepCandidate): Array<string | true> {
 	const keyword = staticTokens(tag, namespace, name)?.[0];
 	const first = keyword === undefined ? [] : [keyword];
-	if (namespace === "svg") return [...first, "1", "x"];
-	if (isBooleanAttribute(name)) return [true];
-	if (keyword !== undefined) return first;
-	if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) return ["2"];
-	if (TRUE_VALUED_ATTRIBUTES.has(name)) return ["true", "false"];
-	if (URL_ATTRIBUTES.has(name) || name.endsWith("srcset")) return ["data:,", "/x"];
+	if (namespace === "svg") {
+		return [...first, "1", "x"];
+	}
+	if (isBooleanAttribute(name)) {
+		return [true];
+	}
+	if (keyword !== undefined) {
+		return first;
+	}
+	if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) {
+		return ["2"];
+	}
+	if (TRUE_VALUED_ATTRIBUTES.has(name)) {
+		return ["true", "false"];
+	}
+	if (URL_ATTRIBUTES.has(name) || name.endsWith("srcset")) {
+		return ["data:,", "/x"];
+	}
 	return ["x", "1", "true"];
 }
 
@@ -565,7 +613,9 @@ function sweepSource(candidate: SweepCandidate, written: string): string {
 		? `<${tag}${attributes} />`
 		: `<${tag}${attributes}>${SWEEP_CONTENT[tag] ?? ""}</${tag}>`;
 	const context = SWEEP_CONTEXT[tag];
-	if (context) source = `<${context}>${source}</${context}>`;
+	if (context) {
+		source = `<${context}>${source}</${context}>`;
+	}
 	for (
 		let child = tag, parents = REQUIRED_PARENTS.get(child);
 		parents;
@@ -577,18 +627,18 @@ function sweepSource(candidate: SweepCandidate, written: string): string {
 	return source;
 }
 
-let sweep: readonly StaticCase[] | undefined;
+let sweep: ReadonlyArray<StaticCase> | undefined;
 
 /**
  * The pairs each sweep leaves out, by key, with the codes the analyzer reported for the last
  * value tried: what the vocabulary lists but no target is asked to render.
  */
-const drops = { static: new Map<string, string[]>(), bound: new Map<string, string[]>() };
+const drops = { static: new Map<string, Array<string>>(), bound: new Map<string, Array<string>>() };
 
 /** The pairs the attribute sweeps leave out, with the analyzer's codes (see `drops`). */
 export function sweepDrops(): {
-	static: ReadonlyMap<string, readonly string[]>;
-	bound: ReadonlyMap<string, readonly string[]>;
+	static: ReadonlyMap<string, ReadonlyArray<string>>;
+	bound: ReadonlyMap<string, ReadonlyArray<string>>;
 } {
 	attributeSweep();
 	boundAttributeSweep();
@@ -601,8 +651,10 @@ export function sweepDrops(): {
  * to. The analyzer decides, so the sweep follows what it accepts: an attribute it starts
  * accepting is rendered by every target from then on.
  */
-export function attributeSweep(): readonly StaticCase[] {
-	if (sweep) return sweep;
+export function attributeSweep(): ReadonlyArray<StaticCase> {
+	if (sweep) {
+		return sweep;
+	}
 	const tries = sweepCandidates().flatMap((candidate) =>
 		sweepValues(candidate).map((value) => ({
 			candidate,
@@ -617,24 +669,31 @@ export function attributeSweep(): readonly StaticCase[] {
 	});
 	// A component the analyzer rejects is left out of the module; its siblings are not.
 	const { module, diagnostics } = analyze(parseModule("Sweep.uf.tsx", source));
-	if (!module) throw new Error("The analyzer rejected the whole attribute sweep.");
+	if (!module) {
+		throw new Error("The analyzer rejected the whole attribute sweep.");
+	}
 	const seen = new Set<string>();
-	const cases: StaticCase[] = [];
+	const cases: Array<StaticCase> = [];
 	const invalid = new Set<string>();
 	for (const component of module.components) {
 		const { candidate } = tries[Number(component.name.slice("Sweep".length))]!;
-		if (seen.has(candidate.key)) continue;
+		if (seen.has(candidate.key)) {
+			continue;
+		}
 		if (checkInvariants(componentModule("Sweep.uf.tsx", module, component)).length) {
 			invalid.add(candidate.key);
 			continue;
 		}
 		seen.add(candidate.key);
-		if (component.render.kind !== "Element")
+		if (component.render.kind !== "Element") {
 			throw new Error(`${candidate.key} has no root element`);
+		}
 		cases.push({ name: candidate.key, render: component.render });
 	}
 	tries.forEach(({ candidate }, index) => {
-		if (seen.has(candidate.key)) return;
+		if (seen.has(candidate.key)) {
+			return;
+		}
 		const { start, end } = ranges[index]!;
 		const reported = diagnostics
 			.filter(({ span: where }) => where.start >= start && where.end <= end)
@@ -667,7 +726,7 @@ const boolean = (value: boolean): BoundValue => ({ type: "boolean", value });
  * number-typed attributes, `about:blank` on URLs (no request, and no scheme a target blocks or
  * prefixes), and a string or a number elsewhere.
  */
-function boundSweepValues({ tag, name, namespace }: SweepCandidate): BoundValue[][] {
+function boundSweepValues({ tag, name, namespace }: SweepCandidate): Array<Array<BoundValue>> {
 	// An enumerated attribute is bound to a union of the keywords every typed target accepts: a
 	// `string` fails some target's types (UF3018).
 	const listed = enumeratedValues(tag, namespace, name);
@@ -676,25 +735,39 @@ function boundSweepValues({ tag, name, namespace }: SweepCandidate): BoundValue[
 	const union = enumerated?.tokens.map((token) => JSON.stringify(token)).join(" | ");
 	const keyword = (value: string): BoundValue => ({ type: union ?? "string", value });
 	if (namespace === "svg") {
-		if (isNumberTypedAttribute(tag, name)) return [[number(2)]];
+		if (isNumberTypedAttribute(tag, name)) {
+			return [[number(2)]];
+		}
 		return [enumerated ? [keyword(enumerated.tokens[0]!)] : [string("1"), number(2)]];
 	}
-	if (isBooleanAttribute(name)) return [[boolean(true)], [boolean(false)]];
+	if (isBooleanAttribute(name)) {
+		return [[boolean(true)], [boolean(false)]];
+	}
 	if (TRUE_VALUED_ATTRIBUTES.has(name)) {
 		return [
 			[boolean(true), keyword("true")],
 			[boolean(false), keyword("false")],
 		];
 	}
-	if (enumerated) return [[keyword(enumerated.tokens[0]!)]];
-	if (isNumberTypedAttribute(tag, name)) return [[number(2)]];
-	if (URL_ATTRIBUTES.has(name)) return [[string("about:blank")]];
-	if (name.endsWith("srcset")) return [[string("about:blank 1x")]];
-	if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) return [[number(2), string("2")]];
+	if (enumerated) {
+		return [[keyword(enumerated.tokens[0]!)]];
+	}
+	if (isNumberTypedAttribute(tag, name)) {
+		return [[number(2)]];
+	}
+	if (URL_ATTRIBUTES.has(name)) {
+		return [[string("about:blank")]];
+	}
+	if (name.endsWith("srcset")) {
+		return [[string("about:blank 1x")]];
+	}
+	if (NUMERIC_ATTRIBUTES.get(tag)?.has(name)) {
+		return [[number(2), string("2")]];
+	}
 	return [[string("x"), number(1)]];
 }
 
-let boundSweep: readonly ParityCase[] | undefined;
+let boundSweep: ReadonlyArray<ParityCase> | undefined;
 
 /**
  * The bound attribute sweep: every (element, attribute) pair the analyzer accepts bound to a
@@ -703,12 +776,16 @@ let boundSweep: readonly ParityCase[] | undefined;
  * `set_attribute`, Angular's `[attr.x]`, Solid's compiled attribute and property setters), and
  * booleans and numbers render by rules a static value never meets.
  */
-export function boundAttributeSweep(): readonly ParityCase[] {
-	if (boundSweep) return boundSweep;
-	const slots: { key: string; first: number; count: number }[] = [];
-	const specs: SourceCase[] = [];
+export function boundAttributeSweep(): ReadonlyArray<ParityCase> {
+	if (boundSweep) {
+		return boundSweep;
+	}
+	const slots: Array<{ key: string; first: number; count: number }> = [];
+	const specs: Array<SourceCase> = [];
 	for (const candidate of sweepCandidates()) {
-		if (candidate.name === "class") continue;
+		if (candidate.name === "class") {
+			continue;
+		}
 		for (const alternatives of boundSweepValues(candidate)) {
 			const [{ value: shown }] = alternatives as [BoundValue];
 			slots.push({
@@ -726,13 +803,16 @@ export function boundAttributeSweep(): readonly ParityCase[] {
 			}
 		}
 	}
-	const codes = new Map<number, string[]>();
+	const codes = new Map<number, Array<string>>();
 	const lowered = lowerSources(specs, "drop", codes);
-	const cases: ParityCase[] = [];
+	const cases: Array<ParityCase> = [];
 	for (const { key, first, count } of slots) {
 		const accepted = lowered.slice(first, first + count).find((each) => each !== undefined);
-		if (accepted) cases.push({ ...accepted, name: key });
-		else drops.bound.set(key, codes.get(first + count - 1) ?? []);
+		if (accepted) {
+			cases.push({ ...accepted, name: key });
+		} else {
+			drops.bound.set(key, codes.get(first + count - 1) ?? []);
+		}
 	}
 	if (cases.length < 400) {
 		throw new Error(`The analyzer accepts only ${cases.length} pairs of the bound sweep.`);
@@ -741,15 +821,17 @@ export function boundAttributeSweep(): readonly ParityCase[] {
 	return boundSweep;
 }
 
-let allSuites: readonly ParitySuite[] | undefined;
+let allSuites: ReadonlyArray<ParitySuite> | undefined;
 
 /**
  * Every suite each target's render-parity tests run: M0's static ones and the attribute sweep;
  * then M1's source components, destructured and read through one object, each root case as a
  * component's root, the seeded random components, and the bound attribute sweep.
  */
-export function paritySuites(): readonly ParitySuite[] {
-	if (allSuites) return allSuites;
+export function paritySuites(): ReadonlyArray<ParitySuite> {
+	if (allSuites) {
+		return allSuites;
+	}
 	const tricky = sourceCases(TRICKY_SOURCES);
 	const roots = sourceCases([
 		...ROOT_SOURCES,
@@ -806,7 +888,7 @@ export interface ParityModulesOptions {
 	 */
 	perCase?: boolean;
 	/** The suites to serve; by default {@link clientParitySuites}. */
-	suites?: readonly ParitySuite[];
+	suites?: ReadonlyArray<ParitySuite>;
 }
 
 /**
@@ -815,7 +897,7 @@ export interface ParityModulesOptions {
  * escapes for them are checked on the server; Solid's and Svelte's client compiles fold static
  * text and attributes into HTML template strings, whose parsing turns them into line feeds.
  */
-export function clientParitySuites(): readonly ParitySuite[] {
+export function clientParitySuites(): ReadonlyArray<ParitySuite> {
 	return paritySuites().filter(({ cases }) => cases !== CARRIAGE_RETURN_CASES);
 }
 
@@ -850,17 +932,23 @@ function servedSuite(suite: ParitySuite, only: number | undefined): ParitySuite 
 export function renderParityModules(options: ParityModulesOptions): Plugin {
 	const { target, extension = "" } = options;
 	const served = new Map<string, ServedComponent>();
-	let suites: readonly ParitySuite[] | undefined;
+	let suites: ReadonlyArray<ParitySuite> | undefined;
 	/** The suites, built when first needed, not whenever the configuration loads. */
 	const suitesServed = () => {
-		if (suites) return suites;
+		if (suites) {
+			return suites;
+		}
 		suites = options.suites ?? clientParitySuites();
 		suites.forEach(({ cases }, suite) => {
-			if (!target) return;
+			if (!target) {
+				return;
+			}
 			for (const format of options.formatted ? [true, false] : [false]) {
 				const base = `${PARITY_DIRECTORY}${suite}-${format ? "formatted" : "printed"}`;
 				served.set(`${base}${extension}`, { suite, format });
-				if (!options.perCase) continue;
+				if (!options.perCase) {
+					continue;
+				}
 				cases.forEach((_, only) =>
 					served.set(`${base}-${only}${extension}`, { suite, format, only }),
 				);
@@ -871,7 +959,9 @@ export function renderParityModules(options: ParityModulesOptions): Plugin {
 	let root = "";
 	/** The served path of an id or URL with its query, or `undefined` when it is not one. */
 	const servedPath = (id: string) => {
-		if (!id.includes(PARITY_DIRECTORY)) return undefined;
+		if (!id.includes(PARITY_DIRECTORY)) {
+			return undefined;
+		}
 		suitesServed();
 		const [path = ""] = id.split("?");
 		const relative = root && path.startsWith(`${root}/`) ? path.slice(root.length) : path;
@@ -886,16 +976,24 @@ export function renderParityModules(options: ParityModulesOptions): Plugin {
 		},
 		resolveId(source) {
 			const path = servedPath(source);
-			if (path === undefined) return null;
+			if (path === undefined) {
+				return null;
+			}
 			// Queries are the framework plugin's requests for parts of the module (`?vue&type=…`).
 			const query = source.includes("?") ? source.slice(source.indexOf("?")) : "";
 			return `${root}${path}${query}`;
 		},
 		async load(id) {
-			if (id === MANIFEST) return manifest(target, suitesServed(), served);
-			if (id.includes("?")) return null;
+			if (id === MANIFEST) {
+				return manifest(target, suitesServed(), served);
+			}
+			if (id.includes("?")) {
+				return null;
+			}
 			const path = servedPath(id);
-			if (path === undefined || !target) return null;
+			if (path === undefined || !target) {
+				return null;
+			}
 			const { suite, format, only } = served.get(path)!;
 			const [file, ...rest] = await emitParity(target, servedSuite(suitesServed()[suite]!, only), {
 				format,
@@ -915,10 +1013,10 @@ export function renderParityModules(options: ParityModulesOptions): Plugin {
  */
 function manifest(
 	target: Target | undefined,
-	suites: readonly ParitySuite[],
+	suites: ReadonlyArray<ParitySuite>,
 	served: ReadonlyMap<string, ServedComponent>,
 ): string {
-	const components = suites.map(() => [] as string[]);
+	const components = suites.map(() => [] as Array<string>);
 	for (const [path, { suite, format, only }] of served) {
 		const props = jsLiteral(parityProps(servedSuite(suites[suite]!, only)));
 		components[suite]!.push(
@@ -941,17 +1039,27 @@ function manifest(
  * `-0`, `NaN`, the infinities). Props hold only these and plain arrays and objects.
  */
 export function jsLiteral(value: unknown): string {
-	if (value === undefined) return "undefined";
+	if (value === undefined) {
+		return "undefined";
+	}
 	if (typeof value === "number") {
-		if (Object.is(value, -0)) return "-0";
-		if (Number.isNaN(value)) return "NaN";
-		if (!Number.isFinite(value)) return value > 0 ? "Infinity" : "-Infinity";
+		if (Object.is(value, -0)) {
+			return "-0";
+		}
+		if (Number.isNaN(value)) {
+			return "NaN";
+		}
+		if (!Number.isFinite(value)) {
+			return value > 0 ? "Infinity" : "-Infinity";
+		}
 		return String(value);
 	}
 	if (typeof value === "string" || typeof value === "boolean" || value === null) {
 		return JSON.stringify(value);
 	}
-	if (Array.isArray(value)) return `[${value.map(jsLiteral).join(", ")}]`;
+	if (Array.isArray(value)) {
+		return `[${value.map(jsLiteral).join(", ")}]`;
+	}
 	if (typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
 		const entries = Object.entries(value).map(
 			([key, item]) => `${JSON.stringify(key)}: ${jsLiteral(item)}`,

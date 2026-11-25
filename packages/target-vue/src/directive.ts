@@ -35,7 +35,9 @@ function hookCode(hook: DirectiveHook): string {
 	const taken = codeNames(hook.body.code, "statements");
 	const fresh = (base: string) => {
 		let name = base;
-		for (let index = 1; taken.has(name); index++) name = `${base}_${index}`;
+		for (let index = 1; taken.has(name); index++) {
+			name = `${base}_${index}`;
+		}
 		taken.add(name);
 		return name;
 	};
@@ -69,7 +71,7 @@ export function addDirectiveImports(
 }
 
 /** `vFocusTrap.ts`: a `.uf.ts` module's directive, exported as Vue's `ObjectDirective`. */
-export function emitDirective(directive: UfDirective, context: EmitContext): OutputFile[] {
+export function emitDirective(directive: UfDirective, context: EmitContext): Array<OutputFile> {
 	const dependencies = directiveDependencies(directive, context.module);
 	// Vue's type, under a name apart from everything the copied code declares or reads.
 	const type = new NameScope(directiveModuleNames(directive, dependencies)).claim(

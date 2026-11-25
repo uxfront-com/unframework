@@ -39,12 +39,14 @@ export function capabilityCell(
  * reason of the first one whose cell is unsupported (`requires interactivity: …`), or nothing.
  */
 export function requiredSkip(
-	requires: readonly string[],
+	requires: ReadonlyArray<string>,
 	cells: Readonly<Record<string, CapabilityCell>> = capabilityCells(),
 ): string | undefined {
 	for (const name of requires) {
 		const cell = capabilityCell(name, cells);
-		if (cell.support === "unsupported") return requiresSkip(name, cell.reason);
+		if (cell.support === "unsupported") {
+			return requiresSkip(name, cell.reason);
+		}
 	}
 	return undefined;
 }
@@ -88,7 +90,9 @@ export function assertInteractive(
 	target: string = currentTarget(),
 ): void {
 	const cell = capabilityCell("interactivity", cells);
-	if (cell.support !== "unsupported") return;
+	if (cell.support !== "unsupported") {
+		return;
+	}
 	throw new Error(
 		`${what}: ${target} runs no client code (${cell.reason}). A test that interacts or reads emitted events declares it: it(name, { requires: ["interactivity"] }, fn).`,
 	);

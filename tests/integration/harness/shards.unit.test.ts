@@ -18,7 +18,7 @@ import { SHARDS, SSR_SHARDS, shardFiles, shardOf } from "./shards.ts";
 import type { ShardKind } from "./shards.ts";
 
 /** Every shard of `items` for `count`, in order. */
-const shardsOf = <T>(items: readonly T[], count: number) =>
+const shardsOf = <T>(items: ReadonlyArray<T>, count: number) =>
 	Array.from({ length: count }, (_, index) => shardOf(items, index, count));
 
 describe("shardOf", () => {
@@ -85,7 +85,7 @@ describe("the ssr shards", () => {
 	const harness: HarnessContext = inject("ufHarness");
 	const mode = { update: false, pixels: "baseline", canary: null, ci: false } as const;
 	/** The ssr project of `target`, resolved, as Vitest resolves it. */
-	const ssrProject = async (only?: Record<string, string[]>) => {
+	const ssrProject = async (only?: Record<string, Array<string>>) => {
 		const projects = harnessProjects({ harness, mode, targets: ["react"], referencesOnly: only });
 		// compile, harness, toolchain:react, then ssr:react.
 		const project = await (projects[3] as () => Promise<UserWorkspaceConfig>)();
@@ -134,7 +134,7 @@ describe("the shard files on disk", () => {
 		ssr: /^describeSsrShard\((\d+)\);$/m,
 	};
 
-	it.each(Object.keys(SHARDS) as ShardKind[])(
+	it.each(Object.keys(SHARDS) as Array<ShardKind>)(
 		"are exactly the %s shards the count names, each calling its own index",
 		(kind) => {
 			const pattern = new RegExp(`^${kind}\\.[^.]+\\.(?:unit\\.)?test\\.ts$`);

@@ -15,7 +15,7 @@ const proc = (pid: number, ppid: number, pgid: number, rssKib = 1024): ProcessIn
 	rssKib,
 	started: STARTED,
 });
-const pids = (members: readonly ProcessInfo[]) => members.map((member) => member.pid);
+const pids = (members: ReadonlyArray<ProcessInfo>) => members.map((member) => member.pid);
 
 describe("parseProcesses", () => {
 	it("reads each process, with its start time, and leaves out zombies", () => {

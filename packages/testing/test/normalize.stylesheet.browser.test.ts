@@ -56,7 +56,7 @@ afterEach(() => {
 	document.body.replaceChildren();
 });
 
-const SAME: readonly (readonly [string, string, string])[] = [
+const SAME: ReadonlyArray<readonly [string, string, string]> = [
 	[
 		"spaces around an inline made a block",
 		'<p>a <span class="block"> b</span></p>',
@@ -79,7 +79,7 @@ const SAME: readonly (readonly [string, string, string])[] = [
 	],
 ];
 
-const DIFFERENT: readonly (readonly [string, string, string])[] = [
+const DIFFERENT: ReadonlyArray<readonly [string, string, string]> = [
 	[
 		"a space before a block made inline",
 		'<div>a <div class="inline">b</div></div>',
@@ -103,7 +103,7 @@ const DIFFERENT: readonly (readonly [string, string, string])[] = [
  * keeps them apart only because it reads the computed `float` and `position`, which take the
  * box out of flow, where whitespace collapses across it instead of ending at it.
  */
-const DIFFERENT_OUT_OF_FLOW: readonly (readonly [string, string, string])[] = [
+const DIFFERENT_OUT_OF_FLOW: ReadonlyArray<readonly [string, string, string]> = [
 	[
 		"spaces around a float",
 		'<p>a <span class="float">x</span> b</p>',

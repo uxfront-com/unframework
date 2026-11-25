@@ -441,7 +441,7 @@ describe("workerUrl", () => {
 
 /** A thread that records what it gets, and replies only when a test says so. */
 class FakeThread extends EventEmitter implements CompileThread {
-	readonly received: WorkerRequest[] = [];
+	readonly received: Array<WorkerRequest> = [];
 	referenced = false;
 	postMessage(message: WorkerRequest): void {
 		this.received.push(message);
@@ -453,7 +453,7 @@ class FakeThread extends EventEmitter implements CompileThread {
 		this.referenced = false;
 	}
 	/** The compiles it holds that it has not replied to, by request number. */
-	get compiles(): (CompileRequest & { request: number })[] {
+	get compiles(): Array<CompileRequest & { request: number }> {
 		return this.received.filter((message) => "request" in message);
 	}
 	/** Replies to the compile of `id` with code naming the thread. */
@@ -481,7 +481,7 @@ const request = (plugin: number, id: string): CompileRequest => ({
 describe("compilePool", () => {
 	/** A pool of fake threads, and the threads it started. */
 	const fakePool = (size: number) => {
-		const threads: FakeThread[] = [];
+		const threads: Array<FakeThread> = [];
 		const pool = compilePool(() => {
 			const thread = new FakeThread();
 			threads.push(thread);
@@ -539,7 +539,9 @@ describe("compilePool", () => {
 		const pending = [pool.compile(request(7, "A")), pool.compile(request(7, "B"))];
 		pool.release(7);
 		expect(threads).toHaveLength(2);
-		for (const thread of threads) expect(thread.received.at(-1)).toEqual({ release: 7 });
+		for (const thread of threads) {
+			expect(thread.received.at(-1)).toEqual({ release: 7 });
+		}
 		threads[0]!.reply("A", "a");
 		threads[1]!.reply("B", "b");
 		await Promise.all(pending);

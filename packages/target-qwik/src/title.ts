@@ -38,13 +38,13 @@ interface TitleContext {
 }
 
 /** The children each `<option>` {@link qwikTitles} rewrote held in the source. */
-const optionSources = new WeakMap<ElementNode, readonly RenderNode[]>();
+const optionSources = new WeakMap<ElementNode, ReadonlyArray<RenderNode>>();
 
 /**
  * An option's children as the source writes them, before {@link qwikTitles} made them one
  * string: what a `v-model` selects an option without a `value` by (./composition.ts).
  */
-export function optionSource(option: ElementNode): readonly RenderNode[] {
+export function optionSource(option: ElementNode): ReadonlyArray<RenderNode> {
 	return optionSources.get(option) ?? option.children;
 }
 
@@ -121,19 +121,25 @@ export function qwikTitles(
  * throws on one rather than drop it (a target that throws is reported by the compiler).
  */
 function titleChildren(
-	children: readonly RenderNode[],
+	children: ReadonlyArray<RenderNode>,
 	options: Omit<TitleContext, "placeholders">,
-): RenderNode[] {
+): Array<RenderNode> {
 	const [only] = children;
-	if (!only) return [];
+	if (!only) {
+		return [];
+	}
 	const context: TitleContext = { ...options, placeholders: new Placeholders() };
-	if (children.length === 1 && only.kind === "Text") return [only];
+	if (children.length === 1 && only.kind === "Text") {
+		return [only];
+	}
 	if (children.length === 1 && only.kind === "Interpolation" && isText(only.value, context)) {
 		return [only];
 	}
 	const value = children.length === 1 ? alone(only, context) : text(children, context, false);
 	const span = { start: only.span.start, end: children.at(-1)!.span.end };
-	if (typeof value === "string") return value ? [{ kind: "Text", value, span }] : [];
+	if (typeof value === "string") {
+		return value ? [{ kind: "Text", value, span }] : [];
+	}
 	const code = context.placeholders.print(() => printExpression(value));
 	// Printed here, each part spelled by the context: the expression holds no reference for a
 	// rewrite to spell again.
@@ -151,7 +157,9 @@ function alone(node: RenderNode, context: TitleContext): JsExpression | string {
 		case "If":
 			return chain(node, (children) => branchValue(children, context), undefinedValue(), context);
 		case "Interpolation": {
-			if (isText(node.value, context)) return expression(node.value, context);
+			if (isText(node.value, context)) {
+				return expression(node.value, context);
+			}
 			const kinds = propReadKinds(node.value, context.jsx.component, context.module);
 			if (kinds && [...kinds].every((kind) => ["string", "null", "undefined"].includes(kind))) {
 				const value = expression(node.value, context, "operand");
@@ -165,9 +173,11 @@ function alone(node: RenderNode, context: TitleContext): JsExpression | string {
 }
 
 /** A branch of a conditional that is the title's whole value: see {@link alone}. */
-function branchValue(children: readonly RenderNode[], context: TitleContext): JsExpression {
+function branchValue(children: ReadonlyArray<RenderNode>, context: TitleContext): JsExpression {
 	const [only] = children;
-	if (!only) return undefinedValue();
+	if (!only) {
+		return undefinedValue();
+	}
 	const value = children.length === 1 ? alone(only, context) : text(children, context, false);
 	return typeof value === "string" ? js.stringLiteral(value) : value;
 }
@@ -177,17 +187,21 @@ function branchValue(children: readonly RenderNode[], context: TitleContext): Js
  * renders a value. Inside another template literal (`inner`), one part needs none of its own.
  */
 function text(
-	nodes: readonly RenderNode[],
+	nodes: ReadonlyArray<RenderNode>,
 	context: TitleContext,
 	inner: boolean,
 ): JsExpression | string {
-	const parts: TextPart[] = [];
+	const parts: Array<TextPart> = [];
 	for (const node of nodes) {
 		const value = node.kind === "Text" ? node.value : templatePart(node, context);
-		if (value !== undefined) parts.push(value);
+		if (value !== undefined) {
+			parts.push(value);
+		}
 	}
 	const [only] = parts;
-	if (inner && parts.length === 1 && typeof only !== "string") return only!;
+	if (inner && parts.length === 1 && typeof only !== "string") {
+		return only!;
+	}
 	return textTemplate(parts);
 }
 
@@ -244,7 +258,7 @@ function interpolationPart(value: Expression, context: TitleContext): JsExpressi
 /** A conditional as a ternary chain: each branch's value, then `otherwise` if none renders. */
 function chain(
 	node: IfNode,
-	value: (children: readonly RenderNode[]) => JsExpression,
+	value: (children: ReadonlyArray<RenderNode>) => JsExpression,
 	otherwise: JsExpression,
 	context: TitleContext,
 ): JsExpression {

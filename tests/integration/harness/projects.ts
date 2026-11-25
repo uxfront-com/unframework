@@ -56,15 +56,15 @@ import { ufMapStack } from "./thrown.ts";
 export interface HarnessSetup {
 	harness: HarnessContext;
 	mode: HarnessMode;
-	targets: readonly string[];
+	targets: ReadonlyArray<string>;
 	/** `--project` patterns from the command line; unselected projects load no toolchain. */
-	projectFilter?: readonly string[] | undefined;
+	projectFilter?: ReadonlyArray<string> | undefined;
 	/**
 	 * The targets some case names as its own reference (ADR-0057), each with those cases: their
 	 * `ssr:` and `browser:` projects run on those cases alone. A target the run leaves out joins
 	 * with them, so the other targets have the case's expectations and pixels to compare with.
 	 */
-	referencesOnly?: Readonly<Record<string, readonly string[]>>;
+	referencesOnly?: Readonly<Record<string, ReadonlyArray<string>>>;
 }
 
 /**
@@ -75,12 +75,14 @@ export interface HarnessSetup {
  */
 export function referencesOnly(
 	cases: Readonly<Record<string, { reference?: string }>>,
-	targets: readonly string[],
+	targets: ReadonlyArray<string>,
 	pass: boolean = process.env.UF_REFERENCE_PASS === "1",
-): Record<string, string[]> {
-	const only: Record<string, string[]> = {};
+): Record<string, Array<string>> {
+	const only: Record<string, Array<string>> = {};
 	for (const [id, config] of Object.entries(cases)) {
-		if (config.reference === undefined || (!pass && targets.includes(config.reference))) continue;
+		if (config.reference === undefined || (!pass && targets.includes(config.reference))) {
+			continue;
+		}
 		(only[config.reference] ??= []).push(id);
 	}
 	return only;
@@ -90,7 +92,7 @@ export function referencesOnly(
 const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as const;
 
 /** The layers each kind of project records, which an unavailable project fails. */
-const LAYERS_OF: Record<"ssr" | "browser" | "hydrate", LayerName[]> = {
+const LAYERS_OF: Record<"ssr" | "browser" | "hydrate", Array<LayerName>> = {
 	ssr: ["L6", "L13"],
 	browser: ["L7", "L8", "L9", "L10", "L11", "L13", "L14"],
 	hydrate: ["L12"],
@@ -100,7 +102,7 @@ const LAYERS_OF: Record<"ssr" | "browser" | "hydrate", LayerName[]> = {
 export const BENCH_PROJECT = "bench";
 
 /** The name of every project of the default run, in order: what a run of all of them covers. */
-export function projectNames(targets: readonly string[]): string[] {
+export function projectNames(targets: ReadonlyArray<string>): Array<string> {
 	return [
 		"compile",
 		"harness",
@@ -112,12 +114,12 @@ export function projectNames(targets: readonly string[]): string[] {
 }
 
 /** What CI's parity job requires: the default run's projects, and the `Bench` job's. */
-export function parityProjects(targets: readonly string[]): string[] {
+export function parityProjects(targets: ReadonlyArray<string>): Array<string> {
 	return [...projectNames(targets), BENCH_PROJECT];
 }
 
 /** Every project of the harness. */
-export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[] {
+export function harnessProjects(setup: HarnessSetup): Array<TestProjectConfiguration> {
 	return [
 		nodeProject(setup, "compile", "compile", undefined, ["harness/compile.test.ts"]),
 		nodeProject(setup, "harness", "harness", undefined, ["harness/*.unit.test.ts"]),
@@ -147,12 +149,14 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
 		...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
 		...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
 		...setup.targets.map((target) => lazyProject(setup, "hydrate", target, hydrateProject)),
-		...Object.keys(setup.referencesOnly ?? {})
-			.filter((target) => !setup.targets.includes(target))
-			.flatMap((target) => [
-				lazyProject(setup, "ssr", target, ssrProject),
-				lazyProject(setup, "browser", target, browserProject),
-			]),
+		...Object.keys(setup.referencesOnly ?? {}).flatMap((target) =>
+			setup.targets.includes(target)
+				? []
+				: [
+						lazyProject(setup, "ssr", target, ssrProject),
+						lazyProject(setup, "browser", target, browserProject),
+					],
+		),
 	];
 }
 
@@ -213,7 +217,7 @@ export interface ProjectEntry {
 }
 
 /** Every project `harnessProjects` makes, with its kind and target, in the same order. */
-export function projectEntries(setup: HarnessSetup): ProjectEntry[] {
+export function projectEntries(setup: HarnessSetup): Array<ProjectEntry> {
 	const extra = Object.keys(setup.referencesOnly ?? {}).filter(
 		(target) => !setup.targets.includes(target),
 	);
@@ -268,25 +272,35 @@ export const MAX_REFERENCE_PAGES = 28;
 export function referencePages(
 	setup: HarnessSetup,
 	cpus: number,
-	argv: readonly string[] = process.argv,
+	argv: ReadonlyArray<string> = process.argv,
 	env: Readonly<Record<string, string | undefined>> = process.env,
 ): number | undefined {
 	// An update run writes artefacts, so it keeps the page count it has always had.
-	if (setup.mode.update || !fileParallelism(setup.mode)) return undefined;
-	if (env.VITEST_MAX_WORKERS !== undefined) return undefined;
-	if (argv.some((arg) => /^--max-?workers(=|$)/i.test(arg))) return undefined;
+	if (setup.mode.update || !fileParallelism(setup.mode)) {
+		return undefined;
+	}
+	if (env.VITEST_MAX_WORKERS !== undefined) {
+		return undefined;
+	}
+	if (argv.some((arg) => /^--max-?workers(=|$)/i.test(arg))) {
+		return undefined;
+	}
 	const selected = projectEntries(setup).filter((entry) =>
 		isSelected(entry.name, setup.projectFilter),
 	);
 	const reference = selected.find(
 		(entry) => entry.kind === "browser" && entry.target === REFERENCE,
 	);
-	if (!reference) return undefined;
+	if (!reference) {
+		return undefined;
+	}
 	const group = projectGroup(setup, reference.kind, reference.target);
 	const shared = selected.some(
 		(entry) => entry !== reference && projectGroup(setup, entry.kind, entry.target) === group,
 	);
-	if (shared) return undefined;
+	if (shared) {
+		return undefined;
+	}
 	return Math.min(MAX_REFERENCE_PAGES, Math.max(1, Math.round(cpus * REFERENCE_PAGES_PER_CPU)));
 }
 
@@ -311,7 +325,7 @@ function nodeProject(
 	name: string,
 	kind: ProjectKind,
 	target: string | undefined,
-	include: string[],
+	include: Array<string>,
 	test: UserWorkspaceConfig["test"] = {},
 ): UserWorkspaceConfig & { extends: false } {
 	return {
@@ -334,7 +348,7 @@ type ProjectFactory = (
 	setup: HarnessSetup,
 	target: string,
 	toolchain: Toolchain,
-	unframework: (options: UnframeworkOptions) => Plugin[],
+	unframework: (options: UnframeworkOptions) => Array<Plugin>,
 ) => Promise<UserWorkspaceConfig>;
 
 /**
@@ -406,7 +420,7 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
  * The plugin of a canary that corrupts the maps of served modules (`Canary.servedMap`), as a list
  * to spread into a project's plugins: empty for every other run.
  */
-function servedMapCanary(setup: HarnessSetup, target: string): Plugin[] {
+function servedMapCanary(setup: HarnessSetup, target: string): Array<Plugin> {
 	const plugin = canaryServePlugin(
 		setup.mode.canary,
 		target,
@@ -496,7 +510,7 @@ async function pageProject(
 	setup: HarnessSetup,
 	target: string,
 	toolchain: Toolchain,
-	unframework: (options: UnframeworkOptions) => Plugin[],
+	unframework: (options: UnframeworkOptions) => Array<Plugin>,
 ): Promise<UserWorkspaceConfig> {
 	const name = `${kind}:${target}`;
 	const context = toolchainContext(target);
@@ -544,7 +558,7 @@ async function pageProject(
 				expect: {
 					// A locator that never matches fails in seconds, not at the test timeout. The testing
 					// setup gives `expect.element` this timeout too: Vitest 5 does not (element-timeout.ts).
-					poll: { timeout: 5_000 },
+					poll: { timeout: 5000 },
 					// A test without an assertion fails L8: every spec asserts what it rendered (ADR-0043).
 					requireAssertions: true,
 				},
@@ -613,11 +627,13 @@ function pageCompilers(
 	kind: "browser" | "hydrate",
 	setup: HarnessSetup,
 	target: string,
-	unframework: (options: UnframeworkOptions) => Plugin[],
-): Plugin[] {
+	unframework: (options: UnframeworkOptions) => Array<Plugin>,
+): Array<Plugin> {
 	const options = unpluginOptions(setup, target);
 	const canary = setup.mode.canary ? findCanary(setup.mode.canary) : undefined;
-	if (kind !== "hydrate" || !canary?.clientOnly) return unframework(options);
+	if (kind !== "hydrate" || !canary?.clientOnly) {
+		return unframework(options);
+	}
 	return [
 		...onEnvironments(unframework(options), (name) => name === "client"),
 		...onEnvironments(unframework({ ...options, plugins: [] }), (name) => name !== "client"),
@@ -625,7 +641,7 @@ function pageCompilers(
 }
 
 /** Plugins that apply to the environments `applies` names alone. */
-function onEnvironments(plugins: Plugin[], applies: (name: string) => boolean): Plugin[] {
+function onEnvironments(plugins: Array<Plugin>, applies: (name: string) => boolean): Array<Plugin> {
 	return plugins.map((plugin) => ({
 		...plugin,
 		applyToEnvironment: (environment) =>
@@ -660,7 +676,9 @@ export function ssrExternals(fragment: ViteUserConfig): Plugin {
 		configEnvironment: {
 			order: "post",
 			handler(name, config) {
-				if (name !== "ssr" || !names.length) return;
+				if (name !== "ssr" || !names.length) {
+					return;
+				}
 				const current = config.resolve?.external;
 				config.resolve ??= {};
 				config.resolve.external = [...(Array.isArray(current) ? current : []), ...names];
@@ -683,11 +701,15 @@ export function noErrorBroadcast(): Plugin {
 		configureServer(server) {
 			const hot = server.environments.client.hot;
 			const send = hot.send.bind(hot);
-			hot.send = (...args: unknown[]) => {
+			hot.send = (...args: Array<unknown>) => {
 				const [payload] = args;
 				if (typeof payload === "object" && payload !== null && "type" in payload) {
-					if (payload.type === "error") return;
+					if (payload.type === "error") {
+						return;
+					}
 				}
+				// `send` is overloaded, so the wrapper passes on the arguments as they came.
+				// oxlint-disable-next-line quality/no-reflect-apply
 				Reflect.apply(send, undefined, args);
 			};
 		},
@@ -731,8 +753,10 @@ function resolveModule(specifier: string): string {
  * Whether `--project` selects a project, with Vitest's wildcards (`*`) and negations (`!`).
  * Without patterns every project is selected.
  */
-export function isSelected(name: string, patterns: readonly string[] | undefined): boolean {
-	if (!patterns?.length) return true;
+export function isSelected(name: string, patterns: ReadonlyArray<string> | undefined): boolean {
+	if (!patterns?.length) {
+		return true;
+	}
 	if (
 		patterns.some((pattern) => pattern.startsWith("!") && toRegExp(pattern.slice(1)).test(name))
 	) {
@@ -744,18 +768,25 @@ export function isSelected(name: string, patterns: readonly string[] | undefined
 
 /** A `--project` pattern as Vitest matches it (`wildcardPatternToRegExp`): case-insensitive. */
 function toRegExp(pattern: string): RegExp {
-	const parts = pattern.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+	const parts = pattern
+		.split("*")
+		.map((part) => part.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`));
 	return new RegExp(`^${parts.join(".*")}$`, "i");
 }
 
 /** The `--project` (`-p`) patterns of a Vitest command line, in each spelling Vitest accepts. */
-export function projectPatterns(argv: readonly string[]): string[] {
-	const patterns: string[] = [];
+export function projectPatterns(argv: ReadonlyArray<string>): Array<string> {
+	const patterns: Array<string> = [];
 	for (let index = 0; index < argv.length; index += 1) {
 		const option = /^(?:--project|-p)(?:=(.*))?$/s.exec(argv[index]!);
-		if (!option) continue;
-		if (option[1] !== undefined) patterns.push(option[1]);
-		else if (argv[index + 1] !== undefined) patterns.push(argv[(index += 1)]!);
+		if (!option) {
+			continue;
+		}
+		if (option[1] !== undefined) {
+			patterns.push(option[1]);
+		} else if (argv[index + 1] !== undefined) {
+			patterns.push(argv[(index += 1)]!);
+		}
 	}
 	return patterns;
 }

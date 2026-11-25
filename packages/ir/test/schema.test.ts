@@ -59,9 +59,9 @@ describe("irSchema", () => {
 });
 
 /** The `kind` constants of a union definition in the schema. */
-function kindsOf(definition: string): string[] {
+function kindsOf(definition: string): Array<string> {
 	const definitions = irSchema.definitions as Record<string, Record<string, unknown>>;
-	const branches = (definitions[definition]!.anyOf as { $ref: string }[] | undefined) ?? [
+	const branches = (definitions[definition]!.anyOf as Array<{ $ref: string }> | undefined) ?? [
 		{ $ref: definitions[definition]!.$ref as string },
 	];
 	return branches.map(({ $ref }) => {
@@ -90,7 +90,7 @@ describe("the kind lists", () => {
 	});
 
 	it("name every binding kind in the schema", () => {
-		const definitions = irSchema.definitions as Record<string, { enum?: string[] }>;
+		const definitions = irSchema.definitions as Record<string, { enum?: Array<string> }>;
 		expect([...BINDING_KINDS].sort()).toEqual([...definitions.BindingKind!.enum!].sort());
 	});
 });
@@ -116,10 +116,10 @@ describe("validateModule", () => {
 			[createExport("default", "Hello", at)],
 		);
 	const render = (module: Record<string, unknown>) =>
-		(module.components as Record<string, unknown>[])[0]!.render as Record<string, unknown>;
+		(module.components as Array<Record<string, unknown>>)[0]!.render as Record<string, unknown>;
 
 	// Each sample is a valid module with one change; validateModule must agree with Ajv on all.
-	const samples: [string, (module: Record<string, unknown>) => unknown][] = [
+	const samples: Array<[string, (module: Record<string, unknown>) => unknown]> = [
 		["a valid module", (module) => module],
 		["a module with an unknown field", (module) => ({ ...module, extra: true })],
 		[
@@ -137,26 +137,35 @@ describe("validateModule", () => {
 		[
 			"an attribute name in camel case",
 			(module) => (
-				((render(module).attributes as { name: unknown }[])[0]!.name = "readOnly"),
+				((render(module).attributes as Array<{ name: unknown }>)[0]!.name = "readOnly"),
 				module
 			),
 		],
 		[
 			"an attribute name with a space",
-			(module) => (((render(module).attributes as { name: unknown }[])[0]!.name = "a b"), module),
+			(module) => (
+				((render(module).attributes as Array<{ name: unknown }>)[0]!.name = "a b"),
+				module
+			),
 		],
 		[
 			"an attribute value of false",
-			(module) => (((render(module).attributes as { value: unknown }[])[1]!.value = false), module),
+			(module) => (
+				((render(module).attributes as Array<{ value: unknown }>)[1]!.value = false),
+				module
+			),
 		],
 		[
 			"a text node without a value",
-			(module) => (delete (render(module).children as Record<string, unknown>[])[0]!.value, module),
+			(module) => (
+				delete (render(module).children as Array<Record<string, unknown>>)[0]!.value,
+				module
+			),
 		],
 		["a span of NaN", (module) => ((render(module).span = { start: Number.NaN, end: 1 }), module)],
 		[
 			"an export of an unknown kind",
-			(module) => (((module.exports as { kind: string }[])[0]!.kind = "both"), module),
+			(module) => (((module.exports as Array<{ kind: string }>)[0]!.kind = "both"), module),
 		],
 		// Styles (ADR-0063).
 		...(
@@ -169,7 +178,7 @@ describe("validateModule", () => {
 		).map(([name, specifier, scopeId]): [string, (module: Record<string, unknown>) => unknown] => [
 			name,
 			(module) => (
-				Object.assign((module.components as Record<string, unknown>[])[0]!, {
+				Object.assign((module.components as Array<Record<string, unknown>>)[0]!, {
 					styles: [{ specifier, source: "", span: { start: 0, end: 1 } }],
 					scopeId,
 				}),
@@ -185,8 +194,8 @@ describe("validateModule", () => {
 				"",
 				"./a.css",
 				"/a",
-				"\\a",
-				"C:\\x",
+				String.raw`\a`,
+				String.raw`C:\x`,
 			] as const
 		).map((specifier): [string, (module: Record<string, unknown>) => unknown] => [
 			`a pass-through import of ${specifier}`,
@@ -211,12 +220,12 @@ describe("validateModule", () => {
 		// Holes, which `forEach` skips and Ajv checks as `undefined`.
 		[
 			"children with a hole",
-			(module) => (((render(module).children as unknown[]).length = 3), module),
+			(module) => (((render(module).children as Array<unknown>).length = 3), module),
 		],
 		[
 			"attributes with a deleted item",
 			// oxlint-disable-next-line no-array-delete -- the hole it leaves is the point.
-			(module) => (delete (render(module).attributes as unknown[])[0], module),
+			(module) => (delete (render(module).attributes as Array<unknown>)[0], module),
 		],
 		[
 			"components that are a sparse array",
@@ -234,7 +243,7 @@ describe("validateModule", () => {
 	it("accepts the names HTML's vocabulary has", () => {
 		const module = structuredClone(valid()) as unknown as Record<string, unknown>;
 		render(module).tag = "h1";
-		(render(module).attributes as { name: unknown }[])[0]!.name = "data-é.x_1";
+		(render(module).attributes as Array<{ name: unknown }>)[0]!.name = "data-é.x_1";
 		expect(validateModule(module)).toEqual([]);
 	});
 
@@ -274,7 +283,7 @@ describe("validateModule", () => {
 
 	it("checks a hole in an array as a missing item", () => {
 		const module = structuredClone(valid()) as unknown as Record<string, unknown>;
-		(render(module).children as unknown[]).length = 3;
+		(render(module).children as Array<unknown>).length = 3;
 		expect(validateModule(module)).toEqual([
 			{
 				path: "/components/0/render/children/2",
@@ -286,33 +295,34 @@ describe("validateModule", () => {
 
 	// The kinds M1 adds, each changed once; validateModule must agree with Ajv on all.
 	type Json = Record<string, unknown>;
-	const component = (module: Json) => (module.components as Json[])[0]!;
-	const roots = (module: Json) => (component(module).render as { children: Json[] }).children;
+	const component = (module: Json) => (module.components as Array<Json>)[0]!;
+	const roots = (module: Json) => (component(module).render as { children: Array<Json> }).children;
 	const card = (module: Json) => roots(module)[0]!;
-	const list = (module: Json) => roots(module)[1]! as { branches: Json[] };
+	const list = (module: Json) => roots(module)[1]! as { branches: Array<Json> };
 	const loop = (module: Json) =>
-		((list(module).branches[0]!.children as Json[])[0]!.children as Json[])[0]!;
-	const attribute = (module: Json, index: number) => (card(module).attributes as Json[])[index]!;
-	const counter = (module: Json) => (module.components as Json[])[1]!;
-	const item = (module: Json, index: number) => (counter(module).setup as Json[])[index]!;
+		((list(module).branches[0]!.children as Array<Json>)[0]!.children as Array<Json>)[0]!;
+	const attribute = (module: Json, index: number) =>
+		(card(module).attributes as Array<Json>)[index]!;
+	const counter = (module: Json) => (module.components as Array<Json>)[1]!;
+	const item = (module: Json, index: number) => (counter(module).setup as Array<Json>)[index]!;
 	const emitsOf = (module: Json) => counter(module).emits as Json;
 	const fnOf = (module: Json, index: number) => {
 		const found = item(module, index);
 		return (found.function ?? found.callback ?? found.getter ?? found.effect) as Json;
 	};
 	const parameter = (module: Json, index: number, position: number) =>
-		(fnOf(module, index).parameters as Json[])[position]!;
+		(fnOf(module, index).parameters as Array<Json>)[position]!;
 	const codeRef = (module: Json, index: number, position: number) =>
-		((fnOf(module, index).body as Json).refs as Json[])[position]!;
-	const control = (module: Json) => (fnOf(module, 6).eventControls as Json[])[0]!;
+		((fnOf(module, index).body as Json).refs as Array<Json>)[position]!;
+	const control = (module: Json) => (fnOf(module, 6).eventControls as Array<Json>)[0]!;
 	const counterRender = (module: Json) => counter(module).render as Json;
 	const counterAttribute = (module: Json, child: number, index: number) =>
-		((counterRender(module).children as Json[])[child]!.attributes as Json[])[index]!;
-	const listener = (module: Json) => (counterRender(module).attributes as Json[])[0]!;
+		((counterRender(module).children as Array<Json>)[child]!.attributes as Array<Json>)[index]!;
+	const listener = (module: Json) => (counterRender(module).attributes as Array<Json>)[0]!;
 	/** The expression `<output>` renders: `label(doubled.value)`. */
 	const shown = (module: Json) =>
-		((counterRender(module).children as Json[])[4]!.children as Json[])[0]!.value as Json;
-	const kindSamples: [string, (module: Json) => unknown][] = [
+		((counterRender(module).children as Array<Json>)[4]!.children as Array<Json>)[0]!.value as Json;
+	const kindSamples: Array<[string, (module: Json) => unknown]> = [
 		["a module with every kind", (module) => module],
 		["a module without types", ({ types: _types, ...module }) => module],
 		[
@@ -331,15 +341,15 @@ describe("validateModule", () => {
 		],
 		[
 			"a class part of an unknown kind",
-			(module) => (((attribute(module, 0).items as Json[])[0]!.kind = "Name"), module),
+			(module) => (((attribute(module, 0).items as Array<Json>)[0]!.kind = "Name"), module),
 		],
 		[
 			"a static style value that is a number",
-			(module) => (((attribute(module, 1).declarations as Json[])[0]!.value = 1), module),
+			(module) => (((attribute(module, 1).declarations as Array<Json>)[0]!.value = 1), module),
 		],
 		[
 			"a spread key without a span",
-			(module) => (delete (attribute(module, 3).keys as Json[])[0]!.span, module),
+			(module) => (delete (attribute(module, 3).keys as Array<Json>)[0]!.span, module),
 		],
 		["a spread without nullish", (module) => (delete attribute(module, 3).nullish, module)],
 		[
@@ -349,20 +359,20 @@ describe("validateModule", () => {
 		[
 			"a reference of an unknown kind",
 			(module) => (
-				(((attribute(module, 2).value as Json).refs as Json[])[0]!.kind = "Local"),
+				(((attribute(module, 2).value as Json).refs as Array<Json>)[0]!.kind = "Local"),
 				module
 			),
 		],
 		[
 			"a shorthand that is false",
 			(module) => (
-				(((attribute(module, 2).value as Json).refs as Json[])[0]!.shorthand = false),
+				(((attribute(module, 2).value as Json).refs as Array<Json>)[0]!.shorthand = false),
 				module
 			),
 		],
 		[
 			"a prop whose optional is a string",
-			(module) => (((component(module).props as Json[])[0]!.optional = "no"), module),
+			(module) => (((component(module).props as Array<Json>)[0]!.optional = "no"), module),
 		],
 		[
 			"a props parameter of an unknown form",
@@ -370,15 +380,15 @@ describe("validateModule", () => {
 		],
 		[
 			"a binding of an unknown kind",
-			(module) => (((component(module).bindings as Json[])[0]!.kind = "slotScope"), module),
+			(module) => (((component(module).bindings as Array<Json>)[0]!.kind = "slotScope"), module),
 		],
 		[
 			"a binding of a setup kind",
-			(module) => (((component(module).bindings as Json[])[0]!.kind = "state"), module),
+			(module) => (((component(module).bindings as Array<Json>)[0]!.kind = "state"), module),
 		],
 		[
 			"a binding id without an offset",
-			(module) => (((component(module).bindings as Json[])[0]!.id = "label"), module),
+			(module) => (((component(module).bindings as Array<Json>)[0]!.id = "label"), module),
 		],
 		["a tag in camel case", (module) => ((card(module).tag = "linearGradient"), module)],
 		["a tag with a hyphen", (module) => ((card(module).tag = "font-face"), module)],
@@ -434,11 +444,11 @@ describe("validateModule", () => {
 		],
 		[
 			"a watch source of an unknown kind",
-			(module) => (((item(module, 9).sources as Json[])[0]!.kind = "Reactive"), module),
+			(module) => (((item(module, 9).sources as Array<Json>)[0]!.kind = "Reactive"), module),
 		],
 		[
 			"a getter source without a getter",
-			(module) => (delete (item(module, 10).sources as Json[])[0]!.getter, module),
+			(module) => (delete (item(module, 10).sources as Array<Json>)[0]!.getter, module),
 		],
 		[
 			"a lifecycle hook of an unknown kind",
@@ -469,16 +479,17 @@ describe("validateModule", () => {
 		],
 		[
 			"an event name in camel case",
-			(module) => (((emitsOf(module).events as Json[])[0]!.name = "Change"), module),
+			(module) => (((emitsOf(module).events as Array<Json>)[0]!.name = "Change"), module),
 		],
 		[
 			"an event name with a hyphen",
-			(module) => (((emitsOf(module).events as Json[])[0]!.name = "item-select"), module),
+			(module) => (((emitsOf(module).events as Array<Json>)[0]!.name = "item-select"), module),
 		],
 		[
 			"an event parameter whose optional is false",
 			(module) => (
-				(((emitsOf(module).events as Json[])[0]!.parameters as Json[])[1]!.optional = false),
+				(((emitsOf(module).events as Array<Json>)[0]!.parameters as Array<Json>)[1]!.optional =
+					false),
 				module
 			),
 		],
@@ -505,7 +516,7 @@ describe("validateModule", () => {
 		],
 		[
 			"a reference whose call is false",
-			(module) => (((shown(module).refs as Json[])[0]!.call = false), module),
+			(module) => (((shown(module).refs as Array<Json>)[0]!.call = false), module),
 		],
 	];
 
@@ -551,8 +562,10 @@ describe("validateModule", () => {
 		let deepest = module.components[0]!.render as unknown as Json;
 		while ((deepest.children ?? deepest.branches ?? deepest.body) !== undefined) {
 			deepest =
-				(deepest.children as Json[] | undefined)?.[0] ??
-				((deepest.branches as Json[] | undefined)?.[0]?.children as Json[] | undefined)?.[0] ??
+				(deepest.children as Array<Json> | undefined)?.[0] ??
+				(
+					(deepest.branches as Array<Json> | undefined)?.[0]?.children as Array<Json> | undefined
+				)?.[0] ??
 				(deepest.body as Json);
 		}
 		deepest.kind = "Unknown";

@@ -14,7 +14,9 @@ import type { ReactPlan, TransitionNames } from "./plan.ts";
 /** The dialect's `transition` hook: `<Transition name="fade">{open ? <p key={0} /> : null}</Transition>`. */
 export function transitionCall(plan: ReactPlan): JsxDialect["transition"] {
 	const names = plan.helpers.transition;
-	if (!names) return undefined;
+	if (!names) {
+		return undefined;
+	}
 	return (node, context) => {
 		const [child] = node.children;
 		const content =
@@ -38,7 +40,7 @@ export function transitionHelpers(
 	names: TransitionNames,
 	imports: ImportSet,
 	subscribes: boolean,
-): string[] {
+): Array<string> {
 	const react = (name: string) => imports.add("react", name);
 	const type = (name: string) => imports.add("react", name, { type: true });
 	const { component, item, entry, subscribe, attach } = names;

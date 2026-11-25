@@ -16,7 +16,7 @@ function lowered(source: string): UfComponent {
 }
 
 /** The source text of each root node `scopeRoots` names. */
-function roots(source: string): string[] {
+function roots(source: string): Array<string> {
 	return scopeRoots(lowered(source)).map(({ start, end }) => source.slice(start, end));
 }
 

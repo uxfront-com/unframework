@@ -23,8 +23,7 @@ interface DocsPage {
  */
 export default defineEventHandler(async (event) => {
 	const { siteUrl } = useRuntimeConfig(event).public;
-	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a collection Nitro's types don't see
-	const pages = (await queryCollection(event, "docs" as never).all()) as DocsPage[];
+	const pages = (await queryCollection(event, "docs" as never).all()) as Array<DocsPage>;
 
 	const paths = [
 		"/",
@@ -59,5 +58,5 @@ const XML_ENTITIES: Record<string, string> = {
 };
 
 function escapeXml(value: string) {
-	return value.replace(/[&<>"']/g, (char) => XML_ENTITIES[char]!);
+	return value.replaceAll(/[&<>"']/g, (char) => XML_ENTITIES[char]!);
 }

@@ -16,7 +16,7 @@ const DELIMITERS =
 	"<b>&amp; &lt; {{ x }} }} {#if a} {@html b} @if (c) { ${d} `e` 'f' \"g\" \\h </p>";
 
 /** The hand-written components, each one root element. */
-export const TRICKY_SOURCES: readonly SourceCase[] = [
+export const TRICKY_SOURCES: ReadonlyArray<SourceCase> = [
 	// Interpolations (ADR-0035): text, as every target escapes it.
 	{
 		name: "a string with markup and every template's delimiters",
@@ -27,7 +27,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
 	{
 		name: "interpolations beside text with edge and run whitespace",
 		params: "{ s, t }: { s: string; t: string }",
-		jsx: '<p>{" a  "}{s}{"  b "}x {t}  y{"\\t"}{s}</p>',
+		jsx: String.raw`<p>{" a  "}{s}{"  b "}x {t}  y{"\t"}{s}</p>`,
 		props: { s: " lead  run ", t: "trail\t" },
 	},
 	{
@@ -76,9 +76,9 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
 		jsx: [
 			"<p>",
 			'{s + "\\x41"}|{on ? "\\u00e9\\t" : \'it\\\'s\'}|{`\\x42${s}\\uD83D\\uDE00`.length}|',
-			'{s + "😀" + "\\uD83D\\uDE00"}|{s.length > 0 ? 1e3 : .5}|{1_000 + 0.25}|',
+			String.raw`{s + "😀" + "\uD83D\uDE00"}|{s.length > 0 ? 1e3 : .5}|{1_000 + 0.25}|`,
 			"{s /* note */}|{/* lead */ s}|{s // line\n}|",
-			'{"a\\\\b" + s}|{\'"\' + s + "\'"}',
+			String.raw`{"a\\b" + s}|{'"' + s + "'"}`,
 			"</p>",
 		].join(""),
 		props: { s: "z", on: true },
@@ -210,7 +210,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
 		params:
 			"{ zero, empty, nan, nothing }: { zero: number; empty: string; nan: number; nothing: string | null }",
 		jsx: '<p>[{zero && <b>zero</b>}{empty && "empty"}{nan && <i>nan</i>}{nothing && <u>null</u>}]</p>',
-		props: { zero: 0, empty: "", nan: NaN, nothing: null },
+		props: { zero: 0, empty: "", nan: Number.NaN, nothing: null },
 	},
 	{
 		name: "truthy values that are not booleans render their branch",
@@ -251,7 +251,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
 	...[true, false].map((on): SourceCase => ({
 		name: `whitespace in a pre, around a conditional (${on})`,
 		params: "{ on, s }: { on: boolean; s: string }",
-		jsx: '<pre>a  {on ? " b\\n" : <i>{s}</i>}{"\\tc "}</pre>',
+		jsx: String.raw`<pre>a  {on ? " b\n" : <i>{s}</i>}{"\tc "}</pre>`,
 		props: { on, s: " s " },
 	})),
 	// A line feed after a conditional that always renders an element, which the analyser accepts:
@@ -260,14 +260,14 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
 	...[true, false].map((on): SourceCase => ({
 		name: `a line feed in a pre after a conditional of elements (${on})`,
 		params: "{ on }: { on: boolean }",
-		jsx: '<pre>{on ? <b>x</b> : <i>y</i>}{"\\nz"}</pre>',
+		jsx: String.raw`<pre>{on ? <b>x</b> : <i>y</i>}{"\nz"}</pre>`,
 		props: { on },
 	})),
 	{
 		// For Solid: a line feed between two interpolations in a `<pre>`, which JSX keeps.
 		name: "a line feed between interpolations in a pre",
 		params: "{ a, b }: { a: string; b: string }",
-		jsx: '<pre>{a}{"\\n"}{b}</pre>',
+		jsx: String.raw`<pre>{a}{"\n"}{b}</pre>`,
 		props: { a: "x", b: "y" },
 	},
 	{
@@ -803,7 +803,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
 ];
 
 /** Components whose own root is under test, each rendered as a component of its own. */
-export const ROOT_SOURCES: readonly SourceCase[] = [
+export const ROOT_SOURCES: ReadonlyArray<SourceCase> = [
 	{
 		name: "text and interpolations at a root fragment's edges",
 		params: "{ s }: { s: string }",
@@ -818,7 +818,7 @@ export const ROOT_SOURCES: readonly SourceCase[] = [
 	},
 	{
 		name: "whitespace at both edges",
-		jsx: '<>{" "}<b>x</b>{"\\n"}</>',
+		jsx: String.raw`<>{" "}<b>x</b>{"\n"}</>`,
 	},
 	{
 		name: "a conditional, a list and a block at the root",
@@ -865,8 +865,11 @@ export const ROOT_SOURCES: readonly SourceCase[] = [
 ];
 
 /** The seeds of the random components, and of the random roots. */
-export const FUZZ_SOURCE_SEEDS: readonly number[] = Array.from({ length: 60 }, (_, i) => i + 1);
-export const ROOT_SOURCE_SEEDS: readonly number[] = Array.from({ length: 8 }, (_, i) => i + 101);
+export const FUZZ_SOURCE_SEEDS: ReadonlyArray<number> = Array.from({ length: 60 }, (_, i) => i + 1);
+export const ROOT_SOURCE_SEEDS: ReadonlyArray<number> = Array.from(
+	{ length: 8 },
+	(_, i) => i + 101,
+);
 
 /** Options for {@link fuzzSource}. */
 export interface FuzzSourceOptions {
@@ -897,12 +900,12 @@ const STATIC_CLASSES = ["a", "b c", "card card--wide", "@y", "w-1/3"];
 const TOGGLE_CLASSES = ["on", "is-active", "w-1/2", "md:flex", "x_y"];
 
 /** CSS properties no two of which overlap, with values every target renders as written. */
-const STYLE_PROPERTIES: readonly {
+const STYLE_PROPERTIES: ReadonlyArray<{
 	property: string;
 	key: string;
-	values: readonly string[];
-	numbers?: readonly number[];
-}[] = [
+	values: ReadonlyArray<string>;
+	numbers?: ReadonlyArray<number>;
+}> = [
 	{ property: "color", key: "color", values: ["red", "rgb(1, 2, 3)", "#00f"] },
 	{ property: "background-color", key: "backgroundColor", values: ["white", "rgba(0, 0, 0, 0.5)"] },
 	{ property: "margin-top", key: "marginTop", values: ["4px", "1em", "0px"] },
@@ -942,13 +945,13 @@ const PHRASING_PARENTS = new Set(["p", "span", "b", "i", "em", "a", "label", "bu
  */
 export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): SourceCase {
 	const next = random(seed * 7919 + (options.root ? 1 : 0) + (options.form === "object" ? 2 : 0));
-	const pick = <T>(items: readonly T[]): T => items[Math.floor(next() * items.length)]!;
+	const pick = <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!;
 	const chance = (probability: number) => next() < probability;
 	const variant = options.root ? "R" : options.form === "object" ? "O" : "F";
 	const prefix = `${variant}${seed}`;
 	const defaults = options.form !== "object";
-	const props: FuzzProp[] = [];
-	const types: string[] = [];
+	const props: Array<FuzzProp> = [];
+	const types: Array<string> = [];
 	let tokens = 0;
 	let keys = 0;
 
@@ -994,7 +997,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 			case 1:
 				return `{${numberProp(pick([0, -0, 1e21, 2.5, -3, 0.1 + 0.2, 1e-7]))}}`;
 			case 2:
-				return `{${stringProp()} + ${pick(['"\\x41"', '"!"', '" & "', "'{{'", '"\\u00e9"'])}}`;
+				return `{${stringProp()} + ${pick([String.raw`"\x41"`, '"!"', '" & "', "'{{'", String.raw`"\u00e9"`])}}`;
 			case 3:
 				return `{\`\${${stringProp()}}|\${${numberProp(pick([1, 0]))}}\`}`;
 			case 4: {
@@ -1043,27 +1046,47 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 
 	/** Global attributes and the element's own, static and bound, `class`, `style`, a spread. */
 	function attributes(tag: string, svg: boolean): string {
-		const written: string[] = [];
+		const written: Array<string> = [];
 		const names = new Set<string>();
 		const add = (name: string, source: string) => {
-			if (names.has(name)) return;
+			if (names.has(name)) {
+				return;
+			}
 			names.add(name);
 			written.push(source);
 		};
 		if (svg) {
 			svgAttributes(tag, add);
 		} else {
-			if (chance(0.2)) add("title", chance(0.5) ? `title={${stringProp()}}` : `title="t${seed}"`);
-			if (chance(0.15)) add("data-x", `data-x={${pick([stringProp(), numberProp(pick([0, 7]))])}}`);
-			if (chance(0.1)) add("aria-label", `aria-label={${stringProp()}}`);
-			if (chance(0.1)) add("aria-hidden", `aria-hidden={${booleanProp()}}`);
-			if (chance(0.05)) add("tabindex", `tabindex={${numberProp(pick([0, -1, 2]))}}`);
-			if (chance(0.05)) add("data-n", `data-n={${nullableProp()}}`);
+			if (chance(0.2)) {
+				add("title", chance(0.5) ? `title={${stringProp()}}` : `title="t${seed}"`);
+			}
+			if (chance(0.15)) {
+				add("data-x", `data-x={${pick([stringProp(), numberProp(pick([0, 7]))])}}`);
+			}
+			if (chance(0.1)) {
+				add("aria-label", `aria-label={${stringProp()}}`);
+			}
+			if (chance(0.1)) {
+				add("aria-hidden", `aria-hidden={${booleanProp()}}`);
+			}
+			if (chance(0.05)) {
+				add("tabindex", `tabindex={${numberProp(pick([0, -1, 2]))}}`);
+			}
+			if (chance(0.05)) {
+				add("data-n", `data-n={${nullableProp()}}`);
+			}
 			own(tag, add);
 		}
-		if (chance(0.25)) add("class", `class=${classValue()}`);
-		if (chance(0.2)) add("style", `style=${styleValue()}`);
-		if (!svg && chance(0.12)) spread(names, written);
+		if (chance(0.25)) {
+			add("class", `class=${classValue()}`);
+		}
+		if (chance(0.2)) {
+			add("style", `style=${styleValue()}`);
+		}
+		if (!svg && chance(0.12)) {
+			spread(names, written);
+		}
 		return written.map((attribute) => ` ${attribute}`).join("");
 	}
 
@@ -1085,41 +1108,69 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 			case "img":
 				add("src", `src=${ownValue(() => stringProp("about:blank"), "data:,")}`);
 				add("alt", `alt={${stringProp()}}`);
-				if (chance(0.3)) add("width", `width={${numberProp(16)}}`);
+				if (chance(0.3)) {
+					add("width", `width={${numberProp(16)}}`);
+				}
 				return;
 			case "input":
 				add("type", `type="${pick(["text", "email", "number", "checkbox"])}"`);
-				if (chance(0.4)) add("name", `name={${stringProp("field")}}`);
-				if (chance(0.3)) add("placeholder", `placeholder={${stringProp()}}`);
-				if (chance(0.3)) add("disabled", `disabled={${booleanProp()}}`);
-				if (chance(0.2)) add("required", `required={${booleanProp()}}`);
-				if (chance(0.2)) add("readonly", "readonly");
+				if (chance(0.4)) {
+					add("name", `name={${stringProp("field")}}`);
+				}
+				if (chance(0.3)) {
+					add("placeholder", `placeholder={${stringProp()}}`);
+				}
+				if (chance(0.3)) {
+					add("disabled", `disabled={${booleanProp()}}`);
+				}
+				if (chance(0.2)) {
+					add("required", `required={${booleanProp()}}`);
+				}
+				if (chance(0.2)) {
+					add("readonly", "readonly");
+				}
 				return;
 			case "button":
 				add("type", `type="${pick(["button", "submit", "reset"])}"`);
-				if (chance(0.3)) add("disabled", `disabled={${booleanProp()}}`);
+				if (chance(0.3)) {
+					add("disabled", `disabled={${booleanProp()}}`);
+				}
 				return;
 			case "ol":
-				if (chance(0.4)) add("start", `start={${numberProp(pick([3, -1]))}}`);
-				if (chance(0.3)) add("reversed", `reversed={${booleanProp()}}`);
+				if (chance(0.4)) {
+					add("start", `start={${numberProp(pick([3, -1]))}}`);
+				}
+				if (chance(0.3)) {
+					add("reversed", `reversed={${booleanProp()}}`);
+				}
 				return;
 			case "td":
 			case "th":
-				if (chance(0.3)) add("colspan", `colspan={${numberProp(pick([1, 2]))}}`);
+				if (chance(0.3)) {
+					add("colspan", `colspan={${numberProp(pick([1, 2]))}}`);
+				}
 				return;
 			case "select":
 				add("name", `name="choice"`);
-				if (chance(0.3)) add("disabled", `disabled={${booleanProp()}}`);
+				if (chance(0.3)) {
+					add("disabled", `disabled={${booleanProp()}}`);
+				}
 				return;
 			case "textarea":
 				add("name", `name="note"`);
-				if (chance(0.3)) add("rows", `rows={${numberProp(pick([2, 3]))}}`);
-				if (chance(0.3)) add("placeholder", `placeholder={${stringProp()}}`);
+				if (chance(0.3)) {
+					add("rows", `rows={${numberProp(pick([2, 3]))}}`);
+				}
+				if (chance(0.3)) {
+					add("placeholder", `placeholder={${stringProp()}}`);
+				}
 				return;
 			case "pre":
 			case "section":
 			case "div":
-				if (chance(0.1)) add("lang", `lang={${stringProp("en")}}`);
+				if (chance(0.1)) {
+					add("lang", `lang={${stringProp("en")}}`);
+				}
 				return;
 			default:
 		}
@@ -1127,8 +1178,12 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 
 	/** A static value, or a prop holding it, typed as `type` (an enumerated one's literals). */
 	const svgValue = (value: string | number, type?: string) => {
-		if (!chance(0.5)) return `"${value}"`;
-		if (typeof value === "number") return `{${numberProp(value)}}`;
+		if (!chance(0.5)) {
+			return `"${value}"`;
+		}
+		if (typeof value === "number") {
+			return `{${numberProp(value)}}`;
+		}
 		return `{${type ? declare("e", type, value) : stringProp(value)}}`;
 	};
 
@@ -1137,17 +1192,23 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 		switch (tag) {
 			case "svg":
 				add("viewBox", `viewBox=${svgValue("0 0 10 10")}`);
-				if (chance(0.5)) add("width", `width=${svgValue(10)}`);
+				if (chance(0.5)) {
+					add("width", `width=${svgValue(10)}`);
+				}
 				return;
 			case "circle":
 				add("cx", `cx=${svgValue(5)}`);
 				add("r", `r=${svgValue(pick([1, 2]))}`);
-				if (chance(0.5)) add("stroke-width", `stroke-width=${svgValue(1)}`);
+				if (chance(0.5)) {
+					add("stroke-width", `stroke-width=${svgValue(1)}`);
+				}
 				return;
 			case "rect":
 				add("width", `width=${svgValue(4)}`);
 				add("height", `height=${svgValue("2")}`);
-				if (chance(0.5)) add("fill", `fill=${svgValue(pick(["red", "none"]))}`);
+				if (chance(0.5)) {
+					add("fill", `fill=${svgValue(pick(["red", "none"]))}`);
+				}
 				return;
 			case "path":
 				add("d", `d=${svgValue("M0 0 L 5 5")}`);
@@ -1190,17 +1251,21 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 			null,
 			undefined,
 		]);
-		if (value === null) return declare("c", "string | null", null);
+		if (value === null) {
+			return declare("c", "string | null", null);
+		}
 		return declare("c", "string", value, value === undefined ? { absent: chance(0.5) } : {});
 	};
 
 	/** A `class` value, in one of its forms, with names that never repeat on the element. */
 	function classValue(): string {
 		const used = new Set<string>();
-		const fresh = (pool: readonly string[]) => {
+		const fresh = (pool: ReadonlyArray<string>) => {
 			const names = pool.filter((name) => !name.split(" ").some((part) => used.has(part)));
 			const chosen = pick(names.length ? names : [token()]);
-			for (const part of chosen.split(" ")) used.add(part);
+			for (const part of chosen.split(" ")) {
+				used.add(part);
+			}
 			return chosen;
 		};
 		switch (Math.floor(next() * 5)) {
@@ -1233,7 +1298,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 					}
 				});
 				// All static, it would be a static `class` (UF3004).
-				if (items.every((item) => item.startsWith('"'))) items.push(dynamicProp());
+				if (items.every((item) => item.startsWith('"'))) {
+					items.push(dynamicProp());
+				}
 				return `{[${items.join(", ")}]}`;
 			}
 		}
@@ -1242,14 +1309,20 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 	/** A `style` value: a static string, or an object of static and bound declarations. */
 	function styleValue(): string {
 		const chosen = STYLE_PROPERTIES.filter(() => chance(0.3));
-		if (!chosen.length) chosen.push(pick(STYLE_PROPERTIES));
+		if (!chosen.length) {
+			chosen.push(pick(STYLE_PROPERTIES));
+		}
 		if (chance(0.25)) {
 			return `"${chosen.map(({ property, values }) => `${property}: ${pick(values)}`).join("; ")}"`;
 		}
 		const entries = chosen.map(({ key, values, numbers }) => {
 			const how = Math.floor(next() * 4);
-			if (how === 0) return `${key}: ${JSON.stringify(pick(values))}`;
-			if (how === 1 && numbers) return `${key}: ${numberProp(pick(numbers))}`;
+			if (how === 0) {
+				return `${key}: ${JSON.stringify(pick(values))}`;
+			}
+			if (how === 1 && numbers) {
+				return `${key}: ${numberProp(pick(numbers))}`;
+			}
 			if (how === 2) {
 				// Left out when nullish or empty.
 				const empty = chance(0.5);
@@ -1261,19 +1334,23 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 	}
 
 	/** A spread of a typed object, its keys none the element writes, maybe optional. */
-	function spread(names: Set<string>, written: string[]): void {
+	function spread(names: Set<string>, written: Array<string>): void {
 		// A spread's `class` merges with the element's own; any other key is the spread's alone.
 		const spreadKeys = ["title", "data-x", "aria-label", "class", "lang"].filter(
 			(key) => (key === "class" || !names.has(key)) && chance(0.6),
 		);
-		if (!spreadKeys.length) return;
+		if (!spreadKeys.length) {
+			return;
+		}
 		const type = `${prefix}Attrs${types.length}`;
 		types.push(
 			`interface ${type} {\n${spreadKeys.map((key) => `  ${/-/.test(key) ? JSON.stringify(key) : key}?: string;`).join("\n")}\n}`,
 		);
 		const value: Record<string, unknown> = {};
 		for (const key of spreadKeys) {
-			if (chance(0.7)) value[key] = key === "class" ? `t${seed}x${++tokens}` : text();
+			if (chance(0.7)) {
+				value[key] = key === "class" ? `t${seed}x${++tokens}` : text();
+			}
 		}
 		// An optional source reads every key through `?.`.
 		const name = chance(0.3)
@@ -1281,16 +1358,22 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 				? declare("a", type, value, { optional: true })
 				: declare("a", type, undefined, { absent: chance(0.5) })
 			: declare("a", type, value);
-		for (const key of spreadKeys) names.add(key);
+		for (const key of spreadKeys) {
+			names.add(key);
+		}
 		written.unshift(`{...${name}}`);
 	}
 
 	/** A random element of a tag, with attributes and content. */
 	function element(tag: string, place: Place): string {
-		if (tag === "svg") return svgElement("svg", 0);
+		if (tag === "svg") {
+			return svgElement("svg", 0);
+		}
 		const inner = content(tag, place);
 		const open = `<${tag}${attributes(tag, false)}`;
-		if (["br", "img", "input"].includes(tag)) return `${open} />`;
+		if (["br", "img", "input"].includes(tag)) {
+			return `${open} />`;
+		}
 		return `${open}>${inner}</${tag}>`;
 	}
 
@@ -1315,7 +1398,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 						const numbers = declare("l", "number[]", uniqueNumbers());
 						return `{${numbers}.map((x) => <rect key={x} x={x} width="1" height="1" />)}`;
 					}
-					if (kind === "if") return `{${condition()} && <circle cx="1" r="1" />}`;
+					if (kind === "if") {
+						return `{${condition()} && <circle cx="1" r="1" />}`;
+					}
 					return svgElement(kind === "g" && depth > 1 ? "rect" : kind, depth + 1);
 				});
 				return `${open}>${children.join("")}</${tag}>`;
@@ -1398,7 +1483,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 	}
 
 	/** A child element of a random allowed tag, one level deeper. */
-	const child = (allowed: readonly string[], place: Place) => {
+	const child = (allowed: ReadonlyArray<string>, place: Place) => {
 		const tag = pick(allowed);
 		return element(tag, {
 			depth: place.depth + 1,
@@ -1407,7 +1492,7 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 	};
 
 	/** A conditional with element, text or several nodes in its branches. */
-	function conditional(allowed: readonly string[], place: Place): string {
+	function conditional(allowed: ReadonlyArray<string>, place: Place): string {
 		const branch = (): string => {
 			switch (Math.floor(next() * 4)) {
 				case 0:
@@ -1419,8 +1504,10 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 			}
 		};
 		// A conditional whose branches hold no JSX is an interpolation: keep one element in each.
-		const chain = (...parts: string[]) => {
-			if (!parts.some((part) => part.startsWith("<"))) parts[0] = child(allowed, place);
+		const chain = (...parts: Array<string>) => {
+			if (!parts.some((part) => part.startsWith("<"))) {
+				parts[0] = child(allowed, place);
+			}
 			return parts;
 		};
 		switch (Math.floor(next() * 4)) {
@@ -1442,8 +1529,13 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 	}
 
 	/** Text, interpolations, conditionals, lists and elements, never two texts in a row. */
-	function mixed(allowed: readonly string[], place: Place, max: number, parent: string): string[] {
-		const children: string[] = [];
+	function mixed(
+		allowed: ReadonlyArray<string>,
+		place: Place,
+		max: number,
+		parent: string,
+	): Array<string> {
+		const children: Array<string> = [];
 		let lastText = false;
 		const count =
 			(place.depth === 0 ? 2 : 0) + Math.floor(next() * (place.depth >= 3 ? 2 : max + 1));
@@ -1456,14 +1548,18 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 				continue;
 			}
 			lastText = false;
-			if (roll < 0.4) children.push(interpolation());
-			else if (roll < 0.5) {
+			if (roll < 0.4) {
+				children.push(interpolation());
+			} else if (roll < 0.5) {
 				children.push(interpolation(), textChild(text()));
 				lastText = true;
-			} else if (roll < 0.62 && place.depth < 3) children.push(conditional(candidates, place));
-			else if (roll < 0.7 && place.depth < 3 && !place.interactive)
+			} else if (roll < 0.62 && place.depth < 3) {
+				children.push(conditional(candidates, place));
+			} else if (roll < 0.7 && place.depth < 3 && !place.interactive) {
 				children.push(list(parent, place));
-			else children.push(child(candidates, place));
+			} else {
+				children.push(child(candidates, place));
+			}
 		}
 		return children;
 	}
@@ -1499,7 +1595,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 			case "pre": {
 				// Preformatted text keeps every space and line break; it never starts with a line feed.
 				const children = mixed(["b", "i", "span", "br"], place, 4, tag);
-				return [`a${pick(["  ", "\t", " "])}`.replace(/\t/, '{"\\t"}'), ...children].join("");
+				return [`a${pick(["  ", "\t", " "])}`.replace(/\t/, String.raw`{"\t"}`), ...children].join(
+					"",
+				);
 			}
 			case "ul":
 			case "ol":
@@ -1523,7 +1621,9 @@ export function fuzzSource(seed: number, options: FuzzSourceOptions = {}): Sourc
 	let jsx: string;
 	if (options.root) {
 		const children = mixed([...BLOCKS, ...INLINES], { depth: 1, interactive: false }, 5, "#root");
-		if (!children.length) children.push(interpolation());
+		if (!children.length) {
+			children.push(interpolation());
+		}
 		jsx = `<>${children.join("")}</>`;
 	} else {
 		jsx = element(pick(FLOW), { depth: 0, interactive: false });

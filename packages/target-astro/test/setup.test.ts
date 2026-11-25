@@ -572,7 +572,7 @@ describe("the M2 output through the toolchain", { timeout: 60_000 }, () => {
 		async (format) => {
 			const directory = join(scratch.path, `toolchain-${format}`);
 			mkdirSync(directory, { recursive: true });
-			const files: { path: string; contents: string }[] = [];
+			const files: Array<{ path: string; contents: string }> = [];
 			for (const [name, source] of Object.entries(sources)) {
 				for (const file of emitSource(source)) {
 					const contents = format ? (await formatOutput(file)).file.contents : file.contents;

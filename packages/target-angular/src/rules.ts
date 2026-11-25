@@ -29,7 +29,9 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
 				case "signal":
 				case "linked":
 				case "model":
-					if (write.operator === "=") return `this.${binding.name}.set(${parts.value})`;
+					if (write.operator === "=") {
+						return `this.${binding.name}.set(${parts.value})`;
+					}
 					// `update` for a new value made from the current one, as Angular's guide writes it,
 					// where the value reads only literals and signals. Its callback is a closure, where
 					// TypeScript keeps no narrowing of a local, a parameter or a field (`row.size` under
@@ -66,7 +68,9 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
 		emit: (emit, _binding, parts) =>
 			emitCall(`this.${outputName(emit.event)}`, eventOf(plan, emit), parts.arguments),
 		api: () => {
-			if (nextTick === undefined) throw new Error("`nextTick` is called, and no helper declared.");
+			if (nextTick === undefined) {
+				throw new Error("`nextTick` is called, and no helper declared.");
+			}
 			return `this.${nextTick}`;
 		},
 		// The global `@angular/core` declares, which a production build defines as `false`; a test
@@ -86,8 +90,12 @@ function readsOnlySignals(code: string): boolean {
 
 /** Whether a node of class code reads only literals, signals and methods (see `readsOnlySignals`). */
 function closed(value: unknown, parent?: Node, key = ""): boolean {
-	if (Array.isArray(value)) return value.every((item) => closed(item, parent, key));
-	if (!isNode(value)) return true;
+	if (Array.isArray(value)) {
+		return value.every((item) => closed(item, parent, key));
+	}
+	if (!isNode(value)) {
+		return true;
+	}
 	switch (value.type) {
 		case "Identifier":
 			// A member's or a key's own name reads nothing.
@@ -123,9 +131,15 @@ function closed(value: unknown, parent?: Node, key = ""): boolean {
  * source may use, so the text is the rules' own.
  */
 export function tidied(code: string, kind: CodeKind): string {
-	if (!code.includes("?.nativeElement")) return code;
+	if (!code.includes("?.nativeElement")) {
+		return code;
+	}
 	const read = code.includes("?.nativeElement?.")
-		? mapCode(code, { other: (text) => text.replace(/(\(\)\?\.nativeElement)\?\./g, "$1.") }, kind)
+		? mapCode(
+				code,
+				{ other: (text) => text.replaceAll(/(\(\)\?\.nativeElement)\?\./g, "$1.") },
+				kind,
+			)
 		: code;
 	return withNullElements(read, kind);
 }
@@ -139,15 +153,21 @@ interface Node {
 
 /** Class code with each template ref's read used as a value ending `?? null` (see `tidied`). */
 function withNullElements(code: string, kind: CodeKind): string {
-	const edits: { start: number; end: number }[] = [];
+	const edits: Array<{ start: number; end: number }> = [];
 	const visit = (value: unknown, parent: Node | undefined, key: string): void => {
 		if (Array.isArray(value)) {
-			for (const item of value) visit(item, parent, key);
+			for (const item of value) {
+				visit(item, parent, key);
+			}
 			return;
 		}
-		if (!isNode(value)) return;
+		if (!isNode(value)) {
+			return;
+		}
 		if (value.type === "ChainExpression" && isElementRead(value.expression as Node)) {
-			if (parent === undefined || !testsOnly(parent, key, value)) edits.push(value);
+			if (parent === undefined || !testsOnly(parent, key, value)) {
+				edits.push(value);
+			}
 			return;
 		}
 		for (const [child, node] of Object.entries(value)) {
@@ -167,13 +187,17 @@ function withNullElements(code: string, kind: CodeKind): string {
 
 /** `this.field()?.nativeElement`: a template ref's element, read in the class. */
 function isElementRead(node: Node): boolean {
-	if (node.type !== "MemberExpression" || node.computed || !node.optional) return false;
+	if (node.type !== "MemberExpression" || node.computed || !node.optional) {
+		return false;
+	}
 	const object = node.object as Node;
 	const property = node.property as Node;
-	if (property.name !== "nativeElement" || object.type !== "CallExpression") return false;
+	if (property.name !== "nativeElement" || object.type !== "CallExpression") {
+		return false;
+	}
 	const callee = object.callee as Node;
 	return (
-		(object.arguments as unknown[]).length === 0 &&
+		(object.arguments as Array<unknown>).length === 0 &&
 		callee.type === "MemberExpression" &&
 		(callee.object as Node).type === "ThisExpression"
 	);
@@ -193,7 +217,9 @@ function testsOnly(parent: Node, key: string, node: Node): boolean {
 		case "LogicalExpression":
 			return parent.left === node;
 		case "BinaryExpression": {
-			if (parent.operator !== "==" && parent.operator !== "!=") return false;
+			if (parent.operator !== "==" && parent.operator !== "!=") {
+				return false;
+			}
 			const other = (parent.left === node ? parent.right : parent.left) as Node;
 			return (
 				(other.type === "Literal" && other.value === null) ||
@@ -449,7 +475,9 @@ export function readThroughLet(plan: Plan, binding: Binding): boolean {
 
 function eventOf(plan: Plan, emit: EmitReference): EventDeclaration {
 	const event = plan.events.get(emit.event);
-	if (!event) throw new Error(`\`${emit.event}\` is emitted and not declared.`);
+	if (!event) {
+		throw new Error(`\`${emit.event}\` is emitted and not declared.`);
+	}
 	return event;
 }
 
@@ -458,18 +486,30 @@ function eventOf(plan: Plan, emit: EmitReference): EventDeclaration {
  * members, the value for one required member, and a tuple of exactly the arguments given
  * otherwise (the mount adapter spreads it back).
  */
-export function emitCall(output: string, event: EventDeclaration, args: readonly string[]): string {
+export function emitCall(
+	output: string,
+	event: EventDeclaration,
+	args: ReadonlyArray<string>,
+): string {
 	const [only, ...more] = event.parameters;
-	if (only === undefined) return `${output}.emit()`;
-	if (more.length === 0 && !only.optional) return `${output}.emit(${args[0] ?? ""})`;
+	if (only === undefined) {
+		return `${output}.emit()`;
+	}
+	if (more.length === 0 && !only.optional) {
+		return `${output}.emit(${args[0] ?? ""})`;
+	}
 	return `${output}.emit([${args.join(", ")}])`;
 }
 
 /** An output's value type by the same rule: `void`, the member's type, or the named tuple. */
 export function outputType(event: EventDeclaration): string {
 	const [only, ...more] = event.parameters;
-	if (only === undefined) return "void";
-	if (more.length === 0 && !only.optional) return only.type.code;
+	if (only === undefined) {
+		return "void";
+	}
+	if (more.length === 0 && !only.optional) {
+		return only.type.code;
+	}
 	return `[${event.parameters
 		.map(({ name, optional, type }) => `${name}${optional ? "?" : ""}: ${type.code}`)
 		.join(", ")}]`;

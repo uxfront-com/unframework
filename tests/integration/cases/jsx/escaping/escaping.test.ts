@@ -15,9 +15,9 @@ describeTargets("jsx/escaping", () => {
 			.element(view.getByText("<b>{{ user.name }}</b> {#if open} @if (open) {} &amp;"))
 			.toBeVisible();
 		await expect
-			.element(view.getByText('Bound: Say "hi" & {{ wave }} in C:\\Users\\ada\\index.ts'))
-			.toHaveAttribute("data-path", "C:\\Users\\ada");
-		await expect.element(view.getByText("Mustache: {{ C:\\Users\\ada }}")).toBeVisible();
+			.element(view.getByText(String.raw`Bound: Say "hi" & {{ wave }} in C:\Users\ada\index.ts`))
+			.toHaveAttribute("data-path", String.raw`C:\Users\ada`);
+		await expect.element(view.getByText(String.raw`Mustache: {{ C:\Users\ada }}`)).toBeVisible();
 		await expect
 			.element(view.getByText("Template syntax & escaping"))
 			.toHaveAttribute("title", "Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) & JSX {name}");
@@ -29,11 +29,11 @@ describeTargets("jsx/escaping", () => {
 		await expect.element(view.getByText("const answer = 42;")).toBeVisible();
 		await expect
 			.element(view.getByText("Static: <b>not bold</b>, {{ name }}, @if (ok) { }"))
-			.toHaveAttribute("data-sample", "<b> \"double\" 'single' C:\\temp");
+			.toHaveAttribute("data-sample", String.raw`<b> "double" 'single' C:\temp`);
 		await expect
 			.element(
 				view.getByText(
-					'Literal: {{ name }} <i>not italic</i> {#each items} @for "quoted" C:\\temp café',
+					String.raw`Literal: {{ name }} <i>not italic</i> {#each items} @for "quoted" C:\temp café`,
 				),
 			)
 			.toBeVisible();

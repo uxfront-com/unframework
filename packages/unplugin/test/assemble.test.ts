@@ -17,7 +17,7 @@ const declarations = (exported: string) =>
 	`const { a, b: [c, ...d] = [], ...e } = {};\nfunction h() {}\nclass K {}\ninterface P {}\nenum E {}\n${exported}\n`;
 
 /** The IR exports of a file whose one component, `Card`, is exported under each of `names`. */
-const exportsOf = (...names: string[]) => names.map((name) => ({ name, local: "Card" }));
+const exportsOf = (...names: Array<string>) => names.map((name) => ({ name, local: "Card" }));
 
 describe("assembleModule", () => {
 	const base = {
@@ -136,9 +136,11 @@ const named = (path: string, name: string, contents: string): OutputFile => ({
 });
 
 /** The module `joinModules` makes of `files`, which must have a map. */
-function mappedJoin(files: readonly OutputFile[]) {
+function mappedJoin(files: ReadonlyArray<OutputFile>) {
 	const result = joinModules(files, "x");
-	if (!("map" in result) || !result.map) throw new Error(`no map: ${JSON.stringify(result)}`);
+	if (!("map" in result) || !result.map) {
+		throw new Error(`no map: ${JSON.stringify(result)}`);
+	}
 	return { code: result.code, map: result.map };
 }
 
@@ -237,7 +239,9 @@ describe("joinModules", () => {
 			],
 			"x",
 		);
-		if (!("code" in result)) throw new Error(result.error);
+		if (!("code" in result)) {
+			throw new Error(result.error);
+		}
 		expect(result.code.match(/import \{ component\$ \}/g)).toHaveLength(1);
 		expect(result.code).toContain("export default component$");
 		expect(result.code).toContain("export const Badge = component$");

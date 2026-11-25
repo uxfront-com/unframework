@@ -26,7 +26,7 @@ describe("svelte toolchain", () => {
 
 	it.each(["browser", "ssr"] as const)("adds vite-plugin-svelte (%s)", async (mode) => {
 		const config = await toolchain.vite(mode, context);
-		const names = (config.plugins as Plugin[]).map((plugin) => plugin.name);
+		const names = (config.plugins as Array<Plugin>).map((plugin) => plugin.name);
 		expect(names).toContain("vite-plugin-svelte");
 		expect(config.resolve?.dedupe).toEqual(["svelte"]);
 	});

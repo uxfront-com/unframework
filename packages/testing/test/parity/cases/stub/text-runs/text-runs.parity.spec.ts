@@ -18,7 +18,7 @@ import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
 import "../../../dom-target.ts";
 
 /** Texts as frameworks split them: one piece per text node. */
-const SAMPLES: Record<string, string[]> = {
+const SAMPLES: Record<string, Array<string>> = {
 	price: ["Price: ", "12", " EUR"],
 	kerning: ["A", "V", "A To Ta"],
 	count: ["Showing ", "3", " of ", "10", " items"],
@@ -34,7 +34,7 @@ const SAMPLES: Record<string, string[]> = {
 const WIDTHS = { line: "", narrow: "123px" } as const;
 
 interface Shape {
-	pieces: readonly string[];
+	pieces: ReadonlyArray<string>;
 	/** A comment between each two pieces, as framework anchors. */
 	anchors?: boolean;
 	width?: string;
@@ -47,7 +47,9 @@ function render(view: View, { pieces, anchors = false, width = "", whiteSpace = 
 	p.style.width = width;
 	p.style.whiteSpace = whiteSpace;
 	pieces.forEach((piece, index) => {
-		if (index && anchors) p.append(document.createComment(""));
+		if (index && anchors) {
+			p.append(document.createComment(""));
+		}
 		p.append(document.createTextNode(piece));
 	});
 	view.container.replaceChildren(p);
@@ -133,7 +135,7 @@ describeTargets("stub/text-runs", () => {
 
 	it("still tells apart white space that renders differently, and only that", async () => {
 		const view = await mount({ html: "" });
-		const two = async (whiteSpace: string, a: readonly string[], b: readonly string[]) => {
+		const two = async (whiteSpace: string, a: ReadonlyArray<string>, b: ReadonlyArray<string>) => {
 			render(view, { pieces: a, whiteSpace });
 			const first = await capture(view, true);
 			render(view, { pieces: b, whiteSpace });
@@ -173,7 +175,9 @@ describeTargets("stub/text-runs", () => {
 					expect(Math.abs(width - ewidth), where).toBeLessThanOrEqual(slack);
 					// A collapsed character renders nothing, and a text node that collapses whole has no
 					// box for a range to measure: only rendered characters have a place to compare.
-					if (!width) return;
+					if (!width) {
+						return;
+					}
 					expect(Math.abs(x - ex), where).toBeLessThanOrEqual(slack);
 					expect([y, height], where).toEqual([ey, eheight]);
 				});
@@ -219,10 +223,10 @@ describeTargets("stub/text-runs", () => {
 		after.forEach(([element, nodes, values], index) => {
 			const [beforeElement, beforeNodes, beforeValues] = before[index]!;
 			expect(element).toBe(beforeElement);
-			expect((nodes as Node[]).every((node, at) => node === (beforeNodes as Node[])[at])).toBe(
-				true,
-			);
-			expect(nodes).toHaveLength((beforeNodes as Node[]).length);
+			expect(
+				(nodes as Array<Node>).every((node, at) => node === (beforeNodes as Array<Node>)[at]),
+			).toBe(true);
+			expect(nodes).toHaveLength((beforeNodes as Array<Node>).length);
 			expect(values).toEqual(beforeValues);
 		});
 	});
@@ -242,7 +246,7 @@ describeTargets("stub/text-runs", () => {
 			);
 			const p = view.container.querySelector("p")!;
 			const nodes = [...p.childNodes];
-			const changes: MutationRecord[] = [];
+			const changes: Array<MutationRecord> = [];
 			const observer = new MutationObserver((records) => changes.push(...records));
 			observer.observe(view.container, { childList: true, subtree: true, characterData: true });
 			await view.expectParity("split");
@@ -270,10 +274,12 @@ describeTargets("stub/text-runs", () => {
 });
 
 /** Each character's box in an element's text: x, y, width and height. */
-function characterBoxes(element: Element): [number, number, number, number][] {
-	const boxes: [number, number, number, number][] = [];
+function characterBoxes(element: Element): Array<[number, number, number, number]> {
+	const boxes: Array<[number, number, number, number]> = [];
 	for (const node of element.childNodes) {
-		if (!(node instanceof Text)) continue;
+		if (!(node instanceof Text)) {
+			continue;
+		}
 		for (let index = 0; index < node.length; index += 1) {
 			const range = document.createRange();
 			range.setStart(node, index);

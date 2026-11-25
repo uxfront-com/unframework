@@ -22,8 +22,8 @@ export interface ToolchainMessage {
 
 /** What a framework's own compiler said about one file (layer L3). */
 export interface FrameworkCompileResult {
-	errors: ToolchainMessage[];
-	warnings: ToolchainMessage[];
+	errors: Array<ToolchainMessage>;
+	warnings: Array<ToolchainMessage>;
 }
 
 /** An output file to check, by absolute path. */
@@ -47,7 +47,7 @@ export interface ToolchainContext {
 	 * package types, such as a styling engine's virtual modules (ADR-0064). A toolchain whose compiler
 	 * type-checks too (Angular's ngtsc) adds them to its program.
 	 */
-	declarations?: readonly string[];
+	declarations?: ReadonlyArray<string>;
 	/**
 	 * The build `frameworkEmit` compiles for: `production` by default (L15), or `development`. Only
 	 * a compiler that decides the build itself reads it, as Qwik's optimizer folds its `isDev`
@@ -59,14 +59,14 @@ export interface ToolchainContext {
 	 * such as a styling engine's (ADR-0064): a toolchain that runs the outputs through a Vite server of
 	 * its own (Astro's render server) adds a fresh set there too.
 	 */
-	plugins?: () => Promise<Plugin[]>;
+	plugins?: () => Promise<Array<Plugin>>;
 }
 
 /** The kinds of project a toolchain configures Vite for (see {@link Toolchain.vite}). */
 export type ToolchainMode = "browser" | "ssr" | "hydrate";
 
 /** A Vitest browser command: runs in Node, called from the browser. */
-export type ToolchainCommand = (context: unknown, ...args: never[]) => unknown;
+export type ToolchainCommand = (context: unknown, ...args: Array<never>) => unknown;
 
 /** The Node side of a target's toolchain. */
 export interface Toolchain {
@@ -112,7 +112,7 @@ export interface Toolchain {
 	 * by file path. Clean output yields `{ errors: [], warnings: [] }` for every file.
 	 */
 	frameworkCompile(
-		files: readonly ToolchainFile[],
+		files: ReadonlyArray<ToolchainFile>,
 		context: ToolchainContext,
 	): Promise<Map<string, FrameworkCompileResult>>;
 	/**
@@ -122,18 +122,18 @@ export interface Toolchain {
 	 * says why.
 	 */
 	frameworkEmit(
-		files: readonly ToolchainFile[],
+		files: ReadonlyArray<ToolchainFile>,
 		context: ToolchainContext,
-	): Promise<Map<string, ToolchainFile[]>>;
+	): Promise<Map<string, Array<ToolchainFile>>>;
 	/**
 	 * L4: type-checks output files (absolute paths) in one checker run, and returns every
 	 * diagnostic by file path. A checker that cannot start rejects: a gate that cannot start
 	 * fails.
 	 */
 	typecheck(
-		files: readonly string[],
+		files: ReadonlyArray<string>,
 		context: ToolchainContext,
-	): Promise<Map<string, ToolchainMessage[]>>;
+	): Promise<Map<string, Array<ToolchainMessage>>>;
 	/**
 	 * L5: lints output files (absolute paths) with the framework's own lint rules and the shared
 	 * baseline, and returns every message by file path, as `typecheck` does: an entry for each
@@ -142,9 +142,9 @@ export interface Toolchain {
 	 * file or prints output the toolchain cannot read rejects.
 	 */
 	lint(
-		files: readonly string[],
+		files: ReadonlyArray<string>,
 		context: ToolchainContext,
-	): Promise<Map<string, ToolchainMessage[]>>;
+	): Promise<Map<string, Array<ToolchainMessage>>>;
 }
 
 /** Declares a toolchain, checking its shape at compile time. */
@@ -161,11 +161,11 @@ export interface MountEvent {
 	/** The event's name as the source declares it, `change`: each adapter spells it its own way. */
 	name: string;
 	/** Whether each member of the event's named tuple is optional, in order. */
-	optional: readonly boolean[];
+	optional: ReadonlyArray<boolean>;
 }
 
 /** A listener a test gives a mounted component: the arguments of one emit, as the source passed them. */
-export type MountListener = (...args: unknown[]) => void;
+export type MountListener = (...args: Array<unknown>) => void;
 
 /** What a {@link RenderCommand} renders: a compiled component, by its id, with its props. */
 export interface RenderRequest {
@@ -176,7 +176,7 @@ export interface RenderRequest {
 /** What a {@link RenderCommand} gives back: the server's HTML, and what the render logged. */
 export interface RenderResult {
 	html: string;
-	console: CapturedConsoleMessage[];
+	console: Array<CapturedConsoleMessage>;
 }
 
 /** Renders a component on the server, called from the page: a target with no client runtime. */
@@ -194,7 +194,7 @@ export interface MountOptions {
 	 */
 	on?: Readonly<Record<string, MountListener>>;
 	/** The events the component declares, every one `on` names among them (see {@link MountEvent}). */
-	events?: readonly MountEvent[];
+	events?: ReadonlyArray<MountEvent>;
 	/**
 	 * How a target with no client runtime (Astro) reaches its server render from the page. Its
 	 * adapter calls the Vitest browser command when this is absent, as the test projects need; a host
@@ -212,7 +212,7 @@ export interface CapturedConsoleMessage {
 /** What a render reports beyond the page: a mount's, or a rerender's. */
 export interface RenderReport {
 	/** Console messages emitted where the page could not capture them. */
-	console?: CapturedConsoleMessage[];
+	console?: Array<CapturedConsoleMessage>;
 }
 
 /** A component mounted by a target's adapter. */
@@ -270,7 +270,7 @@ export interface HydratedComponent extends MountedComponent {
 	 * its message: React's recoverable errors, Vue's and Svelte's hydration warnings, Solid's and
 	 * Angular's thrown errors, Qwik's `qerror` events. L12 fails on any.
 	 */
-	takeMismatches(): string[];
+	takeMismatches(): Array<string>;
 }
 
 /**

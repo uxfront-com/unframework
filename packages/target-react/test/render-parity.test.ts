@@ -25,8 +25,8 @@ async function render(suite: ParitySuite, format: boolean) {
 	const path = join(scratch, `${randomUUID()}.tsx`);
 	writeFileSync(path, file!.contents);
 	const component = ((await import(path)) as { default: unknown }).default;
-	const logged: string[] = [];
-	const capture = (...args: unknown[]) => void logged.push(formatMessage(...args));
+	const logged: Array<string> = [];
+	const capture = (...args: Array<unknown>) => void logged.push(formatMessage(...args));
 	const spies = [
 		vi.spyOn(console, "error").mockImplementation(capture),
 		vi.spyOn(console, "warn").mockImplementation(capture),
@@ -34,7 +34,9 @@ async function render(suite: ParitySuite, format: boolean) {
 	try {
 		return { html: await renderToString(component, { props: parityProps(suite) }), logged };
 	} finally {
-		for (const spy of spies) spy.mockRestore();
+		for (const spy of spies) {
+			spy.mockRestore();
+		}
 	}
 }
 

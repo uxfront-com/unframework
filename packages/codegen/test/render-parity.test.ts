@@ -304,11 +304,13 @@ describe("compareCases", () => {
 /** Every element of a tree, with its parent and its ancestors, outermost first. */
 function* elements(
 	node: ElementNode,
-	ancestors: readonly ElementNode[] = [],
-): Generator<{ node: ElementNode; ancestors: readonly ElementNode[] }> {
+	ancestors: ReadonlyArray<ElementNode> = [],
+): Generator<{ node: ElementNode; ancestors: ReadonlyArray<ElementNode> }> {
 	yield { node, ancestors };
 	for (const child of node.children) {
-		if (child.kind === "Element") yield* elements(child, [...ancestors, node]);
+		if (child.kind === "Element") {
+			yield* elements(child, [...ancestors, node]);
+		}
 	}
 }
 
@@ -334,7 +336,7 @@ describe("the cases", () => {
 	});
 
 	it("keep to the nesting the HTML parser leaves in place", () => {
-		const problems: string[] = [];
+		const problems: Array<string> = [];
 		for (const { name, render } of [...TRICKY_CASES, ...FUZZ_CASES]) {
 			for (const { node, ancestors } of elements(render)) {
 				const parent = ancestors.at(-1);
@@ -404,7 +406,9 @@ describe("the cases", () => {
 	it("start no <pre> or <textarea> with a line feed, which most targets lose", () => {
 		for (const { name, render } of FUZZ_CASES) {
 			for (const { node } of elements(render)) {
-				if (node.tag !== "pre" && node.tag !== "textarea") continue;
+				if (node.tag !== "pre" && node.tag !== "textarea") {
+					continue;
+				}
 				const [first] = node.children;
 				expect(first?.kind === "Text" && first.value.startsWith("\n"), name).toBe(false);
 			}
@@ -414,8 +418,11 @@ describe("the cases", () => {
 	it("never put two text nodes side by side, as the IR never does", () => {
 		const check = (node: ReturnType<typeof el>): void => {
 			node.children.forEach((child, index) => {
-				if (child.kind === "Element") check(child);
-				else expect(node.children[index - 1]?.kind).not.toBe("Text");
+				if (child.kind === "Element") {
+					check(child);
+				} else {
+					expect(node.children[index - 1]?.kind).not.toBe("Text");
+				}
 			});
 		};
 		for (const { render } of [...TRICKY_CASES, ...FUZZ_CASES, ...CARRIAGE_RETURN_CASES]) {
@@ -506,7 +513,11 @@ describe("emitParity", () => {
 			if (node.kind === "Element" && node.tag === "select") {
 				context.report({ code: "UF4001", severity: "error", message: "no", span: node.span });
 			}
-			for (const child of node.children) if (child.kind === "Element") visit(child);
+			for (const child of node.children) {
+				if (child.kind === "Element") {
+					visit(child);
+				}
+			}
 		};
 		visit(component.render);
 		return printed(component, context);
@@ -610,7 +621,9 @@ describe("the attribute sweep", () => {
 
 	it("renders every SVG element and SVG's attributes in an <svg>, with their case", () => {
 		const names = new Set(sweep.map(({ name }) => name));
-		for (const tag of SVG_ELEMENTS) expect(names, tag).toContain(`<svg:${tag}>`);
+		for (const tag of SVG_ELEMENTS) {
+			expect(names, tag).toContain(`<svg:${tag}>`);
+		}
 		for (const name of [
 			"<svg:svg viewBox>",
 			"<svg:linearGradient gradientUnits>",
@@ -683,7 +696,7 @@ describe("the bound attribute sweep", () => {
  * pair the vocabulary lists is rendered unless a rule below names it, so no attribute drops out
  * of the sweeps silently (when the analyzer's values or rules change, this list must too).
  */
-const LEFT_OUT: readonly { reason: string; code: string; pairs: readonly string[] }[] = [
+const LEFT_OUT: ReadonlyArray<{ reason: string; code: string; pairs: ReadonlyArray<string> }> = [
 	{
 		reason: "the element belongs to the document or to template syntax (UNRENDERABLE_ELEMENTS)",
 		code: "UF3002",
@@ -735,7 +748,11 @@ const LEFT_OUT: readonly { reason: string; code: string; pairs: readonly string[
 ];
 
 /** What only the bound sweep leaves out, with LEFT_OUT's. */
-const LEFT_OUT_BOUND: readonly { reason: string; code: string; pairs: readonly string[] }[] = [
+const LEFT_OUT_BOUND: ReadonlyArray<{
+	reason: string;
+	code: string;
+	pairs: ReadonlyArray<string>;
+}> = [
 	{
 		reason: 'boolean attributes Vue\'s server or Svelte render as "false" (ADR-0037)',
 		code: "UF1002",
@@ -761,7 +778,7 @@ function expectedLeftOut(rules: typeof LEFT_OUT): Map<string, string> {
 }
 
 /** Each pair a sweep left out, with the codes the analyzer gave its last value. */
-function actualLeftOut(dropped: ReadonlyMap<string, readonly string[]>): Map<string, string> {
+function actualLeftOut(dropped: ReadonlyMap<string, ReadonlyArray<string>>): Map<string, string> {
 	return new Map(
 		[...dropped].map(([key, codes]) => [
 			key.replace(/ = .*$/, ""),
@@ -815,7 +832,9 @@ describe("the suites", () => {
 
 	it("put a root case alone in its suite, as the component's root", () => {
 		for (const suite of paritySuites()) {
-			if (suite.root === "self") expect(suite.cases, suite.title).toHaveLength(1);
+			if (suite.root === "self") {
+				expect(suite.cases, suite.title).toHaveLength(1);
+			}
 		}
 	});
 });

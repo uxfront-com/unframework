@@ -8,7 +8,7 @@ import type { RecordedCapture, VisualCell, VisualReport } from "../src/report.ts
 const OUT = "/p/.unframework/visual";
 const base = { mode: "check+live", attachments: [] };
 
-const captures: RecordedCapture[] = [
+const captures: Array<RecordedCapture> = [
 	{
 		example: "examples/Buttons",
 		target: "vue",

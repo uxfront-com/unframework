@@ -23,7 +23,7 @@ export interface ModuleReach {
 	/** The constants and value imports its output declares and imports, by local name. */
 	values: Set<string>;
 	/** The module's type declarations its constants name, transitively, beyond its own. */
-	types: TypeDeclaration[];
+	types: Array<TypeDeclaration>;
 	/** The type names its constants and those declarations read, which its output imports. */
 	typeNames: Set<string>;
 }
@@ -38,7 +38,7 @@ export interface ModuleReach {
 export function moduleReach(
 	owner: UfComponent,
 	module: UfModule,
-	typeTexts: readonly TypeText[] = [],
+	typeTexts: ReadonlyArray<TypeText> = [],
 ): ModuleReach {
 	const moduleValues = new Set([
 		...(module.constants ?? []).map(({ name }) => name),
@@ -51,34 +51,56 @@ export function moduleReach(
 	);
 	const query = (text: string, kind: CodeKind | "type", shadowed: ReadonlySet<string>) => {
 		for (const { name } of typeQueries(text, kind)) {
-			if (moduleValues.has(name) && !shadowed.has(name)) values.add(name);
+			if (moduleValues.has(name) && !shadowed.has(name)) {
+				values.add(name);
+			}
 		}
 	};
 	const shadowed = topLevelNames(owner);
-	for (const { code } of codeOf(owner)) query(code.code, codeKind(code, owner), shadowed);
-	for (const text of ownTypes(owner)) query(text.code, "type", shadowed);
-	for (const text of typeTexts) query(text.code, "type", new Set());
+	for (const { code } of codeOf(owner)) {
+		query(code.code, codeKind(code, owner), shadowed);
+	}
+	for (const text of ownTypes(owner)) {
+		query(text.code, "type", shadowed);
+	}
+	for (const text of typeTexts) {
+		query(text.code, "type", new Set());
+	}
 	const own = new Set(owner.types);
 	const named = new Set<string>();
 	const declared = new Set<string>();
 	for (let size = -1; size !== values.size + declared.size;) {
 		size = values.size + declared.size;
 		for (const constant of module.constants ?? []) {
-			if (!values.has(constant.name)) continue;
+			if (!values.has(constant.name)) {
+				continue;
+			}
 			for (const reference of constant.value.refs) {
-				if (reference.kind === "Binding") values.add(nameOf(reference.binding));
+				if (reference.kind === "Binding") {
+					values.add(nameOf(reference.binding));
+				}
 			}
 			if (constant.type) {
-				for (const name of typeNames(constant.type)) named.add(name);
+				for (const name of typeNames(constant.type)) {
+					named.add(name);
+				}
 				query(constant.type.code, "type", new Set());
 			}
-			for (const name of codeNames(constant.value.code)) named.add(name);
+			for (const name of codeNames(constant.value.code)) {
+				named.add(name);
+			}
 			query(constant.value.code, "expression", new Set());
 		}
 		for (const declaration of module.types) {
-			if (!own.has(declaration.name) && !named.has(declaration.name)) continue;
-			if (!own.has(declaration.name)) declared.add(declaration.name);
-			for (const name of codeNames(declaration.code, "statements")) named.add(name);
+			if (!own.has(declaration.name) && !named.has(declaration.name)) {
+				continue;
+			}
+			if (!own.has(declaration.name)) {
+				declared.add(declaration.name);
+			}
+			for (const name of codeNames(declaration.code, "statements")) {
+				named.add(name);
+			}
 			query(declaration.code, "statements", new Set());
 		}
 	}
@@ -102,7 +124,9 @@ export function moduleLocals(
 	scope.reserve(...reach.values);
 	const shadowed = topLevelNames(owner);
 	const locals = new Map<string, string>();
-	for (const name of reach.values) locals.set(name, shadowed.has(name) ? scope.claim(name) : name);
+	for (const name of reach.values) {
+		locals.set(name, shadowed.has(name) ? scope.claim(name) : name);
+	}
 	return locals;
 }
 
@@ -114,7 +138,7 @@ export function constantsCode(
 	module: UfModule,
 	reach: ModuleReach,
 	locals: ReadonlyMap<string, string>,
-): string[] {
+): Array<string> {
 	return (module.constants ?? [])
 		.filter((constant) => reach.values.has(constant.name))
 		.map((constant) => {
@@ -147,15 +171,29 @@ function topLevelNames(owner: UfComponent): Set<string> {
 }
 
 /** The type text an owner's IR writes beside its code: its props', setup's and emits' types. */
-function ownTypes(owner: UfComponent): TypeText[] {
-	const found: TypeText[] = [];
-	if (owner.propsParameter) found.push(owner.propsParameter.type);
-	for (const prop of owner.props) found.push(prop.type);
-	for (const item of owner.setup) if ("type" in item && item.type) found.push(item.type);
-	if (owner.emits) found.push(owner.emits.type);
+function ownTypes(owner: UfComponent): Array<TypeText> {
+	const found: Array<TypeText> = [];
+	if (owner.propsParameter) {
+		found.push(owner.propsParameter.type);
+	}
+	for (const prop of owner.props) {
+		found.push(prop.type);
+	}
+	for (const item of owner.setup) {
+		if ("type" in item && item.type) {
+			found.push(item.type);
+		}
+	}
+	if (owner.emits) {
+		found.push(owner.emits.type);
+	}
 	for (const parameter of owner.typeParameters ?? []) {
-		if (parameter.constraint) found.push(parameter.constraint);
-		if (parameter.default) found.push(parameter.default);
+		if (parameter.constraint) {
+			found.push(parameter.constraint);
+		}
+		if (parameter.default) {
+			found.push(parameter.default);
+		}
 	}
 	return found;
 }
@@ -165,13 +203,17 @@ function ownTypes(owner: UfComponent): TypeText[] {
  * shorthand property expanded (`{ LIMITS: LIMITS_1 }`).
  */
 function renamedValue(value: Code, locals: ReadonlyMap<string, string>): string {
-	const edits: { start: number; end: number; text: string }[] = [];
+	const edits: Array<{ start: number; end: number; text: string }> = [];
 	let shorthand: ReadonlySet<number> | undefined;
 	for (const reference of value.refs) {
-		if (reference.kind !== "Binding") continue;
+		if (reference.kind !== "Binding") {
+			continue;
+		}
 		const name = nameOf(reference.binding);
 		const local = locals.get(name) ?? name;
-		if (local === name) continue;
+		if (local === name) {
+			continue;
+		}
 		const start = reference.span.start - value.span.start;
 		shorthand ??= shorthandValues(value.code);
 		const key = reference.shorthand || shorthand.has(start) ? `${name}: ` : "";
@@ -179,7 +221,9 @@ function renamedValue(value: Code, locals: ReadonlyMap<string, string>): string 
 	}
 	for (const { name, start, end } of typeQueries(value.code, "expression")) {
 		const local = locals.get(name) ?? name;
-		if (local !== name) edits.push({ start, end, text: local });
+		if (local !== name) {
+			edits.push({ start, end, text: local });
+		}
 	}
 	return applied(value.code, edits);
 }
@@ -197,7 +241,7 @@ function renamedQueries(
 	return applied(text, edits);
 }
 
-function applied(text: string, edits: readonly { start: number; end: number; text: string }[]) {
+function applied(text: string, edits: ReadonlyArray<{ start: number; end: number; text: string }>) {
 	let written = "";
 	let last = 0;
 	for (const edit of edits.toSorted((a, b) => a.start - b.start)) {
@@ -214,7 +258,7 @@ function applied(text: string, edits: readonly { start: number; end: number; tex
 function typeQueries(
 	text: string,
 	kind: CodeKind | "type",
-): { name: string; start: number; end: number }[] {
+): Array<{ name: string; start: number; end: number }> {
 	// Type text parses as the type of an assertion, whose offsets the prefix shifts.
 	const prefix = kind === "type" ? "null as " : "";
 	let root: unknown;
@@ -226,11 +270,15 @@ function typeQueries(
 	} catch {
 		return [];
 	}
-	const found: { name: string; start: number; end: number }[] = [];
+	const found: Array<{ name: string; start: number; end: number }> = [];
 	visit(root, (node) => {
-		if (node.type !== "TSTypeQuery") return;
+		if (node.type !== "TSTypeQuery") {
+			return;
+		}
 		let name = node["exprName"] as AstNode | undefined;
-		while (name?.type === "TSQualifiedName") name = name["left"] as AstNode;
+		while (name?.type === "TSQualifiedName") {
+			name = name["left"] as AstNode;
+		}
 		if (name?.type === "Identifier" && typeof name["name"] === "string") {
 			found.push({
 				name: name["name"],
@@ -250,7 +298,9 @@ function shorthandValues(code: string): Set<number> {
 	const found = new Set<number>();
 	visit(parseExpressionSource(code).expression, (node) => {
 		const value = node["value"] as AstNode | undefined;
-		if (node.type === "Property" && node["shorthand"] === true && value) found.add(value.start);
+		if (node.type === "Property" && node["shorthand"] === true && value) {
+			found.add(value.start);
+		}
 	});
 	return found;
 }

@@ -14,7 +14,9 @@ async function compileSources(project: Record<string, string>): Promise<Record<s
 	const readFile = async (path: string) => project[path.slice("/project/".length)];
 	const outputs: Record<string, string> = {};
 	for (const [filename, source] of Object.entries(project)) {
-		if (!/\.uf\.tsx?$/.test(filename)) continue;
+		if (!/\.uf\.tsx?$/.test(filename)) {
+			continue;
+		}
 		const { diagnostics, outputs: emitted } = await compile(source, {
 			filename,
 			targets: ["astro"],
@@ -22,8 +24,12 @@ async function compileSources(project: Record<string, string>): Promise<Record<s
 			typeOracle: createSyntacticOracle({ root: "/project", readFile }),
 		});
 		const errors = diagnostics.filter(({ severity }) => severity !== "info");
-		if (errors.length) throw new Error(`${filename}: ${JSON.stringify(errors)}`);
-		for (const file of emitted.astro ?? []) outputs[file.path] = file.contents;
+		if (errors.length) {
+			throw new Error(`${filename}: ${JSON.stringify(errors)}`);
+		}
+		for (const file of emitted.astro ?? []) {
+			outputs[file.path] = file.contents;
+		}
 	}
 	return outputs;
 }

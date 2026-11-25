@@ -38,14 +38,14 @@ export interface ParityView {
 	/** The container's locator, which matches nothing the view teleported (ADR-0098). */
 	containerLocator: Locator;
 	/** What the view teleported, each with its own locator, in `body` order (ADR-0098). */
-	teleported(): { element: Element; locator: Locator }[];
+	teleported(): Array<{ element: Element; locator: Locator }>;
 	/** Playwright's ARIA snapshot of the root, without Angular's host spaces (ADR-0060). */
 	aria(): Promise<string>;
 	/** The normalised DOM, and the renaming of the generated ids it found. */
 	dom(): { html: string; ids: Map<string, string> };
 	settle(): Promise<void>;
 	/** The view's trace: the steps since the mount or the previous `expectParity`. */
-	trace: { take(): TraceStep[] };
+	trace: { take(): Array<TraceStep> };
 }
 
 /** The scenarios each spec file has checked, by file: a name names one scenario of a case. */
@@ -70,7 +70,9 @@ export async function expectParity(
 		throw new Error(`expectParity("${name}"): a pixel tolerance needs a reason.`);
 	}
 	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-	if (!test) throw new Error("expectParity must be called inside a test.");
+	if (!test) {
+		throw new Error("expectParity must be called inside a test.");
+	}
 	// One scenario, one name: a second check under a name would settle the same trace (and DOM)
 	// twice, maybe once with steps and once without.
 	const names = checked.get(test.file.filepath) ?? new Set<string>();
@@ -93,14 +95,16 @@ export async function expectParity(
 	const pixels = !isHydrateProject();
 	await recordLayerChecks(test, subject, {
 		async L7() {
-			const failures: string[] = [];
+			const failures: Array<string> = [];
 			const { html, ids } = view.dom();
 			const dom = await commands.ufArtefact({
 				case: caseId,
 				file: `dom.${name}.html`,
 				contents: asFile(html),
 			});
-			if (!dom.pass) failures.push(dom.message);
+			if (!dom.pass) {
+				failures.push(dom.message);
+			}
 			// A generated id in the tree's text or a link's URL reads as the DOM's renaming has it.
 			const snapshot = renameGeneratedIds(await view.aria(), new Map(ids));
 			const aria = await commands.ufArtefact({
@@ -108,8 +112,12 @@ export async function expectParity(
 				file: `aria.${name}.yaml`,
 				contents: asFile(snapshot),
 			});
-			if (!aria.pass) failures.push(aria.message);
-			if (failures.length) throw new Error(failures.join("\n\n"));
+			if (!aria.pass) {
+				failures.push(aria.message);
+			}
+			if (failures.length) {
+				throw new Error(failures.join("\n\n"));
+			}
 		},
 		async L9() {
 			// With no steps, no trace: the reference deletes a stale one, and a follower fails on it.
@@ -118,7 +126,9 @@ export async function expectParity(
 				file: `trace.${name}.json`,
 				contents: steps.length ? traceFile(steps) : null,
 			});
-			if (!trace.pass) throw new Error(trace.message);
+			if (!trace.pass) {
+				throw new Error(trace.message);
+			}
 			return steps.length ? undefined : { skip: NO_INTERACTION_SKIP };
 		},
 		...(pixels
@@ -154,7 +164,9 @@ export async function expectParity(
 				declaredAxe,
 				view.teleported().map(({ element }) => element),
 			);
-			if (pass) return;
+			if (pass) {
+				return;
+			}
 			const lines = [...unexpected];
 			if (missing.length) {
 				lines.push(`  declared in case.json but not reported: ${missing.join(", ")}`);

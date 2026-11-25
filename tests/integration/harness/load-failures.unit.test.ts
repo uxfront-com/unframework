@@ -12,10 +12,10 @@ import { LoadFailureReporter, readLoadFailures } from "./load-failures.ts";
 const root = mkdtempSync(join(tmpdir(), "uf-load-failures-"));
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-const module = (project: string, file: string, errors: unknown[]) => ({
+const module = (project: string, file: string, errors: Array<unknown>) => ({
 	project: { name: project },
 	moduleId: join(root, file),
-	errors: () => errors as { message?: string; cause?: unknown }[],
+	errors: () => errors as Array<{ message?: string; cause?: unknown }>,
 });
 
 describe("LoadFailureReporter", () => {

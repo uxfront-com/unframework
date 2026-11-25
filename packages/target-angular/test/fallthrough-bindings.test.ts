@@ -5,7 +5,6 @@
 // consumer's key whose value is `undefined` or `null` removes the attribute, and a name the
 // consumer does not pass keeps the root's own binding. Like the rerender test, it runs in Node on
 // domino, through the same renderer as in the browser.
-// oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -44,7 +43,9 @@ const saved = new Map<string, PropertyDescriptor | undefined>();
 beforeAll(async () => {
 	DominoAdapter.makeCurrent();
 	const document = new DominoAdapter().createHtmlDocument();
-	for (const name of globals) saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+	for (const name of globals) {
+		saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+	}
 	Object.assign(globalThis, { document, window: document.defaultView });
 
 	const [emitted] = emitModule(lower(BUTTON, "Btn.uf.tsx"));
@@ -60,13 +61,16 @@ beforeAll(async () => {
 afterAll(() => {
 	for (const name of globals) {
 		const descriptor = saved.get(name);
-		if (descriptor) Object.defineProperty(globalThis, name, descriptor);
-		else Reflect.deleteProperty(globalThis, name);
+		if (descriptor) {
+			Object.defineProperty(globalThis, name, descriptor);
+		} else {
+			Reflect.deleteProperty(globalThis, name);
+		}
 	}
 	removeScratch();
 });
 
-const logged: unknown[][] = [];
+const logged: Array<Array<unknown>> = [];
 let container: HTMLElement;
 let mounted: MountedComponent | undefined;
 

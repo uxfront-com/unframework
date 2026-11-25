@@ -691,7 +691,7 @@ export default function Pick({ sizes, label }: { sizes: number[]; label: string 
   );
 }`,
 		);
-		const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+		const read = String.raw`.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "")`;
 		expect(contents).toContain(`currentSize === \`\${n ?? ""}\`${read}`);
 		expect(contents).toContain(`currentSize === \` \${label ?? ""}! \`${read}`);
 	});
@@ -1258,7 +1258,7 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
 
 	it("renders a nullish expression as no text, and keeps a non-ASCII space", async () => {
 		const contents = await emitSource(pick);
-		const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+		const read = String.raw`.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "")`;
 		expect(contents).toContain(`currentPicked === \`\${hint ?? ""}\`${read}`);
 		// The DOM strips ASCII whitespace only.
 		expect(contents).toContain('currentPicked === "\u00a0sp\u00a0"');
@@ -1456,16 +1456,18 @@ function lines(code: string): string {
  * files or any other path, may remain.
  */
 async function expectCheckedClean(
-	sources: readonly string[],
+	sources: ReadonlyArray<string>,
 	modules: Readonly<Record<string, string>> = {},
 ): Promise<void> {
-	const paths: string[] = [];
+	const paths: Array<string> = [];
 	for (const source of sources) {
 		const dir = mkdtempSync(join(scratch, "checked-"));
 		// The `.ts` modules a source imports, beside its outputs as in an output tree (ADR-0070).
-		for (const [name, code] of Object.entries(modules)) writeFileSync(join(dir, name), code);
+		for (const [name, code] of Object.entries(modules)) {
+			writeFileSync(join(dir, name), code);
+		}
 		const module = lower(source);
-		const reported: unknown[] = [];
+		const reported: Array<unknown> = [];
 		for (const component of module.components) {
 			const emit: EmitContext = {
 				module,
@@ -1487,7 +1489,9 @@ async function expectCheckedClean(
 		toolchain.lint(paths, context),
 	]);
 	for (const results of [types, lint]) {
-		for (const [path, messages] of results) expect(messages, path).toEqual([]);
+		for (const [path, messages] of results) {
+			expect(messages, path).toEqual([]);
+		}
 		expect([...results.keys()].toSorted()).toEqual(paths.toSorted());
 	}
 }

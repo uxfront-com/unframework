@@ -112,7 +112,9 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
 	const vite = (browser as { project?: { browser?: { vite?: ViteDevServer } } } | undefined)
 		?.project?.browser?.vite;
 	const client: DevEnvironment | undefined = vite?.environments.client;
-	if (!client) return undefined;
+	if (!client) {
+		return undefined;
+	}
 	return {
 		async resolve(specifier, importer) {
 			return (await client.pluginContainer.resolveId(specifier, importer))?.id;
@@ -121,7 +123,9 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
 			await client.moduleGraph.ensureEntryFromUrl(id);
 			const loaded = await client.pluginContainer.load(id);
 			const code = typeof loaded === "object" ? loaded?.code : loaded;
-			if (code == null) return;
+			if (typeof code !== "string") {
+				return;
+			}
 			const transformed = (await client.pluginContainer.transform(code, id)).code;
 			if (transformed !== `export default ${JSON.stringify(astroComponentRef(id))};\n`) {
 				const thrown = /^throw new Error\((".*")\);$/m.exec(transformed)?.[1];
@@ -131,22 +135,25 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
 		async sheet(id) {
 			const loaded = await client.pluginContainer.load(id);
 			const code = typeof loaded === "object" ? loaded?.code : loaded;
-			if (code == null)
+			if (typeof code !== "string") {
 				throw new Error(`ufAstroRender: the browser project serves no sheet ${id}.`);
+			}
 			return code;
 		},
 		async composable(id) {
 			const loaded = await client.pluginContainer.load(id);
 			const code = typeof loaded === "object" ? loaded?.code : loaded;
-			if (code == null)
+			if (typeof code !== "string") {
 				throw new Error(`ufAstroRender: the browser project serves no composables ${id}.`);
+			}
 			return code;
 		},
 		async helper(id) {
 			const loaded = await client.pluginContainer.load(id);
 			const code = typeof loaded === "object" ? loaded?.code : loaded;
-			if (code == null)
+			if (typeof code !== "string") {
 				throw new Error(`ufAstroRender: the browser project serves no helper ${id}.`);
+			}
 			return code;
 		},
 	};
@@ -167,7 +174,7 @@ export function renderAstroComponent(
 	root: string,
 	request: AstroRenderRequest,
 	childModules?: ChildModules,
-	plugins?: () => Promise<Plugin[]>,
+	plugins?: () => Promise<Array<Plugin>>,
 ): Promise<AstroRenderResult> {
 	const run = async () => {
 		children = childModules;
@@ -188,7 +195,7 @@ export function renderAstroComponent(
 async function render(
 	root: string,
 	{ id, props }: AstroRenderRequest,
-	plugins: (() => Promise<Plugin[]>) | undefined,
+	plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<AstroRenderResult> {
 	if (!ASTRO_VIRTUAL_ID.test(id) || id.includes("?")) {
 		throw new TypeError(`ufAstroRender: ${JSON.stringify(id)} is not an Astro output id.`);
@@ -209,7 +216,9 @@ async function render(
 			: HELPER_ID.test(served)
 				? await children?.helper(served).catch(() => undefined)
 				: compiledAstroSource(served);
-		if (current !== previous) invalidate(server.ssr, served);
+		if (current !== previous) {
+			invalidate(server.ssr, served);
+		}
 	}
 
 	const module: { default?: unknown } = await server.ssr.runner.import(`${id}?container`);
@@ -225,7 +234,7 @@ async function render(
 	// before its parent's, as an Astro page links them. Read again each render, so a recompile
 	// or a canary is seen. An emitted sheet comes from the browser project; another, such as
 	// a styling engine's (ADR-0064), from the plugin of the render server's own that serves it.
-	const styles: string[] = [];
+	const styles: Array<string> = [];
 	for (const sheet of importedSheets(server.ssr, `${id}?container`)) {
 		styles.push(
 			`<style>${await (SHEET_ID.test(sheet) ? children!.sheet(sheet) : stylesheet(server.ssr, sheet))}</style>`,
@@ -238,16 +247,23 @@ async function render(
  * The sheets a compiled component imports, through the components it imports, in import order:
  * each child's (depth first) before the importer's own.
  */
-function importedSheets(ssr: RunnableDevEnvironment, id: string): string[] {
+function importedSheets(ssr: RunnableDevEnvironment, id: string): Array<string> {
 	const sheets = new Set<string>();
 	const seen = new Set<string>();
 	const visit = (node: EnvironmentModuleNode | undefined) => {
-		if (!node?.id || seen.has(node.id)) return;
+		if (!node?.id || seen.has(node.id)) {
+			return;
+		}
 		seen.add(node.id);
 		for (const imported of node.importedModules) {
-			if (!imported.id) continue;
-			if (ASTRO_VIRTUAL_ID.test(imported.id)) visit(imported);
-			else if (STYLESHEET_ID.test(imported.id)) sheets.add(splitQuery(imported.id)[0]);
+			if (!imported.id) {
+				continue;
+			}
+			if (ASTRO_VIRTUAL_ID.test(imported.id)) {
+				visit(imported);
+			} else if (STYLESHEET_ID.test(imported.id)) {
+				sheets.add(splitQuery(imported.id)[0]);
+			}
 		}
 	};
 	visit(ssr.moduleGraph.getModuleById(id));
@@ -258,7 +274,9 @@ function importedSheets(ssr: RunnableDevEnvironment, id: string): string[] {
 async function stylesheet(ssr: RunnableDevEnvironment, id: string): Promise<string> {
 	const loaded = await ssr.pluginContainer.load(id);
 	const code = typeof loaded === "object" ? loaded?.code : loaded;
-	if (code == null) throw new Error(`ufAstroRender: no plugin serves the sheet ${id}.`);
+	if (typeof code !== "string") {
+		throw new Error(`ufAstroRender: no plugin serves the sheet ${id}.`);
+	}
 	return code;
 }
 
@@ -274,7 +292,7 @@ function invalidate(ssr: RunnableDevEnvironment, id: string): void {
 
 function renderServer(
 	root: string,
-	plugins: (() => Promise<Plugin[]>) | undefined,
+	plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<RenderServer> {
 	let server = servers.get(root);
 	if (!server) {
@@ -286,7 +304,7 @@ function renderServer(
 
 async function startRenderServer(
 	root: string,
-	plugins: (() => Promise<Plugin[]>) | undefined,
+	plugins: (() => Promise<Array<Plugin>>) | undefined,
 ): Promise<RenderServer> {
 	const { createServer, isRunnableDevEnvironment } = await import("vite");
 	const served = new Map<string, string>();
@@ -331,19 +349,33 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
 		name: "unframework:astro-render-source",
 		enforce: "pre",
 		async resolveId(id, importer) {
-			if (ASTRO_VIRTUAL_ID.test(id)) return id;
+			if (ASTRO_VIRTUAL_ID.test(id)) {
+				return id;
+			}
 			const [parent] = splitQuery(importer ?? "");
-			if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) return null;
+			if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) {
+				return null;
+			}
 			const child = await children.resolve(id, parent);
 			// A served module's sheet (ADR-0063): the render reads it from the browser project.
-			if (child !== undefined && SHEET_ID.test(child)) return splitQuery(child)[0];
+			if (child !== undefined && SHEET_ID.test(child)) {
+				return splitQuery(child)[0];
+			}
 			// A module of composables (ADR-0069): its static module, as the browser project compiles it.
-			if (child !== undefined && COMPOSABLE_ID.test(child)) return splitQuery(child)[0];
+			if (child !== undefined && COMPOSABLE_ID.test(child)) {
+				return splitQuery(child)[0];
+			}
 			// A shared helper module (ADR-0121): its text, as the browser project's compile emitted it.
-			if (child !== undefined && HELPER_ID.test(child)) return splitQuery(child)[0];
-			if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) return null;
+			if (child !== undefined && HELPER_ID.test(child)) {
+				return splitQuery(child)[0];
+			}
+			if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) {
+				return null;
+			}
 			const [path] = splitQuery(child);
-			if (compiledAstroSource(path) === undefined) await children.load(path);
+			if (compiledAstroSource(path) === undefined) {
+				await children.load(path);
+			}
 			return path;
 		},
 		load: {
@@ -351,10 +383,14 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
 			async handler(id) {
 				// The render puts the sheet before the markup itself (`importedSheets`): the module is
 				// only an edge of the graph, whatever the sheet holds.
-				if (SHEET_ID.test(id)) return "";
+				if (SHEET_ID.test(id)) {
+					return "";
+				}
 				// A plain TypeScript module, which the server's own transform takes from here.
 				if (COMPOSABLE_ID.test(id)) {
-					if (!children) throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+					if (!children) {
+						throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+					}
 					const [file] = splitQuery(id);
 					const code = await children.composable(file);
 					served.set(file, code);
@@ -362,14 +398,18 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
 				}
 				// A shared helper module, a plain TypeScript module too (ADR-0121).
 				if (HELPER_ID.test(id)) {
-					if (!children) throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+					if (!children) {
+						throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+					}
 					const [file] = splitQuery(id);
 					const code = await children.helper(file);
 					served.set(file, code);
 					return code;
 				}
 				const [path, query] = splitQuery(id);
-				if (ASTRO_SUB_REQUEST.test(query)) return null;
+				if (ASTRO_SUB_REQUEST.test(query)) {
+					return null;
+				}
 				const source = compiledAstroSource(path);
 				if (source === undefined) {
 					throw new Error(`ufAstroRender: no compiled source for ${path}.`);
@@ -394,7 +434,7 @@ export async function closeAstroRenderServers(): Promise<void> {
 	);
 }
 
-const renders = new AsyncLocalStorage<CapturedConsoleMessage[]>();
+const renders = new AsyncLocalStorage<Array<CapturedConsoleMessage>>();
 
 /**
  * Collects the `console.warn` and `console.error` calls a render makes (layer L13). The console
@@ -403,8 +443,8 @@ const renders = new AsyncLocalStorage<CapturedConsoleMessage[]>();
  */
 async function captureConsole<T>(
 	run: () => Promise<T>,
-): Promise<{ value: T; messages: CapturedConsoleMessage[] }> {
-	const messages: CapturedConsoleMessage[] = [];
+): Promise<{ value: T; messages: Array<CapturedConsoleMessage> }> {
+	const messages: Array<CapturedConsoleMessage> = [];
 	const { warn, error } = console;
 	console.warn = capturing("warn", warn);
 	console.error = capturing("error", error);
@@ -417,9 +457,12 @@ async function captureConsole<T>(
 }
 
 function capturing(level: CapturedConsoleMessage["level"], original: Console["warn"]) {
-	return (...args: unknown[]): void => {
+	return (...args: Array<unknown>): void => {
 		const sink = renders.getStore();
-		if (sink) sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
-		else original(...args);
+		if (sink) {
+			sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
+		} else {
+			original(...args);
+		}
 	};
 }

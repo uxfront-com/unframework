@@ -34,7 +34,7 @@ const runners = new Map<DevEnvironment, ModuleRunner>();
  * The console messages of the render that logs them: renders run concurrently, one per page, and
  * each collects only what its own async work logs. Anything else reaches the console as before.
  */
-const renders = new AsyncLocalStorage<CapturedConsoleMessage[]>();
+const renders = new AsyncLocalStorage<Array<CapturedConsoleMessage>>();
 
 /**
  * `ufHydrationRender`: the server HTML of the calling case's main component with `props`, as the
@@ -76,15 +76,15 @@ async function render(
 	const source = caseMainSource(harness, request.case);
 	const runner = runnerOf(ssr);
 	const [renderer, module] = await Promise.all([
-		runner.import(server) as Promise<{ renderForHydration?: HydrationRenderer }>,
-		runner.import(source) as Promise<{ default?: unknown }>,
+		runner.import<{ renderForHydration?: HydrationRenderer }>(server),
+		runner.import<{ default?: unknown }>(source),
 	]);
 	if (typeof renderer.renderForHydration !== "function") {
 		throw new Error(
 			`[uf] ${server} exports no renderForHydration: a toolchain with a hydrate adapter renders its server HTML through it (ADR-0095).`,
 		);
 	}
-	const messages: CapturedConsoleMessage[] = [];
+	const messages: Array<CapturedConsoleMessage> = [];
 	installConsoleCapture();
 	// The events the component declares, as the page listens to them: a renderer whose client
 	// cannot take a function from the server (Qwik's QRLs) renders a listener for each by name.
@@ -138,7 +138,9 @@ export function hydrationRunners(): Plugin {
 /** The URL a page imports a source from: under the server's root, or through `/@fs/`. */
 export function moduleUrl(root: string, source: string): string {
 	const path = relative(root, source);
-	if (path && !path.startsWith("..") && !isAbsolute(path)) return `/${path.split(sep).join("/")}`;
+	if (path && !path.startsWith("..") && !isAbsolute(path)) {
+		return `/${path.split(sep).join("/")}`;
+	}
 	return `/@fs/${source.split(sep).join("/").replace(/^\/+/, "")}`;
 }
 
@@ -146,16 +148,21 @@ let installed = false;
 
 /** Routes `console.warn` and `console.error` to the render that logs them, once per process. */
 function installConsoleCapture(): void {
-	if (installed) return;
+	if (installed) {
+		return;
+	}
 	installed = true;
 	console.warn = capturing("warn", console.warn.bind(console));
 	console.error = capturing("error", console.error.bind(console));
 }
 
 function capturing(level: CapturedConsoleMessage["level"], original: Console["warn"]) {
-	return (...args: unknown[]): void => {
+	return (...args: Array<unknown>): void => {
 		const sink = renders.getStore();
-		if (sink) sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
-		else original(...args);
+		if (sink) {
+			sink.push({ level, message: formatWithOptions({ colors: false }, ...args) });
+		} else {
+			original(...args);
+		}
 	};
 }

@@ -15,14 +15,23 @@ const SVELTE_COMPILE = "vite-plugin-svelte:compile";
  * `isOwn` limits this to the modules this plugin loaded. A later release of the Svelte plugin
  * that renames the step leaves the double chain, which L14's stack checks then fail on.
  */
-export function chainSvelteOnce(plugins: readonly Plugin[], isOwn: (id: string) => boolean): void {
+export function chainSvelteOnce(
+	plugins: ReadonlyArray<Plugin>,
+	isOwn: (id: string) => boolean,
+): void {
 	const compile = plugins.find((plugin) => plugin.name === SVELTE_COMPILE);
 	const hook = compile?.transform;
-	if (!hook || typeof hook === "function") return;
+	if (!hook || typeof hook === "function") {
+		return;
+	}
 	const handler = hook.handler;
 	hook.handler = function (code, id, options) {
-		if (!isOwn(id)) return handler.call(this, code, id, options);
-		const context = Object.create(this, { getCombinedSourcemap: { value: () => undefined } });
+		if (!isOwn(id)) {
+			return handler.call(this, code, id, options);
+		}
+		const context = Object.create(this, {
+			getCombinedSourcemap: { value: () => undefined },
+		}) as typeof this;
 		return handler.call(context, code, id, options);
 	};
 }
@@ -37,20 +46,29 @@ const QWIK_PLUGIN = "vite-plugin-qwik";
  * segment's module, by the segment's id.
  */
 export function chainQwikSegments(
-	plugins: readonly Plugin[],
+	plugins: ReadonlyArray<Plugin>,
 	mapOf: (id: string) => SourceMapV3 | undefined,
 ): void {
 	const qwik = plugins.find((plugin) => plugin.name === QWIK_PLUGIN);
 	const hook = qwik?.load;
-	if (!qwik || !hook) return;
+	if (!qwik || !hook) {
+		return;
+	}
 	const handler = typeof hook === "function" ? hook : hook.handler;
 	const load: typeof handler = async function (id, options) {
 		const result = await handler.call(this, id, options);
 		const parent = mapOf(id);
-		if (!parent || typeof result !== "object" || result === null) return result;
-		if (!result.map) return result;
+		if (!parent || typeof result !== "object" || result === null) {
+			return result;
+		}
+		if (!result.map) {
+			return result;
+		}
 		return { ...result, map: chainMap(result.map, parent) };
 	};
-	if (typeof hook === "function") qwik.load = load;
-	else hook.handler = load;
+	if (typeof hook === "function") {
+		qwik.load = load;
+	} else {
+		hook.handler = load;
+	}
 }

@@ -417,7 +417,7 @@ export const URL_ATTRIBUTES: ReadonlySet<string> = words(
  */
 function urlScheme(url: string): string | undefined {
 	// oxlint-disable-next-line no-control-regex -- the leading C0 controls the URL parser strips.
-	const stripped = url.replace(/^[\u0000-\u001F ]+/, "").replace(/[\t\n\r]/g, "");
+	const stripped = url.replace(/^[\u0000-\u001F ]+/, "").replaceAll(/[\t\n\r]/g, "");
 	return /^([a-z][a-z\d+.-]*):/i.exec(stripped)?.[1]?.toLowerCase();
 }
 
@@ -465,9 +465,15 @@ export function unanalysableUrl(
 	name: string,
 	value: string,
 ): "javascript" | "data" | undefined {
-	if (!URL_ATTRIBUTES.has(name)) return undefined;
-	if (isJavaScriptUrl(value)) return "javascript";
-	if (NESTED_DOCUMENT_ATTRIBUTES.get(tag) === name && urlScheme(value) === "data") return "data";
+	if (!URL_ATTRIBUTES.has(name)) {
+		return undefined;
+	}
+	if (isJavaScriptUrl(value)) {
+		return "javascript";
+	}
+	if (NESTED_DOCUMENT_ATTRIBUTES.get(tag) === name && urlScheme(value) === "data") {
+		return "data";
+	}
 	return undefined;
 }
 
@@ -511,20 +517,20 @@ export function replaceIdReferences(
 	replace: (id: string) => string,
 ): string {
 	if (ID_REFERENCE_ATTRIBUTES.has(name)) {
-		return value.replace(/[^\t\n\f\r ]+/g, (id) => replace(id));
+		return value.replaceAll(/[^\t\n\f\r ]+/g, (id) => replace(id));
 	}
 	if (FRAGMENT_ATTRIBUTES.has(name) && value.length > 1 && value.startsWith("#")) {
 		return `#${replace(value.slice(1))}`;
 	}
-	return value.replace(
+	return value.replaceAll(
 		URL_REFERENCE,
 		(_reference, quote: string, id: string) => `url(${quote}#${replace(id)}${quote})`,
 	);
 }
 
 /** The ids an attribute value refers to, in order (see {@link replaceIdReferences}). */
-export function idReferencesIn(name: string, value: string): string[] {
-	const ids: string[] = [];
+export function idReferencesIn(name: string, value: string): Array<string> {
+	const ids: Array<string> = [];
 	replaceIdReferences(name, value, (id) => {
 		ids.push(id);
 		return id;
@@ -542,9 +548,15 @@ export type UnkeptCharacter = "carriage-return" | "nul" | "surrogate" | "control
  * controls (but tab, line feed and form feed) or the noncharacters in a document.
  */
 export function unkeptCharacter(codePoint: number): UnkeptCharacter | undefined {
-	if (codePoint === 0x0d) return "carriage-return";
-	if (codePoint === 0) return "nul";
-	if (codePoint >= 0xd800 && codePoint <= 0xdfff) return "surrogate";
+	if (codePoint === 0x0d) {
+		return "carriage-return";
+	}
+	if (codePoint === 0) {
+		return "nul";
+	}
+	if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
+		return "surrogate";
+	}
 	if (
 		(codePoint < 0x20 && codePoint !== 0x09 && codePoint !== 0x0a && codePoint !== 0x0c) ||
 		(codePoint >= 0x7f && codePoint <= 0x9f)
@@ -590,9 +602,9 @@ export const NUMERIC_ATTRIBUTES: ReadonlyMap<
 		ol: { start: { kind: "integer" } },
 		progress: { max: { kind: "number" }, value: { kind: "number" } },
 		select: { size: { kind: "positive-integer" } },
-		td: { rowspan: { kind: "non-negative-integer", max: 65534 } },
+		td: { rowspan: { kind: "non-negative-integer", max: 65_534 } },
 		textarea: { cols: { kind: "positive-integer" }, rows: { kind: "positive-integer" } },
-		th: { rowspan: { kind: "non-negative-integer", max: 65534 } },
+		th: { rowspan: { kind: "non-negative-integer", max: 65_534 } },
 	}).map(([tag, attributes]) => [tag, table(attributes)]),
 );
 

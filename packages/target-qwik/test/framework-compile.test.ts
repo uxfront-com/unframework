@@ -12,7 +12,7 @@ const context = {
 	toolchainDir: `${repo}tests/toolchains/qwik`,
 	root: `${repo}tests/integration`,
 };
-const goldens: ToolchainFile[] = qwikGoldens(
+const goldens: Array<ToolchainFile> = qwikGoldens(
 	// A tree's shared helper modules too, which its outputs import (ADR-0121).
 	"tests/integration/cases/**/__output__/qwik/{*,_unframework/*}",
 ).map((path) => ({ path, contents: readFileSync(path, "utf8") }));
@@ -33,7 +33,9 @@ describe("frameworkCompile (L3, the Qwik optimizer)", () => {
 		expect(goldens.length).toBeGreaterThanOrEqual(2);
 		const results = await toolchain.frameworkCompile(goldens, context);
 		expect([...results.keys()].toSorted()).toEqual(goldens.map((file) => file.path).toSorted());
-		for (const result of results.values()) expect(result).toEqual({ errors: [], warnings: [] });
+		for (const result of results.values()) {
+			expect(result).toEqual({ errors: [], warnings: [] });
+		}
 	}, 60_000);
 
 	it("accepts the fixtures, interactive and attribute-heavy ones included", async () => {
@@ -45,7 +47,9 @@ describe("frameworkCompile (L3, the Qwik optimizer)", () => {
 		);
 		const results = await toolchain.frameworkCompile(files, context);
 		expect(results.size).toBe(files.length);
-		for (const result of results.values()) expect(result).toEqual({ errors: [], warnings: [] });
+		for (const result of results.values()) {
+			expect(result).toEqual({ errors: [], warnings: [] });
+		}
 	});
 
 	it("reports a mismatched closing tag as an error at its position", async () => {

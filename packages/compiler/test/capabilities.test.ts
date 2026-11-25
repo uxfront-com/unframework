@@ -38,7 +38,9 @@ describe("portability diagnostics", () => {
 		expect(result.diagnostics[0]!.message).toMatch(
 			/^The vue target does not support listbox: runtime-dom's `nodeOps.createElement` /,
 		);
-		for (const target of TARGET_NAMES) expect(ownOutputs(result, target), target).toHaveLength(1);
+		for (const target of TARGET_NAMES) {
+			expect(ownOutputs(result, target), target).toHaveLength(1);
+		}
 	});
 
 	it("reports a listener that falls through a component once on Astro, and prints none", async () => {
@@ -153,7 +155,7 @@ describe("the capability check on code that runs in the browser", () => {
 	});
 	/** The IR package's counter: every listener option, `useId`, `nextTick` and effects. */
 	const counter = () => createModule("Counter.uf.tsx", [everyKind().components[1]!]);
-	const report = (diagnostics: Diagnostic[]) =>
+	const report = (diagnostics: Array<Diagnostic>) =>
 		diagnostics.map(({ code, severity, span, message }) => [
 			code,
 			severity,
