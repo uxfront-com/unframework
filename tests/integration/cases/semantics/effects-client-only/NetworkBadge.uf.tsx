@@ -1,20 +1,20 @@
 import { onMounted, ref, watch } from "@uxfront/unframework";
 
 export default function NetworkBadge() {
-	const online = ref<boolean>();
-	const label = ref("Checking the connection");
+  const online = ref<boolean>();
+  const label = ref("Checking the connection");
 
-	watch(online, (value) => {
-		label.value = value ? "Online" : "Offline";
-	});
+  watch(online, (value) => {
+    label.value = value ? "Online" : "Offline";
+  });
 
-	onMounted(() => {
-		online.value = navigator.onLine;
-	});
+  onMounted(() => {
+    online.value = navigator.onLine;
+  });
 
-	return (
-		<p class="network-badge" role="status" data-checked={online.value === undefined ? "no" : "yes"}>
-			{label.value}
-		</p>
-	);
+  return (
+    <p class="network-badge" role="status" data-checked={online.value === undefined ? "no" : "yes"}>
+      {label.value}
+    </p>
+  );
 }

@@ -3,5 +3,5 @@
 export type Label = string;
 
 export interface Labelled {
-	label: Label;
+  label: Label;
 }

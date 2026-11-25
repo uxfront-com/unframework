@@ -3,13 +3,13 @@
 import { defineDirective } from "@uxfront/unframework";
 
 export const vRecord = defineDirective<number>({
-	mounted(el, value) {
-		el.setAttribute("data-value", String(value));
-		el.setAttribute("data-updates", "0");
-	},
-	updated(el, value, oldValue) {
-		el.setAttribute("data-value", String(value));
-		el.setAttribute("data-old-value", String(oldValue));
-		el.setAttribute("data-updates", String(Number(el.getAttribute("data-updates")) + 1));
-	},
+  mounted(el, value) {
+    el.setAttribute("data-value", String(value));
+    el.setAttribute("data-updates", "0");
+  },
+  updated(el, value, oldValue) {
+    el.setAttribute("data-value", String(value));
+    el.setAttribute("data-old-value", String(oldValue));
+    el.setAttribute("data-updates", String(Number(el.getAttribute("data-updates")) + 1));
+  },
 });

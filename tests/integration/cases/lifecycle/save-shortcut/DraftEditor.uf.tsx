@@ -1,32 +1,32 @@
 import { defineEmits, onMounted, onUnmounted, ref } from "@uxfront/unframework";
 
 export default function DraftEditor() {
-	const emit = defineEmits<{ saved: [count: number] }>();
+  const emit = defineEmits<{ saved: [count: number] }>();
 
-	const saves = ref(0);
+  const saves = ref(0);
 
-	function onShortcut(event: KeyboardEvent) {
-		if (event.key !== "s" || !event.ctrlKey) return;
-		event.preventDefault();
-		saves.value += 1;
-		emit("saved", saves.value);
-	}
+  function onShortcut(event: KeyboardEvent) {
+    if (event.key !== "s" || !event.ctrlKey) return;
+    event.preventDefault();
+    saves.value += 1;
+    emit("saved", saves.value);
+  }
 
-	onMounted(() => {
-		document.addEventListener("keydown", onShortcut);
-	});
+  onMounted(() => {
+    document.addEventListener("keydown", onShortcut);
+  });
 
-	onUnmounted(() => {
-		document.removeEventListener("keydown", onShortcut);
-	});
+  onUnmounted(() => {
+    document.removeEventListener("keydown", onShortcut);
+  });
 
-	return (
-		<section class="draft-editor" aria-label="Draft">
-			<label>
-				Draft
-				<textarea name="draft" />
-			</label>
-			<p role="status">Saved: {saves.value}</p>
-		</section>
-	);
+  return (
+    <section class="draft-editor" aria-label="Draft">
+      <label>
+        Draft
+        <textarea name="draft" />
+      </label>
+      <p role="status">Saved: {saves.value}</p>
+    </section>
+  );
 }

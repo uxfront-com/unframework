@@ -30,6 +30,15 @@ export default defineConfig({
 		"tests/integration/styleframe.d.ts",
 		// Written by `pnpm test:budgets:update`, never by hand.
 		"tests/integration/budgets.json",
+		// The compiler's inputs. Their exact bytes reach its checked outputs: IR spans, the lines
+		// and columns diagnostics quote, scope ids hashed from a sheet's text, and shared modules and
+		// sheets copied as written. Test files and case.json reach no output, so they are formatted.
+		"tests/integration/cases/**/*.uf.tsx",
+		"tests/integration/cases/**/*.ts",
+		"!tests/integration/cases/**/*.test.ts",
+		"tests/integration/cases/**/*.css",
+		// The sample design system's sheets: its expectations pin the scope ids hashed from them.
+		"tests/e2e/design-system/**/*.css",
 		// Emitter output that tests compare byte for byte. The compiler formats its own output
 		// with two spaces (packages/codegen/src/format.ts), so these keep two spaces too.
 		"packages/target-solid/test/fixtures/{Address,AsyncRuns,Coalesced,ForwardedSlot,KeyedRows,Lifecycle,ListedSelect,Listeners,NarrowedState,Narrowing,NumberText,OptionText,RowSlots,Runs,SelectRow,Swatch,UnmatchedSelect,Watchers}.tsx",

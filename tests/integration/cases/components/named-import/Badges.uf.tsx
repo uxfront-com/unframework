@@ -1,7 +1,7 @@
 export function Badge({ text }: { text: string }) {
-	return <span class="badge">{text}</span>;
+  return <span class="badge">{text}</span>;
 }
 
 export function Pill({ text }: { text: string }) {
-	return <span class="pill">{text}</span>;
+  return <span class="pill">{text}</span>;
 }

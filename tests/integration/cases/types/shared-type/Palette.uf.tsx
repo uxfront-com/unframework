@@ -5,9 +5,9 @@ import type { Tone } from "./types";
 export type { Tone } from "./types";
 
 export default function Palette({ tone }: { tone: Tone }) {
-	return (
-		<div class="palette">
-			<Swatch tone={tone} />
-		</div>
-	);
+  return (
+    <div class="palette">
+      <Swatch tone={tone} />
+    </div>
+  );
 }

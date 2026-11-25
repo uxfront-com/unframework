@@ -3,12 +3,12 @@
 import { defineDirective } from "@uxfront/unframework";
 
 export const vNote = defineDirective<string>({
-	mounted(el, value) {
-		const call = `mounted ${value}`;
-		document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
-	},
-	unmounted(el) {
-		const call = `unmounted ${el.getAttribute("data-name")}`;
-		document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
-	},
+  mounted(el, value) {
+    const call = `mounted ${value}`;
+    document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
+  },
+  unmounted(el) {
+    const call = `unmounted ${el.getAttribute("data-name")}`;
+    document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
+  },
 });

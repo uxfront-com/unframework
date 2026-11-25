@@ -3,16 +3,16 @@
 import { computed, ref } from "@uxfront/unframework";
 
 export function useCart() {
-	const items = ref(0);
-	const empty = computed(() => items.value === 0);
+  const items = ref(0);
+  const empty = computed(() => items.value === 0);
 
-	function add(count: number) {
-		items.value += count;
-	}
+  function add(count: number) {
+    items.value += count;
+  }
 
-	function clear() {
-		items.value = 0;
-	}
+  function clear() {
+    items.value = 0;
+  }
 
-	return { items, empty, add, clear };
+  return { items, empty, add, clear };
 }

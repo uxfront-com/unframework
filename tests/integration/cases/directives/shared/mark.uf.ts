@@ -3,7 +3,7 @@
 import { defineDirective } from "@uxfront/unframework";
 
 export const vMark = defineDirective<string>({
-	mounted(el, value) {
-		el.setAttribute("data-directive-mounted", value);
-	},
+  mounted(el, value) {
+    el.setAttribute("data-directive-mounted", value);
+  },
 });

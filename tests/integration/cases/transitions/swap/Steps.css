@@ -1,22 +1,22 @@
 .steps {
-	padding: 8px;
+  padding: 8px;
 }
 
 .card,
 .step {
-	margin: 4px 0;
+  margin: 4px 0;
 }
 
 .swap-enter-active,
 .swap-leave-active,
 .step-enter-active,
 .step-leave-active {
-	transition: opacity 80ms ease;
+  transition: opacity 80ms ease;
 }
 
 .swap-enter-from,
 .swap-leave-to,
 .step-enter-from,
 .step-leave-to {
-	opacity: 0;
+  opacity: 0;
 }

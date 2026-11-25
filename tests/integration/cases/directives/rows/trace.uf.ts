@@ -3,16 +3,16 @@
 import { defineDirective } from "@uxfront/unframework";
 
 export const vTrace = defineDirective<string>({
-	mounted(el, value) {
-		const call = `trace mounted ${value}`;
-		document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
-	},
-	updated(el, value, oldValue) {
-		const call = `trace updated ${value} ${oldValue}`;
-		document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
-	},
-	unmounted(el) {
-		const call = "trace unmounted";
-		document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
-	},
+  mounted(el, value) {
+    const call = `trace mounted ${value}`;
+    document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
+  },
+  updated(el, value, oldValue) {
+    const call = `trace updated ${value} ${oldValue}`;
+    document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
+  },
+  unmounted(el) {
+    const call = "trace unmounted";
+    document.dispatchEvent(new CustomEvent("directive-trace", { detail: { call, el } }));
+  },
 });

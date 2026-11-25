@@ -3,22 +3,22 @@
 import { onMounted, onUnmounted, ref } from "@uxfront/unframework";
 
 export function useMediaQuery(query: string) {
-	const matches = ref(false);
-	let list: MediaQueryList | undefined;
+  const matches = ref(false);
+  let list: MediaQueryList | undefined;
 
-	function update() {
-		matches.value = list?.matches ?? false;
-	}
+  function update() {
+    matches.value = list?.matches ?? false;
+  }
 
-	onMounted(() => {
-		list = window.matchMedia(query);
-		update();
-		list.addEventListener("change", update);
-	});
+  onMounted(() => {
+    list = window.matchMedia(query);
+    update();
+    list.addEventListener("change", update);
+  });
 
-	onUnmounted(() => {
-		list?.removeEventListener("change", update);
-	});
+  onUnmounted(() => {
+    list?.removeEventListener("change", update);
+  });
 
-	return { matches };
+  return { matches };
 }

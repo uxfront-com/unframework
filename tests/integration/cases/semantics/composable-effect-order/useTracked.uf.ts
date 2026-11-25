@@ -3,15 +3,15 @@
 import { onMounted, ref, watch } from "@uxfront/unframework";
 
 export function useTracked(report: (entry: string) => void) {
-	const count = ref(0);
+  const count = ref(0);
 
-	watch(count, () => report("composable watcher"));
+  watch(count, () => report("composable watcher"));
 
-	onMounted(() => report("composable mounted"));
+  onMounted(() => report("composable mounted"));
 
-	function increment() {
-		count.value++;
-	}
+  function increment() {
+    count.value++;
+  }
 
-	return { count, increment };
+  return { count, increment };
 }

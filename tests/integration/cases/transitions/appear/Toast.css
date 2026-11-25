@@ -1,13 +1,13 @@
 .toast {
-	margin: 0;
-	padding: 8px;
-	background-color: rgb(220, 252, 231);
+  margin: 0;
+  padding: 8px;
+  background-color: rgb(220, 252, 231);
 }
 
 .pop-enter-active {
-	transition: transform 60ms ease;
+  transition: transform 60ms ease;
 }
 
 .pop-enter-from {
-	transform: scale(0.9);
+  transform: scale(0.9);
 }

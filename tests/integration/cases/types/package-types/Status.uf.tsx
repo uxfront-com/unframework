@@ -7,9 +7,9 @@ import type { Labelled } from "./types";
 type StatusProps = TimeInterval<string> & Labelled;
 
 export default function Status({ value, interval, label }: StatusProps) {
-	return (
-		<p>
-			{label}: {value} after {interval} ms
-		</p>
-	);
+  return (
+    <p>
+      {label}: {value} after {interval} ms
+    </p>
+  );
 }
