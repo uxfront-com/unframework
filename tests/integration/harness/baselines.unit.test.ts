@@ -693,9 +693,10 @@ describe("CI's Baselines job", () => {
 			throw new Error("ci.yml has no baselines job.");
 		}
 		expect(job).toMatch(/^ {4}name: Baselines$/m);
-		// A docs-only pull request skips it, like every test job (ADR-0084).
+		// A docs-only pull request skips it, like every test job (ADR-0084), and the merge queue
+		// never runs it, since no one downloads baselines from a queue run (ADR-0123).
 		expect(job).toMatch(
-			/^ {4}if: \$\{\{ !cancelled\(\) && github\.event_name != 'push' && needs\.changes\.outputs\.tests != 'false' \}\}$/m,
+			/^ {4}if: \$\{\{ !cancelled\(\) && github\.event_name != 'push' && github\.event_name != 'merge_group' && needs\.changes\.outputs\.tests != 'false' \}\}$/m,
 		);
 		expect(/^on:\n((?: {2}.*\n)+)/m.exec(workflow)?.[1]).toMatch(
 			/^ {2}pull_request:\n(?:.*\n)* {2}workflow_dispatch:$/m,

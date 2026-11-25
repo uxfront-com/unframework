@@ -458,13 +458,6 @@ describe("canaries", () => {
 		expect(gate).not.toMatch(/\|\| true|continue-on-error/);
 	});
 
-	it("run Baselines on a pull request and by hand, never in the merge queue (ADR-0123)", () => {
-		const baselines = workflowJob("ci.yml", "baselines");
-		expect(baselines).toContain(
-			"if: ${{ !cancelled() && github.event_name != 'push' && github.event_name != 'merge_group' && needs.changes.outputs.tests != 'false' }}\n",
-		);
-	});
-
 	it("run the parity matrix in the merge queue, where Merge gate waits for it (ADR-0123)", () => {
 		const parity = workflowJob("ci.yml", "parity");
 		expect(parity).not.toContain("event_name");
