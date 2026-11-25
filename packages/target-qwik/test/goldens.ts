@@ -2,7 +2,7 @@
 // committed expected diagnostics hold an error for Qwik (a capability Qwik does not support, as
 // UF4001) has no output: the harness skips its layers from L3 on (cases.ts `expectsErrors`), so
 // these tests leave its golden out too.
-import { existsSync, globSync, readFileSync } from "node:fs";
+import { existsSync, globSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,12 +27,13 @@ function expectsErrors(golden: string): boolean {
 }
 
 /**
- * The absolute paths of the goldens matching `pattern` (from the repository's root), sorted, but
- * the scoped sheets (`<source>.css`), which the compile project parses instead (ADR-0063).
+ * The absolute paths of the golden files matching `pattern` (from the repository's root), sorted,
+ * but the scoped sheets (`<source>.css`), which the compile project parses instead (ADR-0063), and
+ * the directories the pattern matches, such as a tree's `_unframework/` (ADR-0121).
  */
 export function goldens(pattern: string): Array<string> {
   return globSync(pattern, { cwd: repo })
     .toSorted()
     .map((file) => join(repo, file))
-    .filter((file) => !file.endsWith(".css") && !expectsErrors(file));
+    .filter((file) => !file.endsWith(".css") && statSync(file).isFile() && !expectsErrors(file));
 }

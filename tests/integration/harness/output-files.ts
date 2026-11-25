@@ -48,7 +48,8 @@ export async function outputFiles(
     // Every source of the case, as the compile project writes them into one tree (ADR-0057):
     // a parent's output imports its children's.
     const directory = join(root, "cases", info.id, "__output__", target);
-    const paths: Array<string> = [];
+    // A set: two sources that use one helper each write its module, one file (ADR-0121).
+    const paths = new Set<string>();
     for (const source of info.sources) {
       const text = readFileSync(source.source, "utf8");
       const typeOracle = caseOracle(info, casesDir, { filename: source.filename, text });
@@ -67,10 +68,10 @@ export async function outputFiles(
       for (const file of result.outputs[target] ?? []) {
         const path = join(directory, file.path);
         writeIfChanged(path, file.contents);
-        paths.push(path);
+        paths.add(path);
       }
     }
-    files.set(info.id, toolchainFiles(paths).sort());
+    files.set(info.id, toolchainFiles([...paths]).sort());
   }
   return files;
 }

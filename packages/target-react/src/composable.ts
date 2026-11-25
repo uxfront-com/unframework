@@ -21,6 +21,7 @@ import { moduleReads } from "./modules.ts";
 import { liveReaderNames, planComponent, setupOwner } from "./plan.ts";
 import { reactCode } from "./rules.ts";
 import { printSetup } from "./setup.ts";
+import { importShared } from "./shared.ts";
 
 /**
  * `useToggle.ts`: `export function useToggle(initial: boolean) { …; return { on, currentOn,
@@ -44,7 +45,7 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
     return [];
   }
   const owner = setupOwner(composable);
-  const plan = planComponent(owner, module, composable);
+  const plan = planComponent(owner, module, composable, context.helper !== undefined);
   const code = reactCode(plan);
   const setup = printSetup(plan, code);
 
@@ -105,15 +106,25 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
         .join(", ")}>`
     : "";
 
-  const helpers = plan.helpers.nextTick
-    ? [
-        nextTickHelper(plan.helpers.nextTick, {
-          useRef: plan.names.add("react", "useRef"),
-          useReducer: plan.names.add("react", "useReducer"),
-          useEffect: plan.names.add("react", "useEffect"),
-        }),
-      ]
-    : [];
+  // With `helper`, `useNextTick` is a shared module (ADR-0121); without it, inline as before.
+  if (context.helper && plan.helpers.nextTick) {
+    importShared(
+      context.helper,
+      `${composable.name}.ts`,
+      plan.names,
+      new Map([["useNextTick", plan.helpers.nextTick]]),
+    );
+  }
+  const helpers =
+    plan.helpers.nextTick && !context.helper
+      ? [
+          nextTickHelper(plan.helpers.nextTick, {
+            useRef: plan.names.add("react", "useRef"),
+            useReducer: plan.names.add("react", "useReducer"),
+            useEffect: plan.names.add("react", "useEffect"),
+          }),
+        ]
+      : [];
   // The module's values it reads, as the source declares and imports them (ADR-0070).
   const reads = moduleReads(owner, module, plan.names, [
     ...composable.parameters.map(({ type }) => type),

@@ -10,6 +10,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -167,7 +168,12 @@ describe("every toolchain", () => {
       for (const { file, contents } of [SHARED, COMPOSABLES[target]!]) {
         writeFileSync(join(directory, file), contents);
       }
-      const files = toolchainFiles(readdirSync(directory).map((file) => join(directory, file)));
+      // The tree's helper modules too, in `_unframework/` (ADR-0121).
+      const files = toolchainFiles(
+        (readdirSync(directory, { recursive: true }) as Array<string>)
+          .map((file) => join(directory, file))
+          .filter((path) => statSync(path).isFile()),
+      );
       const outputs = new Set(files);
       const toolchain = await loadToolchain(target);
       const context = { toolchainDir: toolchainDir(target), root: ROOT };

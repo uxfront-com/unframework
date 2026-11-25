@@ -234,13 +234,18 @@ export async function measureSize(
   return bundleSize(files.map((path) => emitted.get(path) ?? []));
 }
 
+/** A shared helper module's path (ADR-0121), which no case's bundle takes as an entry. */
+const HELPER_MODULE = /(?:^|\/)_unframework\/[^/]+$/;
+
 /** The path a module is found by, with no script extension: imports name either kind. */
 const moduleKey = (path: string) => path.replace(/\.[cm]?[jt]sx?$/, "");
 
 /**
- * What the bundle of some modules weighs: each list's first module is an entry, and every import
- * outside them is external. A relative import of nothing in the lists, but for a stylesheet,
- * rejects: the bundle would be missing what the module needs.
+ * What the bundle of some modules weighs: each list's first module is an entry, but for a shared
+ * helper module in `_unframework/` (ADR-0121), which only the modules that import it reach, as
+ * in an app: inlined where one entry imports it, and a shared chunk where several do. Every
+ * import outside the lists is external. A relative import of nothing in the lists, but for a
+ * stylesheet, rejects: the bundle would be missing what the module needs.
  */
 export async function bundleSize(
   lists: ReadonlyArray<ReadonlyArray<ToolchainFile>>,
@@ -271,7 +276,9 @@ export async function bundleSize(
     },
   };
   const bundle = await rolldown({
-    input: lists.flatMap((list) => (list[0] ? [list[0].path] : [])),
+    input: lists.flatMap((list) =>
+      list[0] && !HELPER_MODULE.test(list[0].path) ? [list[0].path] : [],
+    ),
     plugins: [memory],
     logLevel: "silent",
     tsconfig: false,

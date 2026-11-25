@@ -59,6 +59,8 @@ import {
 import type { WatcherUses } from "./helpers.ts";
 import { eventProp } from "./props.ts";
 import type { SolidProps } from "./props.ts";
+import { printHelper } from "./shared-names.ts";
+import type { SharedHelpers } from "./shared-names.ts";
 import { edited, untrackEdits } from "./untracked.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
@@ -71,6 +73,8 @@ export class SolidCode {
   readonly module: UfModule;
   /** How every reference is spelled, writes and emits included. */
   readonly rules: RewriteRules;
+  /** The shared helpers the file imports, where it shares them (ADR-0121). */
+  readonly shared: SharedHelpers | undefined;
   readonly #imports: ImportSet;
   readonly #props: SolidProps;
   readonly #composition: SolidComposition;
@@ -96,8 +100,10 @@ export class SolidCode {
     imports: ImportSet,
     props: SolidProps,
     composition: SolidComposition,
+    shared?: SharedHelpers,
   ) {
     this.component = component;
+    this.shared = shared;
     this.module = composition.module;
     this.#imports = imports;
     this.#props = props;
@@ -515,7 +521,7 @@ export class SolidCode {
     return `${this.#watchEffect}([${sources.join(", ")}], ${this.callback(effect)});`;
   }
 
-  /** The inline helpers the code printed so far calls. */
+  /** The helpers the code printed so far calls: none that the file shares. */
   helpers(): Array<string> {
     const helpers: Array<string> = [];
     if (this.#watcher || this.#watchEffect) {
@@ -535,7 +541,9 @@ export class SolidCode {
       );
     }
     if (this.#nextTick) {
-      helpers.push(nextTickHelperCode(this.#nextTick));
+      helpers.push(
+        ...printHelper(this.shared, NEXT_TICK_HELPER, this.#nextTick, nextTickHelperCode),
+      );
     }
     return helpers;
   }

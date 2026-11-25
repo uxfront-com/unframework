@@ -91,10 +91,17 @@ export type ProcessRun = Pick<CheckerRun, "code" | "signal" | "stdout" | "stderr
 
 /**
  * Runs a tool as a process in `cwd` and collects its output, as every gate runs its tools:
- * without the test runner's NODE_OPTIONS and NODE_PATH, and without colour. Rejects only when
- * the process cannot start; how it ended is the caller's to judge.
+ * without the test runner's NODE_OPTIONS and NODE_PATH, and without colour. `input` goes to its
+ * standard input, which then closes: a request whose size grows with the corpus goes there, since
+ * Linux refuses one argument over 128 KiB (`spawn E2BIG`). Rejects only when the process cannot
+ * start; how it ended is the caller's to judge.
  */
-export function execute(command: string, args: Array<string>, cwd: string): Promise<ProcessRun> {
+export function execute(
+  command: string,
+  args: Array<string>,
+  cwd: string,
+  input?: string,
+): Promise<ProcessRun> {
   return new Promise((resolvePromise, reject) => {
     // NODE_OPTIONS belongs to the test runner, not to the checker. Without NODE_PATH, the
     // checker resolves its own dependencies from where it is installed, however the tests were
@@ -103,8 +110,12 @@ export function execute(command: string, args: Array<string>, cwd: string): Prom
     const child = spawn(command, args, {
       cwd,
       env: { ...env, NO_COLOR: "1", FORCE_COLOR: "0" },
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: "pipe",
     });
+    // Without `input`, standard input ends at once. A process that exits before it reads all of
+    // its input closes the pipe: its exit, not the write's EPIPE, is what the caller judges.
+    child.stdin.on("error", () => {});
+    child.stdin.end(input);
     let stdout = "";
     let stderr = "";
     child.stdout.setEncoding("utf8").on("data", (chunk: string) => (stdout += chunk));

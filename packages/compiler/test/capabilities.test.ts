@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import { everyKind } from "../../ir/test/fixtures.ts";
 import { checkCapabilities } from "../src/capabilities.ts";
 import { compile, createFileResolver, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 describe("portability diagnostics", () => {
   it("reports Vue's single-selection list box at its `size`, on Vue alone", async () => {
@@ -38,7 +39,7 @@ describe("portability diagnostics", () => {
       /^The vue target does not support listbox: runtime-dom's `nodeOps.createElement` /,
     );
     for (const target of TARGET_NAMES) {
-      expect(result.outputs[target], target).toHaveLength(1);
+      expect(ownOutputs(result, target), target).toHaveLength(1);
     }
   });
 

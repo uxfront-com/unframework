@@ -47,7 +47,14 @@ import type {
  * its compiles takes, but the file name and the resolver, which are the project's.
  */
 export type ProjectOptions = FileResolverOptions &
-  Omit<CompileOptions, "filename" | "resolve" | "typeOracle">;
+  Omit<CompileOptions, "filename" | "resolve" | "typeOracle" | "helperRoot"> & {
+    /**
+     * The directory whose output tree holds `_unframework/`, the shared helper modules
+     * (ADR-0121), relative to the root: one for every module, or one per module, given its file.
+     * Defaults to each module's own directory, as `compile()`'s does.
+     */
+    helperRoot?: string | ((file: string) => string);
+  };
 
 /** What {@link Project.update} did. */
 export interface ProjectUpdate {
@@ -148,12 +155,13 @@ export function createProject(options: ProjectOptions): Project {
   const root = options.root.replace(/\/+$/, "");
   const { typeOracle } = options;
   // What each compile takes besides the project's own options.
-  const compileOptions: Omit<CompileOptions, "filename" | "resolve" | "typeOracle"> = {
-    ...options,
-  };
+  const { helperRoot: _helperRoot, ...rest } = options;
+  const compileOptions: Omit<CompileOptions, "filename" | "resolve" | "typeOracle"> = { ...rest };
   for (const key of ["root", "readFile", "typeOracle"]) {
     Reflect.deleteProperty(compileOptions, key);
   }
+  const helperRootOf = (file: string) =>
+    typeof options.helperRoot === "function" ? options.helperRoot(file) : options.helperRoot;
   const readPath = (path: string | undefined) =>
     path === undefined ? Promise.resolve(undefined) : options.readFile(`${root}/${path}`);
 
@@ -620,8 +628,10 @@ export function createProject(options: ProjectOptions): Project {
       update: (changes) => typeOracle.update(changes),
       dispose: () => typeOracle.dispose(),
     };
+    const helperRoot = helperRootOf(file);
     const result = await compile(source, {
       ...compileOptions,
+      ...(helperRoot === undefined ? {} : { helperRoot }),
       filename: file,
       resolve: recording,
       ...(oracle ? { typeOracle: oracle } : {}),

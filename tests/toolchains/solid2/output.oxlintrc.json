@@ -19,7 +19,8 @@
     "respectEslintDisableDirectives": false
   },
   "rules": {
-    // P7, D11: an output imports only its framework, and (from M3) the outputs beside it, and
+    // P7, D11: an output imports only its framework, and (from M3) the outputs beside it and the
+    // shared helper modules in `_unframework/` (ADR-0121), and
     // (from M4) the `virtual:` modules a styling engine's plugin registers, which it keeps as
     // written (plan §4.4, ADR-0064). A type import is erased, so a package's types are imported
     // by name, as the source imports them (ADR-0067).

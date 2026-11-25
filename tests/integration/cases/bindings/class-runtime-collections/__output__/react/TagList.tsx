@@ -1,3 +1,4 @@
+import { cx } from "./_unframework/cx";
 import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 type TagStates = { selected?: boolean; muted?: boolean };
@@ -41,22 +42,4 @@ export default function TagList({
       </button>
     </div>
   );
-}
-
-/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") {
-      if (part) names.push(part);
-    } else if (Array.isArray(part)) {
-      const joined = cx(...part);
-      if (joined) names.push(joined);
-    } else if (part && typeof part === "object") {
-      for (const [key, on] of Object.entries(part)) {
-        if (on) names.push(key);
-      }
-    }
-  }
-  return names.join(" ");
 }

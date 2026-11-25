@@ -262,7 +262,8 @@ export function planListeners(
           event: attribute.event,
           option,
           output,
-          className: plan.imports.claim(`${pascalCase(attribute.event)}${pascalCase(option)}`),
+          name: `${pascalCase(attribute.event)}${pascalCase(option)}`,
+          className: plan.helper(`${pascalCase(attribute.event)}${pascalCase(option)}`),
           eventType: DOM_EVENTS.get(attribute.event) ?? "Event",
         };
         directives.set(output, directive);

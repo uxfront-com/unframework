@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -96,10 +96,14 @@ export function emit(
  * parses them instead (ADR-0063).
  */
 export function goldens(targetName: string): Array<ToolchainFile> {
-  const pattern = new RegExp(`(?:^|/)__output__/${targetName}/[^/]+$`);
+  // A tree's shared helper modules too, in `_unframework/` (ADR-0121).
+  const pattern = new RegExp(`(?:^|/)__output__/${targetName}/(?:_unframework/)?[^/]+$`);
   return readdirSync(cases, { recursive: true })
     .map((entry) => String(entry).split("\\").join("/"))
-    .filter((entry) => pattern.test(entry) && !entry.endsWith(".css"))
+    .filter(
+      (entry) =>
+        pattern.test(entry) && !entry.endsWith(".css") && statSync(join(cases, entry)).isFile(),
+    )
     .toSorted()
     .map((entry) => {
       const path = join(cases, entry);

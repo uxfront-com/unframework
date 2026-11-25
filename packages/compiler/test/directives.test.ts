@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { compile, createFileResolver, createSyntacticOracle, TARGET_NAMES } from "../src/index.ts";
 import type { TargetName, TypeOracle } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 const TRAP = `import { defineDirective } from "@uxfront/unframework";
 
@@ -18,8 +19,14 @@ export const vFocusTrap = defineDirective<boolean>({
 });
 `;
 
-/** What each target names a directive's module, and what the module exports. */
-const MODULES: Record<TargetName, { path: string; export: string } | undefined> = {
+/**
+ * What each target names a directive's module, what the module exports, and the shared helper
+ * modules it imports (ADR-0121).
+ */
+const MODULES: Record<
+  TargetName,
+  { path: string; export: string; helpers?: Array<string> } | undefined
+> = {
   vue: {
     path: "vFocusTrap.ts",
     export: "export const vFocusTrap: ObjectDirective<HTMLElement, boolean>",
@@ -32,12 +39,18 @@ const MODULES: Record<TargetName, { path: string; export: string } | undefined> 
   solid: {
     path: "vFocusTrap.ts",
     export: "export function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void",
+    helpers: ["_unframework/queueHook.ts"],
   },
   solid2: {
     path: "vFocusTrap.ts",
     export: "export function vFocusTrap(getValue: () => boolean): (element: HTMLElement) => void",
+    helpers: ["_unframework/queueHook.ts"],
   },
-  angular: { path: "v-focus-trap.ts", export: "export class VFocusTrap {" },
+  angular: {
+    path: "v-focus-trap.ts",
+    export: "export class VFocusTrap {",
+    helpers: ["_unframework/queueHook.ts"],
+  },
   qwik: { path: "vFocusTrap.ts", export: "export const vFocusTrap = {" },
   astro: undefined,
 };
@@ -48,13 +61,24 @@ describe("a module of directives on each target", () => {
     async (target) => {
       const result = await compile(TRAP, { filename: "focusTrap.uf.ts", targets: [target] });
       expect(result.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
-      const files = result.outputs[target] ?? [];
+      // Its own files, without the helpers it calls, which it puts in `_unframework/` (ADR-0121).
+      const files = ownOutputs(result, target);
       const expected = MODULES[target];
       if (!expected) {
         expect(files).toEqual([]);
         return;
       }
+      const helpers = expected.helpers ?? [];
       expect(files.map(({ path }) => path)).toEqual([expected.path]);
+      expect(result.helpers[target] ?? []).toEqual(helpers);
+      // `compile()` appends the helper modules after the module, which imports each one.
+      expect((result.outputs[target] ?? []).map(({ path }) => path)).toEqual([
+        expected.path,
+        ...helpers,
+      ]);
+      for (const helper of helpers) {
+        expect(files[0]!.contents).toContain(`from "./${helper.replace(/\.ts$/, "")}"`);
+      }
       expect(files[0]!.contents).toContain(expected.export);
       // The constant its hook reads comes with it, as a composable's does (ADR-0070).
       expect(files[0]!.contents).toContain('const FOCUSABLE = "button";');

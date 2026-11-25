@@ -9,6 +9,7 @@ import {
 import type { SharedModule, StylesheetSource } from "@unframework.dev/analyzer";
 import {
   anchorOutput,
+  createHelperModules,
   formatOutput,
   identityMapped,
   kebabCase,
@@ -123,6 +124,42 @@ export interface CompileOptions {
    * too, so it must hold the text given here. The caller owns it, and disposes of it.
    */
   typeOracle?: TypeOracle;
+  /**
+   * The directory whose output tree holds `_unframework/`, the shared helper modules (ADR-0121),
+   * named as `filename` is: the directory of `filename` or one above it, with forward slashes, and
+   * `""` for the root. It defaults to the directory of `filename`, so one compile's outputs are a
+   * complete tree. Any other directory throws (`checkHelperRoot`).
+   */
+  helperRoot?: string;
+}
+
+/**
+ * The helper modules' directory, relative to the directory of `filename`: `""` for its own,
+ * `"../.."` for the directory two above. Throws when `helperRoot` is not the directory of
+ * `filename` or one above it, since a helper module there would sit outside the output tree.
+ */
+export function checkHelperRoot(filename: string, helperRoot: string | undefined): string {
+  const parts = (path: string) => path.split("/").filter((part) => part && part !== ".");
+  const directory = parts(directoryOf(filename));
+  if (helperRoot === undefined) {
+    return "";
+  }
+  const root = typeof helperRoot === "string" ? parts(helperRoot) : [];
+  // Named as `filename` is: both absolute, or both relative.
+  const above =
+    typeof helperRoot === "string" &&
+    helperRoot.startsWith("/") === filename.startsWith("/") &&
+    root.length <= directory.length &&
+    root.every((part, index) => part === directory[index]);
+  if (!above) {
+    throw new TypeError(
+      `The helperRoot ${JSON.stringify(helperRoot)} is invalid: the helper modules' directory is the directory of ${filename} or one above it, named as the file is (ADR-0121).`,
+    );
+  }
+  return directory
+    .slice(root.length)
+    .map(() => "..")
+    .join("/");
 }
 
 /**
@@ -154,6 +191,13 @@ export interface CompileResult {
    */
   outputs: Record<string, Array<OutputFile>>;
   /**
+   * The paths in each target's `outputs` that are shared helper modules (ADR-0121), by target
+   * name, sorted: `_unframework/<file>` in the `helperRoot` directory. Each one's text depends only
+   * on the target and the helper, so every compile that emits it writes the same file, and a
+   * caller that writes a tree writes it once. A caller must write them beside the components.
+   */
+  helpers: Record<string, Array<string>>;
+  /**
    * The component each output file is written for, by target name, then by the file's path, or
    * the composable for a `.uf.ts` source's: the unplugin loads a file's components under ids of
    * their own (ADR-0053). The scoped sheet, `<source>.css`, is no component's module, and is left
@@ -184,16 +228,19 @@ export async function compile(source: string, options: CompileOptions): Promise<
   if (options.passThrough) {
     checkPassThrough(options.passThrough);
   }
+  const helperBase = checkHelperRoot(file, options.helperRoot);
   const diagnostics: Array<Diagnostic> = [];
   const targets = options.targets.map(resolveTarget);
   const outputs: Record<string, Array<OutputFile>> = {};
   const owners: Record<string, Record<string, string>> = {};
+  const helpers: Record<string, Array<string>> = {};
   for (const target of targets) {
     if (Object.hasOwn(outputs, target.name)) {
       throw new TypeError(`Two targets are named "${target.name}".`);
     }
     outputs[target.name] = [];
     owners[target.name] = {};
+    helpers[target.name] = [];
   }
 
   // The analyser's module, frozen: every plugin's module is compared with it, whatever the
@@ -417,9 +464,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
           diagnostics,
           sheets,
           copies,
+          helperBase,
         );
         outputs[target.name] = emitted.files;
         owners[target.name] = emitted.owners;
+        helpers[target.name] = emitted.helpers;
       } catch (error) {
         diagnostics.push(internal(file, error, `The ${target.name} target failed`, target.name));
       }
@@ -431,6 +480,7 @@ export async function compile(source: string, options: CompileOptions): Promise<
     ir: module,
     diagnostics: sortDiagnostics(diagnostics),
     outputs,
+    helpers,
     owners,
     dependencies: [...dependencies].toSorted(),
   };
@@ -549,6 +599,8 @@ interface Copy {
  * may not share a path, compared without case: case-insensitive file systems would write one
  * over the other. Each shared `.ts` module's copy follows, unchanged, where a component's files
  * were written: neither the hooks nor formatting see it, and `owners` leaves it out (ADR-0070).
+ * Each helper module the target put comes last, sorted, formatted and identity-mapped, and
+ * `owners` leaves it out too (ADR-0121).
  */
 async function emitTarget(
   target: Target,
@@ -558,8 +610,11 @@ async function emitTarget(
   diagnostics: Array<Diagnostic>,
   sheets: ReadonlyMap<string, string>,
   copies: ReadonlyMap<string, Copy>,
-): Promise<{ files: Array<OutputFile>; owners: Record<string, string> }> {
+  helperBase: string,
+): Promise<{ files: Array<OutputFile>; owners: Record<string, string>; helpers: Array<string> }> {
   const file = options.filename;
+  const helperModules = createHelperModules(helperBase);
+  const helper = helperModules.helper;
   const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
   diagnostics.push(...checkCapabilities(module, target));
   const written: Array<OutputFile> = [];
@@ -572,6 +627,7 @@ async function emitTarget(
           module,
           options: options.targetOptions?.[target.name],
           report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
+          helper,
         }),
       );
       if ("problem" in emitted) {
@@ -700,6 +756,7 @@ async function emitTarget(
           module,
           options: options.targetOptions?.[target.name],
           report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
+          helper,
         }),
       );
       if ("problem" in emitted) {
@@ -760,7 +817,46 @@ async function emitTarget(
     }
     written.push(options.sourceMap ? identityMapped({ path, contents }) : { path, contents });
   }
+  // The helper modules, where an output was written: formatted like generated code, then mapped
+  // onto themselves, since no source holds their text (ADR-0121).
+  const helperPaths: Array<string> = [];
+  for (const module of written.length ? helperModules.files() : []) {
+    let output = module;
+    if (options.format !== false) {
+      const outcome = await formatOutput(module);
+      if (outcome.error) {
+        const what = `The ${target.name} target emitted the helper module ${module.path}, which does not parse`;
+        diagnostics.push(internal(file, outcome.error, what, target.name));
+      }
+      output = { path: module.path, contents: outcome.file.contents };
+    }
+    // Compared where each file lands, so `../_unframework/cx.ts` from a source inside
+    // `_unframework/` meets that source's copy `cx.ts`.
+    const place = (path: string) => joinPath(directoryOf(file), `./${path}`)?.toLowerCase();
+    const key = place(output.path);
+    const owner = [...owners.values()].find(({ path }) => place(path) === key);
+    const copy = [...copies].find(([path]) => place(path) === key);
+    if (owner || copy) {
+      const span = copy?.[1].span ?? { start: 0, end: 0 };
+      const what = copy
+        ? `The shared module ${copy[0]}`
+        : `${owner!.component}'s output, ${owner!.path},`;
+      diagnostics.push(
+        createDiagnostic("UF1104", {
+          file,
+          span,
+          message: `${what} and the ${target.name} helper module ${output.path} are one file: \`_unframework/\` at the root of each output tree holds the helper modules (ADR-0121).`,
+          help: "Rename the shared module, or the directory that holds it.",
+          target: target.name,
+        }),
+      );
+      continue;
+    }
+    written.push(options.sourceMap ? identityMapped(output) : output);
+    helperPaths.push(output.path);
+  }
   return {
+    helpers: helperPaths,
     files: written,
     owners: Object.fromEntries(
       [...owners.values()]

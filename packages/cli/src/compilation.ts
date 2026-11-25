@@ -45,6 +45,11 @@ export interface Compilation {
   config?: ResolvedConfig;
   /** Each target's files, at their paths in `outDir/<target>`. Empty unless `status` is 0. */
   trees: ReadonlyMap<string, Array<OutputFile>>;
+  /**
+   * The paths in each tree that are shared helper modules (ADR-0121), `_unframework/<file>`:
+   * no source holds their text, so each one's map names the module itself.
+   */
+  helpers: ReadonlyMap<string, ReadonlySet<string>>;
   /** The directory relative paths resolve against. */
   root: string;
   /** The config file as diagnostics name it. */
@@ -97,6 +102,7 @@ export async function compileSources(
     config?: ResolvedConfig,
     trees: ReadonlyMap<string, Array<OutputFile>> = new Map(),
     authored: Array<string> = [],
+    helpers: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
   ): Promise<Compilation> => {
     const sources = new Map<string, string>();
     for (const { file } of diagnostics) {
@@ -110,6 +116,7 @@ export async function compileSources(
       sources,
       ...(config ? { config } : {}),
       trees,
+      helpers,
       root,
       configFile: loaded.file ?? "unframework.config.ts",
       authored,
@@ -168,6 +175,8 @@ export async function compileSources(
       targets: config.targets,
       targetOptions: config.targetOptions,
       sourceMap: true,
+      // One `_unframework/` per tree, at its root, which mirrors srcDir (ADR-0121).
+      helperRoot: named(config.srcDir),
     });
     const srcDir = named(config.srcDir);
     for (const file of files) {
@@ -221,14 +230,17 @@ export async function compileSources(
   }
 
   const trees = new Map<string, Array<OutputFile>>();
+  const helpers = new Map<string, ReadonlySet<string>>();
   for (const target of config.targets) {
     const tree = assembleTree(target, compiled, diagnostics);
-    trees.set(target, tree);
+    trees.set(target, tree.files);
+    helpers.set(target, tree.helpers);
   }
   if (hasErrors(diagnostics)) {
     return finish(1, diagnostics, config);
   }
-  return finish(0, diagnostics, config, trees, await authoredFiles(files, compiled, root));
+  const authored = await authoredFiles(files, compiled, root);
+  return finish(0, diagnostics, config, trees, authored, helpers);
 }
 
 /** What a package's `source/` needs for its sources to compile in a consumer's app (ADR-0077). */
@@ -280,31 +292,51 @@ function strictly(diagnostic: Diagnostic): Diagnostic {
 }
 
 /**
- * One target's files: each module's outputs and copies under its directory in srcDir, and the
- * barrel. Two modules compile apart, so `compile()` can't see them collide: a file they would
- * overwrite, or a name the barrel would export twice, is UF1104 here.
+ * One target's files: each module's outputs and copies under its directory in srcDir, each shared
+ * helper module once (ADR-0121), and the barrel. Two modules compile apart, so `compile()` can't
+ * see them collide: a file they would overwrite, or a name the barrel would export twice, is
+ * UF1104 here. A helper module two compiles give different texts is a target's bug, UF9001.
  */
 function assembleTree(
   target: string,
   compiled: ReadonlyArray<Compiled>,
   diagnostics: Array<Diagnostic>,
-): Array<OutputFile> {
+): { files: Array<OutputFile>; helpers: Set<string> } {
   const collision = (file: string, span: Span, message: string) =>
     diagnostics.push(createDiagnostic("UF1104", { file, span, message, target }));
 
   // Keyed as UF1104 compares files: without case, and as an output imports them, with no extension.
-  const claimed = new Map<string, { output: OutputFile; module: string; copy: boolean }>();
-  const claim = (output: OutputFile, module: string, copy = false) => {
+  type Kind = "output" | "copy" | "helper";
+  const claimed = new Map<string, { output: OutputFile; module: string; kind: Kind }>();
+  const claim = (output: OutputFile, module: string, kind: Kind = "output") => {
     const key = output.path.replace(/\.tsx?$/, "").toLowerCase();
     const held = claimed.get(key);
     if (!held) {
-      claimed.set(key, { output, module, copy });
+      claimed.set(key, { output, module, kind });
+      return;
+    }
+    // A helper module every compile that uses it emits is one file, with one text (ADR-0121).
+    if (kind === "helper" && held.kind === "helper" && held.output.path === output.path) {
+      if (held.output.contents === output.contents) {
+        return;
+      }
+      diagnostics.push(
+        createDiagnostic("UF9001", {
+          file: module,
+          span: NO_SPAN,
+          message: `The ${target} target gave the helper module ${output.path} one text for ${held.module} and another for ${module}: a helper's text must depend only on the target and the helper (ADR-0121).`,
+          target,
+        }),
+      );
       return;
     }
     // Only a shared module reached from two importers is one file. Two modules with equal outputs
     // are two sources, and only one of them would reach the tree or its map.
-    if (!copy || !held.copy || held.output.path !== output.path) {
-      const message = `${module} and ${held.module} would both write ${output.path}. Rename one of them.`;
+    if (kind !== "copy" || held.kind !== "copy" || held.output.path !== output.path) {
+      const message =
+        kind === "helper" || held.kind === "helper"
+          ? `${module} and ${held.module} would both write ${output.path}, and \`_unframework/\` at the root of the ${target} tree holds the helper modules (ADR-0121). Rename the shared module, or the directory that holds it.`
+          : `${module} and ${held.module} would both write ${output.path}. Rename one of them.`;
       collision(module, NO_SPAN, message);
     }
   };
@@ -332,9 +364,16 @@ function assembleTree(
     exported.set(name, { specifier, line });
   };
 
+  const helpers = new Set<string>();
   for (const { file, directory, result, copies } of compiled) {
+    const shared = new Set(result.helpers[target] ?? []);
     for (const output of result.outputs[target] ?? []) {
       const path = posix.join(directory, output.path);
+      if (shared.has(output.path)) {
+        helpers.add(path);
+        claim({ ...output, path }, file, "helper");
+        continue;
+      }
       claim({ ...output, path }, file);
       const owner = result.owners[target]?.[output.path];
       if (owner === undefined) {
@@ -357,7 +396,7 @@ function assembleTree(
       }
     }
     for (const copy of copies) {
-      claim({ ...copy, path: posix.join(directory, copy.path) }, file, true);
+      claim({ ...copy, path: posix.join(directory, copy.path) }, file, "copy");
     }
   }
 
@@ -371,7 +410,7 @@ function assembleTree(
   claimed.set(barrel, {
     output: { path: BARREL, contents: `${lines.join("\n")}\n` },
     module: BARREL,
-    copy: false,
+    kind: "output",
   });
-  return [...claimed.values()].map(({ output }) => output);
+  return { files: [...claimed.values()].map(({ output }) => output), helpers };
 }

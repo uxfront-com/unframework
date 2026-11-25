@@ -115,9 +115,11 @@ export function describeCorpusShard(
               if (!files.length) {
                 return { before: [], after: [] };
               }
+              // A helper module maps onto itself, as a copy does (ADR-0121).
+              const own = new Set([...modules, ...(result.helpers[target] ?? [])]);
               return {
-                before: sourceMapProblems(target, files, input, modules),
-                after: sourceMapProblems(target, canaryMaps(canary.id, files), input, modules),
+                before: sourceMapProblems(target, files, input, own),
+                after: sourceMapProblems(target, canaryMaps(canary.id, files), input, own),
               };
             });
             const before = reports.flatMap((report) => report.before);

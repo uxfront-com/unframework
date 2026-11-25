@@ -13,7 +13,10 @@ import { TITLES } from "./titles.ts";
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
 const toolchainDir = join(repo, "tests/toolchains/qwik");
 const context = { toolchainDir, root: join(repo, "tests/integration") };
-const goldens = qwikGoldens("tests/integration/cases/**/__output__/qwik/*");
+const goldens = qwikGoldens(
+  // A tree's shared helper modules too, which its outputs import (ADR-0121).
+  "tests/integration/cases/**/__output__/qwik/{*,_unframework/*}",
+);
 /** The declarations a styled golden's sheet import needs, as the toolchain project passes them. */
 const SHEETS = join(toolchainDir, "sheets.d.ts");
 /** The declarations of the styling engines' modules, which the styled goldens import (ADR-0064). */

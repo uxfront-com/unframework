@@ -22,8 +22,8 @@ export function pascalCase(name: string): string {
 /**
  * The names an output file may declare without capturing or shadowing another (ADR-0035).
  * A target reserves what the source declares or reads (see {@link sourceNames}), then claims
- * each name it introduces itself: `props`, `rawProps`, an inline helper (`cx`), an import
- * (`Show`, `CSSProperties`). A taken name gets the first free `_1`, `_2`… suffix, so the output
+ * each name it introduces itself: `props`, `rawProps`, a helper (`cx`), an import (`Show`,
+ * `CSSProperties`). A taken name gets the first free `_1`, `_2`… suffix, so the output
  * stays deterministic (P8).
  */
 export class NameScope {
@@ -48,8 +48,8 @@ export class NameScope {
   }
 
   /**
-   * Claims `name` from `base` from now on, `base` or `base_1`…: an inline helper takes a base of
-   * its own in each component of a module (see {@link moduleHelperName}).
+   * Claims `name` from `base` from now on, `base` or `base_1`…: a helper printed inline takes a
+   * base of its own in each component of a module (see {@link moduleHelperName}).
    */
   rebase(name: string, base: string): void {
     this.#bases.set(name, base);
@@ -68,8 +68,9 @@ export class NameScope {
 }
 
 /**
- * How component `index` of a module names an inline helper, given the names each component of
- * the module reserves (`reserved`, in component order). A source's outputs are joined into one
+ * How component `index` of a module names a helper it prints inline, given the names each
+ * component of the module reserves (`reserved`, in component order). A helper shared in
+ * `_unframework/` takes one name in every component instead, since each imports it (ADR-0121). A source's outputs are joined into one
  * module where it is loaded (ADR-0053), where every component's helpers and hoisted `const`s are
  * declared, so the names can't depend on what another component claims first. Each component
  * claims the helper from a base of its own, `cx` for the first and `cx_<index>` for the others,

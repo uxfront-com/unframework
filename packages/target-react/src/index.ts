@@ -87,6 +87,7 @@ import { passedTags, planComponent } from "./plan.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
 import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
+import { importShared } from "./shared.ts";
 import { teleportCall, teleportHelpers } from "./teleport.ts";
 import { titleChildren } from "./title.ts";
 import { transitionCall, transitionHelpers } from "./transition.ts";
@@ -136,16 +137,16 @@ export const react: Target = defineTarget({
     list: { support: "native" },
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
-    // React's `className` takes one string: an inline `cx` joins the parts (ADR-0038).
+    // React's `className` takes one string: a `cx` helper joins the parts (ADR-0038, ADR-0121).
     "class-binding": {
       support: "emulated",
       helper: "cx",
-      note: "React's className takes one string, so an inline helper joins the static names, toggles and dynamic parts.",
+      note: "React's className takes one string, so a helper shared in the tree's _unframework/ joins the static names, toggles and dynamic parts.",
     },
     "style-binding": {
       support: "emulated",
       helper: "styleObject",
-      note: "React's style takes an object, so a style bound to a value goes through an inline helper, `styleObject`, that splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+      note: "React's style takes an object, so a style bound to a value goes through a shared helper, `styleObject`, that splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
     },
     "attribute-spread": { support: "native" },
     "raw-html": { support: "native" },
@@ -168,7 +169,7 @@ export const react: Target = defineTarget({
     "model-modifiers": {
       support: "emulated",
       helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
     },
     // The props' rest, spread on the root after its own attributes, so the consumer's win
     // (ADR-0118): its listeners run after the root's own of the same prop, and its `ref` is
@@ -193,7 +194,7 @@ export const react: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so where its root does not spread its props' rest, an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional, on a root <component is>, and on the root beside an element that spreads the rest, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass, so where its root does not spread its props' rest, a shared helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional, on a root <component is>, and on the root beside an element that spreads the rest, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -213,30 +214,30 @@ export const react: Target = defineTarget({
     "keyed-identity": { support: "native" },
     // React 19's server render cannot portal, so the element is portalled once the component
     // has mounted (ADR-0098).
-    // An inline hook per element, whose ref callback and layout effect run the hooks (ADR-0099),
+    // A hook per element, whose ref callback and layout effect run the hooks (ADR-0099),
     // with each element's own value where it reads a row or a fill's props (ADR-0108).
     directive: {
       support: "emulated",
       helper: "useDirective",
-      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose function makes each element's ref callback from its value as the row renders, joined with the element's other callbacks through an inline `mergeRefs`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "React has no directive, so an element's directive goes through a shared hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose function makes each element's ref callback from its value as the row renders, joined with the element's other callbacks through a shared `mergeRefs`. The hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // React has no transition primitive (ADR-0100).
     transition: {
       support: "emulated",
       helper: "Transition",
-      note: "A `<Transition>` is an inline component, `Transition`, around its child, whose branches each take a key: a change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, sets state only in frame and event callbacks or as its child changes, and keeps the child's own ref. The server and the hydrating client render no class (ADR-0100).",
+      note: "A `<Transition>` is a shared component, `Transition`, around its child, whose branches each take a key: a change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, sets state only in frame and event callbacks or as its child changes, and keeps the child's own ref. The server and the hydrating client render no class (ADR-0100).",
     },
     // React has no async component: the setup runs in a function of its own, which the
     // exported component starts once and the resolved one reads with `use` (ADR-0101).
     "async-setup": {
       support: "emulated",
       helper: "SetupPending",
-      note: "React has no async component, so a module-level function runs the awaits, the exported component starts it once and renders, inside a <Suspense>, the component as written, which reads what they resolved to with `use`. An inline fallback, `SetupPending`, renders nothing and shows the content once the setup settles, rather than after React's fallback throttle. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported.",
+      note: "React has no async component, so a module-level function runs the awaits, the exported component starts it once and renders, inside a <Suspense>, the component as written, which reads what they resolved to with `use`. A shared fallback, `SetupPending`, renders nothing and shows the content once the setup settles, rather than after React's fallback throttle. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported.",
     },
     teleport: {
       support: "emulated",
       helper: "teleport",
-      note: "A `<Teleport>` is `createPortal` from react-dom through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted: Fizz throws on a portal, so neither the server nor the hydrating client renders it (ADR-0098).",
+      note: "A `<Teleport>` is `createPortal` from react-dom through a shared helper, `teleport`, once `useSyncExternalStore` says the component has mounted: Fizz throws on a portal, so neither the server nor the hydrating client renders it (ADR-0098).",
     },
   },
   // A custom hook (ADR-0069).
@@ -249,7 +250,8 @@ export const react: Target = defineTarget({
     const { module } = context;
     // Every name the source declares or reads is taken before the output claims its own
     // (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).
-    const plan = planComponent(component, module);
+    // With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
+    const plan = planComponent(component, module, undefined, context.helper !== undefined);
     const { composition } = plan;
     // A listener that falls through is the child's prop (ADR-0118): where React's synthetic event
     // differs from the DOM's on the element it lands on, only a native listener the child adds
@@ -393,42 +395,50 @@ export const react: Target = defineTarget({
       ...eventsInterface(plan),
       ...compositionInterfaces(plan),
     ];
-    const helpers = [
-      ...(outer ? [fn] : []),
-      ...(names.cx ? [cxHelper(names.cx, names.cxCollections)] : []),
-      ...(names.styleObject
-        ? [
-            styleObjectHelper(
-              names.styleObject,
-              names.imports.add("react", "CSSProperties", { type: true }),
-            ),
-          ]
-        : []),
-      ...listenerHelpers(plan),
-      ...(plan.helpers.nextTick
-        ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
-        : []),
-      ...compositionHelpers(plan),
-      ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
-      ...(plan.helpers.transition
-        ? transitionHelpers(plan.helpers.transition, plan.names, !plan.helpers.teleport)
-        : []),
-      ...(plan.helpers.directive
-        ? [
-            useDirectiveHelper(plan.helpers.directive, plan.names),
-            hookQueueCode(plan.helpers.directive.queue),
-          ]
-        : []),
-      ...(plan.helpers.mergeRefs
-        ? [
-            mergeRefsHelper(plan.helpers.mergeRefs, {
-              Ref: plan.names.add("react", "Ref", { type: true }),
-              RefCallback: plan.names.add("react", "RefCallback", { type: true }),
-            }),
-          ]
-        : []),
-      ...(outer ? [setupPendingHelper(outer, plan)] : []),
-    ];
+    const helpers = context.helper
+      ? [
+          ...(outer ? [fn] : []),
+          ...inlineCompositionHelpers(plan),
+          ...shareHelpers(context.helper, `${component.name}.tsx`, plan, names),
+        ]
+      : [
+          ...(outer ? [fn] : []),
+          ...(names.cx ? [cxHelper(names.cx, names.cxCollections)] : []),
+          ...(names.styleObject
+            ? [
+                styleObjectHelper(
+                  names.styleObject,
+                  names.imports.add("react", "CSSProperties", { type: true }),
+                ),
+              ]
+            : []),
+          ...listenerHelpers(plan),
+          ...(plan.helpers.nextTick
+            ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
+            : []),
+          ...compositionHelpers(plan),
+          ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
+          ...(plan.helpers.transition
+            ? transitionHelpers(plan.helpers.transition, plan.names, !plan.helpers.teleport)
+            : []),
+          ...(plan.helpers.directive
+            ? [
+                useDirectiveHelper(plan.helpers.directive, plan.names),
+                hookQueueCode(plan.helpers.directive.queue),
+              ]
+            : []),
+          ...(plan.helpers.mergeRefs
+            ? [
+                mergeRefsHelper(plan.helpers.mergeRefs, {
+                  Ref: plan.names.add("react", "Ref", { type: true }),
+                  RefCallback: plan.names.add("react", "RefCallback", { type: true }),
+                }),
+              ]
+            : []),
+          ...(outer
+            ? [setupPendingHelper(outer.pending, plan.names.add("react", "useEffect"))]
+            : []),
+        ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
     // component's style after its script. Collected last: the types and the helpers import
@@ -902,6 +912,54 @@ function parametersOf(fn: FunctionCode): string {
       return `${rest}${name}${optional}: ${parameter.type?.code ?? (parameter.rest ? "unknown[]" : "unknown")}`;
     })
     .join(", ");
+}
+
+/**
+ * The helpers a component uses, as their shared modules (ADR-0121): each is put through `helper`
+ * and imported under the name the component claimed. Returns nothing to print in the file.
+ */
+function shareHelpers(
+  helper: NonNullable<EmitContext["helper"]>,
+  from: string,
+  plan: ReactPlan,
+  names: ReactNames,
+): Array<string> {
+  const { helpers } = plan;
+  const used = new Map<string, string>();
+  const use = (name: string, local: string | undefined) => {
+    if (local !== undefined) {
+      used.set(name, local);
+    }
+  };
+  use("cx", names.cx);
+  use("styleObject", names.styleObject);
+  use("listen", helpers.listen);
+  use("useOnce", helpers.once);
+  use("useNextTick", helpers.nextTick);
+  use("useModelText", helpers.modelText);
+  use("scopeAttributes", plan.composition.scope?.helper);
+  use("useDirective", helpers.directive?.hook);
+  use("useElementDirective", helpers.directive?.each);
+  use("mergeRefs", helpers.mergeRefs);
+  use("SetupPending", helpers.async?.pending);
+  use("teleport", helpers.teleport?.helper);
+  use("subscribeNothing", helpers.teleport?.subscribe);
+  use("Transition", helpers.transition?.component);
+  importShared(helper, from, plan.names, used);
+  return [];
+}
+
+/**
+ * The helpers composition keeps inline beside shared ones (R4, ADR-0121). `restAttributes` stays
+ * inline too, until its sharing is decided.
+ */
+function inlineCompositionHelpers(plan: ReactPlan): Array<string> {
+  const { helpers } = plan;
+  return [
+    ...(helpers.restAttributes ? [restAttributesHelper(helpers.restAttributes)] : []),
+    ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
+    ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
+  ];
 }
 
 /** The inline helpers composition needs, after the component (ADR-0055). */

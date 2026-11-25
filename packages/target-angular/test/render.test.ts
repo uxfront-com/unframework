@@ -1,8 +1,8 @@
 // The emitted component compiled by ngtsc and rendered by Angular's server platform: what the
 // ssr:angular project does, and the proof that the emitter's escaping and whitespace handling
 // give the DOM the IR describes.
-import { readFileSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -30,13 +30,34 @@ import {
 
 afterAll(removeScratch);
 
-/** Compiles Angular source with the ngtsc plugin and imports the component it exports. */
-async function load(name: string, source: string): Promise<unknown> {
+/** Node resolves a relative import by its full name, which a bundler finds without it. */
+const linked = (code: string) => code.replaceAll(/(from "\.\/(?:_unframework\/)?\w+)"/g, '$1.js"');
+
+/**
+ * Compiles Angular source with the ngtsc plugin and imports the component it exports. A golden
+ * output imports its shared helper modules from its tree's `_unframework/` (ADR-0121), which the
+ * plugin serves beside it, as the unframework plugin does.
+ */
+async function load(name: string, source: string, golden?: string): Promise<unknown> {
   const directory = scratchDir();
-  const { transform } = await ngtscPlugin();
+  const shared = golden === undefined ? undefined : join(dirname(golden), "_unframework");
+  const helpers = Object.fromEntries(
+    shared === undefined || !existsSync(shared)
+      ? []
+      : readdirSync(shared).map((file) => [
+          join(directory, "_unframework", file),
+          readFileSync(join(shared, file), "utf8"),
+        ]),
+  );
+  const { transform } = await ngtscPlugin(helpers);
+  mkdirSync(join(directory, "_unframework"), { recursive: true });
+  for (const id of Object.keys(helpers)) {
+    const compiled = await transform(id);
+    writeFileSync(id.replace(/\.ts$/, ".js"), linked(compiled.code));
+  }
   const { code } = await transform(join(directory, `${name}.uf.tsx.ts`), source);
   const file = join(directory, `${name}.js`);
-  writeFileSync(file, code);
+  writeFileSync(file, linked(code));
   return ((await import(pathToFileURL(file).href)) as { default: unknown }).default;
 }
 
@@ -60,7 +81,7 @@ async function renderEmitted(children: Array<RenderNode>): Promise<string> {
 describe("renderToString", () => {
   it("renders a golden output as the component's host element and content", async () => {
     const golden = goldenFiles().find((path) => basename(path) === "hello.ts")!;
-    const Hello = await load("Hello", readFileSync(golden, "utf8"));
+    const Hello = await load("Hello", readFileSync(golden, "utf8"), golden);
     expect(await renderToString(Hello, {})).toBe(
       '<uf-hello style="display: contents;"><p class="greeting">Hello, world!</p></uf-hello>',
     );
@@ -82,7 +103,7 @@ describe("renderToString", () => {
 
   it("renders the same HTML twice", async () => {
     const golden = goldenFiles().find((path) => basename(path) === "profile-card.ts")!;
-    const Card = await load("ProfileCard", readFileSync(golden, "utf8"));
+    const Card = await load("ProfileCard", readFileSync(golden, "utf8"), golden);
     expect(await renderToString(Card, {})).toBe(await renderToString(Card, {}));
   });
 

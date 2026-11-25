@@ -527,9 +527,27 @@ interface EventProp {
  * rewrite of setup bindings (`count.value` → `count`) and of calls of `emit` (`onchange?.(…)`),
  * and the listeners it writes as attachments (`events.ts`).
  */
-export function instanceScript(component: UfComponent, module: UfModule): InstanceScript {
-  return new ScriptWriter(component, module).write();
+export function instanceScript(
+  component: UfComponent,
+  module: UfModule,
+  share?: (name: SharedHelper) => string,
+): InstanceScript {
+  return new ScriptWriter(component, module, [], share).write();
 }
+
+/**
+ * A helper Svelte shares in the tree's `_unframework/` (ADR-0121), by the name its module
+ * exports: `enter` and `leave` are the transition set's one module (`./shared.ts`).
+ */
+export type SharedHelper =
+  | "once"
+  | "modelText"
+  | "mergeStyle"
+  | "styleText"
+  | "scopeAttributes"
+  | "teleport"
+  | "enter"
+  | "leave";
 
 /**
  * A composable's own module, `useToggle.svelte.ts` (ADR-0069): its setup lowered to runes as a
@@ -561,6 +579,11 @@ export function composableModule(composable: UfComposable, module: UfModule): st
 }
 
 class ScriptWriter {
+  /**
+   * Puts a shared helper in its module and gives the specifier the script imports it by
+   * (ADR-0121). Without it, every helper is printed inline, as before.
+   */
+  readonly #share?: (name: SharedHelper) => string;
   readonly #component: UfComponent;
   readonly #module: UfModule;
   readonly #names: Names;
@@ -627,8 +650,16 @@ class ScriptWriter {
   readonly #results = new Map<UseItem, string>();
   readonly #used = new Map<BindingId, { object: string; member: string }>();
 
-  constructor(component: UfComponent, module: UfModule, typeTexts: ReadonlyArray<TypeText> = []) {
+  constructor(
+    component: UfComponent,
+    module: UfModule,
+    typeTexts: ReadonlyArray<TypeText> = [],
+    share?: (name: SharedHelper) => string,
+  ) {
     this.#module = module;
+    if (share) {
+      this.#share = share;
+    }
     this.#names = new Names(component, module);
     // A fill's snippet is named like its slot, which would hide a binding of that name from
     // everything between the child's tags: such a binding takes a name of its own.
@@ -706,8 +737,12 @@ class ScriptWriter {
     const attached = attachedListeners(component);
     const fields = modelTextFields(component);
     const node = attached.length ? this.#names.claim("node") : undefined;
+    // A shared `modelText` imports `on` in its own module (ADR-0121).
+    const share = this.#share;
     const on =
-      attached.length || fields.length ? this.#names.import("svelte/events", "on") : undefined;
+      attached.length || (fields.length && !share)
+        ? this.#names.import("svelte/events", "on")
+        : undefined;
     const once = attached.some((each) => each.once) ? this.#names.claim("once") : undefined;
     const modelText = fields.length ? this.#names.claim("modelText") : undefined;
     const styleText = bindingForms(component).wholeStyle
@@ -725,6 +760,13 @@ class ScriptWriter {
         ? {
             ...(phases.enter ? { enter: this.#names.claim("enter") } : {}),
             ...(phases.leave ? { leave: this.#names.claim("leave") } : {}),
+          }
+        : undefined;
+    // What the phases share, which a shared transition module keeps to itself (ADR-0121).
+    const transitionInline =
+      transition && !share
+        ? {
+            ...transition,
             classes: this.#names.claim("transitionClasses"),
             runs: this.#names.claim("transitionRuns"),
             config: this.#names.import("svelte/transition", "TransitionConfig", { type: true }),
@@ -789,16 +831,37 @@ class ScriptWriter {
     // An output that exports a type declares its types, and the module's constants a type may
     // query, in `<script module>`.
     const moduleScript = Boolean(owner) || types.some((code) => code.startsWith("export "));
+    const mergeStyle = this.#fallthrough?.mergeStyle;
+    const scope = this.#scope?.helper;
+    // With `share`, each shared helper is imported from its module, under the name the component
+    // claimed for it, `once as once_1` where the source takes `once` (ADR-0121).
+    if (share) {
+      const shared: Array<[SharedHelper, string | undefined]> = [
+        ["once", once],
+        ["modelText", modelText],
+        ["mergeStyle", mergeStyle],
+        ["styleText", styleText],
+        ["scopeAttributes", scope],
+        ["teleport", teleport?.helper],
+        ["enter", transition?.enter],
+        ["leave", transition?.leave],
+      ];
+      for (const [name, local] of shared) {
+        if (local !== undefined) {
+          this.#names.importNamed(share(name), name, local);
+        }
+      }
+    }
     const helpers = [
-      ...(once ? [onceHelper(once)] : []),
+      ...(once && !share ? [onceHelper(once)] : []),
       ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
-      ...(modelText && on ? [modelTextHelper(modelText, on)] : []),
-      ...(this.#fallthrough?.mergeStyle ? [mergeStyleHelper(this.#fallthrough.mergeStyle)] : []),
-      ...(styleText ? [styleTextHelper(styleText)] : []),
-      ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
+      ...(modelText && on && !share ? [modelTextHelper(modelText, on)] : []),
+      ...(mergeStyle && !share ? [mergeStyleHelper(mergeStyle)] : []),
+      ...(styleText && !share ? [styleTextHelper(styleText)] : []),
+      ...(scope && !share ? [scopeAttributesHelper(scope)] : []),
       ...(this.#spread?.strip ? [restAttributesHelper(this.#spread.strip)] : []),
-      ...(teleport ? [teleportHelper(teleport.helper)] : []),
-      ...(transition ? transitionHelpers(transition) : []),
+      ...(teleport && !share ? [teleportHelper(teleport.helper)] : []),
+      ...(transitionInline ? transitionHelpers(transitionInline) : []),
       ...(attachments ? directives.map((directive) => attachmentCode(directive, attachments)) : []),
     ];
     // A teleport's content waits for the component to mount, so the server and the hydrating
@@ -2613,7 +2676,7 @@ function choosesInBlock(node: DynamicNode, component: UfComponent): boolean {
  * set only when the handler runs, so an event that never reached it does not use it up. Svelte's
  * own migration guide writes `once` this way, as a wrapper.
  */
-function onceHelper(name: string): string {
+export function onceHelper(name: string): string {
   return block(
     `function ${name}<E extends Event>(handler: (event: E) => unknown): (event: E) => void {`,
     [
@@ -2670,7 +2733,7 @@ function transitionPhases(component: UfComponent): { enter: boolean; leave: bool
  * waits before it ends the phase and removes a leaving element. The classes go at that end,
  * Svelte's `introend` or `outroend`, so both elements of a swap end in one frame.
  */
-function transitionHelpers(names: {
+export function transitionHelpers(names: {
   enter?: string;
   leave?: string;
   classes: string;
@@ -2762,7 +2825,7 @@ function transitionHelpers(names: {
  * Svelte removes it where it is. A delegated event still reaches it: `mount()` listens on
  * `document` too, for portals like this one.
  */
-function teleportHelper(name: string): string {
+export function teleportHelper(name: string): string {
   return `/** Moves the element into the element \`to\` selects, and removes it on teardown. */\n${block(
     `function ${name}(to: string): (element: HTMLElement) => () => void {`,
     [
@@ -2968,7 +3031,7 @@ function modelTextFields(component: UfComponent): Array<ModelAttribute> {
  * keys, each with the empty value the parent passes. It reads the names alone and passes on no
  * prop the component declares, which a bare rest spread would.
  */
-function scopeAttributesHelper(name: string): string {
+export function scopeAttributesHelper(name: string): string {
   return [
     "/** The scope attributes of the styled parents that render this component, for its root. */",
     `function ${name}(props: object): Record<string, ""> {`,
@@ -2988,7 +3051,7 @@ function scopeAttributesHelper(name: string): string {
  * consumer's text splits at each `;` outside a string, a comment, an escape or parentheses
  * (`content: "a;b"`).
  */
-function mergeStyleHelper(name: string): string {
+export function mergeStyleHelper(name: string): string {
   return [
     `function ${name}(`,
     "  own: Record<string, string | number | null | undefined>,",
@@ -3034,7 +3097,7 @@ function mergeStyleHelper(name: string): string {
  * an object literal's are, is one declaration per present value, in kebab case, as Vue's
  * `stringifyStyle` writes it.
  */
-function styleTextHelper(name: string): string {
+export function styleTextHelper(name: string): string {
   return [
     `function ${name}(`,
     "  style: object | string | null | undefined,",
@@ -3071,7 +3134,7 @@ function refObjectHelper(name: string): string {
  * when it changes, unless the field shows it already (as a number when it casts), or the user is
  * typing in it and only its trimmed text differs.
  */
-function modelTextHelper(name: string, on: string): string {
+export function modelTextHelper(name: string, on: string): string {
   return [
     `function ${name}<T>(`,
     "  get: () => T,",

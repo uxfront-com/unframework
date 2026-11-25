@@ -15,7 +15,7 @@
 //   (`model-modifiers`, emulated).
 // - A value that may be `null` or `undefined` shows as no text: `value={name() ?? ""}`.
 // - Options another component renders, which the `<select>` cannot mark, are selected by an
-//   inline `selectOptions` from the `ref`: once they are rendered, as the state changes, and as
+//   `selectOptions` helper from the `ref`: once they are rendered, as the state changes, and as
 //   options come and go. A single `<select>` calls it with marked options too: Vue's
 //   `vModelSelect` selects none (`selectedIndex` -1) where no option holds the state, also once
 //   the options change, where the browser would select the first.
@@ -28,14 +28,20 @@ import type { ElementNode, ModelAttribute, UfComponent } from "@unframework.dev/
 import { genericModelType } from "./generics.ts";
 import { unmarkedOptions } from "./render.ts";
 import type { SolidCode } from "./setup.ts";
+import { printHelper } from "./shared-names.ts";
+import type { SharedHelpers } from "./shared-names.ts";
 
 type AstExpression = Parameters<typeof js.callExpression>[0];
 type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
 type JsxAttributeItem = JsxAttribute | ReturnType<typeof js.jsxSpreadAttribute>;
 
-/** The inline helpers a file's `v-model`s call, each claimed when first used. */
+/**
+ * The helpers a file's `v-model`s call, each claimed when first used: inline, or imported from
+ * `_unframework/` where the file shares them (ADR-0121).
+ */
 export class ModelHelpers {
   readonly #imports: ImportSet;
+  readonly #shared: SharedHelpers | undefined;
   #event: string | undefined;
   #toggle: string | undefined;
   #selectedValues: string | undefined;
@@ -44,8 +50,9 @@ export class ModelHelpers {
   #selectOptions: string | undefined;
   #textCaret: string | undefined;
 
-  constructor(imports: ImportSet) {
+  constructor(imports: ImportSet, shared?: SharedHelpers) {
     this.#imports = imports;
+    this.#shared = shared;
   }
 
   /** The name of a listener's event parameter. */
@@ -93,7 +100,11 @@ export class ModelHelpers {
   helpers(): Array<string> {
     const helpers: Array<string> = [];
     if (this.#modelText) {
-      helpers.push(modelTextHelperCode(this.#modelText, this.solid("createRenderEffect")));
+      helpers.push(
+        ...printHelper(this.#shared, "modelText", this.#modelText, (name) =>
+          modelTextHelperCode(name, this.solid("createRenderEffect")),
+        ),
+      );
     }
     if (this.#toggle) {
       helpers.push(toggleHelperCode(this.#toggle));
@@ -106,10 +117,12 @@ export class ModelHelpers {
     }
     if (this.#selectOptions) {
       helpers.push(
-        selectOptionsHelperCode(this.#selectOptions, {
-          createEffect: this.solid("createEffect"),
-          onCleanup: this.solid("onCleanup"),
-        }),
+        ...printHelper(this.#shared, "selectOptions", this.#selectOptions, (name) =>
+          selectOptionsHelperCode(name, {
+            createEffect: this.solid("createEffect"),
+            onCleanup: this.solid("onCleanup"),
+          }),
+        ),
       );
     }
     return helpers;
@@ -376,15 +389,15 @@ function own(element: ElementNode, context: JsxContext): AstExpression {
 }
 
 /**
- * The inline `modelText` helper (emulated `model-modifiers`, ADR-0054): Vue's `vModelText`, as a
- * field's `ref`. The field's initial value is its `value` prop, which the server renders; the
- * helper writes what the user types, trimmed or cast as Vue's `looseToNumber` casts it, on
- * `input` or, when lazy, on `change`, and a trimmed or number field shows that text, trimmed
- * or cast, once it changes; it shows each new value of the state (no text for `null` or `undefined`), except
- * where the text already reads as it, or while the user is typing in a trimmed field what it
- * reads as trimmed.
+ * The `modelText` helper, shared in `_unframework/` (ADR-0121) or inline (emulated
+ * `model-modifiers`, ADR-0054): Vue's `vModelText`, as a field's `ref`. The field's initial value
+ * is its `value` prop, which the server renders; the helper writes what the user types, trimmed or
+ * cast as Vue's `looseToNumber` casts it, on `input` or, when lazy, on `change`, and a trimmed or
+ * number field shows that text, trimmed or cast, once it changes; it shows each new value of the
+ * state (no text for `null` or `undefined`), except where the text already reads as it, or while
+ * the user is typing in a trimmed field what it reads as trimmed.
  */
-function modelTextHelperCode(name: string, createRenderEffect: string): string {
+export function modelTextHelperCode(name: string, createRenderEffect: string): string {
   return `/** Binds a text field to a signal as Vue's \`vModelText\` does: see its modifiers. */
 function ${name}<T extends string | number | null | undefined>(
   value: () => T,
@@ -436,14 +449,14 @@ function ${name}(select: HTMLSelectElement): string[] {
 }
 
 /**
- * The inline `selectOptions` helper (emulated `model-array` and `two-way-binding` where the
- * options are another component's): each option selected where it holds the state, or where
- * the state's array holds it, and none where no option holds a single value (`selectedIndex`
- * -1), as Vue's `vModelSelect` sets them, once they are rendered, as the state changes, and as
- * options come and go or change their value. A single value is compared as a string, as Vue's
- * `looseEqual` compares an option's value with it.
+ * The `selectOptions` helper, shared in `_unframework/` (ADR-0121) or inline (emulated
+ * `model-array` and `two-way-binding` where the options are another component's): each option
+ * selected where it holds the state, or where the state's array holds it, and none where no option
+ * holds a single value (`selectedIndex` -1), as Vue's `vModelSelect` sets them, once they are
+ * rendered, as the state changes, and as options come and go or change their value. A single value
+ * is compared as a string, as Vue's `looseEqual` compares an option's value with it.
  */
-function selectOptionsHelperCode(
+export function selectOptionsHelperCode(
   name: string,
   solid: { createEffect: string; onCleanup: string },
 ): string {

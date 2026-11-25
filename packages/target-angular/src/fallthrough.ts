@@ -2,8 +2,9 @@
 // spread, and a host that carries an attribute is not unwrapped (ADR-0010), so a component that
 // takes what its consumer passes declares it as inputs, which the consumer binds on the host:
 // `class` and `style`, merged into the element that takes them, and two records, `ufAttributes`
-// (each attribute by its name) and `ufListeners` (each native listener by its event), which an
-// inline directive of the component's file, `[ufFallthrough]`, puts on that element. A root
+// (each attribute by its name) and `ufListeners` (each native listener by its event), which a
+// directive, `[ufFallthrough]`, puts on that element: shared in the tree's `_unframework/` with the
+// listeners' types (ADR-0121), or inline in the component's file where the emit shares nothing. A root
 // component passes them on to its own root component. A ref on a component that exposes nothing
 // holds its root element: the component declares it, `ufElement`, a query of its root element, or
 // of its root component's own, and the parent's ref reads it.
@@ -385,8 +386,21 @@ export function fallthroughDirectiveCode(
   if (className === undefined) {
     return type;
   }
+  return `${type}\n${fallthroughClassCode(className, listeners, core, common)}`;
+}
+
+/**
+ * The directive's class (see {@link fallthroughDirectiveCode}), whose records' listeners are of
+ * the type `listeners` names: one type, inline, or the union of both event maps' types, where the
+ * directive is shared in `_unframework/` (ADR-0121) and so takes either.
+ */
+export function fallthroughClassCode(
+  className: string,
+  listeners: string,
+  core: (name: string, type?: boolean) => string,
+  common: (name: string) => string,
+): string {
   return [
-    type,
     "/**",
     " * Puts what a consumer passes the component, and the component does not declare, on the element",
     " * that takes it (ADR-0118): the attributes, the consumer's winning over the element's own, and",
@@ -436,11 +450,20 @@ export function fallthroughDirectiveCode(
   ].join("\n");
 }
 
-/** The type of the listeners' record: a handler of each event, typed by its event. */
-function listenersTypeCode(name: string, events: FallthroughPlan["events"]): string {
+/**
+ * The type of the listeners' record: a handler of each event, typed by its event. `exported`
+ * exports it, from the module where it is shared (ADR-0121).
+ */
+export function listenersTypeCode(
+  name: string,
+  events: FallthroughPlan["events"],
+  exported = false,
+): string {
   return [
-    "/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */",
-    `type ${name} = { [K in keyof ${events}]?: (event: ${events}[K]) => void };`,
+    events === "SVGElementEventMap"
+      ? "/** A native listener of each event a consumer passes an SVG element, by name (ADR-0118). */"
+      : "/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */",
+    `${exported ? "export " : ""}type ${name} = { [K in keyof ${events}]?: (event: ${events}[K]) => void };`,
     "",
   ].join("\n");
 }

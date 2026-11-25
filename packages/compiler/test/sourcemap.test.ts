@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { compile, createProject, TARGET_NAMES } from "../src/index.ts";
 import type { CompilerPlugin, TargetName } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 const BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -116,7 +117,8 @@ describe("compile with sourceMap", () => {
       sourceMap: true,
     });
     expect(result.diagnostics.filter(({ code }) => code.startsWith("UF9"))).toEqual([]);
-    for (const [target, files] of Object.entries(result.outputs)) {
+    for (const target of Object.keys(result.outputs)) {
+      const files = ownOutputs(result, target);
       expect(files.length, target).toBeGreaterThan(0);
       for (const file of files) {
         expect(file.map, file.path).toMatchObject({
@@ -144,7 +146,10 @@ describe("compile with sourceMap", () => {
 
   it("is byte-identical across two compiles (P8)", async () => {
     const options = { filename: "Card.uf.tsx", targets: TARGET_NAMES, sourceMap: true };
-    expect(JSON.stringify((await compile(SOURCE, options)).outputs)).toBe(
+    const first = await compile(SOURCE, options);
+    // Its React output shares helpers (ADR-0121), whose modules and maps must not vary.
+    expect(first.helpers.react!.length).toBeGreaterThan(0);
+    expect(JSON.stringify(first.outputs)).toBe(
       JSON.stringify((await compile(SOURCE, options)).outputs),
     );
   });
@@ -278,7 +283,7 @@ describe("compile with sourceMap", () => {
       targets: ["react"],
       sourceMap: true,
     });
-    const lines = result.outputs.react!.map((file) =>
+    const lines = ownOutputs(result, "react").map((file) =>
       lineOf(file.contents, file.map!.mappings, "throw"),
     );
     expect(lines).toEqual([2, 6]);
@@ -386,10 +391,10 @@ describe("compile with sourceMap", () => {
 
   // Each mapped right until its line was split at its braces first, which gave the text to another.
   it.each<[string, TargetName, number, string, number]>([
-    ["control-flow/keyed-map/ContributorTable", "solid", 36, ".login", 26],
+    ["control-flow/keyed-map/ContributorTable", "solid", 37, ".login", 26],
     ["control-flow/keyed-map/ContributorTable", "astro", 36, ".login", 26],
-    ["lifecycle/teardown-order/SearchSession", "angular", 154, ".length", 53],
-    ["lifecycle/unmount-timers/AutoRefresh", "react", 52, "setInterval", 25],
+    ["lifecycle/teardown-order/SearchSession", "angular", 80, ".length", 53],
+    ["lifecycle/unmount-timers/AutoRefresh", "react", 53, "setInterval", 25],
     ["state/array-replacement/TaskList", "qwik", 32, "tasks.value, {", 19],
   ])(
     "traces %s on %s, line %i, to its authored line",
@@ -400,7 +405,7 @@ describe("compile with sourceMap", () => {
         targets: [target],
         sourceMap: true,
       });
-      const file = result.outputs[target]!.find(({ contents }) =>
+      const file = ownOutputs(result, target).find(({ contents }) =>
         contents.split("\n")[line - 1]?.includes(token),
       )!;
       const column = file.contents.split("\n")[line - 1]!.indexOf(token);

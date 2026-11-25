@@ -13,7 +13,8 @@ const context = {
   root: `${repo}tests/integration`,
 };
 const goldens: Array<ToolchainFile> = qwikGoldens(
-  "tests/integration/cases/**/__output__/qwik/*",
+  // A tree's shared helper modules too, which its outputs import (ADR-0121).
+  "tests/integration/cases/**/__output__/qwik/{*,_unframework/*}",
 ).map((path) => ({ path, contents: readFileSync(path, "utf8") }));
 const fixture = (name: string): string =>
   fileURLToPath(new URL(`fixtures/${name}`, import.meta.url));

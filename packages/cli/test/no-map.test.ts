@@ -80,6 +80,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
                 { ...WARNING, code: "UF4002", severity: "info", file },
               ],
               outputs: { react: [{ path: "S.tsx", contents: "export default 4;\n" }] },
+              helpers: { react: [] },
               owners: { react: {} },
               dependencies: [],
             } as never;
@@ -95,6 +96,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
                     ? [{ path: "E.ts", contents: "export const shared = 1;\n" }]
                     : [],
               },
+              helpers: { react: [] },
               owners: { react: {} },
               dependencies: [],
             };
@@ -110,6 +112,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
                     ? [{ path: "C.ts", contents: "export const shared = 1;\n" }]
                     : [],
               },
+              helpers: { react: [] },
               owners: { react: {} },
               dependencies: [],
             };
@@ -126,6 +129,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
                   { path: "A.tsx", ...same },
                 ],
               },
+              helpers: { react: [] },
               owners: { react: {} },
               dependencies: [],
             };
@@ -149,6 +153,7 @@ vi.mock("@unframework.dev/compiler", async (original) => {
                 },
               ],
             },
+            helpers: { react: [] },
             owners: { react: {} },
             dependencies: [],
           } as never;
@@ -243,6 +248,8 @@ describe("what a project is given", () => {
         targets: ["react"],
         targetOptions: { react: { compiler: true } },
         sourceMap: true,
+        // One `_unframework/` per tree, at its root (ADR-0121).
+        helperRoot: "src",
       }),
     ]);
     expect(disposals.count).toBe(1);

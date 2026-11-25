@@ -173,7 +173,8 @@ describe("react frameworkCompile (L3)", () => {
       errors: [
         {
           message: "Expected corresponding JSX closing tag for <p>.",
-          line: 9,
+          // After the import of its shared helper (ADR-0121).
+          line: 10,
           column: 5,
           code: "MissingClosingTagElement",
         },

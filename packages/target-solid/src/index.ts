@@ -49,6 +49,13 @@ import { solidProps } from "./props.ts";
 import { forSolid } from "./render.ts";
 import { SolidCode, solidSetup } from "./setup.ts";
 import type { SolidResource } from "./setup.ts";
+import {
+  printHelper,
+  reserveSharedNames,
+  SHARED_HELPER_NAMES,
+  SharedHelpers,
+} from "./shared-names.ts";
+import { importShared } from "./shared.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
@@ -90,7 +97,7 @@ export const solid: Target = defineTarget({
     "next-tick": {
       support: "emulated",
       helper: NEXT_TICK_HELPER,
-      note: "Solid has no nextTick: it applies writes to the DOM as it makes them, so an inline helper resolves a promise.",
+      note: "Solid has no nextTick: it applies writes to the DOM as it makes them, so a shared helper resolves a promise.",
     },
     // The props proxy reads each key live, whatever keys a parent passes.
     "late-prop": { support: "native" },
@@ -101,16 +108,16 @@ export const solid: Target = defineTarget({
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
     // Solid's `class` takes one string: static names and toggles print as `class` and
-    // `classList`, and an inline helper joins dynamic parts with them (ADR-0038).
+    // `classList`, and a shared helper, `cx`, joins dynamic parts with them (ADR-0038, ADR-0121).
     "class-binding": {
       support: "emulated",
       helper: CLASS_HELPER,
-      note: "Solid's class takes one string, so an inline helper joins dynamic parts with the static names and toggles; static names and toggles alone print as class and classList.",
+      note: "Solid's class takes one string, so a helper shared in the tree's _unframework/ joins dynamic parts with the static names and toggles; static names and toggles alone print as class and classList.",
     },
     "style-binding": {
       support: "emulated",
       helper: STYLE_HELPER,
-      note: "Solid's style takes kebab-case keys, so a style bound to a value goes through an inline helper that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+      note: "Solid's style takes kebab-case keys, so a style bound to a value goes through a shared helper, `styleProperties`, that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
     },
     "attribute-spread": { support: "native" },
     "raw-html": { support: "native" },
@@ -128,12 +135,12 @@ export const solid: Target = defineTarget({
     "model-array": {
       support: "emulated",
       helper: "toggle",
-      note: "A checkbox group's array goes through an inline helper, `toggle`, a multiple select's through `selectedValues`, and the options of a select that a component, a slot or an interpolation renders through `selectOptions`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
+      note: "A checkbox group's array goes through an inline helper, `toggle`, a multiple select's through an inline `selectedValues`, and the options of a select that a component, a slot or an interpolation renders through a shared `selectOptions`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
     },
     "model-modifiers": {
       support: "emulated",
       helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
     },
     // Solid's `splitProps` takes what a component declares out of its props, and its root
     // spreads the others after its own attributes, its own listeners calling the consumer's
@@ -156,7 +163,7 @@ export const solid: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so a root that takes what falls through takes them with it, and an inline helper picks them out of its props by name for any other root: each branch of a root conditional, a root <component is>, and the root of a component that spreads the props' rest on another element, whose rest leaves them out through a second helper, `restAttributes`, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass, so a root that takes what falls through takes them with it, and a shared helper, `scopeAttributes`, picks them out of its props by name for any other root: each branch of a root conditional, a root <component is>, and the root of a component that spreads the props' rest on another element, whose rest leaves them out through a second helper, `restAttributes`, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -180,31 +187,31 @@ export const solid: Target = defineTarget({
     // client hydrates in place and doesn't run the setup again; a rejected setup throws from the
     // resource's read.
     "async-setup": { support: "native" },
-    // `<For>` follows the items themselves, so a list goes through an inline helper whose rows
+    // `<For>` follows the items themselves, so a list goes through a shared helper whose rows
     // follow the source's key (ADR-0096).
     "keyed-identity": {
       support: "emulated",
       helper: KEYED_HELPER,
-      note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through an inline helper over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
+      note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through a shared helper, `KeyedFor`, over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
     },
     // `<Portal>` wraps its content in a `<div>` (ADR-0098).
-    // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through an inline queue
+    // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through a shared queue
     // in Vue's order: Solid runs a parent's ref before its children's (ADR-0099).
     directive: {
       support: "emulated",
       helper: QUEUE_HELPER,
-      note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through a shared queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     // Solid's transitions are a package of their own, which no output imports (P7, ADR-0100).
     transition: {
       support: "emulated",
       helper: "Transition",
-      note: "A `<Transition>` is an inline component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
+      note: "A `<Transition>` is a shared component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
     },
     teleport: {
       support: "emulated",
       helper: TELEPORT_HELPER,
-      note: "Solid's <Portal> wraps its content in a <div>, so a `<Teleport>` goes through an inline helper, `Teleport`, that inserts its one element into `to` once the component has mounted, as <Portal> does in <head> (ADR-0098).",
+      note: "Solid's <Portal> wraps its content in a <div>, so a `<Teleport>` goes through a shared helper, `Teleport`, that inserts its one element into `to` once the component has mounted, as <Portal> does in <head> (ADR-0098).",
     },
   },
   emit(component: UfComponent, context: EmitContext): Array<OutputFile> {
@@ -218,9 +225,11 @@ export const solid: Target = defineTarget({
     for (const name of moduleValueNames(context.module)) {
       names.add(name);
     }
+    // With `helper`, the helpers one text serves are shared modules (ADR-0121); without it, inline.
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-    // the class, scope, style, keyed list, teleport and directive queue helpers from bases of its own (`cx_1`), past the
-    // names any other component declares.
+    // the helpers it prints inline from bases of its own (`cx_1`), past the names any other
+    // component declares.
+    const shared = context.helper ? new SharedHelpers() : undefined;
     const index = context.module.components.findIndex((each) => each.name === component.name);
     const reserved = context.module.components.map((each) => {
       const taken = sourceNames(each, context.module);
@@ -237,13 +246,20 @@ export const solid: Target = defineTarget({
       TELEPORT_HELPER,
       QUEUE_HELPER,
       REST_HELPER,
-    ].map((helper) => {
-      const { base, others } = moduleHelperName(helper, reserved, index);
-      for (const name of others) {
-        names.add(name);
-      }
-      return [helper, base] as const;
-    });
+    ]
+      .filter((helper) => !shared || !SHARED_HELPER_NAMES.includes(helper))
+      .map((helper) => {
+        const { base, others } = moduleHelperName(helper, reserved, index);
+        for (const name of others) {
+          names.add(name);
+        }
+        return [helper, base] as const;
+      });
+    // A shared helper (ADR-0121) is imported by every component of the source under one name,
+    // the module's own unless a component declares it, so their imports are one line in the join.
+    if (shared) {
+      reserveSharedNames(names, reserved);
+    }
     const scope = new NameScope(names);
     for (const [helper, base] of bases) {
       scope.rebase(helper, base);
@@ -265,7 +281,7 @@ export const solid: Target = defineTarget({
       types: composition.parameterTypes(),
       reads: composition.reads,
     });
-    const code = new SolidCode(component, imports, props, composition);
+    const code = new SolidCode(component, imports, props, composition, shared);
     const setup = solidSetup(code, placeholders);
     const types = componentTypes(component, context.module);
     // The branch callbacks around what prints, which listeners read through too.
@@ -275,7 +291,7 @@ export const solid: Target = defineTarget({
       component,
       new BindingTypes(component, context.module.types),
     );
-    const models = new ModelHelpers(imports);
+    const models = new ModelHelpers(imports, shared);
     // What falls through (ADR-0118): the props but what the component declares and what the
     // element that takes them merges itself, `const [, others] = splitProps(props, ["title"]);`.
     const { plan } = composition;
@@ -366,9 +382,18 @@ export const solid: Target = defineTarget({
     const sheet = component.styles
       ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
       : [];
+    const printed = [
+      ...helpers(),
+      ...code.helpers(),
+      ...(queue ? printHelper(shared, QUEUE_HELPER, queue.name, hookQueueCode) : []),
+    ];
+    const path = `${component.name}.tsx`;
+    if (context.helper && shared) {
+      importShared(context.helper, path, imports, shared.used);
+    }
     return [
       {
-        path: `${component.name}.tsx`,
+        path,
         contents: printComponentModule(
           {
             types: [
@@ -377,11 +402,7 @@ export const solid: Target = defineTarget({
               ...composition.types,
             ],
             body: [...keys, ...reads.constants, ...directives, ...setup.hoisted, ...statements],
-            helpers: [
-              ...helpers(),
-              ...code.helpers(),
-              ...(queue ? [hookQueueCode(queue.name)] : []),
-            ],
+            helpers: printed,
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],
             placeholders,

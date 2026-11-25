@@ -409,11 +409,13 @@ function checkSourceMaps(
     if (!files.length) {
       return [];
     }
+    // A helper module maps onto itself, as a copy does (ADR-0121).
+    const own = new Set([...modules, ...(first.helpers[target] ?? [])]);
     return sourceMapProblems(
       target,
       canaryMaps(harness.canary, files),
       { filename: source.filename, text },
-      modules,
+      own,
     );
   });
   if (problems.length) {

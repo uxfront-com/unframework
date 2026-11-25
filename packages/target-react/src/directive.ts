@@ -1,5 +1,5 @@
 // A directive on React (ADR-0099): React has no directive, so a component that applies one calls
-// an inline hook, `useDirective`, once per use at its top level, and passes the ref callback it
+// a hook, `useDirective`, once per use at its top level, and passes the ref callback it
 // returns to the element: `const focusTrapRef = useDirective(vFocusTrap, () => open)`. One use may
 // render several elements, as a slot a child renders in a list, so the callback, one stable
 // function, records each element it receives, and its cleanup forgets that one: an element whose
@@ -8,7 +8,7 @@
 // it mounted: a new element is `mounted`, a value that changed (`Object.is`) `updated` on each
 // element, and an element gone `unmounted`, as is each one left when the component unmounts. The
 // microtask covers an element a child renders in the slot content, whose callback runs without a
-// render of this component. Each hook goes through the inline `queueHook`, which runs them in
+// render of this component. Each hook goes through the `queueHook` helper, which runs them in
 // Vue's order with every other output's. Refs and effects never run on the server. A `.uf.ts`
 // module's directive is the plain hooks object, which the hook reads. A use whose value reads a
 // list's row or a scoped fill's props has a value for each element, which one getter can't give,

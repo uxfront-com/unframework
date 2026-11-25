@@ -292,7 +292,7 @@ function composableImports(
  * object, which a merge spreads. A declaration list splits as Vue's `parseStringStyle` splits
  * it, with camel-case keys, as the consumer's object has them, which Astro writes in kebab case.
  */
-function styleObjectHelper(name: string): string {
+export function styleObjectHelper(name: string): string {
   // Raw, so the regular expressions keep their escapes.
   return String.raw`/** A style bound to a value as an object: a declaration list becomes one. */
 function ${name}(style: object | string | null | undefined): Record<string, string> {
@@ -316,7 +316,7 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
  * keys, each with the empty value the parent passes. It passes on no prop the component
  * declares, which a spread of `Astro.props` would.
  */
-function scopeAttributesHelper(name: string): string {
+export function scopeAttributesHelper(name: string): string {
   return [
     "/** The scope attributes of the styled parents that render this component, for its root. */",
     `function ${name}(props: object): Record<string, ""> {`,

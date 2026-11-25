@@ -1,4 +1,4 @@
-export { checkPassThrough, compile } from "./compile.ts";
+export { checkHelperRoot, checkPassThrough, compile } from "./compile.ts";
 export { createFileResolver, createProject } from "./project.ts";
 export type { Project, ProjectOptions, ProjectUpdate } from "./project.ts";
 // The harness and the unplugin build their file-backed oracle from it (ADR-0067).

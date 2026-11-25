@@ -23,6 +23,15 @@ const packaged = async (under?: string) => {
   return root;
 };
 
+/** A component with a root conditional and a trimmed text field. */
+const SEARCH = `import { ref } from "@uxfront/unframework";
+
+export default function Search(props: { open: boolean }) {
+  const query = ref("");
+  return <>{props.open ? <input type="search" v-model_trim={query.value} /> : <p>Closed</p>}</>;
+}
+`;
+
 describe("build --package: Svelte", () => {
   it("keeps the components, turns modules into JS, and writes declarations", async () => {
     const root = await packaged();
@@ -59,6 +68,44 @@ describe("build --package: Svelte", () => {
     // Conditions match in order: `svelte` before `types` would hide the declarations.
     expect(Object.keys(manifest.exports["./svelte"])).toEqual(["types", "svelte"]);
     expect(manifest.peerDependencies).toEqual({ svelte: "^5.29.0" });
+  });
+
+  // A root conditional takes `scopeAttributes`, and a trimmed field `modelText`, whose module is a
+  // `.svelte.ts` one, since it calls `$effect` (ADR-0121): svelte-package turns both into JS.
+  it("packages the shared helper modules the components import, which no entry exports", async () => {
+    const root = designSystem({
+      config: { targets: ["svelte"], package: { resolveFrom: TOOLCHAIN } },
+      frameworks: ["svelte"],
+      files: { "src/Search.uf.tsx": SEARCH },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(stderr).toBe("");
+    expect(code).toBe(0);
+    const files = tree(join(root, "dist", "package"));
+    expect(Object.keys(files).filter((path) => path.includes("_unframework/"))).toEqual([
+      "svelte/_unframework/modelText.svelte.d.ts",
+      "svelte/_unframework/modelText.svelte.js",
+      "svelte/_unframework/scopeAttributes.d.ts",
+      "svelte/_unframework/scopeAttributes.js",
+    ]);
+    // The component is the emitted one: svelte-package keeps a `.svelte` file as it is, so each
+    // import stays extensionless, as `./shared/format` does, and a bundler resolves it to the
+    // module's JS, beside its declarations.
+    const search = files["svelte/Search.svelte"]!;
+    expect(search).toEqual(tree(join(root, "dist", "svelte"))["Search.svelte"]);
+    const specifiers = [...search.matchAll(/from "\.\/(_unframework\/[^"]+)"/g)].map(
+      ([, path]) => path!,
+    );
+    expect(specifiers).toEqual(["_unframework/modelText.svelte", "_unframework/scopeAttributes"]);
+    for (const path of specifiers) {
+      expect(Object.keys(files), path).toContain(`svelte/${path}.js`);
+      expect(Object.keys(files), path).toContain(`svelte/${path}.d.ts`);
+    }
+    expect(files["svelte/_unframework/modelText.svelte.js"]).toContain("$effect(");
+    expect(files["svelte/_unframework/modelText.svelte.js"]).not.toContain(": string");
+    expect(JSON.stringify(JSON.parse(files["package.json"] ?? "").exports)).not.toContain(
+      "_unframework",
+    );
   });
 
   it.each(["R&D", "C++"])("gives the same package under a directory named %s", async (under) => {

@@ -3,6 +3,8 @@
 // plugin compiles it with `NgtscProgram` over an in-memory host, before Analog sees it. Analog
 // then finds no decorators left and passes the module through (the Angular+Qwik ADR). A child
 // that a module imports is a virtual module too, so it is resolved and loaded first (ADR-0053).
+// So is a shared helper module in `_unframework/` (ADR-0121): the plugin holds its text once the
+// compile that emitted it has run, a module's compile reads it, and it is compiled on its own.
 // The compile itself runs in a worker (ngtsc-worker): Vitest serves every project's transforms
 // from one main thread, and a compile there would stall all of them while it runs. The workers
 // are a small pool, so the compiles that several test files ask for at once run at once
@@ -22,6 +24,14 @@ import type { AngularCompiler } from "./tools.ts";
  * reads to check its template against the composable's types (ADR-0069).
  */
 const VIRTUAL_ID = /\.uf\.tsx?(?:\.[^/?]+)?\.ts$/;
+/**
+ * A shared helper module's id (ADR-0121), `<helper root>/_unframework/angular/ScopeAttributes.ts`,
+ * which the unframework plugin serves too, or the path an output imports it by,
+ * `<helper root>/_unframework/ScopeAttributes.ts`, whose text `getCompiled` gives as well. A helper
+ * module imports its siblings (`./looseToNumber`) beside its id. It is one of ours only while
+ * `getCompiled` gives its text: a project file at the path is the project's.
+ */
+const HELPER_ID = /\/_unframework\/(?:[^/?]+\/)?[^/?]+\.ts$/;
 /**
  * A relative import or re-export in generated code, of a child's output (`./field`, ADR-0053)
  * or of a file on disk: `import … from "./x"`, `export … from "./x"` or `import "./x"`. Its
@@ -95,6 +105,12 @@ export function ngtscVirtual(
   /** The virtual module each relative import of a virtual module resolved to, by importer. */
   const children = new Map<string, string>();
 
+  /** The shared helper module a path names, without its extension, while the plugin serves it. */
+  function helperModule(path: string): string | undefined {
+    const id = `${path}.ts`;
+    return HELPER_ID.test(id) && api!.getCompiled(id) !== undefined ? id : undefined;
+  }
+
   function compile(id: string, code: string): Promise<Compiled> {
     const sources = new Map([[id, code]]);
     const sheets = new Map<string, string>();
@@ -113,7 +129,7 @@ export function ngtscVirtual(
         const key = childKey(file, specifier);
         const child = COMPONENT_IMPORT.test(specifier)
           ? `${resolve(dirname(file), specifier)}.ts`
-          : children.get(key);
+          : (children.get(key) ?? helperModule(resolve(dirname(file), specifier)));
         if (!child) {
           continue;
         }
@@ -154,9 +170,14 @@ export function ngtscVirtual(
       api = candidate as UnframeworkApi;
     },
     transform: {
-      filter: { id: /\.uf\.tsx?(?:\.[^/?]+)?\.ts(?:\?|$)/ },
+      // A shared helper module is compiled ahead of time too, so its `@Directive` or `@Pipe`
+      // reaches the browser as a definition, never as a JIT decorator (ADR-0121).
+      filter: { id: /(?:\.uf\.tsx?(?:\.[^/?]+)?|\/_unframework\/(?:[^/?]+\/)?[^/?]+)\.ts(?:\?|$)/ },
       async handler(code, rawId) {
         const id = rawId.split("?")[0]!;
+        if (HELPER_ID.test(id) && api!.getCompiled(id) === undefined) {
+          return null;
+        }
         // ngtsc reads a child's source from the unframework plugin, which has it only once Vite
         // has loaded the child (ADR-0027's negative): resolve each relative import with Vite
         // and load the virtual modules it names before this module compiles (ADR-0053). A child

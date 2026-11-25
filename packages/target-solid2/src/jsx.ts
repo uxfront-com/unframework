@@ -58,6 +58,7 @@ import type { Frame, Narrowings, ReferencePath } from "./narrowing.ts";
 import { eventProp } from "./props.ts";
 import { escapedOnServer } from "./render.ts";
 import type { SolidCode } from "./setup.ts";
+import { printHelper } from "./shared-names.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type AstExpression = Parameters<typeof js.callExpression>[0];
@@ -79,14 +80,14 @@ export const STYLE_HELPER = "styleProperties";
  * ADR-0096).
  */
 export const KEYED_HELPER = "KeyedFor";
-/** The inline helper that mounts a `<Teleport>`'s element into `to` (ADR-0098). */
+/** The helper that mounts a `<Teleport>`'s element into `to` (ADR-0098). */
 export const TELEPORT_HELPER = "Teleport";
 
-/** The inline helper that runs a `<Transition>`'s classes (ADR-0100). */
+/** The helper that runs a `<Transition>`'s classes (ADR-0100). */
 export const TRANSITION_HELPER = "Transition";
 
 /**
- * The inline helper that writes a boolean of an enumerated attribute as its name, `"true"` or
+ * The helper that writes a boolean of an enumerated attribute as its name, `"true"` or
  * `"false"` (ADR-0102): Solid 2 writes a boolean as the attribute's presence, where Vue writes the
  * name for ARIA's attributes and for its own enumerated ones.
  */
@@ -103,7 +104,7 @@ function isEnumerated(name: string): boolean {
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
-  /** The inline helpers to print after the component, as source code. */
+  /** The helpers to print after the component, as source code: none that the file shares. */
   helpers: () => Array<string>;
 }
 
@@ -113,7 +114,7 @@ export interface SolidCompose {
   composition: SolidComposition;
   /** The props object's name: absent where the output reads no prop. */
   object: string | undefined;
-  /** The inline helpers the file's `v-model`s call. */
+  /** The helpers the file's `v-model`s call. */
   models: ModelHelpers;
   /**
    * What `omit` leaves of the props for the element that takes what falls through
@@ -502,16 +503,27 @@ export function solidJsx(
       return [...fallthrough, js.jsxSpreadAttribute(picked)];
     },
   };
+  /** A helper's code, or none where the file imports it from `_unframework/` (ADR-0121). */
+  const share = (name: string, local: string, print: (local: string) => string) =>
+    printHelper(code.shared, name, local, print);
   return {
     dialect,
     helpers: () => [
-      ...(helper ? [classHelperCode(helper, collections)] : []),
-      ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
-      ...(enumeratedHelper ? [enumeratedHelperCode(enumeratedHelper)] : []),
-      ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
-      ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
-      ...(teleportHelper ? [teleportHelperCode(teleportHelper, imports)] : []),
-      ...(transitionHelper ? [transitionHelperCode(transitionHelper, imports)] : []),
+      ...(helper ? share(CLASS_HELPER, helper, (name) => classHelperCode(name, collections)) : []),
+      ...(styleHelper ? share(STYLE_HELPER, styleHelper, (name) => styleHelperCode(name)) : []),
+      ...(enumeratedHelper
+        ? share(ENUMERATED_HELPER, enumeratedHelper, (name) => enumeratedHelperCode(name))
+        : []),
+      ...(scopeHelper ? share(SCOPE_HELPER, scopeHelper, (name) => scopeHelperCode(name)) : []),
+      ...(keyedHelper
+        ? share(KEYED_HELPER, keyedHelper, (name) => keyedHelperCode(name, imports))
+        : []),
+      ...(teleportHelper
+        ? share(TELEPORT_HELPER, teleportHelper, (name) => teleportHelperCode(name, imports))
+        : []),
+      ...(transitionHelper
+        ? share(TRANSITION_HELPER, transitionHelper, (name) => transitionHelperCode(name, imports))
+        : []),
       ...models.helpers(),
     ],
   };
@@ -853,7 +865,7 @@ function fallbackAttribute(children: ReadonlyArray<RenderNode>, context: JsxCont
 
 /**
  * A list as `<KeyedFor each={source} by={(item, index) => key}>{(item) => <li>…</li>}</KeyedFor>`,
- * an inline helper over `<For>` whose rows follow the source's `key`, as a keyed list's do on
+ * a helper over `<For>` whose rows follow the source's `key`, as a keyed list's do on
  * the other targets (`keyed-identity`, ADR-0096). `<For>` follows the items themselves, so an
  * item replaced by a copy of the same key would get a new row, and lose its focus and typed text.
  * The row is an object of getters named as the source's item, which the rewrite rules read
@@ -1220,12 +1232,12 @@ function numberLiteral(expression: Expression): AstExpression | undefined {
 }
 
 /**
- * The inline class helper (emulated `class-binding`, ADR-0038), printed after the component:
- * Vue's class semantics for the parts the output passes it, strings as they are and the names
- * of an object's truthy entries, joined with spaces. Its parameters are `unknown`, so a part of
- * any type the analyser accepts type-checks.
+ * The class helper (emulated `class-binding`, ADR-0038), shared in `_unframework/` (ADR-0121) or
+ * printed after the component: Vue's class semantics for the parts the output passes it, strings as
+ * they are and the names of an object's truthy entries, joined with spaces. Its parameters are
+ * `unknown`, so a part of any type the analyser accepts type-checks.
  */
-function classHelperCode(name: string, collections: boolean): string {
+export function classHelperCode(name: string, collections: boolean): string {
   return `/** Joins class names: strings as they are, and the names of an object's truthy entries. */
 function ${name}(...parts: unknown[]): string {
   const names: string[] = [];
@@ -1254,7 +1266,7 @@ function ${name}(...parts: unknown[]): string {
  * property or a CSS identifier is kept as a property, since Solid's server escapes an object's
  * values, not its keys.
  */
-function styleHelperCode(name: string): string {
+export function styleHelperCode(name: string): string {
   // Raw, so the regular expressions keep their escapes.
   return String.raw`/** A style bound to a value as an object of CSS properties. */
 function ${name}(style: object | string | null | undefined): Record<string, string> | undefined {
@@ -1295,7 +1307,7 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
  * the map has dropped: Solid disposes of the row first, as `<For>` reruns before the computations
  * its rows own.
  */
-function keyedHelperCode(name: string, imports: ImportSet): string {
+export function keyedHelperCode(name: string, imports: ImportSet): string {
   const For = imports.add("solid-js", "For");
   const createMemo = imports.add("solid-js", "createMemo");
   const untrack = imports.add("solid-js", "untrack");
@@ -1344,7 +1356,7 @@ function ${name}<T>(props: {
  * mount in the order they rendered, each in a flush of its own, from a queue the first of them to
  * settle runs in a microtask, as Vue appends them.
  */
-function teleportHelperCode(name: string, imports: ImportSet): string {
+export function teleportHelperCode(name: string, imports: ImportSet): string {
   const createSignal = imports.add("solid-js", "createSignal");
   const flush = imports.add("solid-js", "flush");
   const onSettled = imports.add("solid-js", "onSettled");
@@ -1379,17 +1391,18 @@ function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Elemen
 }
 
 /**
- * The inline transition helper (emulated `transition`, ADR-0100), printed after the component:
- * Solid's own transitions are a package of their own, which no output imports (P7). It resolves
- * its child, one element or none, and renders the elements it keeps: the shown one, and each one
- * leaving, which stays until its leave ends, where `insert` keeps a node it already holds. Each
- * phase adds its `-from` and `-active` classes, swaps `-from` for `-to` two frames later, as Vue
- * does, and removes them at the end: the element's own `transitionend` or `animationend`, or its
- * longest duration and delay, whichever comes first. The first element enters only with `appear`
- * on a client mount, never while it hydrates, and the server renders the child as it is, which it
- * resolves nowhere else. When its owner goes, it goes with it at once, as on Vue.
+ * The transition helper (emulated `transition`, ADR-0100), shared in `_unframework/` (ADR-0121) or
+ * printed after the component: Solid's own transitions are a package of their own, which no output
+ * imports (P7). It resolves its child, one element or none, and renders the elements it keeps: the
+ * shown one, and each one leaving, which stays until its leave ends, where `insert` keeps a node it
+ * already holds. Each phase adds its `-from` and `-active` classes, swaps `-from` for `-to` two
+ * frames later, as Vue does, and removes them at the end: the element's own `transitionend` or
+ * `animationend`, or its longest duration and delay, whichever comes first. The first element
+ * enters only with `appear` on a client mount, never while it hydrates, and the server renders the
+ * child as it is, which it resolves nowhere else. When its owner goes, it goes with it at once, as
+ * on Vue.
  */
-function transitionHelperCode(name: string, imports: ImportSet): string {
+export function transitionHelperCode(name: string, imports: ImportSet): string {
   const children = imports.add("solid-js", "children");
   const createEffect = imports.add("solid-js", "createEffect");
   const createSignal = imports.add("solid-js", "createSignal");
@@ -1483,11 +1496,11 @@ function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Eleme
 }
 
 /**
- * The inline enumerated-attribute helper (ADR-0102), printed after the component: a boolean as its
- * name, as Vue writes it, and anything else as it is, `null` and `undefined` removing the
- * attribute.
+ * The enumerated-attribute helper (ADR-0102), shared in `_unframework/` (ADR-0121) or printed after
+ * the component: a boolean as its name, as Vue writes it, and anything else as it is, `null` and
+ * `undefined` removing the attribute.
  */
-function enumeratedHelperCode(name: string): string {
+export function enumeratedHelperCode(name: string): string {
   return `/** An enumerated attribute's value: a boolean as \`"true"\` or \`"false"\`, as Vue writes it. */
 function ${name}<T>(value: T): T extends boolean ? \`\${T}\` : T {
   return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? \`\${T}\` : T;
@@ -1495,12 +1508,12 @@ function ${name}<T>(value: T): T extends boolean ? \`\${T}\` : T {
 }
 
 /**
- * The inline scope helper (emulated `child-root-scope`, ADR-0063), printed after the component:
- * the props' `data-uf-*` keys, each with the empty value the parent passes. It reads the names
- * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
- * component declares.
+ * The scope helper (emulated `child-root-scope`, ADR-0063), shared in `_unframework/` (ADR-0121) or
+ * printed after the component: the props' `data-uf-*` keys, each with the empty value the parent
+ * passes. It reads the names alone, so it never runs a prop's getter (a slot's `children`), and
+ * passes on no prop the component declares.
  */
-function scopeHelperCode(name: string): string {
+export function scopeHelperCode(name: string): string {
   return `/** The scope attributes of the styled parents that render this component, for its root. */
 function ${name}(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};

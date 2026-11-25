@@ -6,6 +6,7 @@ import type { ElementNode, UfComponent, UfComposable } from "@unframework.dev/ir
 import { emitDirective } from "./directive.ts";
 import { SVELTE_EVENT_INTERFACES } from "./events.ts";
 import { composableModule, instanceScript, lateProvides } from "./script.ts";
+import { sharedHelper } from "./shared.ts";
 
 /** Whether a tag is a component's, which Svelte reads from a capitalised tag or one with a dot. */
 const isComponentTag = (tag: string) => /^[A-Z]/.test(tag) || tag.includes(".");
@@ -43,7 +44,7 @@ export const svelte: Target = defineTarget({
     "style-binding": {
       support: "emulated",
       helper: "styleText",
-      note: "Svelte's `style` takes a declaration list, so a style bound to an object goes through an inline helper, `styleText`, that writes its declarations (ADR-0065); declarations print as `style:` directives.",
+      note: "Svelte's `style` takes a declaration list, so a style bound to an object goes through a shared helper, `styleText`, that writes its declarations (ADR-0065); declarations print as `style:` directives.",
     },
     "attribute-spread": { support: "native" },
     "raw-html": { support: "native" },
@@ -62,14 +63,14 @@ export const svelte: Target = defineTarget({
     "model-modifiers": {
       support: "emulated",
       helper: "modelText",
-      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through a shared helper, `modelText` (ADR-0054).",
     },
     // What a component does not declare is its props' rest, which its fallthrough element spreads
     // last (ADR-0118); only a style merges through a helper.
     fallthrough: {
       support: "emulated",
       helper: "mergeStyle",
-      note: "A component takes a consumer's `style` as a string, merged over its root's own declarations through an inline helper, `mergeStyle`, where a consumer's nullish value removes the root's declaration, as an object merge does (ADR-0054). The attributes and listeners it does not declare are its props' rest, natively: its props type declares its root element's attributes from `svelte/elements` but for its own names, and the root, or the element that spreads the source's `...rest`, spreads the rest last, so the consumer's attribute wins; where that element listens to an event itself, its handler calls the consumer's listener after its own code (ADR-0118).",
+      note: "A component takes a consumer's `style` as a string, merged over its root's own declarations through a shared helper, `mergeStyle`, where a consumer's nullish value removes the root's declaration, as an object merge does (ADR-0054). The attributes and listeners it does not declare are its props' rest, natively: its props type declares its root element's attributes from `svelte/elements` but for its own names, and the root, or the element that spreads the source's `...rest`, spreads the rest last, so the consumer's attribute wins; where that element listens to an event itself, its handler calls the consumer's listener after its own code (ADR-0118).",
     },
     "contextual-root": { support: "native" },
     // `bind:this` holds what a child exports, and on a child that exposes nothing its `ref` prop,
@@ -88,7 +89,7 @@ export const svelte: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: "scopeAttributes",
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them. A root that spreads the props' rest takes them with it; where the source's `...rest` is another element's, the root picks them out of it, and that element spreads the rest without them, through a second helper, `restAttributes` (ADR-0118).",
+      note: "A child cannot know the scope attributes its styled parents pass, so a shared helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them. A root that spreads the props' rest takes them with it; where the source's `...rest` is another element's, the root picks them out of it, and that element spreads the rest without them, through a second helper, `restAttributes` (ADR-0118).",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -109,7 +110,7 @@ export const svelte: Target = defineTarget({
     transition: {
       support: "emulated",
       helper: "enter",
-      note: "Svelte's transitions run their own CSS or ticks, never Vue's classes, so each element of a `<Transition>`'s conditional takes `in:enter` and `out:leave`, local, whose functions run the classes and return the transition's time as their `duration`. With `appear`, `in:` is global, so the enter runs as the element first mounts too (ADR-0100).",
+      note: "Svelte's transitions run their own CSS or ticks, never Vue's classes, so each element of a `<Transition>`'s conditional takes `in:enter` and `out:leave`, shared in the tree's `_unframework/transition.ts`, whose functions run the classes and return the transition's time as their `duration`. With `appear`, `in:` is global, so the enter runs as the element first mounts too (ADR-0100).",
     },
     // An attachment, `{@attach vFocusTrap(() => open)}` (ADR-0099).
     directive: { support: "native" },
@@ -154,7 +155,12 @@ export const svelte: Target = defineTarget({
     if (late.length) {
       return [];
     }
-    const script = instanceScript(component, context.module);
+    // With `helper`, the helpers are shared modules (ADR-0121); without it, inline as before.
+    const script = instanceScript(
+      component,
+      context.module,
+      context.helper && sharedHelper(context.helper, `${component.name}.svelte`),
+    );
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
     const { styleText, teleport, transition, fallthrough } = script;

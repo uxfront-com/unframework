@@ -1,3 +1,5 @@
+import { cx } from "./_unframework/cx";
+import { useOnce } from "./_unframework/useOnce";
 import { type ComponentPropsWithRef, type KeyboardEvent, useRef, useState } from "react";
 
 export interface QuickActionsProps {
@@ -129,30 +131,4 @@ export default function QuickActions({
       </form>
     </section>
   );
-}
-
-/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") {
-      if (part) names.push(part);
-    } else if (part && typeof part === "object") {
-      for (const [key, on] of Object.entries(part)) {
-        if (on) names.push(key);
-      }
-    }
-  }
-  return names.join(" ");
-}
-
-/** The guard of a listener that runs once per element, as `{ once: true }` makes it. */
-function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
-  const fired = useRef(new WeakSet<EventTarget>());
-  return (event) => {
-    const target = event.currentTarget;
-    if (!target || fired.current.has(target)) return false;
-    fired.current.add(target);
-    return true;
-  };
 }

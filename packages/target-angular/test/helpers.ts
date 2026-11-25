@@ -284,6 +284,8 @@ export function writeFiles(
   return Object.fromEntries(
     Object.entries(files).map(([name, contents]) => {
       const path = join(directory, name);
+      // A shared helper module sits in `_unframework/` (ADR-0121).
+      mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, contents);
       return [name, path];
     }),

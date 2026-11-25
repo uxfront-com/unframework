@@ -40,13 +40,14 @@ component, written as a React developer would write it (plan §6):
   targets, only where TypeScript reads its syntax as sometimes nullish: TS2869 and TS2871 reject
   the guard on `n + 1`, on `a ?? "x"` and on `a ?? null`, whose nullish fallback becomes `""`
   instead (`a ?? ""`). A `string` or `number` prop that is never absent needs no guard.
-- `className="a b"` for a static class; any other class goes through `cx`, an inline helper
-  printed after the component (`className={cx("badge", tone, { active })}`): the
+- `className="a b"` for a static class; any other class goes through `cx`, a helper shared in
+  the tree's `_unframework/cx.ts` (`className={cx("badge", tone, { active })}`, ADR-0121): the
   `class-binding` capability is emulated.
 - `style={{ color: "red", marginTop: gap }}`, typed `as CSSProperties` (a type import from
-  `react`) when it sets a custom property. A style bound to a value goes through `styleObject`, an
-  inline helper that splits a declaration list into an object as Vue does (`style={styleObject(look)}`),
-  and `cx` reads an array's entries where a class part may be an array or an object (ADR-0065).
+  `react`) when it sets a custom property. A style bound to a value goes through `styleObject`, a
+  shared helper that splits a declaration list into an object as Vue does (`style={styleObject(look)}`),
+  and `cx` reads an array's entries, which only a class part that may be an array or an object
+  holds (ADR-0065).
 - a spread written out key by key (`title={attrs.title}`, through `?.` when the source may be
   absent), its `class` merged into the element's `cx`.
 
@@ -72,7 +73,7 @@ ADR-0049 record the decisions):
 | `watch(source, cb, options)`                                                                                    | a `previous<Source>` ref, `const on<Source>Change = useEffectEvent(cb)` with its parameters typed from the sources, and `useEffect` over the source values that calls it when one changed (`Object.is`), returning `onCleanup`'s callbacks; where a pre watcher writes state, a post watcher waits for the write to render (its state is a dependency, and so is a count of its waits, which it raises so that React commits again where the state ends where it was) and keeps its cleanups in a ref for its next call and the unmount |
 | `watchEffect(effect)`                                                                                           | `useEffectEvent` taking the values it reads, and `useEffect` over them; a value only a function it calls reads is passed as `_name`; where a pre watcher writes state, it waits for the write to render, as a post watcher does, and calls back only with values its last call did not have                                                                                                                                                                                                                                             |
 | `onMounted(cb)`, `onUnmounted(cb)`                                                                              | `const onMount = useEffectEvent(cb); useEffect(() => { onMount(); }, [])`; `useEffect(() => () => onUnmount(), [])`, after every other effect, so every watcher's cleanup runs before it                                                                                                                                                                                                                                                                                                                                                |
-| `await nextTick()`                                                                                              | `await nextTick()`, from `const nextTick = useNextTick()` (inline helper, after the state the component's effects write, passed as `() => Object.is(resultsRef.current, results)`): its render has the priority of the code that calls it, so it resolves in the task of the click or key that wrote, once its effects ran and nothing they wrote waits to render (else it asks for a render of its own and looks again); when the component unmounts too                                                                               |
+| `await nextTick()`                                                                                              | `await nextTick()`, from `const nextTick = useNextTick()` (shared helper, after the state the component's effects write, passed as `() => Object.is(resultsRef.current, results)`): its render has the priority of the code that calls it, so it resolves in the task of the click or key that wrote, once its effects ran and nothing they wrote waits to render (else it asks for a render of its own and looks again); when the component unmounts too                                                                               |
 | `if (isDev) { … }`                                                                                              | `if (process.env.NODE_ENV !== "production") { … }`: at the top level, in the body, on every render (ADR-0117)                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `defineEmits<{ change: [value: number] }>()`                                                                    | `export interface CounterEvents { onChange?: (value: number) => void }`, the parameter typed `CounterProps & CounterEvents`, emitted events destructured                                                                                                                                                                                                                                                                                                                                                                                |
 | `emit("change", v)`                                                                                             | `onChange?.(v)` (`props.onChange?.(v)` in the object form)                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -126,23 +127,34 @@ the component opts out of it: its body starts with a comment naming the shape an
 The capabilities: `interactivity`, `event-capture`, `event-passive`, `conditional-event-control`
 and `use-id` are native;
 `event-once` (`useOnce`), `event-semantics` (`listen`) and `next-tick` (`useNextTick`) are
-emulated with inline helpers, `class-binding` with `cx` and `style-binding` with `styleObject`. Of composition's cells,
+emulated with shared helpers, `class-binding` with `cx` and `style-binding` with `styleObject`. Of composition's cells,
 `model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
-are emulated, and the others native. Of the styles' cells, `child-root-scope` is emulated
+are emulated, and the others native: `useModelText` is shared, and `toggle` and `refObject`,
+short and in few files, stay inline. Of the styles' cells, `child-root-scope` is emulated
 (`scopeAttributes`), and the others native. Of M5's cells, `composable-effect-order` is
 unsupported (UF4005, info): a composable is a custom hook, whose effects keep React's order rather
 than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
 native.
 
-`directive` is emulated (ADR-0099): an element's directive goes through an inline hook, `useDirective`, called once per use at the component's top level, in a post-order of the elements, whose ref callback records each element it receives, and its cleanup forgets that one, and whose layout effect runs `mounted`, `updated` when the value changes and `unmounted` on each element apart, queued through an inline `queueHook` that runs them in Vue's order. Its ref callback joins the element's own where it has one.
+`directive` is emulated (ADR-0099): an element's directive goes through a shared hook, `useDirective`, called once per use at the component's top level, in a post-order of the elements, whose ref callback records each element it receives, and its cleanup forgets that one, and whose layout effect runs `mounted`, `updated` when the value changes and `unmounted` on each element apart, queued through `queueHook`, the module `useDirective`'s imports, which runs them in Vue's order. Its ref callback joins the element's own where it has one.
 
-A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective` instead (ADR-0108), whose function makes the element's ref callback from its value as the row renders, `ref={withTrace(item.label)}`, where the branches around the element still narrow it. An inline `mergeRefs` joins it with the element's other callbacks, and the callback of the element's native listeners is then written in place, so they're added again at each render. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
+A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective` instead (ADR-0108), whose function makes the element's ref callback from its value as the row renders, `ref={withTrace(item.label)}`, where the branches around the element still narrow it. A shared `mergeRefs` joins it with the element's other callbacks, and the callback of the element's native listeners is then written in place, so they're added again at each render. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
 
-`transition` is emulated (ADR-0100): a `<Transition>` is an inline component, `Transition`, around its child, whose branches each take a key. A change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, keeps the child's own ref through an inline `TransitionItem`, and renders no class on the server or while the client hydrates, through `useSyncExternalStore`.
+`transition` is emulated (ADR-0100): a `<Transition>` is a shared component, `Transition`, around its child, whose branches each take a key. A change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, keeps the child's own ref through `TransitionItem`, declared in its module, and renders no class on the server or while the client hydrates, through `useSyncExternalStore`.
 
-`teleport` is emulated (ADR-0098): a `<Teleport>` is `createPortal` from react-dom, through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted, so neither the server nor the hydrating client renders it. The output imports `react-dom`, React's renderer, and a React package peers on it.
+`teleport` is emulated (ADR-0098): a `<Teleport>` is `createPortal` from react-dom, through a shared helper, `teleport`, once `useSyncExternalStore` says the component has mounted, so neither the server nor the hydrating client renders it. The output imports `react-dom`, React's renderer, and a React package peers on it.
 
-`async-setup` is emulated (ADR-0101): React has no async component, so the output holds three functions (`src/async.ts`). A module-level `async function profileSetup({ id }: ProfileProps)` runs the awaits in order and returns what the component reads, `{ user }`; it takes the props the awaits read, with their defaults, and an await nothing reads has no name. The exported `Profile` starts it once, `const [setup] = useState(() => profileSetup(props))`, and renders `<Suspense fallback={<SetupPending setup={setup} onSettled={setSettled} />}><ProfileResolved {...props} setup={setup} settled={settled} /></Suspense>`, so every prop, `className`, `style`, the slots, models, events, scope attributes and the `ref` a handle goes to, reaches `ProfileResolved`. That is the component as it is without awaits, its first statement `const { user } = use(setup);` (`use(props.setup)` in the object form); its `settled: _settled` keeps the flag out of the scope attributes' rest, and a `"use no memo"` opt-out applies to it alone. `SetupPending`, an inline component, renders nothing, and its effect sets `settled` once the setup settles: the boundary renders again at once, rather than after React's fallback throttle. Only a fallback React commits runs it, so neither the server nor the hydrating client does: the server's render waits for the setup, and a hydrating boundary keeps the server's DOM until the setup resolves there. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported (the cell's note).
+`async-setup` is emulated (ADR-0101): React has no async component, so the output holds three functions (`src/async.ts`). A module-level `async function profileSetup({ id }: ProfileProps)` runs the awaits in order and returns what the component reads, `{ user }`; it takes the props the awaits read, with their defaults, and an await nothing reads has no name. The exported `Profile` starts it once, `const [setup] = useState(() => profileSetup(props))`, and renders `<Suspense fallback={<SetupPending setup={setup} onSettled={setSettled} />}><ProfileResolved {...props} setup={setup} settled={settled} /></Suspense>`, so every prop, `className`, `style`, the slots, models, events, scope attributes and the `ref` a handle goes to, reaches `ProfileResolved`. That is the component as it is without awaits, its first statement `const { user } = use(setup);` (`use(props.setup)` in the object form); its `settled: _settled` keeps the flag out of the scope attributes' rest, and a `"use no memo"` opt-out applies to it alone. `SetupPending`, a shared component, renders nothing, and its effect sets `settled` once the setup settles: the boundary renders again at once, rather than after React's fallback throttle. Only a fallback React commits runs it, so neither the server nor the hydrating client does: the server's render waits for the setup, and a hydrating boundary keeps the server's DOM until the setup resolves there. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported (the cell's note).
+
+The shared helpers are modules of their own in the tree's `_unframework/` (ADR-0121), put
+through `EmitContext.helper` and printed by `src/shared.ts`: `cx.ts`, `styleObject.ts`,
+`listen.ts`, `useOnce.ts`, `useNextTick.ts`, `useModelText.ts`, `scopeAttributes.ts`,
+`useDirective.ts`, `useElementDirective.ts`, `queueHook.ts`, `mergeRefs.ts`, `SetupPending.ts`,
+`teleport.ts`, `subscribeNothing.ts` and `Transition.tsx`. Each imports React by its own names, so
+its text depends only on the helper, and a helper that calls another imports it as its sibling
+(`./queueHook`). A component imports each without the extension, `import { cx } from
+"./_unframework/cx"`. A context without `helper` gets every helper printed inline after the
+component, as before.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
@@ -153,8 +165,10 @@ to reject (ADR-0033).
 
 Each component is its own file, `Field.tsx`, which its parent imports as the source does
 (`import Field from "./Field"`); a component that renders itself calls its own function, and the
-components of one source each take their inline helpers under names of their own (`cx_1`), since
-a source's outputs are joined into one module where it is loaded (ADR-0053). What composition adds
+components of one source import each shared helper under one name, `cx`, or `cx as cx_1` where a
+component of the source declares `cx`, since a source's outputs are joined into one module where
+it is loaded (ADR-0053), which writes their one import once. A helper printed inline takes a name
+of its own in each component (`toggle_1`). What composition adds
 to a component's props is declared in generated interfaces beside its events', all exported
 (`src/composition.ts` plans them, `src/compose.ts` prints the template's side; ADR-0054 records
 the mapping):
@@ -207,7 +221,7 @@ props alike. A component also takes the scope attributes of its styled parents, 
 nodes spreads: its root element, component or `<component is>`, or each branch of a root
 conditional that renders one alone (`scopeRoots`, where Vue's fallthrough reaches). A root that
 spreads the rest of its props passes them with it (ADR-0118). Any other picks them out of the rest
-of its props pattern with the inline `scopeAttributes` helper (`{...scopeAttributes(attributes)}`),
+of its props pattern with the shared `scopeAttributes` helper (`{...scopeAttributes(attributes)}`),
 or out of the props object in the object form, and a component without props takes one, typed
 `object`. The helper keeps only the `data-uf-*` keys, so no prop the output leaves unread reaches
 the root.

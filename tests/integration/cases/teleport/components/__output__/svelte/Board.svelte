@@ -3,6 +3,7 @@
 <script lang="ts">
   import Card from "./Card.svelte";
   import Tip from "./Tip.svelte";
+  import { teleport } from "./_unframework/teleport";
   import { onMount } from "svelte";
   import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
@@ -32,21 +33,6 @@
   onMount(() => {
     mounted = true;
   });
-
-  /** Moves the element into the element `to` selects, and removes it on teardown. */
-  function teleport(to: string): (element: HTMLElement) => () => void {
-    return (element) => {
-      const target = document.querySelector(to);
-      if (!target) element.remove();
-      else {
-        const active = document.activeElement;
-        target.append(element);
-        // Moving a node blurs what it holds, which a component inside it may have focused.
-        if (active instanceof HTMLElement && element.contains(active)) active.focus();
-      }
-      return () => element.remove();
-    };
-  }
 </script>
 
 <section class={["board", className]} aria-label="Board" {style} bind:this={ref} {...attributes}>

@@ -4,7 +4,7 @@
 // and returns what they resolved to (`profileSetup`). The exported component starts it once,
 // holds its promise in state and renders, inside a `<Suspense>`, the component as it is without
 // awaits (`ProfileResolved`), whose first statement reads the setup with `use`. The fallback,
-// an inline `SetupPending`, renders nothing and tells the component once the setup settles, so
+// a `SetupPending` component, renders nothing and tells the component once the setup settles, so
 // React shows the content at once rather than after its fallback throttle. It mounts only where
 // the fallback commits: never on the server and never while the client hydrates, where a render
 // of the boundary with new props would make React drop the server's DOM.
@@ -12,7 +12,7 @@ import { js, typeNames } from "@unframework.dev/codegen";
 import type { JsxContext } from "@unframework.dev/codegen";
 import type { AwaitItem, BindingId, TypeParameter, UfComponent } from "@unframework.dev/ir";
 
-import type { AsyncSetupNames, ReactPlan } from "./plan.ts";
+import type { ReactPlan } from "./plan.ts";
 import type { ReactCode } from "./rules.ts";
 
 type FunctionNode = ReturnType<typeof js.functionDeclaration>;
@@ -212,14 +212,13 @@ export function outerComponent(
  * `SetupPending`: the fallback that renders nothing and calls `onSettled(true)` once the setup
  * settles, resolved or rejected, unless it has unmounted by then.
  */
-export function setupPendingHelper(names: AsyncSetupNames, plan: ReactPlan): string {
-  const useEffect = plan.names.add("react", "useEffect");
+export function setupPendingHelper(name: string, useEffect: string): string {
   return `/**
  * Renders nothing while a setup runs, and tells the component once it settles, so React shows the
  * content at once rather than after its fallback throttle. Only a fallback React commits runs it:
  * never on the server, and never while the client hydrates.
  */
-function ${names.pending}({
+function ${name}({
   setup,
   onSettled,
 }: {
