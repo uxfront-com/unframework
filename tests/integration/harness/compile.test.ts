@@ -384,11 +384,13 @@ function checkSourceMaps(
     // A source a target writes no file for has no map to check or corrupt: a `.uf.ts` module's
     // directives on Astro, which runs no hook (ADR-0099).
     if (!files.length) return [];
+    // A helper module maps onto itself, as a copy does (ADR-0121).
+    const own = new Set([...modules, ...(first.helpers[target] ?? [])]);
     return sourceMapProblems(
       target,
       canaryMaps(harness.canary, files),
       { filename: source.filename, text },
-      modules,
+      own,
     );
   });
   if (problems.length) throw new Error(problems.join("\n"));

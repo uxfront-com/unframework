@@ -1,6 +1,7 @@
+import { clearedRef } from "./_unframework/clearedRef";
 import { loadUser } from "./api";
 import type { ComponentProps, JSX } from "@solidjs/web";
-import { Loading, Show, createMemo, omit, onCleanup, onSettled, untrack } from "solid-js";
+import { Loading, Show, createMemo, omit, onSettled, untrack } from "solid-js";
 
 export interface NoteEvents {
   onReady?: (name: string) => void;
@@ -58,10 +59,4 @@ export default function Note(
       </Show>
     </Loading>
   );
-}
-
-/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
-function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
-  onCleanup(clear);
-  return callback;
 }

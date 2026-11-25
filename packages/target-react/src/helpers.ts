@@ -1,5 +1,7 @@
-// The inline helpers of React's emulated capabilities (P7, ADR-0033): each is printed after the
-// component that needs it, under a name the output file claims, and named in its capability cell.
+// The helpers of React's emulated capabilities (P7, ADR-0033), each named in its capability cell.
+// Each printer takes the names it calls, so `./shared.ts` prints a helper's module with React's
+// own names (ADR-0121), and a context without `helper` gets it after the component, under names
+// the output file claims.
 
 /**
  * `event-semantics`: a native listener, where React's synthetic event would not keep the DOM's

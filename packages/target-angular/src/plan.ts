@@ -180,6 +180,15 @@ export interface Plan {
    * by binding: the local name of the child, whose `ufElement` the ref reads.
    */
   elementRefs: ReadonlyMap<BindingId, string>;
+  /**
+   * Claims the local name of a helper the file declares, or imports from `_unframework/` where
+   * the helpers are shared (ADR-0121): then a source's components are joined into one module
+   * where it is loaded (ADR-0053), so each imports the helper under one name, its own unless a
+   * component of the source declares it or imports a child by it, and the join writes one import.
+   */
+  helper(base: string): string;
+  /** The shared helpers the file imports, by export name, where the helpers are shared. */
+  shared?: Map<string, string>;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
@@ -234,7 +243,7 @@ export const ANGULAR_IMPORTS: readonly string[] = [
  * component is the source's, with each setup binding an event shares its name with renamed
  * (`withOutputNames`) and each narrowed member path of the setup asserted (./narrowing.ts).
  */
-export function planComponent(declared: UfComponent, module: UfModule): Plan {
+export function planComponent(declared: UfComponent, module: UfModule, shares = false): Plan {
   const component = assertedSetup(withOutputNames(declared, module));
   const source = sourceNames(component, module);
   // The class takes the component's name, unless an import has it (`Component`): see ./index.ts.
@@ -327,6 +336,24 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     ...ANGULAR_IMPORTS,
     "Object",
   ]);
+  const shared = shares ? new Map<string, string>() : undefined;
+  let declaredInSource: string[] | undefined;
+  const helper = (base: string): string => {
+    if (!shared) return imports.claim(base);
+    const known = shared.get(base);
+    if (known !== undefined) return known;
+    // Every name of the helper's that a component of the source declares, or a child it imports
+    // binds, is left, so that each component claims the same name.
+    declaredInSource ??= [
+      ...module.components.flatMap((each) => [...sourceNames(each, module)]),
+      ...(module.imports ?? []).flatMap((entry) => entry.names.map(({ local }) => local)),
+    ];
+    const own = new RegExp(`^${base}(?:_\\d+)*$`);
+    imports.reserve(...declaredInSource.filter((name) => own.test(name)));
+    const local = imports.claim(base);
+    shared.set(base, local);
+    return local;
+  };
   return {
     component,
     module,
@@ -352,6 +379,8 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     late,
     elementRefs,
     ...(resolved === undefined ? {} : { resolved }),
+    helper,
+    ...(shared === undefined ? {} : { shared }),
   };
 }
 

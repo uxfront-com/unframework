@@ -150,7 +150,7 @@ per component (ADR-0034, ADR-0046):
   its frontmatter, `import "./Card.uf.tsx.css";`, after its children's imports, and every element
   of its markup carries `data-uf-<id>=""`. Its root spreads the `data-uf-*` props of the styled
   parents that render it: with the rest of its props where its root takes what falls through
-  (`{...attrs}`), and otherwise picked out of `Astro.props` by an inline helper,
+  (`{...attrs}`), and otherwise picked out of `Astro.props` by a shared helper,
   `{...scopeAttributes(Astro.props)}` (`child-root-scope`, emulated), on each node Vue's
   fallthrough reaches. Content filled into a child whose sheet uses `:slotted()`, a scoped
   fill's render prop included, carries the child's `-s`.
@@ -188,6 +188,12 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 `reactive-context` are unsupported (UF4001, warnings: `inject` gives its fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
 `scoped-slot` (a render prop named as the slot), `child-root-scope` (`scopeAttributes`) and
 `style-binding` (`styleObject`, for a style bound to a value that a merge spreads, ADR-0065).
+
+`scopeAttributes` and `styleObject` are modules of their own in the tree's `_unframework/`
+(ADR-0121), put through `EmitContext.helper` and printed by `src/shared.ts`, which the
+frontmatter imports without `.ts`, `import { scopeAttributes } from
+"./_unframework/scopeAttributes"`. `uniqueId` reads `Astro.locals`, and `withoutScope` is the
+fallthrough's, so both stay inline, and so does every helper of a context without `helper`.
 
 `directive` is unsupported (UF4001, info, ADR-0099): a static page runs no hook, so the element renders without its directive, and a `.uf.ts` module's directive has no file.
 

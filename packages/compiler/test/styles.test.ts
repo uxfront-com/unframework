@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { compile, createFileResolver } from "../src/index.ts";
 import type { CompilerPlugin } from "../src/index.ts";
+import { ownOutputs } from "./outputs.ts";
 
 const CARD = `import "./Card.css";
 
@@ -100,7 +101,7 @@ describe("compile() with stylesheets", () => {
     expect(result.diagnostics).toEqual([]);
     for (const target of ["vue", "react"]) {
       // Formatting keeps the sheet as the scoper printed it: no newline is added.
-      expect(result.outputs[target]?.at(-1)).toEqual({
+      expect(ownOutputs(result, target).at(-1)).toEqual({
         path: "Card.uf.tsx.css",
         contents: `.card[data-uf-${id}] { color: red }`,
       });

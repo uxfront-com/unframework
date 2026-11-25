@@ -356,19 +356,18 @@ describe("moduleCopyProblems (L2, ADR-0070)", () => {
 describe("sourceMapProblems (L14)", () => {
   const card = `export default function Card({ label }: { label: string }) {
   const shout = () => label.toUpperCase();
-  return <button onClick={shout}>{label}</button>;
+  return <button class="card" onClick={shout}>{label}</button>;
 }
 `;
   const source = { filename: "fixture/card/Card.uf.tsx", text: card };
   const none = new Set<string>();
-  const mapped = async (target: TargetName = "react"): Promise<OutputFile[]> => {
-    const result = await compile(card, {
-      filename: source.filename,
-      targets: [target],
-      sourceMap: true,
-    });
-    return result.outputs[target]!;
-  };
+  const compiled = (target: TargetName = "react") =>
+    compile(card, { filename: source.filename, targets: [target], sourceMap: true });
+  const mapped = async (target: TargetName = "react"): Promise<OutputFile[]> =>
+    (await compiled(target)).outputs[target]!;
+  /** The shared helper modules of a compile, which map onto themselves (ADR-0121). */
+  const helpers = async (target: TargetName = "react") =>
+    new Set((await compiled(target)).helpers[target]);
   /** The map of the one file, changed. */
   const withMap = (file: OutputFile, map: Partial<SourceMapV3>): OutputFile => ({
     ...file,
@@ -377,8 +376,21 @@ describe("sourceMapProblems (L14)", () => {
 
   it("passes every target's maps of a real compile", async () => {
     for (const target of TARGET_NAMES) {
-      expect(sourceMapProblems(target, await mapped(target), source, none), target).toEqual([]);
+      expect(
+        sourceMapProblems(target, await mapped(target), source, await helpers(target)),
+        target,
+      ).toEqual([]);
     }
+  });
+
+  it("maps a helper module onto itself, and fails one taken for the component's", async () => {
+    const files = await mapped();
+    const helper = files.find((file) => file.path.startsWith("_unframework/"))!;
+    expect(helper.path).toBe("_unframework/cx.ts");
+    expect(sourceMapProblems("react", [helper], source, await helpers())).toEqual([]);
+    expect(sourceMapProblems("react", [helper], source, none)).toEqual([
+      'react/_unframework/cx.ts\'s map names ["cx.ts"], not its source Card.uf.tsx.',
+    ]);
   });
 
   it("fails an output with no map", async () => {
@@ -419,7 +431,7 @@ describe("sourceMapProblems (L14)", () => {
     const files = await mapped();
     const shifted = canaryMaps("L14-map-shifted", files);
     expect(shifted).not.toEqual(files);
-    expect(sourceMapProblems("react", shifted, source, none)).toEqual([
+    expect(sourceMapProblems("react", shifted, source, await helpers())).toEqual([
       expect.stringMatching(
         /^react\/\S+'s map has 1 wrong segment\(s\), the first at \d+:\d+ reads "/,
       ),

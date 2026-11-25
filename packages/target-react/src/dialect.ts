@@ -1,5 +1,5 @@
 // How React writes what the JSX printer's defaults write differently: React's prop names,
-// number-typed props as numbers, `className` through an inline `cx`, style objects typed for
+// number-typed props as numbers, `className` through the `cx` helper, style objects typed for
 // custom properties, and spreads written out key by key (ADR-0037 to ADR-0039). Every boolean
 // attribute the IR can hold is one of React's boolean props (test/attributes.test.ts), so the
 // defaults write it bare and bind it as it is.
@@ -283,7 +283,7 @@ function classParts(attribute: ClassAttribute, context: JsxContext): Expression[
 }
 
 /**
- * `className={cx(…)}`: React's `className` takes one string, so the inline `cx` helper joins
+ * `className={cx(…)}`: React's `className` takes one string, so the `cx` helper joins
  * the static names, the dynamic parts, the toggles' objects and the spreads' classes (the
  * `class-binding` capability, emulated: ADR-0038).
  */

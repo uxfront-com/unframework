@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 
 import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
 import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
-import type { CompileResult, TargetName } from "@unframework.dev/compiler";
+import type { CompileResult, OutputFile, TargetName } from "@unframework.dev/compiler";
 import type { ElementNode, RenderNode, UfModule } from "@unframework.dev/ir";
 import type { ProjectKind } from "@unframework.dev/testing/node";
 import { describe, expect, it } from "vitest";
@@ -628,9 +628,21 @@ describe("canaries", () => {
 
   it("L2-unformatted output is not a fixed point of the formatter, on every target", async () => {
     const result = await compileWith("L2-unformatted");
+    // Without the format step, Angular's shared fallthrough modules print as the target writes
+    // them, whose import and type lines run past the formatter's width (ADR-0121).
+    const helpers: Partial<Record<TargetName, string[]>> = {
+      angular: ["Fallthrough.ts", "Listeners.ts"],
+    };
     for (const target of TARGET_NAMES) {
       expect(await formattingProblems(target, result.outputs[target]!), target).toEqual([
         expect.stringMatching(/ is not formatted idempotently:/),
+        ...(helpers[target] ?? []).map((file) =>
+          expect.stringMatching(
+            new RegExp(
+              `^${target}/_unframework/${file.replace(".", "\\.")} is not formatted idempotently:`,
+            ),
+          ),
+        ),
       ]);
     }
   });
@@ -930,11 +942,9 @@ describe("canaries", () => {
     // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
     expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
-    // The scope and fallthrough directives' inputs too, which no consumer binds (ADR-0063,
-    // ADR-0118), and the fallthrough inputs a parent binds on the host.
+    // The fallthrough inputs a parent binds on the host too (ADR-0118). The scope and fallthrough
+    // directives are shared helper modules, apart from the component's file (ADR-0121).
     expect(lines("angular")).toEqual([
-      "  readonly ufScope = input.required<any>();",
-      "  readonly ufFallthrough = input.required<any>();",
       '  readonly title = input<any>("Tasks (today)", {',
       "  readonly tasks = input.required<any>();",
       "  readonly done = input.required<any>();",
@@ -1007,8 +1017,6 @@ describe("canaries", () => {
     expect(await lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
-      "  readonly ufScope = input.required<any>();",
-      "  readonly ufFallthrough = input.required<any>();",
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",
       "  readonly class = input<any>();",
@@ -1180,10 +1188,13 @@ describe("canaries", () => {
     const [before] = clean.outputs.react!;
     const [after] = corrupted.outputs.react!;
     expect(after!.contents.length).toBeGreaterThan(before!.contents.length * 1.9);
-    const size = (contents: string, path: string) => bundleSize([[{ path, contents }]]);
+    // Every file of the compile, its shared helper modules included (ADR-0121), as L15 bundles
+    // a case's tree.
+    const size = (files: readonly OutputFile[]) =>
+      bundleSize(files.map((file) => [{ path: `/case/${file.path}`, contents: file.contents }]));
     const [grown, base] = await Promise.all([
-      size(after!.contents, "/case/a.tsx"),
-      size(before!.contents, "/case/a.tsx"),
+      size(corrupted.outputs.react!),
+      size(clean.outputs.react!),
     ]);
     expect(grown.raw).toBeGreaterThan(base.raw * 1.05);
     expect(grown.gzip).toBeGreaterThan(base.gzip * 1.05);

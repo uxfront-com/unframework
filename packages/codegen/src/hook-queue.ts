@@ -5,15 +5,16 @@
 // `mounted`, `unmounted` and `mounted` are, keeps its place among the rest, and one element's
 // hooks keep the order they were queued in. A
 // target whose own order differs (Solid's refs run parent first, Angular mixes the two, React's
-// and Qwik's helpers run from effects) queues each hook in an inline helper, which sorts what one
-// turn queued and runs it in a microtask. Each output declares the helper, since no output imports
-// another's (P7), but they share one queue, kept on `globalThis` under a registered symbol whose
-// name carries the queue's version, so hooks from different outputs, a directive module's and a
-// component's, sort together. A detached subtree keeps its shape, so an element removed with its
+// and Qwik's helpers run from effects) queues each hook in a helper, which sorts what one turn
+// queued and runs it in a microtask. A target may share the helper in its tree's `_unframework/`
+// or print it inline (ADR-0121). Either way, separately compiled outputs still sort their hooks
+// together, a directive module from one package and a component from another, so every copy of
+// the helper shares one queue, kept on `globalThis` under a registered symbol whose name carries
+// the queue's version. A detached subtree keeps its shape, so an element removed with its
 // descendants still sorts after them. A hook that throws is reported, and the rest of its turn
 // still runs.
 
-/** The inline helper that queues a directive's hook, `queueHook(element, () => …, "mounted")`. */
+/** The helper that queues a directive's hook, `queueHook(element, () => …, "mounted")`. */
 export function hookQueueCode(name: string): string {
   return [
     "/**",

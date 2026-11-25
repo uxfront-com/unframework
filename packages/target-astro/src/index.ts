@@ -14,6 +14,7 @@ import { planFallthrough, scopeRootsOf } from "./fallthrough.ts";
 import { childTags, frontmatterOf } from "./frontmatter.ts";
 import { printComponentMarkup } from "./markup.ts";
 import { UNIQUE_ID } from "./setup.ts";
+import { sharedHelper } from "./shared.ts";
 import { spellingOf } from "./spelling.ts";
 import { withoutTeleports } from "./teleport.ts";
 
@@ -68,7 +69,7 @@ export const astro: Target = defineTarget({
     "style-binding": {
       support: "emulated",
       helper: "styleObject",
-      note: "A style bound to a value is Astro's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+      note: "A style bound to a value is Astro's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, a shared helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
     "raw-html": { support: "native" },
@@ -119,7 +120,7 @@ export const astro: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: "scopeAttributes",
-      note: "A child cannot know the scope attributes its styled parents pass. A root that takes the fallthrough spreads them with the rest of its props; elsewhere an inline helper picks them out of its props by name and spreads them on each branch of a root conditional, on a root <component is>, and on the root of a component whose props' rest sits on another element, as Vue's fallthrough reaches them.",
+      note: "A child cannot know the scope attributes its styled parents pass. A root that takes the fallthrough spreads them with the rest of its props; elsewhere a shared helper picks them out of its props by name and spreads them on each branch of a root conditional, on a root <component is>, and on the root of a component whose props' rest sits on another element, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
@@ -190,13 +191,22 @@ export const astro: Target = defineTarget({
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
     // component's style after its script.
     const file = module.file;
+    // With `helper`, the helpers are shared modules the frontmatter imports (ADR-0121), under the
+    // names the component claimed; without it, the frontmatter prints them inline, as before.
+    const share = context.helper && sharedHelper(context.helper, `${component.name}.astro`);
+    if (share) {
+      if (scope)
+        imports.add(share("scopeAttributes"), "scopeAttributes", { local: scope, exact: true });
+      if (styleObject)
+        imports.add(share("styleObject"), "styleObject", { local: styleObject, exact: true });
+    }
     const code = frontmatterOf(component, module, {
       spelling,
       imports,
       render,
       markupNamesAstro: /\bAstro\./.test(markup),
-      ...(scope ? { scope } : {}),
-      ...(styleObject ? { styleObject } : {}),
+      ...(scope && !share ? { scope } : {}),
+      ...(styleObject && !share ? { styleObject } : {}),
       ...(component.styles ? { sheet: `./${file.slice(file.lastIndexOf("/") + 1)}.css` } : {}),
     });
     return [

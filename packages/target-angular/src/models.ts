@@ -27,8 +27,19 @@ import { templateRules } from "./rules.ts";
 /** A helper the template calls, declared in the file and read through a member of its name. */
 export interface ModelHelper {
   name: string;
+  /** Its declaration, or nothing for a shared one, which the file imports. */
   code: string;
+  /** The export name of its module in `_unframework/`, where it is shared (ADR-0121). */
+  shared?: string;
 }
+
+/** The model helpers shared in `_unframework/` (ADR-0121); the others stay inline (R4). */
+const SHARED_MODEL_HELPERS: ReadonlySet<string> = new Set([
+  "styleObject",
+  "modelText",
+  "writeModelText",
+  "looseToNumber",
+]);
 
 /** The helpers' code, by their base names. */
 const HELPERS = {
@@ -67,7 +78,7 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
   }
   return properties;
 }`,
-  modelText: (name: string) => `/**
+  modelText: (name: string, loose = "looseToNumber") => `/**
  * Vue's \`vModelText\` (ADR-0054): the text a field shows for its model's value. It keeps the
  * field's own text where that text already means the value (\`12.5kg\` for \`12.5\` with a number
  * cast), or where the person is editing a trimmed field whose trimmed text is the value.
@@ -78,7 +89,7 @@ function ${name}(
   modifiers: { trim?: boolean; number?: boolean },
 ): string {
   const text = field.value;
-  const current = modifiers.number && !/^0\\d/.test(text) ? looseToNumber(text) : text;
+  const current = modifiers.number && !/^0\\d/.test(text) ? ${loose}(text) : text;
   const next = value ?? "";
   if (current === next) return text;
   const editing = field.ownerDocument.activeElement === field && field.type !== "range";
@@ -87,6 +98,7 @@ function ${name}(
 }`,
   writeModelText: (
     name: string,
+    loose = "looseToNumber",
   ) => `/** What a field's text writes to its model, as Vue's \`vModelText\` reads it (ADR-0054). */
 function ${name}<T>(
   model: WritableSignal<T>,
@@ -94,7 +106,7 @@ function ${name}<T>(
   modifiers: { trim?: boolean; number?: boolean },
 ): void {
   const text = modifiers.trim ? field.value.trim() : field.value;
-  model.set((modifiers.number ? looseToNumber(text) : text) as T);
+  model.set((modifiers.number ? ${loose}(text) : text) as T);
 }`,
   looseToNumber: (
     name: string,
@@ -127,6 +139,17 @@ function ${name}(select: HTMLSelectElement): string[] {
   return Array.from(select.selectedOptions, (option) => option.value);
 }`,
 } as const;
+
+/** A model helper's code under `name`, calling `looseToNumber` by `loose` where it calls it. */
+export function modelHelperCode(
+  base: "styleObject" | "modelText" | "writeModelText" | "looseToNumber",
+  name: string,
+  loose?: string,
+): string {
+  return base === "modelText" || base === "writeModelText"
+    ? HELPERS[base](name, loose)
+    : HELPERS[base](name);
+}
 
 /** The native controls' `v-model`s of a template, and what they need from the class and the file. */
 export interface Models {
@@ -172,14 +195,17 @@ export function planModels(plan: Plan): Models {
     if (!found) {
       // A helper is a function of the file and a member of the class of one name, so it takes
       // a name free in both: the outputs and the props are members too.
-      let name = plan.imports.claim(base);
+      // A shared one (ADR-0121) takes the name every component of the source imports it by.
+      const shared = plan.shared !== undefined && SHARED_MODEL_HELPERS.has(base);
+      let name = shared ? plan.helper(base) : plan.imports.claim(base);
       while (plan.members.has(name)) name = plan.imports.claim(base);
       plan.members.reserve(name);
+      // A shared `modelText` imports `looseToNumber` in its own module.
       const support = base === "modelText" || base === "writeModelText";
-      if (support && !helpers.has("looseToNumber")) helper("looseToNumber");
-      found = { name, code: "" };
+      if (support && !shared && !helpers.has("looseToNumber")) helper("looseToNumber");
+      found = { name, code: "", ...(shared ? { shared: base } : {}) };
       helpers.set(base, found);
-      found.code = HELPERS[base](name);
+      if (!shared) found.code = HELPERS[base](name);
     }
     return found.name;
   };
@@ -315,7 +341,7 @@ export function planModels(plan: Plan): Models {
     }
     // A hydrated field keeps the server's text with the caret before it: a directive the field's
     // `[value]` binding selects puts it after (ADR-0095).
-    if (model.control === "textarea") textCaret ??= plan.imports.claim("TextCaret");
+    if (model.control === "textarea") textCaret ??= plan.helper("TextCaret");
     if (variable !== undefined) printed.unshift({ name: `#${variable}`, text: `#${variable}` });
     attributes.set(model, printed);
     return element;

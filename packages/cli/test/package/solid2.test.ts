@@ -8,6 +8,12 @@ import { run, tree } from "../helpers.ts";
 import { check, consumer, designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
 
 /** A design system packaged for `solid@2`, and for `solid@1` beside it when `both`. */
+// A title with a class bound to a value, so it imports the shared `cx` (ADR-0121).
+const TITLE = `export function CardTitle(props: { label: string }) {
+  return <h2 class={["card-title", { long: props.label.length > 8 }]}>{props.label}</h2>;
+}
+`;
+
 const packaged = async (both = false) => {
   const root = designSystem({
     config: {
@@ -21,6 +27,7 @@ const packaged = async (both = false) => {
     },
     frameworks: ["solid-js", "@solidjs/web"],
     frameworksFrom: "tests/toolchains/solid2",
+    files: { "src/CardTitle.uf.tsx": TITLE },
   });
   const { code, stderr } = await run(root, "build", "--package");
   expect(stderr).toBe("");
@@ -41,6 +48,11 @@ describe("build --package: solid@2", () => {
         "solid2/CardTitle.d.ts",
         "solid2/CardTitle.js",
         "solid2/CardTitle.jsx",
+        // The shared helper modules the outputs import (ADR-0121), which no entry exports.
+        "solid2/_unframework/createState.js",
+        "solid2/_unframework/createState.jsx",
+        "solid2/_unframework/cx.js",
+        "solid2/_unframework/cx.jsx",
         "solid2/index.d.ts",
         "solid2/index.js",
         "solid2/index.jsx",
@@ -58,6 +70,21 @@ describe("build --package: solid@2", () => {
     expect(files["solid2/CardTitle.js"]).toContain("template");
     expect(files["solid2/CardTitle.jsx"]).toContain("<h2");
     expect(files["solid2/CardTitle.jsx"]).not.toContain("@solidjs/web");
+    // Each output imports a helper from the package's own `_unframework/`, on its side of the
+    // condition, and declares none of its own.
+    expect(files["solid2/CardTitle.js"]).toContain('from "./_unframework/cx.js"');
+    expect(files["solid2/CardTitle.js"]).not.toMatch(/function cx\b/);
+    expect(files["solid2/CardTitle.jsx"]).toContain('from "./_unframework/cx.jsx"');
+    expect(files["solid2/CardTitle.jsx"]).not.toMatch(/function cx\b/);
+    expect(files["solid2/useToggle.js"]).toContain('from "./_unframework/createState.js"');
+    expect(files["solid2/useToggle.js"]).not.toMatch(/function createState\b/);
+    expect(files["solid2/useToggle.jsx"]).toContain('from "./_unframework/createState.jsx"');
+    expect(files["solid2/useToggle.jsx"]).not.toMatch(/function createState\b/);
+    expect(files["solid2/_unframework/cx.js"]).toMatch(/^export \{ cx \};$/m);
+    expect(files["solid2/_unframework/cx.jsx"]).toMatch(/^export \{ cx \};$/m);
+    expect(JSON.stringify(JSON.parse(files["package.json"] ?? "").exports)).not.toContain(
+      "_unframework",
+    );
     const manifest = JSON.parse(files["package.json"] ?? "");
     expect(manifest.exports["./solid2"]).toEqual({
       types: "./solid2/index.d.ts",

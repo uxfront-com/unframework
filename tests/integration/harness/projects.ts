@@ -387,6 +387,9 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
       recordCompiledModule(event);
       return guard ? goldenGuard(event) : undefined;
     },
+    // Each case is an output tree of its own, whose golden files hold its helper modules
+    // (ADR-0121): the guard compares them with the unplugin's.
+    helperRoot: (file) => file.slice(0, file.lastIndexOf("/")),
     plugins: canaryPlugins(
       setup.mode.canary,
       target,

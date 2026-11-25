@@ -1,5 +1,8 @@
+import { KeyedFor } from "./_unframework/KeyedFor";
+import { cx } from "./_unframework/cx";
+import { enumeratedValue } from "./_unframework/enumeratedValue";
 import type { ComponentProps, JSX } from "@solidjs/web";
-import { For, Match, Switch, createMemo, omit, untrack } from "solid-js";
+import { Match, Switch, omit } from "solid-js";
 
 export interface UploadStep {
   id: string;
@@ -60,55 +63,5 @@ export default function UploadStatus(
         </KeyedFor>
       </ol>
     </section>
-  );
-}
-
-/** Joins class names: strings as they are, and the names of an object's truthy entries. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") names.push(part);
-    else if (part && typeof part === "object") {
-      for (const [name, on] of Object.entries(part)) if (on) names.push(name);
-    }
-  }
-  return names.join(" ");
-}
-
-/** An enumerated attribute's value: a boolean as `"true"` or `"false"`, as Vue writes it. */
-function enumeratedValue<T>(value: T): T extends boolean ? `${T}` : T {
-  return (typeof value === "boolean" ? String(value) : value) as T extends boolean ? `${T}` : T;
-}
-
-/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
-function KeyedFor<T>(props: {
-  each: readonly T[];
-  by: (item: T, index: number) => unknown;
-  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
-}): JSX.Element {
-  const items = createMemo(() => {
-    const rows = new Map<unknown, T>();
-    props.each.forEach((item, index) => {
-      const key = props.by(item, index);
-      rows.set(rows.has(key) ? {} : key, item);
-    });
-    return rows;
-  });
-  return (
-    <For each={[...items().keys()]}>
-      {(key, index) => {
-        const item = createMemo(() => items().get(key) as T);
-        return untrack(() =>
-          props.children({
-            get value() {
-              return item();
-            },
-            get index() {
-              return index();
-            },
-          }),
-        );
-      }}
-    </For>
   );
 }

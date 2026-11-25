@@ -1,4 +1,5 @@
 import Tag from "./Tag";
+import { cx } from "./_unframework/cx";
 import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 
 export default function Tags(
@@ -22,16 +23,4 @@ export default function Tags(
       </button>
     </div>
   );
-}
-
-/** Joins class names: strings as they are, and the names of an object's truthy entries. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") names.push(part);
-    else if (part && typeof part === "object") {
-      for (const [name, on] of Object.entries(part)) if (on) names.push(name);
-    }
-  }
-  return names.join(" ");
 }

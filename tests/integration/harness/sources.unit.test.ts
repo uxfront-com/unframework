@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { CompileResult } from "@unframework.dev/compiler";
 import { describe, expect, it } from "vitest";
 
 import type { CaseSource } from "./cases.ts";
@@ -14,7 +15,7 @@ import type { SourceCompile } from "./sources.ts";
 
 const FORM = [
   "export default function Form() {",
-  '  return <form aria-label="Sign in"><button type="submit">Send</button></form>;',
+  '  return <form class="form" aria-label="Sign in"><button type="submit">Send</button></form>;',
   "}",
   "",
 ].join("\n");
@@ -44,7 +45,7 @@ const source = (name: string, ir = `ir.${name}.json`): CaseSource => ({
 
 async function compileCase(
   files: readonly (readonly [CaseSource, string])[],
-): Promise<SourceCompile[]> {
+): Promise<(SourceCompile & { result: CompileResult })[]> {
   return Promise.all(
     files.map(async ([each, text]) => ({
       source: each,
@@ -69,15 +70,27 @@ describe("a case of two sources", () => {
       }),
     );
     expect(paths).toEqual({
-      react: ["Field.tsx", "Form.tsx"],
+      // One module of each helper, which both sources write (ADR-0121).
+      react: ["Field.tsx", "_unframework/cx.ts", "Form.tsx"],
       vue: ["Field.vue", "Form.vue"],
       svelte: ["Field.svelte", "Form.svelte"],
       solid: ["Field.tsx", "Form.tsx"],
       solid2: ["Field.tsx", "Form.tsx"],
-      angular: ["field.ts", "form.ts"],
+      angular: [
+        "field.ts",
+        "_unframework/Fallthrough.ts",
+        "_unframework/Listeners.ts",
+        "_unframework/ScopeAttributes.ts",
+        "form.ts",
+      ],
       qwik: ["Field.tsx", "Form.tsx"],
       astro: ["Field.astro", "Form.astro"],
     });
+    // Both sources write `cx`, which the tree holds once.
+    expect(compiles.map(({ result }) => result.helpers.react)).toEqual([
+      ["_unframework/cx.ts"],
+      ["_unframework/cx.ts"],
+    ]);
     expect(caseOutputs(compiles, "vue").files.get("Field.vue")).toBe(
       compiles[0]!.result.outputs.vue![0]!.contents,
     );
