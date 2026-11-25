@@ -303,7 +303,7 @@ export const CANARIES: ReadonlyArray<Canary> = [
 					/__expected__\/diagnostics\.json differs[\s\S]*(?:UF1201|^\+\s+"line": \d+,$)/m,
 			},
 		},
-		source: (text) => `import "react";\n${text}`,
+		source: (text) => text,
 	},
 	{
 		id: "L1-plugin-throws",
