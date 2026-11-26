@@ -3,5 +3,5 @@ import Chip from "../../../../../integration/cases/types/intersection-props/__ou
 </script>
 
 <template>
-  <Chip size="small" tone="accent" label="Draft" />
+	<Chip size="small" tone="accent" label="Draft" />
 </template>

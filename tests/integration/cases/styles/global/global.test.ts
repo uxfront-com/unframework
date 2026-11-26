@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Banner from "./Banner.uf.tsx";
 
 describeTargets("styles/global", () => {
-  it("styles the child's highlight through the global rule", async () => {
-    const view = await mountScenario(Banner, "tip");
-    await view.expectParity("tip");
-    await expect.element(view.getByText("press Tab")).toBeVisible();
-  });
+	it("styles the child's highlight through the global rule", async () => {
+		const view = await mountScenario(Banner, "tip");
+		await view.expectParity("tip");
+		await expect.element(view.getByText("press Tab")).toBeVisible();
+	});
 });

@@ -11,35 +11,35 @@ import { expect } from "vitest";
 import Menu from "./Menu.uf.tsx";
 
 describeTargets("transitions/reverse", () => {
-  it("renders the open menu", async () => {
-    const view = await mountScenario(Menu, "open");
-    await view.expectParity("open");
-    await expect.element(view.getByText("Profile")).toBeVisible();
-    await expect.element(view.getByRole("status")).toHaveTextContent("Refreshes: 0");
-  });
+	it("renders the open menu", async () => {
+		const view = await mountScenario(Menu, "open");
+		await view.expectParity("open");
+		await expect.element(view.getByText("Profile")).toBeVisible();
+		await expect.element(view.getByRole("status")).toHaveTextContent("Refreshes: 0");
+	});
 
-  it(
-    "ends settled when the menu opens again while it leaves",
-    { requires: ["transition", "interactivity"] },
-    async () => {
-      const style = document.createElement("style");
-      // A class beats the harness's `*` among `!important` declarations.
-      style.textContent =
-        ".fade-enter-active, .fade-leave-active { transition: all 200ms linear !important; }";
-      document.head.append(style);
-      try {
-        const view = await mountScenario(Menu, "open");
-        await view.user.click(view.getByRole("button", { name: "Refresh" }));
-        await view.expectParity("refreshed");
-        await expect
-          .element(view.getByRole("button", { name: "Refresh" }))
-          .toHaveAttribute("aria-expanded", "true");
-        await expect.element(view.getByRole("status")).toHaveTextContent("Refreshes: 1");
-        const menus = [...view.container.querySelectorAll(".items")];
-        expect(menus.map((menu) => menu.className)).toEqual(["items"]);
-      } finally {
-        style.remove();
-      }
-    },
-  );
+	it(
+		"ends settled when the menu opens again while it leaves",
+		{ requires: ["transition", "interactivity"] },
+		async () => {
+			const style = document.createElement("style");
+			// A class beats the harness's `*` among `!important` declarations.
+			style.textContent =
+				".fade-enter-active, .fade-leave-active { transition: all 200ms linear !important; }";
+			document.head.append(style);
+			try {
+				const view = await mountScenario(Menu, "open");
+				await view.user.click(view.getByRole("button", { name: "Refresh" }));
+				await view.expectParity("refreshed");
+				await expect
+					.element(view.getByRole("button", { name: "Refresh" }))
+					.toHaveAttribute("aria-expanded", "true");
+				await expect.element(view.getByRole("status")).toHaveTextContent("Refreshes: 1");
+				const menus = [...view.container.querySelectorAll(".items")];
+				expect(menus.map((menu) => menu.className)).toEqual(["items"]);
+			} finally {
+				style.remove();
+			}
+		},
+	);
 });

@@ -4,13 +4,6 @@ description: Sets up pnpm and Node.js, restores the pnpm store and installs the 
 # Every job that installs calls this right after its checkout, which must come first, since a
 # local action is read from the checkout. tests/repo/test/ci-setup.test.ts fails when a job in
 # ci.yml or nightly.yml installs or caches on its own.
-inputs:
-  filter:
-    description: >-
-      Installs only this workspace package and its dependencies, without their install scripts,
-      for a job that needs one package's dependencies. Empty installs the whole workspace.
-    required: false
-    default: ""
 runs:
   using: composite
   steps:
@@ -46,11 +39,4 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      env:
-        FILTER: ${{ inputs.filter }}
-      run: |
-        if [ -n "$FILTER" ]; then
-          pnpm install --frozen-lockfile --ignore-scripts --filter "$FILTER"
-        else
-          pnpm install --frozen-lockfile
-        fi
+      run: pnpm install --frozen-lockfile

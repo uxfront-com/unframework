@@ -27,107 +27,116 @@ export type { SsrCase } from "../harness.ts";
  * `describeTargets` titles its own. It reads the project's provided `target`, `ufHarness` and
  * `ufServer`, and throws in a project that lacks them.
  */
-export function describeServerRender(cases: readonly SsrCase[]): void {
-  const target = inject("target");
-  // The normaliser removes only this target's framework noise, so it must know the target.
-  if (!isNormalizeTarget(target)) {
-    throw new Error(
-      `The normaliser does not know the target "${target}": add its noise rules first.`,
-    );
-  }
-  const harness = inject("ufHarness");
-  const server = inject("ufServer");
-  if (server === undefined) {
-    throw new Error(
-      `[uf] The ssr:${target} project provides no "ufServer": the server render runs only in an ssr project of the harness or of defineTestConfig.`,
-    );
-  }
-  const loadRenderer = rendererOf(server);
+export function describeServerRender(cases: ReadonlyArray<SsrCase>): void {
+	const target = inject("target");
+	// The normaliser removes only this target's framework noise, so it must know the target.
+	if (!isNormalizeTarget(target)) {
+		throw new Error(
+			`The normaliser does not know the target "${target}": add its noise rules first.`,
+		);
+	}
+	const harness = inject("ufHarness");
+	const server = inject("ufServer");
+	if (server === undefined) {
+		throw new Error(
+			`[uf] The ssr:${target} project provides no "ufServer": the server render runs only in an ssr project of the harness or of defineTestConfig.`,
+		);
+	}
+	const loadRenderer = rendererOf(server);
 
-  /**
-   * Renders once, collecting console.warn and console.error into `messages` (the originals still
-   * print). Tests in a file run one at a time, so patching the console is safe.
-   */
-  async function render(
-    component: unknown,
-    props: Record<string, unknown>,
-    messages: string[],
-  ): Promise<string> {
-    const originals = { warn: console.warn, error: console.error };
-    for (const level of ["warn", "error"] as const) {
-      console[level] = (...args: unknown[]) => {
-        messages.push(`console.${level}: ${formatConsoleArgs(args)}`);
-        originals[level].apply(console, args);
-      };
-    }
-    try {
-      const html = await (await loadRenderer())(component, { props });
-      if (typeof html !== "string")
-        throw new Error(`The ${target} renderer returned ${typeof html}, not HTML.`);
-      return html;
-    } finally {
-      console.warn = originals.warn;
-      console.error = originals.error;
-    }
-  }
+	/**
+	 * Renders once, collecting console.warn and console.error into `messages` (the originals still
+	 * print). Tests in a file run one at a time, so patching the console is safe.
+	 */
+	async function render(
+		component: unknown,
+		props: Record<string, unknown>,
+		messages: Array<string>,
+	): Promise<string> {
+		const originals = { warn: console.warn, error: console.error };
+		for (const level of ["warn", "error"] as const) {
+			console[level] = (...args: Array<unknown>) => {
+				messages.push(`console.${level}: ${formatConsoleArgs(args)}`);
+				originals[level].apply(console, args);
+			};
+		}
+		try {
+			const html = await (await loadRenderer())(component, { props });
+			if (typeof html !== "string") {
+				throw new Error(`The ${target} renderer returned ${typeof html}, not HTML.`);
+			}
+			return html;
+		} finally {
+			console.warn = originals.warn;
+			console.error = originals.error;
+		}
+	}
 
-  // The target in the title, as `describeTargets` puts it: a report of every project tells the
-  // seven runs apart.
-  describe(`ssr [${target}]`, () => {
-    // The renderer's cold start (the framework's server modules, through Vite) is the project's,
-    // not the first case's: under load, every ssr and browser project at once, it can outlast a
-    // test's timeout. A renderer that fails to load fails each case's L6 with the reason.
-    beforeAll(async () => {
-      await loadRenderer().catch(() => undefined);
-    }, 300_000);
+	// The target in the title, as `describeTargets` puts it: a report of every project tells the
+	// seven runs apart.
+	describe(`ssr [${target}]`, () => {
+		// The renderer's cold start (the framework's server modules, through Vite) is the project's,
+		// not the first case's: under load, every ssr and browser project at once, it can outlast a
+		// test's timeout. A renderer that fails to load fails each case's L6 with the reason.
+		beforeAll(async () => {
+			await loadRenderer().catch(() => undefined);
+		}, 300_000);
 
-    for (const info of cases) {
-      const config = harness.cases[info.id] ?? {};
-      for (const [scenario, { props = {} }] of Object.entries(ssrScenarios(config))) {
-        it(`${info.id} › ${scenario}`, async ({ task }) => {
-          if (info.failure !== undefined) throw new Error(info.failure);
-          const messages: string[] = [];
-          let rendered = false;
-          await checkLayers(
-            task,
-            { case: info.id, target, quarantine: harness.quarantine },
-            {
-              async L6() {
-                if (info.skip !== undefined) return { skip: info.skip };
-                const component = (
-                  (await import(/* @vite-ignore */ info.source)) as { default: unknown }
-                ).default;
-                const first = await render(component, props, messages);
-                const second = await render(component, props, messages);
-                rendered = true;
-                const html = normalizeHtml(first, { target });
-                const again = normalizeHtml(second, { target });
-                if (html !== again) {
-                  throw new Error(
-                    `Two renders of the same props differ:\n${diffLines(html, again)}`,
-                  );
-                }
-                const outcome = settleArtefact(
-                  join(info.dir, "__expected__", `ssr.${scenario}.html`),
-                  html,
-                  sharedArtefactContext(harness, target, info.id),
-                );
-                if (!outcome.pass) throw new Error(outcome.message);
-              },
-              L13: () => {
-                if (!messages.length && !rendered) return { skip: info.skip ?? NOT_RENDERED_SKIP };
-                if (messages.length) {
-                  throw new Error(
-                    `${messages.length} console message(s) during the server render:\n  ${messages.join("\n  ")}`,
-                  );
-                }
-              },
-            },
-          );
-        });
-      }
-    }
-  });
+		for (const info of cases) {
+			const config = harness.cases[info.id] ?? {};
+			for (const [scenario, { props = {} }] of Object.entries(ssrScenarios(config))) {
+				it(`${info.id} › ${scenario}`, async ({ task }) => {
+					if (info.failure !== undefined) {
+						throw new Error(info.failure);
+					}
+					const messages: Array<string> = [];
+					let rendered = false;
+					await checkLayers(
+						task,
+						{ case: info.id, target, quarantine: harness.quarantine },
+						{
+							async L6() {
+								if (info.skip !== undefined) {
+									return { skip: info.skip };
+								}
+								const component = (
+									(await import(/* @vite-ignore */ info.source)) as { default: unknown }
+								).default;
+								const first = await render(component, props, messages);
+								const second = await render(component, props, messages);
+								rendered = true;
+								const html = normalizeHtml(first, { target });
+								const again = normalizeHtml(second, { target });
+								if (html !== again) {
+									throw new Error(
+										`Two renders of the same props differ:\n${diffLines(html, again)}`,
+									);
+								}
+								const outcome = settleArtefact(
+									join(info.dir, "__expected__", `ssr.${scenario}.html`),
+									html,
+									sharedArtefactContext(harness, target, info.id),
+								);
+								if (!outcome.pass) {
+									throw new Error(outcome.message);
+								}
+							},
+							L13: () => {
+								if (!messages.length && !rendered) {
+									return { skip: info.skip ?? NOT_RENDERED_SKIP };
+								}
+								if (messages.length) {
+									throw new Error(
+										`${messages.length} console message(s) during the server render:\n  ${messages.join("\n  ")}`,
+									);
+								}
+							},
+						},
+					);
+				});
+			}
+		}
+	});
 }
 
 /**
@@ -135,16 +144,16 @@ export function describeServerRender(cases: readonly SsrCase[]): void {
  * framework copy).
  */
 function rendererOf(server: string): () => Promise<SsrRenderer> {
-  let renderer: Promise<SsrRenderer> | undefined;
-  return () => {
-    renderer ??= (
-      import(/* @vite-ignore */ server) as Promise<{ renderToString?: SsrRenderer }>
-    ).then((module) => {
-      if (typeof module.renderToString !== "function") {
-        throw new Error(`${server} does not export renderToString.`);
-      }
-      return module.renderToString;
-    });
-    return renderer;
-  };
+	let renderer: Promise<SsrRenderer> | undefined;
+	return () => {
+		renderer ??= (
+			import(/* @vite-ignore */ server) as Promise<{ renderToString?: SsrRenderer }>
+		).then((module) => {
+			if (typeof module.renderToString !== "function") {
+				throw new Error(`${server} does not export renderToString.`);
+			}
+			return module.renderToString;
+		});
+		return renderer;
+	};
 }

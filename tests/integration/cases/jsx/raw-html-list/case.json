@@ -1,14 +1,14 @@
 {
-  "description": "`innerHTML` on the element a list renders reads each item's markup: a list variable in the markup's expression.",
-  "ssr": {
-    "default": {
-      "props": {
-        "entries": [
-          { "id": 1, "html": "<strong>Added</strong> raw HTML" },
-          { "id": 2, "html": "<em>Fixed</em> a <code>key</code> warning" },
-          { "id": 3, "html": "Plain text, <a href=\"#notes\">with a link</a>" }
-        ]
-      }
-    }
-  }
+	"description": "`innerHTML` on the element a list renders reads each item's markup: a list variable in the markup's expression.",
+	"ssr": {
+		"default": {
+			"props": {
+				"entries": [
+					{ "id": 1, "html": "<strong>Added</strong> raw HTML" },
+					{ "id": 2, "html": "<em>Fixed</em> a <code>key</code> warning" },
+					{ "id": 3, "html": "Plain text, <a href=\"#notes\">with a link</a>" }
+				]
+			}
+		}
+	}
 }

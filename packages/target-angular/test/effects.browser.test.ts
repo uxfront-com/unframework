@@ -51,308 +51,316 @@ import { cleanup, render } from "./browser.ts";
 afterEach(cleanup);
 
 describe("watch", () => {
-  it("runs once per handler, only on a change, with the previous value", async () => {
-    const view = await render(SearchPager, SearchPagerEvents);
-    // `query` written twice in one handler; `page` written to the value it has.
-    await view.click("button", "Search boots");
-    await view.click("button", "Next page");
-    await view.click("button", "Skip two pages");
-    expect(view.events).toEqual([
-      ["queryRun", "boots", ""],
-      ["pageRun", 2, 1],
-      ["pageRun", 4, 2],
-    ]);
-  });
+	it("runs once per handler, only on a change, with the previous value", async () => {
+		const view = await render(SearchPager, SearchPagerEvents);
+		// `query` written twice in one handler; `page` written to the value it has.
+		await view.click("button", "Search boots");
+		await view.click("button", "Next page");
+		await view.click("button", "Skip two pages");
+		expect(view.events).toEqual([
+			["queryRun", "boots", ""],
+			["pageRun", 2, 1],
+			["pageRun", 4, 2],
+		]);
+	});
 
-  it("runs its cleanup right before its next callback, never for a value written back", async () => {
-    const view = await render(SearchPager, SearchPagerEvents);
-    await view.click("button", "Search boots");
-    await view.click("button", "Next page");
-    // `page` goes back to 1 and `query` changes: one callback each, the cleanup first.
-    await view.click("button", "Search sandals");
-    expect(view.events.slice(2)).toEqual([
-      ["cleanedUp", "query"],
-      ["queryRun", "sandals", "boots"],
-      ["pageRun", 1, 2],
-    ]);
-  });
+	it("runs its cleanup right before its next callback, never for a value written back", async () => {
+		const view = await render(SearchPager, SearchPagerEvents);
+		await view.click("button", "Search boots");
+		await view.click("button", "Next page");
+		// `page` goes back to 1 and `query` changes: one callback each, the cleanup first.
+		await view.click("button", "Search sandals");
+		expect(view.events.slice(2)).toEqual([
+			["cleanedUp", "query"],
+			["queryRun", "sandals", "boots"],
+			["pageRun", 1, 2],
+		]);
+	});
 
-  it("keeps the previous value of each callback", async () => {
-    const view = await render(ZoomControl, []);
-    await view.click("button", "Zoom in");
-    await view.click("button", "Zoom in");
-    await view.click("button", "Zoom out");
-    await view.click("button", "Reset");
-    // Resetting to the value the zoom has runs no callback.
-    await view.click("button", "Reset");
-    expect([...view.container.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
-      "100% to 125%",
-      "125% to 150%",
-      "150% to 125%",
-      "125% to 100%",
-    ]);
-  });
+	it("keeps the previous value of each callback", async () => {
+		const view = await render(ZoomControl, []);
+		await view.click("button", "Zoom in");
+		await view.click("button", "Zoom in");
+		await view.click("button", "Zoom out");
+		await view.click("button", "Reset");
+		// Resetting to the value the zoom has runs no callback.
+		await view.click("button", "Reset");
+		expect([...view.container.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+			"100% to 125%",
+			"125% to 150%",
+			"150% to 125%",
+			"125% to 100%",
+		]);
+	});
 
-  it("runs an immediate getter at setup, and its cleanup before the next and at unmount", async () => {
-    const view = await render(ChannelPicker, ChannelPickerEvents);
-    expect(view.events).toEqual([["join", "general"]]);
-    // "General" lower-cased is the value the getter has: nothing runs.
-    await view.click("button", "Join #General");
-    expect(view.events).toEqual([["join", "general"]]);
-    await view.click("button", "Join #random");
-    expect(view.events.slice(1)).toEqual([
-      ["leave", "general"],
-      ["join", "random"],
-    ]);
-    await view.unmount();
-    expect(view.events.slice(3)).toEqual([["leave", "random"]]);
-  });
+	it("runs an immediate getter at setup, and its cleanup before the next and at unmount", async () => {
+		const view = await render(ChannelPicker, ChannelPickerEvents);
+		expect(view.events).toEqual([["join", "general"]]);
+		// "General" lower-cased is the value the getter has: nothing runs.
+		await view.click("button", "Join #General");
+		expect(view.events).toEqual([["join", "general"]]);
+		await view.click("button", "Join #random");
+		expect(view.events.slice(1)).toEqual([
+			["leave", "general"],
+			["join", "random"],
+		]);
+		await view.unmount();
+		expect(view.events.slice(3)).toEqual([["leave", "random"]]);
+	});
 
-  it("runs an immediate watcher of an input at setup, then on each change", async () => {
-    const view = await render(SectionHeading, SectionHeadingEvents, { title: "Introduction" });
-    await view.rerender({ title: "Setup" });
-    expect(view.emitted("change")).toEqual([
-      ["Introduction", undefined],
-      ["Setup", "Introduction"],
-    ]);
-    expect(view.emitted("ready")).toEqual([[]]);
-  });
+	it("runs an immediate watcher of an input at setup, then on each change", async () => {
+		const view = await render(SectionHeading, SectionHeadingEvents, { title: "Introduction" });
+		await view.rerender({ title: "Setup" });
+		expect(view.emitted("change")).toEqual([
+			["Introduction", undefined],
+			["Setup", "Introduction"],
+		]);
+		expect(view.emitted("ready")).toEqual([[]]);
+	});
 
-  it("watches a getter over two signals, an array of signals and an input", async () => {
-    const view = await render(PriceRange, PriceRangeEvents, { currency: "EUR" });
-    // Both ends move: the span stays, the range runs once for the two writes.
-    await view.click("button", "Shift up");
-    await view.click("button", "Widen");
-    await view.rerender({ currency: "USD" });
-    expect(view.events).toEqual([
-      ["rangeUpdate", 20, 60],
-      ["spanUpdate", 50],
-      ["rangeUpdate", 20, 70],
-      ["currencyUpdate", "USD"],
-    ]);
-  });
+	it("watches a getter over two signals, an array of signals and an input", async () => {
+		const view = await render(PriceRange, PriceRangeEvents, { currency: "EUR" });
+		// Both ends move: the span stays, the range runs once for the two writes.
+		await view.click("button", "Shift up");
+		await view.click("button", "Widen");
+		await view.rerender({ currency: "USD" });
+		expect(view.events).toEqual([
+			["rangeUpdate", 20, 60],
+			["spanUpdate", 50],
+			["rangeUpdate", 20, 70],
+			["currencyUpdate", "USD"],
+		]);
+	});
 
-  it("runs a watcher of an input on a rerender, with the previous value", async () => {
-    const view = await render(Temperature, TemperatureEvents, { celsius: 20 });
-    await view.rerender({ celsius: 35 });
-    await view.rerender({ celsius: 2 });
-    expect(view.get("figure").dataset.level).toBe("cold");
-    expect(view.emitted("reading")).toEqual([
-      [35, 20],
-      [2, 35],
-    ]);
-  });
+	it("runs a watcher of an input on a rerender, with the previous value", async () => {
+		const view = await render(Temperature, TemperatureEvents, { celsius: 20 });
+		await view.rerender({ celsius: 35 });
+		await view.rerender({ celsius: 2 });
+		expect(view.get("figure").dataset.level).toBe("cold");
+		expect(view.emitted("reading")).toEqual([
+			[35, 20],
+			[2, 35],
+		]);
+	});
 
-  it('reads the updated DOM with `flush: "post"`', async () => {
-    const view = await render(MessageList, MessageListEvents);
-    await view.click("button", "Add a message");
-    await view.click("button", "Add a message");
-    expect(view.emitted("rendered")).toEqual([[2], [3]]);
-  });
+	it('reads the updated DOM with `flush: "post"`', async () => {
+		const view = await render(MessageList, MessageListEvents);
+		await view.click("button", "Add a message");
+		await view.click("button", "Add a message");
+		expect(view.emitted("rendered")).toEqual([[2], [3]]);
+	});
 
-  it("changes in the browser what the server rendered: a watcher fed by `onMounted`", async () => {
-    const view = await render(NetworkBadge, []);
-    const badge = view.get('[role="status"]');
-    expect(badge.textContent).toBe(navigator.onLine ? "Online" : "Offline");
-    expect(badge.dataset.checked).toBe("yes");
-  });
+	it("changes in the browser what the server rendered: a watcher fed by `onMounted`", async () => {
+		const view = await render(NetworkBadge, []);
+		const badge = view.get('[role="status"]');
+		expect(badge.textContent).toBe(navigator.onLine ? "Online" : "Offline");
+		expect(badge.dataset.checked).toBe("yes");
+	});
 });
 
 describe("watchEffect", () => {
-  it("runs after the render and after each change of what it reads, its cleanup first", async () => {
-    const view = await render(UnreadBadge, UnreadBadgeEvents, { appName: "Inbox" });
-    await view.click("button", "Receive a message");
-    // Writing the value it has re-runs nothing.
-    await view.click("button", "Mark all read");
-    await view.click("button", "Mark all read");
-    await view.rerender({ appName: "Mail" });
-    expect(view.events).toEqual([
-      ["titleChange", "(0) Inbox"],
-      ["titleRelease", "(0) Inbox"],
-      ["titleChange", "(1) Inbox"],
-      ["titleRelease", "(1) Inbox"],
-      ["titleChange", "(0) Inbox"],
-      ["titleRelease", "(0) Inbox"],
-      ["titleChange", "(0) Mail"],
-    ]);
-  });
+	it("runs after the render and after each change of what it reads, its cleanup first", async () => {
+		const view = await render(UnreadBadge, UnreadBadgeEvents, { appName: "Inbox" });
+		await view.click("button", "Receive a message");
+		// Writing the value it has re-runs nothing.
+		await view.click("button", "Mark all read");
+		await view.click("button", "Mark all read");
+		await view.rerender({ appName: "Mail" });
+		expect(view.events).toEqual([
+			["titleChange", "(0) Inbox"],
+			["titleRelease", "(0) Inbox"],
+			["titleChange", "(1) Inbox"],
+			["titleRelease", "(1) Inbox"],
+			["titleChange", "(0) Inbox"],
+			["titleRelease", "(0) Inbox"],
+			["titleChange", "(0) Mail"],
+		]);
+	});
 });
 
 describe("lifecycle", () => {
-  it("runs `onMounted` once, with the DOM in the document", async () => {
-    const text = "Signals make Angular state explicit.";
-    const view = await render(ArticlePreview, ArticlePreviewEvents, { title: "Signals", text });
-    await view.rerender({ title: "Signals", text: "Shorter." });
-    expect(view.emitted("ready")).toEqual([[text.length]]);
-    expect(view.get('[role="status"]').textContent).toBe(`${text.length} characters`);
-  });
+	it("runs `onMounted` once, with the DOM in the document", async () => {
+		const text = "Signals make Angular state explicit.";
+		const view = await render(ArticlePreview, ArticlePreviewEvents, { title: "Signals", text });
+		await view.rerender({ title: "Signals", text: "Shorter." });
+		expect(view.emitted("ready")).toEqual([[text.length]]);
+		expect(view.get('[role="status"]').textContent).toBe(`${text.length} characters`);
+	});
 
-  it("runs `onUnmounted` when the component goes: the timer stops", async () => {
-    const view = await render(AutoRefresh, AutoRefreshEvents, { interval: 20 });
-    await view.click("button", "Auto-refresh");
-    await expect.poll(() => view.emitted("refresh").length).toBeGreaterThanOrEqual(2);
-    await view.unmount();
-    const ticks = view.emitted("refresh").length;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(view.emitted("refresh")).toHaveLength(ticks);
-  });
+	it("runs `onUnmounted` when the component goes: the timer stops", async () => {
+		const view = await render(AutoRefresh, AutoRefreshEvents, { interval: 20 });
+		await view.click("button", "Auto-refresh");
+		await expect.poll(() => view.emitted("refresh").length).toBeGreaterThanOrEqual(2);
+		await view.unmount();
+		const ticks = view.emitted("refresh").length;
+		await new Promise((resolve) => {
+			setTimeout(resolve, 100);
+		});
+		expect(view.emitted("refresh")).toHaveLength(ticks);
+	});
 
-  it("resolves `nextTick()` once the DOM has updated, the ref empty once its element goes", async () => {
-    const view = await render(ShippingDetails, ShippingDetailsEvents);
-    await view.click("button", "Shipping details");
-    await expect.poll(() => view.emitted("toggled")).toEqual([[3]]);
-    await view.click("button", "Shipping details");
-    await expect.poll(() => view.emitted("toggled")).toEqual([[3], [0]]);
-  });
+	it("resolves `nextTick()` once the DOM has updated, the ref empty once its element goes", async () => {
+		const view = await render(ShippingDetails, ShippingDetailsEvents);
+		await view.click("button", "Shipping details");
+		await expect.poll(() => view.emitted("toggled")).toEqual([[3]]);
+		await view.click("button", "Shipping details");
+		await expect.poll(() => view.emitted("toggled")).toEqual([[3], [0]]);
+	});
 
-  it("writes, awaits a promise and `nextTick()`, and reads its own writes after", async () => {
-    const view = await render(SaveDraft, SaveDraftEvents);
-    await view.click("button", "Save the draft");
-    await expect.poll(() => view.emitted("saved")).toEqual([[1, "Saved, attempt 1"]]);
-    // The write after `nextTick()` renders in Angular's next change detection.
-    await view.mounted.settle();
-    expect(view.get('[role="status"]').textContent).toBe("Saved, attempt 1");
-  });
+	it("writes, awaits a promise and `nextTick()`, and reads its own writes after", async () => {
+		const view = await render(SaveDraft, SaveDraftEvents);
+		await view.click("button", "Save the draft");
+		await expect.poll(() => view.emitted("saved")).toEqual([[1, "Saved, attempt 1"]]);
+		// The write after `nextTick()` renders in Angular's next change detection.
+		await view.mounted.settle();
+		expect(view.get('[role="status"]').textContent).toBe("Saved, attempt 1");
+	});
 });
 
 describe("nextTick", () => {
-  it("resumes in the task that rendered, before the next event of the same key", async () => {
-    const view = await render(InlineEditor, InlineEditorEvents);
-    await userEvent.click(view.get("button", "Rename"));
-    await expect.poll(() => view.emitted("focused")).toEqual([["Name"]]);
-    // Enter's `keydown` renames and moves the focus to Rename once the DOM shows it: before the
-    // key's `keypress`, whose activation clicks the button, as on Vue.
-    await userEvent.keyboard("Budget{Enter}");
-    await view.mounted.settle();
-    expect(view.emitted("renamed")).toEqual([["Budget"]]);
-    await expect.poll(() => view.emitted("focused")).toEqual([["Name"], ["Rename"], ["Name"]]);
-    expect(document.activeElement).toBe(view.get("input"));
-  });
+	it("resumes in the task that rendered, before the next event of the same key", async () => {
+		const view = await render(InlineEditor, InlineEditorEvents);
+		await userEvent.click(view.get("button", "Rename"));
+		await expect.poll(() => view.emitted("focused")).toEqual([["Name"]]);
+		// Enter's `keydown` renames and moves the focus to Rename once the DOM shows it: before the
+		// key's `keypress`, whose activation clicks the button, as on Vue.
+		await userEvent.keyboard("Budget{Enter}");
+		await view.mounted.settle();
+		expect(view.emitted("renamed")).toEqual([["Budget"]]);
+		await expect.poll(() => view.emitted("focused")).toEqual([["Name"], ["Rename"], ["Name"]]);
+		expect(document.activeElement).toBe(view.get("input"));
+	});
 });
 
 describe("async callbacks", () => {
-  it("runs an async watch callback and an async `watchEffect` past their `await`", async () => {
-    const view = await render(AsyncEffects, AsyncEffectsEvents, { id: 1 });
-    // The effect read `count` before its `await`: it tracked it, and runs again on a change.
-    await expect.poll(() => view.emitted("seen")).toEqual([[0]]);
-    await view.click("button", "Add");
-    await expect.poll(() => view.emitted("saved")).toEqual([[1]]);
-    await expect.poll(() => view.emitted("seen")).toEqual([[0], [1]]);
-    await view.rerender({ id: 2 });
-    await expect.poll(() => view.emitted("loaded")).toEqual([["User 2"]]);
-    expect(view.get("p").textContent).toBe("User 2");
-  });
+	it("runs an async watch callback and an async `watchEffect` past their `await`", async () => {
+		const view = await render(AsyncEffects, AsyncEffectsEvents, { id: 1 });
+		// The effect read `count` before its `await`: it tracked it, and runs again on a change.
+		await expect.poll(() => view.emitted("seen")).toEqual([[0]]);
+		await view.click("button", "Add");
+		await expect.poll(() => view.emitted("saved")).toEqual([[1]]);
+		await expect.poll(() => view.emitted("seen")).toEqual([[0], [1]]);
+		await view.rerender({ id: 2 });
+		await expect.poll(() => view.emitted("loaded")).toEqual([["User 2"]]);
+		expect(view.get("p").textContent).toBe("User 2");
+	});
 });
 
 describe("array sources", () => {
-  it("hands the callback its values and the previous ones as mutable tuples, annotated or not", async () => {
-    const view = await render(Tuples, TuplesEvents, { label: "a" });
-    await expect
-      .poll(() => view.emitted("seen"))
-      .toEqual([
-        [0, "a", "-/-"],
-        [0, "a", "-/-"],
-      ]);
-    await view.click("button", "Move");
-    expect(view.get("output").textContent).toBe("a:0>a:1 1/a 1+a<0+a 2A a@1");
-    await view.rerender({ label: "b" });
-    expect(view.get("output").textContent).toBe(
-      "a:0>a:1 1/a 1+a<0+a 2A a@1 a:1>b:1 1/b 1+b<1+a 2B b@1",
-    );
-    expect(view.get("p").textContent).toBe("2");
-    expect(view.emitted("seen")).toEqual([
-      [0, "a", "-/-"],
-      [0, "a", "-/-"],
-      [1, "a", "0/a"],
-      [1, "a", "0/a"],
-      [1, "b", "1/a"],
-      [1, "b", "1/a"],
-    ]);
-  });
+	it("hands the callback its values and the previous ones as mutable tuples, annotated or not", async () => {
+		const view = await render(Tuples, TuplesEvents, { label: "a" });
+		await expect
+			.poll(() => view.emitted("seen"))
+			.toEqual([
+				[0, "a", "-/-"],
+				[0, "a", "-/-"],
+			]);
+		await view.click("button", "Move");
+		expect(view.get("output").textContent).toBe("a:0>a:1 1/a 1+a<0+a 2A a@1");
+		await view.rerender({ label: "b" });
+		expect(view.get("output").textContent).toBe(
+			"a:0>a:1 1/a 1+a<0+a 2A a@1 a:1>b:1 1/b 1+b<1+a 2B b@1",
+		);
+		expect(view.get("p").textContent).toBe("2");
+		expect(view.emitted("seen")).toEqual([
+			[0, "a", "-/-"],
+			[0, "a", "-/-"],
+			[1, "a", "0/a"],
+			[1, "a", "0/a"],
+			[1, "b", "1/a"],
+			[1, "b", "1/a"],
+		]);
+	});
 });
 
 describe("template refs", () => {
-  it("keep, pass, return and compare an element as the source does, `null` when empty", async () => {
-    const view = await render(Elements, ElementsEvents);
-    await expect.poll(() => view.emitted("found")).toEqual([[true]]);
-    expect(view.get("p").textContent).toBe("seen");
-    await view.click("button", "Handle");
-    expect(view.emitted("handled")).toEqual([[]]);
-  });
+	it("keep, pass, return and compare an element as the source does, `null` when empty", async () => {
+		const view = await render(Elements, ElementsEvents);
+		await expect.poll(() => view.emitted("found")).toEqual([[true]]);
+		expect(view.get("p").textContent).toBe("seen");
+		await view.click("button", "Handle");
+		expect(view.emitted("handled")).toEqual([[]]);
+	});
 });
 
 describe("callbacks that return", () => {
-  it("run as the source's, and every `onUnmounted` runs whatever an earlier one returned", async () => {
-    const view = await render(Teardowns, TeardownsEvents);
-    expect(view.get("p").textContent).toBe("1");
-    for (let click = 0; click < 3; click++) await view.click("button", "More");
-    expect(view.emitted("counted")).toEqual([[1], [2]]);
-    expect(view.get("p").textContent).toBe("2");
-    await view.unmount();
-    expect(view.emitted("stopped")).toEqual([["second"]]);
-  });
+	it("run as the source's, and every `onUnmounted` runs whatever an earlier one returned", async () => {
+		const view = await render(Teardowns, TeardownsEvents);
+		expect(view.get("p").textContent).toBe("1");
+		for (let click = 0; click < 3; click++) {
+			await view.click("button", "More");
+		}
+		expect(view.emitted("counted")).toEqual([[1], [2]]);
+		expect(view.get("p").textContent).toBe("2");
+		await view.unmount();
+		expect(view.emitted("stopped")).toEqual([["second"]]);
+	});
 });
 
 /** What `AsyncTeardown`'s watcher and hooks wrote on `<body>`. */
 const marks = () =>
-  Object.fromEntries(
-    ["data-uf-count", "data-uf-mounted", "data-uf-unmounted"].map((name) => [
-      name,
-      document.body.getAttribute(name),
-    ]),
-  );
+	Object.fromEntries(
+		["data-uf-count", "data-uf-mounted", "data-uf-unmounted"].map((name) => [
+			name,
+			document.body.getAttribute(name),
+		]),
+	);
 
 describe("async setup (ADR-0101)", () => {
-  afterEach(() => {
-    for (const name of Object.keys(marks())) document.body.removeAttribute(name);
-    vi.restoreAllMocks();
-  });
+	afterEach(() => {
+		for (const name of Object.keys(marks())) {
+			document.body.removeAttribute(name);
+		}
+		vi.restoreAllMocks();
+	});
 
-  it("runs the rest of the setup once it resolves, and `onUnmounted` as the component goes", async () => {
-    const view = await render(AsyncTeardown, [], { id: "ada" });
-    expect(view.get("button").textContent).toBe("Label ada: 9");
-    await view.click("button");
-    expect(marks()).toEqual({
-      "data-uf-count": "10",
-      "data-uf-mounted": "Label ada",
-      "data-uf-unmounted": null,
-    });
-    await view.unmount();
-    expect(marks()["data-uf-unmounted"]).toBe("Label ada");
-  });
+	it("runs the rest of the setup once it resolves, and `onUnmounted` as the component goes", async () => {
+		const view = await render(AsyncTeardown, [], { id: "ada" });
+		expect(view.get("button").textContent).toBe("Label ada: 9");
+		await view.click("button");
+		expect(marks()).toEqual({
+			"data-uf-count": "10",
+			"data-uf-mounted": "Label ada",
+			"data-uf-unmounted": null,
+		});
+		await view.unmount();
+		expect(marks()["data-uf-unmounted"]).toBe("Label ada");
+	});
 
-  it("runs none of the rest, and no `onUnmounted`, when destroyed before the setup resolves", async () => {
-    const errors = vi.spyOn(console, "error");
-    // What the rest of the setup would throw, run against a destroyed injector (NG0205).
-    const thrown: unknown[] = [];
-    const caught = (event: ErrorEvent | PromiseRejectionEvent) =>
-      thrown.push("reason" in event ? event.reason : event.error);
-    window.addEventListener("error", caught);
-    window.addEventListener("unhandledrejection", caught);
-    const app = await createApplication({ providers: [provideZonelessChangeDetection()] });
-    const host = document.createElement("uf-async-teardown");
-    document.body.append(host);
-    const ref = createComponent(angularComponent(AsyncTeardown), {
-      environmentInjector: app.injector,
-      hostElement: host,
-    });
-    ref.setInput("id", "ada");
-    app.attachView(ref.hostView);
-    // `ngOnInit` starts the setup; the application goes before its await resolves.
-    app.tick();
-    app.destroy();
-    host.remove();
-    // The setup's continuation runs in a microtask, and Angular reports what a pending task
-    // throws in a later task: nothing may happen by then.
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    window.removeEventListener("error", caught);
-    window.removeEventListener("unhandledrejection", caught);
-    expect(thrown).toEqual([]);
-    expect(marks()).toEqual({
-      "data-uf-count": null,
-      "data-uf-mounted": null,
-      "data-uf-unmounted": null,
-    });
-    expect(errors).not.toHaveBeenCalled();
-  });
+	it("runs none of the rest, and no `onUnmounted`, when destroyed before the setup resolves", async () => {
+		const errors = vi.spyOn(console, "error");
+		// What the rest of the setup would throw, run against a destroyed injector (NG0205).
+		const thrown: Array<unknown> = [];
+		const caught = (event: ErrorEvent | PromiseRejectionEvent) =>
+			thrown.push("reason" in event ? event.reason : event.error);
+		window.addEventListener("error", caught);
+		window.addEventListener("unhandledrejection", caught);
+		const app = await createApplication({ providers: [provideZonelessChangeDetection()] });
+		const host = document.createElement("uf-async-teardown");
+		document.body.append(host);
+		const ref = createComponent(angularComponent(AsyncTeardown), {
+			environmentInjector: app.injector,
+			hostElement: host,
+		});
+		ref.setInput("id", "ada");
+		app.attachView(ref.hostView);
+		// `ngOnInit` starts the setup; the application goes before its await resolves.
+		app.tick();
+		app.destroy();
+		host.remove();
+		// The setup's continuation runs in a microtask, and Angular reports what a pending task
+		// throws in a later task: nothing may happen by then.
+		await new Promise((resolve) => {
+			setTimeout(resolve, 50);
+		});
+		window.removeEventListener("error", caught);
+		window.removeEventListener("unhandledrejection", caught);
+		expect(thrown).toEqual([]);
+		expect(marks()).toEqual({
+			"data-uf-count": null,
+			"data-uf-mounted": null,
+			"data-uf-unmounted": null,
+		});
+		expect(errors).not.toHaveBeenCalled();
+	});
 });

@@ -1,5 +1,6 @@
+import { clearedRef } from "./_unframework/clearedRef";
 import type { ComponentProps, JSX } from "@solidjs/web";
-import { omit, onCleanup } from "solid-js";
+import { omit } from "solid-js";
 
 export default function SearchToggle(
   props: Omit<ComponentProps<"div">, "class" | "style"> & {
@@ -55,10 +56,4 @@ export default function SearchToggle(
       />
     </div>
   );
-}
-
-/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
-function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
-  onCleanup(clear);
-  return callback;
 }

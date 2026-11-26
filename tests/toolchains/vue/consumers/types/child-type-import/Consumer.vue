@@ -6,5 +6,5 @@ const field: FieldProps = { name: "email", label: "Email" };
 </script>
 
 <template>
-  <Form :field="field" />
+	<Form :field="field" />
 </template>

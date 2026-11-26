@@ -7,28 +7,28 @@ import { expect } from "vitest";
 import Team from "./Team.uf.tsx";
 
 describeTargets("async-setup/nested", () => {
-  it("renders every async child's data", async () => {
-    const view = await mountScenario(Team, "two");
-    await view.expectParity("two");
-    await expect.element(view.getByRole("heading", { name: "User ada" })).toBeVisible();
-    await expect.element(view.getByRole("heading", { name: "User grace" })).toBeVisible();
-    await expect.element(view.getByRole("heading", { name: "User linus" })).toBeVisible();
-    await expect.element(view.getByRole("heading", { name: "User hopper" })).toBeVisible();
-  });
+	it("renders every async child's data", async () => {
+		const view = await mountScenario(Team, "two");
+		await view.expectParity("two");
+		await expect.element(view.getByRole("heading", { name: "User ada" })).toBeVisible();
+		await expect.element(view.getByRole("heading", { name: "User grace" })).toBeVisible();
+		await expect.element(view.getByRole("heading", { name: "User linus" })).toBeVisible();
+		await expect.element(view.getByRole("heading", { name: "User hopper" })).toBeVisible();
+	});
 
-  it(
-    "counts in a child, and resets it through the parent's ref",
-    { requires: ["interactivity", "expose"] },
-    async () => {
-      const view = await mountScenario(Team, "two");
-      await view.user.click(view.getByRole("button", { name: "User ada visits: 3" }));
-      await view.expectParity("after-count");
-      await view.user.click(view.getByRole("button", { name: "Reset" }));
-      await view.expectParity("after-reset");
-      await expect.element(view.getByRole("button", { name: "User ada visits: 0" })).toBeVisible();
-      await expect
-        .element(view.getByRole("button", { name: "User grace visits: 5" }))
-        .toBeVisible();
-    },
-  );
+	it(
+		"counts in a child, and resets it through the parent's ref",
+		{ requires: ["interactivity", "expose"] },
+		async () => {
+			const view = await mountScenario(Team, "two");
+			await view.user.click(view.getByRole("button", { name: "User ada visits: 3" }));
+			await view.expectParity("after-count");
+			await view.user.click(view.getByRole("button", { name: "Reset" }));
+			await view.expectParity("after-reset");
+			await expect.element(view.getByRole("button", { name: "User ada visits: 0" })).toBeVisible();
+			await expect
+				.element(view.getByRole("button", { name: "User grace visits: 5" }))
+				.toBeVisible();
+		},
+	);
 });

@@ -15,21 +15,21 @@ export type Assembly = { code: string; map?: SourceMapV3 } | { error: string };
 
 /** What {@link assembleModule} needs to know. */
 export interface AssemblyInput {
-  /** The target's name, for messages. */
-  target: string;
-  /** The `.uf.tsx` file as diagnostics name it. */
-  filename: string;
-  /** The extension of the module id, such as `.tsx` or `.vue`. */
-  extension: string;
-  /** Every file the target emitted for the module, in component order. */
-  files: readonly OutputFile[];
-  /** What the `.uf.tsx` file exports (the IR's exports): `name` is `"default"` or a name. */
-  exports: readonly { name: string; local: string }[];
-  /**
-   * The paths of every file the compile emitted: an output's import of one of them is an import
-   * of a component the joined module holds already, which the join leaves out (ADR-0053).
-   */
-  siblings?: readonly string[];
+	/** The target's name, for messages. */
+	target: string;
+	/** The `.uf.tsx` file as diagnostics name it. */
+	filename: string;
+	/** The extension of the module id, such as `.tsx` or `.vue`. */
+	extension: string;
+	/** Every file the target emitted for the module, in component order. */
+	files: ReadonlyArray<OutputFile>;
+	/** What the `.uf.tsx` file exports (the IR's exports): `name` is `"default"` or a name. */
+	exports: ReadonlyArray<{ name: string; local: string }>;
+	/**
+	 * The paths of every file the compile emitted: an output's import of one of them is an import
+	 * of a component the joined module holds already, which the join leaves out (ADR-0053).
+	 */
+	siblings?: ReadonlyArray<string>;
 }
 
 // Script modules can be joined into one module; markup files (.vue, .svelte, .astro) hold one
@@ -43,47 +43,51 @@ const SCRIPT = /^\.tsx?$/;
  * components of a file.
  */
 export function assembleModule(input: AssemblyInput): Assembly {
-  const { target, filename, extension, files, exports } = input;
-  const matching = files.filter((file) => file.path.endsWith(extension));
-  if (matching.length === 0) {
-    const emitted = files.map((file) => file.path).join(", ") || "nothing";
-    return {
-      error: `The ${target} target emitted no ${extension} file for ${filename} (it emitted ${emitted}), so the module has no code. A target's module ids must end in the extension of the file it emits for each component.`,
-    };
-  }
-  if (SCRIPT.test(extension)) {
-    if (matching.length === 1) return loaded(matching[0]!, target);
-    const paths = matching.map((file) => file.path).join(", ");
-    return joinModules(
-      matching,
-      `${filename} compiles to ${matching.length} ${target} files (${paths})`,
-      input.siblings,
-    );
-  }
-  if (matching.length > 1) {
-    const paths = matching.map((file) => file.path).join(", ");
-    return {
-      error: `${filename} compiles to ${matching.length} ${target} files for one component (${paths}), and a ${extension} file holds one, so they cannot load as one module.`,
-    };
-  }
-  // M6 decides whether a markup target's module also exports its component by name, for
-  // instance through a module that re-exports the framework's default under each name
-  // (ADR-0053's open item). Outputs never need it: they import each other's files.
-  const named = exports.filter((entry) => entry.name !== "default");
-  if (named.length > 0) {
-    const names = named.map((entry) => `\`${entry.name}\``).join(", ");
-    return {
-      error: `${filename} exports ${names} by name, and the module of a ${extension} file has only a default export, so \`import { ${named[0]!.name} }\` would find nothing on the ${target} target. Export the file's main component as the default: \`export default function ${named[0]!.local}() { … }\`.`,
-    };
-  }
-  return loaded(matching[0]!, target);
+	const { target, filename, extension, files, exports } = input;
+	const matching = files.filter((file) => file.path.endsWith(extension));
+	if (matching.length === 0) {
+		const emitted = files.map((file) => file.path).join(", ") || "nothing";
+		return {
+			error: `The ${target} target emitted no ${extension} file for ${filename} (it emitted ${emitted}), so the module has no code. A target's module ids must end in the extension of the file it emits for each component.`,
+		};
+	}
+	if (SCRIPT.test(extension)) {
+		if (matching.length === 1) {
+			return loaded(matching[0]!, target);
+		}
+		const paths = matching.map((file) => file.path).join(", ");
+		return joinModules(
+			matching,
+			`${filename} compiles to ${matching.length} ${target} files (${paths})`,
+			input.siblings,
+		);
+	}
+	if (matching.length > 1) {
+		const paths = matching.map((file) => file.path).join(", ");
+		return {
+			error: `${filename} compiles to ${matching.length} ${target} files for one component (${paths}), and a ${extension} file holds one, so they cannot load as one module.`,
+		};
+	}
+	// M6 decides whether a markup target's module also exports its component by name, for
+	// instance through a module that re-exports the framework's default under each name
+	// (ADR-0053's open item). Outputs never need it: they import each other's files.
+	const named = exports.filter((entry) => entry.name !== "default");
+	if (named.length > 0) {
+		const names = named.map((entry) => `\`${entry.name}\``).join(", ");
+		return {
+			error: `${filename} exports ${names} by name, and the module of a ${extension} file has only a default export, so \`import { ${named[0]!.name} }\` would find nothing on the ${target} target. Export the file's main component as the default: \`export default function ${named[0]!.local}() { … }\`.`,
+		};
+	}
+	return loaded(matching[0]!, target);
 }
 
 /** What one file loads: its text, and its map when it has one. */
 function loaded({ contents, map }: OutputFile, target: string): Assembly {
-  if (!map) return { code: contents };
-  // Astro's compiler traces a frontmatter line from its column 0 (ADR-0074).
-  return { code: contents, map: target === "astro" ? withLineStarts(map) : map };
+	if (!map) {
+		return { code: contents };
+	}
+	// Astro's compiler traces a frontmatter line from its column 0 (ADR-0074).
+	return { code: contents, map: target === "astro" ? withLineStarts(map) : map };
 }
 
 /**
@@ -93,140 +97,150 @@ function loaded({ contents, map }: OutputFile, target: string): Assembly {
  * text of a file with no map stays unmapped in the join's.
  */
 export function joinModules(
-  files: readonly OutputFile[],
-  context: string,
-  siblings: readonly string[] = [],
+	files: ReadonlyArray<OutputFile>,
+	context: string,
+	siblings: ReadonlyArray<string> = [],
 ): Assembly {
-  // `./Note` and `./Note.tsx` name a file of the join.
-  const joined = new Set(
-    siblings.flatMap((path) => [`./${path}`, `./${path.replace(/\.[^./]+$/, "")}`]),
-  );
-  const seenImports = new Set<string>();
-  const declaredBy = new Map<string, string[]>();
-  const exportedBy = new Map<string, string[]>();
-  const bundle = new Bundle({ separator: "\n" });
+	// `./Note` and `./Note.tsx` name a file of the join.
+	const joined = new Set(
+		siblings.flatMap((path) => [`./${path}`, `./${path.replace(/\.[^./]+$/, "")}`]),
+	);
+	const seenImports = new Set<string>();
+	const declaredBy = new Map<string, Array<string>>();
+	const exportedBy = new Map<string, Array<string>>();
+	const bundle = new Bundle({ separator: "\n" });
 
-  for (const file of files) {
-    const parsed = parseModule(file.path, file.contents);
-    if (parsed.errors.length > 0) {
-      return {
-        error: `${context}, and ${file.path} does not parse, so they cannot be joined into one module: ${parsed.errors[0]!.message}`,
-      };
-    }
-    const part = new MagicString(file.contents);
-    for (const statement of parsed.program.body) {
-      if (statement.type === "ImportDeclaration") {
-        const text = file.contents.slice(statement.start, statement.end);
-        if (joined.has(statement.source.value) || seenImports.has(text)) {
-          // The line break that ends it goes with it.
-          const end = file.contents[statement.end] === "\n" ? statement.end + 1 : statement.end;
-          part.remove(statement.start, end);
-          continue;
-        }
-        seenImports.add(text);
-        for (const specifier of statement.specifiers) {
-          record(declaredBy, specifier.local.name, file.path);
-        }
-        continue;
-      }
-      for (const name of declaredNames(statement)) record(declaredBy, name, file.path);
-      for (const name of exportedNames(statement)) record(exportedBy, name, file.path);
-    }
-    bundle.addSource({ filename: file.path, content: part });
-  }
+	for (const file of files) {
+		const parsed = parseModule(file.path, file.contents);
+		if (parsed.errors.length > 0) {
+			return {
+				error: `${context}, and ${file.path} does not parse, so they cannot be joined into one module: ${parsed.errors[0]!.message}`,
+			};
+		}
+		const part = new MagicString(file.contents);
+		for (const statement of parsed.program.body) {
+			if (statement.type === "ImportDeclaration") {
+				const text = file.contents.slice(statement.start, statement.end);
+				if (joined.has(statement.source.value) || seenImports.has(text)) {
+					// The line break that ends it goes with it.
+					const end = file.contents[statement.end] === "\n" ? statement.end + 1 : statement.end;
+					part.remove(statement.start, end);
+					continue;
+				}
+				seenImports.add(text);
+				for (const specifier of statement.specifiers) {
+					record(declaredBy, specifier.local.name, file.path);
+				}
+				continue;
+			}
+			for (const name of declaredNames(statement)) {
+				record(declaredBy, name, file.path);
+			}
+			for (const name of exportedNames(statement)) {
+				record(exportedBy, name, file.path);
+			}
+		}
+		bundle.addSource({ filename: file.path, content: part });
+	}
 
-  const clashes = [
-    ...clashesOf(declaredBy).map(([name, paths]) => `\`${name}\` is declared by ${paths}`),
-    ...clashesOf(exportedBy).map(([name, paths]) => `\`${name}\` is exported by ${paths}`),
-  ];
-  if (clashes.length > 0) {
-    return {
-      error: `${context}, and they cannot be joined into one module: ${clashes.join("; ")}. Give each component its own .uf.tsx file.`,
-    };
-  }
-  const code = bundle.toString();
-  if (!files.some((file) => file.map)) return { code };
-  // At every character, so the join's map holds each segment the files' maps have.
-  return { code, map: composeJoinedMap(bundle.generateMap({ hires: true }), files) };
+	const clashes = [
+		...clashesOf(declaredBy).map(([name, paths]) => `\`${name}\` is declared by ${paths}`),
+		...clashesOf(exportedBy).map(([name, paths]) => `\`${name}\` is exported by ${paths}`),
+	];
+	if (clashes.length > 0) {
+		return {
+			error: `${context}, and they cannot be joined into one module: ${clashes.join("; ")}. Give each component its own .uf.tsx file.`,
+		};
+	}
+	const code = bundle.toString();
+	if (!files.some((file) => file.map)) {
+		return { code };
+	}
+	// At every character, so the join's map holds each segment the files' maps have.
+	return { code, map: composeJoinedMap(bundle.generateMap({ hires: true }), files) };
 }
 
 /** Notes that the file at `path` declares or exports `name`. */
-function record(names: Map<string, string[]>, name: string, path: string): void {
-  const paths = names.get(name) ?? [];
-  if (!paths.includes(path)) paths.push(path);
-  names.set(name, paths);
+function record(names: Map<string, Array<string>>, name: string, path: string): void {
+	const paths = names.get(name) ?? [];
+	if (!paths.includes(path)) {
+		paths.push(path);
+	}
+	names.set(name, paths);
 }
 
-function clashesOf(names: Map<string, string[]>): [name: string, paths: string][] {
-  return [...names]
-    .filter(([, paths]) => paths.length > 1)
-    .map(([name, paths]) => [name, paths.join(" and ")]);
+function clashesOf(names: Map<string, Array<string>>): Array<[name: string, paths: string]> {
+	return [...names]
+		.filter(([, paths]) => paths.length > 1)
+		.map(([name, paths]) => [name, paths.join(" and ")]);
 }
 
 /** The names a top-level statement binds in module scope (imports are handled separately). */
-function declaredNames(statement: AST.Directive | AST.Statement): string[] {
-  switch (statement.type) {
-    case "ExportNamedDeclaration":
-      return statement.declaration ? declaredNames(statement.declaration) : [];
-    case "ExportDefaultDeclaration": {
-      const declaration = statement.declaration;
-      return (declaration.type === "FunctionDeclaration" ||
-        declaration.type === "ClassDeclaration" ||
-        declaration.type === "TSInterfaceDeclaration") &&
-        declaration.id
-        ? [declaration.id.name]
-        : [];
-    }
-    case "VariableDeclaration":
-      return statement.declarations.flatMap((declarator) => patternNames(declarator.id));
-    case "FunctionDeclaration":
-    case "TSDeclareFunction":
-    case "ClassDeclaration":
-      return statement.id ? [statement.id.name] : [];
-    case "TSTypeAliasDeclaration":
-    case "TSInterfaceDeclaration":
-    case "TSEnumDeclaration":
-    case "TSImportEqualsDeclaration":
-      return [statement.id.name];
-    case "TSModuleDeclaration":
-      return statement.id.type === "Identifier" ? [statement.id.name] : [];
-    default:
-      return [];
-  }
+function declaredNames(statement: AST.Directive | AST.Statement): Array<string> {
+	switch (statement.type) {
+		case "ExportNamedDeclaration":
+			return statement.declaration ? declaredNames(statement.declaration) : [];
+		case "ExportDefaultDeclaration": {
+			const declaration = statement.declaration;
+			return (declaration.type === "FunctionDeclaration" ||
+				declaration.type === "ClassDeclaration" ||
+				declaration.type === "TSInterfaceDeclaration") &&
+				declaration.id
+				? [declaration.id.name]
+				: [];
+		}
+		case "VariableDeclaration":
+			return statement.declarations.flatMap((declarator) => patternNames(declarator.id));
+		case "FunctionDeclaration":
+		case "TSDeclareFunction":
+		case "ClassDeclaration":
+			return statement.id ? [statement.id.name] : [];
+		case "TSTypeAliasDeclaration":
+		case "TSInterfaceDeclaration":
+		case "TSEnumDeclaration":
+		case "TSImportEqualsDeclaration":
+			return [statement.id.name];
+		case "TSModuleDeclaration":
+			return statement.id.type === "Identifier" ? [statement.id.name] : [];
+		default:
+			return [];
+	}
 }
 
-function patternNames(pattern: AST.BindingPattern | AST.BindingRestElement): string[] {
-  switch (pattern.type) {
-    case "Identifier":
-      return [pattern.name];
-    case "AssignmentPattern":
-      return patternNames(pattern.left);
-    case "RestElement":
-      return patternNames(pattern.argument);
-    case "ArrayPattern":
-      return pattern.elements.flatMap((element) => (element ? patternNames(element) : []));
-  }
-  return pattern.properties.flatMap((property) =>
-    patternNames(property.type === "RestElement" ? property : property.value),
-  );
+function patternNames(pattern: AST.BindingPattern | AST.BindingRestElement): Array<string> {
+	switch (pattern.type) {
+		case "Identifier":
+			return [pattern.name];
+		case "AssignmentPattern":
+			return patternNames(pattern.left);
+		case "RestElement":
+			return patternNames(pattern.argument);
+		case "ArrayPattern":
+			return pattern.elements.flatMap((element) => (element ? patternNames(element) : []));
+		default:
+			break;
+	}
+	return pattern.properties.flatMap((property) =>
+		patternNames(property.type === "RestElement" ? property : property.value),
+	);
 }
 
 /** The names a top-level statement exports. */
-function exportedNames(statement: AST.Directive | AST.Statement): string[] {
-  switch (statement.type) {
-    case "ExportDefaultDeclaration":
-      return ["default"];
-    case "ExportNamedDeclaration":
-      return statement.declaration
-        ? declaredNames(statement.declaration)
-        : statement.specifiers.map((specifier) => moduleExportName(specifier.exported));
-    case "ExportAllDeclaration":
-      return statement.exported ? [moduleExportName(statement.exported)] : [];
-    default:
-      return [];
-  }
+function exportedNames(statement: AST.Directive | AST.Statement): Array<string> {
+	switch (statement.type) {
+		case "ExportDefaultDeclaration":
+			return ["default"];
+		case "ExportNamedDeclaration":
+			return statement.declaration
+				? declaredNames(statement.declaration)
+				: statement.specifiers.map((specifier) => moduleExportName(specifier.exported));
+		case "ExportAllDeclaration":
+			return statement.exported ? [moduleExportName(statement.exported)] : [];
+		default:
+			return [];
+	}
 }
 
 function moduleExportName(name: AST.ModuleExportName): string {
-  return name.type === "Literal" ? name.value : name.name;
+	return name.type === "Literal" ? name.value : name.name;
 }

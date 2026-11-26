@@ -1,7 +1,7 @@
 {
-  "main": "Page.uf.tsx",
-  "description": "A directive on each element a scoped fill renders, whose value reads the fill's props: when the child passes one row new props, that element keeps its directive and runs `updated` with its new value.",
-  "ssr": {
-    "initial": {}
-  }
+	"main": "Page.uf.tsx",
+	"description": "A directive on each element a scoped fill renders, whose value reads the fill's props: when the child passes one row new props, that element keeps its directive and runs `updated` with its new value.",
+	"ssr": {
+		"initial": {}
+	}
 }

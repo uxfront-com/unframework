@@ -1,6 +1,6 @@
 # web
 
-Static Nuxt site for https://unframework.dev: the homepage and the documentation at `/docs`, prerendered and deployed to Cloudflare Workers as static assets. It is built like [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web) and [opencomponents.dev](https://github.com/uxfront-com/open-components), from the same homepage kit, with the docs on [Docus](https://docus.dev).
+Static Nuxt site for https://unframework.dev: the homepage, the documentation at `/docs` and the changelog at `/changelog`, prerendered and deployed to Cloudflare Workers as static assets. It is built like [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web) and [opencomponents.dev](https://github.com/uxfront-com/open-components), from the same homepage kit, with the docs on [Docus](https://docus.dev).
 
 ## Commands
 
@@ -9,7 +9,7 @@ pnpm dev          # dev server on http://localhost:3000
 pnpm build        # nuxt generate → dist
 pnpm preview      # serve the generated site
 pnpm check-types  # type-check the .ts sources (.vue files aren't covered, see "The docs" for what else it skips)
-pnpm lighthouse   # Lighthouse CI on the homepage and five docs pages, served from dist with wrangler dev (add new routes to `url` in `lighthouserc.mjs`)
+pnpm lighthouse   # Lighthouse CI on the homepage, five docs pages and two changelog pages, served from dist with wrangler dev (add new routes to `url` in `lighthouserc.mjs`)
 pnpm check:seo    # check dist against the search rules (see "The SEO check")
 pnpm test         # the unit tests of the SEO check's payload rule and the structured data
 ```
@@ -66,7 +66,7 @@ The documentation is built with [Docus](https://docus.dev), through [`@uxfront/l
 
 How it shares the app with the homepage:
 
-- `app/app.vue` replaces Docus's own, so it renders the Docus shell (header, sidebar, search), loaded lazily from `docus/app/app.vue`, on `/docs` and below, and the bare page everywhere else. `app/error.vue` still renders `UxErrorPage`, docs included.
+- `app/app.vue` replaces Docus's own, so it renders the Docus shell (header, sidebar, search), loaded lazily from `docus/app/app.vue`, on `/docs`, `/changelog` and below, and the bare page everywhere else. `app/error.vue` still renders `UxErrorPage`, docs included.
 - `docsTheme.byline` in `app/app.config.ts` signs the docs header's `Unframework` "by UXFront", like the homepage header. `@uxfront/layer-docs` draws it, and leaves the name itself as Docus's plain title.
 - Docus adds Tailwind CSS and Nuxt UI to the entry stylesheet. On the homepage, `@uxfront/layer-ui` loads that stylesheet after first paint, and the `.ux-site` styles take precedence over it. Keep `app/app.css`, which Docus imports into the same stylesheet, off `.ux-site` too.
 - `@uxfront/layer-ui` turns off Nuxt's prefetch hints. Otherwise every page, the homepage included, would prefetch the docs' lazy chunks, which delays the homepage's fonts and stylesheet, and with them its LCP.
@@ -74,14 +74,14 @@ How it shares the app with the homepage:
 - `app/components/` replaces one component of the docs theme to name a control it leaves without one: the button that opens the "Copy page" menu (`docs/DocsPageHeaderLinks.vue`, a copy of Docus's). Compare the copy with the original when Docus is updated.
 - Code blocks use GitHub's light and dark high-contrast themes, which `@uxfront/layer-docs` sets in place of Docus's Material themes, whose tokens fall below WCAG AA contrast. The layer also names the header's menu button.
 - Docus reads the site URL from `NUXT_SITE_URL`, which `nuxt.config.ts` defaults to the production origin (`SITE_URL` in `app/data/site.ts`), and generates `robots.txt` (with `@nuxtjs/robots`). It allows every crawler, and `robots.groups` in `nuxt.config.ts` adds a group for each AI search crawler we allow by name (`AI_CRAWLERS`), so the policy is written down. Don't add a `public/robots.txt`: the module renames it to `_robots.txt` and merges it in.
-- `server/routes/sitemap.xml.ts` replaces Docus's sitemap, which leaves out the homepage. Each URL's `<lastmod>` is the date of the last commit of the page's source file (`app/pages/index.vue` for the homepage), which `modules/seo.ts` reads at build time. A page you haven't committed yet gets no date, and `check:seo` names it.
+- `server/routes/sitemap.xml.ts` replaces Docus's sitemap, which leaves out the homepage. Each URL's `<lastmod>` is the date of the last commit of the page's source file (`app/pages/index.vue` for the homepage), which `modules/seo.ts` reads at build time. A page you haven't committed yet gets no date, and `check:seo` names it. The changelog is dated by its newest entry, and each entry by its `date`.
 - `app/plugins/seo-head.ts` completes the head that the homepage kit and Docus write. It adds `twitter:title` and `twitter:description`, and an `og:image:alt` for the docs' generated images, and it rewrites their structured data (`app/lib/structured-data.ts`). The homepage gets a `WebSite`, a `SoftwareSourceCode` for Unframework and an `Organization` for UXFront, its publisher, in place of the kit's `Organization` named Unframework. Docs pages get a `TechArticle` in place of Docus's `Article`, with the sitemap's date and the page's Open Graph image, and breadcrumbs that start at the homepage and link each section's first page, since a section has no page of its own. The plugin reads the tags rather than copying Docus's page, so a Docus update doesn't leave a stale copy behind, and `check:seo` fails if the tags it reads change shape. After a client-side navigation, nuxt-og-image doesn't set `og:image` again, so the plugin puts each docs page's image in the page's payload, and the client reads it from there.
 - Docs pages' Open Graph images are 1200 × 630 (`ogImage.defaults` in `nuxt.config.ts`), like `public/og.jpg`. `app/app.vue` points each docs page at its markdown copy with `<link rel="alternate" type="text/markdown">`.
 - The site is static, so Docus's MCP server is off (`mcp.enabled` in `nuxt.config.ts`), and so is its AI assistant, which only starts with an `AI_GATEWAY_API_KEY`.
 - The `cloudflare_pages_static` preset is set for production builds only: under it, `nuxt dev` serves Nuxt Content's browser database from a dump frozen at startup, so after a reload the docs would show stale content.
 - In content, link to the generated files (`/llms.txt`, `/raw/…`) with `{external}`, as the introduction does. Otherwise the router handles the click and shows the 404 page.
 - Examples of the compiler are copied verbatim from a corpus case's source and its golden outputs (`tests/integration/cases`). Put `<!-- prettier-ignore -->` before each copied block: oxfmt formats a fenced block's code, which would change the whitespace of the outputs. Docus highlights `tsx`, `svelte` and `astro` blocks only because `nuxt.config.ts` adds them to its languages.
-- `server/middleware/raw-markdown.ts` serves `/raw/<path>.md` from the page's source file, and `server/routes/llms-full.txt.ts` builds `llms-full.txt` from the same files (`server/utils/raw-markdown.ts`). Nuxt Content rebuilds both from the parsed pages instead, and writes tables as unescaped HTML and link attributes as `{rel="&#x22;nofollow&#x22;"}`, which agents, and Docus's "Copy page", then read. nuxt-llms registers its own `llms-full.txt` route, which a `nitro:config` hook in `nuxt.config.ts` removes.
+- `server/middleware/raw-markdown.ts` serves `/raw/<path>.md` from the page's source file, for a changelog entry too, and `server/routes/llms-full.txt.ts` builds `llms-full.txt` from the same files (`server/utils/raw-markdown.ts`). Nuxt Content rebuilds both from the parsed pages instead, and writes tables as unescaped HTML and link attributes as `{rel="&#x22;nofollow&#x22;"}`, which agents, and Docus's "Copy page", then read. nuxt-llms registers its own `llms-full.txt` route, which a `nitro:config` hook in `nuxt.config.ts` removes.
 - `pnpm-workspace.yaml` pins `mdast-util-to-markdown` to 2.1.2: 2.1.3 sends `remark-mdc` into endless recursion on any **bold** text, and `llms-full.txt` fails to prerender.
 
 Docus and `@uxfront/layer-docs` ship their sources uncompiled, and they don't type-check against this app's dependencies. `pnpm check-types` runs `tsc` and fails on any error outside them.
@@ -108,6 +108,38 @@ Write an example once per framework in a `::framework-switcher`, one slot per fr
 ````
 
 It shows the reader's framework, with no tabs of its own. The reader picks it once for the whole site, in the Framework select above the sidebar (in the header's menu on smaller screens), and the pick is kept across visits. The frameworks, their order and their slot names (the `value`s) are `docsTheme.frameworks` in `app/app.config.ts`: the seven Unframework compiles to. A page doesn't have to cover them all: a missing framework shows the first one the page has, with a note saying so. `@uxfront/layer-docs` highlights `tsx`, `svelte`, `angular-html`, `angular-ts` and `astro` on top of Docus's languages. Add any other an example needs to `content.build.markdown.highlight.langs` in `nuxt.config.ts`.
+
+## The changelog
+
+`/changelog` lists what each release of `@uxfront/unframework` brings, newest first, with each entry in full, and every entry also has a page of its own at `/changelog/<file name>`. Entries are markdown files in `content/changelog/`, in the `changelog` collection (`content.config.ts`):
+
+```md
+---
+title: One styled root for a link or a button
+description: A component's root can now switch between tags, so one component renders a link or a button, and its parent styles whichever one renders.
+date: 2026-11-21
+version: 0.5.0
+release: https://github.com/uxfront-com/unframework/releases/tag/%40uxfront/unframework%400.5.0
+link:
+  label: Read the Dynamic components page
+  to: /docs/components/dynamic-components
+---
+
+A button that becomes a link when it has an `href` is one of the first components a design system needs, …
+
+## New
+
+- A parent's `class` and `style` merge into whichever tag renders, …
+```
+
+- Keep it high level: a couple of sentences on what's new and why it matters, then a few short points, leaving the details to the docs page it links to. Write it the way the docs pages are written, talking to the reader in full sentences rather than lists of features. The `title` is 46 characters at most and the `description` 70 to 160, as for any page (see [The SEO check](#the-seo-check)).
+- `date` is the day the release was published on npm, and orders the entries. When two entries share a day, give the later one a time too, in UTC, as in `2026-11-21T12:00:00Z`, so it comes first. The page still shows the day. `version` is the badge beside it, `release` the release on GitHub, and `link` the docs page to read more on.
+- Group the notes under `## New`, `## Improved` and `## Fixed`, leaving out any you don't need. On `/changelog`, where each entry's title is an `<h2>`, they move down a level, and only get anchor links on the entry's own page, since every entry has a New section.
+- A release gets an entry when it changes something a reader notices. One that only bumps dependencies gets one when the packages it pulls in change something a reader notices, and is folded into the next entry otherwise.
+- Name the file after what it adds, as in `dynamic-root.md`, since it's the entry's URL. The crawler finds the entries' pages from `/changelog`, `sitemap.xml` lists them all, and Nuxt Content lists their markdown copies under `## Changelog` in `llms.txt`.
+- `app/pages/changelog/` holds the two pages, and `app/components/changelog/ChangelogEntry.vue` the entry they both show. Their Tailwind classes are listed in `app/app.css`'s sources, since Docus's Tailwind doesn't scan the app. The docs header links to the changelog from `docsTheme.headerLinks` in `app/app.config.ts`, and the homepage header from `CHANGELOG_URL` in `app/data/site.ts`.
+
+`scripts/changelog.test.ts` (`pnpm test`) fails an entry whose `date` isn't `YYYY-MM-DD`, whose `version` isn't `x.y.z` or another entry's, whose `release` isn't that version's, or whose headings aren't the three above, and fails when there are no entries.
 
 ## The SEO check
 
@@ -154,6 +186,6 @@ With Amplitude built in, the homepage keeps its 100 in Performance (no added Tot
 
 The rules are the same as for [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web#keeping-100s-as-the-site-grows): no render-blocking resources, heavy code behind dynamic `import()`, images through `@nuxt/image`, and a title, meta description, canonical link and single `<h1>` on every page.
 
-`lighthouserc.mjs` audits the homepage and five docs pages, with the thresholds of the shared preset, `lighthouseConfig` from `@uxfront/site-checks/lighthouse`. Each fails below 0.95 in accessibility and best practices and below 1 in SEO, and the homepage also fails below 0.95 in performance. The docs pages are Docus's theme, which scores lower in performance on phones, so they don't assert it yet.
+`lighthouserc.mjs` audits the homepage, five docs pages and two changelog pages, with the thresholds of the shared preset, `lighthouseConfig` from `@uxfront/site-checks/lighthouse`. Each fails below 0.95 in accessibility and best practices and below 1 in SEO, and the homepage also fails below 0.95 in performance. The docs pages are Docus's theme, which scores lower in performance on phones, so they and the changelog pages don't assert it yet.
 
 Lighthouse CI serves `dist` with `wrangler dev`, which reads `wrangler.jsonc` and serves `/docs/<path>` from `<path>.html` and unknown paths with `404.html`, as Cloudflare does. Keep it: Lighthouse CI's own static server answers 404 for every docs page.

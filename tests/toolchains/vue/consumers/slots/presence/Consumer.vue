@@ -3,7 +3,7 @@ import Card from "../../../../../integration/cases/slots/presence/__output__/vue
 </script>
 
 <template>
-  <Card label="Weather">
-    <template #title><h3>Sunny</h3></template>
-  </Card>
+	<Card label="Weather">
+		<template #title><h3>Sunny</h3></template>
+	</Card>
 </template>

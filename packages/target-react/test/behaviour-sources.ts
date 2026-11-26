@@ -7,9 +7,9 @@
 
 /** Component name → source. */
 export const BEHAVIOUR_SOURCES: Readonly<Record<string, string>> = {
-  // A directive (ADR-0099), whose hooks report each call on the document: \`useDirective\`'s ref
-  // callback only records the element, and its layout effects run the hooks.
-  Marked: `import { defineDirective, ref } from "@uxfront/unframework";
+	// A directive (ADR-0099), whose hooks report each call on the document: \`useDirective\`'s ref
+	// callback only records the element, and its layout effects run the hooks.
+	Marked: `import { defineDirective, ref } from "@uxfront/unframework";
 
 const vLog = defineDirective<number>({
   mounted(el, value) {
@@ -38,8 +38,8 @@ export default function Marked() {
   );
 }
 `,
-  // A child that renders its \`row\` slot once per item, and adds and removes items alone.
-  Rows: `import { defineSlots, ref } from "@uxfront/unframework";
+	// A child that renders its \`row\` slot once per item, and adds and removes items alone.
+	Rows: `import { defineSlots, ref } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
 export default function Rows() {
@@ -54,9 +54,9 @@ export default function Rows() {
   );
 }
 `,
-  // One directive use whose element \`Rows\` renders once per row (ADR-0099): each gets its own
-  // hooks, reported with its element.
-  Repeat: `import { defineDirective, ref } from "@uxfront/unframework";
+	// One directive use whose element \`Rows\` renders once per row (ADR-0099): each gets its own
+	// hooks, reported with its element.
+	Repeat: `import { defineDirective, ref } from "@uxfront/unframework";
 
 import Rows from "./Rows.uf.tsx";
 
@@ -82,8 +82,8 @@ export default function Repeat() {
   );
 }
 `,
-  // Listeners beside a \`v-model\` (ADR-0054): each runs after the model's write, and reads it.
-  ModelReads: `import { defineEmits, ref } from "@uxfront/unframework";
+	// Listeners beside a \`v-model\` (ADR-0054): each runs after the model's write, and reads it.
+	ModelReads: `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function ModelReads() {
   const emit = defineEmits<{ seen: [value: string] }>();
@@ -107,9 +107,9 @@ export default function ModelReads() {
   );
 }
 `,
-  // Checked controls beside listeners that write state: one on \`input\`, where a render keeps what
-  // was clicked, and one on \`change\` that sets the model back, which unchecks the box, as on Vue.
-  DirtyForm: `import { ref } from "@uxfront/unframework";
+	// Checked controls beside listeners that write state: one on \`input\`, where a render keeps what
+	// was clicked, and one on \`change\` that sets the model back, which unchecks the box, as on Vue.
+	DirtyForm: `import { ref } from "@uxfront/unframework";
 
 export default function DirtyForm() {
   const agreed = ref(false);
@@ -132,8 +132,8 @@ export default function DirtyForm() {
   );
 }
 `,
-  // A bound model whose parent holds its value (ADR-0054): every write starts from that value.
-  HeldStepper: `import { defineModel } from "@uxfront/unframework";
+	// A bound model whose parent holds its value (ADR-0054): every write starts from that value.
+	HeldStepper: `import { defineModel } from "@uxfront/unframework";
 
 export default function HeldStepper() {
   const value = defineModel<number>("value", { default: 0 });
@@ -144,7 +144,7 @@ export default function HeldStepper() {
   );
 }
 `,
-  Phases: `import { defineEmits, ref } from "@uxfront/unframework";
+	Phases: `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Phases() {
   const emit = defineEmits<{ logged: [entries: string[]]; total: [value: number] }>();
@@ -181,7 +181,7 @@ export default function Phases() {
 }
 `,
 
-  Watcher: `import { defineEmits, ref, watch } from "@uxfront/unframework";
+	Watcher: `import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export default function Watcher() {
   const emit = defineEmits<{ ran: [value: number, previous: number]; cleaned: [value: number] }>();
@@ -220,7 +220,7 @@ export default function Watcher() {
 }
 `,
 
-  Ticker: `import { defineEmits, onMounted, onUnmounted, useTemplateRef } from "@uxfront/unframework";
+	Ticker: `import { defineEmits, onMounted, onUnmounted, useTemplateRef } from "@uxfront/unframework";
 
 export default function Ticker() {
   const emit = defineEmits<{ mounted: [connected: boolean]; tick: [count: number]; unmounted: [] }>();
@@ -245,7 +245,7 @@ export default function Ticker() {
 }
 `,
 
-  Options: `import { ref } from "@uxfront/unframework";
+	Options: `import { ref } from "@uxfront/unframework";
 
 export default function Options() {
   const log = ref<string[]>([]);
@@ -278,7 +278,7 @@ export default function Options() {
 }
 `,
 
-  Fields: `import { ref } from "@uxfront/unframework";
+	Fields: `import { ref } from "@uxfront/unframework";
 
 export default function Fields() {
   const log = ref<string[]>([]);
@@ -303,7 +303,7 @@ export default function Fields() {
 }
 `,
 
-  Notes: `import { defineEmits, onMounted, ref, useTemplateRef } from "@uxfront/unframework";
+	Notes: `import { defineEmits, onMounted, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Notes() {
   const emit = defineEmits<{ mounted: [connected: boolean]; picked: [] }>();
@@ -322,7 +322,7 @@ export default function Notes() {
 }
 `,
 
-  Deferred: `import { defineEmits } from "@uxfront/unframework";
+	Deferred: `import { defineEmits } from "@uxfront/unframework";
 
 export interface DeferredProps {
   label: string;
@@ -352,7 +352,7 @@ export default function Deferred({ label }: DeferredProps) {
 }
 `,
 
-  Ticked: `import { defineEmits, nextTick, ref, useTemplateRef, watch } from "@uxfront/unframework";
+	Ticked: `import { defineEmits, nextTick, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 export default function Ticked() {
   const emit = defineEmits<{ watched: [value: number]; read: [text: string] }>();
@@ -378,7 +378,7 @@ export default function Ticked() {
 }
 `,
 
-  Channel: `import { defineEmits, ref, watch } from "@uxfront/unframework";
+	Channel: `import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export default function Channel() {
   const emit = defineEmits<{ join: [name: string]; leave: [name: string] }>();
@@ -403,7 +403,7 @@ export default function Channel() {
 }
 `,
 
-  Branches: `import { ref } from "@uxfront/unframework";
+	Branches: `import { ref } from "@uxfront/unframework";
 
 export default function Branches() {
   const editing = ref(false);
@@ -423,7 +423,7 @@ export default function Branches() {
   );
 }
 `,
-  Ready: `import { defineEmits, nextTick, onMounted, ref, useTemplateRef, watch } from "@uxfront/unframework";
+	Ready: `import { defineEmits, nextTick, onMounted, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 export default function Ready() {
   const emit = defineEmits<{ shown: [text: string]; measured: [text: string] }>();
@@ -458,7 +458,7 @@ export default function Ready() {
   );
 }
 `,
-  Pair: `import { defineEmits, ref } from "@uxfront/unframework";
+	Pair: `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Pair() {
   const emit = defineEmits<{ first: [value: string] }>();
@@ -495,7 +495,7 @@ export default function Pair() {
 }
 `,
 
-  Choices: `import { ref } from "@uxfront/unframework";
+	Choices: `import { ref } from "@uxfront/unframework";
 
 export default function Choices() {
   const log = ref<string[]>([]);
@@ -529,7 +529,7 @@ export default function Choices() {
   );
 }
 `,
-  Modes: `import { ref } from "@uxfront/unframework";
+	Modes: `import { ref } from "@uxfront/unframework";
 
 export default function Modes() {
   const mode = ref("a");
@@ -559,7 +559,7 @@ export default function Modes() {
   );
 }
 `,
-  Shortcuts: `import { defineEmits, onMounted, onUnmounted, ref, watch } from "@uxfront/unframework";
+	Shortcuts: `import { defineEmits, onMounted, onUnmounted, ref, watch } from "@uxfront/unframework";
 
 export default function Shortcuts() {
   const emit = defineEmits<{ shortcut: [key: string, count: number] }>();
@@ -603,7 +603,7 @@ export default function Shortcuts() {
   );
 }
 `,
-  Measured: `import { defineEmits, ref, useTemplateRef, watch } from "@uxfront/unframework";
+	Measured: `import { defineEmits, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 export default function Measured() {
   const emit = defineEmits<{ rendered: [count: number] }>();
@@ -635,7 +635,7 @@ export default function Measured() {
   );
 }
 `,
-  AsyncPair: `import { defineEmits } from "@uxfront/unframework";
+	AsyncPair: `import { defineEmits } from "@uxfront/unframework";
 
 export default function AsyncPair() {
   const emit = defineEmits<{ log: [entry: string] }>();
@@ -684,7 +684,7 @@ export default function AsyncPair() {
   );
 }
 `,
-  Guards: `import { defineEmits, ref } from "@uxfront/unframework";
+	Guards: `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Guards() {
   const emit = defineEmits<{ log: [entry: string] }>();
@@ -718,7 +718,7 @@ export default function Guards() {
   );
 }
 `,
-  Narrowed: `import { defineEmits } from "@uxfront/unframework";
+	Narrowed: `import { defineEmits } from "@uxfront/unframework";
 
 export interface User {
   name: string;
@@ -752,7 +752,7 @@ export default function Narrowed({ owner, value }: NarrowedProps) {
   );
 }
 `,
-  NestKeys: `import { ref } from "@uxfront/unframework";
+	NestKeys: `import { ref } from "@uxfront/unframework";
 
 export default function NestKeys() {
   const mode = ref("a");
@@ -782,7 +782,7 @@ export default function NestKeys() {
   );
 }
 `,
-  Switches: `import { ref } from "@uxfront/unframework";
+	Switches: `import { ref } from "@uxfront/unframework";
 
 export default function Switches() {
   const byPassword = ref(true);
@@ -832,7 +832,7 @@ export default function Switches() {
   );
 }
 `,
-  Checked: `import { defineEmits, nextTick, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
+	Checked: `import { defineEmits, nextTick, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
 
 export default function Checked() {
   const emit = defineEmits<{ saved: [value: string]; summary: [text: string]; focused: [label: string] }>();
@@ -883,7 +883,7 @@ export default function Checked() {
   );
 }
 `,
-  TickFlag: `import { defineEmits, nextTick, ref, useTemplateRef, watch } from "@uxfront/unframework";
+	TickFlag: `import { defineEmits, nextTick, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 export default function TickFlag() {
   const emit = defineEmits<{ focused: [label: string] }>();
@@ -922,7 +922,7 @@ export default function TickFlag() {
   );
 }
 `,
-  CheckedPlain: `import { defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";
+	CheckedPlain: `import { defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function CheckedPlain() {
   const emit = defineEmits<{ saved: [value: string]; summary: [text: string]; }>();
@@ -969,7 +969,7 @@ export default function CheckedPlain() {
   );
 }
 `,
-  Pager: `import { defineEmits, ref } from "@uxfront/unframework";
+	Pager: `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Pager() {
   const emit = defineEmits<{ moved: [page: number] }>();
@@ -994,7 +994,7 @@ export default function Pager() {
   );
 }
 `,
-  Escapable: `import { defineEmits, ref } from "@uxfront/unframework";
+	Escapable: `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Escapable() {
   const emit = defineEmits<{ closed: [reason: string] }>();
@@ -1023,7 +1023,7 @@ export default function Escapable() {
   );
 }
 `,
-  Settle: `import { defineEmits, onUnmounted, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
+	Settle: `import { defineEmits, onUnmounted, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
 
 export default function Settle() {
   const emit = defineEmits<{ log: [entry: string] }>();
@@ -1065,7 +1065,7 @@ export default function Settle() {
   );
 }
 `,
-  Editor: `import { defineEmits, nextTick, ref, useTemplateRef } from "@uxfront/unframework";
+	Editor: `import { defineEmits, nextTick, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Editor() {
   const emit = defineEmits<{ focused: [label: string]; renamed: [name: string] }>();
@@ -1102,7 +1102,7 @@ export default function Editor() {
   );
 }
 `,
-  TickClose: `import { defineEmits, nextTick, ref } from "@uxfront/unframework";
+	TickClose: `import { defineEmits, nextTick, ref } from "@uxfront/unframework";
 
 export default function TickClose() {
   const emit = defineEmits<{ close: []; done: [open: boolean] }>();

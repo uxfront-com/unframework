@@ -7,9 +7,9 @@ import { expect } from "vitest";
 import Badge from "./Badge.uf.tsx";
 
 describeTargets("styleframe/recipe", () => {
-  it("renders the recipe's classes", async () => {
-    const view = await mountScenario(Badge, "default");
-    await view.expectParity("default");
-    await expect.element(view.getByText("New")).toBeVisible();
-  });
+	it("renders the recipe's classes", async () => {
+		const view = await mountScenario(Badge, "default");
+		await view.expectParity("default");
+		await expect.element(view.getByText("New")).toBeVisible();
+	});
 });

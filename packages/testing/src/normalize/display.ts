@@ -18,61 +18,61 @@ import type { TreeElement } from "./tree.ts";
  *   content in it: whitespace collapses across it as if it were not there.
  */
 export type Outer =
-  | "none"
-  | "contents"
-  | "inline"
-  | "atomic"
-  | "break"
-  | "ruby-break"
-  | "block"
-  | "out-of-flow";
+	| "none"
+	| "contents"
+	| "inline"
+	| "atomic"
+	| "break"
+	| "ruby-break"
+	| "block"
+	| "out-of-flow";
 
 export interface Box {
-  outer: Outer;
-  /** Whether the element is a flex or grid container, whose children are blockified. */
-  blockifiesChildren: boolean;
-  /**
-   * Whether a whitespace-only text child renders nothing unless it follows text that does not
-   * end in whitespace: Chromium's rule for the children of tables, table rows and sections,
-   * and flex and grid containers (`Text::TextLayoutObjectIsNeeded`).
-   */
-  dropsWhitespaceChildren: boolean;
-  /**
-   * Whether the element is a ruby (`<ruby>`, `display: ruby`) or a ruby annotation (`<rt>` in a
-   * ruby, `display: ruby-text`), whose content Chromium lays out on one line: see `boxOf` for
-   * what it inlinifies.
-   */
-  rubyContent: boolean;
-  /** Whether the element is a ruby annotation (`<rt>` in a ruby, `display: ruby-text`). */
-  rubyAnnotation: boolean;
-  /**
-   * Whether the start and the end of the element's inline box are items of their own in
-   * Blink's inline layout: a ruby's columns, and the bidi controls around an element whose
-   * `unicode-bidi` is not `normal` (`<bdi>`, `<bdo>`, `<li>`, `dir="…"`). Whitespace collapses
-   * across them, but they hide a zero-width space from a line break on the other side, which
-   * then renders: `a\u200b<bdi>\nb</bdi>` is `a\u200b b`, where `a\u200b<b>\nb</b>` is
-   * `a\u200bb`. An annotation's end is one, and so is its start, except where its parent is a
-   * ruby container (`ParentLayout.rubyContainer`): in a ruby, `a\u200b<rt>\nb</rt>` is
-   * `a\u200b<rt>b</rt>`. Anywhere else Chromium wraps the annotation in an anonymous ruby,
-   * whose start is one.
-   */
-  opaqueStart: boolean;
-  opaqueEnd: boolean;
-  /**
-   * Whether the element is a list item. Laid out inline (`display: inline list-item`, or
-   * inlinified by a ruby), it starts with its marker: content that ends in a space, which takes
-   * the whitespace after it.
-   */
-  listItem: boolean;
-  /**
-   * Whether the box is table-internal: a row group, a row, a column group, a column, a cell or
-   * a caption, by its `display` (see `boxOf`) or the user-agent default. Unless its parent is a table
-   * part, CSS wraps it in an anonymous table (CSS 2.1 §17.2.1), an atomic `inline-table` when
-   * the parent is an inline box, with rules for the whitespace around it this model does not
-   * follow: the whitespace rule keeps that line as written. In a block container the wrapper
-   * is a block-level `table`, which is what `outer` says.
-   */
-  tableInternal: boolean;
+	outer: Outer;
+	/** Whether the element is a flex or grid container, whose children are blockified. */
+	blockifiesChildren: boolean;
+	/**
+	 * Whether a whitespace-only text child renders nothing unless it follows text that does not
+	 * end in whitespace: Chromium's rule for the children of tables, table rows and sections,
+	 * and flex and grid containers (`Text::TextLayoutObjectIsNeeded`).
+	 */
+	dropsWhitespaceChildren: boolean;
+	/**
+	 * Whether the element is a ruby (`<ruby>`, `display: ruby`) or a ruby annotation (`<rt>` in a
+	 * ruby, `display: ruby-text`), whose content Chromium lays out on one line: see `boxOf` for
+	 * what it inlinifies.
+	 */
+	rubyContent: boolean;
+	/** Whether the element is a ruby annotation (`<rt>` in a ruby, `display: ruby-text`). */
+	rubyAnnotation: boolean;
+	/**
+	 * Whether the start and the end of the element's inline box are items of their own in
+	 * Blink's inline layout: a ruby's columns, and the bidi controls around an element whose
+	 * `unicode-bidi` is not `normal` (`<bdi>`, `<bdo>`, `<li>`, `dir="…"`). Whitespace collapses
+	 * across them, but they hide a zero-width space from a line break on the other side, which
+	 * then renders: `a\u200b<bdi>\nb</bdi>` is `a\u200b b`, where `a\u200b<b>\nb</b>` is
+	 * `a\u200bb`. An annotation's end is one, and so is its start, except where its parent is a
+	 * ruby container (`ParentLayout.rubyContainer`): in a ruby, `a\u200b<rt>\nb</rt>` is
+	 * `a\u200b<rt>b</rt>`. Anywhere else Chromium wraps the annotation in an anonymous ruby,
+	 * whose start is one.
+	 */
+	opaqueStart: boolean;
+	opaqueEnd: boolean;
+	/**
+	 * Whether the element is a list item. Laid out inline (`display: inline list-item`, or
+	 * inlinified by a ruby), it starts with its marker: content that ends in a space, which takes
+	 * the whitespace after it.
+	 */
+	listItem: boolean;
+	/**
+	 * Whether the box is table-internal: a row group, a row, a column group, a column, a cell or
+	 * a caption, by its `display` (see `boxOf`) or the user-agent default. Unless its parent is a table
+	 * part, CSS wraps it in an anonymous table (CSS 2.1 §17.2.1), an atomic `inline-table` when
+	 * the parent is an inline box, with rules for the whitespace around it this model does not
+	 * follow: the whitespace rule keeps that line as written. In a block container the wrapper
+	 * is a block-level `table`, which is what `outer` says.
+	 */
+	tableInternal: boolean;
 }
 
 /**
@@ -81,11 +81,11 @@ export interface Box {
  * `style` attribute.
  */
 export interface ComputedLayout {
-  display: string;
-  position: string;
-  float: string;
-  unicodeBidi: string;
-  whiteSpaceCollapse: string;
+	display: string;
+	position: string;
+	float: string;
+	unicodeBidi: string;
+	whiteSpaceCollapse: string;
 }
 
 /**
@@ -99,31 +99,31 @@ const computedLayouts = new WeakMap<TreeElement, ComputedLayout>();
 
 /** Records the computed values of the live element a parsed element was rebuilt from. */
 export function recordComputedLayout(element: TreeElement, layout: ComputedLayout): void {
-  computedLayouts.set(element, layout);
+	computedLayouts.set(element, layout);
 }
 
 /** What the element's parent does to its box, besides what the element's own style says. */
 export interface ParentLayout {
-  /** The parent is a flex or grid container: it blockifies its children. */
-  blockifies: boolean;
-  /** The element is in a ruby's content: the ruby inlinifies it. */
-  ruby: boolean;
-  /**
-   * The parent box is a ruby container itself (`display: ruby`, `inline ruby` or `block ruby`;
-   * `display: contents` between them is no box), not an annotation or an element in one. An
-   * annotation anywhere else gets an anonymous ruby around it.
-   */
-  rubyContainer: boolean;
+	/** The parent is a flex or grid container: it blockifies its children. */
+	blockifies: boolean;
+	/** The element is in a ruby's content: the ruby inlinifies it. */
+	ruby: boolean;
+	/**
+	 * The parent box is a ruby container itself (`display: ruby`, `inline ruby` or `block ruby`;
+	 * `display: contents` between them is no box), not an annotation or an element in one. An
+	 * annotation anywhere else gets an anonymous ruby around it.
+	 */
+	rubyContainer: boolean;
 }
 
 const words = (list: string): ReadonlySet<string> => new Set(list.split(" "));
 
 /** HTML elements with a block-level display (block, table parts) by default. */
 const BLOCK_TAGS = words(
-  "address article aside blockquote body caption center col colgroup dd details dialog dir div " +
-    "dl dt fieldset figcaption figure footer form frame frameset h1 h2 h3 h4 h5 h6 header hgroup " +
-    "hr html legend listing main menu nav ol optgroup option p plaintext pre search section " +
-    "summary table tbody td tfoot th thead tr ul xmp",
+	"address article aside blockquote body caption center col colgroup dd details dialog dir div " +
+		"dl dt fieldset figcaption figure footer form frame frameset h1 h2 h3 h4 h5 h6 header hgroup " +
+		"hr html legend listing main menu nav ol optgroup option p plaintext pre search section " +
+		"summary table tbody td tfoot th thead tr ul xmp",
 );
 
 /** HTML elements whose default display is a table, a table row or section, or a column. */
@@ -134,12 +134,12 @@ const TABLE_INTERNAL_TAGS = words("caption col colgroup tbody td tfoot th thead 
 
 /** HTML elements that are replaced or inline-block by default. */
 const ATOMIC_TAGS = words(
-  "audio button canvas embed iframe img input marquee meter object progress select textarea video",
+	"audio button canvas embed iframe img input marquee meter object progress select textarea video",
 );
 
 /** HTML elements with `display: none` by default. */
 const NONE_TAGS = words(
-  "area base basefont datalist head link meta noembed noframes param rp script style template title",
+	"area base basefont datalist head link meta noembed noframes param rp script style template title",
 );
 
 /**
@@ -148,17 +148,17 @@ const NONE_TAGS = words(
  * not rendered as flowing text.
  */
 const PRESERVING_TAGS = words(
-  "iframe listing noembed noframes noscript plaintext pre script style textarea title xmp",
+	"iframe listing noembed noframes noscript plaintext pre script style textarea title xmp",
 );
 
 /** The preserving elements whose text is raw text or a `<textarea>`'s value. */
 const KEPT_TEXT_TAGS = words(
-  "iframe noembed noframes noscript plaintext script style textarea title xmp",
+	"iframe noembed noframes noscript plaintext script style textarea title xmp",
 );
 
 /** `white-space` and `white-space-collapse` keywords that keep spaces or line breaks. */
 const PRESERVING_KEYWORDS = words(
-  "pre pre-wrap pre-line break-spaces preserve preserve-breaks preserve-spaces",
+	"pre pre-wrap pre-line break-spaces preserve preserve-breaks preserve-spaces",
 );
 const COLLAPSING_KEYWORDS = words("normal nowrap collapse");
 
@@ -188,31 +188,31 @@ const DIRECTIONS = words("ltr rtl auto");
  * it is not table-internal.
  */
 function box(
-  outer: Outer,
-  traits: Partial<Omit<Box, "outer" | "opaqueStart" | "opaqueEnd">> = {},
+	outer: Outer,
+	traits: Partial<Omit<Box, "outer" | "opaqueStart" | "opaqueEnd">> = {},
 ): Box {
-  const blockifiesChildren = traits.blockifiesChildren ?? false;
-  return {
-    outer,
-    blockifiesChildren,
-    dropsWhitespaceChildren: traits.dropsWhitespaceChildren ?? blockifiesChildren,
-    rubyContent: traits.rubyContent ?? false,
-    rubyAnnotation: traits.rubyAnnotation ?? false,
-    listItem: traits.listItem ?? false,
-    tableInternal: traits.tableInternal ?? false,
-    opaqueStart: false,
-    opaqueEnd: false,
-  };
+	const blockifiesChildren = traits.blockifiesChildren ?? false;
+	return {
+		outer,
+		blockifiesChildren,
+		dropsWhitespaceChildren: traits.dropsWhitespaceChildren ?? blockifiesChildren,
+		rubyContent: traits.rubyContent ?? false,
+		rubyAnnotation: traits.rubyAnnotation ?? false,
+		listItem: traits.listItem ?? false,
+		tableInternal: traits.tableInternal ?? false,
+		opaqueStart: false,
+		opaqueEnd: false,
+	};
 }
 
 /** Whether a node is the HTML element `<tag>`. */
 function isHtmlElement(node: TreeElement["parentNode"], tag: string): boolean {
-  return (
-    node !== null &&
-    "tagName" in node &&
-    node.namespaceURI === HTML_NAMESPACE &&
-    node.tagName === tag
-  );
+	return (
+		node !== null &&
+		"tagName" in node &&
+		node.namespaceURI === HTML_NAMESPACE &&
+		node.tagName === tag
+	);
 }
 
 /**
@@ -220,49 +220,79 @@ function isHtmlElement(node: TreeElement["parentNode"], tag: string): boolean {
  * inputs, and `<noscript>` (the parser and the browser both run with scripting enabled).
  */
 function forcedBox(element: TreeElement): Box | undefined {
-  if (element.namespaceURI !== HTML_NAMESPACE) return undefined;
-  if (element.tagName === "noscript") return box("none");
-  if (element.tagName === "input" && getAttribute(element, "type")?.toLowerCase() === "hidden") {
-    return box("none");
-  }
-  return undefined;
+	if (element.namespaceURI !== HTML_NAMESPACE) {
+		return undefined;
+	}
+	if (element.tagName === "noscript") {
+		return box("none");
+	}
+	if (element.tagName === "input" && getAttribute(element, "type")?.toLowerCase() === "hidden") {
+		return box("none");
+	}
+	return undefined;
 }
 
 /** The user-agent stylesheet's display for an element, per the HTML rendering section. */
 function defaultBox(element: TreeElement): Box {
-  const tag = element.tagName;
-  if (element.namespaceURI === SVG_NAMESPACE) {
-    if (tag === "svg") return box("atomic");
-    if (tag === "style" || tag === "script") return box("none");
-    return box(SVG_INLINE_TAGS.has(tag) ? "inline" : "block");
-  }
-  if (element.namespaceURI === MATHML_NAMESPACE) {
-    // MathML lays out its own children and ignores whitespace between them.
-    if (tag !== "math") return box("block");
-    return box(getAttribute(element, "display")?.toLowerCase() === "block" ? "block" : "atomic");
-  }
-  const hidden = getAttribute(element, "hidden");
-  if (hidden !== undefined && hidden.toLowerCase() !== "until-found" && tag !== "embed") {
-    return box("none");
-  }
-  if (tag === "dialog" && getAttribute(element, "open") === undefined) return box("none");
-  if (tag === "audio" && getAttribute(element, "controls") === undefined) return box("none");
-  if (tag === "br") return box("break");
-  if (tag === "slot") return box("contents");
-  // `ruby { display: ruby }`, and `ruby > rt { display: ruby-text }`: an `<rt>` elsewhere is
-  // an ordinary inline.
-  if (tag === "ruby") return box("inline", { rubyContent: true });
-  if (tag === "rt" && isHtmlElement(element.parentNode, "ruby")) {
-    return box("inline", { rubyContent: true, rubyAnnotation: true });
-  }
-  if (tag === "li") return box("block", { listItem: true });
-  if (NONE_TAGS.has(tag)) return box("none");
-  const tableInternal = TABLE_INTERNAL_TAGS.has(tag);
-  if (TABLE_TAGS.has(tag)) return box("block", { dropsWhitespaceChildren: true, tableInternal });
-  if (BLOCK_TAGS.has(tag)) return box("block", { tableInternal });
-  if (ATOMIC_TAGS.has(tag)) return box("atomic");
-  // Every other element, custom elements included, has the initial `display: inline`.
-  return box("inline");
+	const tag = element.tagName;
+	if (element.namespaceURI === SVG_NAMESPACE) {
+		if (tag === "svg") {
+			return box("atomic");
+		}
+		if (tag === "style" || tag === "script") {
+			return box("none");
+		}
+		return box(SVG_INLINE_TAGS.has(tag) ? "inline" : "block");
+	}
+	if (element.namespaceURI === MATHML_NAMESPACE) {
+		// MathML lays out its own children and ignores whitespace between them.
+		if (tag !== "math") {
+			return box("block");
+		}
+		return box(getAttribute(element, "display")?.toLowerCase() === "block" ? "block" : "atomic");
+	}
+	const hidden = getAttribute(element, "hidden");
+	if (hidden !== undefined && hidden.toLowerCase() !== "until-found" && tag !== "embed") {
+		return box("none");
+	}
+	if (tag === "dialog" && getAttribute(element, "open") === undefined) {
+		return box("none");
+	}
+	if (tag === "audio" && getAttribute(element, "controls") === undefined) {
+		return box("none");
+	}
+	if (tag === "br") {
+		return box("break");
+	}
+	if (tag === "slot") {
+		return box("contents");
+	}
+	// `ruby { display: ruby }`, and `ruby > rt { display: ruby-text }`: an `<rt>` elsewhere is
+	// an ordinary inline.
+	if (tag === "ruby") {
+		return box("inline", { rubyContent: true });
+	}
+	if (tag === "rt" && isHtmlElement(element.parentNode, "ruby")) {
+		return box("inline", { rubyContent: true, rubyAnnotation: true });
+	}
+	if (tag === "li") {
+		return box("block", { listItem: true });
+	}
+	if (NONE_TAGS.has(tag)) {
+		return box("none");
+	}
+	const tableInternal = TABLE_INTERNAL_TAGS.has(tag);
+	if (TABLE_TAGS.has(tag)) {
+		return box("block", { dropsWhitespaceChildren: true, tableInternal });
+	}
+	if (BLOCK_TAGS.has(tag)) {
+		return box("block", { tableInternal });
+	}
+	if (ATOMIC_TAGS.has(tag)) {
+		return box("atomic");
+	}
+	// Every other element, custom elements included, has the initial `display: inline`.
+	return box("inline");
 }
 
 /**
@@ -272,71 +302,77 @@ function defaultBox(element: TreeElement): Box {
  * `math` is a MathML layout: on any other element it computes to `flow`.
  */
 export function boxFromDisplay(value: string, mathml = false): Box | undefined {
-  const keywords = value.trim().split(/\s+/);
-  if (keywords.length === 1) {
-    switch (keywords[0]) {
-      case "none":
-        return box("none");
-      case "contents":
-        return box("contents");
-      case "inline":
-      case "initial":
-      case "unset":
-        return box("inline");
-      case "ruby":
-        return box("inline", { rubyContent: true });
-      case "ruby-text":
-        return box("inline", { rubyContent: true, rubyAnnotation: true });
-      case "math":
-        return box(mathml ? "atomic" : "inline");
-      case "inline-block":
-        return box("atomic");
-      case "inline-table":
-        return box("atomic", { dropsWhitespaceChildren: true });
-      case "inline-flex":
-      case "inline-grid":
-        return box("atomic", { blockifiesChildren: true });
-      case "table":
-        return box("block", { dropsWhitespaceChildren: true });
-      // Table-internal, static or bound (ADR-0065, see `Box.tableInternal`).
-      case "table-row-group":
-      case "table-header-group":
-      case "table-footer-group":
-      case "table-row":
-      case "table-column-group":
-      case "table-column":
-        return box("block", { dropsWhitespaceChildren: true, tableInternal: true });
-      case "table-cell":
-      case "table-caption":
-        return box("block", { tableInternal: true });
-      case "block":
-      case "flow":
-      case "flow-root":
-        return box("block");
-      case "list-item":
-        return box("block", { listItem: true });
-      case "flex":
-      case "grid":
-        return box("block", { blockifiesChildren: true });
-      default:
-        return undefined;
-    }
-  }
-  const has = (keyword: string) => keywords.includes(keyword);
-  if (has("run-in")) return undefined;
-  const inner = keywords.find((keyword) =>
-    ["flow", "flow-root", "table", "flex", "grid", "ruby", "math"].includes(keyword),
-  );
-  const traits = {
-    blockifiesChildren: inner === "flex" || inner === "grid",
-    dropsWhitespaceChildren: inner === "flex" || inner === "grid" || inner === "table",
-    rubyContent: inner === "ruby",
-    listItem: has("list-item"),
-  };
-  const flows = inner === undefined || inner === "flow" || (inner === "math" && !mathml);
-  if (has("inline")) return box(flows || inner === "ruby" ? "inline" : "atomic", traits);
-  if (has("block") || has("list-item")) return box("block", traits);
-  return undefined;
+	const keywords = value.trim().split(/\s+/);
+	if (keywords.length === 1) {
+		switch (keywords[0]) {
+			case "none":
+				return box("none");
+			case "contents":
+				return box("contents");
+			case "inline":
+			case "initial":
+			case "unset":
+				return box("inline");
+			case "ruby":
+				return box("inline", { rubyContent: true });
+			case "ruby-text":
+				return box("inline", { rubyContent: true, rubyAnnotation: true });
+			case "math":
+				return box(mathml ? "atomic" : "inline");
+			case "inline-block":
+				return box("atomic");
+			case "inline-table":
+				return box("atomic", { dropsWhitespaceChildren: true });
+			case "inline-flex":
+			case "inline-grid":
+				return box("atomic", { blockifiesChildren: true });
+			case "table":
+				return box("block", { dropsWhitespaceChildren: true });
+			// Table-internal, static or bound (ADR-0065, see `Box.tableInternal`).
+			case "table-row-group":
+			case "table-header-group":
+			case "table-footer-group":
+			case "table-row":
+			case "table-column-group":
+			case "table-column":
+				return box("block", { dropsWhitespaceChildren: true, tableInternal: true });
+			case "table-cell":
+			case "table-caption":
+				return box("block", { tableInternal: true });
+			case "block":
+			case "flow":
+			case "flow-root":
+				return box("block");
+			case "list-item":
+				return box("block", { listItem: true });
+			case "flex":
+			case "grid":
+				return box("block", { blockifiesChildren: true });
+			default:
+				return undefined;
+		}
+	}
+	const has = (keyword: string) => keywords.includes(keyword);
+	if (has("run-in")) {
+		return undefined;
+	}
+	const inner = keywords.find((keyword) =>
+		["flow", "flow-root", "table", "flex", "grid", "ruby", "math"].includes(keyword),
+	);
+	const traits = {
+		blockifiesChildren: inner === "flex" || inner === "grid",
+		dropsWhitespaceChildren: inner === "flex" || inner === "grid" || inner === "table",
+		rubyContent: inner === "ruby",
+		listItem: has("list-item"),
+	};
+	const flows = inner === undefined || inner === "flow" || (inner === "math" && !mathml);
+	if (has("inline")) {
+		return box(flows || inner === "ruby" ? "inline" : "atomic", traits);
+	}
+	if (has("block") || has("list-item")) {
+		return box("block", traits);
+	}
+	return undefined;
 }
 
 /**
@@ -360,22 +396,22 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
  * defaults, and a class whose stylesheet changes the layout is invisible there.
  */
 export function boxOf(element: TreeElement, parent: ParentLayout): Box {
-  const placed = placedBox(element, parent);
-  const bidi = isolatesBidi(element);
-  return {
-    ...placed,
-    opaqueStart: (placed.rubyContent && !(placed.rubyAnnotation && parent.rubyContainer)) || bidi,
-    opaqueEnd: placed.rubyContent || bidi,
-  };
+	const placed = placedBox(element, parent);
+	const bidi = isolatesBidi(element);
+	return {
+		...placed,
+		opaqueStart: (placed.rubyContent && !(placed.rubyAnnotation && parent.rubyContainer)) || bidi,
+		opaqueEnd: placed.rubyContent || bidi,
+	};
 }
 
 /** The box an inline `display` gives, or the user-agent default. */
 function declaredBox(element: TreeElement, display: string | undefined): Box {
-  return (
-    (display !== undefined
-      ? boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE)
-      : undefined) ?? defaultBox(element)
-  );
+	return (
+		(display !== undefined
+			? boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE)
+			: undefined) ?? defaultBox(element)
+	);
 }
 
 /**
@@ -391,53 +427,61 @@ function declaredBox(element: TreeElement, display: string | undefined): Box {
  * The last two read only `display: none`.
  */
 function computedBox(element: TreeElement, display: string): Box {
-  const fallback = defaultBox(element);
-  if (
-    isHtmlElement(element, "wbr") ||
-    (element.namespaceURI === SVG_NAMESPACE && element.tagName !== "svg")
-  ) {
-    return display === "none" ? box("none") : fallback;
-  }
-  if (display === "inline" && (fallback.outer === "atomic" || fallback.outer === "break")) {
-    return fallback;
-  }
-  return boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE) ?? fallback;
+	const fallback = defaultBox(element);
+	if (
+		isHtmlElement(element, "wbr") ||
+		(element.namespaceURI === SVG_NAMESPACE && element.tagName !== "svg")
+	) {
+		return display === "none" ? box("none") : fallback;
+	}
+	if (display === "inline" && (fallback.outer === "atomic" || fallback.outer === "break")) {
+		return fallback;
+	}
+	return boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE) ?? fallback;
 }
 
 /** The element's box, laid out by its parent (see `boxOf`), its edges aside. */
 function placedBox(element: TreeElement, parent: ParentLayout): Box {
-  const forced = forcedBox(element);
-  if (forced) return forced;
-  const computed = computedLayouts.get(element);
-  const style = getAttribute(element, "style");
-  const declared = computed
-    ? computedBox(element, computed.display)
-    : declaredBox(element, styleValue(style, "display"));
-  if (declared.outer === "none" || declared.outer === "contents") return declared;
-  const position = computed ? computed.position : styleValue(style, "position");
-  const float = computed ? computed.float : styleValue(style, "float");
-  const floats = float !== undefined && FLOATING_KEYWORDS.has(float);
-  const positioned = position !== undefined && OUT_OF_FLOW_POSITIONS.has(position);
-  // Blockified, a table-internal box is a block container, in no anonymous table: its inner
-  // display becomes `flow` (CSS Display 3 §2.7), so its children are laid out as a block's.
-  const own =
-    declared.tableInternal && (floats || positioned || parent.blockifies) ? box("block") : declared;
-  if (positioned) return { ...own, outer: "out-of-flow" };
-  if (parent.ruby) {
-    // A float is blockified before the ruby drops its float, so it is inlinified as a block.
-    if (floats || own.outer === "block") {
-      return { ...own, outer: own.listItem || own.rubyContent ? "inline" : "atomic" };
-    }
-    return own.outer === "break" ? { ...own, outer: "ruby-break" } : own;
-  }
-  if (floats) return { ...own, outer: "out-of-flow" };
-  if (
-    parent.blockifies &&
-    (own.outer === "inline" || own.outer === "atomic" || own.outer === "break")
-  ) {
-    return { ...own, outer: "block" };
-  }
-  return own;
+	const forced = forcedBox(element);
+	if (forced) {
+		return forced;
+	}
+	const computed = computedLayouts.get(element);
+	const style = getAttribute(element, "style");
+	const declared = computed
+		? computedBox(element, computed.display)
+		: declaredBox(element, styleValue(style, "display"));
+	if (declared.outer === "none" || declared.outer === "contents") {
+		return declared;
+	}
+	const position = computed ? computed.position : styleValue(style, "position");
+	const float = computed ? computed.float : styleValue(style, "float");
+	const floats = float !== undefined && FLOATING_KEYWORDS.has(float);
+	const positioned = position !== undefined && OUT_OF_FLOW_POSITIONS.has(position);
+	// Blockified, a table-internal box is a block container, in no anonymous table: its inner
+	// display becomes `flow` (CSS Display 3 §2.7), so its children are laid out as a block's.
+	const own =
+		declared.tableInternal && (floats || positioned || parent.blockifies) ? box("block") : declared;
+	if (positioned) {
+		return { ...own, outer: "out-of-flow" };
+	}
+	if (parent.ruby) {
+		// A float is blockified before the ruby drops its float, so it is inlinified as a block.
+		if (floats || own.outer === "block") {
+			return { ...own, outer: own.listItem || own.rubyContent ? "inline" : "atomic" };
+		}
+		return own.outer === "break" ? { ...own, outer: "ruby-break" } : own;
+	}
+	if (floats) {
+		return { ...own, outer: "out-of-flow" };
+	}
+	if (
+		parent.blockifies &&
+		(own.outer === "inline" || own.outer === "atomic" || own.outer === "break")
+	) {
+		return { ...own, outer: "block" };
+	}
+	return own;
 }
 
 /**
@@ -447,14 +491,22 @@ function placedBox(element: TreeElement, parent: ParentLayout): Box {
  * the default, as Chromium computes them).
  */
 function isolatesBidi(element: TreeElement): boolean {
-  const computed = computedLayouts.get(element);
-  if (computed) return BIDI_KEYWORDS.has(computed.unicodeBidi);
-  const value = styleValue(getAttribute(element, "style"), "unicode-bidi");
-  if (value === "normal" || value === "initial" || value === "unset") return false;
-  if (value !== undefined && BIDI_KEYWORDS.has(value)) return true;
-  if (element.namespaceURI !== HTML_NAMESPACE) return false;
-  const dir = getAttribute(element, "dir")?.toLowerCase();
-  return BIDI_TAGS.has(element.tagName) || (dir !== undefined && DIRECTIONS.has(dir));
+	const computed = computedLayouts.get(element);
+	if (computed) {
+		return BIDI_KEYWORDS.has(computed.unicodeBidi);
+	}
+	const value = styleValue(getAttribute(element, "style"), "unicode-bidi");
+	if (value === "normal" || value === "initial" || value === "unset") {
+		return false;
+	}
+	if (value !== undefined && BIDI_KEYWORDS.has(value)) {
+		return true;
+	}
+	if (element.namespaceURI !== HTML_NAMESPACE) {
+		return false;
+	}
+	const dir = getAttribute(element, "dir")?.toLowerCase();
+	return BIDI_TAGS.has(element.tagName) || (dir !== undefined && DIRECTIONS.has(dir));
 }
 
 /**
@@ -468,25 +520,29 @@ function isolatesBidi(element: TreeElement): boolean {
  * reading: Chromium never renders its own text, whatever its user-agent `white-space: pre` says.
  */
 export function preservesWhitespace(element: TreeElement, inherited: boolean): boolean {
-  const computed = computedLayouts.get(element);
-  if (computed && !isHtmlElement(element, "select")) {
-    return PRESERVING_KEYWORDS.has(computed.whiteSpaceCollapse) || keepsText(element);
-  }
-  const value = styleValue(getAttribute(element, "style"), "white-space", "white-space-collapse");
-  const keywords = value?.split(/\s+/) ?? [];
-  if (keywords.some((keyword) => PRESERVING_KEYWORDS.has(keyword))) return true;
-  if (keywords.some((keyword) => COLLAPSING_KEYWORDS.has(keyword))) return false;
-  return (
-    inherited ||
-    keepsText(element) ||
-    (element.namespaceURI === HTML_NAMESPACE && PRESERVING_TAGS.has(element.tagName))
-  );
+	const computed = computedLayouts.get(element);
+	if (computed && !isHtmlElement(element, "select")) {
+		return PRESERVING_KEYWORDS.has(computed.whiteSpaceCollapse) || keepsText(element);
+	}
+	const value = styleValue(getAttribute(element, "style"), "white-space", "white-space-collapse");
+	const keywords = value?.split(/\s+/) ?? [];
+	if (keywords.some((keyword) => PRESERVING_KEYWORDS.has(keyword))) {
+		return true;
+	}
+	if (keywords.some((keyword) => COLLAPSING_KEYWORDS.has(keyword))) {
+		return false;
+	}
+	return (
+		inherited ||
+		keepsText(element) ||
+		(element.namespaceURI === HTML_NAMESPACE && PRESERVING_TAGS.has(element.tagName))
+	);
 }
 
 /** Whether the element's text is raw text or a value, which is never laid out as flowing text. */
 function keepsText(element: TreeElement): boolean {
-  return (
-    (element.namespaceURI === HTML_NAMESPACE && KEPT_TEXT_TAGS.has(element.tagName)) ||
-    (element.namespaceURI === SVG_NAMESPACE && SVG_PRESERVING_TAGS.has(element.tagName))
-  );
+	return (
+		(element.namespaceURI === HTML_NAMESPACE && KEPT_TEXT_TAGS.has(element.tagName)) ||
+		(element.namespaceURI === SVG_NAMESPACE && SVG_PRESERVING_TAGS.has(element.tagName))
+	);
 }

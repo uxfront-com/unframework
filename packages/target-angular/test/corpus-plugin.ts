@@ -26,15 +26,19 @@ const PROBE = "probe/";
 
 /** A case's component: its file name and its source, from the corpus or from M2_SOURCES. */
 function sourceOf(name: string): { file: string; source: string } {
-  if (name.startsWith(PROBE)) {
-    const file = `${name.slice(PROBE.length)}.uf.tsx`;
-    const source = M2_SOURCES[file];
-    if (source === undefined) throw new Error(`M2_SOURCES has no ${file}.`);
-    return { file, source };
-  }
-  const file = readdirSync(join(casesDir, name)).find((each) => each.endsWith(".uf.tsx"));
-  if (!file) throw new Error(`The case ${name} has no source.`);
-  return { file, source: readFileSync(join(casesDir, name, file), "utf8") };
+	if (name.startsWith(PROBE)) {
+		const file = `${name.slice(PROBE.length)}.uf.tsx`;
+		const source = M2_SOURCES[file];
+		if (source === undefined) {
+			throw new Error(`M2_SOURCES has no ${file}.`);
+		}
+		return { file, source };
+	}
+	const file = readdirSync(join(casesDir, name)).find((each) => each.endsWith(".uf.tsx"));
+	if (!file) {
+		throw new Error(`The case ${name} has no source.`);
+	}
+	return { file, source: readFileSync(join(casesDir, name, file), "utf8") };
 }
 
 /**
@@ -42,42 +46,50 @@ function sourceOf(name: string): { file: string; source: string } {
  * `api.getSheet`, which finds no sheet: the browser tests serve no styled case.
  */
 export function corpusOutputs(): Plugin {
-  const compiled = new Map<string, string>();
-  let root = "";
-  /** The served id of a case: its directory, and its component's file name. */
-  const idOf = (name: string) => `${root}${DIRECTORY}${name}/${sourceOf(name).file}.ts`;
-  return {
-    name: "unframework",
-    enforce: "pre",
-    api: { getCompiled: (id: string) => compiled.get(id), getSheet: () => undefined },
-    configResolved(config) {
-      root = config.root;
-    },
-    resolveId(source) {
-      if (source.startsWith(EVENTS)) return `${EVENTS_ID}${source.slice(EVENTS.length)}`;
-      return source.startsWith(PREFIX) ? idOf(source.slice(PREFIX.length)) : null;
-    },
-    async load(id) {
-      if (id.startsWith(EVENTS_ID)) {
-        const { file, source } = sourceOf(id.slice(EVENTS_ID.length));
-        const module = lower(source, file, true);
-        const events = (module.components[0]?.emits?.events ?? []).map((event) => ({
-          name: event.name,
-          optional: event.parameters.map((parameter) => parameter.optional === true),
-        }));
-        return `export default ${JSON.stringify(events)};\n`;
-      }
-      if (!id.includes(DIRECTORY)) return null;
-      const name = id.slice(id.indexOf(DIRECTORY) + DIRECTORY.length, id.lastIndexOf("/"));
-      const { file, source } = sourceOf(name);
-      // A case may show a warning on purpose (`semantics/setup-once`'s UF2007).
-      const module = lower(source, file, true);
-      const [output, ...more] = emitModule(module);
-      if (!output || more.length) throw new Error(`${name} does not emit one file.`);
-      const { file: formatted, error } = await formatOutput(output);
-      if (error) throw new Error(`${name} does not format: ${error}`);
-      compiled.set(id, formatted.contents);
-      return formatted.contents;
-    },
-  } as Plugin;
+	const compiled = new Map<string, string>();
+	let root = "";
+	/** The served id of a case: its directory, and its component's file name. */
+	const idOf = (name: string) => `${root}${DIRECTORY}${name}/${sourceOf(name).file}.ts`;
+	return {
+		name: "unframework",
+		enforce: "pre",
+		api: { getCompiled: (id: string) => compiled.get(id), getSheet: () => undefined },
+		configResolved(config) {
+			root = config.root;
+		},
+		resolveId(source) {
+			if (source.startsWith(EVENTS)) {
+				return `${EVENTS_ID}${source.slice(EVENTS.length)}`;
+			}
+			return source.startsWith(PREFIX) ? idOf(source.slice(PREFIX.length)) : null;
+		},
+		async load(id) {
+			if (id.startsWith(EVENTS_ID)) {
+				const { file, source } = sourceOf(id.slice(EVENTS_ID.length));
+				const module = lower(source, file, true);
+				const events = (module.components[0]?.emits?.events ?? []).map((event) => ({
+					name: event.name,
+					optional: event.parameters.map((parameter) => parameter.optional === true),
+				}));
+				return `export default ${JSON.stringify(events)};\n`;
+			}
+			if (!id.includes(DIRECTORY)) {
+				return null;
+			}
+			const name = id.slice(id.indexOf(DIRECTORY) + DIRECTORY.length, id.lastIndexOf("/"));
+			const { file, source } = sourceOf(name);
+			// A case may show a warning on purpose (`semantics/setup-once`'s UF2007).
+			const module = lower(source, file, true);
+			const [output, ...more] = emitModule(module);
+			if (!output || more.length) {
+				throw new Error(`${name} does not emit one file.`);
+			}
+			const { file: formatted, error } = await formatOutput(output);
+			if (error) {
+				throw new Error(`${name} does not format: ${error}`);
+			}
+			compiled.set(id, formatted.contents);
+			return formatted.contents;
+		},
+	} as Plugin;
 }

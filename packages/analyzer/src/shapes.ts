@@ -28,57 +28,71 @@ const API_MACROS = new Set(["defineEmits", "defineModel", "defineSlots"]);
  * declarations. What `compile()` asks the type
  * oracle for before the module is analysed.
  */
-export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
-  const imported = typeImportNames(parsed.program);
-  const found = new Map<string, ShapeQuery>();
-  const add = (type: AST.TSType) => {
-    const key = `${type.start}:${type.end}`;
-    if (!found.has(key)) {
-      found.set(key, { file: parsed.file, span: { start: type.start, end: type.end } });
-    }
-  };
-  // A type that reaches an import through the module's own declarations (`interface X extends
-  // Imported`) is one the in-module path leaves `external`.
-  const local = localShapes(parsed, parsed.file);
-  const names = (type: AST.TSType) =>
-    namesImported(type, imported) ||
-    (local({ start: type.start, end: type.end })?.unresolved.some(
-      (entry) => entry.reason === "external",
-    ) ??
-      false);
-  const inBody = (node: AST.Node) => {
-    visit(node, (each) => {
-      // A member's annotation inside a type is the type's, queried with it.
-      if (each.type === "TSTypeLiteral") return false;
-      if (each.type === "TSTypeAnnotation" && names(each.typeAnnotation)) add(each.typeAnnotation);
-      if (each.type === "CallExpression" && each.typeArguments) {
-        const callee = each.callee.type === "Identifier" ? each.callee.name : undefined;
-        for (const argument of each.typeArguments.params) {
-          if ((callee && API_MACROS.has(callee)) || names(argument)) add(argument);
-        }
-      }
-      if (
-        each.type === "TSTypeReference" &&
-        each.typeName.type === "Identifier" &&
-        each.typeName.name === "InjectionKey"
-      ) {
-        for (const argument of each.typeArguments?.params ?? []) add(argument);
-      }
-      return true;
-    });
-  };
-  for (const fn of functions(parsed.program)) {
-    const [parameter] = fn.params;
-    const annotation =
-      parameter && "typeAnnotation" in parameter ? parameter.typeAnnotation : undefined;
-    if (annotation) add(annotation.typeAnnotation);
-    if (fn.body) inBody(fn.body);
-  }
-  // A key declared at the module's top level (ADR-0054).
-  for (const statement of parsed.program.body) {
-    if (statement.type !== "FunctionDeclaration") inBody(statement);
-  }
-  return [...found.values()].toSorted((a, b) => a.span.start - b.span.start);
+export function shapeQueries(parsed: ParsedModule): Array<ShapeQuery> {
+	const imported = typeImportNames(parsed.program);
+	const found = new Map<string, ShapeQuery>();
+	const add = (type: AST.TSType) => {
+		const key = `${type.start}:${type.end}`;
+		if (!found.has(key)) {
+			found.set(key, { file: parsed.file, span: { start: type.start, end: type.end } });
+		}
+	};
+	// A type that reaches an import through the module's own declarations (`interface X extends
+	// Imported`) is one the in-module path leaves `external`.
+	const local = localShapes(parsed, parsed.file);
+	const names = (type: AST.TSType) =>
+		namesImported(type, imported) ||
+		(local({ start: type.start, end: type.end })?.unresolved.some(
+			(entry) => entry.reason === "external",
+		) ??
+			false);
+	const inBody = (node: AST.Node) => {
+		visit(node, (each) => {
+			// A member's annotation inside a type is the type's, queried with it.
+			if (each.type === "TSTypeLiteral") {
+				return false;
+			}
+			if (each.type === "TSTypeAnnotation" && names(each.typeAnnotation)) {
+				add(each.typeAnnotation);
+			}
+			if (each.type === "CallExpression" && each.typeArguments) {
+				const callee = each.callee.type === "Identifier" ? each.callee.name : undefined;
+				for (const argument of each.typeArguments.params) {
+					if ((callee && API_MACROS.has(callee)) || names(argument)) {
+						add(argument);
+					}
+				}
+			}
+			if (
+				each.type === "TSTypeReference" &&
+				each.typeName.type === "Identifier" &&
+				each.typeName.name === "InjectionKey"
+			) {
+				for (const argument of each.typeArguments?.params ?? []) {
+					add(argument);
+				}
+			}
+			return true;
+		});
+	};
+	for (const fn of functions(parsed.program)) {
+		const [parameter] = fn.params;
+		const annotation =
+			parameter && "typeAnnotation" in parameter ? parameter.typeAnnotation : undefined;
+		if (annotation) {
+			add(annotation.typeAnnotation);
+		}
+		if (fn.body) {
+			inBody(fn.body);
+		}
+	}
+	// A key declared at the module's top level (ADR-0054).
+	for (const statement of parsed.program.body) {
+		if (statement.type !== "FunctionDeclaration") {
+			inBody(statement);
+		}
+	}
+	return [...found.values()].toSorted((a, b) => a.span.start - b.span.start);
 }
 
 /**
@@ -87,78 +101,88 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
  * from another module is `unresolved` as `external`.
  */
 export function ownShapes(parsed: ParsedModule): Shapes {
-  return localShapes(parsed, parsed.file);
+	return localShapes(parsed, parsed.file);
 }
 
 /** Whether a type names one of the given imported types, at any depth. */
 function namesImported(type: AST.TSType, imported: ReadonlySet<string>): boolean {
-  let named = false;
-  visit(type, (node) => {
-    if (
-      node.type === "TSTypeReference" &&
-      node.typeName.type === "Identifier" &&
-      imported.has(node.typeName.name)
-    ) {
-      named = true;
-    }
-    return !named;
-  });
-  return named;
+	let named = false;
+	visit(type, (node) => {
+		if (
+			node.type === "TSTypeReference" &&
+			node.typeName.type === "Identifier" &&
+			imported.has(node.typeName.name)
+		) {
+			named = true;
+		}
+		return !named;
+	});
+	return named;
 }
 
 /** The local names of the types a module imports from modules other than the authoring API. */
 export function typeImportNames(program: AST.Program): Set<string> {
-  const names = new Set<string>();
-  for (const statement of program.body) {
-    if (statement.type !== "ImportDeclaration" || isAuthoringModule(statement.source.value)) {
-      continue;
-    }
-    for (const specifier of statement.specifiers) {
-      if (
-        statement.importKind === "type" ||
-        (specifier.type === "ImportSpecifier" && specifier.importKind === "type")
-      ) {
-        names.add(specifier.local.name);
-      }
-    }
-  }
-  return names;
+	const names = new Set<string>();
+	for (const statement of program.body) {
+		if (statement.type !== "ImportDeclaration" || isAuthoringModule(statement.source.value)) {
+			continue;
+		}
+		for (const specifier of statement.specifiers) {
+			if (
+				statement.importKind === "type" ||
+				(specifier.type === "ImportSpecifier" && specifier.importKind === "type")
+			) {
+				names.add(specifier.local.name);
+			}
+		}
+	}
+	return names;
 }
 
 /** The functions a module declares at its top level, exported or not, written as values too. */
-function functions(program: AST.Program): AST.Function[] {
-  const found: (AST.Function | AST.ArrowFunctionExpression)[] = [];
-  for (const statement of program.body) {
-    const declaration =
-      (statement.type === "ExportNamedDeclaration" ||
-        statement.type === "ExportDefaultDeclaration") &&
-      statement.declaration
-        ? statement.declaration
-        : statement;
-    if (declaration.type === "FunctionDeclaration") found.push(declaration);
-    if (declaration.type === "VariableDeclaration") {
-      for (const declarator of declaration.declarations) {
-        const init = declarator.init;
-        if (init?.type === "ArrowFunctionExpression" || init?.type === "FunctionExpression") {
-          found.push(init);
-        }
-      }
-    }
-  }
-  return found as AST.Function[];
+function functions(program: AST.Program): Array<AST.Function> {
+	const found: Array<AST.Function | AST.ArrowFunctionExpression> = [];
+	for (const statement of program.body) {
+		const declaration =
+			(statement.type === "ExportNamedDeclaration" ||
+				statement.type === "ExportDefaultDeclaration") &&
+			statement.declaration
+				? statement.declaration
+				: statement;
+		if (declaration.type === "FunctionDeclaration") {
+			found.push(declaration);
+		}
+		if (declaration.type === "VariableDeclaration") {
+			for (const declarator of declaration.declarations) {
+				const init = declarator.init;
+				if (init?.type === "ArrowFunctionExpression" || init?.type === "FunctionExpression") {
+					found.push(init);
+				}
+			}
+		}
+	}
+	return found as Array<AST.Function>;
 }
 
 /** Walks a node's tree, entering each node's children when `enter` returns true. */
 export function visit(node: unknown, enter: (node: AST.Node) => boolean): void {
-  if (!node || typeof node !== "object") return;
-  if (Array.isArray(node)) {
-    for (const item of node) visit(item, enter);
-    return;
-  }
-  const typed = node as AST.Node;
-  if (typeof typed.type !== "string") return;
-  if (!enter(typed)) return;
-  for (const key of visitorKeys[typed.type] ?? []) {
-    visit((node as Record<string, unknown>)[key], enter);
-  }
+	if (!node || typeof node !== "object") {
+		return;
+	}
+	if (Array.isArray(node)) {
+		for (const item of node) {
+			visit(item, enter);
+		}
+		return;
+	}
+	const typed = node as AST.Node;
+	if (typeof typed.type !== "string") {
+		return;
+	}
+	if (!enter(typed)) {
+		return;
+	}
+	for (const key of visitorKeys[typed.type] ?? []) {
+		visit((node as Record<string, unknown>)[key], enter);
+	}
 }

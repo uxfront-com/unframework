@@ -1,16 +1,16 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { formatOutput } from "@unframework.dev/codegen";
 import type { Diagnostic, EmitContext, OutputFile, ToolchainFile } from "@unframework.dev/codegen";
 import {
-  createComponent,
-  createElement,
-  createExport,
-  createModule,
-  createStaticAttribute,
-  createText,
+	createComponent,
+	createElement,
+	createExport,
+	createModule,
+	createStaticAttribute,
+	createText,
 } from "@unframework.dev/ir";
 import type { ElementNode, RenderNode, UfModule } from "@unframework.dev/ir";
 
@@ -32,16 +32,16 @@ const next = () => ({ start: offset, end: ++offset });
 
 /** An element, with attributes in the order given and text children as strings. */
 export function el(
-  tag: string,
-  attributes: Record<string, string | true> = {},
-  ...children: (RenderNode | string)[]
+	tag: string,
+	attributes: Record<string, string | true> = {},
+	...children: Array<RenderNode | string>
 ): ElementNode {
-  return createElement(
-    tag,
-    Object.entries(attributes).map(([name, value]) => createStaticAttribute(name, value, next())),
-    children.map((child) => (typeof child === "string" ? createText(child, next()) : child)),
-    next(),
-  );
+	return createElement(
+		tag,
+		Object.entries(attributes).map(([name, value]) => createStaticAttribute(name, value, next())),
+		children.map((child) => (typeof child === "string" ? createText(child, next()) : child)),
+		next(),
+	);
 }
 
 /** `basics/hello`, as the analyser lowers it. */
@@ -49,43 +49,43 @@ export const hello = (): ElementNode => el("p", { class: "greeting" }, "Hello, w
 
 /** `basics/nested-and-void`, as the analyser lowers it. */
 export const profileCard = (): ElementNode =>
-  el(
-    "article",
-    { class: "profile", "aria-labelledby": "profile-name" },
-    el(
-      "header",
-      { class: "profile-header" },
-      el("img", {
-        src: AVATAR,
-        alt: "Ada's avatar",
-        width: "48",
-        height: "48",
-      }),
-      el("h2", { id: "profile-name" }, "Ada Lovelace"),
-    ),
-    el("p", {}, "Mathematician & writer", el("br"), "of the first published program"),
-    el("hr"),
-    el("label", { for: "profile-note" }, "Note"),
-    el("input", { id: "profile-note", type: "text", name: "note", placeholder: "Say hello" }),
-  );
+	el(
+		"article",
+		{ class: "profile", "aria-labelledby": "profile-name" },
+		el(
+			"header",
+			{ class: "profile-header" },
+			el("img", {
+				src: AVATAR,
+				alt: "Ada's avatar",
+				width: "48",
+				height: "48",
+			}),
+			el("h2", { id: "profile-name" }, "Ada Lovelace"),
+		),
+		el("p", {}, "Mathematician & writer", el("br"), "of the first published program"),
+		el("hr"),
+		el("label", { for: "profile-note" }, "Note"),
+		el("input", { id: "profile-note", type: "text", name: "note", placeholder: "Say hello" }),
+	);
 
 export const AVATAR =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E";
+	"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E";
 
 /** Emits one component through the Solid target and collects what it reports. */
 export function emit(
-  render: ElementNode,
-  { name = "Fixture", kind = "default" }: { name?: string; kind?: "default" | "named" } = {},
-): { files: OutputFile[]; reported: Omit<Diagnostic, "file" | "target">[] } {
-  const component = createComponent(name, render, next());
-  const module = createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, next())]);
-  const reported: Omit<Diagnostic, "file" | "target">[] = [];
-  const context: EmitContext = {
-    module,
-    options: undefined,
-    report: (diagnostic) => void reported.push(diagnostic),
-  };
-  return { files: target.emit(component, context), reported };
+	render: ElementNode,
+	{ name = "Fixture", kind = "default" }: { name?: string; kind?: "default" | "named" } = {},
+): { files: Array<OutputFile>; reported: Array<Omit<Diagnostic, "file" | "target">> } {
+	const component = createComponent(name, render, next());
+	const module = createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, next())]);
+	const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
+	const context: EmitContext = {
+		module,
+		options: undefined,
+		report: (diagnostic) => void reported.push(diagnostic),
+	};
+	return { files: target.emit(component, context), reported };
 }
 
 /**
@@ -93,16 +93,20 @@ export function emit(
  * sheets (`<source>.css`), which no framework compiler or checker reads: the compile project
  * parses them instead (ADR-0063).
  */
-export function goldens(targetName: string): ToolchainFile[] {
-  const pattern = new RegExp(`(?:^|/)__output__/${targetName}/[^/]+$`);
-  return readdirSync(cases, { recursive: true })
-    .map((entry) => String(entry).split("\\").join("/"))
-    .filter((entry) => pattern.test(entry) && !entry.endsWith(".css"))
-    .toSorted()
-    .map((entry) => {
-      const path = join(cases, entry);
-      return { path, contents: readFileSync(path, "utf8") };
-    });
+export function goldens(targetName: string): Array<ToolchainFile> {
+	// A tree's shared helper modules too, in `_unframework/` (ADR-0121).
+	const pattern = new RegExp(`(?:^|/)__output__/${targetName}/(?:_unframework/)?[^/]+$`);
+	return readdirSync(cases, { recursive: true })
+		.map((entry) => String(entry).split("\\").join("/"))
+		.filter(
+			(entry) =>
+				pattern.test(entry) && !entry.endsWith(".css") && statSync(join(cases, entry)).isFile(),
+		)
+		.toSorted()
+		.map((entry) => {
+			const path = join(cases, entry);
+			return { path, contents: readFileSync(path, "utf8") };
+		});
 }
 
 /**
@@ -110,14 +114,14 @@ export function goldens(targetName: string): ToolchainFile[] {
  * IR the compiler would hand it.
  */
 export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
-  const { module, diagnostics } = analyze(parseModule(file, source));
-  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-  if (!module || errors.length) {
-    throw new Error(
-      `The analyser rejects ${JSON.stringify(source)}: ${JSON.stringify(errors, null, 2)}`,
-    );
-  }
-  return module;
+	const { module, diagnostics } = analyze(parseModule(file, source));
+	const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+	if (!module || errors.length) {
+		throw new Error(
+			`The analyser rejects ${JSON.stringify(source)}: ${JSON.stringify(errors, null, 2)}`,
+		);
+	}
+	return module;
 }
 
 /**
@@ -126,21 +130,23 @@ export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
  * Throws when the target reports anything: it never reports (ADR-0033).
  */
 export async function emitSource(source: string, name?: string): Promise<string> {
-  const module = lower(source);
-  const component = name
-    ? module.components.find((each) => each.name === name)!
-    : module.components[0]!;
-  const reported: Omit<Diagnostic, "file" | "target">[] = [];
-  const context: EmitContext = {
-    module,
-    options: undefined,
-    report: (diagnostic) => void reported.push(diagnostic),
-  };
-  const files = target.emit(component, context);
-  if (reported.length || files.length !== 1) {
-    throw new Error(`The Solid target reported ${JSON.stringify(reported)}.`);
-  }
-  const outcome = await formatOutput(files[0]!);
-  if (outcome.error) throw new Error(`oxfmt rejects the output: ${outcome.error}`);
-  return outcome.file.contents;
+	const module = lower(source);
+	const component = name
+		? module.components.find((each) => each.name === name)!
+		: module.components[0]!;
+	const reported: Array<Omit<Diagnostic, "file" | "target">> = [];
+	const context: EmitContext = {
+		module,
+		options: undefined,
+		report: (diagnostic) => void reported.push(diagnostic),
+	};
+	const files = target.emit(component, context);
+	if (reported.length || files.length !== 1) {
+		throw new Error(`The Solid target reported ${JSON.stringify(reported)}.`);
+	}
+	const outcome = await formatOutput(files[0]!);
+	if (outcome.error) {
+		throw new Error(`oxfmt rejects the output: ${outcome.error}`);
+	}
+	return outcome.file.contents;
 }

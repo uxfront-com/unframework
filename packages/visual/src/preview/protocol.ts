@@ -73,16 +73,16 @@ export type EmbedTheme = "light" | "dark";
 
 /** The page that frames an embed sets its colour mode, if the embed's URL has a `theme`. */
 export interface EmbedThemeMessage {
-  type: typeof EMBED_MESSAGE;
-  kind: "theme";
-  theme: EmbedTheme;
+	type: typeof EMBED_MESSAGE;
+	kind: "theme";
+	theme: EmbedTheme;
 }
 
 /** An embed with `resize=true` says how tall its content is, in whole CSS pixels. */
 export interface EmbedResizeMessage {
-  type: typeof EMBED_MESSAGE;
-  kind: "resize";
-  height: number;
+	type: typeof EMBED_MESSAGE;
+	kind: "resize";
+	height: number;
 }
 
 /** The start of an example's entry key, `example:<id>`, as `entryKey` writes it. */
@@ -90,42 +90,42 @@ export const EXAMPLE_KEY_PREFIX = "example:";
 
 /** What a static preview's frame says when asked for a render the build did not make. */
 export const STATIC_RENDER_MESSAGE =
-  "The static preview renders this target only as each entry first shows: run unframework preview to change its controls.";
+	"The static preview renders this target only as each entry first shows: run unframework preview to change its controls.";
 
 /**
  * A render made at build time: the props it was made with, and the HTML it gave or why it failed,
  * which the frame shows as a dev server's failed render.
  */
 export type StaticRender =
-  | { props: Record<string, unknown>; html: string }
-  | { props: Record<string, unknown>; error: string };
+	| { props: Record<string, unknown>; html: string }
+	| { props: Record<string, unknown>; error: string };
 
 /** The shell asks a frame to render an entry with props: mounted, or rerendered in place. */
 export interface RenderMessage {
-  type: typeof PREVIEW_MESSAGE;
-  kind: "render";
-  /** Grows with each message the shell sends, so a frame's answer names what it rendered. */
-  seq: number;
-  /** The entry's key, `example:<id>` or `component:<id>` (`entryKey`). */
-  entry: string;
-  props: Record<string, unknown>;
+	type: typeof PREVIEW_MESSAGE;
+	kind: "render";
+	/** Grows with each message the shell sends, so a frame's answer names what it rendered. */
+	seq: number;
+	/** The entry's key, `example:<id>` or `component:<id>` (`entryKey`). */
+	entry: string;
+	props: Record<string, unknown>;
 }
 
 /** A frame says it is ready for a render: on each load, a reload after Vite optimised included. */
 export interface ReadyMessage {
-  type: typeof PREVIEW_MESSAGE;
-  kind: "ready";
-  target: string;
+	type: typeof PREVIEW_MESSAGE;
+	kind: "ready";
+	target: string;
 }
 
 /** A frame says how a render went. */
 export interface RenderedMessage {
-  type: typeof PREVIEW_MESSAGE;
-  kind: "rendered" | "failed";
-  target: string;
-  seq: number;
-  /** Why it failed. */
-  message?: string;
+	type: typeof PREVIEW_MESSAGE;
+	kind: "rendered" | "failed";
+	target: string;
+	seq: number;
+	/** Why it failed. */
+	message?: string;
 }
 
 /** The shell's messages to a frame. */
@@ -140,62 +140,62 @@ export type FrameMessage = ReadyMessage | RenderedMessage;
  * without one takes {@link DEFAULT_LAYOUT}.
  */
 export type PreviewLayout =
-  | { display: "block" }
-  | {
-      display: "flex";
-      direction: "row" | "column";
-      justify: "start" | "center" | "end" | "between" | "around" | "evenly";
-      align: "start" | "center" | "end" | "stretch" | "baseline";
-      wrap: boolean;
-      /** A CSS length: `0`, or a number in `px`, `rem` or `em`. */
-      gap: string;
-    };
+	| { display: "block" }
+	| {
+			display: "flex";
+			direction: "row" | "column";
+			justify: "start" | "center" | "end" | "between" | "around" | "evenly";
+			align: "start" | "center" | "end" | "stretch" | "baseline";
+			wrap: boolean;
+			/** A CSS length: `0`, or a number in `px`, `rem` or `em`. */
+			gap: string;
+	  };
 
 /** The layout of an entry that sets none: centred on both axes, in a row, with no gap. */
 export const DEFAULT_LAYOUT: Extract<PreviewLayout, { display: "flex" }> = {
-  display: "flex",
-  direction: "row",
-  justify: "center",
-  align: "center",
-  wrap: false,
-  gap: "0",
+	display: "flex",
+	direction: "row",
+	justify: "center",
+	align: "center",
+	wrap: false,
+	gap: "0",
 };
 
 /** What a target's server gives its frame: the target and its entries' modules, by id. */
 export interface FrameOptions {
-  target: string;
-  /** The adapter's `mount`, from the target's toolchain. */
-  mount: (
-    component: unknown,
-    container: HTMLElement,
-    options: Record<string, unknown>,
-  ) => Promise<{
-    rerender(props: Readonly<Record<string, unknown>>): Promise<unknown>;
-    unmount(): Promise<void>;
-  }>;
-  /** Loads an entry's module, whose default export the frame mounts. */
-  entries: Record<string, () => Promise<{ default?: unknown }>>;
-  /** Whether the target renders on the server through {@link RENDER_PATH} (Astro). */
-  serverRender: boolean;
-  /**
-   * In a static preview, for a target that renders on the server: each entry's render made at
-   * build time, a {@link StaticRender} at this URL relative to the frame page. The frame reads it
-   * in place of {@link RENDER_PATH}, and fails a render with other props.
-   */
-  staticRenders?: Record<string, string>;
-  /**
-   * Whether the frame is part of a static preview, where every frame shares the shell's origin
-   * (ADR-0111). Such a frame takes messages from, and sends them to, a shell at its own origin only.
-   */
-  staticPreview?: boolean;
-  /**
-   * The layout of each entry that sets one, by key (ADR-0114). The frame puts it, or
-   * {@link DEFAULT_LAYOUT}, on the fresh container of each mount.
-   */
-  layouts?: Record<string, PreviewLayout>;
-  /**
-   * The control groups of each example that has any, by key (ADR-0113), which a standalone frame
-   * shows with `controls=true` (ADR-0116).
-   */
-  controls?: Record<string, ExampleControlGroup[]>;
+	target: string;
+	/** The adapter's `mount`, from the target's toolchain. */
+	mount: (
+		component: unknown,
+		container: HTMLElement,
+		options: Record<string, unknown>,
+	) => Promise<{
+		rerender(props: Readonly<Record<string, unknown>>): Promise<unknown>;
+		unmount(): Promise<void>;
+	}>;
+	/** Loads an entry's module, whose default export the frame mounts. */
+	entries: Record<string, () => Promise<{ default?: unknown }>>;
+	/** Whether the target renders on the server through {@link RENDER_PATH} (Astro). */
+	serverRender: boolean;
+	/**
+	 * In a static preview, for a target that renders on the server: each entry's render made at
+	 * build time, a {@link StaticRender} at this URL relative to the frame page. The frame reads it
+	 * in place of {@link RENDER_PATH}, and fails a render with other props.
+	 */
+	staticRenders?: Record<string, string>;
+	/**
+	 * Whether the frame is part of a static preview, where every frame shares the shell's origin
+	 * (ADR-0111). Such a frame takes messages from, and sends them to, a shell at its own origin only.
+	 */
+	staticPreview?: boolean;
+	/**
+	 * The layout of each entry that sets one, by key (ADR-0114). The frame puts it, or
+	 * {@link DEFAULT_LAYOUT}, on the fresh container of each mount.
+	 */
+	layouts?: Record<string, PreviewLayout>;
+	/**
+	 * The control groups of each example that has any, by key (ADR-0113), which a standalone frame
+	 * shows with `controls=true` (ADR-0116).
+	 */
+	controls?: Record<string, Array<ExampleControlGroup>>;
 }

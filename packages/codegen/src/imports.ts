@@ -6,11 +6,11 @@ import { importDeclaration, importDefaultSpecifier, importSpecifier } from "./js
 import { NameScope } from "./names.ts";
 
 interface ModuleImports {
-  defaultName?: string;
-  names: Map<string, { local: string; type: boolean }>;
-  /** Further local names of a named import the source binds twice (`{ AKey as A, AKey as B }`). */
-  aliases: { name: string; local: string; type: boolean }[];
-  sideEffect: boolean;
+	defaultName?: string;
+	names: Map<string, { local: string; type: boolean }>;
+	/** Further local names of a named import the source binds twice (`{ AKey as A, AKey as B }`). */
+	aliases: Array<{ name: string; local: string; type: boolean }>;
+	sideEffect: boolean;
 }
 
 /**
@@ -25,148 +25,158 @@ interface ModuleImports {
  * never collide either (ADR-0035).
  */
 export class ImportSet {
-  readonly #modules = new Map<string, ModuleImports>();
-  /** The pass-through imports, by module, in the order added (`addPassThrough`). */
-  readonly #passThrough = new Map<string, { imported: string; local: string }[]>();
-  /** The output file's names: imports, reserved source names and claimed locals. */
-  readonly scope: NameScope;
+	readonly #modules = new Map<string, ModuleImports>();
+	/** The pass-through imports, by module, in the order added (`addPassThrough`). */
+	readonly #passThrough = new Map<string, Array<{ imported: string; local: string }>>();
+	/** The output file's names: imports, reserved source names and claimed locals. */
+	readonly scope: NameScope;
 
-  /**
-   * `reserved`: the names the module itself declares, which no import may take, or the
-   * output file's name scope to share.
-   */
-  constructor(reserved: Iterable<string> | NameScope = []) {
-    this.scope = reserved instanceof NameScope ? reserved : new NameScope(reserved);
-  }
+	/**
+	 * `reserved`: the names the module itself declares, which no import may take, or the
+	 * output file's name scope to share.
+	 */
+	constructor(reserved: Iterable<string> | NameScope = []) {
+		this.scope = reserved instanceof NameScope ? reserved : new NameScope(reserved);
+	}
 
-  #module(source: string): ModuleImports {
-    let entry = this.#modules.get(source);
-    if (!entry) {
-      entry = { names: new Map(), aliases: [], sideEffect: false };
-      this.#modules.set(source, entry);
-    }
-    return entry;
-  }
+	#module(source: string): ModuleImports {
+		let entry = this.#modules.get(source);
+		if (!entry) {
+			entry = { names: new Map(), aliases: [], sideEffect: false };
+			this.#modules.set(source, entry);
+		}
+		return entry;
+	}
 
-  /** Marks names as taken, as they are: see {@link NameScope.reserve}. */
-  reserve(...names: string[]): void {
-    this.scope.reserve(...names);
-  }
+	/** Marks names as taken, as they are: see {@link NameScope.reserve}. */
+	reserve(...names: Array<string>): void {
+		this.scope.reserve(...names);
+	}
 
-  /** Takes a free local name for the output's own use: see {@link NameScope.claim}. */
-  claim(name: string): string {
-    return this.scope.claim(name);
-  }
+	/** Takes a free local name for the output's own use: see {@link NameScope.claim}. */
+	claim(name: string): string {
+		return this.scope.claim(name);
+	}
 
-  /**
-   * Imports a named binding: `import { name } from "source"`, or `name as local` when its name
-   * is taken. Returns the local name to refer to it by. `exact` keeps a local name the source
-   * declares itself (an imported injection key's, ADR-0054), which the scope reserves already.
-   */
-  add(
-    source: string,
-    name: string,
-    options: { type?: boolean; local?: string; exact?: boolean } = {},
-  ): string {
-    const entry = this.#module(source);
-    const existing = entry.names.get(name);
-    if (
-      existing &&
-      options.exact &&
-      options.local !== undefined &&
-      options.local !== existing.local
-    ) {
-      // The source binds the name twice: each local is its own, so each is imported.
-      if (!entry.aliases.some((alias) => alias.local === options.local)) {
-        this.scope.reserve(options.local);
-        entry.aliases.push({ name, local: options.local, type: Boolean(options.type) });
-      }
-      return options.local;
-    }
-    if (existing) {
-      existing.type &&= Boolean(options.type);
-      return existing.local;
-    }
-    if (options.exact) this.scope.reserve(options.local ?? name);
-    const local = options.exact ? (options.local ?? name) : this.scope.claim(options.local ?? name);
-    entry.names.set(name, { local, type: Boolean(options.type) });
-    return local;
-  }
+	/**
+	 * Imports a named binding: `import { name } from "source"`, or `name as local` when its name
+	 * is taken. Returns the local name to refer to it by. `exact` keeps a local name the source
+	 * declares itself (an imported injection key's, ADR-0054), which the scope reserves already.
+	 */
+	add(
+		source: string,
+		name: string,
+		options: { type?: boolean; local?: string; exact?: boolean } = {},
+	): string {
+		const entry = this.#module(source);
+		const existing = entry.names.get(name);
+		if (
+			existing &&
+			options.exact &&
+			options.local !== undefined &&
+			options.local !== existing.local
+		) {
+			// The source binds the name twice: each local is its own, so each is imported.
+			if (!entry.aliases.some((alias) => alias.local === options.local)) {
+				this.scope.reserve(options.local);
+				entry.aliases.push({ name, local: options.local, type: Boolean(options.type) });
+			}
+			return options.local;
+		}
+		if (existing) {
+			existing.type &&= Boolean(options.type);
+			return existing.local;
+		}
+		if (options.exact) {
+			this.scope.reserve(options.local ?? name);
+		}
+		const local = options.exact ? (options.local ?? name) : this.scope.claim(options.local ?? name);
+		entry.names.set(name, { local, type: Boolean(options.type) });
+		return local;
+	}
 
-  /**
-   * Imports a default binding: `import local from "source"`. Returns the local name. `exact`
-   * keeps a name the source declares itself (a child component's local name, ADR-0053), which
-   * the scope reserves already.
-   */
-  addDefault(source: string, local: string, options: { exact?: boolean } = {}): string {
-    const entry = this.#module(source);
-    if (options.exact) this.scope.reserve(local);
-    entry.defaultName ??= options.exact ? local : this.scope.claim(local);
-    return entry.defaultName;
-  }
+	/**
+	 * Imports a default binding: `import local from "source"`. Returns the local name. `exact`
+	 * keeps a name the source declares itself (a child component's local name, ADR-0053), which
+	 * the scope reserves already.
+	 */
+	addDefault(source: string, local: string, options: { exact?: boolean } = {}): string {
+		const entry = this.#module(source);
+		if (options.exact) {
+			this.scope.reserve(local);
+		}
+		entry.defaultName ??= options.exact ? local : this.scope.claim(local);
+		return entry.defaultName;
+	}
 
-  /** Imports a module for its side effects: `import "source"`. */
-  addSideEffect(source: string): void {
-    this.#module(source).sideEffect = true;
-  }
+	/** Imports a module for its side effects: `import "source"`. */
+	addSideEffect(source: string): void {
+		this.#module(source).sideEffect = true;
+	}
 
-  /**
-   * Imports a module that passes through as written (ADR-0064): by name, under the source's own
-   * local name, which the scope reserves, or for its effect alone. These imports follow the
-   * sorted ones, in the order they are added, each module once: an engine's setup module, or two
-   * engines' stylesheets, depend on their order.
-   */
-  addPassThrough(source: string, name?: { imported: string; local: string }): void {
-    let names = this.#passThrough.get(source);
-    if (!names) this.#passThrough.set(source, (names = []));
-    if (!name || names.some(({ local }) => local === name.local)) return;
-    this.scope.reserve(name.local);
-    names.push(name);
-  }
+	/**
+	 * Imports a module that passes through as written (ADR-0064): by name, under the source's own
+	 * local name, which the scope reserves, or for its effect alone. These imports follow the
+	 * sorted ones, in the order they are added, each module once: an engine's setup module, or two
+	 * engines' stylesheets, depend on their order.
+	 */
+	addPassThrough(source: string, name?: { imported: string; local: string }): void {
+		let names = this.#passThrough.get(source);
+		if (!names) {
+			this.#passThrough.set(source, (names = []));
+		}
+		if (!name || names.some(({ local }) => local === name.local)) {
+			return;
+		}
+		this.scope.reserve(name.local);
+		names.push(name);
+	}
 
-  get size(): number {
-    return this.#modules.size + this.#passThrough.size;
-  }
+	get size(): number {
+		return this.#modules.size + this.#passThrough.size;
+	}
 
-  /** The import declarations, sorted by module and name, then the pass-through ones in order. */
-  toDeclarations(): AST.ImportDeclaration[] {
-    const passThrough = [...this.#passThrough].map(([source, names]) =>
-      importDeclaration(
-        source,
-        names.map(({ imported, local }) => importSpecifier(imported, local, "value")),
-      ),
-    );
-    return [...this.#sorted(), ...passThrough];
-  }
+	/** The import declarations, sorted by module and name, then the pass-through ones in order. */
+	toDeclarations(): Array<AST.ImportDeclaration> {
+		const passThrough = [...this.#passThrough].map(([source, names]) =>
+			importDeclaration(
+				source,
+				names.map(({ imported, local }) => importSpecifier(imported, local, "value")),
+			),
+		);
+		return [...this.#sorted(), ...passThrough];
+	}
 
-  #sorted(): AST.ImportDeclaration[] {
-    return [...this.#modules.keys()].toSorted().map((source) => {
-      const entry = this.#modules.get(source)!;
-      const specifiers: AST.ImportDeclarationSpecifier[] = [];
-      if (entry.defaultName) specifiers.push(importDefaultSpecifier(entry.defaultName));
-      const names = [
-        ...entry.names.entries(),
-        ...entry.aliases.map(({ name, ...value }) => [name, value] as const),
-      ].toSorted(([a, x], [b, y]) =>
-        a < b ? -1 : a > b ? 1 : x.local < y.local ? -1 : x.local > y.local ? 1 : 0,
-      );
-      const allTypes =
-        names.length > 0 && names.every(([, value]) => value.type) && !entry.defaultName;
-      for (const [name, value] of names) {
-        specifiers.push(
-          importSpecifier(name, value.local, value.type && !allTypes ? "type" : "value"),
-        );
-      }
-      return importDeclaration(source, specifiers, allTypes ? "type" : "value");
-    });
-  }
+	#sorted(): Array<AST.ImportDeclaration> {
+		return [...this.#modules.keys()].toSorted().map((source) => {
+			const entry = this.#modules.get(source)!;
+			const specifiers: Array<AST.ImportDeclarationSpecifier> = [];
+			if (entry.defaultName) {
+				specifiers.push(importDefaultSpecifier(entry.defaultName));
+			}
+			const names = [
+				...entry.names.entries(),
+				...entry.aliases.map(({ name, ...value }) => [name, value] as const),
+			].toSorted(([a, x], [b, y]) =>
+				a < b ? -1 : a > b ? 1 : x.local < y.local ? -1 : x.local > y.local ? 1 : 0,
+			);
+			const allTypes =
+				names.length > 0 && names.every(([, value]) => value.type) && !entry.defaultName;
+			for (const [name, value] of names) {
+				specifiers.push(
+					importSpecifier(name, value.local, value.type && !allTypes ? "type" : "value"),
+				);
+			}
+			return importDeclaration(source, specifiers, allTypes ? "type" : "value");
+		});
+	}
 }
 
 /** An import every output keeps as written, with the names a component's template reads. */
 export interface PassThroughUse {
-  specifier: string;
-  /** The names the template reads, by the name the module exports and the source's local. */
-  names: { imported: string; local: string }[];
+	specifier: string;
+	/** The names the template reads, by the name the module exports and the source's local. */
+	names: Array<{ imported: string; local: string }>;
 }
 
 /**
@@ -175,31 +185,40 @@ export interface PassThroughUse {
  * component's template calls, by the name the source binds, which the template reads as written.
  * The plugin that registers each module resolves it.
  */
-export function passThroughImports(component: UfComponent, module: UfModule): PassThroughUse[] {
-  const read = new Set<string>();
-  for (const { expression } of expressionsOf(component)) {
-    for (const reference of expression.refs) {
-      if (reference.kind === "Import") read.add(reference.name);
-    }
-  }
-  return (module.passThroughImports ?? []).flatMap((entry): PassThroughUse[] => {
-    const names = entry.names
-      .filter(({ local }) => read.has(local))
-      .map(({ imported, local }) => ({ imported, local }));
-    return entry.names.length && !names.length ? [] : [{ specifier: entry.specifier, names }];
-  });
+export function passThroughImports(
+	component: UfComponent,
+	module: UfModule,
+): Array<PassThroughUse> {
+	const read = new Set<string>();
+	for (const { expression } of expressionsOf(component)) {
+		for (const reference of expression.refs) {
+			if (reference.kind === "Import") {
+				read.add(reference.name);
+			}
+		}
+	}
+	return (module.passThroughImports ?? []).flatMap((entry): Array<PassThroughUse> => {
+		const names = entry.names
+			.filter(({ local }) => read.has(local))
+			.map(({ imported, local }) => ({ imported, local }));
+		return entry.names.length && !names.length ? [] : [{ specifier: entry.specifier, names }];
+	});
 }
 
 /** Adds the imports every output keeps as written to a component's ({@link passThroughImports}). */
 export function addPassThroughImports(
-  component: UfComponent,
-  module: UfModule,
-  imports: ImportSet,
+	component: UfComponent,
+	module: UfModule,
+	imports: ImportSet,
 ): void {
-  for (const { specifier, names } of passThroughImports(component, module)) {
-    if (!names.length) imports.addPassThrough(specifier);
-    for (const name of names) imports.addPassThrough(specifier, name);
-  }
+	for (const { specifier, names } of passThroughImports(component, module)) {
+		if (!names.length) {
+			imports.addPassThrough(specifier);
+		}
+		for (const name of names) {
+			imports.addPassThrough(specifier, name);
+		}
+	}
 }
 
 /**
@@ -208,16 +227,16 @@ export function addPassThroughImports(
  * relative path as the sources, as the default or by name.
  */
 export interface ChildImport {
-  /** The name the template uses: the import's local name, or a component's own. */
-  local: string;
-  /** The child's own name, which names its output file. */
-  name: string;
-  /** `./Field.vue`, `../shared/field`: the child's output file as `file` names it. */
-  specifier: string;
-  /** How the child's output exports it: a script target keeps the source's export kind. */
-  export: "default" | "named";
-  /** Whether the component renders itself (recursion). */
-  self: boolean;
+	/** The name the template uses: the import's local name, or a component's own. */
+	local: string;
+	/** The child's own name, which names its output file. */
+	name: string;
+	/** `./Field.vue`, `../shared/field`: the child's output file as `file` names it. */
+	specifier: string;
+	/** How the child's output exports it: a script target keeps the source's export kind. */
+	export: "default" | "named";
+	/** Whether the component renders itself (recursion). */
+	self: boolean;
 }
 
 /**
@@ -228,56 +247,62 @@ export interface ChildImport {
  * siblings can import them (ADR-0053).
  */
 export function childImports(
-  component: UfComponent,
-  module: UfModule,
-  file: (name: string) => string,
-): ChildImport[] {
-  const used: string[] = [];
-  walk(component.render, {
-    enter(node) {
-      const names =
-        node.kind === "Component"
-          ? [node.component]
-          : node.kind === "Dynamic"
-            ? node.candidates.flatMap((each) => (each.kind === "Component" ? [each.component] : []))
-            : [];
-      for (const name of names) if (!used.includes(name)) used.push(name);
-    },
-  });
-  return used.map((local): ChildImport => {
-    for (const entry of module.imports ?? []) {
-      const imported = entry.names.find(
-        (name) => name.kind === "Component" && name.local === local,
-      );
-      if (!imported) continue;
-      const api = entry.api.components.find((each) =>
-        imported.imported === "default"
-          ? each.export === "default"
-          : each.export === "named" && each.name === imported.imported,
-      )!;
-      const directory = entry.file.includes("/")
-        ? entry.file.slice(0, entry.file.lastIndexOf("/"))
-        : "";
-      const path = `${directory ? `${directory}/` : ""}${file(api.name)}`;
-      return {
-        local,
-        name: api.name,
-        specifier: path.startsWith("../") ? path : `./${path}`,
-        export: api.export === "default" ? "default" : "named",
-        self: false,
-      };
-    }
-    const exported = module.exports.some(
-      (entry) => entry.local === local && entry.kind === "default",
-    );
-    return {
-      local,
-      name: local,
-      specifier: `./${file(local)}`,
-      export: exported ? "default" : "named",
-      self: local === component.name,
-    };
-  });
+	component: UfComponent,
+	module: UfModule,
+	file: (name: string) => string,
+): Array<ChildImport> {
+	const used: Array<string> = [];
+	walk(component.render, {
+		enter(node) {
+			const names =
+				node.kind === "Component"
+					? [node.component]
+					: node.kind === "Dynamic"
+						? node.candidates.flatMap((each) => (each.kind === "Component" ? [each.component] : []))
+						: [];
+			for (const name of names) {
+				if (!used.includes(name)) {
+					used.push(name);
+				}
+			}
+		},
+	});
+	return used.map((local): ChildImport => {
+		for (const entry of module.imports ?? []) {
+			const imported = entry.names.find(
+				(name) => name.kind === "Component" && name.local === local,
+			);
+			if (!imported) {
+				continue;
+			}
+			const api = entry.api.components.find((each) =>
+				imported.imported === "default"
+					? each.export === "default"
+					: each.export === "named" && each.name === imported.imported,
+			)!;
+			const directory = entry.file.includes("/")
+				? entry.file.slice(0, entry.file.lastIndexOf("/"))
+				: "";
+			const path = `${directory ? `${directory}/` : ""}${file(api.name)}`;
+			return {
+				local,
+				name: api.name,
+				specifier: path.startsWith("../") ? path : `./${path}`,
+				export: api.export === "default" ? "default" : "named",
+				self: false,
+			};
+		}
+		const exported = module.exports.some(
+			(entry) => entry.local === local && entry.kind === "default",
+		);
+		return {
+			local,
+			name: local,
+			specifier: `./${file(local)}`,
+			export: exported ? "default" : "named",
+			self: local === component.name,
+		};
+	});
 }
 
 /**
@@ -285,16 +310,18 @@ export function childImports(
  * default export, else its first exported component, else its first.
  */
 export function keyOwner(
-  components: readonly { name: string; export?: "default" | "named" | "local" }[],
-  exports: readonly { kind: "default" | "named"; local: string }[] = [],
+	components: ReadonlyArray<{ name: string; export?: "default" | "named" | "local" }>,
+	exports: ReadonlyArray<{ kind: "default" | "named"; local: string }> = [],
 ): string | undefined {
-  const exported = exports.find((entry) => entry.kind === "default") ?? exports[0];
-  if (exported) return exported.local;
-  const main =
-    components.find((component) => component.export === "default") ??
-    components.find((component) => component.export === "named") ??
-    components[0];
-  return main?.name;
+	const exported = exports.find((entry) => entry.kind === "default") ?? exports[0];
+	if (exported) {
+		return exported.local;
+	}
+	const main =
+		components.find((component) => component.export === "default") ??
+		components.find((component) => component.export === "named") ??
+		components[0];
+	return main?.name;
 }
 
 /**
@@ -302,12 +329,12 @@ export function keyOwner(
  * from: each target writes a module's keys into the output of its main component (`keyOwner`).
  */
 export interface KeyImport {
-  /** The name the setup uses. */
-  local: string;
-  /** The key's own name, which its module exports. */
-  name: string;
-  /** `./Tabs.vue`, `./tabs`: absent for a key the component's own output declares. */
-  specifier?: string;
+	/** The name the setup uses. */
+	local: string;
+	/** The key's own name, which its module exports. */
+	name: string;
+	/** `./Tabs.vue`, `./tabs`: absent for a key the component's own output declares. */
+	specifier?: string;
 }
 
 /**
@@ -316,36 +343,38 @@ export interface KeyImport {
  * {@link childImports}.
  */
 export function keyImports(
-  component: UfComponent,
-  module: UfModule,
-  file: (name: string) => string,
-): KeyImport[] {
-  const used: string[] = [];
-  for (const item of component.setup) {
-    if ((item.kind === "Provide" || item.kind === "Inject") && !used.includes(item.key)) {
-      used.push(item.key);
-    }
-  }
-  return used.map((local): KeyImport => {
-    for (const entry of module.imports ?? []) {
-      const imported = entry.names.find((name) => name.kind === "Key" && name.local === local);
-      const owner = keyOwner(entry.api.components);
-      if (!imported || owner === undefined) continue;
-      const directory = entry.file.includes("/")
-        ? entry.file.slice(0, entry.file.lastIndexOf("/"))
-        : "";
-      const path = `${directory ? `${directory}/` : ""}${file(owner)}`;
-      return {
-        local,
-        name: imported.imported,
-        specifier: path.startsWith("../") ? path : `./${path}`,
-      };
-    }
-    const owner = keyOwner(module.components, module.exports)!;
-    return owner === component.name
-      ? { local, name: local }
-      : { local, name: local, specifier: `./${file(owner)}` };
-  });
+	component: UfComponent,
+	module: UfModule,
+	file: (name: string) => string,
+): Array<KeyImport> {
+	const used: Array<string> = [];
+	for (const item of component.setup) {
+		if ((item.kind === "Provide" || item.kind === "Inject") && !used.includes(item.key)) {
+			used.push(item.key);
+		}
+	}
+	return used.map((local): KeyImport => {
+		for (const entry of module.imports ?? []) {
+			const imported = entry.names.find((name) => name.kind === "Key" && name.local === local);
+			const owner = keyOwner(entry.api.components);
+			if (!imported || owner === undefined) {
+				continue;
+			}
+			const directory = entry.file.includes("/")
+				? entry.file.slice(0, entry.file.lastIndexOf("/"))
+				: "";
+			const path = `${directory ? `${directory}/` : ""}${file(owner)}`;
+			return {
+				local,
+				name: imported.imported,
+				specifier: path.startsWith("../") ? path : `./${path}`,
+			};
+		}
+		const owner = keyOwner(module.components, module.exports)!;
+		return owner === component.name
+			? { local, name: local }
+			: { local, name: local, specifier: `./${file(owner)}` };
+	});
 }
 
 /**
@@ -353,16 +382,18 @@ export function keyImports(
  * and one of the module's own components says through its setup.
  */
 export function childIsAsync(module: UfModule, local: string): boolean {
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
-    const api = entry.api.components.find((each) =>
-      imported.imported === "default"
-        ? each.export === "default"
-        : each.export === "named" && each.name === imported.imported,
-    );
-    return api?.async === true;
-  }
-  const own = module.components.find((component) => component.name === local);
-  return own?.setup.some((item) => item.kind === "Await") ?? false;
+	for (const entry of module.imports ?? []) {
+		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+		if (!imported) {
+			continue;
+		}
+		const api = entry.api.components.find((each) =>
+			imported.imported === "default"
+				? each.export === "default"
+				: each.export === "named" && each.name === imported.imported,
+		);
+		return api?.async === true;
+	}
+	const own = module.components.find((component) => component.name === local);
+	return own?.setup.some((item) => item.kind === "Await") ?? false;
 }

@@ -1,40 +1,40 @@
 {
-  "name": "unframework-monorepo",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
-    "format": "oxfmt",
-    "format:check": "oxfmt --check",
-    "check-types": "turbo run check-types",
-    "test": "turbo run test",
-    "test:quick": "node scripts/test-loop.ts quick",
-    "test:full": "node scripts/test-loop.ts full",
-    "test:update": "pnpm --filter @unframework.dev/integration test:update",
-    "test:canaries": "pnpm --filter @unframework.dev/integration test:canaries",
-    "test:budgets:update": "pnpm --filter @unframework.dev/integration test:budgets:update",
-    "test:baselines": "pnpm --filter @unframework.dev/integration test:baselines",
-    "test:baselines:check": "pnpm --filter @unframework.dev/integration test:baselines:check",
-    "test:baselines:download": "pnpm --filter @unframework.dev/integration test:baselines:download",
-    "new:package": "node scripts/new-package.ts",
-    "changeset": "changeset"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^3.0.3",
-    "@uxfront/oxfmt-config": "^0.1.1",
-    "@uxfront/oxlint-config": "^0.1.1",
-    "@uxfront/typescript-config": "catalog:",
-    "oxfmt": "catalog:",
-    "oxlint": "catalog:",
-    "oxlint-tsgolint": "catalog:",
-    "turbo": "^2.11.2",
-    "typescript": "7.1.0-beta"
-  },
-  "engines": {
-    "node": ">=24"
-  },
-  "packageManager": "pnpm@11.25.0"
+	"name": "unframework-monorepo",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
+		"format": "oxfmt",
+		"format:check": "oxfmt --check",
+		"check-types": "turbo run check-types",
+		"test": "turbo run test",
+		"test:quick": "node scripts/test-loop.ts quick",
+		"test:full": "node scripts/test-loop.ts full",
+		"test:update": "pnpm --filter @unframework.dev/integration test:update",
+		"test:canaries": "pnpm --filter @unframework.dev/integration test:canaries",
+		"test:budgets:update": "pnpm --filter @unframework.dev/integration test:budgets:update",
+		"test:baselines": "pnpm --filter @unframework.dev/integration test:baselines",
+		"test:baselines:check": "pnpm --filter @unframework.dev/integration test:baselines:check",
+		"test:baselines:download": "pnpm --filter @unframework.dev/integration test:baselines:download",
+		"new:package": "node scripts/new-package.ts",
+		"changeset": "changeset"
+	},
+	"devDependencies": {
+		"@changesets/cli": "^3.0.3",
+		"@uxfront/oxfmt-config": "^0.2.0",
+		"@uxfront/oxlint-config": "^0.2.0",
+		"@uxfront/typescript-config": "catalog:",
+		"oxfmt": "catalog:",
+		"oxlint": "catalog:",
+		"oxlint-tsgolint": "catalog:",
+		"turbo": "^2.11.2",
+		"typescript": "7.1.0-beta"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"packageManager": "pnpm@11.25.0"
 }

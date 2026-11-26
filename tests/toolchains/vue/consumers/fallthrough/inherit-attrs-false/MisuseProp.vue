@@ -3,6 +3,6 @@ import Field from "../../../../../integration/cases/fallthrough/inherit-attrs-fa
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Field.prop:label -->
-  <Field :label="1" />
+	<!-- @uf-expect TS2322 Field.prop:label -->
+	<Field :label="1" />
 </template>

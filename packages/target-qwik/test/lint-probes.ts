@@ -9,7 +9,7 @@
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.tsx": `import { component$ } from "@qwik.dev/core";
+	"Badge.tsx": `import { component$ } from "@qwik.dev/core";
 
 export interface BadgeProps {
   label: string;
@@ -43,7 +43,7 @@ export default component$<BadgeProps>(({ label, tone = "info", count, pill = fal
   );
 });
 `,
-  "LinkCard.tsx": `import { component$ } from "@qwik.dev/core";
+	"LinkCard.tsx": `import { component$ } from "@qwik.dev/core";
 
 interface LinkAttrs {
   href: string;
@@ -71,7 +71,7 @@ export default component$<LinkCardProps>((props) => {
   );
 });
 `,
-  "TodoList.tsx": `import { component$ } from "@qwik.dev/core";
+	"TodoList.tsx": `import { component$ } from "@qwik.dev/core";
 
 interface Todo {
   id: string;
@@ -134,7 +134,7 @@ export default component$<TodoListProps>(({ todos, heading }) => {
 
 /** File name → contents. */
 export const M2_SHAPES: Readonly<Record<string, string>> = {
-  "Stepper.tsx": `import {
+	"Stepper.tsx": `import {
   $,
   type QRL,
   component$,
@@ -233,7 +233,7 @@ function rendered<T extends Element>(element: T | undefined): T | null {
 }
 
 `,
-  "Watchers.tsx": `import {
+	"Watchers.tsx": `import {
   type QRL,
   component$,
   noSerialize,
@@ -402,7 +402,7 @@ export default component$<WatchersProps & WatchersEvents>(
 );
 
 `,
-  "Listeners.tsx": `import { $, component$, sync$, useSignal } from "@qwik.dev/core";
+	"Listeners.tsx": `import { $, component$, sync$, useSignal } from "@qwik.dev/core";
 
 const blockComma = sync$((event: KeyboardEvent) => {
   if (event.key === ",") event.preventDefault();
@@ -491,7 +491,7 @@ export default component$(() => {
 const onceClick = new WeakSet<Element>();
 
 `,
-  "Picker.tsx": `import { $, type QRL, component$, sync$, useSignal } from "@qwik.dev/core";
+	"Picker.tsx": `import { $, type QRL, component$, sync$, useSignal } from "@qwik.dev/core";
 
 export interface Item {
   id: string;
@@ -542,7 +542,7 @@ export default component$<{ items: Item[] } & PickerEvents>(({ items, onPicked$ 
 });
 
 `,
-  "Ordered.tsx": `import { $, type QRL, component$, sync$, useSignal } from "@qwik.dev/core";
+	"Ordered.tsx": `import { $, type QRL, component$, sync$, useSignal } from "@qwik.dev/core";
 
 type Size = "sm" | "md";
 

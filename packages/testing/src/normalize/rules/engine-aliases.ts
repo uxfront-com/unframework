@@ -9,9 +9,9 @@ import type { TreeParent } from "../tree.ts";
  * same property is listed, so a value still compares as it is.
  */
 const ENGINE_ALIASES: Readonly<Partial<Record<BrowserEngine, Readonly<Record<string, string>>>>> = {
-  // Firefox parses `-webkit-box-orient` as an alias of its own property, and `style.cssText`
-  // writes the property's name.
-  firefox: { "-moz-box-orient": "-webkit-box-orient" },
+	// Firefox parses `-webkit-box-orient` as an alias of its own property, and `style.cssText`
+	// writes the property's name.
+	firefox: { "-moz-box-orient": "-webkit-box-orient" },
 };
 
 /**
@@ -23,22 +23,26 @@ const ENGINE_ALIASES: Readonly<Partial<Record<BrowserEngine, Readonly<Record<str
  * It runs before rule 4a, which sorts the declarations by their names.
  */
 export function renameEngineAliases(root: TreeParent, engine?: BrowserEngine): void {
-  const aliases = engine === undefined ? undefined : ENGINE_ALIASES[engine];
-  if (!aliases) return;
-  forEachElement(root, (element) => {
-    for (const attribute of element.attrs) {
-      if (attributeName(attribute) !== "style") continue;
-      const declarations = parseStyle(attribute.value);
-      if (!declarations.some((declaration) => Object.hasOwn(aliases, declaration.property))) {
-        continue;
-      }
-      attribute.value = printStyle(
-        declarations.map((declaration) =>
-          Object.hasOwn(aliases, declaration.property)
-            ? { ...declaration, property: aliases[declaration.property]! }
-            : declaration,
-        ),
-      );
-    }
-  });
+	const aliases = engine === undefined ? undefined : ENGINE_ALIASES[engine];
+	if (!aliases) {
+		return;
+	}
+	forEachElement(root, (element) => {
+		for (const attribute of element.attrs) {
+			if (attributeName(attribute) !== "style") {
+				continue;
+			}
+			const declarations = parseStyle(attribute.value);
+			if (!declarations.some((declaration) => Object.hasOwn(aliases, declaration.property))) {
+				continue;
+			}
+			attribute.value = printStyle(
+				declarations.map((declaration) =>
+					Object.hasOwn(aliases, declaration.property)
+						? { ...declaration, property: aliases[declaration.property]! }
+						: declaration,
+				),
+			);
+		}
+	});
 }

@@ -33,13 +33,13 @@ import { judgeTest } from "./browser/behaviour.ts";
 import { noOutputReason, requiredSkip, standInCause } from "./browser/capabilities.ts";
 import { restoreClock } from "./browser/clock.ts";
 import {
-  beginSpecFileConsole,
-  beginTestConsole,
-  describeConsole,
-  endSpecFileConsole,
-  endTestConsole,
-  installConsoleCapture,
-  unexpectedConsole,
+	beginSpecFileConsole,
+	beginTestConsole,
+	describeConsole,
+	endSpecFileConsole,
+	endTestConsole,
+	installConsoleCapture,
+	unexpectedConsole,
 } from "./browser/console.ts";
 import { prepareSpecFile } from "./browser/determinism.ts";
 import { boundElementTimeout } from "./browser/element-timeout.ts";
@@ -58,7 +58,9 @@ import type { LayerSubject } from "./layers.ts";
 
 /** A hydrate project (L12, ADR-0095): every check a spec runs is recorded as L12. */
 const hydrating = isHydrateProject();
-if (hydrating) recordEveryLayerAs("L12");
+if (hydrating) {
+	recordEveryLayerAs("L12");
+}
 
 installConsoleCapture();
 beginSpecFileConsole();
@@ -72,16 +74,18 @@ installNavigationGuard();
 // died never gets here. The second parameter is the file's fixtures, a destructuring pattern.
 // oxlint-disable-next-line no-empty-pattern
 aroundAll(async (runSuite, {}, suite) => {
-  await runSuite();
-  // A hydrate project captures no pixels, so no follower waits on it.
-  if (hydrating) return;
-  await commands.ufSpecFinished({ case: caseOfFile(suite.file.filepath, inject("ufHarness")) });
+	await runSuite();
+	// A hydrate project captures no pixels, so no follower waits on it.
+	if (hydrating) {
+		return;
+	}
+	await commands.ufSpecFinished({ case: caseOfFile(suite.file.filepath, inject("ufHarness")) });
 });
 
 // The first parameter is the file's fixtures, a destructuring pattern (see the afterAll below).
 // oxlint-disable-next-line no-empty-pattern
 beforeAll(async ({}, suite) => {
-  await prepareSpecFile(await emulateColorScheme(suite.file.filepath));
+	await prepareSpecFile(await emulateColorScheme(suite.file.filepath));
 });
 
 /**
@@ -89,51 +93,55 @@ beforeAll(async ({}, suite) => {
  * `light` by default, before anything mounts, and returns it for the startup check.
  */
 async function emulateColorScheme(file: string): Promise<ColorScheme> {
-  const harness = inject("ufHarness");
-  const scheme = harness.cases[caseOfFile(file, harness)]?.colorScheme ?? "light";
-  await commands.ufColorScheme(scheme);
-  return scheme;
+	const harness = inject("ufHarness");
+	const scheme = harness.cases[caseOfFile(file, harness)]?.colorScheme ?? "light";
+	await commands.ufColorScheme(scheme);
+	return scheme;
 }
 
 beforeEach(({ task, skip }) => {
-  beginTestConsole();
-  // What `body` holds now is the page's: anything else the test leaves there is a leak.
-  startTeleports();
-  // A trace a test before this one left behind is that test's, judged already.
-  closeTraces();
-  const requires = task.meta.ufRequires;
-  const subject = subjectOf(task);
-  // A case the target has no output for has a stand-in for its component, which renders
-  // nothing: each of its tests is skipped there, whatever it requires, with the errors the case
-  // expects.
-  // A hydrate project skips every test where the target does not hydrate, whatever else would
-  // skip it there, so every L12 cell of such a target says why (ADR-0095).
-  const reason =
-    (hydrating ? requiredSkip(["hydration"]) : undefined) ??
-    noOutputReason(subject.case) ??
-    (requires ? requiredSkip(requires) : undefined);
-  if (reason === undefined) {
-    // A case the target cannot compile yet has a stand-in for its component too, which throws
-    // when the spec mounts it, before `expectParity` records L7, L9, L10 or L11: every browser
-    // layer fails here with the stand-in's cause, the test still runs, and its quarantine
-    // entries hold only while it fails (ADR-0068).
-    const cause = standInCause(subject.case);
-    if (cause !== undefined) recordStandIn(task, subject, cause);
-    return;
-  }
-  // Recorded before skipping: the parity reporter fails a skip that records no reason, and the
-  // summary excuses this test's scenarios on this target alone (`meta.uf.skipped`).
-  for (const layer of BROWSER_LAYERS) recordLayer(task, subject, layer, { status: "skip", reason });
-  task.meta.uf!.skipped = reason;
-  skip(reason);
+	beginTestConsole();
+	// What `body` holds now is the page's: anything else the test leaves there is a leak.
+	startTeleports();
+	// A trace a test before this one left behind is that test's, judged already.
+	closeTraces();
+	const requires = task.meta.ufRequires;
+	const subject = subjectOf(task);
+	// A case the target has no output for has a stand-in for its component, which renders
+	// nothing: each of its tests is skipped there, whatever it requires, with the errors the case
+	// expects.
+	// A hydrate project skips every test where the target does not hydrate, whatever else would
+	// skip it there, so every L12 cell of such a target says why (ADR-0095).
+	const reason =
+		(hydrating ? requiredSkip(["hydration"]) : undefined) ??
+		noOutputReason(subject.case) ??
+		(requires ? requiredSkip(requires) : undefined);
+	if (reason === undefined) {
+		// A case the target cannot compile yet has a stand-in for its component too, which throws
+		// when the spec mounts it, before `expectParity` records L7, L9, L10 or L11: every browser
+		// layer fails here with the stand-in's cause, the test still runs, and its quarantine
+		// entries hold only while it fails (ADR-0068).
+		const cause = standInCause(subject.case);
+		if (cause !== undefined) {
+			recordStandIn(task, subject, cause);
+		}
+		return;
+	}
+	// Recorded before skipping: the parity reporter fails a skip that records no reason, and the
+	// summary excuses this test's scenarios on this target alone (`meta.uf.skipped`).
+	for (const layer of BROWSER_LAYERS) {
+		recordLayer(task, subject, layer, { status: "skip", reason });
+	}
+	task.meta.uf!.skipped = reason;
+	skip(reason);
 });
 
 /** The tests this file's afterEach has judged. */
 const judged = new WeakSet<object>();
 
 afterEach(async ({ task }) => {
-  judged.add(task);
-  await afterTest(task);
+	judged.add(task);
+	await afterTest(task);
 });
 
 // A spec's own afterEach that throws stops Vitest from running the afterEach hooks after it,
@@ -141,8 +149,10 @@ afterEach(async ({ task }) => {
 // nor L8, so this hook, around every test, judges it when the afterEach could not. Its first
 // parameter is the test's, the second its fixtures, which Vitest needs as a destructuring pattern.
 aroundEach(async (runTest, { task }) => {
-  await runTest();
-  if (!judged.has(task)) await afterTest(task);
+	await runTest();
+	if (!judged.has(task)) {
+		await afterTest(task);
+	}
 });
 
 /**
@@ -155,49 +165,51 @@ aroundEach(async (runTest, { task }) => {
  * the next test's to judge.
  */
 async function afterTest(task: RunnerTestCase): Promise<void> {
-  if (task.meta.uf?.skipped !== undefined) return;
-  let cleanupError: unknown;
-  try {
-    await cleanup();
-  } catch (error) {
-    cleanupError = error;
-  }
-  // After the unmount, so a component's teardown clears its interval on the clock that set it.
-  restoreClock();
-  await resetInput();
-  await settleTeardown();
-  const subject = subjectOf(task);
-  for (const message of closeTraces()) {
-    recordLayer(task, subject, "L9", { status: "fail", message });
-  }
-  const unexpected = unexpectedConsole();
-  endTestConsole();
-  recordLayer(
-    task,
-    subject,
-    "L13",
-    unexpected.length
-      ? { status: "fail", message: describeConsole(unexpected) }
-      : { status: "pass" },
-  );
-  const left = leftInBody();
-  const leaks = left.length
-    ? [
-        `The test left ${left.length === 1 ? "an element" : `${left.length} elements`} in <body> once its views were unmounted: ${left.join(", ")}. A component removes what it appends to <body>, a teleport's content among it, as it unmounts (ADR-0098).`,
-      ]
-    : [];
-  // Last, so L8 sees every error the spec's own hooks threw (they ran before this one).
-  judgeTest(task, subject, cleanupError, [...takePreventedNavigations(), ...leaks]);
+	if (task.meta.uf?.skipped !== undefined) {
+		return;
+	}
+	let cleanupError: unknown;
+	try {
+		await cleanup();
+	} catch (error) {
+		cleanupError = error;
+	}
+	// After the unmount, so a component's teardown clears its interval on the clock that set it.
+	restoreClock();
+	await resetInput();
+	await settleTeardown();
+	const subject = subjectOf(task);
+	for (const message of closeTraces()) {
+		recordLayer(task, subject, "L9", { status: "fail", message });
+	}
+	const unexpected = unexpectedConsole();
+	endTestConsole();
+	recordLayer(
+		task,
+		subject,
+		"L13",
+		unexpected.length
+			? { status: "fail", message: describeConsole(unexpected) }
+			: { status: "pass" },
+	);
+	const left = leftInBody();
+	const leaks = left.length
+		? [
+				`The test left ${left.length === 1 ? "an element" : `${left.length} elements`} in <body> once its views were unmounted: ${left.join(", ")}. A component removes what it appends to <body>, a teleport's content among it, as it unmounts (ADR-0098).`,
+			]
+		: [];
+	// Last, so L8 sees every error the spec's own hooks threw (they ran before this one).
+	judgeTest(task, subject, cleanupError, [...takePreventedNavigations(), ...leaks]);
 }
 
 /** The case and target a test verifies, with the run's quarantine. */
 function subjectOf(task: RunnerTestCase): LayerSubject {
-  const harness = inject("ufHarness");
-  return {
-    case: caseOfFile(task.file.filepath, harness),
-    target: currentTarget(),
-    quarantine: harness.quarantine,
-  };
+	const harness = inject("ufHarness");
+	return {
+		case: caseOfFile(task.file.filepath, harness),
+		target: currentTarget(),
+		quarantine: harness.quarantine,
+	};
 }
 
 /**
@@ -207,12 +219,14 @@ function subjectOf(task: RunnerTestCase): LayerSubject {
  * where it was, so a later Tab would start there, or leave the frame).
  */
 async function resetInput(): Promise<void> {
-  await commands.ufResetInput();
-  await releaseKeys();
-  await userEvent.cleanup();
-  const active = document.activeElement;
-  if (active instanceof HTMLElement || active instanceof SVGElement) active.blur();
-  window.focus();
+	await commands.ufResetInput();
+	await releaseKeys();
+	await userEvent.cleanup();
+	const active = document.activeElement;
+	if (active instanceof HTMLElement || active instanceof SVGElement) {
+		active.blur();
+	}
+	window.focus();
 }
 
 // Registered before any spec's hooks, so it runs after them (Vitest runs after-hooks as a stack).
@@ -220,32 +234,36 @@ async function resetInput(): Promise<void> {
 // pattern even when, as here, the hook only needs the suite (the second).
 // oxlint-disable-next-line no-empty-pattern
 afterAll(async ({}, suite) => {
-  await settleTeardown();
-  const late = unexpectedConsole();
-  endTestConsole();
-  const file = suite.file;
-  const harness = inject("ufHarness");
-  const caseId = caseOfFile(file.filepath, harness);
-  // What the page logs from here on, before the next spec file that shares it starts, is judged
-  // with that file's first test, which names this case (ADR-0092).
-  endSpecFileConsole(caseId);
-  if (!late.length) return;
-  // The last test has recorded L13 already; the file's own record reaches the parity reporter
-  // with the file's result, and the quarantine applies to it as to any record.
-  const recorded = recordLayer(
-    file,
-    {
-      case: caseId,
-      target: currentTarget(),
-      quarantine: harness.quarantine,
-    },
-    "L13",
-    {
-      status: "fail",
-      message: `after the last test of this file (a late teardown or an afterAll hook): ${describeConsole(late)}`,
-    },
-  );
-  if (recorded.status === "fail") throw new Error(`L13: ${recorded.message}`);
+	await settleTeardown();
+	const late = unexpectedConsole();
+	endTestConsole();
+	const file = suite.file;
+	const harness = inject("ufHarness");
+	const caseId = caseOfFile(file.filepath, harness);
+	// What the page logs from here on, before the next spec file that shares it starts, is judged
+	// with that file's first test, which names this case (ADR-0092).
+	endSpecFileConsole(caseId);
+	if (!late.length) {
+		return;
+	}
+	// The last test has recorded L13 already; the file's own record reaches the parity reporter
+	// with the file's result, and the quarantine applies to it as to any record.
+	const recorded = recordLayer(
+		file,
+		{
+			case: caseId,
+			target: currentTarget(),
+			quarantine: harness.quarantine,
+		},
+		"L13",
+		{
+			status: "fail",
+			message: `after the last test of this file (a late teardown or an afterAll hook): ${describeConsole(late)}`,
+		},
+	);
+	if (recorded.status === "fail") {
+		throw new Error(`L13: ${recorded.message}`);
+	}
 });
 
 /**
@@ -253,6 +271,10 @@ afterAll(async ({}, suite) => {
  * framework scheduler's warning after unmount then lands in the test that unmounted.
  */
 async function settleTeardown(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+	await new Promise<void>((resolve) => {
+		setTimeout(resolve, 0);
+	});
+	await new Promise<void>((resolve) => {
+		requestAnimationFrame(() => resolve());
+	});
 }

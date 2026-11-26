@@ -11,7 +11,7 @@
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
-  "Badge.tsx": `import type { CSSProperties } from "react";
+	"Badge.tsx": `import type { CSSProperties } from "react";
 
 export interface BadgeProps {
   label: string;
@@ -60,7 +60,7 @@ function cx(...parts: unknown[]): string {
   return names.join(" ");
 }
 `,
-  "LinkCard.tsx": `interface LinkAttrs {
+	"LinkCard.tsx": `interface LinkAttrs {
   href: string;
   title?: string;
   class?: string;
@@ -101,7 +101,7 @@ function cx(...parts: unknown[]): string {
   return names.join(" ");
 }
 `,
-  "TodoList.tsx": `interface Todo {
+	"TodoList.tsx": `interface Todo {
   id: string;
   title: string;
   done?: boolean;
@@ -168,7 +168,7 @@ function cx(...parts: unknown[]): string {
 
 /** File name → contents. */
 export const M2_SHAPES: Readonly<Record<string, string>> = {
-  "Branches.tsx": `import { Fragment, useRef, useState } from "react";
+	"Branches.tsx": `import { Fragment, useRef, useState } from "react";
 
 export default function Branches() {
   const [editing, setEditing] = useState(false);
@@ -206,7 +206,7 @@ export default function Branches() {
   );
 }
 `,
-  "Loops.tsx": `import { useRef, useState } from "react";
+	"Loops.tsx": `import { useRef, useState } from "react";
 
 export default function Loops() {
   const [total, setTotal] = useState(0);
@@ -235,7 +235,7 @@ export default function Loops() {
   );
 }
 `,
-  "Greeting.tsx": `import { useState } from "react";
+	"Greeting.tsx": `import { useState } from "react";
 
 export interface GreetingProps {
   name: string;
@@ -263,7 +263,7 @@ export default function Greeting({ name, sizes }: GreetingProps) {
   );
 }
 `,
-  "Poller.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+	"Poller.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 
 export interface PollerProps {
   interval: number;
@@ -337,7 +337,7 @@ export default function Poller({
   );
 }
 `,
-  "Cart.tsx": `import { useMemo, useRef, useState } from "react";
+	"Cart.tsx": `import { useMemo, useRef, useState } from "react";
 
 export interface CartProps {
   price: number;
@@ -386,7 +386,7 @@ export default function Cart({ price, onCheckout }: CartProps & CartEvents) {
   );
 }
 `,
-  "Title.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
+	"Title.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface TitleProps {
   app: string;
@@ -427,7 +427,7 @@ export default function Title({ app, onTitle }: TitleProps & TitleEvents) {
   );
 }
 `,
-  "Toggle.tsx": `import type { MouseEvent } from "react";
+	"Toggle.tsx": `import type { MouseEvent } from "react";
 
 export interface ToggleProps {
   label: string;
@@ -450,7 +450,7 @@ export default function Toggle({ label, onChange: onChange_1 }: ToggleProps & To
   );
 }
 `,
-  "Listeners.tsx": `import {
+	"Listeners.tsx": `import {
   type KeyboardEvent as ReactKeyboardEvent,
   type SyntheticEvent,
   useRef,
@@ -616,7 +616,7 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
   };
 }
 `,
-  "Expander.tsx": `import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+	"Expander.tsx": `import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 
 export interface ExpanderEvents {
   onShown?: (rows: number) => void;
@@ -705,7 +705,7 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
     });
 }
 `,
-  "Bare.tsx": `export interface BareEvents {
+	"Bare.tsx": `export interface BareEvents {
   onPing?: (count: number) => void;
 }
 
@@ -717,7 +717,7 @@ export function Bare({ onPing }: BareEvents) {
   );
 }
 `,
-  "Panel.tsx": `export interface PanelProps {
+	"Panel.tsx": `export interface PanelProps {
   title: string;
 }
 
@@ -735,7 +735,7 @@ export function Panel(props: PanelProps & PanelEvents) {
   );
 }
 `,
-  "Field.tsx": `import { useEffect, useEffectEvent, useId, useRef } from "react";
+	"Field.tsx": `import { useEffect, useEffectEvent, useId, useRef } from "react";
 
 export default function Field() {
   const input = useRef<HTMLInputElement>(null);
@@ -769,7 +769,7 @@ export default function Field() {
   );
 }
 `,
-  "Stepper.tsx": `import { useRef, useState } from "react";
+	"Stepper.tsx": `import { useRef, useState } from "react";
 
 export default function Stepper() {
   const [count, setCount] = useState(0);
@@ -816,7 +816,7 @@ export default function Stepper() {
   );
 }
 `,
-  "Labels.tsx": `import { useRef, useState } from "react";
+	"Labels.tsx": `import { useRef, useState } from "react";
 
 export interface LabelsEvents {
   onSaid?: (text: string) => void;
@@ -847,7 +847,7 @@ export default function Labels({ onSaid }: LabelsEvents) {
   );
 }
 `,
-  "Range.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
+	"Range.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export interface RangeProps {
   unit: string;
@@ -944,7 +944,7 @@ export default function Range({ unit, onMoved, onSpanned, onUnitSet }: RangeProp
   );
 }
 `,
-  "Ready.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useReducer, useRef, useState } from "react";
+	"Ready.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useReducer, useRef, useState } from "react";
 
 export interface ReadyEvents {
   onShown?: (text: string) => void;
@@ -1062,7 +1062,7 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
     });
 }
 `,
-  "Focus.tsx": `import { useRef, useState } from "react";
+	"Focus.tsx": `import { useRef, useState } from "react";
 
 export interface FocusEvents {
   onStarted?: (count: number) => void;
@@ -1163,7 +1163,7 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
   };
 }
 `,
-  "Fields.tsx": `import { useLayoutEffect, useRef, useState } from "react";
+	"Fields.tsx": `import { useLayoutEffect, useRef, useState } from "react";
 
 export interface FieldsProps {
   label: string;
@@ -1268,7 +1268,7 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
   };
 }
 `,
-  "Choices.tsx": `import { type MouseEvent, useRef, useState } from "react";
+	"Choices.tsx": `import { type MouseEvent, useRef, useState } from "react";
 
 function hold(event: MouseEvent) {
   event.preventDefault();
@@ -1353,7 +1353,7 @@ function listen<K extends keyof HTMLElementEventMap>(
   return () => element?.removeEventListener(type, listener as EventListener, options);
 }
 `,
-  "Modes.tsx": `import { Fragment, useRef, useState } from "react";
+	"Modes.tsx": `import { Fragment, useRef, useState } from "react";
 
 export default function Modes() {
   const [mode, setMode] = useState("a");
@@ -1425,7 +1425,7 @@ export default function Modes() {
   );
 }
 `,
-  "Level.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
+	"Level.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface LevelProps {
   unit: string;
@@ -1479,7 +1479,7 @@ export default function Level({ unit, onReport }: LevelProps & LevelEvents) {
   );
 }
 `,
-  "Shortcuts.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+	"Shortcuts.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 
 export interface ShortcutsEvents {
   onShortcut?: (key: string, count: number) => void;
@@ -1552,7 +1552,7 @@ export default function Shortcuts({ onShortcut }: ShortcutsEvents) {
   );
 }
 `,
-  "Late.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+	"Late.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 
 export interface LateEvents {
   onShortcut?: (key: string, count: number) => void;
@@ -1588,7 +1588,7 @@ export default function Late({ onShortcut }: LateEvents) {
   return <p>Used: {count}</p>;
 }
 `,
-  "Tally.tsx": `import { useState } from "react";
+	"Tally.tsx": `import { useState } from "react";
 
 export interface TallyEvents {
   onCounted?: (done: number, total: number, last: number) => void;
@@ -1618,7 +1618,7 @@ export default function Tally({ onCounted }: TallyEvents) {
   );
 }
 `,
-  "Counts.tsx": `export interface CountsEvents {
+	"Counts.tsx": `export interface CountsEvents {
   onCounted?: (values: number[]) => void;
 }
 
@@ -1645,7 +1645,7 @@ export default function Counts({ onCounted }: CountsEvents) {
   );
 }
 `,
-  "Measured.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
+	"Measured.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface MeasuredEvents {
   onRendered?: (count: number) => void;
@@ -1706,7 +1706,7 @@ export default function Measured({ onRendered }: MeasuredEvents) {
   );
 }
 `,
-  "PriceTag.tsx": `import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+	"PriceTag.tsx": `import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 export interface PriceTagProps {
   /** The unit price, in cents. */
@@ -1778,7 +1778,7 @@ export default function PriceTag({ price }: PriceTagProps) {
   );
 }
 `,
-  "RefTypes.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
+	"RefTypes.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 export default function RefTypes() {
   const panel = useRef<HTMLElement>(null);
@@ -1847,7 +1847,7 @@ function listen<K extends keyof HTMLElementEventMap>(
   return () => element?.removeEventListener(type, listener as EventListener, options);
 }
 `,
-  "Memos.tsx": `import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+	"Memos.tsx": `import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 export interface MemosEvents {
   onSeen?: (text: string) => void;
@@ -1926,7 +1926,7 @@ export default function Memos({ onSeen, onTotal }: MemosEvents) {
   );
 }
 `,
-  "Merged.tsx": `import { useLayoutEffect, useRef, useState } from "react";
+	"Merged.tsx": `import { useLayoutEffect, useRef, useState } from "react";
 
 export interface MergedEvents {
   onLog?: (entry: string) => void;
@@ -2084,7 +2084,7 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
   };
 }
 `,
-  "Narrowed.tsx": `import { useLayoutEffect, useRef } from "react";
+	"Narrowed.tsx": `import { useLayoutEffect, useRef } from "react";
 
 export interface User {
   name: string;
@@ -2154,7 +2154,7 @@ function listen<K extends keyof HTMLElementEventMap>(
   return () => element?.removeEventListener(type, listener as EventListener, options);
 }
 `,
-  "NestKeys.tsx": `import { Fragment, useRef, useState } from "react";
+	"NestKeys.tsx": `import { Fragment, useRef, useState } from "react";
 
 export default function NestKeys() {
   const [mode, setMode] = useState("a");
@@ -2236,7 +2236,7 @@ export default function NestKeys() {
   );
 }
 `,
-  "Settle.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+	"Settle.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 
 export interface SettleEvents {
   onLog?: (entry: string) => void;
@@ -2363,7 +2363,7 @@ export default function Settle({ onLog }: SettleEvents) {
   );
 }
 `,
-  "Gated.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+	"Gated.tsx": `import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 
 export interface GatedEvents {
   onLog?: (entry: string) => void;
@@ -2509,7 +2509,7 @@ export default function Gated({ onLog }: GatedEvents) {
   );
 }
 `,
-  "Shadow.tsx": `import { useRef, useState } from "react";
+	"Shadow.tsx": `import { useRef, useState } from "react";
 
 export interface ShadowEvents {
   onLog?: (entry: string) => void;
@@ -2566,7 +2566,7 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
   };
 }
 `,
-  "Ticker.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
+	"Ticker.tsx": `import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 export default function Ticker() {
   const [seconds, setSeconds] = useState(0);
@@ -2620,7 +2620,7 @@ export default function Ticker() {
   );
 }
 `,
-  "Escapable.tsx": `import { useLayoutEffect, useRef, useState } from "react";
+	"Escapable.tsx": `import { useLayoutEffect, useRef, useState } from "react";
 
 export interface EscapableEvents {
   onClosed?: (reason: string) => void;
@@ -2670,7 +2670,7 @@ export default function Escapable({ onClosed }: EscapableEvents) {
   );
 }
 `,
-  "Saver.tsx": `import { useLayoutEffect, useRef, useState } from "react";
+	"Saver.tsx": `import { useLayoutEffect, useRef, useState } from "react";
 
 interface Settings {
   theme: string;
@@ -2724,7 +2724,7 @@ export default function Saver({ onSaved }: SaverEvents) {
   );
 }
 `,
-  "Picker.tsx": `import { useLayoutEffect, useMemo, useRef, useState } from "react";
+	"Picker.tsx": `import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 interface Member {
   id: number;

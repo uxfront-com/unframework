@@ -17,10 +17,10 @@ import type { ShellFixture } from "./shell-commands.ts";
 
 const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
 const ROOTS: Record<ShellFixture, string> = {
-  "design-system": fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url)),
-  "shell-tree": fileURLToPath(new URL("fixtures/shell-tree", import.meta.url)),
-  "example-controls": fileURLToPath(new URL("fixtures/example-controls", import.meta.url)),
-  "example-twins": fileURLToPath(new URL("fixtures/example-twins", import.meta.url)),
+	"design-system": fileURLToPath(new URL("../../../tests/e2e/design-system", import.meta.url)),
+	"shell-tree": fileURLToPath(new URL("fixtures/shell-tree", import.meta.url)),
+	"example-controls": fileURLToPath(new URL("fixtures/example-controls", import.meta.url)),
+	"example-twins": fileURLToPath(new URL("fixtures/example-twins", import.meta.url)),
 };
 const TARGETS = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
 
@@ -49,30 +49,32 @@ const STUB_FRAME = `<!doctype html>
 `;
 
 /** `ufShellFixture`: the shell page of a fixture, which only Node can read the catalogue for. */
-export const ufShellFixture: BrowserCommand<[name: ShellFixture, targets?: string[]]> = async (
-  _context,
-  name,
-  targets = TARGETS,
+export const ufShellFixture: BrowserCommand<[name: ShellFixture, targets?: Array<string>]> = async (
+	_context,
+	name,
+	targets = TARGETS,
 ) => {
-  if (!SHELL_FIXTURES.includes(name)) throw new Error(`No shell fixture named ${String(name)}.`);
-  const root = ROOTS[name];
-  const catalogue = await readCatalogue(root, (await projectConfig(root)).srcDir);
-  const out = join(PACKAGE, ".output/shell");
-  mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "frame.html"), STUB_FRAME);
-  const frames = targets.map((target) => ({
-    target,
-    src: `/.output/shell/frame.html?target=${target}`,
-  }));
-  const html = shellPage(shellData(catalogue, frames));
-  writeFileSync(join(out, `${name}.html`), html);
-  return { html };
+	if (!SHELL_FIXTURES.includes(name)) {
+		throw new Error(`No shell fixture named ${String(name)}.`);
+	}
+	const root = ROOTS[name];
+	const catalogue = await readCatalogue(root, (await projectConfig(root)).srcDir);
+	const out = join(PACKAGE, ".output/shell");
+	mkdirSync(out, { recursive: true });
+	writeFileSync(join(out, "frame.html"), STUB_FRAME);
+	const frames = targets.map((target) => ({
+		target,
+		src: `/.output/shell/frame.html?target=${target}`,
+	}));
+	const html = shellPage(shellData(catalogue, frames));
+	writeFileSync(join(out, `${name}.html`), html);
+	return { html };
 };
 
 /** `ufShellColorScheme`: `prefers-color-scheme` as the page sees it, which only Playwright can set. */
 export const ufShellColorScheme: BrowserCommand<[scheme: "light" | "dark"]> = async (
-  context,
-  scheme,
+	context,
+	scheme,
 ) => {
-  await context.page.emulateMedia({ colorScheme: scheme });
+	await context.page.emulateMedia({ colorScheme: scheme });
 };

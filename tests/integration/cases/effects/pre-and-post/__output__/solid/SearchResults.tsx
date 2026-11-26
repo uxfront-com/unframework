@@ -1,14 +1,13 @@
+import { KeyedFor } from "./_unframework/KeyedFor";
+import { nextTick } from "./_unframework/nextTick";
 import {
   type ComponentProps,
-  For,
   type JSX,
-  createMemo,
   createReaction,
   createSignal,
   onCleanup,
   onMount,
   splitProps,
-  untrack,
 } from "solid-js";
 
 export interface SearchResultsEvents {
@@ -113,39 +112,6 @@ export default function SearchResults(
   );
 }
 
-/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
-function KeyedFor<T>(props: {
-  each: readonly T[];
-  by: (item: T, index: number) => unknown;
-  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
-}): JSX.Element {
-  const items = createMemo(() => {
-    const rows = new Map<unknown, T>();
-    props.each.forEach((item, index) => {
-      const key = props.by(item, index);
-      rows.set(rows.has(key) ? {} : key, item);
-    });
-    return rows;
-  });
-  return (
-    <For each={[...items().keys()]}>
-      {(key, index) => {
-        const item = createMemo(() => items().get(key) as T);
-        return untrack(() =>
-          props.children({
-            get value() {
-              return item();
-            },
-            get index() {
-              return index();
-            },
-          }),
-        );
-      }}
-    </For>
-  );
-}
-
 /**
  * The watchers whose sources have changed since the last flush, in the order they changed: those
  * that run before the DOM updates, and those that run after it.
@@ -220,12 +186,4 @@ function createWatcher<T>(
     for (const cleanup of cleanups.splice(0)) cleanup();
     callback(value, previous, (cleanup) => cleanups.push(cleanup));
   }
-}
-
-/**
- * Resolves once the DOM has updated and the watchers have run: Solid applies writes as it makes
- * them, and the watchers run in a microtask queued at the first write, before this one.
- */
-function nextTick(): Promise<void> {
-  return Promise.resolve();
 }

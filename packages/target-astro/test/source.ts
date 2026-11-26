@@ -17,27 +17,31 @@ import target from "../src/index.ts";
 
 /** The IR of a source that must lower without an error or a warning. */
 export function lower(source: string, file = "Card.uf.tsx", shapes?: Shapes): UfModule {
-  const { module, diagnostics } = analyze(parseModule(file, source), shapes ? { shapes } : {});
-  if (diagnostics.length || !module) {
-    throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics)}`);
-  }
-  const broken = checkInvariants(module);
-  if (broken.length) throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
-  return module;
+	const { module, diagnostics } = analyze(parseModule(file, source), shapes ? { shapes } : {});
+	if (diagnostics.length || !module) {
+		throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics)}`);
+	}
+	const broken = checkInvariants(module);
+	if (broken.length) {
+		throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
+	}
+	return module;
 }
 
 /** The files this target emits for each component of a source, which must report nothing. */
-export function emitSource(source: string, file?: string, shapes?: Shapes): OutputFile[] {
-  const module = lower(source, file, shapes);
-  const reported: unknown[] = [];
-  const context: EmitContext = {
-    module,
-    options: undefined,
-    report: (diagnostic) => void reported.push(diagnostic),
-  };
-  const files = module.components.flatMap((component) => target.emit(component, context));
-  if (reported.length) throw new Error(`emit reported ${JSON.stringify(reported)}`);
-  return files;
+export function emitSource(source: string, file?: string, shapes?: Shapes): Array<OutputFile> {
+	const module = lower(source, file, shapes);
+	const reported: Array<unknown> = [];
+	const context: EmitContext = {
+		module,
+		options: undefined,
+		report: (diagnostic) => void reported.push(diagnostic),
+	};
+	const files = module.components.flatMap((component) => target.emit(component, context));
+	if (reported.length) {
+		throw new Error(`emit reported ${JSON.stringify(reported)}`);
+	}
+	return files;
 }
 
 /**
@@ -46,37 +50,43 @@ export function emitSource(source: string, file?: string, shapes?: Shapes): Outp
  * through a syntactic type oracle over those files (ADR-0067).
  */
 export async function emittedWithTypes(
-  source: string,
-  files: Readonly<Record<string, string>>,
+	source: string,
+	files: Readonly<Record<string, string>>,
 ): Promise<string> {
-  const file = "Card.uf.tsx";
-  const project: Record<string, string> = { ...files, [file]: source };
-  const oracle = createSyntacticOracle({
-    root: "/project",
-    readFile: async (path) => project[path.slice("/project/".length)],
-  });
-  const resolved = new Map<string, Awaited<ReturnType<typeof oracle.resolveShape>>>();
-  for (const query of shapeQueries(parseModule(file, source))) {
-    resolved.set(`${query.span.start}:${query.span.end}`, await oracle.resolveShape(query));
-  }
-  const [output, ...more] = emitSource(source, file, (span) =>
-    resolved.get(`${span.start}:${span.end}`),
-  );
-  if (!output || more.length) throw new Error("Expected one file.");
-  return output.contents;
+	const file = "Card.uf.tsx";
+	const project: Record<string, string> = { ...files, [file]: source };
+	const oracle = createSyntacticOracle({
+		root: "/project",
+		readFile: async (path) => project[path.slice("/project/".length)],
+	});
+	const resolved = new Map<string, Awaited<ReturnType<typeof oracle.resolveShape>>>();
+	for (const query of shapeQueries(parseModule(file, source))) {
+		resolved.set(`${query.span.start}:${query.span.end}`, await oracle.resolveShape(query));
+	}
+	const [output, ...more] = emitSource(source, file, (span) =>
+		resolved.get(`${span.start}:${span.end}`),
+	);
+	if (!output || more.length) {
+		throw new Error("Expected one file.");
+	}
+	return output.contents;
 }
 
 /** The one file a single-component source emits, as `emit` prints it. */
 export function emitted(source: string): string {
-  const [file, ...more] = emitSource(source);
-  if (!file || more.length) throw new Error("Expected one file.");
-  return file.contents;
+	const [file, ...more] = emitSource(source);
+	if (!file || more.length) {
+		throw new Error("Expected one file.");
+	}
+	return file.contents;
 }
 
 /** The one file a single-component source emits, formatted as the compiler writes it. */
 export async function compiled(source: string): Promise<string> {
-  const [file] = emitSource(source);
-  const { file: formatted, error } = await formatOutput(file!);
-  if (error) throw new Error(error);
-  return formatted.contents;
+	const [file] = emitSource(source);
+	const { file: formatted, error } = await formatOutput(file!);
+	if (error) {
+		throw new Error(error);
+	}
+	return formatted.contents;
 }

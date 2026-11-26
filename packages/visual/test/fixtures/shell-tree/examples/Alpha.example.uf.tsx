@@ -4,5 +4,5 @@
  * @order 2
  */
 export default function Alpha() {
-  return <p>Alpha</p>;
+	return <p>Alpha</p>;
 }

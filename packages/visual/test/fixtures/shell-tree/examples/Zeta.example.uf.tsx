@@ -4,5 +4,5 @@
  * @order 1
  */
 export default function Zeta() {
-  return <p>Zeta</p>;
+	return <p>Zeta</p>;
 }

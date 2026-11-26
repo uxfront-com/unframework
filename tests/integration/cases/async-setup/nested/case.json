@@ -1,7 +1,7 @@
 {
-  "description": "A sync parent renders async children: one it holds a ref to, a list of them and one through a component whose root is an async child, which takes the parent's class.",
-  "main": "Team.uf.tsx",
-  "ssr": {
-    "two": { "props": { "ids": ["grace", "linus"] } }
-  }
+	"description": "A sync parent renders async children: one it holds a ref to, a list of them and one through a component whose root is an async child, which takes the parent's class.",
+	"main": "Team.uf.tsx",
+	"ssr": {
+		"two": { "props": { "ids": ["grace", "linus"] } }
+	}
 }

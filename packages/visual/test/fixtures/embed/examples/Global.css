@@ -1,14 +1,14 @@
 /* A project's global styles, as Styleframe's sanitize and global presets set them. */
 :global(body) {
-  color: rgb(200, 0, 0);
-  font-family: Georgia, serif;
-  line-height: 3;
+	color: rgb(200, 0, 0);
+	font-family: Georgia, serif;
+	line-height: 3;
 }
 :global(label) {
-  color: rgb(0, 160, 0);
-  font-size: 20px;
+	color: rgb(0, 160, 0);
+	font-size: 20px;
 }
 :global(select) {
-  font-family: Georgia, serif;
-  line-height: 3;
+	font-family: Georgia, serif;
+	line-height: 3;
 }

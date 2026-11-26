@@ -18,19 +18,19 @@ type AstExpression = Parameters<typeof js.conditionalExpression>[0];
  * it fails Qwik's types (L4).
  */
 export function qwikClassAttribute(
-  attribute: ClassAttribute,
-  element: ElementNode,
-  context: JsxContext,
-  isPrimitive: (condition: Expression) => boolean,
-): JsxAttribute[] {
-  const items = classItems(attribute, context, isPrimitive);
-  const reads = spreadClassReads(element, context);
-  const [only] = items;
-  const value =
-    items.length === 1 && reads.length === 0 && only!.type !== "Literal"
-      ? only!
-      : js.arrayExpression([...items, ...reads]);
-  return [js.jsxAttribute("class", js.jsxExpressionContainer(value))];
+	attribute: ClassAttribute,
+	element: ElementNode,
+	context: JsxContext,
+	isPrimitive: (condition: Expression) => boolean,
+): Array<JsxAttribute> {
+	const items = classItems(attribute, context, isPrimitive);
+	const reads = spreadClassReads(element, context);
+	const [only] = items;
+	const value =
+		items.length === 1 && reads.length === 0 && only!.type !== "Literal"
+			? only!
+			: js.arrayExpression([...items, ...reads]);
+	return [js.jsxAttribute("class", js.jsxExpressionContainer(value))];
 }
 
 /**
@@ -40,28 +40,30 @@ export function qwikClassAttribute(
  * into one key, which Qwik splits as the source did.
  */
 function classItems(
-  attribute: ClassAttribute,
-  context: JsxContext,
-  isPrimitive: (condition: Expression) => boolean,
-): AstExpression[] {
-  const items: AstExpression[] = [];
-  let toggles: ToggleClass[] = [];
-  const flush = () => {
-    if (toggles.length) items.push(toggleObject(toggles, context, isPrimitive));
-    toggles = [];
-  };
-  for (const item of attribute.items) {
-    if (item.kind === "Toggle") {
-      toggles.push(item);
-      continue;
-    }
-    flush();
-    items.push(
-      item.kind === "Static" ? js.stringLiteral(item.value) : jsxExpression(item.value, context),
-    );
-  }
-  flush();
-  return items;
+	attribute: ClassAttribute,
+	context: JsxContext,
+	isPrimitive: (condition: Expression) => boolean,
+): Array<AstExpression> {
+	const items: Array<AstExpression> = [];
+	let toggles: Array<ToggleClass> = [];
+	const flush = () => {
+		if (toggles.length) {
+			items.push(toggleObject(toggles, context, isPrimitive));
+		}
+		toggles = [];
+	};
+	for (const item of attribute.items) {
+		if (item.kind === "Toggle") {
+			toggles.push(item);
+			continue;
+		}
+		flush();
+		items.push(
+			item.kind === "Static" ? js.stringLiteral(item.value) : jsxExpression(item.value, context),
+		);
+	}
+	flush();
+	return items;
 }
 
 /**
@@ -70,33 +72,36 @@ function classItems(
  * condition is written shorthand.
  */
 function toggleObject(
-  toggles: readonly ToggleClass[],
-  context: JsxContext,
-  isPrimitive: (condition: Expression) => boolean,
+	toggles: ReadonlyArray<ToggleClass>,
+	context: JsxContext,
+	isPrimitive: (condition: Expression) => boolean,
 ): AstExpression {
-  const groups: { names: string[]; condition: Expression }[] = [];
-  for (const toggle of toggles) {
-    const last = groups.at(-1);
-    if (last && sameSpan(last.condition, toggle.condition)) last.names.push(toggle.name);
-    else groups.push({ names: [toggle.name], condition: toggle.condition });
-  }
-  return js.objectExpression(
-    groups.map(({ names, condition }) => {
-      const key = names.join(" ");
-      if (!isPrimitive(condition)) {
-        const wrapped = js.callExpression(js.identifier("Boolean"), [
-          jsxExpression(condition, context),
-        ]);
-        return js.property(key, wrapped);
-      }
-      if (expressionCode(condition, context) === key) {
-        return js.property(key, js.identifier(key), { shorthand: true });
-      }
-      return js.property(key, jsxExpression(condition, context));
-    }),
-  );
+	const groups: Array<{ names: Array<string>; condition: Expression }> = [];
+	for (const toggle of toggles) {
+		const last = groups.at(-1);
+		if (last && sameSpan(last.condition, toggle.condition)) {
+			last.names.push(toggle.name);
+		} else {
+			groups.push({ names: [toggle.name], condition: toggle.condition });
+		}
+	}
+	return js.objectExpression(
+		groups.map(({ names, condition }) => {
+			const key = names.join(" ");
+			if (!isPrimitive(condition)) {
+				const wrapped = js.callExpression(js.identifier("Boolean"), [
+					jsxExpression(condition, context),
+				]);
+				return js.property(key, wrapped);
+			}
+			if (expressionCode(condition, context) === key) {
+				return js.property(key, js.identifier(key), { shorthand: true });
+			}
+			return js.property(key, jsxExpression(condition, context));
+		}),
+	);
 }
 
 function sameSpan(a: Expression, b: Expression): boolean {
-  return a.span.start === b.span.start && a.span.end === b.span.end;
+	return a.span.start === b.span.start && a.span.end === b.span.end;
 }

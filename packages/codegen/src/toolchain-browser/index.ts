@@ -9,41 +9,53 @@
  * "Astro renders on the server".
  */
 export function assertSerialisableProps(
-  props: Readonly<Record<string, unknown>>,
-  why: string,
+	props: Readonly<Record<string, unknown>>,
+	why: string,
 ): void {
-  for (const [key, value] of Object.entries(props)) assertJsonValue(value, key, why);
+	for (const [key, value] of Object.entries(props)) {
+		assertJsonValue(value, key, why);
+	}
 }
 
 function assertJsonValue(value: unknown, path: string, why: string): void {
-  if (value === null || value === undefined) return;
-  switch (typeof value) {
-    case "string":
-    case "boolean":
-      return;
-    case "number":
-      if (Number.isFinite(value)) return;
-      break;
-    case "object": {
-      if (Array.isArray(value)) {
-        value.forEach((item, index) => assertJsonValue(item, `${path}[${index}]`, why));
-        return;
-      }
-      const prototype: unknown = Object.getPrototypeOf(value);
-      if (prototype === Object.prototype || prototype === null) {
-        for (const [key, item] of Object.entries(value)) {
-          assertJsonValue(item, `${path}.${key}`, why);
-        }
-        return;
-      }
-      break;
-    }
-  }
-  throw new TypeError(`${why}, so props must be JSON values; \`${path}\` is ${describe(value)}.`);
+	if (value === null || value === undefined) {
+		return;
+	}
+	switch (typeof value) {
+		case "string":
+		case "boolean":
+			return;
+		case "number":
+			if (Number.isFinite(value)) {
+				return;
+			}
+			break;
+		case "object": {
+			if (Array.isArray(value)) {
+				value.forEach((item, index) => assertJsonValue(item, `${path}[${index}]`, why));
+				return;
+			}
+			const prototype: unknown = Object.getPrototypeOf(value);
+			if (prototype === Object.prototype || prototype === null) {
+				for (const [key, item] of Object.entries(value)) {
+					assertJsonValue(item, `${path}.${key}`, why);
+				}
+				return;
+			}
+			break;
+		}
+		default:
+			break;
+	}
+	throw new TypeError(`${why}, so props must be JSON values; \`${path}\` is ${describe(value)}.`);
 }
 
 function describe(value: unknown): string {
-  if (typeof value === "number") return String(value);
-  if (typeof value === "object" && value !== null) return `a ${value.constructor.name} instance`;
-  return `a ${typeof value}`;
+	if (typeof value === "number") {
+		return String(value);
+	}
+	if (typeof value === "object" && value !== null) {
+		return `a ${value.constructor.name} instance`;
+	}
+	return `a ${typeof value}`;
 }

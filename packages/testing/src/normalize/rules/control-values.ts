@@ -1,12 +1,12 @@
 import type { NormalizeTarget } from "../targets.ts";
 import {
-  attributeName,
-  childrenOf,
-  forEachElement,
-  getAttribute,
-  HTML_NAMESPACE,
-  isText,
-  replaceChildren,
+	attributeName,
+	childrenOf,
+	forEachElement,
+	getAttribute,
+	HTML_NAMESPACE,
+	isText,
+	replaceChildren,
 } from "../tree.ts";
 import type { TreeElement, TreeParent } from "../tree.ts";
 
@@ -28,33 +28,41 @@ import type { TreeElement, TreeParent } from "../tree.ts";
  * `defaultValue` and Vue as the attribute, must still compare before anyone acts.
  */
 export function removeSettledValues(root: TreeParent): void {
-  forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) return;
-    switch (element.tagName) {
-      case "input": {
-        const state = getAttribute(element, "uf:value");
-        if (state !== undefined && getAttribute(element, "value") === state) {
-          removeAttribute(element, "value");
-        }
-        if (getAttribute(element, "uf:checked") === "true") removeAttribute(element, "checked");
-        return;
-      }
-      case "option":
-        if (getAttribute(element, "uf:selected") === "true") removeAttribute(element, "selected");
-        return;
-      case "textarea": {
-        const state = getAttribute(element, "uf:value");
-        const children = childrenOf(element);
-        const text = children.every(isText)
-          ? children.map((child) => child.value).join("")
-          : undefined;
-        if (state !== undefined && children.length && text === state) replaceChildren(element, []);
-        return;
-      }
-      default:
-        return;
-    }
-  });
+	forEachElement(root, (element) => {
+		if (element.namespaceURI !== HTML_NAMESPACE) {
+			return;
+		}
+		switch (element.tagName) {
+			case "input": {
+				const state = getAttribute(element, "uf:value");
+				if (state !== undefined && getAttribute(element, "value") === state) {
+					removeAttribute(element, "value");
+				}
+				if (getAttribute(element, "uf:checked") === "true") {
+					removeAttribute(element, "checked");
+				}
+				return;
+			}
+			case "option":
+				if (getAttribute(element, "uf:selected") === "true") {
+					removeAttribute(element, "selected");
+				}
+				return;
+			case "textarea": {
+				const state = getAttribute(element, "uf:value");
+				const children = childrenOf(element);
+				const text = children.every(isText)
+					? children.map((child) => child.value).join("")
+					: undefined;
+				if (state !== undefined && children.length && text === state) {
+					replaceChildren(element, []);
+				}
+				return;
+			}
+			default:
+				return;
+		}
+	});
 }
 
 /**
@@ -67,15 +75,19 @@ export function removeSettledValues(root: TreeParent): void {
  * element without the `uf:*` state (a server render) keeps its attribute on React too.
  */
 export function removeReactDefaultStates(root: TreeParent, target?: NormalizeTarget): void {
-  if (target !== "react") return;
-  forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) return;
-    if (element.tagName === "input" && getAttribute(element, "uf:checked") !== undefined) {
-      removeAttribute(element, "checked");
-    } else if (element.tagName === "option" && getAttribute(element, "uf:selected") !== undefined) {
-      removeAttribute(element, "selected");
-    }
-  });
+	if (target !== "react") {
+		return;
+	}
+	forEachElement(root, (element) => {
+		if (element.namespaceURI !== HTML_NAMESPACE) {
+			return;
+		}
+		if (element.tagName === "input" && getAttribute(element, "uf:checked") !== undefined) {
+			removeAttribute(element, "checked");
+		} else if (element.tagName === "option" && getAttribute(element, "uf:selected") !== undefined) {
+			removeAttribute(element, "selected");
+		}
+	});
 }
 
 /**
@@ -89,28 +101,38 @@ export function removeReactDefaultStates(root: TreeParent, target?: NormalizeTar
  * and in the client render's DOM (L7).
  */
 export function removeServerControlStates(root: TreeParent, hydrated?: boolean): void {
-  if (!hydrated) return;
-  forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE) return;
-    switch (element.tagName) {
-      case "input":
-        if (getAttribute(element, "uf:value") !== undefined) removeAttribute(element, "value");
-        if (getAttribute(element, "uf:checked") !== undefined) removeAttribute(element, "checked");
-        return;
-      case "option":
-        if (getAttribute(element, "uf:selected") !== undefined) {
-          removeAttribute(element, "selected");
-        }
-        return;
-      case "textarea":
-        if (getAttribute(element, "uf:value") !== undefined) replaceChildren(element, []);
-        return;
-      default:
-        return;
-    }
-  });
+	if (!hydrated) {
+		return;
+	}
+	forEachElement(root, (element) => {
+		if (element.namespaceURI !== HTML_NAMESPACE) {
+			return;
+		}
+		switch (element.tagName) {
+			case "input":
+				if (getAttribute(element, "uf:value") !== undefined) {
+					removeAttribute(element, "value");
+				}
+				if (getAttribute(element, "uf:checked") !== undefined) {
+					removeAttribute(element, "checked");
+				}
+				return;
+			case "option":
+				if (getAttribute(element, "uf:selected") !== undefined) {
+					removeAttribute(element, "selected");
+				}
+				return;
+			case "textarea":
+				if (getAttribute(element, "uf:value") !== undefined) {
+					replaceChildren(element, []);
+				}
+				return;
+			default:
+				return;
+		}
+	});
 }
 
 function removeAttribute(element: TreeElement, name: string): void {
-  element.attrs = element.attrs.filter((attribute) => attributeName(attribute) !== name);
+	element.attrs = element.attrs.filter((attribute) => attributeName(attribute) !== name);
 }

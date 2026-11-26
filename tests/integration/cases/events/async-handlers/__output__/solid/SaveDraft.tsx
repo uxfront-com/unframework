@@ -1,3 +1,4 @@
+import { nextTick } from "./_unframework/nextTick";
 import { type ComponentProps, type JSX, createSignal, splitProps } from "solid-js";
 
 export interface SaveDraftEvents {
@@ -34,12 +35,4 @@ export default function SaveDraft(
       </button>
     </section>
   );
-}
-
-/**
- * Resolves once the DOM has updated and the watchers have run: Solid applies writes as it makes
- * them, and the watchers run in a microtask queued at the first write, before this one.
- */
-function nextTick(): Promise<void> {
-  return Promise.resolve();
 }

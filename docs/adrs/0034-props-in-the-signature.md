@@ -122,17 +122,17 @@ through silently (P2, P4):
 
 ```tsx
 export interface BadgeProps {
-  label: string;
-  tone?: "info" | "warn";
-  count?: number;
+	label: string;
+	tone?: "info" | "warn";
+	count?: number;
 }
 
 export default function Badge({ label, tone = "info", count }: BadgeProps) {
-  return (
-    <span data-tone={tone}>
-      {label} {count}
-    </span>
-  );
+	return (
+		<span data-tone={tone}>
+			{label} {count}
+		</span>
+	);
 }
 ```
 

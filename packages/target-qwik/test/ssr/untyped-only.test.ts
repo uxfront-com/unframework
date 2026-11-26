@@ -7,17 +7,17 @@ import { renderToString } from "../../src/toolchain/server.ts";
 
 /** A fixture's components, compiled by Qwik's plugin (a computed path: see server.test.ts). */
 const load = async (name: string): Promise<Readonly<Record<string, unknown>>> =>
-  import(`../fixtures/${name}.tsx`);
+	import(`../fixtures/${name}.tsx`) as Promise<{ default: unknown }>;
 const fixtures = await load("UntypedOnly");
 
 describe("an untyped attribute only some tags take, on Qwik's server", () => {
-  it("renders on the tag that takes it, and not on the other", async () => {
-    const input = await renderToString(fixtures.default, { props: { x: true } });
-    expect(input).toMatch(/<input [^>]*form="f1"/);
-    expect(input).toMatch(/<input [^>]*list="l1"/);
-    const link = await renderToString(fixtures.default, { props: { x: false } });
-    expect(link).toMatch(/<a [^>]*aria-label="Field"/);
-    expect(link).not.toContain("form=");
-    expect(link).not.toContain("list=");
-  });
+	it("renders on the tag that takes it, and not on the other", async () => {
+		const input = await renderToString(fixtures.default, { props: { x: true } });
+		expect(input).toMatch(/<input [^>]*form="f1"/);
+		expect(input).toMatch(/<input [^>]*list="l1"/);
+		const link = await renderToString(fixtures.default, { props: { x: false } });
+		expect(link).toMatch(/<a [^>]*aria-label="Field"/);
+		expect(link).not.toContain("form=");
+		expect(link).not.toContain("list=");
+	});
 });

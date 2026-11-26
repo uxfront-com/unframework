@@ -3,6 +3,6 @@ import NameField from "../../../../../integration/cases/fallthrough/root-ref/__o
 </script>
 
 <template>
-  <!-- @uf-expect TS2561 NameField.prop:label -->
-  <NameField lable="Name" />
+	<!-- @uf-expect TS2561 NameField.prop:label -->
+	<NameField lable="Name" />
 </template>

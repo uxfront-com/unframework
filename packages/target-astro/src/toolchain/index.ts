@@ -3,9 +3,9 @@
 // config that imports every target's toolchain pays only for the projects it runs.
 import type { Toolchain } from "@unframework.dev/codegen";
 import {
-  lintWithEslint,
-  lintWithOxlint,
-  mergeLintResults,
+	lintWithEslint,
+	lintWithOxlint,
+	mergeLintResults,
 } from "@unframework.dev/codegen/toolchain-node";
 
 import { astroBrowserRef } from "./browser.ts";
@@ -20,35 +20,37 @@ import { closeAstroRenderServers, createAstroRenderCommand } from "./render.ts";
  * `browser` projects mount the server HTML that the `ufAstroRender` command returns.
  */
 export const toolchain: Toolchain = {
-  name: "astro",
-  vite(mode, context) {
-    if (mode === "ssr") return astroViteConfig(context.root);
-    // Nothing to pre-bundle: in the browser a compiled component is a plain reference that
-    // imports nothing, and the unframework plugin keeps virtual ids out of the dep scan.
-    return { plugins: [astroBrowserRef()] };
-  },
-  browserCommands: (context) => ({ ufAstroRender: createAstroRenderCommand(context) }),
-  renderCommandName: "ufAstroRender",
-  close: closeAstroRenderServers,
-  client: "@unframework.dev/target-astro/toolchain/client",
-  server: "@unframework.dev/target-astro/toolchain/server",
-  frameworkCompile: astroFrameworkCompile,
+	name: "astro",
+	vite(mode, context) {
+		if (mode === "ssr") {
+			return astroViteConfig(context.root);
+		}
+		// Nothing to pre-bundle: in the browser a compiled component is a plain reference that
+		// imports nothing, and the unframework plugin keeps virtual ids out of the dep scan.
+		return { plugins: [astroBrowserRef()] };
+	},
+	browserCommands: (context) => ({ ufAstroRender: createAstroRenderCommand(context) }),
+	renderCommandName: "ufAstroRender",
+	close: closeAstroRenderServers,
+	client: "@unframework.dev/target-astro/toolchain/client",
+	server: "@unframework.dev/target-astro/toolchain/server",
+	frameworkCompile: astroFrameworkCompile,
 
-  frameworkEmit: astroFrameworkEmit,
-  typecheck: astroTypecheck,
-  // L5 (ADR-0042): oxlint's shared baseline over the frontmatter, ESLint over the whole file.
-  // ESLint reads only the `.astro` files: a `.ts` module beside them, a shared module
-  // (ADR-0070) or a composable (ADR-0069), is oxlint's alone, which runs the baseline over it.
-  lint: async (files, context) =>
-    mergeLintResults(
-      await Promise.all([
-        lintWithOxlint(files, context),
-        lintWithEslint(
-          files.filter((file) => file.endsWith(".astro")),
-          context,
-        ),
-      ]),
-    ),
+	frameworkEmit: astroFrameworkEmit,
+	typecheck: astroTypecheck,
+	// L5 (ADR-0042): oxlint's shared baseline over the frontmatter, ESLint over the whole file.
+	// ESLint reads only the `.astro` files: a `.ts` module beside them, a shared module
+	// (ADR-0070) or a composable (ADR-0069), is oxlint's alone, which runs the baseline over it.
+	lint: async (files, context) =>
+		mergeLintResults(
+			await Promise.all([
+				lintWithOxlint(files, context),
+				lintWithEslint(
+					files.filter((file) => file.endsWith(".astro")),
+					context,
+				),
+			]),
+		),
 };
 
 export default toolchain;

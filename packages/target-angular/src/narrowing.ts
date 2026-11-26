@@ -11,17 +11,17 @@
 // narrows as TypeScript narrows a local. A template statement reads an input so too, and a state
 // through the class (`this.selected()!`).
 import type {
-  BindingReference,
-  Code,
-  CodeReference,
-  FunctionCode,
-  Span,
-  UfComponent,
+	BindingReference,
+	Code,
+	CodeReference,
+	FunctionCode,
+	Span,
+	UfComponent,
 } from "@unframework.dev/ir";
 
 /** Whether a reference's own read is narrowed: its whole span is a narrowed path. */
 export function narrowedWhole(reference: BindingReference): boolean {
-  return reference.narrowed?.some(({ span }) => span.end === reference.span.end) === true;
+	return reference.narrowed?.some(({ span }) => span.end === reference.span.end) === true;
 }
 
 /**
@@ -30,41 +30,43 @@ export function narrowedWhole(reference: BindingReference): boolean {
  * The spans after each `!` move with the text: a span that ends where a path does holds its `!`.
  */
 export function assertedCode(code: Code, asserts: (reference: BindingReference) => boolean): Code {
-  const at = code.refs
-    .flatMap((reference) =>
-      reference.kind === "Binding" && asserts(reference)
-        ? (reference.narrowed ?? [])
-            .filter(({ span }) => span.end > reference.span.end)
-            .map(({ span }) => span.end)
-        : [],
-    )
-    .toSorted((a, b) => a - b);
-  if (at.length === 0) return code;
-  const offset = code.span.start;
-  let text = "";
-  let from = 0;
-  for (const position of at) {
-    text += `${code.code.slice(from, position - offset)}!`;
-    from = position - offset;
-  }
-  text += code.code.slice(from);
-  const start = (position: number) => position + at.filter((each) => each < position).length;
-  const end = (position: number) => position + at.filter((each) => each <= position).length;
-  const moved = (span: Span): Span => ({ start: start(span.start), end: end(span.end) });
-  return {
-    code: text,
-    span: { start: code.span.start, end: end(code.span.end) },
-    refs: code.refs.map((reference) => movedReference(reference, moved)),
-  };
+	const at = code.refs
+		.flatMap((reference) =>
+			reference.kind === "Binding" && asserts(reference)
+				? (reference.narrowed ?? [])
+						.filter(({ span }) => span.end > reference.span.end)
+						.map(({ span }) => span.end)
+				: [],
+		)
+		.toSorted((a, b) => a - b);
+	if (at.length === 0) {
+		return code;
+	}
+	const offset = code.span.start;
+	let text = "";
+	let from = 0;
+	for (const position of at) {
+		text += `${code.code.slice(from, position - offset)}!`;
+		from = position - offset;
+	}
+	text += code.code.slice(from);
+	const start = (position: number) => position + at.filter((each) => each < position).length;
+	const end = (position: number) => position + at.filter((each) => each <= position).length;
+	const moved = (span: Span): Span => ({ start: start(span.start), end: end(span.end) });
+	return {
+		code: text,
+		span: { start: code.span.start, end: end(code.span.end) },
+		refs: code.refs.map((reference) => movedReference(reference, moved)),
+	};
 }
 
 /** A function whose body is {@link assertedCode}'s. */
 export function assertedFunction(
-  fn: FunctionCode,
-  asserts: (reference: BindingReference) => boolean,
+	fn: FunctionCode,
+	asserts: (reference: BindingReference) => boolean,
 ): FunctionCode {
-  const body = assertedCode(fn.body, asserts);
-  return body === fn.body ? fn : { ...fn, body };
+	const body = assertedCode(fn.body, asserts);
+	return body === fn.body ? fn : { ...fn, body };
 }
 
 /**
@@ -72,61 +74,61 @@ export function assertedFunction(
  * the class's code, which reads every prop and ref's value through a call.
  */
 export function assertedSetup(component: UfComponent): UfComponent {
-  return {
-    ...component,
-    setup: component.setup.map((item) => {
-      switch (item.kind) {
-        case "State":
-        case "Variable":
-          return item.initial ? { ...item, initial: code(item.initial) } : item;
-        case "Const":
-        case "Await":
-          return { ...item, value: code(item.value) };
-        case "Derived":
-          return { ...item, getter: fn(item.getter) };
-        case "Function":
-          return { ...item, function: fn(item.function) };
-        case "Watch":
-          return {
-            ...item,
-            sources: item.sources.map((source) =>
-              source.kind === "Getter" ? { ...source, getter: fn(source.getter) } : source,
-            ),
-            callback: fn(item.callback),
-          };
-        case "WatchEffect":
-          return { ...item, effect: fn(item.effect) };
-        case "Lifecycle":
-          return { ...item, callback: fn(item.callback) };
-        case "TemplateRef":
-        case "Id":
-        case "Model":
-        case "Provide":
-        case "Inject":
-          return item;
-        case "DevCheck":
-          return { ...item, code: code(item.code) };
-        case "Use":
-          return {
-            ...item,
-            arguments: item.arguments.map((argument) => {
-              switch (argument.kind) {
-                case "Value":
-                  return { ...argument, value: code(argument.value) };
-                case "Getter":
-                  return { ...argument, getter: fn(argument.getter) };
-                case "Callback":
-                  return { ...argument, callback: fn(argument.callback) };
-                default:
-                  return unreachable(argument);
-              }
-            }),
-          };
-        default:
-          return unreachable(item);
-      }
-    }),
-  };
+	return {
+		...component,
+		setup: component.setup.map((item) => {
+			switch (item.kind) {
+				case "State":
+				case "Variable":
+					return item.initial ? { ...item, initial: code(item.initial) } : item;
+				case "Const":
+				case "Await":
+					return { ...item, value: code(item.value) };
+				case "Derived":
+					return { ...item, getter: fn(item.getter) };
+				case "Function":
+					return { ...item, function: fn(item.function) };
+				case "Watch":
+					return {
+						...item,
+						sources: item.sources.map((source) =>
+							source.kind === "Getter" ? { ...source, getter: fn(source.getter) } : source,
+						),
+						callback: fn(item.callback),
+					};
+				case "WatchEffect":
+					return { ...item, effect: fn(item.effect) };
+				case "Lifecycle":
+					return { ...item, callback: fn(item.callback) };
+				case "TemplateRef":
+				case "Id":
+				case "Model":
+				case "Provide":
+				case "Inject":
+					return item;
+				case "DevCheck":
+					return { ...item, code: code(item.code) };
+				case "Use":
+					return {
+						...item,
+						arguments: item.arguments.map((argument) => {
+							switch (argument.kind) {
+								case "Value":
+									return { ...argument, value: code(argument.value) };
+								case "Getter":
+									return { ...argument, getter: fn(argument.getter) };
+								case "Callback":
+									return { ...argument, callback: fn(argument.callback) };
+								default:
+									return unreachable(argument);
+							}
+						}),
+					};
+				default:
+					return unreachable(item);
+			}
+		}),
+	};
 }
 
 /** Every reference: class code reads each through a call. */
@@ -136,41 +138,41 @@ const fn = (each: FunctionCode): FunctionCode => assertedFunction(each, all);
 
 /** A reference with each of its spans moved. */
 function movedReference(reference: CodeReference, moved: (span: Span) => Span): CodeReference {
-  switch (reference.kind) {
-    case "Binding":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        ...(reference.narrowed
-          ? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
-          : {}),
-      };
-    case "Write":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        target: moved(reference.target),
-        ...(reference.value ? { value: moved(reference.value) } : {}),
-      };
-    case "Emit":
-      return {
-        ...reference,
-        span: moved(reference.span),
-        arguments: reference.arguments.map(moved),
-      };
-    case "Global":
-    case "Import":
-    case "Event":
-    case "Api":
-    case "Slot":
-    case "Dev":
-      return { ...reference, span: moved(reference.span) };
-    default:
-      return unreachable(reference);
-  }
+	switch (reference.kind) {
+		case "Binding":
+			return {
+				...reference,
+				span: moved(reference.span),
+				...(reference.narrowed
+					? { narrowed: reference.narrowed.map((path) => ({ ...path, span: moved(path.span) })) }
+					: {}),
+			};
+		case "Write":
+			return {
+				...reference,
+				span: moved(reference.span),
+				target: moved(reference.target),
+				...(reference.value ? { value: moved(reference.value) } : {}),
+			};
+		case "Emit":
+			return {
+				...reference,
+				span: moved(reference.span),
+				arguments: reference.arguments.map(moved),
+			};
+		case "Global":
+		case "Import":
+		case "Event":
+		case "Api":
+		case "Slot":
+		case "Dev":
+			return { ...reference, span: moved(reference.span) };
+		default:
+			return unreachable(reference);
+	}
 }
 
 /** The `never` default of an exhaustive switch (./plan.ts imports this module). */
 function unreachable(value: never): never {
-  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }

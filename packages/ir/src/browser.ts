@@ -188,7 +188,7 @@ export const LIB_DOM_GLOBALS: ReadonlySet<string> = words(`
  * likely fix writes `window.` before one.
  */
 export const WINDOW_MEMBER_GLOBALS: ReadonlySet<string> = new Set([
-  ...words(`
+	...words(`
     addEventListener blur captureEvents clientInformation close closed dispatchEvent event
     external focus frameElement frames innerHeight innerWidth length locationbar menubar moveBy
     moveTo name open opener orientation origin outerHeight outerWidth pageXOffset pageYOffset
@@ -196,5 +196,5 @@ export const WINDOW_MEMBER_GLOBALS: ReadonlySet<string> = new Set([
     screen screenLeft screenTop screenX screenY scroll scrollBy scrollTo scrollX scrollY
     scrollbars self status statusbar stop toString toolbar top
   `),
-  ...[...LIB_DOM_GLOBALS].filter((name) => /^on[a-z]/.test(name)),
+	...[...LIB_DOM_GLOBALS].filter((name) => /^on[a-z]/.test(name)),
 ]);

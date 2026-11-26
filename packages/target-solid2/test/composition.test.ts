@@ -15,9 +15,9 @@ import { SOURCES } from "./sources.ts";
 let scratch: string;
 
 beforeAll(() => {
-  mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
-  // In the package, so the output's `solid-js` imports resolve from its node_modules.
-  scratch = mkdtempSync(join(packageDir, ".uf-tmp", "composition-"));
+	mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
+	// In the package, so the output's `solid-js` imports resolve from its node_modules.
+	scratch = mkdtempSync(join(packageDir, ".uf-tmp", "composition-"));
 });
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
@@ -26,212 +26,212 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
  * included, without the hydration keys and scripts.
  */
 async function serverHtml(name: string, props: Record<string, unknown>): Promise<string> {
-  const filename = join(scratch, `${name}.tsx`);
-  const path = join(scratch, `${name}.js`);
-  writeFileSync(path, await compileForServer(await emitSource(SOURCES[name]!), filename));
-  const { default: component } = (await import(path)) as {
-    default: Component<Record<string, unknown>>;
-  };
-  const html: unknown = await renderToStream(() => createComponent(component, props), {
-    noScripts: true,
-  });
-  return String(html)
-    .replace(/<!--[^>]*-->/g, "")
-    .replace(/ _hk=[^ >]*/g, "");
+	const filename = join(scratch, `${name}.tsx`);
+	const path = join(scratch, `${name}.js`);
+	writeFileSync(path, await compileForServer(await emitSource(SOURCES[name]!), filename));
+	const { default: component } = (await import(path)) as {
+		default: Component<Record<string, unknown>>;
+	};
+	const html: unknown = await renderToStream(() => createComponent(component, props), {
+		noScripts: true,
+	});
+	return String(html)
+		.replaceAll(/<!--[^>]*-->/g, "")
+		.replaceAll(/ _hk=[^ >]*/g, "");
 }
 
 describe("solid2 slots", () => {
-  it("resolves a slot it tests once, in a condition or an attribute", async () => {
-    const output = await emitSource(SOURCES.TestedSlots!);
-    expect(output).toContain("const title = children(() => props.title);");
-    expect(output).toContain("const content = children(() => props.children);");
-    expect(output).toContain('data-filled={content() ? "yes" : "no"}');
-    expect(output).toContain("<Show when={title()}>");
-    // A slot's prop creates its content each time it is read: each is read once.
-    const reads = { title: 0, children: 0 };
-    const html = await serverHtml("TestedSlots", {
-      get title() {
-        reads.title += 1;
-        return "Title";
-      },
-      get children() {
-        reads.children += 1;
-        return "Body";
-      },
-    });
-    // A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
-    // which, on Solid 2, writes no `class` or `style` the props leave out.
-    expect(html).toBe('<section data-filled="yes"><h2>Title</h2>Body</section>');
-    expect(reads).toEqual({ title: 1, children: 1 });
-  });
+	it("resolves a slot it tests once, in a condition or an attribute", async () => {
+		const output = await emitSource(SOURCES.TestedSlots!);
+		expect(output).toContain("const title = children(() => props.title);");
+		expect(output).toContain("const content = children(() => props.children);");
+		expect(output).toContain('data-filled={content() ? "yes" : "no"}');
+		expect(output).toContain("<Show when={title()}>");
+		// A slot's prop creates its content each time it is read: each is read once.
+		const reads = { title: 0, children: 0 };
+		const html = await serverHtml("TestedSlots", {
+			get title() {
+				reads.title += 1;
+				return "Title";
+			},
+			get children() {
+				reads.children += 1;
+				return "Body";
+			},
+		});
+		// A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
+		// which, on Solid 2, writes no `class` or `style` the props leave out.
+		expect(html).toBe('<section data-filled="yes"><h2>Title</h2>Body</section>');
+		expect(reads).toEqual({ title: 1, children: 1 });
+	});
 });
 
 describe("solid2 models", () => {
-  it("reads a required model from its prop alone, typed as declared", async () => {
-    const output = await emitSource(SOURCES.RequiredModel!);
-    expect(output).toContain("  text: string;\n");
-    expect(output).toContain("const text = () => props.text;");
-    expect(output).toContain(
-      "function setText(next: string) {\n    props.onTextChange?.(next);\n  }",
-    );
-    expect(output).not.toContain("createSignal");
-  });
+	it("reads a required model from its prop alone, typed as declared", async () => {
+		const output = await emitSource(SOURCES.RequiredModel!);
+		expect(output).toContain("  text: string;\n");
+		expect(output).toContain("const text = () => props.text;");
+		expect(output).toContain(
+			"function setText(next: string) {\n    props.onTextChange?.(next);\n  }",
+		);
+		expect(output).not.toContain("createSignal");
+	});
 
-  it("shows a text model that may be nullish as no text", async () => {
-    const output = await emitSource(SOURCES.NullableFields!);
-    expect(output).toContain('value={name() ?? ""}');
-    expect(output).toContain('value={untrack(note) ?? ""}');
-    // `modelText` writes the field from a render effect over the model's value, nullish as "".
-    expect(output).toContain('() => value() ?? "",');
-    // A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
-    // which, on Solid 2, writes no `class` or `style` the props leave out.
-    expect(await serverHtml("NullableFields", {})).toBe(
-      '<form><input aria-label="Name" value=""><input aria-label="Note" value=""><textarea aria-label="Memo">Buy milk</textarea></form>',
-    );
-  });
+	it("shows a text model that may be nullish as no text", async () => {
+		const output = await emitSource(SOURCES.NullableFields!);
+		expect(output).toContain('value={name() ?? ""}');
+		expect(output).toContain('value={untrack(note) ?? ""}');
+		// `modelText` writes the field from a render effect over the model's value, nullish as "".
+		expect(output).toContain('() => value() ?? "",');
+		// A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
+		// which, on Solid 2, writes no `class` or `style` the props leave out.
+		expect(await serverHtml("NullableFields", {})).toBe(
+			'<form><input aria-label="Name" value=""><input aria-label="Note" value=""><textarea aria-label="Memo">Buy milk</textarea></form>',
+		);
+	});
 
-  it("shows a modified <textarea>'s nullish model as no text, once", async () => {
-    const output = await emitSource(SOURCES.NullableArea!);
-    expect(output).toContain('value={untrack(note) ?? ""}');
-    expect(output).not.toContain('?? "" ?? ""');
-  });
+	it("shows a modified <textarea>'s nullish model as no text, once", async () => {
+		const output = await emitSource(SOURCES.NullableArea!);
+		expect(output).toContain('value={untrack(note) ?? ""}');
+		expect(output).not.toContain('?? "" ?? ""');
+	});
 
-  it("writes a <textarea>'s text on the server, a modifier's too", async () => {
-    const output = await emitSource(SOURCES.NullableFields!);
-    // Solid 2's server writes a <textarea>'s `value` as its text, so the value is all it takes.
-    expect(output).toContain("value={untrack(memo)}");
-    expect(output).not.toContain("isServer");
-    // Its `ref` also puts a hydrated field's caret after its text (ADR-0095).
-    expect(output).toContain("ref={[modelText(memo, setMemo, { trim: true }), textCaret]}");
-    expect(output).toContain("function textCaret(field: HTMLTextAreaElement)");
-    expect(await serverHtml("NullableFields", {})).toContain(
-      '<textarea aria-label="Memo">Buy milk</textarea>',
-    );
-  });
+	it("writes a <textarea>'s text on the server, a modifier's too", async () => {
+		const output = await emitSource(SOURCES.NullableFields!);
+		// Solid 2's server writes a <textarea>'s `value` as its text, so the value is all it takes.
+		expect(output).toContain("value={untrack(memo)}");
+		expect(output).not.toContain("isServer");
+		// Its `ref` also puts a hydrated field's caret after its text (ADR-0095).
+		expect(output).toContain("ref={[modelText(memo, setMemo, { trim: true }), textCaret]}");
+		expect(output).toContain("function textCaret(field: HTMLTextAreaElement)");
+		expect(await serverHtml("NullableFields", {})).toContain(
+			'<textarea aria-label="Memo">Buy milk</textarea>',
+		);
+	});
 
-  it("selects a <select>'s options in a conditional and by their text", async () => {
-    const output = await emitSource(SOURCES.ConditionalOptions!);
-    expect(output).toContain('<option value="l" selected={size() === "l"}>');
-    expect(output).toContain('<option selected={fruit() === "pear"}>pear</option>');
-    const html = await serverHtml("ConditionalOptions", { extra: true });
-    expect(html).toContain('<option value="l" selected>L</option>');
-    expect(html).toContain("<option selected>pear</option>");
-    expect(html).not.toContain("<select value");
-  });
+	it("selects a <select>'s options in a conditional and by their text", async () => {
+		const output = await emitSource(SOURCES.ConditionalOptions!);
+		expect(output).toContain('<option value="l" selected={size() === "l"}>');
+		expect(output).toContain('<option selected={fruit() === "pear"}>pear</option>');
+		const html = await serverHtml("ConditionalOptions", { extra: true });
+		expect(html).toContain('<option value="l" selected>L</option>');
+		expect(html).toContain("<option selected>pear</option>");
+		expect(html).not.toContain("<select value");
+	});
 });
 
 describe("solid2 refs", () => {
-  // Solid 2 takes an array of ref callbacks, so each is its own entry of one `ref`.
-  it("prints one ref for a template ref and a modified v-model on one element", async () => {
-    const output = await emitSource(SOURCES.TemplateRefModel!);
-    expect(output.match(/\bref=/g)).toEqual(["ref="]);
-    expect(output).toContain("ref={[\n          clearedRef(");
-    expect(output).toContain("          modelText(name, setName, { trim: true }),\n        ]}");
-    expect(output).toContain("box = element;");
-  });
+	// Solid 2 takes an array of ref callbacks, so each is its own entry of one `ref`.
+	it("prints one ref for a template ref and a modified v-model on one element", async () => {
+		const output = await emitSource(SOURCES.TemplateRefModel!);
+		expect(output.match(/\bref=/g)).toEqual(["ref="]);
+		expect(output).toContain("ref={[\n          clearedRef(");
+		expect(output).toContain("          modelText(name, setName, { trim: true }),\n        ]}");
+		expect(output).toContain("box = element;");
+	});
 
-  it("prints one ref for a template ref and a <select>'s option selection", async () => {
-    const output = await emitSource(SOURCES.RefSelect!);
-    expect(output.match(/\bref=/g)).toEqual(["ref="]);
-    expect(output).toContain("ref={[\n          clearedRef(");
-    expect(output).toContain("          selectOptions(size),\n        ]}");
-    expect(output).toContain("field = element;");
-  });
+	it("prints one ref for a template ref and a <select>'s option selection", async () => {
+		const output = await emitSource(SOURCES.RefSelect!);
+		expect(output.match(/\bref=/g)).toEqual(["ref="]);
+		expect(output).toContain("ref={[\n          clearedRef(");
+		expect(output).toContain("          selectOptions(size),\n        ]}");
+		expect(output).toContain("field = element;");
+	});
 
-  it("prints one ref for a template ref and a <select>'s marked options", async () => {
-    const output = await emitSource(SOURCES.RefMarkedSelect!);
-    expect(output.match(/\bref=/g)).toEqual(["ref="]);
-    expect(output).toContain('<option value="s" selected={size() === "s"}>');
-    expect(output).toContain("ref={[\n          clearedRef(");
-    expect(output).toContain("          selectOptions(size),\n        ]}");
-    expect(output).toContain("field = element;");
-  });
+	it("prints one ref for a template ref and a <select>'s marked options", async () => {
+		const output = await emitSource(SOURCES.RefMarkedSelect!);
+		expect(output.match(/\bref=/g)).toEqual(["ref="]);
+		expect(output).toContain('<option value="s" selected={size() === "s"}>');
+		expect(output).toContain("ref={[\n          clearedRef(");
+		expect(output).toContain("          selectOptions(size),\n        ]}");
+		expect(output).toContain("field = element;");
+	});
 });
 
 describe("solid2 fallthrough", () => {
-  it("merges what falls through with a root spread's class", async () => {
-    const output = await emitSource(SOURCES.SpreadRoot!);
-    expect(output).toContain("class={cx(props.attrs.class, props.class)}");
-    expect(output.match(/\bclass=/g)).toHaveLength(1);
-    // A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
-    // which, on Solid 2, writes no `style` the props leave out.
-    expect(await serverHtml("SpreadRoot", { attrs: { class: "a", title: "t" }, class: "b" })).toBe(
-      '<div class="a b" title="t">x</div>',
-    );
-  });
+	it("merges what falls through with a root spread's class", async () => {
+		const output = await emitSource(SOURCES.SpreadRoot!);
+		expect(output).toContain("class={cx(props.attrs.class, props.class)}");
+		expect(output.match(/\bclass=/g)).toHaveLength(1);
+		// A root that spreads its scope attributes renders through Solid's `ssrElement` (ADR-0063),
+		// which, on Solid 2, writes no `style` the props leave out.
+		expect(await serverHtml("SpreadRoot", { attrs: { class: "a", title: "t" }, class: "b" })).toBe(
+			'<div class="a b" title="t">x</div>',
+		);
+	});
 
-  // ADR-0118: what a component does not declare falls through, spread after the root's own.
-  it("spreads what it does not declare on the root, and chains its own listeners", async () => {
-    const output = await emitSource(SOURCES.FallthroughChip!);
-    expect(output).toContain(
-      'const others = omit(\n    props,\n    "title",\n    "label",\n    "onClick",\n    "onPick",\n    "class",\n    "onKeyDown",\n    "onFocus",\n  );',
-    );
-    // Its own `click` event is the component's: no DOM listener of a consumer's.
-    expect(output).toContain("onClick={() => props.onClick?.(props.label)}");
-    expect(output).toContain(
-      "onFocus={(event) => {\n        press();\n        props.onFocus?.(event);\n      }}",
-    );
-    // A listener that may return early calls the consumer's all the same.
-    expect(output).toContain(
-      '        try {\n          if (event.key !== "Enter") return;\n          press();\n        } finally {\n          props.onKeyDown?.(event);\n        }',
-    );
-    expect(output).toContain("      {...others}\n    >");
-    // The consumer's `type` wins, its class joins the root's, and a declared prop named like an
-    // attribute, `title`, is no attribute.
-    expect(
-      await serverHtml("FallthroughChip", {
-        title: "Save",
-        label: "Ada",
-        type: "submit",
-        id: "save",
-        class: "wide",
-        "data-uf-0a1b2c3d": "",
-      }),
-    ).toBe(
-      '<button class="chip wide" aria-pressed="false" type="submit" id="save" data-uf-0a1b2c3d>Save</button>',
-    );
-  });
+	// ADR-0118: what a component does not declare falls through, spread after the root's own.
+	it("spreads what it does not declare on the root, and chains its own listeners", async () => {
+		const output = await emitSource(SOURCES.FallthroughChip!);
+		expect(output).toContain(
+			'const others = omit(\n    props,\n    "title",\n    "label",\n    "onClick",\n    "onPick",\n    "class",\n    "onKeyDown",\n    "onFocus",\n  );',
+		);
+		// Its own `click` event is the component's: no DOM listener of a consumer's.
+		expect(output).toContain("onClick={() => props.onClick?.(props.label)}");
+		expect(output).toContain(
+			"onFocus={(event) => {\n        press();\n        props.onFocus?.(event);\n      }}",
+		);
+		// A listener that may return early calls the consumer's all the same.
+		expect(output).toContain(
+			'        try {\n          if (event.key !== "Enter") return;\n          press();\n        } finally {\n          props.onKeyDown?.(event);\n        }',
+		);
+		expect(output).toContain("      {...others}\n    >");
+		// The consumer's `type` wins, its class joins the root's, and a declared prop named like an
+		// attribute, `title`, is no attribute.
+		expect(
+			await serverHtml("FallthroughChip", {
+				title: "Save",
+				label: "Ada",
+				type: "submit",
+				id: "save",
+				class: "wide",
+				"data-uf-0a1b2c3d": "",
+			}),
+		).toBe(
+			'<button class="chip wide" aria-pressed="false" type="submit" id="save" data-uf-0a1b2c3d>Save</button>',
+		);
+	});
 
-  it("spreads the props' rest on its element, and keeps the scope attributes on the root", async () => {
-    const output = await emitSource(SOURCES.FallthroughField!);
-    // Solid 2 leaves the scope attributes out by rule, which no name lists.
-    expect(output).toContain(
-      'const rest = omit(omit(props, "label", "ref", "class", "onFocus", "onInput"), (name) =>\n    String(name).startsWith("data-uf-"),\n  );',
-    );
-    expect(output).toContain('<label class="field" {...scopeAttributes(props)} ref={props.ref}>');
-    expect(output).toContain(
-      "onInput={(event) => {\n          setText(event.currentTarget.value);\n          props.onInput?.(event);\n        }}",
-    );
-    expect(output).toContain("        {...rest}\n      />");
-    expect(
-      await serverHtml("FallthroughField", {
-        label: "Email",
-        id: "email",
-        name: "email",
-        class: "wide",
-        "data-uf-0a1b2c3d": "",
-      }),
-    ).toBe(
-      '<label class="field" data-uf-0a1b2c3d>Email<input class="control wide" value id="email" name="email" /></label>',
-    );
-  });
+	it("spreads the props' rest on its element, and keeps the scope attributes on the root", async () => {
+		const output = await emitSource(SOURCES.FallthroughField!);
+		// Solid 2 leaves the scope attributes out by rule, which no name lists.
+		expect(output).toContain(
+			'const rest = omit(omit(props, "label", "ref", "class", "onFocus", "onInput"), (name) =>\n    String(name).startsWith("data-uf-"),\n  );',
+		);
+		expect(output).toContain('<label class="field" {...scopeAttributes(props)} ref={props.ref}>');
+		expect(output).toContain(
+			"onInput={(event) => {\n          setText(event.currentTarget.value);\n          props.onInput?.(event);\n        }}",
+		);
+		expect(output).toContain("        {...rest}\n      />");
+		expect(
+			await serverHtml("FallthroughField", {
+				label: "Email",
+				id: "email",
+				name: "email",
+				class: "wide",
+				"data-uf-0a1b2c3d": "",
+			}),
+		).toBe(
+			'<label class="field" data-uf-0a1b2c3d>Email<input class="control wide" value id="email" name="email" /></label>',
+		);
+	});
 
-  it("passes a child's root its attributes, listeners and ref, which holds the element", async () => {
-    const output = await emitSource(SOURCES.FallthroughForm!);
-    // The child's spread hands the ref its element from a `ref` callback, where Solid 2 refuses
-    // `onCleanup`: `clearedRef` registers it as the parent renders.
-    expect(output).toContain(
-      '        ref={clearedRef(\n          (element) => {\n            name = element;\n          },\n          () => {\n            name = null;\n          },\n        )}\n        label="Name"\n        id="name"\n        aria-describedby="hint"\n        title="Your name"\n        onKeyDown={() => setKeys(keys() + 1)}\n        onClick={() => name?.select()}',
-    );
-    const child = await emitSource(SOURCES.FallthroughInput!);
-    expect(child).toContain(
-      "onKeyDown={(event) => {\n        event.stopPropagation();\n        props.onKeyDown?.(event);\n      }}",
-    );
-  });
+	it("passes a child's root its attributes, listeners and ref, which holds the element", async () => {
+		const output = await emitSource(SOURCES.FallthroughForm!);
+		// The child's spread hands the ref its element from a `ref` callback, where Solid 2 refuses
+		// `onCleanup`: `clearedRef` registers it as the parent renders.
+		expect(output).toContain(
+			'        ref={clearedRef(\n          (element) => {\n            name = element;\n          },\n          () => {\n            name = null;\n          },\n        )}\n        label="Name"\n        id="name"\n        aria-describedby="hint"\n        title="Your name"\n        onKeyDown={() => setKeys(keys() + 1)}\n        onClick={() => name?.select()}',
+		);
+		const child = await emitSource(SOURCES.FallthroughInput!);
+		expect(child).toContain(
+			"onKeyDown={(event) => {\n        event.stopPropagation();\n        props.onKeyDown?.(event);\n      }}",
+		);
+	});
 
-  it("hands a consumer's ref the root beside its own ref", async () => {
-    const output = await emitSource(SOURCES.FallthroughRoot!);
-    expect(output).toContain('props: { label: string } & Pick<ComponentProps<"input">, "ref">');
-    expect(output).toContain("        ),\n        props.ref,\n      ]}");
-  });
+	it("hands a consumer's ref the root beside its own ref", async () => {
+		const output = await emitSource(SOURCES.FallthroughRoot!);
+		expect(output).toContain('props: { label: string } & Pick<ComponentProps<"input">, "ref">');
+		expect(output).toContain("        ),\n        props.ref,\n      ]}");
+	});
 });

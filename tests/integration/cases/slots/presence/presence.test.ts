@@ -6,12 +6,12 @@ import { expect } from "vitest";
 import Cards from "./Cards.uf.tsx";
 
 describeTargets("slots/presence", () => {
-  it("wraps only the filled slots", async () => {
-    const view = await mount(Cards);
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("heading", { name: "Weather" })).toBeVisible();
-    await expect
-      .element(view.getByRole("region", { name: "Bare" }))
-      .toHaveTextContent("Empty card");
-  });
+	it("wraps only the filled slots", async () => {
+		const view = await mount(Cards);
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("heading", { name: "Weather" })).toBeVisible();
+		await expect
+			.element(view.getByRole("region", { name: "Bare" }))
+			.toHaveTextContent("Empty card");
+	});
 });

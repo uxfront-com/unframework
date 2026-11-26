@@ -7,6 +7,6 @@ const count = ref(1);
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Select.model:value -->
-  <Select v-model:value="count" label="Size" :options="['s', 'm']" />
+	<!-- @uf-expect TS2322 Select.model:value -->
+	<Select v-model:value="count" label="Size" :options="['s', 'm']" />
 </template>

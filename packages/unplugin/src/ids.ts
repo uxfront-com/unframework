@@ -10,7 +10,7 @@ import type { TargetName } from "@unframework.dev/compiler";
 /** The extension of an authored component file. */
 export const SOURCE_EXTENSION = ".uf.tsx";
 
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (text: string) => text.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 
 /**
  * What `resolveId` looks at, with any query: the module ids of `suffix` coming back, and every
@@ -20,12 +20,12 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&
  * decided by the file it resolves to, never by its spelling: `X.uf` may be a composable, `X.uf.ts`.
  */
 export function specifierFilter(suffix: string): RegExp {
-  return new RegExp(`\\.uf(?:\\.tsx(?:${escapeRegExp(suffix)})?|\\.jsx?)?(?:\\?.*)?$`);
+	return new RegExp(`\\.uf(?:\\.tsx(?:${escapeRegExp(suffix)})?|\\.jsx?)?(?:\\?.*)?$`);
 }
 
 /** The module ids of `suffix`, with any query. */
 export function moduleIdFilter(suffix: string): RegExp {
-  return new RegExp(`${escapeRegExp(`${SOURCE_EXTENSION}${suffix}`)}(?:\\?.*)?$`);
+	return new RegExp(`${escapeRegExp(`${SOURCE_EXTENSION}${suffix}`)}(?:\\?.*)?$`);
 }
 
 /**
@@ -35,14 +35,14 @@ export function moduleIdFilter(suffix: string): RegExp {
  * `.ts` (`/\.[cm]?ts(?![a-z])/`), so its ids end in `.uf.tsx.ts`.
  */
 export const ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
-  react: "",
-  vue: ".vue",
-  svelte: ".svelte",
-  solid: "",
-  solid2: "",
-  angular: ".ts",
-  qwik: "",
-  astro: ".astro",
+	react: "",
+	vue: ".vue",
+	svelte: ".svelte",
+	solid: "",
+	solid2: "",
+	angular: ".ts",
+	qwik: "",
+	astro: ".astro",
 };
 
 /** The extension of an authored module of composables (ADR-0069). */
@@ -56,14 +56,14 @@ export const COMPOSABLE_EXTENSION = ".uf.ts";
  * collects `<file>.ts` ids, so their ids end in `.uf.ts.svelte.ts` and `.uf.ts.ts`.
  */
 export const COMPOSABLE_ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
-  react: "",
-  vue: "",
-  svelte: ".svelte.ts",
-  solid: "",
-  solid2: "",
-  angular: ".ts",
-  qwik: "",
-  astro: "",
+	react: "",
+	vue: "",
+	svelte: ".svelte.ts",
+	solid: "",
+	solid2: "",
+	angular: ".ts",
+	qwik: "",
+	astro: "",
 };
 
 /**
@@ -71,24 +71,24 @@ export const COMPOSABLE_ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
  * third-party target, whose composables load as plain TypeScript modules.
  */
 export function composableIdSuffix(target: TargetName | Target): string {
-  const builtin =
-    typeof target === "string"
-      ? target
-      : TARGET_NAMES.find((name) => builtinTargets[name] === target);
-  return builtin !== undefined && Object.hasOwn(COMPOSABLE_ID_SUFFIXES, builtin)
-    ? COMPOSABLE_ID_SUFFIXES[builtin]
-    : "";
+	const builtin =
+		typeof target === "string"
+			? target
+			: TARGET_NAMES.find((name) => builtinTargets[name] === target);
+	return builtin !== undefined && Object.hasOwn(COMPOSABLE_ID_SUFFIXES, builtin)
+		? COMPOSABLE_ID_SUFFIXES[builtin]
+		: "";
 }
 
 /** A `.uf.ts` specifier, or a module id of composables for `suffix` coming back, with any query. */
 export function composableFilter(suffix: string): RegExp {
-  const tail = suffix ? `(?:${escapeRegExp(suffix)})?` : "";
-  return new RegExp(`${escapeRegExp(COMPOSABLE_EXTENSION)}${tail}(?:\\?.*)?$`);
+	const tail = suffix ? `(?:${escapeRegExp(suffix)})?` : "";
+	return new RegExp(`${escapeRegExp(COMPOSABLE_EXTENSION)}${tail}(?:\\?.*)?$`);
 }
 
 /** The id of the module of composables `file` (an absolute `.uf.ts` path) for an id suffix. */
 export function composableId(file: string, suffix: string, query = ""): string {
-  return `${file}${suffix}${query}`;
+	return `${file}${suffix}${query}`;
 }
 
 /**
@@ -96,13 +96,15 @@ export function composableId(file: string, suffix: string, query = ""): string {
  * id is not one.
  */
 export function parseComposableId(id: string, suffix: string): ModuleRequest | undefined {
-  const index = id.indexOf("?");
-  const path = index === -1 ? id : id.slice(0, index);
-  if (!path.endsWith(`${COMPOSABLE_EXTENSION}${suffix}`)) return undefined;
-  return {
-    file: path.slice(0, path.length - suffix.length),
-    query: index === -1 ? "" : id.slice(index),
-  };
+	const index = id.indexOf("?");
+	const path = index === -1 ? id : id.slice(0, index);
+	if (!path.endsWith(`${COMPOSABLE_EXTENSION}${suffix}`)) {
+		return undefined;
+	}
+	return {
+		file: path.slice(0, path.length - suffix.length),
+		query: index === -1 ? "" : id.slice(index),
+	};
 }
 
 /**
@@ -124,38 +126,40 @@ const EXTENSION = /^(?:\.[\w-]+)*$/;
  * Vite plugin claims.
  */
 export function idSuffix(target: TargetName | Target, extension?: string): string {
-  if (extension !== undefined) {
-    if (!EXTENSION.test(extension)) {
-      throw new TypeError(
-        `The extension ${JSON.stringify(extension)} is not a file extension: use "" to keep the .uf.tsx id, or a suffix such as ".vue".`,
-      );
-    }
-    return extension;
-  }
-  if (typeof target === "string") {
-    if (!Object.hasOwn(ID_SUFFIXES, target)) throw new TypeError(`Unknown target "${target}".`);
-    return ID_SUFFIXES[target];
-  }
-  const builtin = TARGET_NAMES.find((name) => builtinTargets[name] === target);
-  if (builtin === undefined) {
-    throw new TypeError(
-      `The "${target.name}" target is not built in, so its module ids need an explicit \`extension\`: the file extension its framework's Vite plugin claims, such as ".vue", or "" to keep the .uf.tsx id.`,
-    );
-  }
-  return ID_SUFFIXES[builtin];
+	if (extension !== undefined) {
+		if (!EXTENSION.test(extension)) {
+			throw new TypeError(
+				`The extension ${JSON.stringify(extension)} is not a file extension: use "" to keep the .uf.tsx id, or a suffix such as ".vue".`,
+			);
+		}
+		return extension;
+	}
+	if (typeof target === "string") {
+		if (!Object.hasOwn(ID_SUFFIXES, target)) {
+			throw new TypeError(`Unknown target "${target}".`);
+		}
+		return ID_SUFFIXES[target];
+	}
+	const builtin = TARGET_NAMES.find((name) => builtinTargets[name] === target);
+	if (builtin === undefined) {
+		throw new TypeError(
+			`The "${target.name}" target is not built in, so its module ids need an explicit \`extension\`: the file extension its framework's Vite plugin claims, such as ".vue", or "" to keep the .uf.tsx id.`,
+		);
+	}
+	return ID_SUFFIXES[builtin];
 }
 
 /** The module id that loads `file` (an absolute `.uf.tsx` path) for an id suffix. */
 export function moduleId(file: string, suffix: string, query = ""): string {
-  return `${file}${suffix}${query}`;
+	return `${file}${suffix}${query}`;
 }
 
 /** A module id taken apart. */
 export interface ModuleRequest {
-  /** The authored `.uf.tsx` file, or `.uf.ts` file for a module of composables. */
-  file: string;
-  /** The query, with its `?`, or `""`. */
-  query: string;
+	/** The authored `.uf.tsx` file, or `.uf.ts` file for a module of composables. */
+	file: string;
+	/** The query, with its `?`, or `""`. */
+	query: string;
 }
 
 /**
@@ -164,13 +168,15 @@ export interface ModuleRequest {
  * recognised; whether a query belongs to the plugin is the caller's decision.
  */
 export function parseModuleId(id: string, suffix: string): ModuleRequest | undefined {
-  const index = id.indexOf("?");
-  const path = index === -1 ? id : id.slice(0, index);
-  if (!path.endsWith(`${SOURCE_EXTENSION}${suffix}`)) return undefined;
-  return {
-    file: path.slice(0, path.length - suffix.length),
-    query: index === -1 ? "" : id.slice(index),
-  };
+	const index = id.indexOf("?");
+	const path = index === -1 ? id : id.slice(0, index);
+	if (!path.endsWith(`${SOURCE_EXTENSION}${suffix}`)) {
+		return undefined;
+	}
+	return {
+		file: path.slice(0, path.length - suffix.length),
+		query: index === -1 ? "" : id.slice(index),
+	};
 }
 
 // An absolute path with a drive letter, as Vite writes ids on Windows: `C:/project/X.uf.tsx.vue`.
@@ -189,19 +195,25 @@ const DRIVE_PATH = /^[A-Za-z]:\//;
  * package, never one of these ids.
  */
 export function moduleIdCandidates(
-  path: string,
-  root: string,
-  importer: string | undefined,
-): string[] {
-  if (path.startsWith("./") || path.startsWith("../")) {
-    if (importer === undefined) return [];
-    const index = importer.indexOf("?");
-    const importerPath = index === -1 ? importer : importer.slice(0, index);
-    return [posix.join(posix.dirname(importerPath), path)];
-  }
-  if (path.startsWith(`${root}/`)) return [path];
-  if (path.startsWith("/")) return [posix.join(root, path), path];
-  return DRIVE_PATH.test(path) ? [path] : [];
+	path: string,
+	root: string,
+	importer: string | undefined,
+): Array<string> {
+	if (path.startsWith("./") || path.startsWith("../")) {
+		if (importer === undefined) {
+			return [];
+		}
+		const index = importer.indexOf("?");
+		const importerPath = index === -1 ? importer : importer.slice(0, index);
+		return [posix.join(posix.dirname(importerPath), path)];
+	}
+	if (path.startsWith(`${root}/`)) {
+		return [path];
+	}
+	if (path.startsWith("/")) {
+		return [posix.join(root, path), path];
+	}
+	return DRIVE_PATH.test(path) ? [path] : [];
 }
 
 /**
@@ -216,21 +228,23 @@ export const COMPONENT_ID_FILTER: RegExp = COMPONENT_ID;
 
 /** The component id of `output`, a file the target emits for a component of `file`. */
 export function componentId(file: string, output: string, query = ""): string {
-  return `${file}.${output}${query}`;
+	return `${file}.${output}${query}`;
 }
 
 /** A component id taken apart, or `undefined` when the id is not one. */
 export function parseComponentId(
-  id: string,
+	id: string,
 ): { file: string; output: string; query: string } | undefined {
-  const match = COMPONENT_ID.exec(id);
-  if (!match) return undefined;
-  const index = id.indexOf("?");
-  const path = index === -1 ? id : id.slice(0, index);
-  const output = match[1]!;
-  return {
-    file: path.slice(0, path.length - output.length - 1),
-    output,
-    query: index === -1 ? "" : id.slice(index),
-  };
+	const match = COMPONENT_ID.exec(id);
+	if (!match) {
+		return undefined;
+	}
+	const index = id.indexOf("?");
+	const path = index === -1 ? id : id.slice(0, index);
+	const output = match[1]!;
+	return {
+		file: path.slice(0, path.length - output.length - 1),
+		output,
+		query: index === -1 ? "" : id.slice(index),
+	};
 }

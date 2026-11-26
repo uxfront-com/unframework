@@ -18,43 +18,45 @@ const LOST_DECLARATION = "likely not generated";
  * says: a `.svelte` file means nothing to a resolver without that condition.
  */
 export const svelte: Packager = {
-  peer: { name: "svelte", range: "^5.29.0" },
-  needs: [MANIFEST, TYPESCRIPT],
-  types: "svelte",
-  exports: { types: "./svelte/index.d.ts", svelte: "./svelte/index.js" },
-  run: async ({ files, out, work, resolve }) => {
-    await writeFiles(join(work, "in"), files);
-    await writeFile(
-      join(work, "tsconfig.json"),
-      JSON.stringify({
-        compilerOptions: {
-          target: "es2024",
-          lib: ["es2024", "dom", "dom.iterable"],
-          module: "esnext",
-          moduleResolution: "bundler",
-          strict: true,
-          skipLibCheck: true,
-          allowImportingTsExtensions: true,
-          rewriteRelativeImportExtensions: true,
-          types: [],
-        },
-        include: ["in/**/*.ts"],
-      }),
-    );
-    // svelte-package transpiles a module without reading its diagnostics, so a syntax error would
-    // ship as broken JS. A shared module is copied as written, so nothing has parsed it yet.
-    await runScript(
-      await tscOf(resolve(TYPESCRIPT)),
-      ["-p", "tsconfig.json", "--noEmit", "--noCheck"],
-      work,
-    );
-    const script = await binOf(resolve(MANIFEST), "svelte-package");
-    const printed = await runScript(
-      script,
-      ["--input", "in", "--output", out, "--tsconfig", "tsconfig.json"],
-      work,
-    );
-    if (printed.includes(LOST_DECLARATION)) throw new Error(printed);
-    await dropDeclarationSideEffects(out);
-  },
+	peer: { name: "svelte", range: "^5.29.0" },
+	needs: [MANIFEST, TYPESCRIPT],
+	types: "svelte",
+	exports: { types: "./svelte/index.d.ts", svelte: "./svelte/index.js" },
+	run: async ({ files, out, work, resolve }) => {
+		await writeFiles(join(work, "in"), files);
+		await writeFile(
+			join(work, "tsconfig.json"),
+			JSON.stringify({
+				compilerOptions: {
+					target: "es2024",
+					lib: ["es2024", "dom", "dom.iterable"],
+					module: "esnext",
+					moduleResolution: "bundler",
+					strict: true,
+					skipLibCheck: true,
+					allowImportingTsExtensions: true,
+					rewriteRelativeImportExtensions: true,
+					types: [],
+				},
+				include: ["in/**/*.ts"],
+			}),
+		);
+		// svelte-package transpiles a module without reading its diagnostics, so a syntax error would
+		// ship as broken JS. A shared module is copied as written, so nothing has parsed it yet.
+		await runScript(
+			await tscOf(resolve(TYPESCRIPT)),
+			["-p", "tsconfig.json", "--noEmit", "--noCheck"],
+			work,
+		);
+		const script = await binOf(resolve(MANIFEST), "svelte-package");
+		const printed = await runScript(
+			script,
+			["--input", "in", "--output", out, "--tsconfig", "tsconfig.json"],
+			work,
+		);
+		if (printed.includes(LOST_DECLARATION)) {
+			throw new Error(printed);
+		}
+		await dropDeclarationSideEffects(out);
+	},
 };

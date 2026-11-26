@@ -9,29 +9,29 @@ import { expect, it } from "vitest";
 import Panel from "./Panel.uf.tsx";
 
 describeTargets("bindings/style-spread", () => {
-  it("renders each spread's style", async () => {
-    const view = await mountScenario(Panel, "framed");
-    await view.expectParity("framed");
-    const panel = view.getByTitle("Your settings");
-    await expect.element(panel).toHaveClass("panel", { exact: true });
-    await expect
-      .element(panel)
-      .toHaveStyle(
-        "border-top-color: rgb(30, 90, 60); border-top-style: solid; border-top-width: 3px",
-      );
-    await expect
-      .element(view.getByTitle("Saving"))
-      .toHaveStyle("color: rgb(30, 90, 60); padding-left: 8px");
-    await expect
-      .element(view.getByText("Saved a moment ago"))
-      .toHaveStyle("color: rgb(30, 90, 60); font-style: italic");
-  });
+	it("renders each spread's style", async () => {
+		const view = await mountScenario(Panel, "framed");
+		await view.expectParity("framed");
+		const panel = view.getByTitle("Your settings");
+		await expect.element(panel).toHaveClass("panel", { exact: true });
+		await expect
+			.element(panel)
+			.toHaveStyle(
+				"border-top-color: rgb(30, 90, 60); border-top-style: solid; border-top-width: 3px",
+			);
+		await expect
+			.element(view.getByTitle("Saving"))
+			.toHaveStyle("color: rgb(30, 90, 60); padding-left: 8px");
+		await expect
+			.element(view.getByText("Saved a moment ago"))
+			.toHaveStyle("color: rgb(30, 90, 60); font-style: italic");
+	});
 
-  it("renders no style from a spread without one, or from an absent spread", async () => {
-    const view = await mountScenario(Panel, "bare");
-    await view.expectParity("bare");
-    await expect
-      .element(view.getByText("Changes save as you type."))
-      .toHaveStyle("padding-left: 0px");
-  });
+	it("renders no style from a spread without one, or from an absent spread", async () => {
+		const view = await mountScenario(Panel, "bare");
+		await view.expectParity("bare");
+		await expect
+			.element(view.getByText("Changes save as you type."))
+			.toHaveStyle("padding-left: 0px");
+	});
 });

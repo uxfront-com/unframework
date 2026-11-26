@@ -4,14 +4,14 @@ import { act as reactAct } from "react";
 
 /** React's props for the test's listeners: `onChange` for `change`, as the emitted output reads them. */
 export function listenerProps(
-  on: Readonly<Record<string, MountListener>> = {},
+	on: Readonly<Record<string, MountListener>> = {},
 ): Record<string, MountListener> {
-  return Object.fromEntries(
-    Object.entries(on).map(([name, listener]) => [
-      `on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
-      listener,
-    ]),
-  );
+	return Object.fromEntries(
+		Object.entries(on).map(([name, listener]) => [
+			`on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
+			listener,
+		]),
+	);
 }
 
 /**
@@ -20,10 +20,10 @@ export function listenerProps(
  * report every update a scheduled task makes as an update outside `act`.
  */
 export async function act<T>(callback: () => T | Promise<T>): Promise<T> {
-  Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
-  try {
-    return await reactAct(callback);
-  } finally {
-    Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", false);
-  }
+	Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
+	try {
+		return await reactAct(callback);
+	} finally {
+		Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", false);
+	}
 }

@@ -3,6 +3,6 @@ import Counter from "../../../../../integration/cases/expose/several/__output__/
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Counter.prop:start -->
-  <Counter start="one" />
+	<!-- @uf-expect TS2322 Counter.prop:start -->
+	<Counter start="one" />
 </template>

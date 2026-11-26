@@ -6,8 +6,8 @@ import { describeServerRender } from "./index.ts";
 
 const cases = inject("ufSsrCases");
 if (cases === undefined) {
-  throw new Error(
-    `[uf] The ssr:${inject("target")} project provides no "ufSsrCases": this spec runs only in an ssr project of defineTestConfig.`,
-  );
+	throw new Error(
+		`[uf] The ssr:${inject("target")} project provides no "ufSsrCases": this spec runs only in an ssr project of defineTestConfig.`,
+	);
 }
 describeServerRender(cases);

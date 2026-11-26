@@ -104,15 +104,15 @@ For example, this child and parent:
 
 ```tsx
 export default function Base({ href, disabled }: { href?: string; disabled?: boolean }) {
-  return (
-    <component is={href ? "a" : "button"} href={href} disabled={disabled} class="base">
-      Docs
-    </component>
-  );
+	return (
+		<component is={href ? "a" : "button"} href={href} disabled={disabled} class="base">
+			Docs
+		</component>
+	);
 }
 
 export default function Page() {
-  return <Base href="#docs" disabled={true} class="wide" />;
+	return <Base href="#docs" disabled={true} class="wide" />;
 }
 ```
 

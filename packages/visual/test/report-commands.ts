@@ -6,8 +6,8 @@ export const REPORT_FIXTURES = ["report-failed", "report-missing"] as const;
 export type ReportFixture = (typeof REPORT_FIXTURES)[number];
 
 declare module "vitest/browser" {
-  interface BrowserCommands {
-    /** Writes a fixture's `report.html` to `.output/<name>/`, and returns it and that directory. */
-    ufReportFixture(name: ReportFixture): Promise<{ html: string; base: string }>;
-  }
+	interface BrowserCommands {
+		/** Writes a fixture's `report.html` to `.output/<name>/`, and returns it and that directory. */
+		ufReportFixture(name: ReportFixture): Promise<{ html: string; base: string }>;
+	}
 }

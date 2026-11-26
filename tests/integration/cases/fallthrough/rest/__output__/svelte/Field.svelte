@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import { scopeAttributes } from "./_unframework/scopeAttributes";
   import type { ClassValue, HTMLInputAttributes } from "svelte/elements";
 
   type Props = Omit<HTMLInputAttributes, "label" | "children" | "class" | "style" | "ref"> & {
@@ -11,13 +12,6 @@
   };
 
   let { label, class: className, style, ref = $bindable(null), ...rest }: Props = $props();
-
-  /** The scope attributes of the styled parents that render this component, for its root. */
-  function scopeAttributes(props: object): Record<string, ""> {
-    const scope: Record<string, ""> = {};
-    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-    return scope;
-  }
 
   /** What the consumer passes, but the scope attributes the root keeps. */
   function restAttributes(props: object): Record<string, unknown> {

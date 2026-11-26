@@ -177,19 +177,19 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
    import Counter from "./Counter.uf.tsx";
 
    describeTargets("state/counter", () => {
-     it("renders the initial count", async () => {
-       const view = await mountScenario(Counter, "initial"); // case.json's ssr.initial.props
-       await view.expectParity("initial");
-       await expect.element(view.getByRole("status")).toHaveTextContent("2");
-     });
+   	it("renders the initial count", async () => {
+   		const view = await mountScenario(Counter, "initial"); // case.json's ssr.initial.props
+   		await view.expectParity("initial");
+   		await expect.element(view.getByRole("status")).toHaveTextContent("2");
+   	});
 
-     it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
-       const view = await mountScenario(Counter, "initial");
-       await view.user.click(view.getByRole("button", { name: "+3" }));
-       await view.expectParity("after-increment");
-       await expect.element(view.getByRole("status")).toHaveTextContent("5");
-       expect(view.emitted("change")).toEqual([[5]]);
-     });
+   	it("increments and emits the new value", { requires: ["interactivity"] }, async () => {
+   		const view = await mountScenario(Counter, "initial");
+   		await view.user.click(view.getByRole("button", { name: "+3" }));
+   		await view.expectParity("after-increment");
+   		await expect.element(view.getByRole("status")).toHaveTextContent("5");
+   		expect(view.emitted("change")).toEqual([[5]]);
+   	});
    });
    ```
 
@@ -305,7 +305,10 @@ which is never edited by hand: a change that adds a case or changes an output's 
 A time is the main thread's CPU time, as a ratio with `basics/hello` measured in the same run, so
 `basics/hello`'s own never fails.
 A size is the target's framework compile (`frameworkEmit` in its toolchain), bundled and minified by
-rolldown, with the framework, each `.css` and each `passThrough` import left external.
+rolldown, with the framework, each `.css` and each `passThrough` import left external. Each output
+file is an entry, but for a shared helper module in `_unframework/` (ADR-0121), which only the
+files that import it reach, as in an app: inlined where one imports it, a shared chunk where
+several do.
 
 **L4's consumer check** (ADR-0059). A case may have consumer fixtures per target, hand-written in
 that target's language under `../toolchains/<target>/consumers/<area>/<case>/`: one correct

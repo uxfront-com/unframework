@@ -5,16 +5,16 @@
 
 /** The names of the three parameters, as `protocol.ts` declares them. */
 export interface EmbedParamNames {
-  controls: string;
-  theme: string;
-  resize: string;
+	controls: string;
+	theme: string;
+	resize: string;
 }
 
 /** What an embed's URL asks for. Each is off when its parameter is absent. */
 export interface EmbedOptions {
-  controls: boolean;
-  theme?: "light" | "dark";
-  resize: boolean;
+	controls: boolean;
+	theme?: "light" | "dark";
+	resize: boolean;
 }
 
 /**
@@ -23,25 +23,27 @@ export interface EmbedOptions {
  * time, so a page and its embed never read it differently.
  */
 export function embedOptions(
-  params: URLSearchParams,
-  names: EmbedParamNames,
+	params: URLSearchParams,
+	names: EmbedParamNames,
 ): EmbedOptions | { error: string } {
-  const accepted: [name: string, values: string[]][] = [
-    [names.controls, ["true"]],
-    [names.theme, ["light", "dark"]],
-    [names.resize, ["true"]],
-  ];
-  for (const [name, values] of accepted) {
-    for (const value of params.getAll(name)) {
-      if (values.includes(value)) continue;
-      const list = values.join(" or ");
-      return { error: `The ${name} parameter takes ${list}, not ${JSON.stringify(value)}.` };
-    }
-  }
-  const theme = params.get(names.theme);
-  return {
-    controls: params.has(names.controls),
-    ...(theme === "light" || theme === "dark" ? { theme } : {}),
-    resize: params.has(names.resize),
-  };
+	const accepted: Array<[name: string, values: Array<string>]> = [
+		[names.controls, ["true"]],
+		[names.theme, ["light", "dark"]],
+		[names.resize, ["true"]],
+	];
+	for (const [name, values] of accepted) {
+		for (const value of params.getAll(name)) {
+			if (values.includes(value)) {
+				continue;
+			}
+			const list = values.join(" or ");
+			return { error: `The ${name} parameter takes ${list}, not ${JSON.stringify(value)}.` };
+		}
+	}
+	const theme = params.get(names.theme);
+	return {
+		controls: params.has(names.controls),
+		...(theme === "light" || theme === "dark" ? { theme } : {}),
+		resize: params.has(names.resize),
+	};
 }

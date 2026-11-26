@@ -3,10 +3,10 @@
 import type { StubComponent } from "../../../dom-target.ts";
 
 const Note: StubComponent = {
-  html: '<label>Note <input type="text"></label>',
-  setup(container: HTMLElement): void {
-    container.querySelector("input")?.focus();
-  },
+	html: '<label>Note <input type="text"></label>',
+	setup(container: HTMLElement): void {
+		container.querySelector("input")?.focus();
+	},
 };
 
 export default Note;

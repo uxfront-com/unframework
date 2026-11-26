@@ -18,50 +18,56 @@ const ESLINT_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro", "
  * configuration.
  */
 const ESLINT_HOSTS: Readonly<Record<string, string>> = {
-  qwik: "@unframework.dev/toolchain-qwik-eslint",
+	qwik: "@unframework.dev/toolchain-qwik-eslint",
 };
 
 interface DryTask {
-  taskId: string;
-  inputs: Record<string, string>;
-  dependencies: string[];
+	taskId: string;
+	inputs: Record<string, string>;
+	dependencies: Array<string>;
 }
 
-function dryRun(): DryTask[] {
-  const result = spawnSync(
-    join(REPO_ROOT, "node_modules", ".bin", "turbo"),
-    ["run", "test", "--dry=json", "--filter=@unframework.dev/integration"],
-    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
-  );
-  if (result.error) throw result.error;
-  expect(result.status, result.stderr).toBe(0);
-  return (JSON.parse(result.stdout) as { tasks: DryTask[] }).tasks;
+function dryRun(): Array<DryTask> {
+	const result = spawnSync(
+		join(REPO_ROOT, "node_modules", ".bin", "turbo"),
+		["run", "test", "--dry=json", "--filter=@unframework.dev/integration"],
+		{ cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+	);
+	if (result.error) {
+		throw result.error;
+	}
+	expect(result.status, result.stderr).toBe(0);
+	return (JSON.parse(result.stdout) as { tasks: Array<DryTask> }).tasks;
 }
 
 describe("the integration test task", () => {
-  const tasks = dryRun();
-  const test = tasks.find((task) => task.taskId === "@unframework.dev/integration#test")!;
+	const tasks = dryRun();
+	const test = tasks.find((task) => task.taskId === "@unframework.dev/integration#test")!;
 
-  it("hashes CI's workflow and the nightly's, which the harness's own tests read", () => {
-    expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
-    expect(Object.keys(test.inputs)).toContain("../../.github/workflows/nightly.yml");
-  });
+	it("hashes CI's workflow and the nightly's, which the harness's own tests read", () => {
+		expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
+		expect(Object.keys(test.inputs)).toContain("../../.github/workflows/nightly.yml");
+	});
 
-  it("hashes every toolchain's tsconfig and lint configurations through its transit node", () => {
-    for (const target of selectTargets(undefined)) {
-      const id = `@unframework.dev/toolchain-${target}#transit`;
-      expect(test.dependencies).toContain(id);
-      const transit = tasks.find((task) => task.taskId === id);
-      const inputs = Object.keys(transit?.inputs ?? {});
-      expect(inputs, id).toContain("tsconfig.json");
-      // L5 (ADR-0042): oxlint everywhere, and ESLint for the template languages.
-      expect(inputs, id).toContain("output.oxlintrc.json");
-      if (ESLINT_TARGETS.has(target)) expect(inputs, id).toContain("eslint.config.js");
-      const host = ESLINT_HOSTS[target];
-      if (host === undefined) continue;
-      expect(transit?.dependencies, id).toContain(`${host}#transit`);
-      const hostTransit = tasks.find((task) => task.taskId === `${host}#transit`);
-      expect(Object.keys(hostTransit?.inputs ?? {}), host).toContain("eslint.config.js");
-    }
-  });
+	it("hashes every toolchain's tsconfig and lint configurations through its transit node", () => {
+		for (const target of selectTargets(undefined)) {
+			const id = `@unframework.dev/toolchain-${target}#transit`;
+			expect(test.dependencies).toContain(id);
+			const transit = tasks.find((task) => task.taskId === id);
+			const inputs = Object.keys(transit?.inputs ?? {});
+			expect(inputs, id).toContain("tsconfig.json");
+			// L5 (ADR-0042): oxlint everywhere, and ESLint for the template languages.
+			expect(inputs, id).toContain("output.oxlintrc.json");
+			if (ESLINT_TARGETS.has(target)) {
+				expect(inputs, id).toContain("eslint.config.js");
+			}
+			const host = ESLINT_HOSTS[target];
+			if (host === undefined) {
+				continue;
+			}
+			expect(transit?.dependencies, id).toContain(`${host}#transit`);
+			const hostTransit = tasks.find((task) => task.taskId === `${host}#transit`);
+			expect(Object.keys(hostTransit?.inputs ?? {}), host).toContain("eslint.config.js");
+		}
+	});
 });

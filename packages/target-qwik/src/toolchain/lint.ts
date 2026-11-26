@@ -7,10 +7,10 @@ import { dirname, join } from "node:path";
 
 import type { ToolchainContext, ToolchainMessage } from "@unframework.dev/codegen";
 import {
-  lintWithEslint,
-  lintWithOxlint,
-  mergeLintResults,
-  resolveInstalled,
+	lintWithEslint,
+	lintWithOxlint,
+	mergeLintResults,
+	resolveInstalled,
 } from "@unframework.dev/codegen/toolchain-node";
 
 /** The lint host's package, which the toolchain directory installs (tests/toolchains/qwik-eslint). */
@@ -22,16 +22,20 @@ const ESLINT_HOST = "@unframework.dev/toolchain-qwik-eslint";
  * failure first, so a failure names the same linter whichever run ends first.
  */
 export async function lint(
-  files: readonly string[],
-  context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
-  const [oxlint, types] = await Promise.allSettled([
-    lintWithOxlint(files, context),
-    lintTypes(files, context),
-  ]);
-  if (oxlint.status === "rejected") throw oxlint.reason;
-  if (types.status === "rejected") throw types.reason;
-  return mergeLintResults([oxlint.value, types.value]);
+	files: ReadonlyArray<string>,
+	context: ToolchainContext,
+): Promise<Map<string, Array<ToolchainMessage>>> {
+	const [oxlint, types] = await Promise.allSettled([
+		lintWithOxlint(files, context),
+		lintTypes(files, context),
+	]);
+	if (oxlint.status === "rejected") {
+		throw oxlint.reason;
+	}
+	if (types.status === "rejected") {
+		throw types.reason;
+	}
+	return mergeLintResults([oxlint.value, types.value]);
 }
 
 /**
@@ -41,19 +45,19 @@ export async function lint(
  * L4 proved.
  */
 export async function lintTypes(
-  files: readonly string[],
-  context: ToolchainContext,
-): Promise<Map<string, ToolchainMessage[]>> {
-  const manifest = resolveInstalled(context.toolchainDir, `${ESLINT_HOST}/package.json`);
-  if (manifest === undefined) {
-    throw new Error(
-      `${ESLINT_HOST} is not installed in ${context.toolchainDir}: the Qwik toolchain directory ` +
-        `must install its ESLint host (in this repo, tests/toolchains/qwik lists it).`,
-    );
-  }
-  return lintWithEslint(
-    files,
-    { ...context, toolchainDir: dirname(manifest) },
-    { tsconfig: join(context.toolchainDir, "tsconfig.json") },
-  );
+	files: ReadonlyArray<string>,
+	context: ToolchainContext,
+): Promise<Map<string, Array<ToolchainMessage>>> {
+	const manifest = resolveInstalled(context.toolchainDir, `${ESLINT_HOST}/package.json`);
+	if (manifest === undefined) {
+		throw new Error(
+			`${ESLINT_HOST} is not installed in ${context.toolchainDir}: the Qwik toolchain directory ` +
+				`must install its ESLint host (in this repo, tests/toolchains/qwik lists it).`,
+		);
+	}
+	return lintWithEslint(
+		files,
+		{ ...context, toolchainDir: dirname(manifest) },
+		{ tsconfig: join(context.toolchainDir, "tsconfig.json") },
+	);
 }

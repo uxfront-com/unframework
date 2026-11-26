@@ -1,5 +1,7 @@
-// The inline helpers of React's emulated capabilities (P7, ADR-0033): each is printed after the
-// component that needs it, under a name the output file claims, and named in its capability cell.
+// The helpers of React's emulated capabilities (P7, ADR-0033), each named in its capability cell.
+// Each printer takes the names it calls, so `./shared.ts` prints a helper's module with React's
+// own names (ADR-0121), and a context without `helper` gets it after the component, under names
+// the output file claims.
 
 /**
  * `event-semantics`: a native listener, where React's synthetic event would not keep the DOM's
@@ -9,7 +11,7 @@
  * the map every element of the vocabulary dispatches with.
  */
 export function listenHelper(name: string): string {
-  return `/**
+	return `/**
  * Listens to a DOM event natively, where React's synthetic event would not keep the DOM's
  * semantics, and gives back what stops it: the cleanup a ref callback returns.
  */
@@ -30,7 +32,7 @@ function ${name}<K extends keyof HTMLElementEventMap>(
  * element only: in a list, every row's runs once.
  */
 export function onceHelper(name: string, useRef: string): string {
-  return `/** The guard of a listener that runs once per element, as \`{ once: true }\` makes it. */
+	return `/** The guard of a listener that runs once per element, as \`{ once: true }\` makes it. */
 function ${name}(): (event: { currentTarget: EventTarget | null }) => boolean {
   const fired = ${useRef}(new WeakSet<EventTarget>());
   return (event) => {
@@ -56,7 +58,7 @@ function ${name}(): (event: { currentTarget: EventTarget | null }) => boolean {
  * request, as Vue's flush that unmounts it does, unless StrictMode mounts it again at once.
  */
 export function nextTickHelper(name: string, hooks: NextTickHooks): string {
-  return `/**
+	return `/**
  * Vue's \`nextTick\` for one component: the promise resolves once React has rendered the writes
  * made before it and run their effects, and \`settled\` says nothing they wrote waits to render;
  * in the task of a click or a key that wrote, as on Vue. It resolves when the component unmounts
@@ -110,9 +112,9 @@ function ${name}(settled: () => boolean = () => true): () => Promise<void> {
 
 /** The local names of the React hooks the `nextTick` helper calls. */
 export interface NextTickHooks {
-  useRef: string;
-  useReducer: string;
-  useEffect: string;
+	useRef: string;
+	useReducer: string;
+	useEffect: string;
 }
 
 /**
@@ -121,7 +123,7 @@ export interface NextTickHooks {
  * (ADR-0063).
  */
 export function restAttributesHelper(name: string): string {
-  return `/** What the consumer passes, but the scope attributes of its styled parents, which the root keeps. */
+	return `/** What the consumer passes, but the scope attributes of its styled parents, which the root keeps. */
 function ${name}<T extends object>(props: T): T {
   const rest = { ...props };
   for (const key of Object.keys(rest)) {
@@ -138,7 +140,7 @@ function ${name}<T extends object>(props: T): T {
  * where its root does not spread the props' rest (ADR-0118).
  */
 export function scopeAttributesHelper(name: string): string {
-  return `/** The scope attributes of the styled parents that render this component, for its root. */
+	return `/** The scope attributes of the styled parents that render this component, for its root. */
 function ${name}(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const key of Object.keys(props)) {
@@ -155,7 +157,7 @@ function ${name}(props: object): Record<string, ""> {
  * mirror: React Compiler and `react/refs` reject a ref read during render (L3, L5).
  */
 export function refObjectHelper(name: string): string {
-  return `/** A provided ref as its consumers read it: a \`value\` getter over the state. */
+	return `/** A provided ref as its consumers read it: a \`value\` getter over the state. */
 function ${name}<T>(value: T): { readonly value: T } {
   return {
     get value() {
@@ -171,7 +173,7 @@ function ${name}<T>(value: T): { readonly value: T } {
  * into a new array.
  */
 export function toggleHelper(name: string): string {
-  return `/** The array with \`value\` added when \`checked\`, and without it otherwise. */
+	return `/** The array with \`value\` added when \`checked\`, and without it otherwise. */
 function ${name}<T>(values: T[], value: T, checked: boolean): T[] {
   const index = values.indexOf(value);
   if (checked && index === -1) return [...values, value];
@@ -182,9 +184,9 @@ function ${name}<T>(values: T[], value: T, checked: boolean): T[] {
 
 /** The local names of the React hooks and types the `modelText` helper uses, and of its cast. */
 export interface ModelTextNames {
-  useState: string;
-  ChangeEvent: string;
-  looseToNumber: string;
+	useState: string;
+	ChangeEvent: string;
+	looseToNumber: string;
 }
 
 /**
@@ -196,7 +198,7 @@ export interface ModelTextNames {
  * text field's `change` fires), trims there too, and shows a new state unless the focused field already means it.
  */
 export function modelTextHelper(name: string, names: ModelTextNames): string {
-  return `/**
+	return `/**
  * Binds a text field to state as Vue's \`v-model\` does with its modifiers: it writes on each edit
  * (as the field loses focus when \`lazy\`), trimmed and cast to a number as asked, and shows a new
  * state unless the focused field already means it. Gives back the field's props.

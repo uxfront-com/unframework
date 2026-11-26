@@ -3,6 +3,6 @@ import Stepper from "../../../../../integration/cases/models/component/__output_
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Stepper.prop:label -->
-  <Stepper :label="2" />
+	<!-- @uf-expect TS2322 Stepper.prop:label -->
+	<Stepper :label="2" />
 </template>

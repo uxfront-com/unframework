@@ -2,6 +2,6 @@
 export type ButtonVariant = "primary" | "secondary";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
+	initial?: number;
+	step?: number;
 }

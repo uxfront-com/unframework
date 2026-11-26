@@ -10,9 +10,9 @@
 import { join } from "node:path";
 
 import {
-  createHarnessRun,
-  ParityReporter,
-  resolveHarnessMode,
+	createHarnessRun,
+	ParityReporter,
+	resolveHarnessMode,
 } from "@unframework.dev/testing/node";
 import { defineConfig } from "vitest/config";
 import type { ViteUserConfig } from "vitest/config";
@@ -22,77 +22,81 @@ import { caseConfigs, listCases } from "./harness/cases.ts";
 import { LOAD_FAILURES, LoadFailureReporter } from "./harness/load-failures.ts";
 import { CANARY_DIR, CASES_DIR, reportsDirOf, ROOT } from "./harness/paths.ts";
 import {
-  harnessProjects,
-  projectNames,
-  projectPatterns,
-  referencesOnly,
+	harnessProjects,
+	projectNames,
+	projectPatterns,
+	referencesOnly,
 } from "./harness/projects.ts";
 import { QUARANTINE, validateQuarantine } from "./harness/quarantine.ts";
 import { harnessSequencer } from "./harness/sequencer.ts";
 import { REFERENCE, selectTargets } from "./harness/targets.ts";
 
 const mode = resolveHarnessMode({
-  env: process.env,
-  platform: process.platform,
-  argv: process.argv,
+	env: process.env,
+	platform: process.platform,
+	argv: process.argv,
 });
 const targets = selectTargets(process.env.UF_TARGETS);
 if (mode.update && !targets.includes(REFERENCE)) {
-  throw new Error(
-    `[uf] Update mode needs the reference target (${REFERENCE}) to write the shared artefacts: add it to UF_TARGETS.`,
-  );
+	throw new Error(
+		`[uf] Update mode needs the reference target (${REFERENCE}) to write the shared artefacts: add it to UF_TARGETS.`,
+	);
 }
-if (mode.canary) findCanary(mode.canary);
+if (mode.canary) {
+	findCanary(mode.canary);
+}
 
 const cases = listCases(CASES_DIR);
 const problems = validateQuarantine(QUARANTINE, {
-  cases: cases.map((info) => info.id),
-  targets: selectTargets(undefined),
+	cases: cases.map((info) => info.id),
+	targets: selectTargets(undefined),
 });
-if (problems.length) throw new Error(`[uf] The quarantine is invalid:\n  ${problems.join("\n  ")}`);
+if (problems.length) {
+	throw new Error(`[uf] The quarantine is invalid:\n  ${problems.join("\n  ")}`);
+}
 
 const harness = createHarnessRun({
-  root: ROOT,
-  casesDir: CASES_DIR,
-  reference: REFERENCE,
-  mode,
-  quarantine: [...QUARANTINE],
-  cases: caseConfigs(cases),
+	root: ROOT,
+	casesDir: CASES_DIR,
+	reference: REFERENCE,
+	mode,
+	quarantine: [...QUARANTINE],
+	cases: caseConfigs(cases),
 });
 
 const config: ViteUserConfig = defineConfig({
-  test: {
-    reporters: [
-      "default",
-      new ParityReporter({
-        reportsDir: reportsDirOf(mode.browser ?? "chromium"),
-        // A run restricted with UF_TARGETS is partial: it is not named `all`.
-        allProjects: projectNames(selectTargets(undefined)),
-        ...(mode.canary ? { canaryDir: join(CANARY_DIR, mode.canary) } : {}),
-      }),
-      // A canary run's specs that could not load: the evidence of the golden guard in a
-      // browser project, where no test records a cell.
-      ...(mode.canary
-        ? [
-            new LoadFailureReporter({
-              file: join(CANARY_DIR, mode.canary, LOAD_FAILURES),
-              root: ROOT,
-            }),
-          ]
-        : []),
-    ],
-    // Vitest's order, but the spec file that leaves a page unusable runs last in its hydrate
-    // project, whose pages its files share (ADR-0106).
-    sequence: { sequencer: harnessSequencer(cases) },
-    projects: harnessProjects({
-      harness,
-      mode,
-      targets,
-      projectFilter: projectPatterns(process.argv),
-      // A case's own reference runs on that case where UF_TARGETS leaves it out (ADR-0057).
-      referencesOnly: referencesOnly(caseConfigs(cases), targets),
-    }),
-  },
+	test: {
+		reporters: [
+			"default",
+			new ParityReporter({
+				reportsDir: reportsDirOf(mode.browser ?? "chromium"),
+				// A run restricted with UF_TARGETS is partial: it is not named `all`.
+				allProjects: projectNames(selectTargets(undefined)),
+				...(mode.canary ? { canaryDir: join(CANARY_DIR, mode.canary) } : {}),
+			}),
+			// A canary run's specs that could not load: the evidence of the golden guard in a
+			// browser project, where no test records a cell.
+			...(mode.canary
+				? [
+						new LoadFailureReporter({
+							file: join(CANARY_DIR, mode.canary, LOAD_FAILURES),
+							root: ROOT,
+						}),
+					]
+				: []),
+		],
+		// Vitest's order, but the spec file that leaves a page unusable runs last in its hydrate
+		// project, whose pages its files share (ADR-0106).
+		sequence: { sequencer: harnessSequencer(cases) },
+		projects: harnessProjects({
+			harness,
+			mode,
+			targets,
+			projectFilter: projectPatterns(process.argv),
+			// A case's own reference runs on that case where UF_TARGETS leaves it out (ADR-0057).
+			referencesOnly: referencesOnly(caseConfigs(cases), targets),
+		}),
+	},
 });
 
 export default config;

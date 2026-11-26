@@ -1,17 +1,17 @@
 {
-  "name": "e2e-app-qwik",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev:package": "vite --config vite.config.package.ts",
-    "dev:plugin": "vite --config vite.config.plugin.ts"
-  },
-  "dependencies": {
-    "@qwik.dev/core": "2.0.0-rc.5"
-  },
-  "devDependencies": {
-    "typescript": "7.1.0-beta",
-    "vite": "8.3.1"
-  }
+	"name": "e2e-app-qwik",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev:package": "vite --config vite.config.package.ts",
+		"dev:plugin": "vite --config vite.config.plugin.ts"
+	},
+	"dependencies": {
+		"@qwik.dev/core": "2.0.0-rc.5"
+	},
+	"devDependencies": {
+		"typescript": "7.1.0-beta",
+		"vite": "8.3.1"
+	}
 }

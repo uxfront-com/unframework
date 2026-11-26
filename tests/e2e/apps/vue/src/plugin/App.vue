@@ -4,6 +4,6 @@ import Showcase from "./Showcase.vue";
 </script>
 
 <template>
-  <Hello />
-  <Showcase />
+	<Hello />
+	<Showcase />
 </template>

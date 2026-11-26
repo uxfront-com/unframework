@@ -1,9 +1,8 @@
-import TextField, {
-  type TextFieldProps,
-} from "../../../../../integration/cases/types/utility-types/__output__/solid2/TextField";
+import TextField from "../../../../../integration/cases/types/utility-types/__output__/solid2/TextField";
+import type { TextFieldProps } from "../../../../../integration/cases/types/utility-types/__output__/solid2/TextField";
 
 const field: TextFieldProps = { name: "email", label: "Email" };
 
 export function Consumer() {
-  return <TextField name={field.name} label={field.label} placeholder="you@example.com" required />;
+	return <TextField name={field.name} label={field.label} placeholder="you@example.com" required />;
 }

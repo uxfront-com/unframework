@@ -3,6 +3,6 @@ import Section from "../../../../../integration/cases/dynamic/tags/__output__/vu
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Section.prop:title -->
-  <Section :title="[]" />
+	<!-- @uf-expect TS2322 Section.prop:title -->
+	<Section :title="[]" />
 </template>

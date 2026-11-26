@@ -3,6 +3,6 @@
 import { ref as vueRef } from "vue";
 
 export function FrameworkImport() {
-  const count = vueRef(0);
-  return <output>{count.value}</output>;
+	const count = vueRef(0);
+	return <output>{count.value}</output>;
 }

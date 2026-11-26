@@ -1,3 +1,4 @@
+import { cx } from "./_unframework/cx";
 import type { ComponentPropsWithRef } from "react";
 
 type LookupResult = { ok: true; match: string } | { ok: false; error: string };
@@ -33,19 +34,4 @@ export default function FilterSummary({
       {result.ok ? <p>Found {result.match}</p> : <p>No match: {result.error}</p>}
     </section>
   );
-}
-
-/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
-function cx(...parts: unknown[]): string {
-  const names: string[] = [];
-  for (const part of parts) {
-    if (typeof part === "string") {
-      if (part) names.push(part);
-    } else if (part && typeof part === "object") {
-      for (const [key, on] of Object.entries(part)) {
-        if (on) names.push(key);
-      }
-    }
-  }
-  return names.join(" ");
 }

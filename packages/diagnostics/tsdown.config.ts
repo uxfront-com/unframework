@@ -2,12 +2,12 @@ import { defineConfig } from "tsdown";
 import type { UserConfig } from "tsdown";
 
 const config: UserConfig = defineConfig({
-  entry: ["src/index.ts"],
-  unbundle: true,
-  platform: "neutral",
-  dts: true,
-  // `.js` and `.d.ts`, which publishConfig.exports name.
-  fixedExtension: false,
+	entry: ["src/index.ts"],
+	unbundle: true,
+	platform: "neutral",
+	dts: true,
+	// `.js` and `.d.ts`, which publishConfig.exports name.
+	fixedExtension: false,
 });
 
 export default config;

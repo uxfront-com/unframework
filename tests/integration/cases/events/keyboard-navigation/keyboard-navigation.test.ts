@@ -14,95 +14,95 @@ import { expect } from "vitest";
 import CityPicker from "./CityPicker.uf.tsx";
 
 describeTargets("events/keyboard-navigation", () => {
-  it("renders the closed picker", async () => {
-    const view = await mountScenario(CityPicker, "initial");
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("combobox", { name: "City" })).toBeVisible();
-    await expect.element(view.getByRole("status")).toHaveTextContent("No city chosen");
-  });
+	it("renders the closed picker", async () => {
+		const view = await mountScenario(CityPicker, "initial");
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("combobox", { name: "City" })).toBeVisible();
+		await expect.element(view.getByRole("status")).toHaveTextContent("No city chosen");
+	});
 
-  it(
-    "moves through the cities with the arrow keys, keeping the caret",
-    { requires: ["interactivity", "conditional-event-control"] },
-    async () => {
-      const view = await mountScenario(CityPicker, "initial");
-      const city = view.getByRole("combobox", { name: "City" });
-      await view.user.type(city, "Bn{ArrowLeft}{ArrowDown}{ArrowUp}er");
-      await view.expectParity("typed");
-      await expect.element(city).toHaveValue("Bern");
-      await expect.element(view.getByRole("option", { name: "Bern" })).toBeVisible();
-      await view.user.keyboard("{ArrowDown}{Enter}");
-      await view.expectParity("chosen-by-key");
-      await expect.element(view.getByRole("status")).toHaveTextContent("Chosen: Bern");
-      expect(view.emitted("chose")).toEqual([["Bern"]]);
-      await view.user.keyboard("{Escape}");
-      await view.expectParity("escaped");
-      await expect.element(city).toHaveValue("Bern");
-      await expect.element(view.getByRole("status")).toHaveTextContent("Chosen: Bern");
-    },
-  );
+	it(
+		"moves through the cities with the arrow keys, keeping the caret",
+		{ requires: ["interactivity", "conditional-event-control"] },
+		async () => {
+			const view = await mountScenario(CityPicker, "initial");
+			const city = view.getByRole("combobox", { name: "City" });
+			await view.user.type(city, "Bn{ArrowLeft}{ArrowDown}{ArrowUp}er");
+			await view.expectParity("typed");
+			await expect.element(city).toHaveValue("Bern");
+			await expect.element(view.getByRole("option", { name: "Bern" })).toBeVisible();
+			await view.user.keyboard("{ArrowDown}{Enter}");
+			await view.expectParity("chosen-by-key");
+			await expect.element(view.getByRole("status")).toHaveTextContent("Chosen: Bern");
+			expect(view.emitted("chose")).toEqual([["Bern"]]);
+			await view.user.keyboard("{Escape}");
+			await view.expectParity("escaped");
+			await expect.element(city).toHaveValue("Bern");
+			await expect.element(view.getByRole("status")).toHaveTextContent("Chosen: Bern");
+		},
+	);
 
-  it(
-    "closes the list on Escape and keeps the text",
-    { requires: ["interactivity", "conditional-event-control"] },
-    async () => {
-      const view = await mountScenario(CityPicker, "initial");
-      const city = view.getByRole("combobox", { name: "City" });
-      await view.user.type(city, "Ber{ArrowDown}");
-      await view.expectParity("opened");
-      await expect
-        .element(view.getByRole("option", { name: "Bern" }))
-        .toHaveAttribute("aria-selected", "true");
-      await view.user.keyboard("{Escape}");
-      await view.expectParity("closed");
-      await expect.element(city).toHaveValue("Ber");
-      await expect.element(city).toHaveAttribute("aria-expanded", "false");
-      expect(view.getByRole("option").elements()).toEqual([]);
-    },
-  );
+	it(
+		"closes the list on Escape and keeps the text",
+		{ requires: ["interactivity", "conditional-event-control"] },
+		async () => {
+			const view = await mountScenario(CityPicker, "initial");
+			const city = view.getByRole("combobox", { name: "City" });
+			await view.user.type(city, "Ber{ArrowDown}");
+			await view.expectParity("opened");
+			await expect
+				.element(view.getByRole("option", { name: "Bern" }))
+				.toHaveAttribute("aria-selected", "true");
+			await view.user.keyboard("{Escape}");
+			await view.expectParity("closed");
+			await expect.element(city).toHaveValue("Ber");
+			await expect.element(city).toHaveAttribute("aria-expanded", "false");
+			expect(view.getByRole("option").elements()).toEqual([]);
+		},
+	);
 
-  it(
-    "chooses a city with the mouse, keeping the field focused",
-    { requires: ["interactivity"] },
-    async () => {
-      const view = await mountScenario(CityPicker, "initial");
-      const city = view.getByRole("combobox", { name: "City" });
-      await view.user.type(city, "Ba");
-      await view.expectParity("listed");
-      await expect.element(view.getByRole("option", { name: "Basel" })).toBeVisible();
-      await view.user.click(view.getByRole("option", { name: "Basel" }));
-      await view.expectParity("chosen-by-mouse");
-      await expect.element(view.getByRole("status")).toHaveTextContent("Chosen: Basel");
-      await expect.element(city).toHaveFocus();
-      expect(view.emitted("chose")).toEqual([["Basel"]]);
-    },
-  );
+	it(
+		"chooses a city with the mouse, keeping the field focused",
+		{ requires: ["interactivity"] },
+		async () => {
+			const view = await mountScenario(CityPicker, "initial");
+			const city = view.getByRole("combobox", { name: "City" });
+			await view.user.type(city, "Ba");
+			await view.expectParity("listed");
+			await expect.element(view.getByRole("option", { name: "Basel" })).toBeVisible();
+			await view.user.click(view.getByRole("option", { name: "Basel" }));
+			await view.expectParity("chosen-by-mouse");
+			await expect.element(view.getByRole("status")).toHaveTextContent("Chosen: Basel");
+			await expect.element(city).toHaveFocus();
+			expect(view.emitted("chose")).toEqual([["Basel"]]);
+		},
+	);
 
-  it("keeps the search form on the page", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(CityPicker, "initial");
-    await view.user.click(view.getByRole("button", { name: "Search" }));
-    await view.expectParity("searched");
-    await expect.element(view.getByRole("combobox", { name: "City" })).toBeVisible();
-    await expect.element(view.getByRole("status")).toHaveTextContent("No city chosen");
-  });
+	it("keeps the search form on the page", { requires: ["interactivity"] }, async () => {
+		const view = await mountScenario(CityPicker, "initial");
+		await view.user.click(view.getByRole("button", { name: "Search" }));
+		await view.expectParity("searched");
+		await expect.element(view.getByRole("combobox", { name: "City" })).toBeVisible();
+		await expect.element(view.getByRole("status")).toHaveTextContent("No city chosen");
+	});
 
-  it(
-    "adds a note on Enter, and breaks the line on Shift+Enter",
-    { requires: ["interactivity", "conditional-event-control"] },
-    async () => {
-      const view = await mountScenario(CityPicker, "initial");
-      const note = view.getByRole("textbox", { name: "Note" });
-      await view.user.type(note, "Pack light{Enter}");
-      await view.expectParity("noted");
-      await expect
-        .element(view.getByRole("list", { name: "Notes" }).getByRole("listitem"))
-        .toHaveTextContent("Pack light");
-      await expect.element(note).toHaveValue("");
-      expect(view.emitted("noted")).toEqual([["Pack light"]]);
-      await view.user.keyboard("Gate{Shift>}{Enter}{/Shift}B4");
-      await view.expectParity("line-broken");
-      await expect.element(note).toHaveValue("Gate\nB4");
-      expect(view.emitted("noted")).toEqual([["Pack light"]]);
-    },
-  );
+	it(
+		"adds a note on Enter, and breaks the line on Shift+Enter",
+		{ requires: ["interactivity", "conditional-event-control"] },
+		async () => {
+			const view = await mountScenario(CityPicker, "initial");
+			const note = view.getByRole("textbox", { name: "Note" });
+			await view.user.type(note, "Pack light{Enter}");
+			await view.expectParity("noted");
+			await expect
+				.element(view.getByRole("list", { name: "Notes" }).getByRole("listitem"))
+				.toHaveTextContent("Pack light");
+			await expect.element(note).toHaveValue("");
+			expect(view.emitted("noted")).toEqual([["Pack light"]]);
+			await view.user.keyboard("Gate{Shift>}{Enter}{/Shift}B4");
+			await view.expectParity("line-broken");
+			await expect.element(note).toHaveValue("Gate\nB4");
+			expect(view.emitted("noted")).toEqual([["Pack light"]]);
+		},
+	);
 });

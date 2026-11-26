@@ -43,6 +43,6 @@ export type { NormalizeTarget } from "./targets.ts";
  * 7. generated ids become `uf-id-1`, `uf-id-2`… (`canonicalizeGeneratedIds`).
  */
 export function normalizeHtml(html: string, options: NormalizeOptions = {}): string {
-  checkOptions(options);
-  return normalizeTree(parseHtml(html), options);
+	checkOptions(options);
+	return normalizeTree(parseHtml(html), options);
 }

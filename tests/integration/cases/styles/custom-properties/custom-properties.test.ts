@@ -7,10 +7,10 @@ import { expect } from "vitest";
 import Stack from "./Stack.uf.tsx";
 
 describeTargets("styles/custom-properties", () => {
-  it("spaces and outlines the items with the props' values", async () => {
-    const view = await mountScenario(Stack, "wide");
-    await view.expectParity("wide");
-    await expect.element(view.getByRole("listitem").nth(0)).toHaveTextContent("One");
-    await expect.element(view.getByText("Three")).toBeVisible();
-  });
+	it("spaces and outlines the items with the props' values", async () => {
+		const view = await mountScenario(Stack, "wide");
+		await view.expectParity("wide");
+		await expect.element(view.getByRole("listitem").nth(0)).toHaveTextContent("One");
+		await expect.element(view.getByText("Three")).toBeVisible();
+	});
 });

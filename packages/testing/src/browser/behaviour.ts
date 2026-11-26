@@ -25,18 +25,24 @@ type TestError = NonNullable<NonNullable<RunnerTestCase["result"]>["errors"]>[nu
  * expects a layer to fail (a known failure is a quarantine entry).
  */
 export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
-  if (!test) throw new Error("expectLayerFailure must be called inside a test.");
-  const outcome = test.meta.uf?.layers[layer];
-  expect(outcome, `${layer}'s recorded outcome`).toEqual({
-    status: "fail",
-    message: expect.stringMatching(new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, ""))),
-  });
-  if (outcome?.status !== "fail") throw new Error(`${layer} did not fail.`);
-  const layers = consumed.get(test) ?? new Set<LayerName>();
-  layers.add(layer);
-  consumed.set(test, layers);
-  return outcome.message;
+	const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+	if (!test) {
+		throw new Error("expectLayerFailure must be called inside a test.");
+	}
+	const outcome = test.meta.uf?.layers[layer];
+	expect(outcome, `${layer}'s recorded outcome`).toEqual({
+		status: "fail",
+		message: expect.stringMatching(
+			new RegExp(pattern.source, pattern.flags.replaceAll(/[gy]/g, "")),
+		) as unknown,
+	});
+	if (outcome?.status !== "fail") {
+		throw new Error(`${layer} did not fail.`);
+	}
+	const layers = consumed.get(test) ?? new Set<LayerName>();
+	layers.add(layer);
+	consumed.set(test, layers);
+	return outcome.message;
 }
 
 /**
@@ -53,44 +59,48 @@ export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
  * the test's last settle (a navigation the component did not prevent).
  */
 export function judgeTest(
-  task: RunnerTestCase,
-  subject: LayerSubject,
-  unmountError?: unknown,
-  late: readonly string[] = [],
+	task: RunnerTestCase,
+	subject: LayerSubject,
+	unmountError?: unknown,
+	late: ReadonlyArray<string> = [],
 ): void {
-  const errors = task.result?.errors ?? [];
-  const own = errors.filter((error) => error.name !== "LayerFailure");
-  const messages = own.map(describeTestError);
-  // What Vitest never saw: a failed unmount, and what the page refused after the last settle.
-  const unseen = [
-    ...(unmountError === undefined ? [] : [`Unmounting failed: ${formatError(unmountError)}`]),
-    ...late,
-  ];
-  const recorded = recordLayer(
-    task,
-    subject,
-    "L8",
-    messages.length || unseen.length
-      ? { status: "fail", message: [...messages, ...unseen].join("\n") }
-      : { status: "pass" },
-  );
+	const errors = task.result?.errors ?? [];
+	const own = errors.filter((error) => error.name !== "LayerFailure");
+	const messages = own.map(describeTestError);
+	// What Vitest never saw: a failed unmount, and what the page refused after the last settle.
+	const unseen = [
+		...(unmountError === undefined ? [] : [`Unmounting failed: ${formatError(unmountError)}`]),
+		...late,
+	];
+	const recorded = recordLayer(
+		task,
+		subject,
+		"L8",
+		messages.length || unseen.length
+			? { status: "fail", message: [...messages, ...unseen].join("\n") }
+			: { status: "pass" },
+	);
 
-  const skipped = consumed.get(task) ?? new Set<LayerName>();
-  const layers = task.meta.uf?.layers ?? {};
-  const failures = LAYERS.flatMap((layer) => {
-    const outcome = layers[layer];
-    return layer !== "L8" && !skipped.has(layer) && outcome?.status === "fail"
-      ? [`${layer}: ${outcome.message}`]
-      : [];
-  });
-  if (recorded.status === "quarantined" && task.result) {
-    const kept = errors.filter((error) => !own.includes(error));
-    task.result.errors = kept.length ? kept : undefined;
-    if (!kept.length && !failures.length) task.result.state = "pass";
-  } else if (recorded.status === "fail" && unseen.length) {
-    failures.push(...unseen.map((message) => `L8: ${message}`));
-  }
-  if (failures.length) throw new LayerFailure(subject, failures);
+	const skipped = consumed.get(task) ?? new Set<LayerName>();
+	const layers = task.meta.uf?.layers ?? {};
+	const failures = LAYERS.flatMap((layer) => {
+		const outcome = layers[layer];
+		return layer !== "L8" && !skipped.has(layer) && outcome?.status === "fail"
+			? [`${layer}: ${outcome.message}`]
+			: [];
+	});
+	if (recorded.status === "quarantined" && task.result) {
+		const kept = errors.filter((error) => !own.includes(error));
+		task.result.errors = kept.length ? kept : undefined;
+		if (!kept.length && !failures.length) {
+			task.result.state = "pass";
+		}
+	} else if (recorded.status === "fail" && unseen.length) {
+		failures.push(...unseen.map((message) => `L8: ${message}`));
+	}
+	if (failures.length) {
+		throw new LayerFailure(subject, failures);
+	}
 }
 
 /** Terminal colours, which Vitest's element errors carry. */
@@ -105,10 +115,10 @@ const PAGE_HTML = /\n+HTML:\n[\s\S]*$/;
  * page's HTML that an element error appends (its ARIA tree stays, which says what was there).
  */
 function describeTestError(error: TestError): string {
-  const message = error.message.replace(ANSI_COLOUR, "");
-  if (message === NO_ASSERTIONS) {
-    return "The test asserted nothing: every test asserts at least one fact about what it rendered (expect.requireAssertions).";
-  }
-  const name = error.name ?? "Error";
-  return `${name}: ${name === "VitestBrowserElementError" ? message.replace(PAGE_HTML, "") : message}`;
+	const message = error.message.replaceAll(ANSI_COLOUR, "");
+	if (message === NO_ASSERTIONS) {
+		return "The test asserted nothing: every test asserts at least one fact about what it rendered (expect.requireAssertions).";
+	}
+	const name = error.name ?? "Error";
+	return `${name}: ${name === "VitestBrowserElementError" ? message.replace(PAGE_HTML, "") : message}`;
 }

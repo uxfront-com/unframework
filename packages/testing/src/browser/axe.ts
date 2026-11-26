@@ -10,21 +10,21 @@ import axe from "axe-core";
  * rule about the component's own markup, its own landmarks included, stays on.
  */
 const AXE_OPTIONS = {
-  resultTypes: ["violations"],
-  rules: { region: { enabled: false } },
+	resultTypes: ["violations"],
+	rules: { region: { enabled: false } },
 } satisfies axe.RunOptions;
 
 /** How an element's axe violations compare with the rules it is expected to break. */
 export interface AxeComparison {
-  /** The reported rules are exactly the expected ones. */
-  pass: boolean;
-  /**
-   * One line for each reported rule that was not expected, with its impact, its help and the
-   * elements it failed on.
-   */
-  unexpected: string[];
-  /** The expected rules axe did not report. */
-  missing: string[];
+	/** The reported rules are exactly the expected ones. */
+	pass: boolean;
+	/**
+	 * One line for each reported rule that was not expected, with its impact, its help and the
+	 * elements it failed on.
+	 */
+	unexpected: Array<string>;
+	/** The expected rules axe did not report. */
+	missing: Array<string>;
 }
 
 /**
@@ -32,26 +32,28 @@ export interface AxeComparison {
  * `expected`, the rule ids the element is known to break (case.json's `axe` for L11).
  */
 export async function compareAxe(
-  element: Element,
-  expected: readonly string[],
-  teleported: readonly Element[] = [],
+	element: Element,
+	expected: ReadonlyArray<string>,
+	teleported: ReadonlyArray<Element> = [],
 ): Promise<AxeComparison> {
-  // What the view teleported is checked with it (ADR-0098).
-  const results = await axe.run(
-    teleported.length ? { include: [element, ...teleported] } : element,
-    AXE_OPTIONS,
-  );
-  const actual = [...new Set(results.violations.map((violation) => violation.id))].toSorted();
-  const wanted = [...new Set(expected)].toSorted();
-  if (actual.join("\n") === wanted.join("\n")) return { pass: true, unexpected: [], missing: [] };
-  const unexpected = results.violations
-    .filter((violation) => !wanted.includes(violation.id))
-    .map(
-      (violation) =>
-        `  ${violation.id} (${violation.impact ?? "no impact"}): ${violation.help} at ${violation.nodes
-          .map((node) => node.target.join(" "))
-          .join(", ")}`,
-    );
-  const missing = wanted.filter((id) => !actual.includes(id));
-  return { pass: false, unexpected, missing };
+	// What the view teleported is checked with it (ADR-0098).
+	const results = await axe.run(
+		teleported.length ? { include: [element, ...teleported] } : element,
+		AXE_OPTIONS,
+	);
+	const actual = [...new Set(results.violations.map((violation) => violation.id))].toSorted();
+	const wanted = [...new Set(expected)].toSorted();
+	if (actual.join("\n") === wanted.join("\n")) {
+		return { pass: true, unexpected: [], missing: [] };
+	}
+	const unexpected = results.violations
+		.filter((violation) => !wanted.includes(violation.id))
+		.map(
+			(violation) =>
+				`  ${violation.id} (${violation.impact ?? "no impact"}): ${violation.help} at ${violation.nodes
+					.map((node) => node.target.join(" "))
+					.join(", ")}`,
+		);
+	const missing = wanted.filter((id) => !actual.includes(id));
+	return { pass: false, unexpected, missing };
 }

@@ -5,8 +5,8 @@ const fruits = [{ name: "Apple", count: 3 }];
 </script>
 
 <template>
-  <Picker :items="fruits">
-    <!-- @uf-expect TS2339 Picker.slot:item -->
-    <template #item="{ item }">{{ item.nmae }}</template>
-  </Picker>
+	<Picker :items="fruits">
+		<!-- @uf-expect TS2339 Picker.slot:item -->
+		<template #item="{ item }">{{ item.nmae }}</template>
+	</Picker>
 </template>

@@ -6,10 +6,10 @@
 import type { Fix } from "@unframework.dev/diagnostics";
 import { createModelAttribute, createModelBindingAttribute } from "@unframework.dev/ir";
 import type {
-  ComponentApi,
-  ModelAttribute,
-  ModelBindingAttribute,
-  Span,
+	ComponentApi,
+	ModelAttribute,
+	ModelBindingAttribute,
+	Span,
 } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 import { parseModule } from "@unframework.dev/parser";
@@ -30,87 +30,87 @@ export const CONTROL_MODEL: RegExp = /^v-model(?:_(trim|lazy|number))?$/;
  * types or picks as a string. A number or range input casts it, as `.number` does.
  */
 const TEXT_TYPES: ReadonlySet<string> = new Set([
-  "text",
-  "search",
-  "email",
-  "url",
-  "tel",
-  "password",
-  "date",
-  "time",
-  "datetime-local",
-  "month",
-  "week",
-  "color",
+	"text",
+	"search",
+	"email",
+	"url",
+	"tel",
+	"password",
+	"date",
+	"time",
+	"datetime-local",
+	"month",
+	"week",
+	"color",
 ]);
 
 /** Whether `v-model` binds an <input> of this static type, as `controlOf` reads it (UF3042). */
 export function bindsInputType(type: string | undefined): boolean {
-  return (
-    type === undefined ||
-    TEXT_TYPES.has(type) ||
-    type === "number" ||
-    type === "range" ||
-    type === "checkbox" ||
-    type === "radio"
-  );
+	return (
+		type === undefined ||
+		TEXT_TYPES.has(type) ||
+		type === "number" ||
+		type === "range" ||
+		type === "checkbox" ||
+		type === "radio"
+	);
 }
 
 /** What a control's `v-model` needs to know about its element. */
 export interface ControlContext {
-  readonly tag: string;
-  /**
-   * The static `type`, in lower case: `undefined` without one, and `null` for a bound one, which
-   * leaves the control unknown.
-   */
-  readonly type: string | null | undefined;
-  /** Whether a static `multiple` is set: `null` for a bound one. */
-  readonly multiple: boolean | null;
-  /** Whether the element has a `value` attribute: a checkbox's in a group, a radio's. */
-  readonly value: boolean;
-  /** Whether the element has content: a `<textarea>`'s is its initial text. */
-  readonly hasChildren: boolean;
-  readonly render: RenderContext;
+	readonly tag: string;
+	/**
+	 * The static `type`, in lower case: `undefined` without one, and `null` for a bound one, which
+	 * leaves the control unknown.
+	 */
+	readonly type: string | null | undefined;
+	/** Whether a static `multiple` is set: `null` for a bound one. */
+	readonly multiple: boolean | null;
+	/** Whether the element has a `value` attribute: a checkbox's in a group, a radio's. */
+	readonly value: boolean;
+	/** Whether the element has content: a `<textarea>`'s is its initial text. */
+	readonly hasChildren: boolean;
+	readonly render: RenderContext;
 }
 
 /** Reports a misuse of `v-model` (UF3042), and gives nothing. */
 function invalid(
-  render: RenderContext,
-  at: { start: number; end: number },
-  message: string,
-  help = "Bind a ref's value to a form control, `<input v-model={text.value} />`, or a model a component declares, `<Field v-model:value={text.value} />`.",
-  fixes?: Fix[],
+	render: RenderContext,
+	at: { start: number; end: number },
+	message: string,
+	help = "Bind a ref's value to a form control, `<input v-model={text.value} />`, or a model a component declares, `<Field v-model:value={text.value} />`.",
+	fixes?: Array<Fix>,
 ): undefined {
-  render.reporter.report("UF3042", at, message, { help, ...(fixes ? { fixes } : {}) });
-  return undefined;
+	render.reporter.report("UF3042", at, message, { help, ...(fixes ? { fixes } : {}) });
+	return undefined;
 }
 
 /** The value a `v-model` binds: `x.value` of a `state` or `model` binding, checked. */
 function boundValue(item: AST.JSXAttribute, render: RenderContext): CheckedExpression | undefined {
-  const { value } = item;
-  const expression =
-    value?.type === "JSXExpressionContainer" && value.expression.type !== "JSXEmptyExpression"
-      ? value.expression
-      : undefined;
-  const member = expression?.type === "MemberExpression" ? expression : undefined;
-  const binding =
-    member &&
-    member.object.type === "Identifier" &&
-    !member.computed &&
-    !member.optional &&
-    member.property.type === "Identifier" &&
-    member.property.name === "value"
-      ? setupBindingOf(member.object, render)
-      : undefined;
-  if (!expression || !binding || !isWritableRef(binding)) {
-    return invalid(
-      render,
-      value ?? item,
-      "`v-model` binds a ref's value, `text.value`, of a `ref` or a model of the component: the targets write the control's changes back through it.",
-    );
-  }
-  const checked = checkExpression(expression, render);
-  return checked.clean ? checked : undefined;
+	const { value } = item;
+	const expression =
+		value?.type === "JSXExpressionContainer" && value.expression.type !== "JSXEmptyExpression"
+			? value.expression
+			: undefined;
+	const member = expression?.type === "MemberExpression" ? expression : undefined;
+	const binding =
+		member &&
+		member.object.type === "Identifier" &&
+		!member.computed &&
+		!member.optional &&
+		member.property.type === "Identifier" &&
+		member.property.name === "value"
+			? setupBindingOf(member.object, render)
+			: undefined;
+	if (!expression || !binding || !isWritableRef(binding)) {
+		return invalid(
+			render,
+			value ?? item,
+			"`v-model` binds a ref's value, `text.value`, of a `ref` or a model of the component: the targets write the control's changes back through it.",
+		);
+	}
+	const checked = checkExpression(expression, render);
+	return checked.clean ? checked : undefined;
 }
 
 /**
@@ -118,153 +118,163 @@ function boundValue(item: AST.JSXAttribute, render: RenderContext): CheckedExpre
  * its spelling names, and a bound value of the kind the control writes.
  */
 export function lowerControlModel(
-  item: AST.JSXAttribute,
-  name: AST.JSXIdentifier,
-  modifier: "trim" | "lazy" | "number" | undefined,
-  context: ControlContext,
+	item: AST.JSXAttribute,
+	name: AST.JSXIdentifier,
+	modifier: "trim" | "lazy" | "number" | undefined,
+	context: ControlContext,
 ): ModelAttribute | undefined {
-  const { tag, type, multiple, render } = context;
-  const checked = boundValue(item, render);
-  if (!checked) return undefined;
-  const control = controlOf(item, name, checked.kinds, context);
-  if (!control) return undefined;
-  if (modifier && control !== "text" && control !== "number" && control !== "textarea") {
-    return invalid(
-      render,
-      name,
-      `\`${name.name}\` reads the text of a control that has none: <${tag}${type ? ` type="${type}"` : multiple ? " multiple" : ""}> binds ${control === "select" || control === "select-multiple" ? "its selected options" : "its checked state"}.`,
-      "Write `v-model` without the modifier.",
-    );
-  }
-  const numeric = control === "number" || modifier === "number";
-  const expected: Primitive[] =
-    control === "checkbox"
-      ? ["boolean"]
-      : control === "checkbox-group" || control === "select-multiple"
-        ? ["array"]
-        : control === "radio"
-          ? ["string", "number", "boolean", "null", "undefined"]
-          : numeric
-            ? ["number", "string", "undefined", "null"]
-            : ["string", "undefined", "null"];
-  const wrong = outside(checked.kinds, expected);
-  if (wrong.length || (numeric && !has(checked.kinds, "number") && !unknown(checked.kinds))) {
-    return invalid(
-      render,
-      checked.expression.span,
-      `\`${checked.expression.code}\` holds ${describe(checked.kinds)}, and <${tag}${type ? ` type="${type}"` : ""}>'s \`v-model\` writes ${numeric ? "a number (or the text, where it is no number)" : control === "checkbox" ? "a boolean" : control === "checkbox-group" || control === "select-multiple" ? "an array of the checked values" : "a string"}.`,
-      numeric
-        ? "Bind a ref of a number."
-        : control === "text" || control === "textarea"
-          ? "Bind a ref of a string, or write `v-model_number` to read a number."
-          : "Bind a ref of the type the control writes.",
-    );
-  }
-  return createModelAttribute(checked.expression, control, span(item), {
-    trim: modifier === "trim",
-    lazy: modifier === "lazy",
-    number: modifier === "number",
-  });
+	const { tag, type, multiple, render } = context;
+	const checked = boundValue(item, render);
+	if (!checked) {
+		return undefined;
+	}
+	const control = controlOf(item, name, checked.kinds, context);
+	if (!control) {
+		return undefined;
+	}
+	if (modifier && control !== "text" && control !== "number" && control !== "textarea") {
+		return invalid(
+			render,
+			name,
+			`\`${name.name}\` reads the text of a control that has none: <${tag}${type ? ` type="${type}"` : multiple ? " multiple" : ""}> binds ${control === "select" || control === "select-multiple" ? "its selected options" : "its checked state"}.`,
+			"Write `v-model` without the modifier.",
+		);
+	}
+	const numeric = control === "number" || modifier === "number";
+	const expected: Array<Primitive> =
+		control === "checkbox"
+			? ["boolean"]
+			: control === "checkbox-group" || control === "select-multiple"
+				? ["array"]
+				: control === "radio"
+					? ["string", "number", "boolean", "null", "undefined"]
+					: numeric
+						? ["number", "string", "undefined", "null"]
+						: ["string", "undefined", "null"];
+	const wrong = outside(checked.kinds, expected);
+	if (wrong.length || (numeric && !has(checked.kinds, "number") && !unknown(checked.kinds))) {
+		return invalid(
+			render,
+			checked.expression.span,
+			`\`${checked.expression.code}\` holds ${describe(checked.kinds)}, and <${tag}${type ? ` type="${type}"` : ""}>'s \`v-model\` writes ${numeric ? "a number (or the text, where it is no number)" : control === "checkbox" ? "a boolean" : control === "checkbox-group" || control === "select-multiple" ? "an array of the checked values" : "a string"}.`,
+			numeric
+				? "Bind a ref of a number."
+				: control === "text" || control === "textarea"
+					? "Bind a ref of a string, or write `v-model_number` to read a number."
+					: "Bind a ref of the type the control writes.",
+		);
+	}
+	return createModelAttribute(checked.expression, control, span(item), {
+		trim: modifier === "trim",
+		lazy: modifier === "lazy",
+		number: modifier === "number",
+	});
 }
 
 /** The control a `v-model` binds, from its element and the bound value's kinds (UF3042). */
 function controlOf(
-  item: AST.JSXAttribute,
-  name: AST.JSXIdentifier,
-  kinds: Kinds,
-  context: ControlContext,
+	item: AST.JSXAttribute,
+	name: AST.JSXIdentifier,
+	kinds: Kinds,
+	context: ControlContext,
 ): ModelAttribute["control"] | undefined {
-  const { tag, type, multiple, value, render } = context;
-  switch (tag) {
-    case "textarea":
-      // Its content is its initial text, which the server renders and the model replaces.
-      if (context.hasChildren) {
-        return invalid(
-          render,
-          name,
-          "A <textarea> whose `v-model` binds its text takes no content: the server renders the model's value, and the content would differ from it.",
-          "Remove the content, and give the ref the initial text.",
-        );
-      }
-      return "textarea";
-    case "select":
-      if (multiple === null) {
-        return invalid(
-          render,
-          name,
-          "`v-model` on a <select> with a bound `multiple` binds a value or an array, which no target can tell before it renders.",
-          "Write `multiple` as it is, or leave it out.",
-        );
-      }
-      return multiple ? "select-multiple" : "select";
-    case "input":
-      break;
-    default:
-      return invalid(
-        render,
-        name,
-        `<${tag}> is no form control: \`v-model\` binds an <input>, a <textarea> or a <select>.`,
-      );
-  }
-  if (type === null) {
-    return invalid(
-      render,
-      name,
-      "`v-model` on an <input> with a bound `type` binds a value or a checked state, which no target can tell before it renders.",
-      "Write the `type` as it is.",
-    );
-  }
-  if (type === undefined || TEXT_TYPES.has(type)) return "text";
-  if (type === "number" || type === "range") return "number";
-  if (type === "checkbox") {
-    if (unknown(kinds)) {
-      return invalid(
-        render,
-        item.value ?? item,
-        "A checkbox's `v-model` binds a boolean, or an array of the checked boxes' values, and this ref's type says neither.",
-        "Type the ref: `ref<boolean>(false)` or `ref<string[]>([])`.",
-      );
-    }
-    if (!has(kinds, "array")) return "checkbox";
-    if (!value) {
-      return invalid(
-        render,
-        name,
-        "A checkbox that binds an array adds its `value` to it, and this one has none.",
-        'Give the checkbox its `value`: `<input type="checkbox" value="tea" v-model={drinks.value} />`.',
-      );
-    }
-    return "checkbox-group";
-  }
-  if (type === "radio") {
-    if (!value) {
-      return invalid(
-        render,
-        name,
-        "A radio's `v-model` writes the radio's `value`, and this one has none.",
-        'Give the radio its `value`: `<input type="radio" value="tea" v-model={drink.value} />`.',
-      );
-    }
-    return "radio";
-  }
-  return invalid(
-    render,
-    name,
-    `\`v-model\` binds no <input type="${type}">: Vue binds text, number, checkbox and radio inputs, and the other types hold no value a user edits.`,
-  );
+	const { tag, type, multiple, value, render } = context;
+	switch (tag) {
+		case "textarea":
+			// Its content is its initial text, which the server renders and the model replaces.
+			if (context.hasChildren) {
+				return invalid(
+					render,
+					name,
+					"A <textarea> whose `v-model` binds its text takes no content: the server renders the model's value, and the content would differ from it.",
+					"Remove the content, and give the ref the initial text.",
+				);
+			}
+			return "textarea";
+		case "select":
+			if (multiple === null) {
+				return invalid(
+					render,
+					name,
+					"`v-model` on a <select> with a bound `multiple` binds a value or an array, which no target can tell before it renders.",
+					"Write `multiple` as it is, or leave it out.",
+				);
+			}
+			return multiple ? "select-multiple" : "select";
+		case "input":
+			break;
+		default:
+			return invalid(
+				render,
+				name,
+				`<${tag}> is no form control: \`v-model\` binds an <input>, a <textarea> or a <select>.`,
+			);
+	}
+	if (type === null) {
+		return invalid(
+			render,
+			name,
+			"`v-model` on an <input> with a bound `type` binds a value or a checked state, which no target can tell before it renders.",
+			"Write the `type` as it is.",
+		);
+	}
+	if (type === undefined || TEXT_TYPES.has(type)) {
+		return "text";
+	}
+	if (type === "number" || type === "range") {
+		return "number";
+	}
+	if (type === "checkbox") {
+		if (unknown(kinds)) {
+			return invalid(
+				render,
+				item.value ?? item,
+				"A checkbox's `v-model` binds a boolean, or an array of the checked boxes' values, and this ref's type says neither.",
+				"Type the ref: `ref<boolean>(false)` or `ref<string[]>([])`.",
+			);
+		}
+		if (!has(kinds, "array")) {
+			return "checkbox";
+		}
+		if (!value) {
+			return invalid(
+				render,
+				name,
+				"A checkbox that binds an array adds its `value` to it, and this one has none.",
+				'Give the checkbox its `value`: `<input type="checkbox" value="tea" v-model={drinks.value} />`.',
+			);
+		}
+		return "checkbox-group";
+	}
+	if (type === "radio") {
+		if (!value) {
+			return invalid(
+				render,
+				name,
+				"A radio's `v-model` writes the radio's `value`, and this one has none.",
+				'Give the radio its `value`: `<input type="radio" value="tea" v-model={drink.value} />`.',
+			);
+		}
+		return "radio";
+	}
+	return invalid(
+		render,
+		name,
+		`\`v-model\` binds no <input type="${type}">: Vue binds text, number, checkbox and radio inputs, and the other types hold no value a user edits.`,
+	);
 }
 
 /** Whether the model cannot tell a value's kinds. */
 function unknown(kinds: Kinds): boolean {
-  return has(kinds, "unknown");
+	return has(kinds, "unknown");
 }
 
 /** The kinds of a value, in words, for a message. */
 function describe(kinds: Kinds): string {
-  const named = [...kinds.primitives].filter((primitive) => primitive !== "unknown");
-  return named.length
-    ? `a value of type ${named.map((each) => `\`${each}\``).join(" | ")}`
-    : "a value";
+	const named = [...kinds.primitives].filter((primitive) => primitive !== "unknown");
+	return named.length
+		? `a value of type ${named.map((each) => `\`${each}\``).join(" | ")}`
+		: "a value";
 }
 
 /**
@@ -273,64 +283,66 @@ function describe(kinds: Kinds): string {
  * takes none. `items` are the element's attributes, for the rename (`renameFix`).
  */
 export function lowerModelBinding(
-  item: AST.JSXAttribute,
-  name: AST.JSXNamespacedName,
-  api: ComponentApi,
-  info: ComponentInfo,
-  render: RenderContext,
-  items: readonly AST.JSXAttributeItem[] | undefined,
+	item: AST.JSXAttribute,
+	name: AST.JSXNamespacedName,
+	api: ComponentApi,
+	info: ComponentInfo,
+	render: RenderContext,
+	items: ReadonlyArray<AST.JSXAttributeItem> | undefined,
 ): ModelBindingAttribute | undefined {
-  const written = `${name.namespace.name}:${name.name.name}`;
-  if (name.namespace.name !== "v-model") {
-    return invalid(
-      render,
-      name,
-      CONTROL_MODEL.test(name.namespace.name)
-        ? `\`${written}\` gives a component's model a modifier, which only a form control's \`v-model\` takes.`
-        : `\`${written}\` is not an attribute a component takes.`,
-      `Write \`v-model:${name.name.name}\`.`,
-    );
-  }
-  const model = name.name.name;
-  if (!api.models.some((each) => each.name === model)) {
-    const meant = closest(
-      model,
-      api.models.map((each) => each.name),
-    );
-    const others = items?.flatMap((each) =>
-      each !== item &&
-      each.type === "JSXAttribute" &&
-      each.name.type === "JSXNamespacedName" &&
-      each.name.namespace.name === "v-model"
-        ? [each.name.name.name]
-        : [],
-    );
-    render.reporter.report(
-      "UF3037",
-      name,
-      `${info.name} declares no model \`${model}\`.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
-      {
-        help: `Bind a model ${info.name} declares with \`defineModel\`.`,
-        ...(meant ? { fixes: renameFix(meant, meant, name.name, others) } : {}),
-      },
-    );
-    return undefined;
-  }
-  const checked = boundValue(item, render);
-  if (!checked) return undefined;
-  const { type } = api.models.find((each) => each.name === model)!;
-  if (mayBeUndefined(type) && !unknown(checked.kinds) && !has(checked.kinds, "undefined")) {
-    render.reporter.report(
-      "UF3050",
-      item,
-      `${info.name}'s model \`${model}\` can be \`undefined\`, as its type \`${type}\` says, and \`${checked.expression.code}\` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.`,
-      {
-        help: `Let the ref hold \`undefined\`, or, where \`${model}\`'s type in ${info.name} excludes it, give the model a \`default\` or \`required: true\`.`,
-      },
-    );
-    return undefined;
-  }
-  return createModelBindingAttribute(model, checked.expression, span(item));
+	const written = `${name.namespace.name}:${name.name.name}`;
+	if (name.namespace.name !== "v-model") {
+		return invalid(
+			render,
+			name,
+			CONTROL_MODEL.test(name.namespace.name)
+				? `\`${written}\` gives a component's model a modifier, which only a form control's \`v-model\` takes.`
+				: `\`${written}\` is not an attribute a component takes.`,
+			`Write \`v-model:${name.name.name}\`.`,
+		);
+	}
+	const model = name.name.name;
+	if (!api.models.some((each) => each.name === model)) {
+		const meant = closest(
+			model,
+			api.models.map((each) => each.name),
+		);
+		const others = items?.flatMap((each) =>
+			each !== item &&
+			each.type === "JSXAttribute" &&
+			each.name.type === "JSXNamespacedName" &&
+			each.name.namespace.name === "v-model"
+				? [each.name.name.name]
+				: [],
+		);
+		render.reporter.report(
+			"UF3037",
+			name,
+			`${info.name} declares no model \`${model}\`.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
+			{
+				help: `Bind a model ${info.name} declares with \`defineModel\`.`,
+				...(meant ? { fixes: renameFix(meant, meant, name.name, others) } : {}),
+			},
+		);
+		return undefined;
+	}
+	const checked = boundValue(item, render);
+	if (!checked) {
+		return undefined;
+	}
+	const { type } = api.models.find((each) => each.name === model)!;
+	if (mayBeUndefined(type) && !unknown(checked.kinds) && !has(checked.kinds, "undefined")) {
+		render.reporter.report(
+			"UF3050",
+			item,
+			`${info.name}'s model \`${model}\` can be \`undefined\`, as its type \`${type}\` says, and \`${checked.expression.code}\` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.`,
+			{
+				help: `Let the ref hold \`undefined\`, or, where \`${model}\`'s type in ${info.name} excludes it, give the model a \`default\` or \`required: true\`.`,
+			},
+		);
+		return undefined;
+	}
+	return createModelBindingAttribute(model, checked.expression, span(item));
 }
 
 /**
@@ -338,12 +350,14 @@ export function lowerModelBinding(
  * union. `modelOf` adds one to a model with neither `required: true` nor a `default`.
  */
 function mayBeUndefined(type: string): boolean {
-  const parsed = parseModule("type.ts", `type T = ${type};`);
-  const [statement] = parsed.program.body;
-  if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") return false;
-  const annotation = statement.typeAnnotation;
-  const members = annotation.type === "TSUnionType" ? annotation.types : [annotation];
-  return members.some((member) => member.type === "TSUndefinedKeyword");
+	const parsed = parseModule("type.ts", `type T = ${type};`);
+	const [statement] = parsed.program.body;
+	if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") {
+		return false;
+	}
+	const annotation = statement.typeAnnotation;
+	const members = annotation.type === "TSUnionType" ? annotation.types : [annotation];
+	return members.some((member) => member.type === "TSUndefinedKeyword");
 }
 
 /**
@@ -351,28 +365,28 @@ function mayBeUndefined(type: string): boolean {
  * the safe fix to the name of the one model it declares.
  */
 export function namelessModel(
-  name: AST.JSXIdentifier,
-  api: ComponentApi,
-  info: ComponentInfo,
-  render: RenderContext,
+	name: AST.JSXIdentifier,
+	api: ComponentApi,
+	info: ComponentInfo,
+	render: RenderContext,
 ): void {
-  const [only, ...more] = api.models;
-  const at: Span = span(name);
-  invalid(
-    render,
-    name,
-    `\`${name.name}\` on a component binds a model by its name: ${info.name} declares ${api.models.length ? api.models.map((each) => `\`${each.name}\``).join(", ") : "no model"}.`,
-    only
-      ? `Write \`v-model:${only.name}\`.`
-      : `Declare a model in ${info.name} with \`defineModel\`.`,
-    only && !more.length && name.name === "v-model"
-      ? [
-          {
-            title: `Bind \`${only.name}\``,
-            confidence: "safe",
-            edits: [{ span: at, text: `v-model:${only.name}` }],
-          },
-        ]
-      : undefined,
-  );
+	const [only, ...more] = api.models;
+	const at: Span = span(name);
+	invalid(
+		render,
+		name,
+		`\`${name.name}\` on a component binds a model by its name: ${info.name} declares ${api.models.length ? api.models.map((each) => `\`${each.name}\``).join(", ") : "no model"}.`,
+		only
+			? `Write \`v-model:${only.name}\`.`
+			: `Declare a model in ${info.name} with \`defineModel\`.`,
+		only && !more.length && name.name === "v-model"
+			? [
+					{
+						title: `Bind \`${only.name}\``,
+						confidence: "safe",
+						edits: [{ span: at, text: `v-model:${only.name}` }],
+					},
+				]
+			: undefined,
+	);
 }

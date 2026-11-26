@@ -18,15 +18,15 @@ import { QUARANTINE as SVELTE } from "./quarantine/svelte.ts";
 import { QUARANTINE as VUE } from "./quarantine/vue.ts";
 
 /** Each target's file of entries, by target. */
-export const QUARANTINE_FILES: Readonly<Record<TargetName, readonly QuarantineEntry[]>> = {
-  react: REACT,
-  vue: VUE,
-  svelte: SVELTE,
-  solid: SOLID,
-  solid2: SOLID2,
-  angular: ANGULAR,
-  qwik: QWIK,
-  astro: ASTRO,
+export const QUARANTINE_FILES: Readonly<Record<TargetName, ReadonlyArray<QuarantineEntry>>> = {
+	react: REACT,
+	vue: VUE,
+	svelte: SVELTE,
+	solid: SOLID,
+	solid2: SOLID2,
+	angular: ANGULAR,
+	qwik: QWIK,
+	astro: ASTRO,
 };
 
 /**
@@ -34,45 +34,46 @@ export const QUARANTINE_FILES: Readonly<Record<TargetName, readonly QuarantineEn
  * lane that empties its own file must see every entry it owns.
  */
 export function joinQuarantine(
-  files: Readonly<Record<string, readonly QuarantineEntry[]>>,
-): QuarantineEntry[] {
-  const misfiled = Object.entries(files).flatMap(([target, entries]) =>
-    entries
-      .filter((entry) => entry.target !== target)
-      .map(
-        (entry) =>
-          `${entry.case} › ${entry.target} › ${entry.layer} is in quarantine/${target}.ts: move it to quarantine/${entry.target}.ts.`,
-      ),
-  );
-  if (misfiled.length)
-    throw new Error(`[uf] Misfiled quarantine entries:\n  ${misfiled.join("\n  ")}`);
-  return Object.values(files).flat();
+	files: Readonly<Record<string, ReadonlyArray<QuarantineEntry>>>,
+): Array<QuarantineEntry> {
+	const misfiled = Object.entries(files).flatMap(([target, entries]) =>
+		entries
+			.filter((entry) => entry.target !== target)
+			.map(
+				(entry) =>
+					`${entry.case} › ${entry.target} › ${entry.layer} is in quarantine/${target}.ts: move it to quarantine/${entry.target}.ts.`,
+			),
+	);
+	if (misfiled.length) {
+		throw new Error(`[uf] Misfiled quarantine entries:\n  ${misfiled.join("\n  ")}`);
+	}
+	return Object.values(files).flat();
 }
 
 /** Every known failure, from every target's file. */
-export const QUARANTINE: readonly QuarantineEntry[] = joinQuarantine(QUARANTINE_FILES);
+export const QUARANTINE: ReadonlyArray<QuarantineEntry> = joinQuarantine(QUARANTINE_FILES);
 
 /**
  * The layers a quarantine entry may name: the live ones, where a failure can occur. M1 made L5
  * (lint, ADR-0042) and L8 (behaviour, ADR-0043) live; M2 made L9 (interaction traces, ADR-0050),
  * and M6 made L14 (source maps) and L15 (budgets, ADR-0078).
  */
-export const LIVE_LAYERS: readonly LayerName[] = [
-  "L1",
-  "L2",
-  "L3",
-  "L4",
-  "L5",
-  "L6",
-  "L7",
-  "L8",
-  "L9",
-  "L10",
-  "L11",
-  "L12",
-  "L13",
-  "L14",
-  "L15",
+export const LIVE_LAYERS: ReadonlyArray<LayerName> = [
+	"L1",
+	"L2",
+	"L3",
+	"L4",
+	"L5",
+	"L6",
+	"L7",
+	"L8",
+	"L9",
+	"L10",
+	"L11",
+	"L12",
+	"L13",
+	"L14",
+	"L15",
 ];
 
 /**
@@ -81,23 +82,34 @@ export const LIVE_LAYERS: readonly LayerName[] = [
  * reason or an issue cannot be followed up.
  */
 export function validateQuarantine(
-  entries: readonly QuarantineEntry[],
-  known: { cases: readonly string[]; targets: readonly string[] },
-): string[] {
-  const problems: string[] = [];
-  const seen = new Set<string>();
-  for (const entry of entries) {
-    const key = `${entry.case} › ${entry.target} › ${entry.layer}`;
-    if (!known.cases.includes(entry.case)) problems.push(`${key}: no case "${entry.case}".`);
-    if (!known.targets.includes(entry.target))
-      problems.push(`${key}: no target "${entry.target}".`);
-    if (!LAYERS.includes(entry.layer)) problems.push(`${key}: no layer "${entry.layer}".`);
-    else if (!LIVE_LAYERS.includes(entry.layer))
-      problems.push(`${key}: ${entry.layer} is not live, so it cannot fail.`);
-    if (!entry.reason.trim()) problems.push(`${key}: needs a reason.`);
-    if (!entry.issue.trim()) problems.push(`${key}: needs an issue.`);
-    if (seen.has(key)) problems.push(`${key}: listed twice.`);
-    seen.add(key);
-  }
-  return problems;
+	entries: ReadonlyArray<QuarantineEntry>,
+	known: { cases: ReadonlyArray<string>; targets: ReadonlyArray<string> },
+): Array<string> {
+	const problems: Array<string> = [];
+	const seen = new Set<string>();
+	for (const entry of entries) {
+		const key = `${entry.case} › ${entry.target} › ${entry.layer}`;
+		if (!known.cases.includes(entry.case)) {
+			problems.push(`${key}: no case "${entry.case}".`);
+		}
+		if (!known.targets.includes(entry.target)) {
+			problems.push(`${key}: no target "${entry.target}".`);
+		}
+		if (!LAYERS.includes(entry.layer)) {
+			problems.push(`${key}: no layer "${entry.layer}".`);
+		} else if (!LIVE_LAYERS.includes(entry.layer)) {
+			problems.push(`${key}: ${entry.layer} is not live, so it cannot fail.`);
+		}
+		if (!entry.reason.trim()) {
+			problems.push(`${key}: needs a reason.`);
+		}
+		if (!entry.issue.trim()) {
+			problems.push(`${key}: needs an issue.`);
+		}
+		if (seen.has(key)) {
+			problems.push(`${key}: listed twice.`);
+		}
+		seen.add(key);
+	}
+	return problems;
 }

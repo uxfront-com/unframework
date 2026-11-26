@@ -3,7 +3,7 @@ import Frame from "../../../../../integration/cases/slots/forwarding/__output__/
 </script>
 
 <template>
-  <Frame label="Shot">
-    <template #title>Dusk</template>
-  </Frame>
+	<Frame label="Shot">
+		<template #title>Dusk</template>
+	</Frame>
 </template>

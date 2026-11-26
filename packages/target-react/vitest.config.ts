@@ -10,8 +10,8 @@ import { toolchain } from "./src/toolchain/index.ts";
 import { behaviourModules } from "./test/behaviour-modules.ts";
 
 const context = {
-  root: fileURLToPath(new URL(".", import.meta.url)),
-  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/react", import.meta.url)),
+	root: import.meta.dirname,
+	toolchainDir: fileURLToPath(new URL("../../tests/toolchains/react", import.meta.url)),
 };
 
 /**
@@ -21,23 +21,23 @@ const context = {
  */
 const vite = await toolchain.vite("browser", context);
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          environment: "node",
-          include: ["test/**/*.test.ts"],
-          exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
-        },
-      },
-      browserProject({
-        provider: playwright(),
-        vite: { ...vite, plugins: [behaviourModules(), ...(vite.plugins ?? [])] },
-        modules: { target, extension: ".tsx", formatted: true },
-      }),
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					environment: "node",
+					include: ["test/**/*.test.ts"],
+					exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
+				},
+			},
+			browserProject({
+				provider: playwright(),
+				vite: { ...vite, plugins: [behaviourModules(), ...(vite.plugins ?? [])] },
+				modules: { target, extension: ".tsx", formatted: true },
+			}),
+		],
+	},
 });
 
 export default config;

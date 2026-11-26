@@ -7,37 +7,37 @@ component, written as a Solid developer would write it (plan §6).
 import { type JSX, Show, createMemo, createSignal, mergeProps, untrack } from "solid-js";
 
 export interface CounterProps {
-  initial?: number;
-  step?: number;
+	initial?: number;
+	step?: number;
 }
 
 export interface CounterEvents {
-  onChange?: (value: number) => void;
+	onChange?: (value: number) => void;
 }
 
 export default function Counter(
-  rawProps: CounterProps & CounterEvents & { class?: string; style?: JSX.CSSProperties },
+	rawProps: CounterProps & CounterEvents & { class?: string; style?: JSX.CSSProperties },
 ) {
-  const props = mergeProps({ initial: 0, step: 1 } satisfies Partial<CounterProps>, rawProps);
-  const [count, setCount] = createSignal(untrack(() => props.initial));
-  const doubled = createMemo(() => count() * 2);
+	const props = mergeProps({ initial: 0, step: 1 } satisfies Partial<CounterProps>, rawProps);
+	const [count, setCount] = createSignal(untrack(() => props.initial));
+	const doubled = createMemo(() => count() * 2);
 
-  function increment() {
-    setCount(count() + props.step);
-    props.onChange?.(count());
-  }
+	function increment() {
+		setCount(count() + props.step);
+		props.onChange?.(count());
+	}
 
-  return (
-    <div class={props.class ? `counter ${props.class}` : "counter"} style={props.style}>
-      <output>{count()}</output>
-      <Show when={doubled() > 10}>
-        <span>Big</span>
-      </Show>
-      <button type="button" onClick={increment}>
-        +{props.step}
-      </button>
-    </div>
-  );
+	return (
+		<div class={props.class ? `counter ${props.class}` : "counter"} style={props.style}>
+			<output>{count()}</output>
+			<Show when={doubled() > 10}>
+				<span>Big</span>
+			</Show>
+			<button type="button" onClick={increment}>
+				+{props.step}
+			</button>
+		</div>
+	);
 }
 ```
 
@@ -120,15 +120,15 @@ export default function Counter(
   compiles to a memo. The rules are syntactic: a value taken where none was needed renders
   alike.
 - Lists are `<KeyedFor each={items} by={(item) => item.id}>{(item) => <li>…</li>}</KeyedFor>`,
-  an inline helper over `<For>` whose rows follow the source's `key`, printed as `by`
+  a shared helper over `<For>` whose rows follow the source's `key`, printed as `by`
   (`keyed-identity`, emulated, ADR-0096). `<For>` follows the items themselves, so an item
   replaced by a copy of the same key would get a new row. A row is an object of getters named as
   the item, read as `item.value` and `item.index`, which TypeScript narrows as it narrows a prop.
   `by` takes the item and the index as values, as the key reads them. A parameter neither
   callback reads is left out of it.
-- `directive` is emulated (ADR-0099): a ref factory, `ref={vFocusTrap(() => open())}`, joined to the element's own ref callback where it has one, whose `onMount`, effect and `onCleanup` queue the hooks through an inline `queueHook`, which runs them in Vue's order.
-- `transition` is emulated (ADR-0100): an inline component, `Transition`, resolves the child with `children()` and renders a signal of the elements it keeps, the shown one and each one leaving until its leave ends, running Vue's classes on each. The server renders the child as it is.
-- `teleport` is emulated (ADR-0098): an inline helper, `Teleport`, inserts the element into `to` once the component has mounted, as `<Portal>` does in `<head>`, with no wrapper, in a root its owner owns.
+- `directive` is emulated (ADR-0099): a ref factory, `ref={vFocusTrap(() => open())}`, joined to the element's own ref callback where it has one, whose `onMount`, effect and `onCleanup` queue the hooks through a shared `queueHook`, which runs them in Vue's order.
+- `transition` is emulated (ADR-0100): a shared component, `Transition`, resolves the child with `children()` and renders a signal of the elements it keeps, the shown one and each one leaving until its leave ends, running Vue's classes on each. The server renders the child as it is.
+- `teleport` is emulated (ADR-0098): a shared helper, `Teleport`, inserts the element into `to` once the component has mounted, as `<Portal>` does in `<head>`, with no wrapper, in a root its owner owns.
 - HTML's attribute names as written (`class`, `for`, `tabindex`, `readonly`), which Solid's JSX
   takes; SVG's in their own case (`viewBox`, `stroke-width`). Every bindable boolean attribute
   is one Solid's compiler sets as a boolean, so none needs `bool:` (`test/attributes.test.ts`).
@@ -141,8 +141,8 @@ export default function Counter(
   forbid it, the object is typed `Record<string, unknown>`, as TypeScript checks it otherwise.
 - `class="a b"` for static names, and `classList={{ active: props.active }}` for toggles
   beside them, a condition that may not be a boolean in `Boolean(…)`. A lone string part is the
-  class itself (``class={`tone-${props.tone}`}``). Any other class goes through `cx`, an inline
-  helper printed after the component (`class={cx("badge", props.tone, { active: props.active })}`):
+  class itself (``class={`tone-${props.tone}`}``). Any other class goes through `cx`, a helper
+  shared in the tree's `_unframework/cx.ts` (`class={cx("badge", props.tone, { active: props.active })}`):
   Solid's `class` takes one string, and a `classList` beside a dynamic `class` would lose its
   toggles when the class changes. The `class-binding` capability is emulated.
 - `style={{ color: "red", "margin-top": props.gap, "--gap": props.size }}`, with kebab-case
@@ -182,7 +182,7 @@ The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 | `onMounted(cb)`, `onUnmounted(cb)`            | `onMount(cb)`, `onMount(() => onCleanup(cb))`, before the first watcher                                                  |
 | `useTemplateRef<T>()`                         | `let field: T \| null = null`, set and emptied by the element's `ref` callback                                           |
 | `useId()`                                     | `` `uf-id-${createUniqueId()}` ``                                                                                        |
-| `await nextTick()`                            | `await nextTick()`, an inline helper resolving a promise                                                                 |
+| `await nextTick()`                            | `await nextTick()`, a shared helper resolving a promise                                                                  |
 | `if (isDev) { … }`                            | `if (isDev) { … }`, `isDev` from `solid-js/web`, in `untrack` at the top level where it reads a prop or state (ADR-0117) |
 
 - Signals apply a write at once: a read after a write sees it, after `await` too, and Solid
@@ -275,20 +275,20 @@ it in the function child of `<Show>`, inside a `<Suspense>` with no fallback:
 
 ```tsx
 const [awaited] = createResource(async () => {
-  const user = await loadUser(props.id);
-  return { user };
+	const user = await loadUser(props.id);
+	return { user };
 });
 
 return (
-  <Suspense>
-    <Show when={awaited()}>
-      {(resolved) => {
-        const { user } = resolved();
-        const [visits, setVisits] = createSignal(user.visits);
-        return <p>…</p>;
-      }}
-    </Show>
-  </Suspense>
+	<Suspense>
+		<Show when={awaited()}>
+			{(resolved) => {
+				const { user } = resolved();
+				const [visits, setVisits] = createSignal(user.visits);
+				return <p>…</p>;
+			}}
+		</Show>
+	</Suspense>
 );
 ```
 
@@ -320,13 +320,13 @@ calls them.
 import { createSignal } from "solid-js";
 
 export function useToggle(initial: boolean) {
-  const [on, setOn] = createSignal(initial);
+	const [on, setOn] = createSignal(initial);
 
-  function toggle() {
-    setOn(!on());
-  }
+	function toggle() {
+		setOn(!on());
+	}
 
-  return { on, toggle };
+	return { on, toggle };
 }
 ```
 
@@ -398,6 +398,23 @@ Every name the output introduces (`props`, `rawProps`, `_props`, `defaults`, `cx
 claimed around the source's own names, so none captures another. The target reports one
 difference, `composable-effect-order` (UF4005, info); what else Solid cannot render as the other
 targets do is the analyser's to reject (ADR-0033).
+
+The shared helpers are modules of their own in the tree's `_unframework/` (ADR-0121), put through
+`EmitContext.helper` and printed by `src/shared.ts`: `cx.ts`, `styleProperties.ts`,
+`scopeAttributes.ts`, `modelText.ts`, `selectOptions.ts`, `nextTick.ts`, `queueHook.ts`,
+`KeyedFor.tsx`, `Teleport.tsx` and `Transition.tsx`. Each imports Solid by its own names, so its
+text depends only on the helper. One that holds JSX is a `.tsx` module, which Solid's compiler
+transforms as it does a component.
+
+A component, a composable and a directive module import each helper without the extension:
+`import { cx } from "./_unframework/cx"`. The components of one source import it under one name,
+which is `cx as cx_1` where one of them declares `cx`, since a source's outputs are joined into one module
+where it is loaded (ADR-0053). A context without `helper` gets every helper printed inline after
+the component, as before.
+
+The watchers and their scheduler stay inline, since each output tailors them and their queue is
+the file's. So do `restAttributes`, `textCaret`, `toggle` and `selectedValues`, each short and in
+few files.
 
 | Capability                                     | Cell                                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -475,8 +492,8 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   remove it, so a root's own style is spread before the consumer's:
   `style={{ ...{ padding: "2px" }, ...props.style }}`, and a consumer's `undefined` removes the
   root's declaration, as Vue's merge does. A root's static class merges with a conditional
-  rather than `cx`, so two components of one module, which the unplugin joins into one file,
-  declare no helper twice; a root's class from parts or from a spread merges through `cx`.
+  rather than `cx`, so it calls no helper. A root's class from parts or from a spread merges
+  through `cx`.
 - A bound `<textarea>`'s `ref` callback, `textCaret`, sets its text again, so a hydrated field's
   caret is after its text, as a client render leaves it (ADR-0095).
 - Solid's server writes a `<select>`'s and a `<textarea>`'s `value` as an attribute, so a
@@ -514,7 +531,7 @@ child's `-s` on the content filled into a child whose sheet uses `:slotted()`. A
 takes the scope attributes of its styled parents: a root element or component that takes what falls
 through takes them with it, and any other root node, a `<component is>` or each branch of a root
 conditional that renders one alone (`scopeRoots`, where Vue's fallthrough reaches), takes
-`{...scopeAttributes(props)}`. The inline helper reads the props' names alone, keeps the `data-uf-*`
+`{...scopeAttributes(props)}`. The shared helper reads the props' names alone, keeps the `data-uf-*`
 ones, and so runs no getter. Where the props' rest is spread on an element other than the root, the
 root keeps them, and `restAttributes` leaves them out of the rest. A spread makes Solid's compiler
 set the element's attributes through `spread` and `mergeProps`, and render it on the server with

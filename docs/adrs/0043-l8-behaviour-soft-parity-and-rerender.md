@@ -130,20 +130,20 @@ From `props/destructured-defaults`:
 
 ```ts
 describeTargets("props/destructured-defaults", () => {
-  it("renders every default when only the required prop is given", async () => {
-    const view = await mountScenario(Notice, "defaults");
-    await view.expectParity("defaults");
-    await expect.element(view.getByRole("heading", { name: "Notice" })).toBeVisible();
-  });
+	it("renders every default when only the required prop is given", async () => {
+		const view = await mountScenario(Notice, "defaults");
+		await view.expectParity("defaults");
+		await expect.element(view.getByRole("heading", { name: "Notice" })).toBeVisible();
+	});
 
-  // Browser-only: JSON cannot carry `undefined`, so this scenario has no SSR twin.
-  it("takes the defaults for props passed explicitly as undefined", async () => {
-    const view = await mount(Notice, {
-      props: { message: "Backups run every night.", title: undefined, tone: undefined /* … */ },
-    });
-    await view.expectParity("explicit-undefined");
-    await expect.element(view.getByRole("heading", { name: "Notice" })).toBeVisible();
-  });
+	// Browser-only: JSON cannot carry `undefined`, so this scenario has no SSR twin.
+	it("takes the defaults for props passed explicitly as undefined", async () => {
+		const view = await mount(Notice, {
+			props: { message: "Backups run every night.", title: undefined, tone: undefined /* … */ },
+		});
+		await view.expectParity("explicit-undefined");
+		await expect.element(view.getByRole("heading", { name: "Notice" })).toBeVisible();
+	});
 });
 ```
 

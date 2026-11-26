@@ -11,62 +11,62 @@ import { defineTestConfig } from "./config/index.ts";
 
 /** Where the command runs and writes: the shape of `@unframework.dev/cli`'s `Io`. */
 export interface TestIo {
-  cwd: string;
-  stdout(text: string): void;
-  stderr(text: string): void;
+	cwd: string;
+	stdout(text: string): void;
+	stderr(text: string): void;
 }
 
 /** The command's arguments, read. */
 export interface TestArguments {
-  targets: string[];
-  update: boolean;
-  /** What follows `--`, for Vitest. */
-  vitest: string[];
+	targets: Array<string>;
+	update: boolean;
+	/** What follows `--`, for Vitest. */
+	vitest: Array<string>;
 }
 
 /** The files a project's own Vitest configuration may have, the first one found winning. */
 const VITEST_CONFIGS = [
-  "vitest.config.ts",
-  "vitest.config.mts",
-  "vitest.config.js",
-  "vitest.config.mjs",
+	"vitest.config.ts",
+	"vitest.config.mts",
+	"vitest.config.js",
+	"vitest.config.mjs",
 ];
 
 /** Reads the arguments, throwing on a usage error: the CLI exits 2 with the message. */
-export function parseTestArguments(args: readonly string[]): TestArguments {
-  const parsed: TestArguments = { targets: [], update: false, vitest: [] };
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index]!;
-    if (arg === "--") {
-      parsed.vitest = args.slice(index + 1);
-      break;
-    }
-    if (arg === "--update") {
-      parsed.update = true;
-      continue;
-    }
-    const target = /^--target(?:=(.*))?$/s.exec(arg);
-    if (target) {
-      const value = target[1] ?? args[(index += 1)];
-      if (value === undefined || value === "" || value.startsWith("-")) {
-        throw new Error("--target needs a target's name, such as --target react.");
-      }
-      parsed.targets.push(value);
-      continue;
-    }
-    throw new Error(
-      `unknown argument "${arg}". Pass Vitest's own options after --, such as unframework test -- --reporter=json.`,
-    );
-  }
-  const unknown = parsed.targets.filter((name) => !isTargetSelector(name));
-  if (unknown.length) {
-    throw new Error(
-      `unknown target${unknown.length > 1 ? "s" : ""} ${unknown.join(", ")}. The targets are ${TARGET_SELECTORS.join(", ")}.`,
-    );
-  }
-  // By id from here: `solid@2` runs the `solid2` projects (ADR-0102).
-  parsed.targets = parsed.targets.map((name) => (isTargetSelector(name) ? targetName(name) : name));
-  return parsed;
+export function parseTestArguments(args: ReadonlyArray<string>): TestArguments {
+	const parsed: TestArguments = { targets: [], update: false, vitest: [] };
+	for (let index = 0; index < args.length; index += 1) {
+		const arg = args[index]!;
+		if (arg === "--") {
+			parsed.vitest = args.slice(index + 1);
+			break;
+		}
+		if (arg === "--update") {
+			parsed.update = true;
+			continue;
+		}
+		const target = /^--target(?:=(.*))?$/s.exec(arg);
+		if (target) {
+			const value = target[1] ?? args[(index += 1)];
+			if (value === undefined || value === "" || value.startsWith("-")) {
+				throw new Error("--target needs a target's name, such as --target react.");
+			}
+			parsed.targets.push(value);
+			continue;
+		}
+		throw new Error(
+			`unknown argument "${arg}". Pass Vitest's own options after --, such as unframework test -- --reporter=json.`,
+		);
+	}
+	const unknown = parsed.targets.filter((name) => !isTargetSelector(name));
+	if (unknown.length) {
+		throw new Error(
+			`unknown target${unknown.length > 1 ? "s" : ""} ${unknown.join(", ")}. The targets are ${TARGET_SELECTORS.join(", ")}.`,
+		);
+	}
+	// By id from here: `solid@2` runs the `solid2` projects (ADR-0102).
+	parsed.targets = parsed.targets.map((name) => (isTargetSelector(name) ? targetName(name) : name));
+	return parsed;
 }
 
 /**
@@ -74,54 +74,65 @@ export function parseTestArguments(args: readonly string[]): TestArguments {
  * usage or configuration error, which it reports, as the CLI's other commands do (ADR-0076).
  * Vitest's own options (`--reporter`, a file filter) follow `--`.
  */
-export async function run(args: string[], io: TestIo): Promise<number> {
-  const parsed = parseTestArguments(args);
-  const help = parsed.vitest.some((arg) => arg === "--help" || arg === "-h");
-  const { filter, options } = parseCLI(["vitest", ...parsed.vitest]);
-  // `-- --help` is Vitest's help, which parseCLI has printed: nothing to run.
-  if (help) return 0;
-  if (options.update !== undefined && options.update !== false) {
-    throw new Error(
-      "Vitest's --update does not update the shared expectations: run unframework test --update.",
-    );
-  }
-  const config = VITEST_CONFIGS.map((name) => join(io.cwd, name)).find((file) => existsSync(file));
-  // The targets and the mode reach the project's configuration through the environment, whether
-  // it is the project's own file or `defineTestConfig()` here.
-  const saved = {
-    targets: process.env.UF_TARGETS,
-    update: process.env.UF_UPDATE,
-    cli: process.env.UF_TEST_CLI,
-  };
-  const exitCode = process.exitCode;
-  if (parsed.targets.length) process.env.UF_TARGETS = parsed.targets.join(",");
-  else delete process.env.UF_TARGETS;
-  if (parsed.update) process.env.UF_UPDATE = "1";
-  else delete process.env.UF_UPDATE;
-  process.env.UF_TEST_CLI = "1";
-  try {
-    // An invalid configuration is a configuration error, before Vitest starts.
-    const inline = config === undefined ? await defineTestConfig({ root: io.cwd }) : undefined;
-    process.exitCode = 0;
-    const vitest = await startVitest(
-      filter,
-      { ...options, root: io.cwd, run: true, watch: false, config: config ?? false },
-      inline,
-    );
-    const failed =
-      process.exitCode !== 0 ||
-      vitest.state.getCountOfFailedTests() > 0 ||
-      vitest.state.getUnhandledErrors().length > 0;
-    return failed ? 1 : 0;
-  } finally {
-    process.exitCode = exitCode;
-    restore("UF_TARGETS", saved.targets);
-    restore("UF_UPDATE", saved.update);
-    restore("UF_TEST_CLI", saved.cli);
-  }
+export async function run(args: Array<string>, io: TestIo): Promise<number> {
+	const parsed = parseTestArguments(args);
+	const help = parsed.vitest.some((arg) => arg === "--help" || arg === "-h");
+	const { filter, options } = parseCLI(["vitest", ...parsed.vitest]);
+	// `-- --help` is Vitest's help, which parseCLI has printed: nothing to run.
+	if (help) {
+		return 0;
+	}
+	if (options.update !== undefined && options.update !== false) {
+		throw new Error(
+			"Vitest's --update does not update the shared expectations: run unframework test --update.",
+		);
+	}
+	const config = VITEST_CONFIGS.map((name) => join(io.cwd, name)).find((file) => existsSync(file));
+	// The targets and the mode reach the project's configuration through the environment, whether
+	// it is the project's own file or `defineTestConfig()` here.
+	const saved = {
+		targets: process.env.UF_TARGETS,
+		update: process.env.UF_UPDATE,
+		cli: process.env.UF_TEST_CLI,
+	};
+	const exitCode = process.exitCode;
+	if (parsed.targets.length) {
+		process.env.UF_TARGETS = parsed.targets.join(",");
+	} else {
+		delete process.env.UF_TARGETS;
+	}
+	if (parsed.update) {
+		process.env.UF_UPDATE = "1";
+	} else {
+		delete process.env.UF_UPDATE;
+	}
+	process.env.UF_TEST_CLI = "1";
+	try {
+		// An invalid configuration is a configuration error, before Vitest starts.
+		const inline = config === undefined ? await defineTestConfig({ root: io.cwd }) : undefined;
+		process.exitCode = 0;
+		const vitest = await startVitest(
+			filter,
+			{ ...options, root: io.cwd, run: true, watch: false, config: config ?? false },
+			inline,
+		);
+		const failed =
+			process.exitCode !== 0 ||
+			vitest.state.getCountOfFailedTests() > 0 ||
+			vitest.state.getUnhandledErrors().length > 0;
+		return failed ? 1 : 0;
+	} finally {
+		process.exitCode = exitCode;
+		restore("UF_TARGETS", saved.targets);
+		restore("UF_UPDATE", saved.update);
+		restore("UF_TEST_CLI", saved.cli);
+	}
 }
 
 function restore(name: string, value: string | undefined): void {
-  if (value === undefined) delete process.env[name];
-  else process.env[name] = value;
+	if (value === undefined) {
+		delete process.env[name];
+	} else {
+		process.env[name] = value;
+	}
 }

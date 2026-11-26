@@ -3,11 +3,11 @@
 // compiler derives from the IR and the render-parity kit that holds the targets to it agree.
 
 import type {
-  BoundAttribute,
-  ElementNode,
-  RenderNode,
-  SpreadAttribute,
-  StaticAttribute,
+	BoundAttribute,
+	ElementNode,
+	RenderNode,
+	SpreadAttribute,
+	StaticAttribute,
 } from "./types.ts";
 
 /**
@@ -24,39 +24,51 @@ import type {
  * and a bound or spread `disabled` is not.
  */
 export function listBoxSize(
-  element: ElementNode,
+	element: ElementNode,
 ): StaticAttribute | BoundAttribute | SpreadAttribute | undefined {
-  if (element.tag !== "select" || hasStaticAttribute(element, "multiple")) return undefined;
-  const size = sizeOf(element);
-  if (!size) return undefined;
-  if (size.kind === "Static") {
-    if (size.value === true) return undefined;
-    const displaySize = parseNonNegativeInteger(size.value);
-    if (displaySize === undefined || displaySize <= 1) return undefined;
-  }
-  return hasSelectableOption(element, element.children) ? size : undefined;
+	if (element.tag !== "select" || hasStaticAttribute(element, "multiple")) {
+		return undefined;
+	}
+	const size = sizeOf(element);
+	if (!size) {
+		return undefined;
+	}
+	if (size.kind === "Static") {
+		if (size.value === true) {
+			return undefined;
+		}
+		const displaySize = parseNonNegativeInteger(size.value);
+		if (displaySize === undefined || displaySize <= 1) {
+			return undefined;
+		}
+	}
+	return hasSelectableOption(element, element.children) ? size : undefined;
 }
 
 /** The attribute that sets an element's `size`: a static or bound one, or a spread's key. */
 function sizeOf(
-  element: ElementNode,
+	element: ElementNode,
 ): StaticAttribute | BoundAttribute | SpreadAttribute | undefined {
-  for (const attribute of element.attributes) {
-    if (attribute.kind === "Static" || attribute.kind === "Bound") {
-      if (attribute.name === "size") return attribute;
-    } else if (attribute.kind === "Spread" && attribute.keys.some(({ name }) => name === "size")) {
-      return attribute;
-    }
-  }
-  return undefined;
+	for (const attribute of element.attributes) {
+		if (attribute.kind === "Static" || attribute.kind === "Bound") {
+			if (attribute.name === "size") {
+				return attribute;
+			}
+		} else if (attribute.kind === "Spread" && attribute.keys.some(({ name }) => name === "size")) {
+			return attribute;
+		}
+	}
+	return undefined;
 }
 
 /** HTML's rules for parsing non-negative integers: `undefined` where they fail. */
 function parseNonNegativeInteger(value: string): number | undefined {
-  const match = /^[\t\n\f\r ]*([+-]?)(\d+)/.exec(value);
-  if (!match) return undefined;
-  const number = Number(match[2]);
-  return match[1] === "-" && number !== 0 ? undefined : number;
+	const match = /^[\t\n\f\r ]*([+-]?)(\d+)/.exec(value);
+	if (!match) {
+		return undefined;
+	}
+	const number = Number(match[2]);
+	return match[1] === "-" && number !== 0 ? undefined : number;
 }
 
 /**
@@ -64,45 +76,47 @@ function parseNonNegativeInteger(value: string): number | undefined {
  * not disabled, by its own `disabled` or by its parent `<optgroup>`'s, as HTML decides. The
  * branches of a conditional and the body of a list count as the parent's children.
  */
-function hasSelectableOption(parent: ElementNode, children: readonly RenderNode[]): boolean {
-  return children.some((child) => {
-    switch (child.kind) {
-      case "Element":
-        if (child.tag !== "option") return hasSelectableOption(child, child.children);
-        return (
-          !hasStaticAttribute(child, "disabled") &&
-          !(parent.tag === "optgroup" && hasStaticAttribute(parent, "disabled"))
-        );
-      case "If":
-        return child.branches.some((branch) => hasSelectableOption(parent, branch.children));
-      case "For":
-        return hasSelectableOption(parent, [child.body]);
-      // A transition's child renders in its place (ADR-0100).
-      case "Transition":
-        return hasSelectableOption(parent, child.children);
-      case "Text":
-      case "Interpolation":
-      // A teleport's content mounts into another element, never into the list box (ADR-0098).
-      case "Teleport":
-        return false;
-      // What a component or a slot renders is the run time's: taken to be an option.
-      case "Component":
-      case "SlotOutlet":
-      case "Dynamic":
-        return true;
-      default:
-        return unreachable(child);
-    }
-  });
+function hasSelectableOption(parent: ElementNode, children: ReadonlyArray<RenderNode>): boolean {
+	return children.some((child) => {
+		switch (child.kind) {
+			case "Element":
+				if (child.tag !== "option") {
+					return hasSelectableOption(child, child.children);
+				}
+				return (
+					!hasStaticAttribute(child, "disabled") &&
+					!(parent.tag === "optgroup" && hasStaticAttribute(parent, "disabled"))
+				);
+			case "If":
+				return child.branches.some((branch) => hasSelectableOption(parent, branch.children));
+			case "For":
+				return hasSelectableOption(parent, [child.body]);
+			// A transition's child renders in its place (ADR-0100).
+			case "Transition":
+				return hasSelectableOption(parent, child.children);
+			case "Text":
+			case "Interpolation":
+			// A teleport's content mounts into another element, never into the list box (ADR-0098).
+			case "Teleport":
+				return false;
+			// What a component or a slot renders is the run time's: taken to be an option.
+			case "Component":
+			case "SlotOutlet":
+			case "Dynamic":
+				return true;
+			default:
+				return unreachable(child);
+		}
+	});
 }
 
 /** Whether an element has a static attribute: present whatever happens at run time. */
 function hasStaticAttribute(element: ElementNode, name: string): boolean {
-  return element.attributes.some(
-    (attribute) => attribute.kind === "Static" && attribute.name === name,
-  );
+	return element.attributes.some(
+		(attribute) => attribute.kind === "Static" && attribute.name === name,
+	);
 }
 
 function unreachable(value: never): never {
-  throw new Error(`Unexpected render node: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected render node: ${JSON.stringify(value)}`);
 }

@@ -10,7 +10,7 @@ import unframework from "@unframework.dev/unplugin/vite";
 import vue from "@vitejs/plugin-vue";
 
 export default {
-  plugins: [unframework({ target: "vue" }), vue()],
+	plugins: [unframework({ target: "vue" }), vue()],
 };
 ```
 
@@ -25,7 +25,7 @@ On Vite you can leave `target` out, and the framework's plugin in your configura
 
 ```ts
 export default {
-  plugins: [unframework(), vue()],
+	plugins: [unframework(), vue()],
 };
 ```
 
@@ -73,7 +73,7 @@ plugin first, as its installation guide does:
 import styleframe from "styleframe/plugin/vite";
 
 export default {
-  plugins: [styleframe(), unframework({ target: "vue" }), vue()],
+	plugins: [styleframe(), unframework({ target: "vue" }), vue()],
 };
 ```
 
@@ -96,6 +96,7 @@ integration harness does (`sourceUtilities` in `tests/integration/harness/stylef
 | `transformSource` | Called with a `.uf.tsx` or `.uf.ts` file's absolute path, with forward slashes, and its text, each time the plugin reads it, on the first load and on a hot update alike. The string it returns (or a promise of one) is what compiles, and `undefined` compiles the file as written. A hook that throws fails that load, with an error that names the file and the hook's message. `unframework preview` binds its controls to an example's components this way (ADR-0113). |
 | `plugins`         | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `format`          | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                                                                                                                                                                                  |
+| `helperRoot`      | Gives the directory, absolute, whose `_unframework/` holds the shared helper modules of a `.uf.tsx` or `.uf.ts` file's outputs (ADR-0121), given the file's absolute path with forward slashes: its own directory or one above it, inside its graph. Defaults to the graph's root, the project's or the package's, so every module of a graph imports one module of each helper. The integration harness gives each case's directory, where its golden files keep theirs.    |
 | `passThrough`     | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created.                                                                                                                                                                 |
 
 ## The dev server's allow list
@@ -166,6 +167,17 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   map goes on through its module's, and Astro's load map has a segment at column 0 of each line,
   which is where its compiler traces from (ADR-0074, ADR-0078). L14 covers these in dev only.
   An output with no map loads as `{ code }`. A scoped sheet's load is `{ code }` too, since its map has no segments.
+- A shared helper module (ADR-0121) loads under its own id, `<helper root>/_unframework/<target>/<file>`,
+  which no file holds: `resolveId` gives it for a relative import of
+  `<helper root>/_unframework/<file>` from one of the plugin's modules, a Qwik segment split off
+  one, or another helper module, and for its id or that path coming back, once a compile has
+  emitted it. The target's name in the id keeps two plugins for different targets in one server,
+  such as React and Solid islands in one Astro app, from sharing a module where both emit a helper
+  of one name, like `cx.ts`. `load` gives the compile's text and its map, which names the module
+  itself. Every module of a graph imports one id of each helper, so a bundle holds it once per
+  target. A project file at `<helper root>/_unframework/<file>` stays the project's: the plugin
+  never serves the helper in its place, and the module that would import the helper fails with
+  UF1104, as the CLI reports the same layout.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,
@@ -178,8 +190,9 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   which ends in the extension the framework's plugin claims.
 - That error stops two components that share a type declared in their own file: each output
   declares the types its props reach, so `joinModules` reports the type as "declared by A.tsx and
-  B.tsx" (ADR-0034). Two outputs that print the same inline helper, such as React's `cx`, clash
-  the same way, and so do two imports from one module whose sets differ but share a name
+  B.tsx" (ADR-0034). Two outputs that print the same inline helper clash the same way. A helper
+  shared in `_unframework/`, such as React's `cx`, doesn't: every component of a source imports it
+  alike, so the join writes the import once (ADR-0121). So do two imports from one module whose sets differ but share a name
   (Angular's `Component` beside `Component` and `input`, Solid's `Show` beside `Show` and `For`,
   or `{ CardProps }` beside `{ CardProps, Tone }` from a shared `.ts` module): only an identical
   import is written once, and a name two imports bring in is declared twice. Give each such
@@ -314,8 +327,8 @@ A package can ship its `.uf.tsx` and `.uf.ts` files for its consumers to compile
 
 ```json
 {
-  "name": "@acme/ui",
-  "exports": { "./source/*": "./src/*", "./button": "./src/Button.uf.tsx" }
+	"name": "@acme/ui",
+	"exports": { "./source/*": "./src/*", "./button": "./src/Button.uf.tsx" }
 }
 ```
 
@@ -370,12 +383,17 @@ relative path, so importing a package's component from one reports UF1202.
 
 On Vite, the pre plugin, named `unframework`, exposes `api.getCompiled(id)`: the code of the last load of
 a module id that finished, in any environment, or `undefined` when the id has not loaded or that
-load failed. A load in progress never clears it. Angular's `ngtscVirtual` reads the virtual
-sources of child components with it:
+load failed. A load in progress never clears it. For a shared helper module, by its id,
+`<helper root>/_unframework/<target>/<file>`, or by the path its outputs import,
+`<helper root>/_unframework/<file>`, it gives the module's text once a compile has emitted it, as
+`load` serves it, and `undefined` where a project file sits at that path (ADR-0121). Angular's
+`ngtscVirtual` reads the virtual sources of child components and helper modules with it:
 
 ```ts
 const api = config.plugins.find((plugin) => plugin.name === "unframework")?.api;
 api.getCompiled("/abs/Child.uf.tsx.ts");
+api.getCompiled("/abs/_unframework/ScopeAttributes.ts");
+api.getCompiled("/abs/_unframework/angular/ScopeAttributes.ts");
 ```
 
 It exposes `api.getSheet(file)` too: the scoped sheet this target's last finished load of the
@@ -398,7 +416,7 @@ import unframework from "@unframework.dev/unplugin/astro";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  integrations: [unframework()],
+	integrations: [unframework()],
 });
 ```
 

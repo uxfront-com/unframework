@@ -8,9 +8,9 @@ import { expect } from "vitest";
 import Progress from "./Progress.uf.tsx";
 
 describeTargets("styles/keyframes", () => {
-  it("shows the animation's last frame", async () => {
-    const view = await mountScenario(Progress, "loaded");
-    await view.expectParity("loaded");
-    await expect.element(view.getByText("Loaded")).toBeVisible();
-  });
+	it("shows the animation's last frame", async () => {
+		const view = await mountScenario(Progress, "loaded");
+		await view.expectParity("loaded");
+		await expect.element(view.getByText("Loaded")).toBeVisible();
+	});
 });

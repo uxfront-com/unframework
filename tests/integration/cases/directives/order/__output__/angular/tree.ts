@@ -1,15 +1,13 @@
+import { Fallthrough } from "./_unframework/Fallthrough";
+import type { Listeners } from "./_unframework/Listeners";
+import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { queueHook } from "./_unframework/queueHook";
 import Note from "./note";
-import { isPlatformBrowser } from "@angular/common";
 import {
   Component,
   DestroyRef,
   Directive,
   ElementRef,
-  type OnChanges,
-  type OnDestroy,
-  type OnInit,
-  PLATFORM_ID,
-  Renderer2,
   afterRenderEffect,
   inject,
   input,
@@ -18,80 +16,6 @@ import {
 } from "@angular/core";
 
 const TRACE = "directive-trace";
-
-/** The scope attributes taken off each host, for the roots its component renders later. */
-const scopes = new WeakMap<Element, string[]>();
-
-/**
- * Gives a root node of its component the scope attributes the component's styled parents put on
- * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
- */
-@Directive({ selector: "[ufScope]" })
-export class ScopeAttributes implements OnInit {
-  readonly ufScope = input.required<HTMLElement>();
-  private readonly element = inject<ElementRef<Element>>(ElementRef);
-  private readonly renderer = inject(Renderer2);
-
-  ngOnInit(): void {
-    const host = this.ufScope();
-    let names = scopes.get(host);
-    if (!names) {
-      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
-      for (const name of names) this.renderer.removeAttribute(host, name);
-      scopes.set(host, names);
-    }
-    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
-  }
-}
-
-/** A native listener of each event a consumer passes, by the event's name (ADR-0118). */
-type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
-
-/**
- * Puts what a consumer passes the component, and the component does not declare, on the element
- * that takes it (ADR-0118): the attributes, the consumer's winning over the element's own, and
- * the native listeners, which run after the element's own.
- */
-@Directive({ selector: "[ufFallthrough]" })
-export class Fallthrough implements OnChanges, OnDestroy {
-  readonly ufFallthrough = input.required<{
-    attributes: Record<string, unknown> | undefined;
-    listeners: Listeners | undefined;
-  }>();
-  private readonly element = inject<ElementRef<Element>>(ElementRef);
-  private readonly renderer = inject(Renderer2);
-  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly listening = new Map<string, { handler: unknown; stop: () => void }>();
-  private written: Record<string, unknown> = {};
-
-  ngOnChanges(): void {
-    const element = this.element.nativeElement;
-    const { attributes = {}, listeners = {} } = this.ufFallthrough();
-    for (const name of Object.keys(this.written)) {
-      if (!(name in attributes)) this.renderer.removeAttribute(element, name);
-    }
-    for (const [name, value] of Object.entries(attributes)) {
-      if (value === null || value === undefined) this.renderer.removeAttribute(element, name);
-      else this.renderer.setAttribute(element, name, String(value));
-    }
-    this.written = attributes;
-    if (!this.browser) return;
-    const handlers = new Map(Object.entries(listeners));
-    for (const [event, { handler, stop }] of this.listening) {
-      if (handlers.get(event) === handler) continue;
-      stop();
-      this.listening.delete(event);
-    }
-    for (const [event, handler] of handlers) {
-      if (handler === undefined || this.listening.has(event)) continue;
-      this.listening.set(event, { handler, stop: this.renderer.listen(element, event, handler) });
-    }
-  }
-
-  ngOnDestroy(): void {
-    for (const { stop } of this.listening.values()) stop();
-  }
-}
 
 /** The hooks of a directive, which `runDirective` runs on its element. */
 interface DirectiveHooks<E extends Element, T> {
@@ -253,61 +177,6 @@ function runDirective<E extends Element, T>(
       if (taken.mounted) queueHook(element, () => directive.unmounted?.(element), "unmounted");
     });
   };
-}
-
-/**
- * Runs a directive's hook once the turn ends, as Vue runs them: every `unmounted` first, then
- * a descendant's before its ancestor's and siblings' in document order, one element's in the
- * order they came, with the hooks every other output queued.
- */
-function queueHook(
-  element: Element,
-  run: () => void,
-  hook: "mounted" | "updated" | "unmounted",
-): void {
-  const key: unique symbol = Symbol.for("unframework.directive-hooks@2");
-  const scope = globalThis as typeof globalThis & {
-    [key]?: { element: Element; run: () => void; hook: "mounted" | "updated" | "unmounted" }[];
-  };
-  const queued = scope[key];
-  if (queued) {
-    queued.push({ element, run, hook });
-    return;
-  }
-  scope[key] = [{ element, run, hook }];
-  queueMicrotask(() => {
-    const hooks = scope[key] ?? [];
-    scope[key] = undefined;
-    // Every `unmounted` runs first, but one after its own element's `mounted` this turn, as
-    // StrictMode's, which keeps its place among the rest. A leaving one moves up together
-    // with the element's hooks before it, which keep their order.
-    const first = new Set<(typeof hooks)[number]>();
-    const entered = new Set<Element>();
-    for (const each of hooks) {
-      if (each.hook === "mounted") entered.add(each.element);
-      if (each.hook !== "unmounted" || entered.has(each.element)) continue;
-      for (const earlier of hooks) {
-        if (earlier.element === each.element) first.add(earlier);
-        if (earlier === each) break;
-      }
-    }
-    hooks.sort((a, b) => {
-      if (first.has(a) !== first.has(b)) return first.has(a) ? -1 : 1;
-      if (a.element === b.element) return 0;
-      if (a.element.contains(b.element)) return 1;
-      if (b.element.contains(a.element)) return -1;
-      return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING
-        ? -1
-        : 1;
-    });
-    for (const each of hooks) {
-      try {
-        each.run();
-      } catch (error) {
-        reportError(error);
-      }
-    }
-  });
 }
 
 @Directive({ selector: "[vTrace]" })

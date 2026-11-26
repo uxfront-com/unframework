@@ -1,3 +1,3 @@
 export interface Extra {
-  note: string;
+	note: string;
 }

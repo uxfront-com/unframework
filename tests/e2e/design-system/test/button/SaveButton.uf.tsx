@@ -3,5 +3,5 @@ import Button from "../../src/Button.uf.tsx";
 import type { ButtonVariant } from "../../src/types";
 
 export default function SaveButton({ variant }: { variant?: ButtonVariant }) {
-  return <Button variant={variant}>Save</Button>;
+	return <Button variant={variant}>Save</Button>;
 }

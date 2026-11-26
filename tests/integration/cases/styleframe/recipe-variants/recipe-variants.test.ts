@@ -6,15 +6,15 @@ import { expect } from "vitest";
 import Button from "./Button.uf.tsx";
 
 describeTargets("styleframe/recipe-variants", () => {
-  it("renders the default variants", async () => {
-    const view = await mountScenario(Button, "default");
-    await view.expectParity("default");
-    await expect.element(view.getByRole("button", { name: "Cancel" })).toBeVisible();
-  });
+	it("renders the default variants", async () => {
+		const view = await mountScenario(Button, "default");
+		await view.expectParity("default");
+		await expect.element(view.getByRole("button", { name: "Cancel" })).toBeVisible();
+	});
 
-  it("renders the variants the props choose", async () => {
-    const view = await mountScenario(Button, "large-primary");
-    await view.expectParity("large-primary");
-    await expect.element(view.getByRole("button", { name: "Publish" })).toBeVisible();
-  });
+	it("renders the variants the props choose", async () => {
+		const view = await mountScenario(Button, "large-primary");
+		await view.expectParity("large-primary");
+		await expect.element(view.getByRole("button", { name: "Publish" })).toBeVisible();
+	});
 });

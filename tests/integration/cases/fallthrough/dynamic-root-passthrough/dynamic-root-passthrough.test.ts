@@ -12,84 +12,84 @@ import Page from "./Page.uf.tsx";
 
 /** The attributes a consumer passes reach the element that renders, whichever tag it is. */
 async function expectAttributes(view: View, role: "link" | "button") {
-  const direct = view.getByRole(role, { name: "Direct" });
-  await expect.element(direct).toHaveAttribute("id", "direct");
-  await expect.element(direct).toHaveAttribute("data-testid", "direct");
-  await expect.element(direct).toHaveAttribute("title", "Go");
-  await expect.element(direct).toHaveClass("base");
-  const chained = view.getByRole(role, { name: "Chained" });
-  await expect.element(chained).toHaveAttribute("id", "chained");
-  await expect.element(chained).toHaveAttribute("data-testid", "chained");
-  await expect.element(chained).toHaveAttribute("title", "Base");
-  await expect.element(chained).toHaveClass("base", "primary");
+	const direct = view.getByRole(role, { name: "Direct" });
+	await expect.element(direct).toHaveAttribute("id", "direct");
+	await expect.element(direct).toHaveAttribute("data-testid", "direct");
+	await expect.element(direct).toHaveAttribute("title", "Go");
+	await expect.element(direct).toHaveClass("base");
+	const chained = view.getByRole(role, { name: "Chained" });
+	await expect.element(chained).toHaveAttribute("id", "chained");
+	await expect.element(chained).toHaveAttribute("data-testid", "chained");
+	await expect.element(chained).toHaveAttribute("title", "Base");
+	await expect.element(chained).toHaveClass("base", "primary");
 }
 
 /** The log's entries, in order. */
-function entries(view: View): (string | null)[] {
-  const items = view.getByRole("list", { name: "Log" }).getByRole("listitem");
-  return items.elements().map((entry) => entry.textContent);
+function entries(view: View): Array<string | null> {
+	const items = view.getByRole("list", { name: "Log" }).getByRole("listitem");
+	return items.elements().map((entry) => entry.textContent);
 }
 
 describeTargets("fallthrough/dynamic-root-passthrough", () => {
-  it("puts the attributes on the link", async () => {
-    const view = await mount(Page);
-    await view.expectParity("initial");
-    await expectAttributes(view, "link");
-    await expect
-      .element(view.getByRole("link", { name: "Direct" }))
-      .toHaveAttribute("href", "#direct");
-  });
+	it("puts the attributes on the link", async () => {
+		const view = await mount(Page);
+		await view.expectParity("initial");
+		await expectAttributes(view, "link");
+		await expect
+			.element(view.getByRole("link", { name: "Direct" }))
+			.toHaveAttribute("href", "#direct");
+	});
 
-  it("moves the attributes as the tag changes", { requires: ["interactivity"] }, async () => {
-    const view = await mount(Page);
-    await view.user.click(view.getByRole("button", { name: "Toggle" }));
-    await view.expectParity("toggled");
-    await expectAttributes(view, "button");
-    await expect.element(view.getByRole("button", { name: "Direct" })).not.toHaveAttribute("href");
-    await expect.element(view.getByRole("link", { name: "Direct" })).not.toBeInTheDocument();
-  });
+	it("moves the attributes as the tag changes", { requires: ["interactivity"] }, async () => {
+		const view = await mount(Page);
+		await view.user.click(view.getByRole("button", { name: "Toggle" }));
+		await view.expectParity("toggled");
+		await expectAttributes(view, "button");
+		await expect.element(view.getByRole("button", { name: "Direct" })).not.toHaveAttribute("href");
+		await expect.element(view.getByRole("link", { name: "Direct" })).not.toBeInTheDocument();
+	});
 
-  it(
-    "fires the consumer's listeners from whichever tag renders",
-    { requires: ["interactivity", "event-semantics"] },
-    async () => {
-      const view = await mount(Page);
-      await view.user.tab();
-      await view.user.keyboard("a");
-      await view.user.click(view.getByRole("link", { name: "Direct" }));
-      await view.user.click(view.getByRole("link", { name: "Chained" }));
-      await view.user.click(view.getByRole("button", { name: "Toggle" }));
-      await view.user.click(view.getByRole("button", { name: "Direct" }));
-      await view.user.click(view.getByRole("button", { name: "Chained" }));
-      await view.expectParity("clicked");
-      expect(entries(view)).toEqual([
-        "keydown a on a",
-        "click on a",
-        "chained on a",
-        "click on button",
-        "chained on button",
-      ]);
-    },
-  );
+	it(
+		"fires the consumer's listeners from whichever tag renders",
+		{ requires: ["interactivity", "event-semantics"] },
+		async () => {
+			const view = await mount(Page);
+			await view.user.tab();
+			await view.user.keyboard("a");
+			await view.user.click(view.getByRole("link", { name: "Direct" }));
+			await view.user.click(view.getByRole("link", { name: "Chained" }));
+			await view.user.click(view.getByRole("button", { name: "Toggle" }));
+			await view.user.click(view.getByRole("button", { name: "Direct" }));
+			await view.user.click(view.getByRole("button", { name: "Chained" }));
+			await view.expectParity("clicked");
+			expect(entries(view)).toEqual([
+				"keydown a on a",
+				"click on a",
+				"chained on a",
+				"click on button",
+				"chained on button",
+			]);
+		},
+	);
 
-  it(
-    "holds the element that renders in the consumer's ref",
-    { requires: ["interactivity", "expose"] },
-    async () => {
-      const view = await mount(Page);
-      await view.user.click(view.getByRole("button", { name: "Focus direct" }));
-      await view.expectParity("direct-focused");
-      await expect.element(view.getByRole("link", { name: "Direct" })).toHaveFocus();
-      await view.user.click(view.getByRole("button", { name: "Focus chained" }));
-      await view.expectParity("chained-focused");
-      await expect.element(view.getByRole("link", { name: "Chained" })).toHaveFocus();
-      await view.user.click(view.getByRole("button", { name: "Toggle" }));
-      await view.user.click(view.getByRole("button", { name: "Focus direct" }));
-      await view.expectParity("button-focused");
-      await expect.element(view.getByRole("button", { name: "Direct" })).toHaveFocus();
-      await view.user.click(view.getByRole("button", { name: "Focus chained" }));
-      await view.expectParity("focused");
-      await expect.element(view.getByRole("button", { name: "Chained" })).toHaveFocus();
-    },
-  );
+	it(
+		"holds the element that renders in the consumer's ref",
+		{ requires: ["interactivity", "expose"] },
+		async () => {
+			const view = await mount(Page);
+			await view.user.click(view.getByRole("button", { name: "Focus direct" }));
+			await view.expectParity("direct-focused");
+			await expect.element(view.getByRole("link", { name: "Direct" })).toHaveFocus();
+			await view.user.click(view.getByRole("button", { name: "Focus chained" }));
+			await view.expectParity("chained-focused");
+			await expect.element(view.getByRole("link", { name: "Chained" })).toHaveFocus();
+			await view.user.click(view.getByRole("button", { name: "Toggle" }));
+			await view.user.click(view.getByRole("button", { name: "Focus direct" }));
+			await view.expectParity("button-focused");
+			await expect.element(view.getByRole("button", { name: "Direct" })).toHaveFocus();
+			await view.user.click(view.getByRole("button", { name: "Focus chained" }));
+			await view.expectParity("focused");
+			await expect.element(view.getByRole("button", { name: "Chained" })).toHaveFocus();
+		},
+	);
 });

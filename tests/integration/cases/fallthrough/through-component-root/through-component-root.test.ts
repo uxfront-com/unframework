@@ -8,26 +8,26 @@ import { expect } from "vitest";
 import Toolbar from "./Toolbar.uf.tsx";
 
 describeTargets("fallthrough/through-component-root", () => {
-  it("passes the attributes down to the root element", async () => {
-    const view = await mount(Toolbar);
-    await view.expectParity("initial");
-    const save = view.getByRole("button", { name: "Save draft" });
-    await expect.element(save).toHaveAttribute("id", "save");
-    await expect.element(save).toHaveClass("pressable", "save");
-    await expect.element(view.getByText("Clicks: 0")).toBeVisible();
-  });
+	it("passes the attributes down to the root element", async () => {
+		const view = await mount(Toolbar);
+		await view.expectParity("initial");
+		const save = view.getByRole("button", { name: "Save draft" });
+		await expect.element(save).toHaveAttribute("id", "save");
+		await expect.element(save).toHaveClass("pressable", "save");
+		await expect.element(view.getByText("Clicks: 0")).toBeVisible();
+	});
 
-  it("runs the listener from the root element", { requires: ["interactivity"] }, async () => {
-    const view = await mount(Toolbar);
-    await view.user.click(view.getByRole("button", { name: "Save draft" }));
-    await view.expectParity("clicked");
-    await expect.element(view.getByText("Clicks: 1")).toBeVisible();
-  });
+	it("runs the listener from the root element", { requires: ["interactivity"] }, async () => {
+		const view = await mount(Toolbar);
+		await view.user.click(view.getByRole("button", { name: "Save draft" }));
+		await view.expectParity("clicked");
+		await expect.element(view.getByText("Clicks: 1")).toBeVisible();
+	});
 
-  it("holds the root element in the ref", { requires: ["interactivity", "expose"] }, async () => {
-    const view = await mount(Toolbar);
-    await view.user.click(view.getByRole("button", { name: "Focus save" }));
-    await view.expectParity("focused");
-    await expect.element(view.getByRole("button", { name: "Save draft" })).toHaveFocus();
-  });
+	it("holds the root element in the ref", { requires: ["interactivity", "expose"] }, async () => {
+		const view = await mount(Toolbar);
+		await view.user.click(view.getByRole("button", { name: "Focus save" }));
+		await view.expectParity("focused");
+		await expect.element(view.getByRole("button", { name: "Save draft" })).toHaveFocus();
+	});
 });

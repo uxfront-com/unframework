@@ -23,55 +23,61 @@ const KIB_PER_GIB = 1024 * 1024;
 
 /** One live process, as `ps` lists it. */
 export interface ProcessInfo {
-  pid: number;
-  ppid: number;
-  pgid: number;
-  rssKib: number;
-  /** When it started: with the PID, what tells it from a later process on a reused PID. */
-  started: string;
+	pid: number;
+	ppid: number;
+	pgid: number;
+	rssKib: number;
+	/** When it started: with the PID, what tells it from a later process on a reused PID. */
+	started: string;
 }
 
 /** What `.reports/measure/<label>.json` holds. */
 export interface MeasureReport {
-  label: string;
-  command: string[];
-  /** `did-not-complete`: it could not start, or the tool stopped it. */
-  outcome: "completed" | "did-not-complete";
-  /** The command's exit status, or 128 plus the signal that ended it. */
-  exitStatus: number;
-  wallSeconds: number;
-  peakRssGib: number;
-  maxRssGib: number;
-  samples: number;
-  /**
-   * The processes of its process group and the PIDs it saw, still alive at exit, after a short
-   * grace, or `null` if `ps` could not say.
-   */
-  leftover: number | null;
+	label: string;
+	command: Array<string>;
+	/** `did-not-complete`: it could not start, or the tool stopped it. */
+	outcome: "completed" | "did-not-complete";
+	/** The command's exit status, or 128 plus the signal that ended it. */
+	exitStatus: number;
+	wallSeconds: number;
+	peakRssGib: number;
+	maxRssGib: number;
+	samples: number;
+	/**
+	 * The processes of its process group and the PIDs it saw, still alive at exit, after a short
+	 * grace, or `null` if `ps` could not say.
+	 */
+	leftover: number | null;
 }
 
 /** Reads `ps -o pid= -o ppid= -o pgid= -o rss= -o stat= -o lstart=`. A zombie holds nothing. */
-export function parseProcesses(output: string): ProcessInfo[] {
-  const processes: ProcessInfo[] = [];
-  for (const line of output.split("\n")) {
-    if (!line.trim()) continue;
-    const match = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(.+?)\s*$/.exec(line);
-    if (!match) throw new Error(`Cannot read this line of ps: ${JSON.stringify(line)}`);
-    if (match[5]!.startsWith("Z")) continue;
-    processes.push({
-      pid: Number(match[1]),
-      ppid: Number(match[2]),
-      pgid: Number(match[3]),
-      rssKib: Number(match[4]),
-      started: match[6]!,
-    });
-  }
-  return processes;
+export function parseProcesses(output: string): Array<ProcessInfo> {
+	const processes: Array<ProcessInfo> = [];
+	for (const line of output.split("\n")) {
+		if (!line.trim()) {
+			continue;
+		}
+		const match = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(.+?)\s*$/.exec(line);
+		if (!match) {
+			throw new Error(`Cannot read this line of ps: ${JSON.stringify(line)}`);
+		}
+		if (match[5]!.startsWith("Z")) {
+			continue;
+		}
+		processes.push({
+			pid: Number(match[1]),
+			ppid: Number(match[2]),
+			pgid: Number(match[3]),
+			rssKib: Number(match[4]),
+			started: match[6]!,
+		});
+	}
+	return processes;
 }
 
 /** What tells a process from a later one on the same PID. */
 export function identityOf(process: Pick<ProcessInfo, "pid" | "started">): string {
-  return `${process.pid} ${process.started}`;
+	return `${process.pid} ${process.started}`;
 }
 
 /**
@@ -80,172 +86,186 @@ export function identityOf(process: Pick<ProcessInfo, "pid" | "started">): strin
  * the group alone misses a browser, which Playwright starts in a group of its own.
  */
 export function membersOf(
-  processes: readonly ProcessInfo[],
-  root: number,
-  seen: ReadonlySet<string>,
-): ProcessInfo[] {
-  const members = new Set(
-    processes
-      .filter((entry) => entry.pid === root || entry.pgid === root || seen.has(identityOf(entry)))
-      .map((entry) => entry.pid),
-  );
-  for (let grew = true; grew;) {
-    grew = false;
-    for (const entry of processes) {
-      if (!members.has(entry.pid) && members.has(entry.ppid)) {
-        members.add(entry.pid);
-        grew = true;
-      }
-    }
-  }
-  return processes.filter((entry) => members.has(entry.pid));
+	processes: ReadonlyArray<ProcessInfo>,
+	root: number,
+	seen: ReadonlySet<string>,
+): Array<ProcessInfo> {
+	const members = new Set(
+		processes
+			.filter((entry) => entry.pid === root || entry.pgid === root || seen.has(identityOf(entry)))
+			.map((entry) => entry.pid),
+	);
+	for (let grew = true; grew;) {
+		grew = false;
+		for (const entry of processes) {
+			if (!members.has(entry.pid) && members.has(entry.ppid)) {
+				members.add(entry.pid);
+				grew = true;
+			}
+		}
+	}
+	return processes.filter((entry) => members.has(entry.pid));
 }
 
 /** Parses the arguments, and throws the usage on any it cannot read. */
-export function parseArgs(argv: readonly string[]): {
-  label: string;
-  maxRssGib: number;
-  command: string[];
+export function parseArgs(argv: ReadonlyArray<string>): {
+	label: string;
+	maxRssGib: number;
+	command: Array<string>;
 } {
-  const separator = argv.indexOf("--");
-  const command = argv.slice(separator + 1);
-  const [label, flag, value, ...rest] = argv.slice(0, separator);
-  const maxRssGib = flag === undefined ? DEFAULT_MAX_RSS_GIB : Number(value);
-  const valid =
-    separator !== -1 &&
-    Boolean(command[0]) &&
-    // The label names a file: nothing that leaves the directory.
-    label !== undefined &&
-    /^\w[\w.:-]*$/.test(label) &&
-    rest.length === 0 &&
-    (flag === undefined || flag === "--max-rss-gib") &&
-    Number.isFinite(maxRssGib) &&
-    maxRssGib > 0;
-  if (!valid) throw new Error(USAGE);
-  return { label, maxRssGib, command };
+	const separator = argv.indexOf("--");
+	const command = argv.slice(separator + 1);
+	const [label, flag, value, ...rest] = argv.slice(0, separator);
+	const maxRssGib = flag === undefined ? DEFAULT_MAX_RSS_GIB : Number(value);
+	const valid =
+		separator !== -1 &&
+		Boolean(command[0]) &&
+		// The label names a file: nothing that leaves the directory.
+		label !== undefined &&
+		/^\w[\w.:-]*$/.test(label) &&
+		rest.length === 0 &&
+		(flag === undefined || flag === "--max-rss-gib") &&
+		Number.isFinite(maxRssGib) &&
+		maxRssGib > 0;
+	if (!valid) {
+		throw new Error(USAGE);
+	}
+	return { label, maxRssGib, command };
 }
 
-function listProcesses(): ProcessInfo[] {
-  const fields = ["pid", "ppid", "pgid", "rss", "stat", "lstart"];
-  // One -o per field: POSIX reads everything after `=` in one as that field's header.
-  const args = ["-A", ...fields.flatMap((field) => ["-o", `${field}=`])];
-  const result = spawnSync("ps", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`ps exited ${result.status}: ${result.stderr}`);
-  return parseProcesses(result.stdout);
+function listProcesses(): Array<ProcessInfo> {
+	const fields = ["pid", "ppid", "pgid", "rss", "stat", "lstart"];
+	// One -o per field: POSIX reads everything after `=` in one as that field's header.
+	const args = ["-A", ...fields.flatMap((field) => ["-o", `${field}=`])];
+	const result = spawnSync("ps", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+	if (result.error) {
+		throw result.error;
+	}
+	if (result.status !== 0) {
+		throw new Error(`ps exited ${result.status}: ${result.stderr}`);
+	}
+	return parseProcesses(result.stdout);
 }
 
 const round = (value: number) => Math.round(value * 1000) / 1000;
 
 async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
-  const { label, maxRssGib, command } = options;
-  const started = performance.now();
-  // Before the spawn: a command may print at once, and whoever reads that line may signal this
-  // process, which must not then die and leave the tree running. A handler runs from the event
-  // loop, after this synchronous setup. Not `once`: a second signal in the grace must not end this
-  // process before its SIGKILL.
-  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
-    process.on(signal, () => {
-      if (child.pid !== undefined) stop(child.pid, `interrupted by ${signal}`);
-    });
-  }
-  // A session and a process group of its own, so the tree can be stopped without touching this
-  // process. A measured run takes no input.
-  const child = spawn(command[0]!, command.slice(1), {
-    detached: true,
-    stdio: ["ignore", "inherit", "inherit"],
-  });
-  const exited = new Promise<number>((resolve) => {
-    child.once("error", (error) => {
-      console.error(`[uf] Could not start ${command[0]}: ${error.message}`);
-      resolve(127);
-    });
-    child.once("exit", (code, signal) => {
-      resolve(code ?? 128 + (signal ? constants.signals[signal] : 0));
-    });
-  });
+	const { label, maxRssGib, command } = options;
+	const started = performance.now();
+	// Before the spawn: a command may print at once, and whoever reads that line may signal this
+	// process, which must not then die and leave the tree running. A handler runs from the event
+	// loop, after this synchronous setup. Not `once`: a second signal in the grace must not end this
+	// process before its SIGKILL.
+	for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+		process.on(signal, () => {
+			if (child.pid !== undefined) {
+				stop(child.pid, `interrupted by ${signal}`);
+			}
+		});
+	}
+	// A session and a process group of its own, so the tree can be stopped without touching this
+	// process. A measured run takes no input.
+	const child = spawn(command[0]!, command.slice(1), {
+		detached: true,
+		stdio: ["ignore", "inherit", "inherit"],
+	});
+	const exited = new Promise<number>((resolve) => {
+		child.once("error", (error) => {
+			console.error(`[uf] Could not start ${command[0]}: ${error.message}`);
+			resolve(127);
+		});
+		child.once("exit", (code, signal) => {
+			resolve(code ?? 128 + (signal ? constants.signals[signal] : 0));
+		});
+	});
 
-  const root = child.pid;
-  const seen = new Set<string>();
-  /** The tree now. What it finds stays known, so an orphan is still found once it reparents. */
-  const observe = (pid: number): ProcessInfo[] => {
-    const members = membersOf(listProcesses(), pid, seen);
-    for (const member of members) seen.add(identityOf(member));
-    return members;
-  };
+	const root = child.pid;
+	const seen = new Set<string>();
+	/** The tree now. What it finds stays known, so an orphan is still found once it reparents. */
+	const observe = (pid: number): Array<ProcessInfo> => {
+		const members = membersOf(listProcesses(), pid, seen);
+		for (const member of members) {
+			seen.add(identityOf(member));
+		}
+		return members;
+	};
 
-  let peakKib = 0;
-  let samples = 0;
-  let stopping: Promise<void> | undefined;
-  let timer: NodeJS.Timeout | undefined;
-  const stop = (pid: number, reason: string) => {
-    if (stopping) return;
-    console.error(`[uf] ${label}: ${reason}: stopping its process tree.`);
-    clearInterval(timer);
-    stopping = stopTree(pid, observe);
-  };
-  const sample = (pid: number) => {
-    let members: ProcessInfo[];
-    try {
-      members = observe(pid);
-    } catch (error) {
-      // No sample means no ceiling, so the run must not go on.
-      stop(pid, `cannot sample its memory (${(error as Error).message})`);
-      return;
-    }
-    const kib = members.reduce((sum, member) => sum + member.rssKib, 0);
-    peakKib = Math.max(peakKib, kib);
-    samples += 1;
-    if (kib >= maxRssGib * KIB_PER_GIB) {
-      const gib = (kib / KIB_PER_GIB).toFixed(1);
-      stop(pid, `${gib} GiB reached the ${maxRssGib} GiB ceiling`);
-    }
-  };
+	let peakKib = 0;
+	let samples = 0;
+	let stopping: Promise<void> | undefined;
+	let timer: NodeJS.Timeout | undefined;
+	const stop = (pid: number, reason: string) => {
+		if (stopping) {
+			return;
+		}
+		console.error(`[uf] ${label}: ${reason}: stopping its process tree.`);
+		clearInterval(timer);
+		stopping = stopTree(pid, observe);
+	};
+	const sample = (pid: number) => {
+		let members: Array<ProcessInfo>;
+		try {
+			members = observe(pid);
+		} catch (error) {
+			// No sample means no ceiling, so the run must not go on.
+			stop(pid, `cannot sample its memory (${(error as Error).message})`);
+			return;
+		}
+		const kib = members.reduce((sum, member) => sum + member.rssKib, 0);
+		peakKib = Math.max(peakKib, kib);
+		samples += 1;
+		if (kib >= maxRssGib * KIB_PER_GIB) {
+			const gib = (kib / KIB_PER_GIB).toFixed(1);
+			stop(pid, `${gib} GiB reached the ${maxRssGib} GiB ceiling`);
+		}
+	};
 
-  if (root !== undefined) {
-    sample(root);
-    if (!stopping) timer = setInterval(() => sample(root), SAMPLE_MS);
-  }
+	if (root !== undefined) {
+		sample(root);
+		if (!stopping) {
+			timer = setInterval(() => sample(root), SAMPLE_MS);
+		}
+	}
 
-  const exitStatus = await exited;
-  const wallSeconds = (performance.now() - started) / 1000;
-  clearInterval(timer);
-  await stopping;
+	const exitStatus = await exited;
+	const wallSeconds = (performance.now() - started) / 1000;
+	clearInterval(timer);
+	await stopping;
 
-  let leftover: number | null = 0;
-  if (root !== undefined) {
-    const count = (pid: number) => {
-      try {
-        return observe(pid).length;
-      } catch {
-        return null;
-      }
-    };
-    const deadline = performance.now() + LEFTOVER_GRACE_MS;
-    leftover = count(root);
-    while (leftover !== 0 && performance.now() < deadline) {
-      await delay(POLL_MS);
-      leftover = count(root);
-    }
-  }
+	let leftover: number | null = 0;
+	if (root !== undefined) {
+		const count = (pid: number) => {
+			try {
+				return observe(pid).length;
+			} catch {
+				return null;
+			}
+		};
+		const deadline = performance.now() + LEFTOVER_GRACE_MS;
+		leftover = count(root);
+		while (leftover !== 0 && performance.now() < deadline) {
+			await delay(POLL_MS);
+			leftover = count(root);
+		}
+	}
 
-  const completed = root !== undefined && !stopping;
-  const report: MeasureReport = {
-    label,
-    command,
-    outcome: completed ? "completed" : "did-not-complete",
-    exitStatus,
-    wallSeconds: round(wallSeconds),
-    peakRssGib: round(peakKib / KIB_PER_GIB),
-    maxRssGib,
-    samples,
-    leftover,
-  };
-  const directory = join(REPORTS_DIR, "measure");
-  mkdirSync(directory, { recursive: true });
-  writeFileSync(join(directory, `${label}.json`), `${JSON.stringify(report, null, 2)}\n`);
-  // A command that exits 0 on SIGTERM still did not finish its work.
-  return completed ? exitStatus : exitStatus || 1;
+	const completed = root !== undefined && !stopping;
+	const report: MeasureReport = {
+		label,
+		command,
+		outcome: completed ? "completed" : "did-not-complete",
+		exitStatus,
+		wallSeconds: round(wallSeconds),
+		peakRssGib: round(peakKib / KIB_PER_GIB),
+		maxRssGib,
+		samples,
+		leftover,
+	};
+	const directory = join(REPORTS_DIR, "measure");
+	mkdirSync(directory, { recursive: true });
+	writeFileSync(join(directory, `${label}.json`), `${JSON.stringify(report, null, 2)}\n`);
+	// A command that exits 0 on SIGTERM still did not finish its work.
+	return completed ? exitStatus : exitStatus || 1;
 }
 
 /**
@@ -253,48 +273,52 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
  * of the tree are signalled, each by its identity at that moment. If `ps` cannot run, only the
  * group can be stopped.
  */
-async function stopTree(root: number, observe: (pid: number) => ProcessInfo[]): Promise<void> {
-  const signalTree = (signal: NodeJS.Signals): number => {
-    let members: ProcessInfo[] | undefined;
-    try {
-      members = observe(root);
-    } catch {
-      members = undefined;
-    }
-    const inGroup = members === undefined || members.some((member) => member.pgid === root);
-    const outside = (members ?? []).filter((member) => member.pgid !== root);
-    for (const pid of [...(inGroup ? [-root] : []), ...outside.map((member) => member.pid)]) {
-      try {
-        process.kill(pid, signal);
-      } catch {
-        // It exited between the listing and the signal.
-      }
-    }
-    return members?.length ?? 1;
-  };
-  signalTree("SIGTERM");
-  const deadline = performance.now() + STOP_GRACE_MS;
-  while (performance.now() < deadline) {
-    await delay(POLL_MS);
-    try {
-      if (observe(root).length === 0) return;
-    } catch {
-      // Keep waiting: SIGKILL follows.
-    }
-  }
-  signalTree("SIGKILL");
-  await delay(POLL_MS);
+async function stopTree(root: number, observe: (pid: number) => Array<ProcessInfo>): Promise<void> {
+	const signalTree = (signal: NodeJS.Signals): number => {
+		let members: Array<ProcessInfo> | undefined;
+		try {
+			members = observe(root);
+		} catch {
+			members = undefined;
+		}
+		const inGroup = members === undefined || members.some((member) => member.pgid === root);
+		const outside = (members ?? []).filter((member) => member.pgid !== root);
+		for (const pid of [...(inGroup ? [-root] : []), ...outside.map((member) => member.pid)]) {
+			try {
+				process.kill(pid, signal);
+			} catch {
+				// It exited between the listing and the signal.
+			}
+		}
+		return members?.length ?? 1;
+	};
+	signalTree("SIGTERM");
+	const deadline = performance.now() + STOP_GRACE_MS;
+	while (performance.now() < deadline) {
+		await delay(POLL_MS);
+		try {
+			if (observe(root).length === 0) {
+				return;
+			}
+		} catch {
+			// Keep waiting: SIGKILL follows.
+		}
+	}
+	signalTree("SIGKILL");
+	await delay(POLL_MS);
 }
 
-async function main(argv: readonly string[]): Promise<number> {
-  let options: ReturnType<typeof parseArgs>;
-  try {
-    options = parseArgs(argv);
-  } catch (error) {
-    console.error(`[uf] ${(error as Error).message}`);
-    return 2;
-  }
-  return measure(options);
+async function main(argv: ReadonlyArray<string>): Promise<number> {
+	let options: ReturnType<typeof parseArgs>;
+	try {
+		options = parseArgs(argv);
+	} catch (error) {
+		console.error(`[uf] ${(error as Error).message}`);
+		return 2;
+	}
+	return measure(options);
 }
 
-if (import.meta.main) process.exitCode = await main(process.argv.slice(2));
+if (import.meta.main) {
+	process.exitCode = await main(process.argv.slice(2));
+}

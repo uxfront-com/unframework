@@ -6,32 +6,32 @@
 // passes that the component does not declare as the props' rest, spread on its fallthrough node
 // after the node's own attributes (ADR-0118).
 import {
-  expressionCode,
-  handlerText,
-  js,
-  jsxAttributeValue,
-  jsxBranch,
-  jsxDynamic,
-  jsxFillValue,
-  pascalCase,
-  rewriteExpression,
-  typeNames,
+	expressionCode,
+	handlerText,
+	js,
+	jsxAttributeValue,
+	jsxBranch,
+	jsxDynamic,
+	jsxFillValue,
+	pascalCase,
+	rewriteExpression,
+	typeNames,
 } from "@unframework.dev/codegen";
 import type { JsxContext } from "@unframework.dev/codegen";
 import type {
-  BindingId,
-  ClassAttribute,
-  ComponentNode,
-  DynamicNode,
-  ElementNode,
-  Expression,
-  ListenerAttribute,
-  ModelAttribute,
-  ModelBindingAttribute,
-  SlotFill,
-  SlotOutletNode,
-  Span,
-  StyleAttribute,
+	BindingId,
+	ClassAttribute,
+	ComponentNode,
+	DynamicNode,
+	ElementNode,
+	Expression,
+	ListenerAttribute,
+	ModelAttribute,
+	ModelBindingAttribute,
+	SlotFill,
+	SlotOutletNode,
+	Span,
+	StyleAttribute,
 } from "@unframework.dev/ir";
 
 import { slotProp, spanKey } from "./composition.ts";
@@ -42,532 +42,567 @@ import type { ReactCode } from "./rules.ts";
 import { locals } from "./setup.ts";
 
 type JsxAttributeItem =
-  | ReturnType<typeof js.jsxAttribute>
-  | ReturnType<typeof js.jsxSpreadAttribute>;
+	| ReturnType<typeof js.jsxAttribute>
+	| ReturnType<typeof js.jsxSpreadAttribute>;
 type AstExpression = Parameters<typeof js.jsxExpressionContainer>[0];
 
 /** A handler a `v-model` adds: as a function, and as statements given the event's name. */
 export interface ModelHandler {
-  code: string;
-  statements: (event: string) => string[];
+	code: string;
+	statements: (event: string) => Array<string>;
 }
 
 /** What a control's `v-model` writes on its element (ReactComposer.modelParts). */
 export interface ModelParts {
-  state: [string, string][];
-  handlers: Map<string, ModelHandler>;
-  /** The `modelText` field, whose props spread where no listener shares one. */
-  field?: string;
+	state: Array<[string, string]>;
+	handlers: Map<string, ModelHandler>;
+	/** The `modelText` field, whose props spread where no listener shares one. */
+	field?: string;
 }
 
 /** Prints the composition of a planned component's template. */
 export class ReactComposer {
-  readonly #plan: ReactPlan;
-  readonly #code: ReactCode;
-  /** The `class` the root takes from a consumer alone: `className={className}`. */
-  readonly bareClasses: WeakSet<ClassAttribute> = new WeakSet();
-  /** The `style`s the root merges a consumer's into. */
-  readonly fallthroughStyles: WeakSet<StyleAttribute> = new WeakSet();
-  /** The `modelText` fields, in render order. */
-  readonly fields: string[] = [];
-  readonly #parts = new WeakMap<ModelAttribute, ModelParts>();
-  #listeners: ReactListeners | undefined;
-  /** The root nodes still to spread the scope attributes on, by span. */
-  readonly #scopeRoots: Set<string>;
-  /**
-   * The consumer's listener props the fallthrough node runs after its own listeners of the same
-   * prop, by prop: the locals the props pattern takes them out of the rest as (ADR-0118).
-   */
-  readonly consumerListeners: Map<string, string> = new Map();
-  /**
-   * The local the props pattern takes the consumer's `ref` out of the rest as, where the root
-   * takes it apart from the rest: beside its own ref, or away from the rest's element.
-   */
-  consumerRef: string | undefined;
-  /**
-   * The root's own ref joined with the consumer's, declared once in the body (`rootRef`), or the
-   * consumer's alone as a callback, for a `<component is>` root that has none (ADR-0122).
-   */
-  mergedRef: { local: string; own?: string } | undefined;
-  /** The fallthrough node, by span, until it spreads the rest; and the root a `ref` holds. */
-  #target: string | undefined;
-  readonly #refRoot: string | undefined;
-  /** Whether the root takes the consumer's `ref` where it prints none of its own. */
-  readonly #takesRef: boolean;
-  /** Whether the root a `ref` holds is a `<component is>`, which takes it as a callback. */
-  readonly #dynamicRef: boolean;
-  /** Whether the root printed a `ref` of its own. */
-  #ownRef = false;
+	readonly #plan: ReactPlan;
+	readonly #code: ReactCode;
+	/** The `class` the root takes from a consumer alone: `className={className}`. */
+	readonly bareClasses: WeakSet<ClassAttribute> = new WeakSet();
+	/** The `style`s the root merges a consumer's into. */
+	readonly fallthroughStyles: WeakSet<StyleAttribute> = new WeakSet();
+	/** The `modelText` fields, in render order. */
+	readonly fields: Array<string> = [];
+	readonly #parts = new WeakMap<ModelAttribute, ModelParts>();
+	#listeners: ReactListeners | undefined;
+	/** The root nodes still to spread the scope attributes on, by span. */
+	readonly #scopeRoots: Set<string>;
+	/**
+	 * The consumer's listener props the fallthrough node runs after its own listeners of the same
+	 * prop, by prop: the locals the props pattern takes them out of the rest as (ADR-0118).
+	 */
+	readonly consumerListeners: Map<string, string> = new Map();
+	/**
+	 * The local the props pattern takes the consumer's `ref` out of the rest as, where the root
+	 * takes it apart from the rest: beside its own ref, or away from the rest's element.
+	 */
+	consumerRef: string | undefined;
+	/**
+	 * The root's own ref joined with the consumer's, declared once in the body (`rootRef`), or the
+	 * consumer's alone as a callback, for a `<component is>` root that has none (ADR-0122).
+	 */
+	mergedRef: { local: string; own?: string } | undefined;
+	/** The fallthrough node, by span, until it spreads the rest; and the root a `ref` holds. */
+	#target: string | undefined;
+	readonly #refRoot: string | undefined;
+	/** Whether the root takes the consumer's `ref` where it prints none of its own. */
+	readonly #takesRef: boolean;
+	/** Whether the root a `ref` holds is a `<component is>`, which takes it as a callback. */
+	readonly #dynamicRef: boolean;
+	/** Whether the root printed a `ref` of its own. */
+	#ownRef = false;
 
-  constructor(plan: ReactPlan, code: ReactCode) {
-    this.#plan = plan;
-    this.#code = code;
-    this.#scopeRoots = new Set(plan.composition.scope?.roots);
-    const { passing, refTags } = plan.composition;
-    if (passing) this.#target = spanKey(passing.target.span);
-    const { render } = plan.owner;
-    const [only] = render.kind === "Element" ? [render] : render.children;
-    if ((passing?.refTags ?? refTags) !== undefined && only) this.#refRoot = spanKey(only.span);
-    // A `<component is>` root renders one of several elements: a `ref` typed for whichever
-    // renders is no ref of each tag's, so it reaches the root through a callback (ADR-0122).
-    // Tags of one interface (`h2`, `h3`) take one ref type, which reaches the root as it is.
-    const tags = passing?.refTags ?? refTags ?? [];
-    this.#dynamicRef =
-      only?.kind === "Dynamic" &&
-      this.#refRoot !== undefined &&
-      new Set(tags.map(elementInterface)).size > 1;
-    // The root takes the consumer's `ref` apart from the rest where the rest is elsewhere, or
-    // nothing else passes through (ADR-0118), or the root is a `<component is>` (ADR-0122).
-    this.#takesRef = passing ? passing.inner || this.#dynamicRef : refTags !== undefined;
-  }
+	constructor(plan: ReactPlan, code: ReactCode) {
+		this.#plan = plan;
+		this.#code = code;
+		this.#scopeRoots = new Set(plan.composition.scope?.roots);
+		const { passing, refTags } = plan.composition;
+		if (passing) {
+			this.#target = spanKey(passing.target.span);
+		}
+		const { render } = plan.owner;
+		const [only] = render.kind === "Element" ? [render] : render.children;
+		if ((passing?.refTags ?? refTags) !== undefined && only) {
+			this.#refRoot = spanKey(only.span);
+		}
+		// A `<component is>` root renders one of several elements: a `ref` typed for whichever
+		// renders is no ref of each tag's, so it reaches the root through a callback (ADR-0122).
+		// Tags of one interface (`h2`, `h3`) take one ref type, which reaches the root as it is.
+		const tags = passing?.refTags ?? refTags ?? [];
+		this.#dynamicRef =
+			only?.kind === "Dynamic" &&
+			this.#refRoot !== undefined &&
+			new Set(tags.map(elementInterface)).size > 1;
+		// The root takes the consumer's `ref` apart from the rest where the rest is elsewhere, or
+		// nothing else passes through (ADR-0118), or the root is a `<component is>` (ADR-0122).
+		this.#takesRef = passing ? passing.inner || this.#dynamicRef : refTags !== undefined;
+	}
 
-  /**
-   * The local of the consumer's listener of a React prop that the fallthrough node at `span`
-   * also listens to (ADR-0118): its own listeners run first, then the consumer's, as Vue merges
-   * them, where React would keep only the last prop. None for a prop the component declares, as
-   * its event's, which is no listener of the node.
-   */
-  consumerListener(prop: string, span: Span): string | undefined {
-    const { passing } = this.#plan.composition;
-    if (!passing || this.#target === undefined || spanKey(span) !== spanKey(passing.target.span)) {
-      return undefined;
-    }
-    if (passing.declared.includes(prop)) return undefined;
-    let local = this.consumerListeners.get(prop);
-    if (local === undefined) {
-      local = this.#plan.names.claim(prop);
-      this.consumerListeners.set(prop, local);
-    }
-    return local;
-  }
+	/**
+	 * The local of the consumer's listener of a React prop that the fallthrough node at `span`
+	 * also listens to (ADR-0118): its own listeners run first, then the consumer's, as Vue merges
+	 * them, where React would keep only the last prop. None for a prop the component declares, as
+	 * its event's, which is no listener of the node.
+	 */
+	consumerListener(prop: string, span: Span): string | undefined {
+		const { passing } = this.#plan.composition;
+		if (!passing || this.#target === undefined || spanKey(span) !== spanKey(passing.target.span)) {
+			return undefined;
+		}
+		if (passing.declared.includes(prop)) {
+			return undefined;
+		}
+		let local = this.consumerListeners.get(prop);
+		if (local === undefined) {
+			local = this.#plan.names.claim(prop);
+			this.consumerListeners.set(prop, local);
+		}
+		return local;
+	}
 
-  /**
-   * A `ref` the root prints of its own (a template ref, or the callback of its native listeners
-   * or directives), joined with the consumer's, which holds the root element too (ADR-0118):
-   * `ref={rootRef}`, a callback the body makes once for each consumer's ref, or the join in place
-   * where the root's own is no name.
-   */
-  rootRef(attribute: JsxAttributeItem, element: ElementNode): JsxAttributeItem {
-    if (
-      attribute.type !== "JSXAttribute" ||
-      attribute.name.type !== "JSXIdentifier" ||
-      attribute.name.name !== "ref" ||
-      this.#refRoot === undefined ||
-      spanKey(element.span) !== this.#refRoot ||
-      attribute.value?.type !== "JSXExpressionContainer"
-    ) {
-      return attribute;
-    }
-    this.#ownRef = true;
-    const consumer = this.#consumerRef();
-    const merge = (this.#plan.helpers.mergeRefs ??= this.#plan.names.claim("mergeRefs"));
-    const own = attribute.value.expression;
-    // A placeholder of copied code is an identifier without a name until it prints.
-    if (own.type === "Identifier" && own.name !== "") {
-      this.mergedRef ??= { local: this.#plan.names.claim("rootRef"), own: own.name };
-      return js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(this.mergedRef.local)));
-    }
-    if (own.type === "JSXEmptyExpression") return attribute;
-    return js.jsxAttribute(
-      "ref",
-      js.jsxExpressionContainer(
-        js.callExpression(js.identifier(merge), [own, js.identifier(consumer)]),
-      ),
-    );
-  }
+	/**
+	 * A `ref` the root prints of its own (a template ref, or the callback of its native listeners
+	 * or directives), joined with the consumer's, which holds the root element too (ADR-0118):
+	 * `ref={rootRef}`, a callback the body makes once for each consumer's ref, or the join in place
+	 * where the root's own is no name.
+	 */
+	rootRef(attribute: JsxAttributeItem, element: ElementNode): JsxAttributeItem {
+		if (
+			attribute.type !== "JSXAttribute" ||
+			attribute.name.type !== "JSXIdentifier" ||
+			attribute.name.name !== "ref" ||
+			this.#refRoot === undefined ||
+			spanKey(element.span) !== this.#refRoot ||
+			attribute.value?.type !== "JSXExpressionContainer"
+		) {
+			return attribute;
+		}
+		this.#ownRef = true;
+		const consumer = this.#consumerRef();
+		const merge = (this.#plan.helpers.mergeRefs ??= this.#plan.names.claim("mergeRefs"));
+		const own = attribute.value.expression;
+		// A placeholder of copied code is an identifier without a name until it prints.
+		if (own.type === "Identifier" && own.name !== "") {
+			this.mergedRef ??= { local: this.#plan.names.claim("rootRef"), own: own.name };
+			return js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(this.mergedRef.local)));
+		}
+		if (own.type === "JSXEmptyExpression") {
+			return attribute;
+		}
+		return js.jsxAttribute(
+			"ref",
+			js.jsxExpressionContainer(
+				js.callExpression(js.identifier(merge), [own, js.identifier(consumer)]),
+			),
+		);
+	}
 
-  /** The consumer's `ref`'s local, claimed once the root takes it apart from the rest. */
-  #consumerRef(): string {
-    return (this.consumerRef ??= this.#plan.names.scope.has("ref")
-      ? this.#plan.names.claim("refProp")
-      : this.#plan.names.claim("ref"));
-  }
+	/** The consumer's `ref`'s local, claimed once the root takes it apart from the rest. */
+	#consumerRef(): string {
+		return (this.consumerRef ??= this.#plan.names.scope.has("ref")
+			? this.#plan.names.claim("refProp")
+			: this.#plan.names.claim("ref"));
+	}
 
-  /**
-   * Where the component renders a slot (ADR-0054): `{title}`, `{renderItem?.({ item })}`, with
-   * its fallback after `??`, which renders when the parent passed nothing.
-   */
-  slotOutlet(node: SlotOutletNode, context: JsxContext): AstExpression {
-    const slot = this.#plan.composition.slots.get(node.slot)!;
-    const props = node.props ? expressionCode(node.props, context) : "";
-    const value = context.placeholders.expression(
-      slot.scoped ? `${slot.local}?.(${props})` : slot.local,
-      slot.scoped ? "argument" : "operand",
-    );
-    if (!node.fallback.length) return value;
-    return js.logicalExpression("??", value, jsxBranch(node.fallback, context));
-  }
+	/**
+	 * Where the component renders a slot (ADR-0054): `{title}`, `{renderItem?.({ item })}`, with
+	 * its fallback after `??`, which renders when the parent passed nothing.
+	 */
+	slotOutlet(node: SlotOutletNode, context: JsxContext): AstExpression {
+		const slot = this.#plan.composition.slots.get(node.slot)!;
+		const props = node.props ? expressionCode(node.props, context) : "";
+		const value = context.placeholders.expression(
+			slot.scoped ? `${slot.local}?.(${props})` : slot.local,
+			slot.scoped ? "argument" : "operand",
+		);
+		if (!node.fallback.length) {
+			return value;
+		}
+		return js.logicalExpression("??", value, jsxBranch(node.fallback, context));
+	}
 
-  /**
-   * The scope attributes of the styled parents that render the component, spread on each of its
-   * root nodes (the child-root rule, ADR-0063): `{...scopeAttributes(attributes)}`.
-   */
-  scopeRootAttributes(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
-    return [...this.#scopeAttributes(element, context), ...this.#passed(element, context)];
-  }
+	/**
+	 * The scope attributes of the styled parents that render the component, spread on each of its
+	 * root nodes (the child-root rule, ADR-0063): `{...scopeAttributes(attributes)}`.
+	 */
+	scopeRootAttributes(element: ElementNode, context: JsxContext): Array<JsxAttributeItem> {
+		return [...this.#scopeAttributes(element, context), ...this.#passed(element, context)];
+	}
 
-  #scopeAttributes(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
-    const { scope } = this.#plan.composition;
-    // Each root takes them once: the first node printed with its span, which is the root
-    // itself, printed before what it holds.
-    if (!scope || !this.#scopeRoots.delete(spanKey(element.span))) return [];
-    const picked = context.placeholders.expression(`${scope.helper}(${scope.props})`, "argument");
-    return [js.jsxSpreadAttribute(picked)];
-  }
+	#scopeAttributes(element: ElementNode, context: JsxContext): Array<JsxAttributeItem> {
+		const { scope } = this.#plan.composition;
+		// Each root takes them once: the first node printed with its span, which is the root
+		// itself, printed before what it holds.
+		if (!scope || !this.#scopeRoots.delete(spanKey(element.span))) {
+			return [];
+		}
+		const picked = context.placeholders.expression(`${scope.helper}(${scope.props})`, "argument");
+		return [js.jsxSpreadAttribute(picked)];
+	}
 
-  /**
-   * What passes through, on the fallthrough node after its own attributes, so the consumer's
-   * win (ADR-0118): `{...attributes}`, and on the element of the props' rest what the root's
-   * styled parents' scope attributes leave, `{...restAttributes(attributes)}`. The root takes
-   * the consumer's `ref` there, where it prints none of its own.
-   */
-  #passed(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
-    const { passing } = this.#plan.composition;
-    const key = spanKey(element.span);
-    const items: JsxAttributeItem[] = [];
-    if (this.#takesRef && key === this.#refRoot && !this.#ownRef) {
-      this.#ownRef = true;
-      const consumer = this.#consumerRef();
-      if (this.#dynamicRef) {
-        this.#plan.helpers.mergeRefs ??= this.#plan.names.claim("mergeRefs");
-        this.mergedRef ??= { local: this.#plan.names.claim("rootRef") };
-      }
-      items.push(
-        js.jsxAttribute(
-          "ref",
-          js.jsxExpressionContainer(js.identifier(this.mergedRef?.local ?? consumer)),
-        ),
-      );
-    }
-    if (!passing) return items;
-    if (key === this.#target) {
-      this.#target = undefined;
-      const rest = passing.inner
-        ? context.placeholders.expression(
-            `${(this.#plan.helpers.restAttributes ??= this.#plan.names.claim("restAttributes"))}(${passing.rest})`,
-            "argument",
-          )
-        : js.identifier(passing.rest);
-      items.push(js.jsxSpreadAttribute(rest));
-    }
-    return items;
-  }
+	/**
+	 * What passes through, on the fallthrough node after its own attributes, so the consumer's
+	 * win (ADR-0118): `{...attributes}`, and on the element of the props' rest what the root's
+	 * styled parents' scope attributes leave, `{...restAttributes(attributes)}`. The root takes
+	 * the consumer's `ref` there, where it prints none of its own.
+	 */
+	#passed(element: ElementNode, context: JsxContext): Array<JsxAttributeItem> {
+		const { passing } = this.#plan.composition;
+		const key = spanKey(element.span);
+		const items: Array<JsxAttributeItem> = [];
+		if (this.#takesRef && key === this.#refRoot && !this.#ownRef) {
+			this.#ownRef = true;
+			const consumer = this.#consumerRef();
+			if (this.#dynamicRef) {
+				this.#plan.helpers.mergeRefs ??= this.#plan.names.claim("mergeRefs");
+				this.mergedRef ??= { local: this.#plan.names.claim("rootRef") };
+			}
+			items.push(
+				js.jsxAttribute(
+					"ref",
+					js.jsxExpressionContainer(js.identifier(this.mergedRef?.local ?? consumer)),
+				),
+			);
+		}
+		if (!passing) {
+			return items;
+		}
+		if (key === this.#target) {
+			this.#target = undefined;
+			const rest = passing.inner
+				? context.placeholders.expression(
+						`${(this.#plan.helpers.restAttributes ??= this.#plan.names.claim("restAttributes"))}(${passing.rest})`,
+						"argument",
+					)
+				: js.identifier(passing.rest);
+			items.push(js.jsxSpreadAttribute(rest));
+		}
+		return items;
+	}
 
-  /** One of the component's own slots as a value, which a forwarded fill passes on. */
-  slotValue(slot: string, context: JsxContext): AstExpression {
-    return context.placeholders.expression(this.#plan.composition.slots.get(slot)!.local);
-  }
+	/** One of the component's own slots as a value, which a forwarded fill passes on. */
+	slotValue(slot: string, context: JsxContext): AstExpression {
+		return context.placeholders.expression(this.#plan.composition.slots.get(slot)!.local);
+	}
 
-  /**
-   * A fill of a child's slot as its prop: `title={<h2 />}`, a scoped one as a render prop,
-   * `renderItem={({ item }) => …}`, and a forwarded one the component's own slot.
-   */
-  fillAttribute(fill: SlotFill, node: ComponentNode, context: JsxContext): JsxAttributeItem[] {
-    // The child's declaration decides: a scoped slot takes a function, with a parameter or not.
-    const scoped = this.#plan.composition.scoped(node.component, fill.slot);
-    const unnamed = fill.parameter && !fill.parameter.name && !fill.parameter.pattern;
-    const value =
-      scoped && !fill.forward && (!fill.parameter || unnamed)
-        ? js.arrowFunction([], jsxBranch(fill.children, context))
-        : jsxFillValue(fill, context);
-    // A fill that is text alone is the prop's value as written (`title="Sunset"`).
-    const text =
-      value.type === "Literal" && typeof value.value === "string" ? value.value : undefined;
-    return [
-      js.jsxAttribute(
-        slotProp(fill.slot, scoped),
-        text === undefined ? js.jsxExpressionContainer(value) : jsxAttributeValue(text),
-      ),
-    ];
-  }
+	/**
+	 * A fill of a child's slot as its prop: `title={<h2 />}`, a scoped one as a render prop,
+	 * `renderItem={({ item }) => …}`, and a forwarded one the component's own slot.
+	 */
+	fillAttribute(fill: SlotFill, node: ComponentNode, context: JsxContext): Array<JsxAttributeItem> {
+		// The child's declaration decides: a scoped slot takes a function, with a parameter or not.
+		const scoped = this.#plan.composition.scoped(node.component, fill.slot);
+		const unnamed = fill.parameter && !fill.parameter.name && !fill.parameter.pattern;
+		const value =
+			scoped && !fill.forward && (!fill.parameter || unnamed)
+				? js.arrowFunction([], jsxBranch(fill.children, context))
+				: jsxFillValue(fill, context);
+		// A fill that is text alone is the prop's value as written (`title="Sunset"`).
+		const text =
+			value.type === "Literal" && typeof value.value === "string" ? value.value : undefined;
+		return [
+			js.jsxAttribute(
+				slotProp(fill.slot, scoped),
+				text === undefined ? js.jsxExpressionContainer(value) : jsxAttributeValue(text),
+			),
+		];
+	}
 
-  /** A listener of a child's event (ADR-0012): `onClear={clear}`, its handler as client code. */
-  componentEvent(
-    attribute: ListenerAttribute,
-    _node: ComponentNode,
-    context: JsxContext,
-  ): JsxAttributeItem[] {
-    const { handler } = attribute;
-    const code =
-      handler.kind === "Function"
-        ? handlerText(handler, this.#plan.owner, this.#code.rules, "client")
-        : this.#code.fn(handler.function, "client");
-    return [
-      js.jsxAttribute(
-        `on${pascalCase(attribute.event)}`,
-        js.jsxExpressionContainer(context.placeholders.expression(code)),
-      ),
-    ];
-  }
+	/** A listener of a child's event (ADR-0012): `onClear={clear}`, its handler as client code. */
+	componentEvent(
+		attribute: ListenerAttribute,
+		_node: ComponentNode,
+		context: JsxContext,
+	): Array<JsxAttributeItem> {
+		const { handler } = attribute;
+		const code =
+			handler.kind === "Function"
+				? handlerText(handler, this.#plan.owner, this.#code.rules, "client")
+				: this.#code.fn(handler.function, "client");
+		return [
+			js.jsxAttribute(
+				`on${pascalCase(attribute.event)}`,
+				js.jsxExpressionContainer(context.placeholders.expression(code)),
+			),
+		];
+	}
 
-  /**
-   * A form control's `v-model` (ADR-0054): the control's state and the `onChange` that writes it
-   * back, React's event for every edit of a text field. A field with modifiers, and a number or a
-   * range input, binds through `modelText`, which follows Vue's `vModelText`.
-   */
-  modelAttribute(
-    attribute: ModelAttribute,
-    element: ElementNode,
-    context: JsxContext,
-  ): JsxAttributeItem[] {
-    const parts = this.modelParts(attribute, element, context);
-    // A handler a listener of the element shares runs first in the listener's (ReactListeners).
-    const merged = this.#listeners!.modelHeads(element, context);
-    const container = (code: string) =>
-      js.jsxExpressionContainer(context.placeholders.expression(code));
-    const ref = this.#listeners!.modelRef(attribute, element, context);
-    // A consumer's listener of the same prop runs after the model's write (ADR-0118).
-    const consumer = new Map(
-      [...parts.handlers.keys()].flatMap((prop) => {
-        const local = merged.has(prop) ? undefined : this.consumerListener(prop, element.span);
-        return local === undefined ? [] : [[prop, local] as const];
-      }),
-    );
-    if (
-      parts.field &&
-      !consumer.size &&
-      ![...parts.handlers.keys()].some((prop) => merged.has(prop))
-    ) {
-      return [js.jsxSpreadAttribute(js.identifier(parts.field)), ...ref];
-    }
-    const handlerCode = (prop: string, handler: ModelHandler) => {
-      const local = consumer.get(prop);
-      if (local === undefined) return handler.code;
-      const { event } = locals([...handler.statements(""), local], ["event"]);
-      const lines = [...handler.statements(event), `${local}?.(${event})`];
-      return `(${event}) => {\n${lines.map((line) => `${line};`).join("\n")}\n}`;
-    };
-    return [
-      ...parts.state.map(([name, code]) => js.jsxAttribute(name, container(code))),
-      ...[...parts.handlers]
-        .filter(([prop]) => !merged.has(prop))
-        .map(([prop, handler]) => js.jsxAttribute(prop, container(handlerCode(prop, handler)))),
-      ...ref,
-    ];
-  }
+	/**
+	 * A form control's `v-model` (ADR-0054): the control's state and the `onChange` that writes it
+	 * back, React's event for every edit of a text field. A field with modifiers, and a number or a
+	 * range input, binds through `modelText`, which follows Vue's `vModelText`.
+	 */
+	modelAttribute(
+		attribute: ModelAttribute,
+		element: ElementNode,
+		context: JsxContext,
+	): Array<JsxAttributeItem> {
+		const parts = this.modelParts(attribute, element, context);
+		// A handler a listener of the element shares runs first in the listener's (ReactListeners).
+		const merged = this.#listeners!.modelHeads(element, context);
+		const container = (code: string) =>
+			js.jsxExpressionContainer(context.placeholders.expression(code));
+		const ref = this.#listeners!.modelRef(attribute, element, context);
+		// A consumer's listener of the same prop runs after the model's write (ADR-0118).
+		const consumer = new Map(
+			[...parts.handlers.keys()].flatMap((prop) => {
+				const local = merged.has(prop) ? undefined : this.consumerListener(prop, element.span);
+				return local === undefined ? [] : [[prop, local] as const];
+			}),
+		);
+		if (
+			parts.field &&
+			!consumer.size &&
+			![...parts.handlers.keys()].some((prop) => merged.has(prop))
+		) {
+			return [js.jsxSpreadAttribute(js.identifier(parts.field)), ...ref];
+		}
+		const handlerCode = (prop: string, handler: ModelHandler) => {
+			const local = consumer.get(prop);
+			if (local === undefined) {
+				return handler.code;
+			}
+			const { event } = locals([...handler.statements(""), local], ["event"]);
+			const lines = [...handler.statements(event), `${local}?.(${event})`];
+			return `(${event}) => {\n${lines.map((line) => `${line};`).join("\n")}\n}`;
+		};
+		return [
+			...parts.state.map(([name, code]) => js.jsxAttribute(name, container(code))),
+			...[...parts.handlers]
+				.filter(([prop]) => !merged.has(prop))
+				.map(([prop, handler]) => js.jsxAttribute(prop, container(handlerCode(prop, handler)))),
+			...ref,
+		];
+	}
 
-  /** Connects the listeners, which run a `v-model`'s handler first where they share its prop. */
-  connect(listeners: ReactListeners): void {
-    this.#listeners = listeners;
-  }
+	/** Connects the listeners, which run a `v-model`'s handler first where they share its prop. */
+	connect(listeners: ReactListeners): void {
+		this.#listeners = listeners;
+	}
 
-  /**
-   * What a form control's `v-model` writes on the element, once: its state props, and its
-   * handlers by React prop, each as a function and as the statements a listener's handler that
-   * shares the prop runs first (Vue adds the model's listener before the element's own).
-   */
-  modelParts(attribute: ModelAttribute, element: ElementNode, context: JsxContext): ModelParts {
-    const known = this.#parts.get(attribute);
-    if (known) return known;
-    const read = expressionCode(attribute.value, context);
-    const binding = this.#bound(attribute.value);
-    const { control } = attribute;
-    let parts: ModelParts;
-    if (control === "number" || attribute.trim || attribute.lazy || attribute.number) {
-      const options = [
-        ...(attribute.lazy ? ["lazy: true"] : []),
-        ...(attribute.trim ? ["trim: true"] : []),
-        ...(attribute.number || control === "number" ? ["number: true"] : []),
-      ];
-      const name = this.#plan.bindings.get(binding)!.name;
-      const field = this.#plan.names.claim(`${name}Field`);
-      const helper = (this.#plan.helpers.modelText ??= this.#plan.names.claim("useModelText"));
-      const { value } = locals([read, ...this.#assign(binding, "")], ["value"]);
-      const write = this.#writer(binding, value);
-      this.fields.push(`const ${field} = ${helper}(${read}, ${write}, { ${options.join(", ")} });`);
-      parts = {
-        state: [["value", `${field}.value`]],
-        handlers: new Map<string, ModelHandler>([
-          [
-            "onChange",
-            { code: `${field}.onChange`, statements: (event) => [`${field}.onChange(${event})`] },
-          ],
-          ["onFocus", { code: `${field}.onFocus`, statements: () => [`${field}.onFocus()`] }],
-          ["onBlur", { code: `${field}.onBlur`, statements: () => [`${field}.onBlur()`] }],
-        ]),
-        field,
-      };
-    } else {
-      const current = this.#clientRead(attribute.value);
-      const box = boxValue(element, context);
-      // Vue's `vModelText` and `vModelSelect` show `null` and `undefined` as nothing.
-      const shown = this.#nullish(binding) ? `${read} ?? ""` : read;
-      let state: [string, string];
-      let written: string;
-      switch (control) {
-        case "checkbox":
-          state = ["checked", read];
-          written = "EVENT.target.checked";
-          break;
-        case "checkbox-group": {
-          const toggle = (this.#plan.helpers.toggle ??= this.#plan.names.claim("toggle"));
-          state = ["checked", `${read}.includes(${box})`];
-          written = `${toggle}(${current}, ${box}, EVENT.target.checked)`;
-          break;
-        }
-        case "radio":
-          state = ["checked", `${read} === ${box}`];
-          written = box;
-          break;
-        case "select-multiple":
-          state = ["value", read];
-          written = `Array.from(EVENT.target.selectedOptions, (option) => option.value)${this.#cast(binding, read)}`;
-          break;
-        case "text":
-        case "textarea":
-        case "select":
-          state = ["value", shown];
-          written = `EVENT.target.value${this.#cast(binding, read)}`;
-          break;
-        default:
-          return control satisfies never;
-      }
-      const statements = (event: string) =>
-        this.#assign(binding, written.replaceAll("EVENT", event));
-      const { event } = locals([read, current, box, ...this.#assign(binding, "")], ["event"]);
-      const lines = statements(event);
-      const body =
-        lines.length === 1 ? lines[0]! : `{\n${lines.map((line) => `${line};`).join("\n")}\n}`;
-      const code = `(${written.includes("EVENT") ? event : ""}) => ${body}`;
-      parts = {
-        state: [state],
-        handlers: new Map<string, ModelHandler>([["onChange", { code, statements }]]),
-      };
-    }
-    this.#parts.set(attribute, parts);
-    return parts;
-  }
+	/**
+	 * What a form control's `v-model` writes on the element, once: its state props, and its
+	 * handlers by React prop, each as a function and as the statements a listener's handler that
+	 * shares the prop runs first (Vue adds the model's listener before the element's own).
+	 */
+	modelParts(attribute: ModelAttribute, element: ElementNode, context: JsxContext): ModelParts {
+		const known = this.#parts.get(attribute);
+		if (known) {
+			return known;
+		}
+		const read = expressionCode(attribute.value, context);
+		const binding = this.#bound(attribute.value);
+		const { control } = attribute;
+		let parts: ModelParts;
+		if (control === "number" || attribute.trim || attribute.lazy || attribute.number) {
+			const options = [
+				...(attribute.lazy ? ["lazy: true"] : []),
+				...(attribute.trim ? ["trim: true"] : []),
+				...(attribute.number || control === "number" ? ["number: true"] : []),
+			];
+			const name = this.#plan.bindings.get(binding)!.name;
+			const field = this.#plan.names.claim(`${name}Field`);
+			const helper = (this.#plan.helpers.modelText ??= this.#plan.names.claim("useModelText"));
+			const { value } = locals([read, ...this.#assign(binding, "")], ["value"]);
+			const write = this.#writer(binding, value);
+			this.fields.push(`const ${field} = ${helper}(${read}, ${write}, { ${options.join(", ")} });`);
+			parts = {
+				state: [["value", `${field}.value`]],
+				handlers: new Map<string, ModelHandler>([
+					[
+						"onChange",
+						{ code: `${field}.onChange`, statements: (event) => [`${field}.onChange(${event})`] },
+					],
+					["onFocus", { code: `${field}.onFocus`, statements: () => [`${field}.onFocus()`] }],
+					["onBlur", { code: `${field}.onBlur`, statements: () => [`${field}.onBlur()`] }],
+				]),
+				field,
+			};
+		} else {
+			const current = this.#clientRead(attribute.value);
+			const box = boxValue(element, context);
+			// Vue's `vModelText` and `vModelSelect` show `null` and `undefined` as nothing.
+			const shown = this.#nullish(binding) ? `${read} ?? ""` : read;
+			let state: [string, string];
+			let written: string;
+			switch (control) {
+				case "checkbox":
+					state = ["checked", read];
+					written = "EVENT.target.checked";
+					break;
+				case "checkbox-group": {
+					const toggle = (this.#plan.helpers.toggle ??= this.#plan.names.claim("toggle"));
+					state = ["checked", `${read}.includes(${box})`];
+					written = `${toggle}(${current}, ${box}, EVENT.target.checked)`;
+					break;
+				}
+				case "radio":
+					state = ["checked", `${read} === ${box}`];
+					written = box;
+					break;
+				case "select-multiple":
+					state = ["value", read];
+					written = `Array.from(EVENT.target.selectedOptions, (option) => option.value)${this.#cast(binding, read)}`;
+					break;
+				case "text":
+				case "textarea":
+				case "select":
+					state = ["value", shown];
+					written = `EVENT.target.value${this.#cast(binding, read)}`;
+					break;
+				default:
+					return control satisfies never;
+			}
+			const statements = (event: string) =>
+				this.#assign(binding, written.replaceAll("EVENT", event));
+			const { event } = locals([read, current, box, ...this.#assign(binding, "")], ["event"]);
+			const lines = statements(event);
+			const body =
+				lines.length === 1 ? lines[0]! : `{\n${lines.map((line) => `${line};`).join("\n")}\n}`;
+			const code = `(${written.includes("EVENT") ? event : ""}) => ${body}`;
+			parts = {
+				state: [state],
+				handlers: new Map<string, ModelHandler>([["onChange", { code, statements }]]),
+			};
+		}
+		this.#parts.set(attribute, parts);
+		return parts;
+	}
 
-  /**
-   * ` as T` where a state's or a model's declared type names a type parameter of a generic
-   * component (ADR-0068): the control's value is a `string`, which TypeScript cannot narrow to
-   * the type argument. Without a declared type, its type may be inferred from one (`ref(initial)`),
-   * so it is cast to the type of what it reads, ` as typeof chosen`. Nothing otherwise.
-   */
-  #cast(binding: BindingId, read: string): string {
-    const { owner: component } = this.#plan;
-    if (!component.typeParameters?.length) return "";
-    const item = component.setup.find(
-      (entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
-    );
-    const type = item && "type" in item ? item.type : undefined;
-    if (!type) return /^[\w$]+$/.test(read) ? ` as typeof ${read}` : "";
-    const names = typeNames(type);
-    return component.typeParameters.some(({ name }) => names.has(name)) ? ` as ${type.code}` : "";
-  }
+	/**
+	 * ` as T` where a state's or a model's declared type names a type parameter of a generic
+	 * component (ADR-0068): the control's value is a `string`, which TypeScript cannot narrow to
+	 * the type argument. Without a declared type, its type may be inferred from one (`ref(initial)`),
+	 * so it is cast to the type of what it reads, ` as typeof chosen`. Nothing otherwise.
+	 */
+	#cast(binding: BindingId, read: string): string {
+		const { owner: component } = this.#plan;
+		if (!component.typeParameters?.length) {
+			return "";
+		}
+		const item = component.setup.find(
+			(entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
+		);
+		const type = item && "type" in item ? item.type : undefined;
+		if (!type) {
+			return /^[\w$]+$/.test(read) ? ` as typeof ${read}` : "";
+		}
+		const names = typeNames(type);
+		return component.typeParameters.some(({ name }) => names.has(name)) ? ` as ${type.code}` : "";
+	}
 
-  /** Whether a state or a model may hold `null` or `undefined`, as its declaration says. */
-  #nullish(binding: BindingId): boolean {
-    const item = this.#plan.owner.setup.find(
-      (entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
-    );
-    const type = item && "type" in item ? (item.type?.code ?? "") : "";
-    if (/\b(?:null|undefined)\b/.test(type)) return true;
-    if (item?.kind === "State")
-      return !item.initial || /^(?:null|undefined)$/.test(item.initial.code);
-    return item?.kind === "Model" && !item.default && !item.required;
-  }
+	/** Whether a state or a model may hold `null` or `undefined`, as its declaration says. */
+	#nullish(binding: BindingId): boolean {
+		const item = this.#plan.owner.setup.find(
+			(entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
+		);
+		const type = item && "type" in item ? (item.type?.code ?? "") : "";
+		if (/\b(?:null|undefined)\b/.test(type)) {
+			return true;
+		}
+		if (item?.kind === "State") {
+			return !item.initial || /^(?:null|undefined)$/.test(item.initial.code);
+		}
+		return item?.kind === "Model" && !item.default && !item.required;
+	}
 
-  /**
-   * A child's `v-model:<name>` (ADR-0054): its value, and the change callback writing it back,
-   * `value={cups} onValueChange={setCups}`.
-   */
-  modelBinding(
-    attribute: ModelBindingAttribute,
-    _node: ComponentNode,
-    context: JsxContext,
-  ): JsxAttributeItem[] {
-    const binding = this.#bound(attribute.value);
-    const name = this.#plan.bindings.get(binding)!.name;
-    const { value } = locals([name, ...this.#assign(binding, "")], ["value"]);
-    const handler = this.#writer(binding, value);
-    return [
-      js.jsxAttribute(
-        attribute.model,
-        js.jsxExpressionContainer(
-          context.placeholders.expression(expressionCode(attribute.value, context)),
-        ),
-      ),
-      js.jsxAttribute(
-        `on${pascalCase(attribute.model)}Change`,
-        js.jsxExpressionContainer(context.placeholders.expression(handler)),
-      ),
-    ];
-  }
+	/**
+	 * A child's `v-model:<name>` (ADR-0054): its value, and the change callback writing it back,
+	 * `value={cups} onValueChange={setCups}`.
+	 */
+	modelBinding(
+		attribute: ModelBindingAttribute,
+		_node: ComponentNode,
+		context: JsxContext,
+	): Array<JsxAttributeItem> {
+		const binding = this.#bound(attribute.value);
+		const name = this.#plan.bindings.get(binding)!.name;
+		const { value } = locals([name, ...this.#assign(binding, "")], ["value"]);
+		const handler = this.#writer(binding, value);
+		return [
+			js.jsxAttribute(
+				attribute.model,
+				js.jsxExpressionContainer(
+					context.placeholders.expression(expressionCode(attribute.value, context)),
+				),
+			),
+			js.jsxAttribute(
+				`on${pascalCase(attribute.model)}Change`,
+				js.jsxExpressionContainer(context.placeholders.expression(handler)),
+			),
+		];
+	}
 
-  /** `<component is>` (ADR-0054): the element under the `const` the body declares. */
-  dynamic(node: DynamicNode, context: JsxContext): AstExpression {
-    const { name, hoisted } = this.#plan.composition.dynamic.get(node.span.start)!;
-    const element = jsxDynamic(node, name, context);
-    if (hoisted) return element;
-    // In a list, a branch or a scoped fill, what chooses the candidate is that scope's: the
-    // `const` is declared where it renders.
-    const declaration = context.placeholders.statements(
-      `const ${name} = ${expressionCode(node.is, context)};`,
-    );
-    return js.callExpression(js.arrowFunction([], [declaration, js.returnStatement(element)]), []);
-  }
+	/** `<component is>` (ADR-0054): the element under the `const` the body declares. */
+	dynamic(node: DynamicNode, context: JsxContext): AstExpression {
+		const { name, hoisted } = this.#plan.composition.dynamic.get(node.span.start)!;
+		const element = jsxDynamic(node, name, context);
+		if (hoisted) {
+			return element;
+		}
+		// In a list, a branch or a scoped fill, what chooses the candidate is that scope's: the
+		// `const` is declared where it renders.
+		const declaration = context.placeholders.statements(
+			`const ${name} = ${expressionCode(node.is, context)};`,
+		);
+		return js.callExpression(js.arrowFunction([], [declaration, js.returnStatement(element)]), []);
+	}
 
-  /** The state or model a `v-model`'s value names. */
-  #bound(value: Expression): BindingId {
-    const [reference] = value.refs;
-    if (reference?.kind !== "Binding") {
-      throw new Error("A v-model binds a state or a model: the analyser rejects anything else.");
-    }
-    return reference.binding;
-  }
+	/** The state or model a `v-model`'s value names. */
+	#bound(value: Expression): BindingId {
+		const [reference] = value.refs;
+		if (reference?.kind !== "Binding") {
+			throw new Error("A v-model binds a state or a model: the analyser rejects anything else.");
+		}
+		return reference.binding;
+	}
 
-  /** The bound value as client code reads it: the mirror, where client code writes it. */
-  #clientRead(value: Expression): string {
-    return rewriteExpression(value, this.#plan.owner, this.#code.rules, "client");
-  }
+	/** The bound value as client code reads it: the mirror, where client code writes it. */
+	#clientRead(value: Expression): string {
+		return rewriteExpression(value, this.#plan.owner, this.#code.rules, "client");
+	}
 
-  /**
-   * A function that writes the bound state or model: its setter where nothing else is to do,
-   * `(value) => { … }` otherwise.
-   */
-  #writer(binding: BindingId, value: string): string {
-    const statements = this.#assign(binding, value);
-    const state = this.#plan.state.get(binding);
-    if (state && !state.mirror) return state.setter!;
-    if (statements.length === 1) return `(${value}) => ${statements[0]!}`;
-    return `(${value}) => {\n${statements.map((statement) => `${statement};`).join("\n")}\n}`;
-  }
+	/**
+	 * A function that writes the bound state or model: its setter where nothing else is to do,
+	 * `(value) => { … }` otherwise.
+	 */
+	#writer(binding: BindingId, value: string): string {
+		const statements = this.#assign(binding, value);
+		const state = this.#plan.state.get(binding);
+		if (state && !state.mirror) {
+			return state.setter!;
+		}
+		if (statements.length === 1) {
+			return `(${value}) => ${statements[0]!}`;
+		}
+		return `(${value}) => {\n${statements.map((statement) => `${statement};`).join("\n")}\n}`;
+	}
 
-  /**
-   * The statements that write `value` to a state or a model: the mirror first where client code
-   * reads it, then the setter; a model's local state and its change callback (ADR-0054).
-   */
-  #assign(binding: BindingId, value: string): string[] {
-    const state = this.#plan.state.get(binding);
-    if (state) {
-      if (!state.mirror) return [`${state.setter!}(${value})`];
-      const mirror = `${state.mirror}.current`;
-      return [`${mirror} = ${value}`, `${state.setter!}(${mirror})`];
-    }
-    const model = this.#plan.composition.models.get(binding)!;
-    const statements: string[] = [];
-    let written = value;
-    if (model.mirror) {
-      statements.push(`${model.mirror}.current = ${value}`);
-      written = `${model.mirror}.current`;
-    }
-    if (model.local) statements.push(`${model.local.setter}({ value: ${written} })`);
-    statements.push(`${model.eventLocal}?.(${written})`);
-    return statements;
-  }
+	/**
+	 * The statements that write `value` to a state or a model: the mirror first where client code
+	 * reads it, then the setter; a model's local state and its change callback (ADR-0054).
+	 */
+	#assign(binding: BindingId, value: string): Array<string> {
+		const state = this.#plan.state.get(binding);
+		if (state) {
+			if (!state.mirror) {
+				return [`${state.setter!}(${value})`];
+			}
+			const mirror = `${state.mirror}.current`;
+			return [`${mirror} = ${value}`, `${state.setter!}(${mirror})`];
+		}
+		const model = this.#plan.composition.models.get(binding)!;
+		const statements: Array<string> = [];
+		let written = value;
+		if (model.mirror) {
+			statements.push(`${model.mirror}.current = ${value}`);
+			written = `${model.mirror}.current`;
+		}
+		if (model.local) {
+			statements.push(`${model.local.setter}({ value: ${written} })`);
+		}
+		statements.push(`${model.eventLocal}?.(${written})`);
+		return statements;
+	}
 }
 
 /** A checkbox's or a radio's `value`, as code: its static text, or its bound expression. */
 function boxValue(element: ElementNode, context: JsxContext): string {
-  for (const attribute of element.attributes) {
-    if (attribute.kind === "Static" && attribute.name === "value") {
-      return JSON.stringify(attribute.value === true ? "on" : attribute.value);
-    }
-    if (attribute.kind === "Bound" && attribute.name === "value") {
-      return expressionCode(attribute.value, context);
-    }
-  }
-  // A box without a `value` submits "on", which Vue's `v-model` writes too.
-  return JSON.stringify("on");
+	for (const attribute of element.attributes) {
+		if (attribute.kind === "Static" && attribute.name === "value") {
+			return JSON.stringify(attribute.value === true ? "on" : attribute.value);
+		}
+		if (attribute.kind === "Bound" && attribute.name === "value") {
+			return expressionCode(attribute.value, context);
+		}
+	}
+	// A box without a `value` submits "on", which Vue's `v-model` writes too.
+	return JSON.stringify("on");
 }

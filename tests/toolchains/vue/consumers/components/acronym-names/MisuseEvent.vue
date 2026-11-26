@@ -3,6 +3,6 @@ import Avatar from "../../../../../integration/cases/components/acronym-names/__
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Avatar.event:pickedURL -->
-  <Avatar image-u-r-l="/b.png" :user-i-d="3" @picked-u-r-l="(count: number) => count + 1" />
+	<!-- @uf-expect TS2322 Avatar.event:pickedURL -->
+	<Avatar image-u-r-l="/b.png" :user-i-d="3" @picked-u-r-l="(count: number) => count + 1" />
 </template>

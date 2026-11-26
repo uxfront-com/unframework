@@ -7,10 +7,10 @@ import { expect } from "vitest";
 import Toolbar from "./Toolbar.uf.tsx";
 
 describeTargets("styles/child-root", () => {
-  it("styles each child's root, and nothing inside it", async () => {
-    const view = await mount(Toolbar);
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("button", { name: "Save" })).toBeVisible();
-    await expect.element(view.getByRole("button", { name: "Cancel" })).toBeVisible();
-  });
+	it("styles each child's root, and nothing inside it", async () => {
+		const view = await mount(Toolbar);
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("button", { name: "Save" })).toBeVisible();
+		await expect.element(view.getByRole("button", { name: "Cancel" })).toBeVisible();
+	});
 });

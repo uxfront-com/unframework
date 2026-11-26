@@ -10,13 +10,13 @@ import { toolchain } from "./src/toolchain/index.ts";
 import { behaviourModules } from "./test/behaviour-modules.ts";
 
 const context = {
-  root: fileURLToPath(new URL(".", import.meta.url)),
-  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/vue", import.meta.url)),
+	root: import.meta.dirname,
+	toolchainDir: fileURLToPath(new URL("../../tests/toolchains/vue", import.meta.url)),
 };
 
 /** The toolchain's browser configuration, serving the behaviour components too. */
 function withBehaviour(vite: ViteUserConfig): ViteUserConfig {
-  return { ...vite, plugins: [behaviourModules(), ...(vite.plugins ?? [])] };
+	return { ...vite, plugins: [behaviourModules(), ...(vite.plugins ?? [])] };
 }
 
 /**
@@ -25,24 +25,24 @@ function withBehaviour(vite: ViteUserConfig): ViteUserConfig {
  * and the behaviour components (test/behaviour.browser.test.ts).
  */
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          environment: "node",
-          include: ["test/**/*.test.ts"],
-          exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
-        },
-      },
-      browserProject({
-        provider: playwright(),
-        vite: withBehaviour(await toolchain.vite("browser", context)),
-        // The script block is formatted (ADR-0041), so the formatted output differs too.
-        modules: { target, extension: ".vue", formatted: true, perCase: true },
-      }),
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					environment: "node",
+					include: ["test/**/*.test.ts"],
+					exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
+				},
+			},
+			browserProject({
+				provider: playwright(),
+				vite: withBehaviour(await toolchain.vite("browser", context)),
+				// The script block is formatted (ADR-0041), so the formatted output differs too.
+				modules: { target, extension: ".vue", formatted: true, perCase: true },
+			}),
+		],
+	},
 });
 
 export default config;

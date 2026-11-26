@@ -12,8 +12,8 @@ import { corpusOutputs } from "./test/corpus-plugin.ts";
 const SSR = ["test/render.test.ts", "test/server.test.ts", "test/styles.test.ts"];
 
 const context = {
-  toolchainDir: fileURLToPath(new URL("../../tests/toolchains/angular", import.meta.url)),
-  root: fileURLToPath(new URL(".", import.meta.url)),
+	toolchainDir: fileURLToPath(new URL("../../tests/toolchains/angular", import.meta.url)),
+	root: import.meta.dirname,
 };
 const ssr = await toolchain.vite("ssr", context);
 const browser = await toolchain.vite("browser", context);
@@ -23,8 +23,8 @@ const browser = await toolchain.vite("browser", context);
  * tests compile their components with the ngtsc plugin themselves: there is none to serve.
  */
 const noVirtualModules = {
-  name: "unframework",
-  api: { getCompiled: () => undefined, getSheet: () => undefined },
+	name: "unframework",
+	api: { getCompiled: () => undefined, getSheet: () => undefined },
 } as Plugin;
 
 /** Most tests run ngtsc or Angular's renderer: seconds each on a loaded CI runner. */
@@ -38,45 +38,45 @@ const testTimeout = 30_000;
  * browser:angular project does (test/*.browser.test.ts).
  */
 const config: ViteUserConfig = defineConfig({
-  test: {
-    projects: [
-      {
-        test: {
-          name: "unit",
-          include: ["test/*.test.ts"],
-          exclude: [...SSR, "test/*.browser.test.ts"],
-          environment: "node",
-          testTimeout,
-        },
-      },
-      {
-        ...ssr,
-        plugins: [noVirtualModules, ...(ssr.plugins ?? [])],
-        test: { ...ssr.test, name: "ssr", include: SSR, environment: "node", testTimeout },
-      },
-      {
-        ...browser,
-        plugins: [corpusOutputs(), ...(browser.plugins ?? [])],
-        // The dependency scanner cannot load the virtual modules the tests import: it scans no
-        // test file, and the toolchain lists what the adapter and the components import.
-        optimizeDeps: { ...browser.optimizeDeps, entries: [] },
-        test: {
-          ...browser.test,
-          name: "browser",
-          include: ["test/*.browser.test.ts"],
-          testTimeout,
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            headless: true,
-            // Named, or Vitest calls the project "browser (chromium)".
-            instances: [{ browser: "chromium", name: "browser" }],
-            screenshotFailures: false,
-          },
-        },
-      },
-    ],
-  },
+	test: {
+		projects: [
+			{
+				test: {
+					name: "unit",
+					include: ["test/*.test.ts"],
+					exclude: [...SSR, "test/*.browser.test.ts"],
+					environment: "node",
+					testTimeout,
+				},
+			},
+			{
+				...ssr,
+				plugins: [noVirtualModules, ...(ssr.plugins ?? [])],
+				test: { ...ssr.test, name: "ssr", include: SSR, environment: "node", testTimeout },
+			},
+			{
+				...browser,
+				plugins: [corpusOutputs(), ...(browser.plugins ?? [])],
+				// The dependency scanner cannot load the virtual modules the tests import: it scans no
+				// test file, and the toolchain lists what the adapter and the components import.
+				optimizeDeps: { ...browser.optimizeDeps, entries: [] },
+				test: {
+					...browser.test,
+					name: "browser",
+					include: ["test/*.browser.test.ts"],
+					testTimeout,
+					browser: {
+						enabled: true,
+						provider: playwright(),
+						headless: true,
+						// Named, or Vitest calls the project "browser (chromium)".
+						instances: [{ browser: "chromium", name: "browser" }],
+						screenshotFailures: false,
+					},
+				},
+			},
+		],
+	},
 });
 
 export default config;

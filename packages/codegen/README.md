@@ -7,7 +7,12 @@ framework-specific.
   `emit(component, context)`, and `emitComposable(composable, context)`, which emits a `.uf.ts`
   module's composable as its own module (ADR-0069). Every built-in target has `emitComposable`.
   It is optional for a third-party target: `compile()` reports UF1002 for a composable of a
-  target without it. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
+  target without it. The `context` gives `helper(file, contents, from)`, which puts a helper in
+  its shared module, `_unframework/<file>` at the root of the output tree, and returns the
+  relative path the output at `from` imports it by (ADR-0121). `createHelperModules` is what
+  `compile()` collects them with, and a test that emits without `compile()` may use it too. A
+  target that never calls `helper`, or gets a context without it, prints its helpers inline. The
+  matrix has a cell for every name in `CAPABILITY_NAMES`: one per
   IR node and attribute kind (`element`, `text`, `interpolation`, `conditional`, `list`,
   `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`,
   `raw-html`),
@@ -29,8 +34,8 @@ framework-specific.
   component first calls a composable or reads what a module or a composable gives it, in source
   order: a target that cannot emit them reports UF1002 there and emits nothing for it. Every
   built-in target emits them.
-  Each cell is `native`, `emulated` with the name of the inline helper the target prints (React's
-  `cx` for `class-binding`), or `unsupported` with a portability diagnostic: a target declares in
+  Each cell is `native`, `emulated` with the name of the helper the target emits, shared in
+  `_unframework/` or inline (React's `cx` for `class-binding`, ADR-0121), or `unsupported` with a portability diagnostic: a target declares in
   its matrix what it cannot render exactly (P4, ADR-0033). `requiredCapabilities` derives what a
   module uses from its IR, with where each capability is first used (each component's props, then
   its setup items through the exhaustive `SETUP_ITEM_CAPABILITIES`, then its render tree): the
@@ -135,7 +140,7 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   only through `Placeholders` (an expression, a type, a parameter or a list of statements, the
   last ending in a semicolon it may lack), spliced as written once the module is printed, or as
   text joined between printed pieces: `printComponentModule` prints a JSX target's file as its imports, the copied type
-  declarations, the component and its inline helpers. `jsxNode(node, jsxContext(…))` writes any
+  declarations, the component and the helpers it prints inline. `jsxNode(node, jsxContext(…))` writes any
   render node as JSX. Its defaults are React's (ternary chains ending in `null`, never `&&`;
   `.map` with the `key` first and the index only when read; `<>…</>` for several nodes; `{expr}`
   and `name={expr}`; class parts as an array; style objects with camelCase keys; a spread as
@@ -167,8 +172,8 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   whether a directive's value reads a list's row or a scoped fill's props, which React and Qwik
   then take from each element (ADR-0108). `directive-runner.ts` prints the inline
   `runDirective` that runs them as their element comes into the document and leaves it, for
-  Angular and Qwik, and `hook-queue.ts` the inline `queueHook` that runs the hooks in Vue's
-  order on the targets whose own order differs. Text
+  Angular and Qwik, and `hook-queue.ts` the `queueHook` helper that runs the hooks in Vue's
+  order on the targets whose own order differs, shared in `_unframework/` or inline (ADR-0121). Text
   goes through `jsxText`, the JSX escaping contract (ADR-0030): raw only when every JSX
   transform and formatter keeps it as written, and never where a formatter could start a line
   with `//` or `/*`.

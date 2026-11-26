@@ -19,46 +19,48 @@
 // - Constants and functions that capture nothing of the component are hoisted to module scope
 //   (ADR-0045, `unicorn/consistent-function-scoping`).
 import {
-  functionSource,
-  functionText,
-  keyOwner,
-  rewriteCode,
-  typeNames,
-  writtenValue,
+	functionSource,
+	functionText,
+	keyOwner,
+	rewriteCode,
+	typeNames,
+	writtenValue,
 } from "@unframework.dev/codegen";
 import type { ImportSet, Placeholders, RewriteRules } from "@unframework.dev/codegen";
 import { summarizeCode, summarizeTracked, walk } from "@unframework.dev/ir";
 import type {
-  Binding,
-  BindingId,
-  Code,
-  CodeReference,
-  FunctionCode,
-  InjectItem,
-  ModelItem,
-  RefType,
-  SetupItem,
-  Span,
-  UfComponent,
-  UfModule,
-  UseItem,
-  WatchEffectItem,
-  WatchItem,
+	Binding,
+	BindingId,
+	Code,
+	CodeReference,
+	FunctionCode,
+	InjectItem,
+	ModelItem,
+	RefType,
+	SetupItem,
+	Span,
+	UfComponent,
+	UfModule,
+	UseItem,
+	WatchEffectItem,
+	WatchItem,
 } from "@unframework.dev/ir";
 
 import { assertedCode, assertedFunction, assertedWhole } from "./asserted.ts";
 import type { SolidComposition } from "./composition.ts";
 import { namesTypeParameter } from "./generics.ts";
 import {
-  NEXT_TICK_HELPER,
-  nextTickHelperCode,
-  WATCH_EFFECT_HELPER,
-  WATCHER_HELPER,
-  watcherHelperCode,
+	NEXT_TICK_HELPER,
+	nextTickHelperCode,
+	WATCH_EFFECT_HELPER,
+	WATCHER_HELPER,
+	watcherHelperCode,
 } from "./helpers.ts";
 import type { WatcherUses } from "./helpers.ts";
 import { eventProp } from "./props.ts";
 import type { SolidProps } from "./props.ts";
+import { printHelper } from "./shared-names.ts";
+import type { SharedHelpers } from "./shared-names.ts";
 import { edited, untrackEdits } from "./untracked.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
@@ -66,514 +68,553 @@ type Statement = ReturnType<Placeholders["statements"]>;
 
 /** How one output prints its component's code: the rewrite rules and the client functions. */
 export class SolidCode {
-  readonly component: UfComponent;
-  /** The component's module. */
-  readonly module: UfModule;
-  /** How every reference is spelled, writes and emits included. */
-  readonly rules: RewriteRules;
-  readonly #imports: ImportSet;
-  readonly #props: SolidProps;
-  readonly #composition: SolidComposition;
-  readonly #bindings: ReadonlyMap<BindingId, Binding>;
-  readonly #setters = new Map<BindingId, string>();
-  /** A model's local signal, `[localValue, setLocalValue]`, by its binding. */
-  readonly #locals = new Map<BindingId, { value: string; setter: string }>();
-  readonly #uses: WatcherUses = {
-    single: { lazy: false, immediate: false },
-    array: { lazy: false, immediate: false },
-    flush: { pre: false, post: false },
-  };
-  /** The state whose type names a type parameter of a generic owner (ADR-0068). */
-  readonly #generic = new Set<BindingId>();
-  /** The local functions whose call reads a prop, state or a derived value, as `untrack` sees. */
-  readonly #reading = new Set<BindingId>();
-  #watcher: string | undefined;
-  #watchEffect: string | undefined;
-  #nextTick: string | undefined;
+	readonly component: UfComponent;
+	/** The component's module. */
+	readonly module: UfModule;
+	/** How every reference is spelled, writes and emits included. */
+	readonly rules: RewriteRules;
+	/** The shared helpers the file imports, where it shares them (ADR-0121). */
+	readonly shared: SharedHelpers | undefined;
+	readonly #imports: ImportSet;
+	readonly #props: SolidProps;
+	readonly #composition: SolidComposition;
+	readonly #bindings: ReadonlyMap<BindingId, Binding>;
+	readonly #setters = new Map<BindingId, string>();
+	/** A model's local signal, `[localValue, setLocalValue]`, by its binding. */
+	readonly #locals = new Map<BindingId, { value: string; setter: string }>();
+	readonly #uses: WatcherUses = {
+		single: { lazy: false, immediate: false },
+		array: { lazy: false, immediate: false },
+		flush: { pre: false, post: false },
+	};
+	/** The state whose type names a type parameter of a generic owner (ADR-0068). */
+	readonly #generic = new Set<BindingId>();
+	/** The local functions whose call reads a prop, state or a derived value, as `untrack` sees. */
+	readonly #reading = new Set<BindingId>();
+	#watcher: string | undefined;
+	#watchEffect: string | undefined;
+	#nextTick: string | undefined;
 
-  constructor(
-    component: UfComponent,
-    imports: ImportSet,
-    props: SolidProps,
-    composition: SolidComposition,
-  ) {
-    this.component = component;
-    this.module = composition.module;
-    this.#imports = imports;
-    this.#props = props;
-    this.#composition = composition;
-    this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
-    // The setters of the state and the models client code writes, or a `v-model` binds, claimed
-    // in source order; those nothing writes take none (an unused setter fails L5).
-    const written = new Set<BindingId>();
-    for (const item of component.setup) {
-      for (const code of itemCode(item)) {
-        for (const ref of code.refs) if (ref.kind === "Write") written.add(ref.binding);
-      }
-    }
-    for (const handler of inlineHandlers(component)) {
-      for (const ref of handler.body.refs) if (ref.kind === "Write") written.add(ref.binding);
-    }
-    for (const id of modelTargets(component)) written.add(id);
-    for (const item of component.setup) {
-      if ((item.kind === "State" || item.kind === "Model") && written.has(item.binding)) {
-        const { name } = this.#binding(item.binding);
-        this.#setters.set(item.binding, imports.claim(`set${capitalised(name)}`));
-      }
-      // A required model has no local state: its parent always binds it.
-      if (item.kind === "Model" && !item.required) {
-        const { name } = this.#binding(item.binding);
-        this.#locals.set(item.binding, {
-          value: imports.claim(`local${capitalised(name)}`),
-          setter: imports.claim(`setLocal${capitalised(name)}`),
-        });
-      }
-    }
-    // In a generic owner, a state whose type names a type parameter, or whose type is inferred
-    // from anything but a literal (`ref(initial)` with `initial: T`).
-    const parameters = new Set((component.typeParameters ?? []).map(({ name }) => name));
-    for (const item of component.setup) {
-      if (item.kind !== "State" || !parameters.size) continue;
-      const generic = item.type
-        ? [...typeNames(item.type)].some((name) => parameters.has(name))
-        : item.initial !== undefined && !LITERAL.test(item.initial.code);
-      if (generic) this.#generic.add(item.binding);
-    }
-    // Whether watchers run before the DOM updates, after it, or both, which decides whether a
-    // call names its timing (src/helpers.ts): a `watchEffect` runs after it.
-    for (const item of component.setup) {
-      if (item.kind === "WatchEffect" || (item.kind === "Watch" && item.post)) {
-        this.#uses.flush.post = true;
-      } else if (item.kind === "Watch") this.#uses.flush.pre = true;
-    }
-    for (const item of component.setup) {
-      if (item.kind !== "Function") continue;
-      // What it reads in what it hands on to run later is that code's, not the call's.
-      const { reads, emits } = summarizeTracked(item.function.body, component);
-      if (emits.size || [...reads].some((id) => tracked(this.#binding(id).kind))) {
-        this.#reading.add(item.binding);
-      }
-    }
-    // Each list's index, by the name of the item whose row it is read through.
-    const rowItems = new Map<BindingId, string>();
-    walk(component.render, {
-      enter: (node) => {
-        if (node.kind === "For" && node.index !== undefined) {
-          rowItems.set(node.index, this.#binding(node.item).name);
-        }
-      },
-    });
-    this.rules = {
-      binding: (reference, binding, text) => {
-        // A read a condition narrows, where Solid's spelling loses it (src/asserted.ts).
-        const asserted = assertedWhole(reference, binding) ? "!" : "";
-        switch (binding.kind) {
-          case "prop":
-            return `${props.read(binding, text)}${asserted}`;
-          case "loopVar": {
-            // A keyed list's row is an object of getters named as the item, which TypeScript
-            // narrows as it narrows the props (src/jsx.ts, ADR-0096).
-            const item = rowItems.get(binding.id);
-            return item === undefined ? `${text}.value` : `${item}.index`;
-          }
-          // A composable returns its state and derived values as accessors (ADR-0069).
-          case "state":
-          case "derived":
-          case "model":
-          case "usedState":
-          case "usedDerived":
-            return `${binding.name}()${asserted}`;
-          case "templateRef":
-            return binding.name;
-          case "localConst":
-          case "localFn":
-          case "localVar":
-          case "emit":
-          // An awaited value is a constant the resource's record hands on (ADR-0101).
-          case "awaited":
-            return text;
-          // A slot reads as a prop (src/composition.ts), an injected value and a slot's props as
-          // written, and a component by its import's name. A module's values are the copied
-          // module's and the module's own (ADR-0070), and a composable's arguments, functions and
-          // constants are as the source writes them (ADR-0069).
-          case "slots":
-          case "slotScope":
-          case "context":
-          case "component":
-          case "moduleConst":
-          case "import":
-          case "argument":
-          case "usedFn":
-          case "usedConst":
-            return text;
-          default:
-            return unreachable(binding.kind);
-        }
-      },
-      write: (write, binding, parts) => {
-        switch (binding.kind) {
-          case "state":
-          case "model": {
-            const value = writtenValue(write, parts);
-            // A setter takes a function as an update, so a value of a type parameter, which may
-            // be a function, is passed as one that returns it (ADR-0068).
-            const update = this.#generic.has(binding.id) ? `() => ${value}` : value;
-            return `${this.#setters.get(binding.id)!}(${update})`;
-          }
-          case "localVar":
-            return undefined;
-          case "prop":
-          case "loopVar":
-          case "derived":
-          case "templateRef":
-          case "localConst":
-          case "localFn":
-          case "emit":
-          case "awaited":
-          case "slots":
-          case "slotScope":
-          case "context":
-          case "component":
-          // Read-only: a module's value (ADR-0070), and what a composable takes or returns, whose
-          // state changes through its functions (UF2036, ADR-0069).
-          case "moduleConst":
-          case "import":
-          case "argument":
-          case "usedState":
-          case "usedDerived":
-          case "usedFn":
-          case "usedConst":
-            throw new Error(`A write of the ${binding.kind} ${binding.name}: invalid IR.`);
-          default:
-            return unreachable(binding.kind);
-        }
-      },
-      emit: (emit, _binding, parts) =>
-        `${props.object!}.${eventProp(emit.event)}?.(${parts.arguments.join(", ")})`,
-      api: () => (this.#nextTick ??= this.#imports.claim(NEXT_TICK_HELPER)),
-      // Solid's own flag: `true` in its development build, `false` in its production build and
-      // on its server (ADR-0117).
-      dev: () => this.#imports.add("solid-js/web", "isDev"),
-      slot: (reference) => this.slot(reference.slot),
-    };
-  }
+	constructor(
+		component: UfComponent,
+		imports: ImportSet,
+		props: SolidProps,
+		composition: SolidComposition,
+		shared?: SharedHelpers,
+	) {
+		this.component = component;
+		this.shared = shared;
+		this.module = composition.module;
+		this.#imports = imports;
+		this.#props = props;
+		this.#composition = composition;
+		this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
+		// The setters of the state and the models client code writes, or a `v-model` binds, claimed
+		// in source order; those nothing writes take none (an unused setter fails L5).
+		const written = new Set<BindingId>();
+		for (const item of component.setup) {
+			for (const code of itemCode(item)) {
+				for (const ref of code.refs) {
+					if (ref.kind === "Write") {
+						written.add(ref.binding);
+					}
+				}
+			}
+		}
+		for (const handler of inlineHandlers(component)) {
+			for (const ref of handler.body.refs) {
+				if (ref.kind === "Write") {
+					written.add(ref.binding);
+				}
+			}
+		}
+		for (const id of modelTargets(component)) {
+			written.add(id);
+		}
+		for (const item of component.setup) {
+			if ((item.kind === "State" || item.kind === "Model") && written.has(item.binding)) {
+				const { name } = this.#binding(item.binding);
+				this.#setters.set(item.binding, imports.claim(`set${capitalised(name)}`));
+			}
+			// A required model has no local state: its parent always binds it.
+			if (item.kind === "Model" && !item.required) {
+				const { name } = this.#binding(item.binding);
+				this.#locals.set(item.binding, {
+					value: imports.claim(`local${capitalised(name)}`),
+					setter: imports.claim(`setLocal${capitalised(name)}`),
+				});
+			}
+		}
+		// In a generic owner, a state whose type names a type parameter, or whose type is inferred
+		// from anything but a literal (`ref(initial)` with `initial: T`).
+		const parameters = new Set((component.typeParameters ?? []).map(({ name }) => name));
+		for (const item of component.setup) {
+			if (item.kind !== "State" || !parameters.size) {
+				continue;
+			}
+			const generic = item.type
+				? [...typeNames(item.type)].some((name) => parameters.has(name))
+				: item.initial !== undefined && !LITERAL.test(item.initial.code);
+			if (generic) {
+				this.#generic.add(item.binding);
+			}
+		}
+		// Whether watchers run before the DOM updates, after it, or both, which decides whether a
+		// call names its timing (src/helpers.ts): a `watchEffect` runs after it.
+		for (const item of component.setup) {
+			if (item.kind === "WatchEffect" || (item.kind === "Watch" && item.post)) {
+				this.#uses.flush.post = true;
+			} else if (item.kind === "Watch") {
+				this.#uses.flush.pre = true;
+			}
+		}
+		for (const item of component.setup) {
+			if (item.kind !== "Function") {
+				continue;
+			}
+			// What it reads in what it hands on to run later is that code's, not the call's.
+			const { reads, emits } = summarizeTracked(item.function.body, component);
+			if (emits.size || [...reads].some((id) => tracked(this.#binding(id).kind))) {
+				this.#reading.add(item.binding);
+			}
+		}
+		// Each list's index, by the name of the item whose row it is read through.
+		const rowItems = new Map<BindingId, string>();
+		walk(component.render, {
+			enter: (node) => {
+				if (node.kind === "For" && node.index !== undefined) {
+					rowItems.set(node.index, this.#binding(node.item).name);
+				}
+			},
+		});
+		this.rules = {
+			binding: (reference, binding, text) => {
+				// A read a condition narrows, where Solid's spelling loses it (src/asserted.ts).
+				const asserted = assertedWhole(reference, binding) ? "!" : "";
+				switch (binding.kind) {
+					case "prop":
+						return `${props.read(binding, text)}${asserted}`;
+					case "loopVar": {
+						// A keyed list's row is an object of getters named as the item, which TypeScript
+						// narrows as it narrows the props (src/jsx.ts, ADR-0096).
+						const item = rowItems.get(binding.id);
+						return item === undefined ? `${text}.value` : `${item}.index`;
+					}
+					// A composable returns its state and derived values as accessors (ADR-0069).
+					case "state":
+					case "derived":
+					case "model":
+					case "usedState":
+					case "usedDerived":
+						return `${binding.name}()${asserted}`;
+					case "templateRef":
+						return binding.name;
+					case "localConst":
+					case "localFn":
+					case "localVar":
+					case "emit":
+					// An awaited value is a constant the resource's record hands on (ADR-0101).
+					case "awaited":
+						return text;
+					// A slot reads as a prop (src/composition.ts), an injected value and a slot's props as
+					// written, and a component by its import's name. A module's values are the copied
+					// module's and the module's own (ADR-0070), and a composable's arguments, functions and
+					// constants are as the source writes them (ADR-0069).
+					case "slots":
+					case "slotScope":
+					case "context":
+					case "component":
+					case "moduleConst":
+					case "import":
+					case "argument":
+					case "usedFn":
+					case "usedConst":
+						return text;
+					default:
+						return unreachable(binding.kind);
+				}
+			},
+			write: (write, binding, parts) => {
+				switch (binding.kind) {
+					case "state":
+					case "model": {
+						const value = writtenValue(write, parts);
+						// A setter takes a function as an update, so a value of a type parameter, which may
+						// be a function, is passed as one that returns it (ADR-0068).
+						const update = this.#generic.has(binding.id) ? `() => ${value}` : value;
+						return `${this.#setters.get(binding.id)!}(${update})`;
+					}
+					case "localVar":
+						return undefined;
+					case "prop":
+					case "loopVar":
+					case "derived":
+					case "templateRef":
+					case "localConst":
+					case "localFn":
+					case "emit":
+					case "awaited":
+					case "slots":
+					case "slotScope":
+					case "context":
+					case "component":
+					// Read-only: a module's value (ADR-0070), and what a composable takes or returns, whose
+					// state changes through its functions (UF2036, ADR-0069).
+					case "moduleConst":
+					case "import":
+					case "argument":
+					case "usedState":
+					case "usedDerived":
+					case "usedFn":
+					case "usedConst":
+						throw new Error(`A write of the ${binding.kind} ${binding.name}: invalid IR.`);
+					default:
+						return unreachable(binding.kind);
+				}
+			},
+			emit: (emit, _binding, parts) =>
+				`${props.object!}.${eventProp(emit.event)}?.(${parts.arguments.join(", ")})`,
+			api: () => (this.#nextTick ??= this.#imports.claim(NEXT_TICK_HELPER)),
+			// Solid's own flag: `true` in its development build, `false` in its production build and
+			// on its server (ADR-0117).
+			dev: () => this.#imports.add("solid-js/web", "isDev"),
+			slot: (reference) => this.slot(reference.slot),
+		};
+	}
 
-  /** The setter of a state or model binding code writes: none for one nothing writes. */
-  setter(id: BindingId): string | undefined {
-    return this.#setters.get(id);
-  }
+	/** The setter of a state or model binding code writes: none for one nothing writes. */
+	setter(id: BindingId): string | undefined {
+		return this.#setters.get(id);
+	}
 
-  /**
-   * One of the component's slots as a value: the prop that holds it (`props.title`), the
-   * default slot's `children`, or its content resolved once (`content()`, `title()`).
-   */
-  slot(name: string): string {
-    const resolved = this.#composition.resolvedSlot(name);
-    if (resolved) return `${resolved}()`;
-    return `${this.#props.object!}.${name === "default" ? "children" : name}`;
-  }
+	/**
+	 * One of the component's slots as a value: the prop that holds it (`props.title`), the
+	 * default slot's `children`, or its content resolved once (`content()`, `title()`).
+	 */
+	slot(name: string): string {
+		const resolved = this.#composition.resolvedSlot(name);
+		if (resolved) {
+			return `${resolved}()`;
+		}
+		return `${this.#props.object!}.${name === "default" ? "children" : name}`;
+	}
 
-  /**
-   * A model (ADR-0054): a local signal seeded by its default, the model's value read from its
-   * prop while the parent binds it and from the signal otherwise, and, where code writes it, a
-   * setter that writes the signal and asks the parent to change its value.
-   */
-  model(item: ModelItem): string {
-    const { name } = this.#binding(item.binding);
-    const local = this.#locals.get(item.binding);
-    const setter = this.#setters.get(item.binding);
-    const object = this.#props.object!;
-    const prop = `${object}.${item.name}`;
-    const change = `${object}.${eventProp(`${item.name}Change`)}?.(next);`;
-    if (!local) {
-      // Required: the parent always binds it, so it reads the prop alone, typed as declared.
-      const lines = [`const ${name} = () => ${prop};`];
-      if (setter) {
-        const type = item.type?.code ?? `ReturnType<typeof ${name}>`;
-        lines.push(`\nfunction ${setter}(next: ${type}) {\n${change}\n}`);
-      }
-      return lines.join("\n");
-    }
-    const initial = item.default ? item.default.code : "";
-    const pattern = setter ? `[${local.value}, ${local.setter}]` : `[${local.value}]`;
-    const lines = [
-      `const ${pattern} = ${this.solid("createSignal")}${typeArgument(item.type)}(${initial});`,
-      `const ${name} = () => (${prop} === undefined ? ${local.value}() : ${prop});`,
-    ];
-    if (setter) {
-      const type = item.type?.code ?? `ReturnType<typeof ${local.value}>`;
-      lines.push(`\nfunction ${setter}(next: ${type}) {\n${local.setter}(next);\n${change}\n}`);
-    }
-    return lines.join("\n");
-  }
+	/**
+	 * A model (ADR-0054): a local signal seeded by its default, the model's value read from its
+	 * prop while the parent binds it and from the signal otherwise, and, where code writes it, a
+	 * setter that writes the signal and asks the parent to change its value.
+	 */
+	model(item: ModelItem): string {
+		const { name } = this.#binding(item.binding);
+		const local = this.#locals.get(item.binding);
+		const setter = this.#setters.get(item.binding);
+		const object = this.#props.object!;
+		const prop = `${object}.${item.name}`;
+		const change = `${object}.${eventProp(`${item.name}Change`)}?.(next);`;
+		if (!local) {
+			// Required: the parent always binds it, so it reads the prop alone, typed as declared.
+			const lines = [`const ${name} = () => ${prop};`];
+			if (setter) {
+				const type = item.type?.code ?? `ReturnType<typeof ${name}>`;
+				lines.push(`\nfunction ${setter}(next: ${type}) {\n${change}\n}`);
+			}
+			return lines.join("\n");
+		}
+		const initial = item.default ? item.default.code : "";
+		const pattern = setter ? `[${local.value}, ${local.setter}]` : `[${local.value}]`;
+		const lines = [
+			`const ${pattern} = ${this.solid("createSignal")}${typeArgument(item.type)}(${initial});`,
+			`const ${name} = () => (${prop} === undefined ? ${local.value}() : ${prop});`,
+		];
+		if (setter) {
+			const type = item.type?.code ?? `ReturnType<typeof ${local.value}>`;
+			lines.push(`\nfunction ${setter}(next: ${type}) {\n${local.setter}(next);\n${change}\n}`);
+		}
+		return lines.join("\n");
+	}
 
-  /** `const theme = useContext(ThemeKey) ?? fallback;` (ADR-0054). */
-  inject(item: InjectItem): string {
-    const { name } = this.#binding(item.binding);
-    const read = `${this.solid("useContext")}(${item.key})`;
-    if (!item.fallback) return `const ${name} = ${read};`;
-    return `const ${name} = ${read} ?? ${this.provided(item.key, item.fallback)};`;
-  }
+	/** `const theme = useContext(ThemeKey) ?? fallback;` (ADR-0054). */
+	inject(item: InjectItem): string {
+		const { name } = this.#binding(item.binding);
+		const read = `${this.solid("useContext")}(${item.key})`;
+		if (!item.fallback) {
+			return `const ${name} = ${read};`;
+		}
+		return `const ${name} = ${read} ?? ${this.provided(item.key, item.fallback)};`;
+	}
 
-  /**
-   * `const { on, toggle } = useToggle(false);` (ADR-0069): the composable returns its state and
-   * derived values as accessors, which the caller destructures and calls (`on()`), and its
-   * functions and constants as they are. A value argument is read once, a getter is passed as an
-   * arrow the composable reads reactively, and a callback as a function its client code calls.
-   */
-  use(item: UseItem): string {
-    const members = item.members.map(({ member, binding }) => {
-      const { name } = this.#binding(binding);
-      return name === member ? name : `${member}: ${name}`;
-    });
-    const parts = item.arguments.map((argument) => {
-      switch (argument.kind) {
-        case "Value":
-          return this.value(argument.value);
-        case "Getter":
-          return this.getter(argument.getter);
-        case "Callback":
-          return this.client(argument.callback);
-        default:
-          return unreachable(argument);
-      }
-    });
-    return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
-  }
+	/**
+	 * `const { on, toggle } = useToggle(false);` (ADR-0069): the composable returns its state and
+	 * derived values as accessors, which the caller destructures and calls (`on()`), and its
+	 * functions and constants as they are. A value argument is read once, a getter is passed as an
+	 * arrow the composable reads reactively, and a callback as a function its client code calls.
+	 */
+	use(item: UseItem): string {
+		const members = item.members.map(({ member, binding }) => {
+			const { name } = this.#binding(binding);
+			return name === member ? name : `${member}: ${name}`;
+		});
+		const parts = item.arguments.map((argument) => {
+			switch (argument.kind) {
+				case "Value":
+					return this.value(argument.value);
+				case "Getter":
+					return this.getter(argument.getter);
+				case "Callback":
+					return this.client(argument.callback);
+				default:
+					return unreachable(argument);
+			}
+		});
+		return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
+	}
 
-  /**
-   * What a component provides, or injects as a fallback, for a key: a key of a ref takes the
-   * ref itself, as `refObject` (src/composition.ts); anything else its value.
-   */
-  provided(key: string, value: Code): string {
-    const whole = wholeBinding(value);
-    if (whole && keyRef(this.#composition, key)) {
-      const binding = this.#binding(whole);
-      if (binding.kind === "state" || binding.kind === "derived" || binding.kind === "model") {
-        return this.#composition.refObject(binding.name);
-      }
-    }
-    // A provider reads its value once, as `inject`'s fallback is read: in `untrack`.
-    return this.value(value);
-  }
+	/**
+	 * What a component provides, or injects as a fallback, for a key: a key of a ref takes the
+	 * ref itself, as `refObject` (src/composition.ts); anything else its value.
+	 */
+	provided(key: string, value: Code): string {
+		const whole = wholeBinding(value);
+		if (whole && keyRef(this.#composition, key)) {
+			const binding = this.#binding(whole);
+			if (binding.kind === "state" || binding.kind === "derived" || binding.kind === "model") {
+				return this.#composition.refObject(binding.name);
+			}
+		}
+		// A provider reads its value once, as `inject`'s fallback is read: in `untrack`.
+		return this.value(value);
+	}
 
-  /** A name of the output's own, past every name the source and the output take. */
-  claim(name: string): string {
-    return this.#imports.claim(name);
-  }
+	/** A name of the output's own, past every name the source and the output take. */
+	claim(name: string): string {
+		return this.#imports.claim(name);
+	}
 
-  /** A Solid import's local name. */
-  solid(name: string): string {
-    return this.#imports.add("solid-js", name);
-  }
+	/** A Solid import's local name. */
+	solid(name: string): string {
+		return this.#imports.add("solid-js", name);
+	}
 
-  /**
-   * Code the setup evaluates once (an initial value, a constant's value), for the `pure` site, in
-   * `untrack` where it reads a prop, state or a derived value, itself or through what it calls.
-   */
-  value(code: Code): string {
-    const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
-    if (!this.#readsReactive(code)) return text;
-    return `${this.solid("untrack")}(() => ${arrowBody(text)})`;
-  }
+	/**
+	 * Code the setup evaluates once (an initial value, a constant's value), for the `pure` site, in
+	 * `untrack` where it reads a prop, state or a derived value, itself or through what it calls.
+	 */
+	value(code: Code): string {
+		const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
+		if (!this.#readsReactive(code)) {
+			return text;
+		}
+		return `${this.solid("untrack")}(() => ${arrowBody(text)})`;
+	}
 
-  /**
-   * A top-level `if (isDev) { … }` (ADR-0117), for the `pure` site: a statement, in `untrack`
-   * where it reads a prop, state or a derived value, as a value the setup evaluates is.
-   */
-  devCheck(code: Code): string {
-    const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
-    if (!this.#readsReactive(code)) return text;
-    return `${this.solid("untrack")}(() => {\n${text}\n});`;
-  }
+	/**
+	 * A top-level `if (isDev) { … }` (ADR-0117), for the `pure` site: a statement, in `untrack`
+	 * where it reads a prop, state or a derived value, as a value the setup evaluates is.
+	 */
+	devCheck(code: Code): string {
+		const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
+		if (!this.#readsReactive(code)) {
+			return text;
+		}
+		return `${this.solid("untrack")}(() => {\n${text}\n});`;
+	}
 
-  /**
-   * An awaited expression, for the `pure` site, with no `untrack`: the resource runs its fetcher
-   * untracked already (solid-js 1.9 `createResource`), so a prop it reads is read once (ADR-0101).
-   */
-  awaited(code: Code): string {
-    return rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
-  }
+	/**
+	 * An awaited expression, for the `pure` site, with no `untrack`: the resource runs its fetcher
+	 * untracked already (solid-js 1.9 `createResource`), so a prop it reads is read once (ADR-0101).
+	 */
+	awaited(code: Code): string {
+		return rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
+	}
 
-  /** A getter (`computed`, a watch source) as an arrow, for the `pure` site. */
-  getter(fn: FunctionCode): string {
-    return functionText(this.#assertedFunction(fn), this.component, this.rules, "pure");
-  }
+	/** A getter (`computed`, a watch source) as an arrow, for the `pure` site. */
+	getter(fn: FunctionCode): string {
+		return functionText(this.#assertedFunction(fn), this.component, this.rules, "pure");
+	}
 
-  /**
-   * A function client code runs (a setup function, an inline handler): an arrow, or with `name`
-   * a declaration. `tracked` where `solid/reactivity` reads it as a handler (an inline handler of
-   * an `on…` prop or `addEventListener`); it reads a setup function as neither, so an arrow that
-   * one hands to a function says `untrack` (src/untracked.ts).
-   */
-  client(fn: FunctionCode, name?: string, tracked = false): string {
-    return functionSource(fn, this.body(fn, tracked), name === undefined ? {} : { name });
-  }
+	/**
+	 * A function client code runs (a setup function, an inline handler): an arrow, or with `name`
+	 * a declaration. `tracked` where `solid/reactivity` reads it as a handler (an inline handler of
+	 * an `on…` prop or `addEventListener`); it reads a setup function as neither, so an arrow that
+	 * one hands to a function says `untrack` (src/untracked.ts).
+	 */
+	client(fn: FunctionCode, name?: string, tracked = false): string {
+		return functionSource(fn, this.body(fn, tracked), name === undefined ? {} : { name });
+	}
 
-  /**
-   * A callback the rule reads as tracked or called later: a watcher's, a `watchEffect`'s, a
-   * hook's (`onMount`'s and `onCleanup`'s argument).
-   */
-  callback(fn: FunctionCode): string {
-    return functionSource(fn, this.body(fn, true));
-  }
+	/**
+	 * A callback the rule reads as tracked or called later: a watcher's, a `watchEffect`'s, a
+	 * hook's (`onMount`'s and `onCleanup`'s argument).
+	 */
+	callback(fn: FunctionCode): string {
+		return functionSource(fn, this.body(fn, true));
+	}
 
-  /** `createWatcher(source, callback, options)` for a watcher (see src/helpers.ts). */
-  watcher(item: WatchItem): string {
-    const { sources, callback: fn } = item;
-    const array = Boolean(item.array);
-    const immediate = Boolean(item.immediate);
-    const post = Boolean(item.post);
-    const uses = array ? this.#uses.array : this.#uses.single;
-    if (immediate) uses.immediate = true;
-    else uses.lazy = true;
-    this.#watcher ??= this.#imports.claim(WATCHER_HELPER);
-    const printed = sources.map((source) => {
-      switch (source.kind) {
-        // A ref's accessor is a source as it is: `count`, a memo's `total`.
-        case "Ref":
-          return this.#binding(source.binding).name;
-        case "Getter":
-          return this.getter(source.getter);
-        default:
-          return unreachable(source);
-      }
-    });
-    const source = array ? `[${printed.join(", ")}]` : printed[0]!;
-    // A call names its timing where the helper runs watchers of both kinds.
-    const both = this.#uses.flush.pre && this.#uses.flush.post;
-    const options = [
-      ...(immediate ? ["immediate: true"] : []),
-      ...(post && both ? ['flush: "post"'] : []),
-    ];
-    const optionsText = options.length ? `, { ${options.join(", ")} }` : "";
-    return `${this.#watcher}(${source}, ${this.callback(fn)}${optionsText});`;
-  }
+	/** `createWatcher(source, callback, options)` for a watcher (see src/helpers.ts). */
+	watcher(item: WatchItem): string {
+		const { sources, callback: fn } = item;
+		const array = Boolean(item.array);
+		const immediate = Boolean(item.immediate);
+		const post = Boolean(item.post);
+		const uses = array ? this.#uses.array : this.#uses.single;
+		if (immediate) {
+			uses.immediate = true;
+		} else {
+			uses.lazy = true;
+		}
+		this.#watcher ??= this.#imports.claim(WATCHER_HELPER);
+		const printed = sources.map((source) => {
+			switch (source.kind) {
+				// A ref's accessor is a source as it is: `count`, a memo's `total`.
+				case "Ref":
+					return this.#binding(source.binding).name;
+				case "Getter":
+					return this.getter(source.getter);
+				default:
+					return unreachable(source);
+			}
+		});
+		const source = array ? `[${printed.join(", ")}]` : printed[0]!;
+		// A call names its timing where the helper runs watchers of both kinds.
+		const both = this.#uses.flush.pre && this.#uses.flush.post;
+		const options = [
+			...(immediate ? ["immediate: true"] : []),
+			...(post && both ? ['flush: "post"'] : []),
+		];
+		const optionsText = options.length ? `, { ${options.join(", ")} }` : "";
+		return `${this.#watcher}(${source}, ${this.callback(fn)}${optionsText});`;
+	}
 
-  /**
-   * `createWatchEffect(sources, effect)` for a `watchEffect` (see src/helpers.ts): its sources are
-   * the props, state and derived values it reads, which UF2015 keeps to its straight-line start,
-   * its own reads first, in order, then those of the functions it calls; never a read in what it
-   * hands on to run later (a timer's or a `then`'s callback, `onCleanup`'s), as Vue tracks none.
-   */
-  watchEffect(item: WatchEffectItem): string {
-    const { effect } = item;
-    this.#watchEffect ??= this.#imports.claim(WATCH_EFFECT_HELPER);
-    const own = effect.body.refs.flatMap((ref) =>
-      ref.kind === "Binding" && !ref.call && !ref.later && tracked(this.#binding(ref.binding).kind)
-        ? [ref.binding]
-        : [],
-    );
-    const { reads } = summarizeTracked(effect.body, this.component);
-    const sources = [...new Set([...own, ...reads])].flatMap((id) => {
-      const binding = this.#binding(id);
-      switch (binding.kind) {
-        case "state":
-        case "derived":
-        case "usedState":
-        case "usedDerived":
-          return [binding.name];
-        case "prop": {
-          const object = this.#props.object;
-          return [
-            `() => ${this.#props.read(binding, object ? `${object}.${binding.name}` : binding.name)}`,
-          ];
-        }
-        default:
-          return [];
-      }
-    });
-    return `${this.#watchEffect}([${sources.join(", ")}], ${this.callback(effect)});`;
-  }
+	/**
+	 * `createWatchEffect(sources, effect)` for a `watchEffect` (see src/helpers.ts): its sources are
+	 * the props, state and derived values it reads, which UF2015 keeps to its straight-line start,
+	 * its own reads first, in order, then those of the functions it calls; never a read in what it
+	 * hands on to run later (a timer's or a `then`'s callback, `onCleanup`'s), as Vue tracks none.
+	 */
+	watchEffect(item: WatchEffectItem): string {
+		const { effect } = item;
+		this.#watchEffect ??= this.#imports.claim(WATCH_EFFECT_HELPER);
+		const own = effect.body.refs.flatMap((ref) =>
+			ref.kind === "Binding" && !ref.call && !ref.later && tracked(this.#binding(ref.binding).kind)
+				? [ref.binding]
+				: [],
+		);
+		const { reads } = summarizeTracked(effect.body, this.component);
+		const sources = [...new Set([...own, ...reads])].flatMap((id) => {
+			const binding = this.#binding(id);
+			switch (binding.kind) {
+				case "state":
+				case "derived":
+				case "usedState":
+				case "usedDerived":
+					return [binding.name];
+				case "prop": {
+					const object = this.#props.object;
+					return [
+						`() => ${this.#props.read(binding, object ? `${object}.${binding.name}` : binding.name)}`,
+					];
+				}
+				default:
+					return [];
+			}
+		});
+		return `${this.#watchEffect}([${sources.join(", ")}], ${this.callback(effect)});`;
+	}
 
-  /** The inline helpers the code printed so far calls. */
-  helpers(): string[] {
-    const helpers: string[] = [];
-    if (this.#watcher || this.#watchEffect) {
-      const arrays = this.#uses.array.lazy || this.#uses.array.immediate;
-      helpers.push(
-        watcherHelperCode(this.#uses, {
-          createReaction: this.solid("createReaction"),
-          onCleanup: this.solid("onCleanup"),
-          onMount: this.solid("onMount"),
-          ...(this.#watcher ? { watcher: this.#watcher } : {}),
-          ...(this.#watchEffect ? { watchEffect: this.#watchEffect } : {}),
-          ...(arrays ? { values: this.#imports.claim("WatchedValues") } : {}),
-          queue: this.#imports.claim("queuedWatchers"),
-          schedule: this.#imports.claim("queueWatcher"),
-          queued: this.#imports.claim("flushQueued"),
-        }),
-      );
-    }
-    if (this.#nextTick) helpers.push(nextTickHelperCode(this.#nextTick));
-    return helpers;
-  }
+	/** The helpers the code printed so far calls: none that the file shares. */
+	helpers(): Array<string> {
+		const helpers: Array<string> = [];
+		if (this.#watcher || this.#watchEffect) {
+			const arrays = this.#uses.array.lazy || this.#uses.array.immediate;
+			helpers.push(
+				watcherHelperCode(this.#uses, {
+					createReaction: this.solid("createReaction"),
+					onCleanup: this.solid("onCleanup"),
+					onMount: this.solid("onMount"),
+					...(this.#watcher ? { watcher: this.#watcher } : {}),
+					...(this.#watchEffect ? { watchEffect: this.#watchEffect } : {}),
+					...(arrays ? { values: this.#imports.claim("WatchedValues") } : {}),
+					queue: this.#imports.claim("queuedWatchers"),
+					schedule: this.#imports.claim("queueWatcher"),
+					queued: this.#imports.claim("flushQueued"),
+				}),
+			);
+		}
+		if (this.#nextTick) {
+			helpers.push(
+				...printHelper(this.shared, NEXT_TICK_HELPER, this.#nextTick, nextTickHelperCode),
+			);
+		}
+		return helpers;
+	}
 
-  #binding(id: BindingId): Binding {
-    const binding = this.#bindings.get(id);
-    if (!binding) throw new Error(`No binding ${id}: invalid IR.`);
-    return binding;
-  }
+	#binding(id: BindingId): Binding {
+		const binding = this.#bindings.get(id);
+		if (!binding) {
+			throw new Error(`No binding ${id}: invalid IR.`);
+		}
+		return binding;
+	}
 
-  /** Whether code reads a prop, state or a derived value, itself or through what it calls. */
-  #readsReactive(code: Code): boolean {
-    const { reads } = summarizeCode(code, this.component);
-    return [...reads].some((id) => tracked(this.#binding(id).kind));
-  }
+	/** Whether code reads a prop, state or a derived value, itself or through what it calls. */
+	#readsReactive(code: Code): boolean {
+		const { reads } = summarizeCode(code, this.component);
+		return [...reads].some((id) => tracked(this.#binding(id).kind));
+	}
 
-  /**
-   * A function's body, rewritten, the callbacks `solid/reactivity` would report in `untrack`
-   * (src/untracked.ts). `tracked` where the rule reads the function itself as tracked.
-   */
-  body(fn: FunctionCode, tracked: boolean): string {
-    const asserted = this.#assertedFunction(fn);
-    const edits = untrackEdits(asserted, {
-      reactive: this.#reactive(asserted.body.refs),
-      tracked,
-      untrack: () => this.solid("untrack"),
-    });
-    const body = edits.length ? edited(asserted.body, edits) : asserted.body;
-    return rewriteCode(body, this.component, this.rules, "client");
-  }
+	/**
+	 * A function's body, rewritten, the callbacks `solid/reactivity` would report in `untrack`
+	 * (src/untracked.ts). `tracked` where the rule reads the function itself as tracked.
+	 */
+	body(fn: FunctionCode, tracked: boolean): string {
+		const asserted = this.#assertedFunction(fn);
+		const edits = untrackEdits(asserted, {
+			reactive: this.#reactive(asserted.body.refs),
+			tracked,
+			untrack: () => this.solid("untrack"),
+		});
+		const body = edits.length ? edited(asserted.body, edits) : asserted.body;
+		return rewriteCode(body, this.component, this.rules, "client");
+	}
 
-  /** Code with a `!` after each narrowed member path Solid's spelling loses (src/asserted.ts). */
-  #asserted(code: Code): Code {
-    return assertedCode(code, (reference) => this.#binding(reference.binding));
-  }
+	/** Code with a `!` after each narrowed member path Solid's spelling loses (src/asserted.ts). */
+	#asserted(code: Code): Code {
+		return assertedCode(code, (reference) => this.#binding(reference.binding));
+	}
 
-  #assertedFunction(fn: FunctionCode): FunctionCode {
-    return assertedFunction(fn, (reference) => this.#binding(reference.binding));
-  }
+	#assertedFunction(fn: FunctionCode): FunctionCode {
+		return assertedFunction(fn, (reference) => this.#binding(reference.binding));
+	}
 
-  /**
-   * Where code reads what Solid tracks: a prop, state, a derived value; an emit reads a prop; and
-   * a call of a local function that reads one, which the rule reads as a derived signal.
-   */
-  #reactive(refs: readonly CodeReference[]): Span[] {
-    return refs.flatMap((ref) => {
-      switch (ref.kind) {
-        case "Binding":
-          return tracked(this.#binding(ref.binding).kind) ||
-            (ref.call && this.#reading.has(ref.binding))
-            ? [ref.span]
-            : [];
-        case "Write":
-          // `count.value += 1` reads `count()`.
-          return ref.operator !== "=" && tracked(this.#binding(ref.binding).kind) ? [ref.span] : [];
-        case "Emit":
-          return [ref.span];
-        case "Global":
-        case "Import":
-        case "Event":
-        case "Api":
-        case "Slot":
-        case "Dev":
-          return [];
-        default:
-          return unreachable(ref);
-      }
-    });
-  }
+	/**
+	 * Where code reads what Solid tracks: a prop, state, a derived value; an emit reads a prop; and
+	 * a call of a local function that reads one, which the rule reads as a derived signal.
+	 */
+	#reactive(refs: ReadonlyArray<CodeReference>): Array<Span> {
+		return refs.flatMap((ref) => {
+			switch (ref.kind) {
+				case "Binding":
+					return tracked(this.#binding(ref.binding).kind) ||
+						(ref.call && this.#reading.has(ref.binding))
+						? [ref.span]
+						: [];
+				case "Write":
+					// `count.value += 1` reads `count()`.
+					return ref.operator !== "=" && tracked(this.#binding(ref.binding).kind) ? [ref.span] : [];
+				case "Emit":
+					return [ref.span];
+				case "Global":
+				case "Import":
+				case "Event":
+				case "Api":
+				case "Slot":
+				case "Dev":
+					return [];
+				default:
+					return unreachable(ref);
+			}
+		});
+	}
 }
 
 /**
@@ -581,54 +622,54 @@ export class SolidCode {
  * template with no substitution, a boolean or `null`. An array or an object may hold a `T`.
  */
 const LITERAL =
-  /^\s*(?:-?(?:\d|\.\d)[\d_.]*(?:e[+-]?\d+)?n?|0[box][\da-f_]+n?|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`$\\]*`|true|false|null)\s*$/i;
+	/^\s*(?:-?(?:\d|\.\d)[\d_.]*(?:e[+-]?\d+)?n?|0[box][\da-f_]+n?|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`$\\]*`|true|false|null)\s*$/i;
 
 /** Whether Solid tracks a read of a binding of a kind: what `untrack` is for. */
 function tracked(kind: Binding["kind"]): boolean {
-  switch (kind) {
-    case "prop":
-    case "state":
-    case "derived":
-    case "model":
-    // A composable's accessors (ADR-0069).
-    case "usedState":
-    case "usedDerived":
-      return true;
-    case "loopVar":
-    case "templateRef":
-    case "localConst":
-    case "localFn":
-    case "localVar":
-    case "emit":
-    // Read once from the resource's record, never a signal (ADR-0101).
-    case "awaited":
-      return false;
-    case "slots":
-    case "slotScope":
-    case "context":
-    case "component":
-    case "moduleConst":
-    case "import":
-    case "argument":
-    case "usedFn":
-    case "usedConst":
-      return false;
-    default:
-      return unreachable(kind);
-  }
+	switch (kind) {
+		case "prop":
+		case "state":
+		case "derived":
+		case "model":
+		// A composable's accessors (ADR-0069).
+		case "usedState":
+		case "usedDerived":
+			return true;
+		case "loopVar":
+		case "templateRef":
+		case "localConst":
+		case "localFn":
+		case "localVar":
+		case "emit":
+		// Read once from the resource's record, never a signal (ADR-0101).
+		case "awaited":
+			return false;
+		case "slots":
+		case "slotScope":
+		case "context":
+		case "component":
+		case "moduleConst":
+		case "import":
+		case "argument":
+		case "usedFn":
+		case "usedConst":
+			return false;
+		default:
+			return unreachable(kind);
+	}
 }
 
 /** What the setup prints: module-level declarations, and the component body's statements. */
 export interface SolidSetup {
-  /** Constants and functions that capture nothing of the component, at module scope (ADR-0045). */
-  hoisted: Statement[];
-  /**
-   * The setup's statements, in source order: an async setup's from its awaited bindings on,
-   * which run once its awaits resolve (ADR-0101).
-   */
-  statements: Statement[];
-  /** An async setup's awaits, as one resource (ADR-0101), or none. */
-  resource?: SolidResource;
+	/** Constants and functions that capture nothing of the component, at module scope (ADR-0045). */
+	hoisted: Array<Statement>;
+	/**
+	 * The setup's statements, in source order: an async setup's from its awaited bindings on,
+	 * which run once its awaits resolve (ADR-0101).
+	 */
+	statements: Array<Statement>;
+	/** An async setup's awaits, as one resource (ADR-0101), or none. */
+	resource?: SolidResource;
 }
 
 /**
@@ -637,82 +678,82 @@ export interface SolidSetup {
  * child once it resolves. The rest of the setup and the template run in that child.
  */
 export interface SolidResource {
-  /** What the component runs first: its ids, then the resource. */
-  statements: Statement[];
-  /** The resource's accessor, `awaited`. */
-  accessor: string;
-  /** The parameter of `<Show>`'s function child, `resolved`. */
-  parameter: string;
-  /** The first statement of that child, which reads the awaited values out of the record. */
-  bindings: Statement;
+	/** What the component runs first: its ids, then the resource. */
+	statements: Array<Statement>;
+	/** The resource's accessor, `awaited`. */
+	accessor: string;
+	/** The parameter of `<Show>`'s function child, `resolved`. */
+	parameter: string;
+	/** The first statement of that child, which reads the awaited values out of the record. */
+	bindings: Statement;
 }
 
 /** The setup's statements, in source order, and those hoisted out of the component. */
 export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSetup {
-  const { component } = code;
-  const hoisted = hoistable(component, code.module);
-  const module: Statement[] = [];
-  const body: Statement[] = [];
-  const bindingOf = (id: BindingId) => component.bindings.find((binding) => binding.id === id)!;
-  // Printed in source order, so names are claimed in it.
-  const texts = new Map<SetupItem, string>(
-    component.setup.flatMap((item) =>
-      item.kind === "Provide" ? [] : [[item, itemText(item, code, bindingOf)] as const],
-    ),
-  );
-  for (const item of component.setup) {
-    if ("binding" in item && hoisted.has(item.binding)) {
-      // A blank line after each: a module's declarations stand apart.
-      module.push(placeholders.statements(`${texts.get(item)!}\n`));
-    }
-  }
-  const awaits = component.setup.filter((item) => item.kind === "Await");
-  // An async setup's ids are created before its resource, where hydration still runs, so they
-  // keep the server's (ADR-0101): the subtree the resource renders is created again on the
-  // client once it resolves, and an id created there would be a client one (`cl-N`).
-  const early = (item: SetupItem) => awaits.length > 0 && item.kind === "Id";
-  // A `provide` wraps the template in its context's provider (src/composition.ts).
-  const kept = teardownFirst(
-    component.setup.filter(
-      (item) =>
-        item.kind !== "Provide" &&
-        item.kind !== "Await" &&
-        !early(item) &&
-        !("binding" in item && hoisted.has(item.binding)),
-    ),
-  );
-  let resource: SolidResource | undefined;
-  if (awaits.length) {
-    const accessor = code.claim("awaited");
-    const parameter = code.claim("resolved");
-    const names = awaits.map((item) => bindingOf(item.binding).name).join(", ");
-    const fetcher = [...awaits.map((item) => texts.get(item)!), `return { ${names} };`];
-    const statements = [
-      ...component.setup.filter(early).map((item) => placeholders.statements(texts.get(item)!)),
-      placeholders.statements(
-        `const [${accessor}] = ${code.solid("createResource")}(async () => {\n${fetcher.join("\n")}\n});\n`,
-      ),
-    ];
-    // The awaited values, read once from the record (`when` tests the record, so a falsy value
-    // still renders).
-    const bindings = placeholders.statements(
-      `const { ${names} } = ${parameter}();${kept.length ? "" : "\n"}`,
-    );
-    resource = { statements, accessor, parameter, bindings };
-  }
-  for (const [index, item] of kept.entries()) {
-    // A blank line around a block (a function, a watcher, an effect, a hook) and before the
-    // return, as the source sets them apart: oxfmt keeps one blank line and adds none.
-    const previous = kept[index - 1];
-    const before =
-      (index > 0 || resource !== undefined) &&
-      (BLOCKS.has(item.kind) || (previous !== undefined && BLOCKS.has(previous.kind)));
-    const after = index === kept.length - 1;
-    body.push(
-      placeholders.statements(`${before ? "\n" : ""}${texts.get(item)!}${after ? "\n" : ""}`),
-    );
-  }
-  return { hoisted: module, statements: body, ...(resource ? { resource } : {}) };
+	const { component } = code;
+	const hoisted = hoistable(component, code.module);
+	const module: Array<Statement> = [];
+	const body: Array<Statement> = [];
+	const bindingOf = (id: BindingId) => component.bindings.find((binding) => binding.id === id)!;
+	// Printed in source order, so names are claimed in it.
+	const texts = new Map<SetupItem, string>(
+		component.setup.flatMap((item) =>
+			item.kind === "Provide" ? [] : [[item, itemText(item, code, bindingOf)] as const],
+		),
+	);
+	for (const item of component.setup) {
+		if ("binding" in item && hoisted.has(item.binding)) {
+			// A blank line after each: a module's declarations stand apart.
+			module.push(placeholders.statements(`${texts.get(item)!}\n`));
+		}
+	}
+	const awaits = component.setup.filter((item) => item.kind === "Await");
+	// An async setup's ids are created before its resource, where hydration still runs, so they
+	// keep the server's (ADR-0101): the subtree the resource renders is created again on the
+	// client once it resolves, and an id created there would be a client one (`cl-N`).
+	const early = (item: SetupItem) => awaits.length > 0 && item.kind === "Id";
+	// A `provide` wraps the template in its context's provider (src/composition.ts).
+	const kept = teardownFirst(
+		component.setup.filter(
+			(item) =>
+				item.kind !== "Provide" &&
+				item.kind !== "Await" &&
+				!early(item) &&
+				!("binding" in item && hoisted.has(item.binding)),
+		),
+	);
+	let resource: SolidResource | undefined;
+	if (awaits.length) {
+		const accessor = code.claim("awaited");
+		const parameter = code.claim("resolved");
+		const names = awaits.map((item) => bindingOf(item.binding).name).join(", ");
+		const fetcher = [...awaits.map((item) => texts.get(item)!), `return { ${names} };`];
+		const statements = [
+			...component.setup.filter(early).map((item) => placeholders.statements(texts.get(item)!)),
+			placeholders.statements(
+				`const [${accessor}] = ${code.solid("createResource")}(async () => {\n${fetcher.join("\n")}\n});\n`,
+			),
+		];
+		// The awaited values, read once from the record (`when` tests the record, so a falsy value
+		// still renders).
+		const bindings = placeholders.statements(
+			`const { ${names} } = ${parameter}();${kept.length ? "" : "\n"}`,
+		);
+		resource = { statements, accessor, parameter, bindings };
+	}
+	for (const [index, item] of kept.entries()) {
+		// A blank line around a block (a function, a watcher, an effect, a hook) and before the
+		// return, as the source sets them apart: oxfmt keeps one blank line and adds none.
+		const previous = kept[index - 1];
+		const before =
+			(index > 0 || resource !== undefined) &&
+			(BLOCKS.has(item.kind) || (previous !== undefined && BLOCKS.has(previous.kind)));
+		const after = index === kept.length - 1;
+		body.push(
+			placeholders.statements(`${before ? "\n" : ""}${texts.get(item)!}${after ? "\n" : ""}`),
+		);
+	}
+	return { hoisted: module, statements: body, ...(resource ? { resource } : {}) };
 }
 
 /**
@@ -722,112 +763,114 @@ export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSe
  * so every watcher's and effect's cleanup then runs before the hooks, which run in source order,
  * as Vue stops a component's effects before it calls its `onUnmounted` hooks.
  */
-function teardownFirst(items: readonly SetupItem[]): SetupItem[] {
-  const hooks = items.filter(unmounted);
-  if (!hooks.length) return [...items];
-  const anchor = items.findIndex(
-    (item) => item.kind === "Watch" || item.kind === "WatchEffect" || unmounted(item),
-  );
-  const rest = items.filter((item) => !unmounted(item));
-  const at = rest.indexOf(items.slice(anchor).find((item) => !unmounted(item))!);
-  const position = at < 0 ? rest.length : at;
-  return [...rest.slice(0, position), ...hooks.toReversed(), ...rest.slice(position)];
+function teardownFirst(items: ReadonlyArray<SetupItem>): Array<SetupItem> {
+	const hooks = items.filter(unmounted);
+	if (!hooks.length) {
+		return [...items];
+	}
+	const anchor = items.findIndex(
+		(item) => item.kind === "Watch" || item.kind === "WatchEffect" || unmounted(item),
+	);
+	const rest = items.filter((item) => !unmounted(item));
+	const at = rest.indexOf(items.slice(anchor).find((item) => !unmounted(item))!);
+	const position = at < 0 ? rest.length : at;
+	return [...rest.slice(0, position), ...hooks.toReversed(), ...rest.slice(position)];
 }
 
 /** Whether a setup item is an `onUnmounted` hook. */
 function unmounted(item: SetupItem): boolean {
-  return item.kind === "Lifecycle" && item.hook === "unmounted";
+	return item.kind === "Lifecycle" && item.hook === "unmounted";
 }
 
 /** The setup items that print as blocks, set apart by blank lines. */
 const BLOCKS: ReadonlySet<SetupItem["kind"]> = new Set([
-  "Function",
-  "Model",
-  "Watch",
-  "WatchEffect",
-  "Lifecycle",
+	"Function",
+	"Model",
+	"Watch",
+	"WatchEffect",
+	"Lifecycle",
 ]);
 
 /** A type as a call's type argument, `<T>`, or nothing. */
 function typeArgument(type: { code: string } | undefined): string {
-  return type ? `<${type.code}>` : "";
+	return type ? `<${type.code}>` : "";
 }
 
 /** A type as a declaration's annotation, `: T`, or nothing. */
 function annotation(type: { code: string } | undefined): string {
-  return type ? `: ${type.code}` : "";
+	return type ? `: ${type.code}` : "";
 }
 
 /** One setup item as Solid code. */
 function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) => Binding): string {
-  switch (item.kind) {
-    case "State": {
-      const { name } = bindingOf(item.binding);
-      const setter = code.setter(item.binding);
-      const pattern = setter ? `[${name}, ${setter}]` : `[${name}]`;
-      const initial = item.initial ? code.value(item.initial) : "";
-      return `const ${pattern} = ${code.solid("createSignal")}${typeArgument(item.type)}(${initial});`;
-    }
-    case "Derived": {
-      const { name } = bindingOf(item.binding);
-      return `const ${name} = ${code.solid("createMemo")}${typeArgument(item.type)}(${code.getter(item.getter)});`;
-    }
-    case "TemplateRef": {
-      // Empty until its element is created, and again once it is removed (src/listeners.ts):
-      // `null`, as the source's `useTemplateRef` value is.
-      const { name } = bindingOf(item.binding);
-      return `let ${name}: ${item.type ? `${item.type.code} | null` : "unknown"} = null;`;
-    }
-    case "Id": {
-      const { name } = bindingOf(item.binding);
-      return `const ${name} = \`uf-id-\${${code.solid("createUniqueId")}()}\`;`;
-    }
-    case "Await": {
-      // A statement of the resource's fetcher (ADR-0101).
-      const { name } = bindingOf(item.binding);
-      return `const ${name}${annotation(item.type)} = await ${code.awaited(item.value)};`;
-    }
-    case "Const": {
-      const { name } = bindingOf(item.binding);
-      return `const ${name}${annotation(item.type)} = ${code.value(item.value)};`;
-    }
-    case "Variable": {
-      const { name } = bindingOf(item.binding);
-      const initial = item.initial ? ` = ${code.value(item.initial)}` : "";
-      return `let ${name}${annotation(item.type)}${initial};`;
-    }
-    case "Function": {
-      const { name } = bindingOf(item.binding);
-      return item.form === "declaration"
-        ? code.client(item.function, name)
-        : `const ${name} = ${code.client(item.function)};`;
-    }
-    case "Watch":
-      return code.watcher(item);
-    case "WatchEffect":
-      return code.watchEffect(item);
-    case "Lifecycle": {
-      const onMount = code.solid("onMount");
-      const callback = code.callback(item.callback);
-      // `onCleanup` alone would also run when the server disposes its render (ADR-0048).
-      return item.hook === "mounted"
-        ? `${onMount}(${callback});`
-        : `${onMount}(() => ${code.solid("onCleanup")}(${callback}));`;
-    }
-    case "Model":
-      return code.model(item);
-    case "Inject":
-      return code.inject(item);
-    case "Provide":
-      throw new Error("A provide prints in the template, never in the setup.");
-    case "Use":
-      return code.use(item);
-    // In the body, which runs once per instance, untracked as the setup's values are (ADR-0117).
-    case "DevCheck":
-      return code.devCheck(item.code);
-    default:
-      return unreachable(item);
-  }
+	switch (item.kind) {
+		case "State": {
+			const { name } = bindingOf(item.binding);
+			const setter = code.setter(item.binding);
+			const pattern = setter ? `[${name}, ${setter}]` : `[${name}]`;
+			const initial = item.initial ? code.value(item.initial) : "";
+			return `const ${pattern} = ${code.solid("createSignal")}${typeArgument(item.type)}(${initial});`;
+		}
+		case "Derived": {
+			const { name } = bindingOf(item.binding);
+			return `const ${name} = ${code.solid("createMemo")}${typeArgument(item.type)}(${code.getter(item.getter)});`;
+		}
+		case "TemplateRef": {
+			// Empty until its element is created, and again once it is removed (src/listeners.ts):
+			// `null`, as the source's `useTemplateRef` value is.
+			const { name } = bindingOf(item.binding);
+			return `let ${name}: ${item.type ? `${item.type.code} | null` : "unknown"} = null;`;
+		}
+		case "Id": {
+			const { name } = bindingOf(item.binding);
+			return `const ${name} = \`uf-id-\${${code.solid("createUniqueId")}()}\`;`;
+		}
+		case "Await": {
+			// A statement of the resource's fetcher (ADR-0101).
+			const { name } = bindingOf(item.binding);
+			return `const ${name}${annotation(item.type)} = await ${code.awaited(item.value)};`;
+		}
+		case "Const": {
+			const { name } = bindingOf(item.binding);
+			return `const ${name}${annotation(item.type)} = ${code.value(item.value)};`;
+		}
+		case "Variable": {
+			const { name } = bindingOf(item.binding);
+			const initial = item.initial ? ` = ${code.value(item.initial)}` : "";
+			return `let ${name}${annotation(item.type)}${initial};`;
+		}
+		case "Function": {
+			const { name } = bindingOf(item.binding);
+			return item.form === "declaration"
+				? code.client(item.function, name)
+				: `const ${name} = ${code.client(item.function)};`;
+		}
+		case "Watch":
+			return code.watcher(item);
+		case "WatchEffect":
+			return code.watchEffect(item);
+		case "Lifecycle": {
+			const onMount = code.solid("onMount");
+			const callback = code.callback(item.callback);
+			// `onCleanup` alone would also run when the server disposes its render (ADR-0048).
+			return item.hook === "mounted"
+				? `${onMount}(${callback});`
+				: `${onMount}(() => ${code.solid("onCleanup")}(${callback}));`;
+		}
+		case "Model":
+			return code.model(item);
+		case "Inject":
+			return code.inject(item);
+		case "Provide":
+			throw new Error("A provide prints in the template, never in the setup.");
+		case "Use":
+			return code.use(item);
+		// In the body, which runs once per instance, untracked as the setup's values are (ADR-0117).
+		case "DevCheck":
+			return code.devCheck(item.code);
+		default:
+			return unreachable(item);
+	}
 }
 
 /**
@@ -837,239 +880,273 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
  * per instance, never hoisted, and so is one that names a type parameter of a generic component.
  */
 function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
-  // The module's own names, which a hoisted binding of the same name would declare again: the
-  // constants and the imported values (ADR-0070).
-  const taken = new Set([
-    ...(module.constants ?? []).map(({ name }) => name),
-    ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
-  ]);
-  const kinds = new Map(component.bindings.map((binding) => [binding.id, binding.kind]));
-  // An owner that imports its module's values from a sibling's output reads them only once they
-  // are declared, inside its function: never in a constant at module scope (src/composable.ts).
-  const imported = importsModuleValues(module, component.name);
-  const candidates = new Map<BindingId, Code[]>();
-  const functions = new Set<BindingId>();
-  for (const item of component.setup) {
-    // A generic component's type parameters are in scope only inside its function (ADR-0068).
-    if (
-      (item.kind === "Const" || item.kind === "Function") &&
-      namesTypeParameter(component, item)
-    ) {
-      continue;
-    }
-    if ("binding" in item && taken.has(nameOf(item.binding))) continue;
-    if (item.kind === "Const") candidates.set(item.binding, [item.value]);
-    if (item.kind === "Function") functions.add(item.binding);
-    if (item.kind === "Function") {
-      const fn = item.function;
-      candidates.set(item.binding, [fn.body]);
-    }
-  }
-  const hoisted = new Set(candidates.keys());
-  if (imported) {
-    // What reads a module value, itself or through the functions and constants it reads: such a
-    // constant runs that read as the module loads, so it stays in the component.
-    const reads = new Set<BindingId>();
-    for (let size = -1; size !== reads.size;) {
-      size = reads.size;
-      for (const [id, codes] of candidates) {
-        const reaches = codes.some((piece) =>
-          piece.refs.some((ref) => {
-            if (ref.kind !== "Binding") return false;
-            const kind = kinds.get(ref.binding);
-            return kind === "moduleConst" || kind === "import" || reads.has(ref.binding);
-          }),
-        );
-        if (reaches) reads.add(id);
-      }
-    }
-    for (const id of reads) if (!functions.has(id)) hoisted.delete(id);
-  }
-  for (let changed = true; changed;) {
-    changed = false;
-    for (const [id, codes] of candidates) {
-      if (!hoisted.has(id)) continue;
-      const captures = codes.some((piece) =>
-        piece.refs.some((ref) => {
-          switch (ref.kind) {
-            case "Binding": {
-              // A module's value is at module scope already (ADR-0070); a constant that reads it
-              // in an owner that imports it was kept in the component above.
-              const kind = kinds.get(ref.binding);
-              if (kind === "moduleConst" || kind === "import") return false;
-              return !hoisted.has(ref.binding);
-            }
-            case "Write":
-            case "Emit":
-              return !hoisted.has(ref.binding);
-            case "Global":
-            case "Import":
-            case "Event":
-            case "Api":
-            case "Slot":
-            case "Dev":
-              return false;
-            default:
-              return unreachable(ref);
-          }
-        }),
-      );
-      if (captures) {
-        hoisted.delete(id);
-        changed = true;
-      }
-    }
-  }
-  return hoisted;
+	// The module's own names, which a hoisted binding of the same name would declare again: the
+	// constants and the imported values (ADR-0070).
+	const taken = new Set([
+		...(module.constants ?? []).map(({ name }) => name),
+		...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+	]);
+	const kinds = new Map(component.bindings.map((binding) => [binding.id, binding.kind]));
+	// An owner that imports its module's values from a sibling's output reads them only once they
+	// are declared, inside its function: never in a constant at module scope (src/composable.ts).
+	const imported = importsModuleValues(module, component.name);
+	const candidates = new Map<BindingId, Array<Code>>();
+	const functions = new Set<BindingId>();
+	for (const item of component.setup) {
+		// A generic component's type parameters are in scope only inside its function (ADR-0068).
+		if (
+			(item.kind === "Const" || item.kind === "Function") &&
+			namesTypeParameter(component, item)
+		) {
+			continue;
+		}
+		if ("binding" in item && taken.has(nameOf(item.binding))) {
+			continue;
+		}
+		if (item.kind === "Const") {
+			candidates.set(item.binding, [item.value]);
+		}
+		if (item.kind === "Function") {
+			functions.add(item.binding);
+		}
+		if (item.kind === "Function") {
+			const fn = item.function;
+			candidates.set(item.binding, [fn.body]);
+		}
+	}
+	const hoisted = new Set(candidates.keys());
+	if (imported) {
+		// What reads a module value, itself or through the functions and constants it reads: such a
+		// constant runs that read as the module loads, so it stays in the component.
+		const reads = new Set<BindingId>();
+		for (let size = -1; size !== reads.size;) {
+			size = reads.size;
+			for (const [id, codes] of candidates) {
+				const reaches = codes.some((piece) =>
+					piece.refs.some((ref) => {
+						if (ref.kind !== "Binding") {
+							return false;
+						}
+						const kind = kinds.get(ref.binding);
+						return kind === "moduleConst" || kind === "import" || reads.has(ref.binding);
+					}),
+				);
+				if (reaches) {
+					reads.add(id);
+				}
+			}
+		}
+		for (const id of reads) {
+			if (!functions.has(id)) {
+				hoisted.delete(id);
+			}
+		}
+	}
+	for (let changed = true; changed;) {
+		changed = false;
+		for (const [id, codes] of candidates) {
+			if (!hoisted.has(id)) {
+				continue;
+			}
+			const captures = codes.some((piece) =>
+				piece.refs.some((ref) => {
+					switch (ref.kind) {
+						case "Binding": {
+							// A module's value is at module scope already (ADR-0070); a constant that reads it
+							// in an owner that imports it was kept in the component above.
+							const kind = kinds.get(ref.binding);
+							if (kind === "moduleConst" || kind === "import") {
+								return false;
+							}
+							return !hoisted.has(ref.binding);
+						}
+						case "Write":
+						case "Emit":
+							return !hoisted.has(ref.binding);
+						case "Global":
+						case "Import":
+						case "Event":
+						case "Api":
+						case "Slot":
+						case "Dev":
+							return false;
+						default:
+							return unreachable(ref);
+					}
+				}),
+			);
+			if (captures) {
+				hoisted.delete(id);
+				changed = true;
+			}
+		}
+	}
+	return hoisted;
 }
 
 /** The code of a setup item, in source order. */
-function itemCode(item: SetupItem): Code[] {
-  switch (item.kind) {
-    case "State":
-    case "Variable":
-      return item.initial ? [item.initial] : [];
-    case "Const":
-    case "Await":
-      return [item.value];
-    case "Derived":
-      return [item.getter.body];
-    case "Function":
-      return [item.function.body];
-    case "Watch":
-      return [
-        ...item.sources.flatMap((source) => (source.kind === "Getter" ? [source.getter.body] : [])),
-        item.callback.body,
-      ];
-    case "WatchEffect":
-      return [item.effect.body];
-    case "Lifecycle":
-      return [item.callback.body];
-    case "DevCheck":
-      return [item.code];
-    case "TemplateRef":
-    case "Id":
-      return [];
-    case "Model":
-      return [];
-    case "Provide":
-      return [item.value];
-    case "Inject":
-      return item.fallback ? [item.fallback] : [];
-    case "Use":
-      return item.arguments.map((argument) => {
-        switch (argument.kind) {
-          case "Value":
-            return argument.value;
-          case "Getter":
-            return argument.getter.body;
-          case "Callback":
-            return argument.callback.body;
-          default:
-            return unreachable(argument);
-        }
-      });
-    default:
-      return unreachable(item);
-  }
+function itemCode(item: SetupItem): Array<Code> {
+	switch (item.kind) {
+		case "State":
+		case "Variable":
+			return item.initial ? [item.initial] : [];
+		case "Const":
+		case "Await":
+			return [item.value];
+		case "Derived":
+			return [item.getter.body];
+		case "Function":
+			return [item.function.body];
+		case "Watch":
+			return [
+				...item.sources.flatMap((source) => (source.kind === "Getter" ? [source.getter.body] : [])),
+				item.callback.body,
+			];
+		case "WatchEffect":
+			return [item.effect.body];
+		case "Lifecycle":
+			return [item.callback.body];
+		case "DevCheck":
+			return [item.code];
+		case "TemplateRef":
+		case "Id":
+			return [];
+		case "Model":
+			return [];
+		case "Provide":
+			return [item.value];
+		case "Inject":
+			return item.fallback ? [item.fallback] : [];
+		case "Use":
+			return item.arguments.map((argument) => {
+				switch (argument.kind) {
+					case "Value":
+						return argument.value;
+					case "Getter":
+						return argument.getter.body;
+					case "Callback":
+						return argument.callback.body;
+					default:
+						return unreachable(argument);
+				}
+			});
+		default:
+			return unreachable(item);
+	}
 }
 
 /** The functions of a component's inline handlers, in document order. */
-function inlineHandlers(component: UfComponent): FunctionCode[] {
-  const found: FunctionCode[] = [];
-  const visit = (node: UfComponent["render"] | UfComponent["render"]["children"][number]) => {
-    switch (node.kind) {
-      case "Element":
-        for (const attribute of node.attributes) {
-          if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
-            found.push(attribute.handler.function);
-          }
-        }
-        node.children.forEach(visit);
-        return;
-      case "Fragment":
-        node.children.forEach(visit);
-        return;
-      case "If":
-        for (const branch of node.branches) branch.children.forEach(visit);
-        return;
-      case "For":
-        visit(node.body);
-        return;
-      case "Text":
-      case "Interpolation":
-        return;
-      case "Component":
-      case "Dynamic":
-        for (const attribute of node.attributes) {
-          if (
-            (attribute.kind === "Listener" || attribute.kind === "Event") &&
-            attribute.handler.kind === "Inline"
-          ) {
-            found.push(attribute.handler.function);
-          }
-        }
-        if (node.kind === "Dynamic") node.children.forEach(visit);
-        for (const fill of node.fills ?? []) fill.children.forEach(visit);
-        return;
-      case "SlotOutlet":
-        node.fallback.forEach(visit);
-        return;
-      case "Teleport":
-      case "Transition":
-        node.children.forEach(visit);
-        return;
-      default:
-        unreachable(node);
-    }
-  };
-  visit(component.render);
-  return found;
+function inlineHandlers(component: UfComponent): Array<FunctionCode> {
+	const found: Array<FunctionCode> = [];
+	const visit = (node: UfComponent["render"] | UfComponent["render"]["children"][number]) => {
+		switch (node.kind) {
+			case "Element":
+				for (const attribute of node.attributes) {
+					if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
+						found.push(attribute.handler.function);
+					}
+				}
+				node.children.forEach(visit);
+				return;
+			case "Fragment":
+				node.children.forEach(visit);
+				return;
+			case "If":
+				for (const branch of node.branches) {
+					branch.children.forEach(visit);
+				}
+				return;
+			case "For":
+				visit(node.body);
+				return;
+			case "Text":
+			case "Interpolation":
+				return;
+			case "Component":
+			case "Dynamic":
+				for (const attribute of node.attributes) {
+					if (
+						(attribute.kind === "Listener" || attribute.kind === "Event") &&
+						attribute.handler.kind === "Inline"
+					) {
+						found.push(attribute.handler.function);
+					}
+				}
+				if (node.kind === "Dynamic") {
+					node.children.forEach(visit);
+				}
+				for (const fill of node.fills ?? []) {
+					fill.children.forEach(visit);
+				}
+				return;
+			case "SlotOutlet":
+				node.fallback.forEach(visit);
+				return;
+			case "Teleport":
+			case "Transition":
+				node.children.forEach(visit);
+				return;
+			default:
+				unreachable(node);
+		}
+	};
+	visit(component.render);
+	return found;
 }
 
 /** The state and models a `v-model` binds: an element's, or a component's `v-model:<name>`. */
-function modelTargets(component: UfComponent): BindingId[] {
-  const found: BindingId[] = [];
-  walk(component.render, {
-    enter(node) {
-      const attributes =
-        node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
-          ? node.attributes
-          : [];
-      for (const attribute of attributes) {
-        if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") continue;
-        const [ref] = attribute.value.refs;
-        if (ref?.kind === "Binding") found.push(ref.binding);
-      }
-    },
-  });
-  return found;
+function modelTargets(component: UfComponent): Array<BindingId> {
+	const found: Array<BindingId> = [];
+	walk(component.render, {
+		enter(node) {
+			const attributes =
+				node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
+					? node.attributes
+					: [];
+			for (const attribute of attributes) {
+				if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") {
+					continue;
+				}
+				const [ref] = attribute.value.refs;
+				if (ref?.kind === "Binding") {
+					found.push(ref.binding);
+				}
+			}
+		},
+	});
+	return found;
 }
 
 /** The binding code is a whole reference to (`count`, `count.value`), or none. */
 function wholeBinding(code: Code): BindingId | undefined {
-  const [only] = code.refs;
-  if (code.refs.length !== 1 || only?.kind !== "Binding") return undefined;
-  return only.span.start === code.span.start && only.span.end === code.span.end
-    ? only.binding
-    : undefined;
+	const [only] = code.refs;
+	if (code.refs.length !== 1 || only?.kind !== "Binding") {
+		return undefined;
+	}
+	return only.span.start === code.span.start && only.span.end === code.span.end
+		? only.binding
+		: undefined;
 }
 
 /** The ref type a key holds (`InjectionKey<Ref<number>>`), by its local name, or none. */
 function keyRef(composition: SolidComposition, local: string): RefType | undefined {
-  const { module } = composition;
-  const own = module.keys?.find((key) => key.name === local);
-  if (own) return own.ref;
-  for (const entry of module.imports ?? []) {
-    const name = entry.names.find((each) => each.kind === "Key" && each.local === local);
-    if (name) return entry.api.keys.find((key) => key.name === name.imported)?.ref;
-  }
-  return undefined;
+	const { module } = composition;
+	const own = module.keys?.find((key) => key.name === local);
+	if (own) {
+		return own.ref;
+	}
+	for (const entry of module.imports ?? []) {
+		const name = entry.names.find((each) => each.kind === "Key" && each.local === local);
+		if (name) {
+			return entry.api.keys.find((key) => key.name === name.imported)?.ref;
+		}
+	}
+	return undefined;
 }
 
 /** An arrow's expression body: an object literal in parentheses. */
 function arrowBody(code: string): string {
-  return code.trimStart().startsWith("{") ? `(${code})` : code;
+	return code.trimStart().startsWith("{") ? `(${code})` : code;
 }
 
 /**
@@ -1077,26 +1154,26 @@ function arrowBody(code: string): string {
  * ADR-0070): its main component (`keyOwner`), or a `.uf.ts` module's first composable.
  */
 export function moduleMain(module: UfModule): string | undefined {
-  return keyOwner(module.components, module.exports) ?? module.composables?.[0]?.name;
+	return keyOwner(module.components, module.exports) ?? module.composables?.[0]?.name;
 }
 
 /** Whether an owner imports its module's values from its main owner's output (src/composable.ts). */
 function importsModuleValues(module: UfModule, name: string): boolean {
-  return (
-    module.components.length + (module.composables?.length ?? 0) > 1 && moduleMain(module) !== name
-  );
+	return (
+		module.components.length + (module.composables?.length ?? 0) > 1 && moduleMain(module) !== name
+	);
 }
 
 /** The name of a binding id, `name@offset`. */
 export function nameOf(id: BindingId): string {
-  return id.slice(0, id.lastIndexOf("@"));
+	return id.slice(0, id.lastIndexOf("@"));
 }
 
 function capitalised(name: string): string {
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+	return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 function unreachable(value: never): never {
-  throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
+	throw new Error(`Unexpected IR value: ${JSON.stringify(value)}`);
 }

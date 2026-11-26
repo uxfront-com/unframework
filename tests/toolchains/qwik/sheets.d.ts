@@ -4,6 +4,6 @@
 declare module "*.css" {}
 
 declare module "*.css?inline" {
-  const sheet: string;
-  export default sheet;
+	const sheet: string;
+	export default sheet;
 }

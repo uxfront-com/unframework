@@ -4,10 +4,10 @@ import type { FieldProps } from "../../../../../integration/cases/types/child-ty
 import Form from "../../../../../integration/cases/types/child-type-import/__output__/angular/form";
 
 @Component({
-  selector: "uf-form-consumer",
-  imports: [Form],
-  template: `<uf-form [field]="field" />`,
+	selector: "uf-form-consumer",
+	imports: [Form],
+	template: `<uf-form [field]="field" />`,
 })
 export default class Consumer {
-  protected readonly field: FieldProps = { name: "email", label: "Email" };
+	protected readonly field: FieldProps = { name: "email", label: "Email" };
 }

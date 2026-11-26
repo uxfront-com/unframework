@@ -1,8 +1,7 @@
-import Palette, {
-  type Tone,
-} from "../../../../../integration/cases/types/shared-type/__output__/react/Palette";
+import Palette from "../../../../../integration/cases/types/shared-type/__output__/react/Palette";
+import type { Tone } from "../../../../../integration/cases/types/shared-type/__output__/react/Palette";
 
 export function Consumer() {
-  const tone: Tone = "accent";
-  return <Palette tone={tone} />;
+	const tone: Tone = "accent";
+	return <Palette tone={tone} />;
 }

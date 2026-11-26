@@ -3,6 +3,6 @@ import Card from "../../../../../integration/cases/slots/presence/__output__/vue
 </script>
 
 <template>
-  <!-- @uf-expect TS2322 Card.prop:label -->
-  <Card :label="1" />
+	<!-- @uf-expect TS2322 Card.prop:label -->
+	<Card :label="1" />
 </template>

@@ -3,5 +3,5 @@ import Picker from "../../../../../integration/cases/generics/scoped-slot/__outp
 const fruits = [{ name: "Apple", count: 3 }];
 
 export function Consumer() {
-  return <Picker items={fruits} item={({ item }) => `${item.name} × ${item.count}`} />;
+	return <Picker items={fruits} item={({ item }) => `${item.name} × ${item.count}`} />;
 }

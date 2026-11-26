@@ -3,5 +3,5 @@ import Primary from "../../../../../integration/cases/fallthrough/to-component-r
 </script>
 
 <template>
-  <Primary text="Save" class="wide" />
+	<Primary text="Save" class="wide" />
 </template>

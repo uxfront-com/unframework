@@ -6,16 +6,16 @@ import { expect } from "vitest";
 import ChargeButton from "./ChargeButton.uf.tsx";
 
 describeTargets("sourcemaps/handler-throws", () => {
-  it("renders the button", async () => {
-    const view = await mount(ChargeButton);
-    await view.expectParity("initial");
-    await expect.element(view.getByRole("button", { name: "Charge" })).toBeVisible();
-  });
+	it("renders the button", async () => {
+		const view = await mount(ChargeButton);
+		await view.expectParity("initial");
+		await expect.element(view.getByRole("button", { name: "Charge" })).toBeVisible();
+	});
 
-  it("maps the handler's throw to its line", { requires: ["interactivity"] }, async () => {
-    const view = await mount(ChargeButton);
-    const button = view.getByRole("button", { name: "Charge" });
-    await expect.element(button).toBeVisible();
-    await view.expectThrown(() => view.user.click(button));
-  });
+	it("maps the handler's throw to its line", { requires: ["interactivity"] }, async () => {
+		const view = await mount(ChargeButton);
+		const button = view.getByRole("button", { name: "Charge" });
+		await expect.element(button).toBeVisible();
+		await view.expectThrown(() => view.user.click(button));
+	});
 });

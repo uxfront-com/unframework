@@ -34,9 +34,9 @@ A directive is a top-level `const` that `defineDirective` initialises, from the 
 
 ```ts
 export const vFocusTrap = defineDirective<boolean>({
-  mounted(el, value) {},
-  updated(el, value, oldValue) {},
-  unmounted(el) {},
+	mounted(el, value) {},
+	updated(el, value, oldValue) {},
+	unmounted(el) {},
 });
 ```
 

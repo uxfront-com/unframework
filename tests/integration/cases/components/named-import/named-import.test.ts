@@ -6,10 +6,10 @@ import { expect } from "vitest";
 import Status from "./Status.uf.tsx";
 
 describeTargets("components/named-import", () => {
-  it("renders both children", async () => {
-    const view = await mountScenario(Status, "passing");
-    await view.expectParity("passing");
-    await expect.element(view.getByText("Build")).toBeVisible();
-    await expect.element(view.getByText("passing")).toBeVisible();
-  });
+	it("renders both children", async () => {
+		const view = await mountScenario(Status, "passing");
+		await view.expectParity("passing");
+		await expect.element(view.getByText("Build")).toBeVisible();
+		await expect.element(view.getByText("passing")).toBeVisible();
+	});
 });

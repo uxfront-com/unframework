@@ -1,7 +1,7 @@
 import Bio from "./Bio";
 import NameField from "./NameField";
+import { clearedRef } from "./_unframework/clearedRef";
 import type { ComponentProps, JSX } from "@solidjs/web";
-import { onCleanup } from "solid-js";
 
 export default function Profile(
   props: Omit<ComponentProps<"form">, "class" | "style"> & {
@@ -44,10 +44,4 @@ export default function Profile(
       </button>
     </form>
   );
-}
-
-/** A `ref` that calls `callback` with its element, and `clear` once the element is removed. */
-function clearedRef<T>(callback: (element: T) => void, clear: () => void): (element: T) => void {
-  onCleanup(clear);
-  return callback;
 }

@@ -3,5 +3,5 @@ import SearchField from "../../../../../integration/cases/expose/focus/__output_
 </script>
 
 <template>
-  <SearchField label="Find" />
+	<SearchField label="Find" />
 </template>

@@ -8,28 +8,28 @@
 // unused (L5). A composable's call is the destructuring of what its static module returns, and
 // its callbacks, which only client code calls, are dropped (ADR-0069).
 import {
-  functionSource,
-  functionText,
-  liveBindings,
-  needsParentheses,
-  parseExpression,
-  pascalCase,
-  rewriteCode,
+	functionSource,
+	functionText,
+	liveBindings,
+	needsParentheses,
+	parseExpression,
+	pascalCase,
+	rewriteCode,
 } from "@unframework.dev/codegen";
 import type { LiveOptions } from "@unframework.dev/codegen";
 import type {
-  BindingId,
-  Code,
-  CodeReference,
-  DerivedItem,
-  FunctionItem,
-  IdItem,
-  InjectItem,
-  SetupItem,
-  StateItem,
-  UfComponent,
-  UfModule,
-  UseItem,
+	BindingId,
+	Code,
+	CodeReference,
+	DerivedItem,
+	FunctionItem,
+	IdItem,
+	InjectItem,
+	SetupItem,
+	StateItem,
+	UfComponent,
+	UfModule,
+	UseItem,
 } from "@unframework.dev/ir";
 
 import { unreachable } from "./spelling.ts";
@@ -43,103 +43,110 @@ export const SERVER: LiveOptions = { client: false, includeKeys: false };
 
 /** The frontmatter's setup: statements in source order, after the helpers they call. */
 export interface SetupCode {
-  /** The helpers the statements call, each a statement of its own. */
-  helpers: string[];
-  /** The setup's statements, in source order. */
-  statements: string[];
-  /** Whether a helper reads `Astro` (`Astro.locals`). */
-  readsAstro: boolean;
+	/** The helpers the statements call, each a statement of its own. */
+	helpers: Array<string>;
+	/** The setup's statements, in source order. */
+	statements: Array<string>;
+	/** Whether a helper reads `Astro` (`Astro.locals`). */
+	readsAstro: boolean;
 }
 
 /** The setup statements of a component's frontmatter, given what the server render reaches. */
 export function setupCode(
-  component: UfComponent,
-  live: ReadonlySet<BindingId>,
-  spelling: Spelling,
-  injectedType: (item: InjectItem) => string,
+	component: UfComponent,
+	live: ReadonlySet<BindingId>,
+	spelling: Spelling,
+	injectedType: (item: InjectItem) => string,
 ): SetupCode {
-  const helpers: string[] = [];
-  const statements: string[] = [];
-  let uniqueId: string | undefined;
-  for (const item of component.setup) {
-    switch (item.kind) {
-      case "State":
-        if (live.has(item.binding)) statements.push(state(item, component, spelling));
-        break;
-      case "Derived":
-        if (live.has(item.binding)) statements.push(...derived(item, component, spelling));
-        break;
-      // Top-level `await` in the frontmatter, which the Container API waits for (ADR-0101). The
-      // setup always awaits, so an await no server code reads is a statement of its own.
-      case "Await": {
-        const value = `await ${initialiser(item.value, component, spelling)}`;
-        if (!live.has(item.binding)) {
-          statements.push(`${value};`);
-          break;
-        }
-        const type = item.type ? `: ${item.type.code}` : "";
-        statements.push(`const ${spelling.name(item.binding)}${type} = ${value};`);
-        break;
-      }
-      case "Const":
-        if (live.has(item.binding)) {
-          const type = item.type ? `: ${item.type.code}` : "";
-          const value = initialiser(item.value, component, spelling);
-          statements.push(`const ${spelling.name(item.binding)}${type} = ${value};`);
-        }
-        break;
-      case "Function":
-        if (live.has(item.binding)) statements.push(localFunction(item, component, spelling));
-        break;
-      case "Id":
-        if (live.has(item.binding)) {
-          if (uniqueId === undefined) {
-            uniqueId = spelling.scope.claim(UNIQUE_ID);
-            helpers.push(uniqueIdHelper(uniqueId));
-          }
-          statements.push(id(item, uniqueId, spelling));
-        }
-        break;
-      case "Variable":
-        // A setup `let` holds what client code keeps between runs (a timer's id): no template,
-        // getter or initial value reads one (UF2010), so the server render never reaches it.
-        if (live.has(item.binding)) {
-          const type = item.type ? `: ${item.type.code}` : "";
-          const initial = item.initial
-            ? ` = ${initialiser(item.initial, component, spelling)}`
-            : "";
-          statements.push(`let ${spelling.name(item.binding)}${type}${initial};`);
-        }
-        break;
-      case "TemplateRef":
-      case "Watch":
-      case "WatchEffect":
-      case "Lifecycle":
-        // Browser-only: an element is never attached on the server, and Astro has no client.
-        break;
-      // A model is a prop (`./frontmatter.ts`), and nothing writes it. A provided value reaches
-      // no descendant: each component renders on its own (ADR-0054, `context` unsupported).
-      case "Model":
-      case "Provide":
-        break;
-      case "Inject":
-        if (live.has(item.binding))
-          statements.push(injected(item, component, spelling, injectedType));
-        break;
-      case "Use":
-        if (item.members.some(({ binding }) => live.has(binding))) {
-          statements.push(use(item, component, live, spelling));
-        }
-        break;
-      // In the frontmatter, which runs once per render on the server (ADR-0117).
-      case "DevCheck":
-        statements.push(rewriteCode(item.code, component, spelling.rules, "pure"));
-        break;
-      default:
-        unreachable(item);
-    }
-  }
-  return { helpers, statements, readsAstro: uniqueId !== undefined };
+	const helpers: Array<string> = [];
+	const statements: Array<string> = [];
+	let uniqueId: string | undefined;
+	for (const item of component.setup) {
+		switch (item.kind) {
+			case "State":
+				if (live.has(item.binding)) {
+					statements.push(state(item, component, spelling));
+				}
+				break;
+			case "Derived":
+				if (live.has(item.binding)) {
+					statements.push(...derived(item, component, spelling));
+				}
+				break;
+			// Top-level `await` in the frontmatter, which the Container API waits for (ADR-0101). The
+			// setup always awaits, so an await no server code reads is a statement of its own.
+			case "Await": {
+				const value = `await ${initialiser(item.value, component, spelling)}`;
+				if (!live.has(item.binding)) {
+					statements.push(`${value};`);
+					break;
+				}
+				const type = item.type ? `: ${item.type.code}` : "";
+				statements.push(`const ${spelling.name(item.binding)}${type} = ${value};`);
+				break;
+			}
+			case "Const":
+				if (live.has(item.binding)) {
+					const type = item.type ? `: ${item.type.code}` : "";
+					const value = initialiser(item.value, component, spelling);
+					statements.push(`const ${spelling.name(item.binding)}${type} = ${value};`);
+				}
+				break;
+			case "Function":
+				if (live.has(item.binding)) {
+					statements.push(localFunction(item, component, spelling));
+				}
+				break;
+			case "Id":
+				if (live.has(item.binding)) {
+					if (uniqueId === undefined) {
+						uniqueId = spelling.scope.claim(UNIQUE_ID);
+						helpers.push(uniqueIdHelper(uniqueId));
+					}
+					statements.push(id(item, uniqueId, spelling));
+				}
+				break;
+			case "Variable":
+				// A setup `let` holds what client code keeps between runs (a timer's id): no template,
+				// getter or initial value reads one (UF2010), so the server render never reaches it.
+				if (live.has(item.binding)) {
+					const type = item.type ? `: ${item.type.code}` : "";
+					const initial = item.initial
+						? ` = ${initialiser(item.initial, component, spelling)}`
+						: "";
+					statements.push(`let ${spelling.name(item.binding)}${type}${initial};`);
+				}
+				break;
+			case "TemplateRef":
+			case "Watch":
+			case "WatchEffect":
+			case "Lifecycle":
+				// Browser-only: an element is never attached on the server, and Astro has no client.
+				break;
+			// A model is a prop (`./frontmatter.ts`), and nothing writes it. A provided value reaches
+			// no descendant: each component renders on its own (ADR-0054, `context` unsupported).
+			case "Model":
+			case "Provide":
+				break;
+			case "Inject":
+				if (live.has(item.binding)) {
+					statements.push(injected(item, component, spelling, injectedType));
+				}
+				break;
+			case "Use":
+				if (item.members.some(({ binding }) => live.has(binding))) {
+					statements.push(use(item, component, live, spelling));
+				}
+				break;
+			// In the frontmatter, which runs once per render on the server (ADR-0117).
+			case "DevCheck":
+				statements.push(rewriteCode(item.code, component, spelling.rules, "pure"));
+				break;
+			default:
+				unreachable(item);
+		}
+	}
+	return { helpers, statements, readsAstro: uniqueId !== undefined };
 }
 
 /**
@@ -150,20 +157,22 @@ export function setupCode(
  * (`theme?.label`) type-check as the source's do.
  */
 function injected(
-  item: InjectItem,
-  component: UfComponent,
-  spelling: Spelling,
-  injectedType: (item: InjectItem) => string,
+	item: InjectItem,
+	component: UfComponent,
+	spelling: Spelling,
+	injectedType: (item: InjectItem) => string,
 ): string {
-  const name = spelling.name(item.binding);
-  const type = injectedType(item);
-  if (!item.fallback) return `const ${name} = undefined as ${unionWithUndefined(type)};`;
-  return `const ${name} = ${cast(initialiser(item.fallback, component, spelling), type)};`;
+	const name = spelling.name(item.binding);
+	const type = injectedType(item);
+	if (!item.fallback) {
+		return `const ${name} = undefined as ${unionWithUndefined(type)};`;
+	}
+	return `const ${name} = ${cast(initialiser(item.fallback, component, spelling), type)};`;
 }
 
 /** The bindings the server render reaches, in a component's {@link serverView}. */
 export function serverBindings(view: UfComponent): Set<BindingId> {
-  return liveBindings(view, SERVER);
+	return liveBindings(view, SERVER);
 }
 
 /**
@@ -175,19 +184,21 @@ export function serverBindings(view: UfComponent): Set<BindingId> {
  * the module computes it as it loads. Both are `const`s here, read by their bindings.
  */
 export function serverView(component: UfComponent, module: UfModule): UfComponent {
-  const constants = (module.constants ?? []).map((constant): SetupItem => ({
-    kind: "Const",
-    binding: constant.binding,
-    ...(constant.type ? { type: constant.type } : {}),
-    value: constant.value,
-    span: constant.span,
-  }));
-  const setup = component.setup.flatMap((item): SetupItem[] => {
-    if (item.kind !== "Use") return [item];
-    const value = serverArguments(item);
-    return item.members.map(({ binding }) => ({ kind: "Const", binding, value, span: item.span }));
-  });
-  return { ...component, setup: [...constants, ...setup] };
+	const constants = (module.constants ?? []).map((constant): SetupItem => ({
+		kind: "Const",
+		binding: constant.binding,
+		...(constant.type ? { type: constant.type } : {}),
+		value: constant.value,
+		span: constant.span,
+	}));
+	const setup = component.setup.flatMap((item): Array<SetupItem> => {
+		if (item.kind !== "Use") {
+			return [item];
+		}
+		const value = serverArguments(item);
+		return item.members.map(({ binding }) => ({ kind: "Const", binding, value, span: item.span }));
+	});
+	return { ...component, setup: [...constants, ...setup] };
 }
 
 /**
@@ -195,18 +206,18 @@ export function serverView(component: UfComponent, module: UfModule): UfComponen
  * arguments, with their references, for the walks of {@link serverView} alone.
  */
 function serverArguments(item: UseItem): Code {
-  const parts: string[] = [];
-  const refs: CodeReference[] = [];
-  for (const argument of item.arguments) {
-    if (argument.kind === "Value") {
-      parts.push(argument.value.code);
-      refs.push(...argument.value.refs);
-    } else if (argument.kind === "Getter") {
-      parts.push(functionSource(argument.getter, argument.getter.body.code, { arrow: true }));
-      refs.push(...argument.getter.body.refs);
-    }
-  }
-  return { code: `[${parts.join(", ")}]`, span: item.span, refs };
+	const parts: Array<string> = [];
+	const refs: Array<CodeReference> = [];
+	for (const argument of item.arguments) {
+		if (argument.kind === "Value") {
+			parts.push(argument.value.code);
+			refs.push(...argument.value.refs);
+		} else if (argument.kind === "Getter") {
+			parts.push(functionSource(argument.getter, argument.getter.body.code, { arrow: true }));
+			refs.push(...argument.getter.body.refs);
+		}
+	}
+	return { code: `[${parts.join(", ")}]`, span: item.span, refs };
 }
 
 /**
@@ -216,29 +227,31 @@ function serverArguments(item: UseItem): Code {
  * as written and its getters as arrows, which read what the frontmatter declares.
  */
 function use(
-  item: UseItem,
-  component: UfComponent,
-  live: ReadonlySet<BindingId>,
-  spelling: Spelling,
+	item: UseItem,
+	component: UfComponent,
+	live: ReadonlySet<BindingId>,
+	spelling: Spelling,
 ): string {
-  const members = item.members.flatMap(({ member, binding }) => {
-    if (!live.has(binding)) return [];
-    const local = spelling.name(binding);
-    return [local === member ? local : `${member}: ${local}`];
-  });
-  const values = item.arguments.flatMap((argument) => {
-    switch (argument.kind) {
-      case "Value":
-        return [initialiser(argument.value, component, spelling)];
-      case "Getter":
-        return [functionText(argument.getter, component, spelling.rules, "pure", { arrow: true })];
-      case "Callback":
-        return [];
-      default:
-        return unreachable(argument);
-    }
-  });
-  return `const { ${members.join(", ")} } = ${item.composable}(${values.join(", ")});`;
+	const members = item.members.flatMap(({ member, binding }) => {
+		if (!live.has(binding)) {
+			return [];
+		}
+		const local = spelling.name(binding);
+		return [local === member ? local : `${member}: ${local}`];
+	});
+	const values = item.arguments.flatMap((argument) => {
+		switch (argument.kind) {
+			case "Value":
+				return [initialiser(argument.value, component, spelling)];
+			case "Getter":
+				return [functionText(argument.getter, component, spelling.rules, "pure", { arrow: true })];
+			case "Callback":
+				return [];
+			default:
+				return unreachable(argument);
+		}
+	});
+	return `const { ${members.join(", ")} } = ${item.composable}(${values.join(", ")});`;
 }
 
 /**
@@ -254,13 +267,13 @@ function use(
  * it is.
  */
 function state(item: StateItem, component: UfComponent, spelling: Spelling): string {
-  const name = spelling.name(item.binding);
-  if (!item.initial) {
-    return `const ${name} = undefined${item.type ? ` as ${unionWithUndefined(item.type.code)}` : ""};`;
-  }
-  const value = initialiser(item.initial, component, spelling);
-  const type = item.type?.code ?? widenedLiteralType(item.initial.code, true);
-  return `const ${name} = ${type === undefined ? value : cast(value, type)};`;
+	const name = spelling.name(item.binding);
+	if (!item.initial) {
+		return `const ${name} = undefined${item.type ? ` as ${unionWithUndefined(item.type.code)}` : ""};`;
+	}
+	const value = initialiser(item.initial, component, spelling);
+	const type = item.type?.code ?? widenedLiteralType(item.initial.code, true);
+	return `const ${name} = ${type === undefined ? value : cast(value, type)};`;
 }
 
 /**
@@ -269,24 +282,24 @@ function state(item: StateItem, component: UfComponent, spelling: Spelling): str
  * function, called once: `function getTier() {…}` and `const tier = getTier();`. A block getter's
  * return type is the one TypeScript infers for the getter, as `computed`'s type is.
  */
-function derived(item: DerivedItem, component: UfComponent, spelling: Spelling): string[] {
-  const name = spelling.name(item.binding);
-  const { getter } = item;
-  if (getter.expression) {
-    const value = initialiser(getter.body, component, spelling);
-    const type =
-      item.type?.code ?? getter.returnType?.code ?? widenedLiteralType(getter.body.code, false);
-    return [`const ${name} = ${type === undefined ? value : cast(value, type)};`];
-  }
-  const fn = spelling.scope.claim(`get${pascalCase(name)}`);
-  const typed =
-    getter.returnType === undefined && item.type !== undefined
-      ? { ...getter, returnType: item.type }
-      : getter;
-  return [
-    functionText(typed, component, spelling.rules, "pure", { name: fn }),
-    `const ${name} = ${fn}();`,
-  ];
+function derived(item: DerivedItem, component: UfComponent, spelling: Spelling): Array<string> {
+	const name = spelling.name(item.binding);
+	const { getter } = item;
+	if (getter.expression) {
+		const value = initialiser(getter.body, component, spelling);
+		const type =
+			item.type?.code ?? getter.returnType?.code ?? widenedLiteralType(getter.body.code, false);
+		return [`const ${name} = ${type === undefined ? value : cast(value, type)};`];
+	}
+	const fn = spelling.scope.claim(`get${pascalCase(name)}`);
+	const typed =
+		getter.returnType === undefined && item.type !== undefined
+			? { ...getter, returnType: item.type }
+			: getter;
+	return [
+		functionText(typed, component, spelling.rules, "pure", { name: fn }),
+		`const ${name} = ${fn}();`,
+	];
 }
 
 /**
@@ -295,15 +308,15 @@ function derived(item: DerivedItem, component: UfComponent, spelling: Spelling):
  * the server render has.
  */
 function localFunction(item: FunctionItem, component: UfComponent, spelling: Spelling): string {
-  const name = spelling.name(item.binding);
-  switch (item.form) {
-    case "declaration":
-      return functionText(item.function, component, spelling.rules, "pure", { name });
-    case "arrow":
-      return `const ${name} = ${functionText(item.function, component, spelling.rules, "pure", { arrow: true })};`;
-    default:
-      return unreachable(item.form);
-  }
+	const name = spelling.name(item.binding);
+	switch (item.form) {
+		case "declaration":
+			return functionText(item.function, component, spelling.rules, "pure", { name });
+		case "arrow":
+			return `const ${name} = ${functionText(item.function, component, spelling.rules, "pure", { arrow: true })};`;
+		default:
+			return unreachable(item.form);
+	}
 }
 
 /** The name the `useId` helper claims (its cell in the capability matrix names it). */
@@ -317,18 +330,18 @@ export const UNIQUE_ID = "uniqueId";
  * framework's id is the counter, after the prefix every target writes (`uf-id-`).
  */
 function uniqueIdHelper(name: string): string {
-  return [
-    `function ${name}(): string {`,
-    "  const locals = Astro.locals as { ufIdCount?: number };",
-    "  locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;",
-    "  return `uf-id-${locals.ufIdCount}`;",
-    "}",
-  ].join("\n");
+	return [
+		`function ${name}(): string {`,
+		"  const locals = Astro.locals as { ufIdCount?: number };",
+		"  locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;",
+		"  return `uf-id-${locals.ufIdCount}`;",
+		"}",
+	].join("\n");
 }
 
 /** `const id = useId()`: an id from the helper, unique in the request. */
 function id(item: IdItem, helper: string, spelling: Spelling): string {
-  return `const ${spelling.name(item.binding)} = ${helper}();`;
+	return `const ${spelling.name(item.binding)} = ${helper}();`;
 }
 
 /**
@@ -336,13 +349,13 @@ function id(item: IdItem, helper: string, spelling: Spelling): string {
  * parenthesised, where a comma would start another declarator.
  */
 function initialiser(code: Code, component: UfComponent, spelling: Spelling): string {
-  const printed = rewriteCode(code, component, spelling.rules, "pure");
-  return needsParentheses(printed, "argument") ? `(${printed})` : printed;
+	const printed = rewriteCode(code, component, spelling.rules, "pure");
+	return needsParentheses(printed, "argument") ? `(${printed})` : printed;
 }
 
 /** `value as type`, the value parenthesised where `as` would bind to part of it. */
 function cast(value: string, type: string): string {
-  return `${needsParentheses(value) ? `(${value})` : value} as ${type}`;
+	return `${needsParentheses(value) ? `(${value})` : value} as ${type}`;
 }
 
 /**
@@ -350,7 +363,7 @@ function cast(value: string, type: string): string {
  * (oxfmt removes parentheses that turn out redundant).
  */
 function unionWithUndefined(type: string): string {
-  return `${/^[\w$.<>[\]\s,|&"'`-]+$/.test(type) ? type : `(${type})`} | undefined`;
+	return `${/^[\w$.<>[\]\s,|&"'`-]+$/.test(type) ? type : `(${type})`} | undefined`;
 }
 
 /** An expression as codegen's parser gives it. */
@@ -365,40 +378,42 @@ type Node = ReturnType<typeof parseExpression>;
  * expression's. Undefined for any other code, whose type the output keeps as TypeScript infers it.
  */
 function widenedLiteralType(code: string, branches: boolean): string | undefined {
-  const types = new Set<string>();
-  const visit = (node: Node): boolean => {
-    switch (node.type) {
-      case "Literal":
-        if (node.raw === "null") {
-          if (!branches) return false;
-          types.add("null");
-          return true;
-        }
-        return primitive(node.value);
-      case "UnaryExpression":
-        return (
-          (node.operator === "-" || node.operator === "+") &&
-          node.argument.type === "Literal" &&
-          (typeof node.argument.value === "number" || typeof node.argument.value === "bigint") &&
-          primitive(node.argument.value)
-        );
-      case "TemplateLiteral":
-        return node.expressions.length === 0 && primitive("");
-      case "SequenceExpression":
-        return visit(node.expressions.at(-1)!);
-      case "ConditionalExpression":
-        return branches && visit(node.consequent) && visit(node.alternate);
-      default:
-        return false;
-    }
-  };
-  const primitive = (value: unknown): boolean => {
-    const type = typeof value;
-    if (type !== "number" && type !== "string" && type !== "boolean" && type !== "bigint") {
-      return false;
-    }
-    types.add(type);
-    return true;
-  };
-  return visit(parseExpression(code)) ? [...types].join(" | ") : undefined;
+	const types = new Set<string>();
+	const visit = (node: Node): boolean => {
+		switch (node.type) {
+			case "Literal":
+				if (node.raw === "null") {
+					if (!branches) {
+						return false;
+					}
+					types.add("null");
+					return true;
+				}
+				return primitive(node.value);
+			case "UnaryExpression":
+				return (
+					(node.operator === "-" || node.operator === "+") &&
+					node.argument.type === "Literal" &&
+					(typeof node.argument.value === "number" || typeof node.argument.value === "bigint") &&
+					primitive(node.argument.value)
+				);
+			case "TemplateLiteral":
+				return node.expressions.length === 0 && primitive("");
+			case "SequenceExpression":
+				return visit(node.expressions.at(-1)!);
+			case "ConditionalExpression":
+				return branches && visit(node.consequent) && visit(node.alternate);
+			default:
+				return false;
+		}
+	};
+	const primitive = (value: unknown): boolean => {
+		const type = typeof value;
+		if (type !== "number" && type !== "string" && type !== "boolean" && type !== "bigint") {
+			return false;
+		}
+		types.add(type);
+		return true;
+	};
+	return visit(parseExpression(code)) ? [...types].join(" | ") : undefined;
 }
