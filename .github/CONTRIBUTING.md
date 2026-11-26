@@ -87,7 +87,7 @@ code (plan P1). Before you open a pull request:
    - `changes`: CI's gate, which `test:full` reuses for the canaries alone.
    - `baselines`: it needs Docker. See step 4.
    - `parity`: it merges CI's artefacts. The corpus's own summary judges the local run.
-   - `build` and `lighthouse`: they build and audit the docs site, not tests.
+   - `build`: it builds the docs site, not a test.
    - `gate`: `Merge gate` reads the other jobs' results. It isn't a test.
 3. When a change is meant to change the output, run `pnpm test:update` and review every changed
    file under `tests/integration/cases`: the golden outputs and expectations are reviewed like
