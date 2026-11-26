@@ -9,7 +9,9 @@
 				"http://localhost:8799/docs/getting-started/installation",
 				"http://localhost:8799/docs/components/state",
 				"http://localhost:8799/docs/reference/diagnostics",
-				"http://localhost:8799/docs/tooling/cli"
+				"http://localhost:8799/docs/tooling/cli",
+				"http://localhost:8799/changelog",
+				"http://localhost:8799/changelog/dynamic-root"
 			],
 			"numberOfRuns": 3
 		},
