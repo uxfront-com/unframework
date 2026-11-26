@@ -9,7 +9,7 @@ link:
   to: /docs/components/dynamic-components
 ---
 
-A button that becomes a link when it has an `href` is one of the first components a design system needs, and until now its root couldn't be both. A `<component is>` over tags can now be a component's root, and it takes what a parent gives it the way a one-element root does, whichever tag renders.
+A button that becomes a link when it has an `href` is one of the first components a design system needs. Its root can now be a `<component is>` over tags, which takes what a parent gives it the way a one-element root does, whichever tag renders.
 
 ## New
 
@@ -20,4 +20,4 @@ A button that becomes a link when it has an `href` is one of the first component
 ## Fixed
 
 - React compiles a listener on a `<component is>` over tags, which failed to emit before.
-- The font audit in your visual tests sends its requests together, so a page with hundreds of elements no longer comes close to the test's timeout.
+- The font audit that checks each capture's text sends its requests together, so a page with hundreds of elements no longer comes close to the test's timeout.

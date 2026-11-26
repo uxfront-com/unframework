@@ -57,7 +57,7 @@ const date = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UT
 			class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
 		>
 			<UIcon name="i-simple-icons-github" class="size-4" />
-			{{ entry.version }} on GitHub
+			Read the {{ entry.version }} release on GitHub
 			<UIcon name="i-lucide-arrow-right" class="size-3.5" />
 		</NuxtLink>
 	</div>
