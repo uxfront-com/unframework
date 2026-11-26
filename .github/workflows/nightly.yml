@@ -46,7 +46,7 @@ jobs:
 
       # The image ships every engine, so the postinstall skips its browser install in CI.
       - name: Setup
-        uses: ./.github/actions/setup
+        uses: uxfront-com/.github/.github/actions/setup@35f7cdaf9b3c62c04b411c6c454c6f75ae43e54b # main
 
       # scripts/run.ts runs the projects, then the summary, which appends the engine's matrix to
       # the job summary whatever the result. Firefox refuses a $HOME that belongs to another
@@ -187,7 +187,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup
-        uses: ./.github/actions/setup
+        uses: uxfront-com/.github/.github/actions/setup@35f7cdaf9b3c62c04b411c6c454c6f75ae43e54b # main
 
       - name: Canaries
         run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}

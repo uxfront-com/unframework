@@ -22,7 +22,6 @@ import { REPO_ROOT, ROOT } from "./paths.ts";
 /** A file for each entry of the list. */
 const ON_THE_LIST: ReadonlyArray<readonly [string, string]> = [
 	[".github/workflows/ci.yml", ".github/workflows/ci.yml"],
-	[".github/actions/setup/**", ".github/actions/setup/action.yml"],
 	["tests/integration/harness/**", "tests/integration/harness/guard.ts"],
 	["tests/integration/harness/**", "tests/integration/harness/quarantine/vue.ts"],
 	["tests/integration/scripts/**", "tests/integration/scripts/canary-paths.ts"],

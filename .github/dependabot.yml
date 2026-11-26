@@ -32,10 +32,9 @@ updates:
       prefix: chore
       include: scope
 
-  # Keeps the SHA-pinned actions current, in .github/workflows and in the local actions under
-  # .github/actions.
+  # Keeps the SHA-pinned actions in .github/workflows current.
   - package-ecosystem: github-actions
-    directories: ["/", "/.github/actions/*"]
+    directory: /
     schedule:
       interval: monthly
     groups:
