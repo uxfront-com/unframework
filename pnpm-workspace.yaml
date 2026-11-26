@@ -150,6 +150,7 @@ catalog:
   "@types/react": 19.3.0
   "@types/react-dom": 19.3.0
   "@typescript-eslint/scope-manager": 8.71.0
+  "@uxfront/site-checks": 0.1.0
   "@uxfront/typescript-config": ^0.1.0
   "@vitejs/plugin-react": 6.1.1
   "@vitejs/plugin-vue": 6.0.9

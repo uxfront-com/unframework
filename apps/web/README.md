@@ -9,9 +9,9 @@ pnpm dev          # dev server on http://localhost:3000
 pnpm build        # nuxt generate → dist
 pnpm preview      # serve the generated site
 pnpm check-types  # type-check the .ts sources (.vue files aren't covered, see "The docs" for what else it skips)
-pnpm lighthouse   # Lighthouse CI on the homepage and five docs pages, served from dist with wrangler dev (add new routes to `url` in `lighthouserc.json`)
+pnpm lighthouse   # Lighthouse CI on the homepage, five docs pages and two changelog pages, served from dist with wrangler dev (add new routes to `url` in `lighthouserc.mjs`)
 pnpm check:seo    # check dist against the search rules (see "The SEO check")
-pnpm test         # the unit tests of the SEO check and the structured data
+pnpm test         # the unit tests of the SEO check's payload rule and the structured data
 ```
 
 ## The homepage
@@ -143,7 +143,9 @@ A button that becomes a link when it has an `href` is one of the first component
 
 ## The SEO check
 
-`pnpm check:seo` (`scripts/check-seo.ts`) reads `dist` after a build and fails, naming the page and the rule, unless the site keeps the rules below. CI runs it in the `Build` job, after the build. It prints a line per page and per file it checks, and a summary.
+`pnpm check:seo` reads `dist` after a build and fails, naming the rule and the page or file, unless the site keeps the rules below. CI runs it in the `Build` job, after the build. It prints a line per rule, with its problems under it, and a summary.
+
+The check is `site-checks seo` from [`@uxfront/site-checks`](https://github.com/uxfront-com/uxfront/tree/main/packages/site-checks), the package the UXFront sites share. `scripts/site-checks.config.ts` turns on this site's rules and sets their options, and its parsing profile reads each page as the site's own checker did before. The package's README lists every rule and its options. The `_payload.json` rule is this site's own, in `scripts/payload.ts`.
 
 Every page in `sitemap.xml` has:
 
@@ -164,7 +166,7 @@ The site as a whole has:
 - No temporary redirect (302 or 307, or a rule with no status, which Cloudflare sends as a 302) in `_redirects`.
 - The `www` and `workers.dev` host rules in `_headers`.
 
-Google and Bing verify the site by a DNS record, not a token in the code, so the check has nothing to read for them. `scripts/check-seo.test.ts` and `scripts/structured-data.test.ts` test the check and the structured data with `node --test` (`pnpm test`).
+Google and Bing verify the site by a DNS record, not a token in the code, so the check has nothing to read for them. `scripts/payload.test.ts` and `scripts/structured-data.test.ts` test the `_payload.json` rule and the structured data with `node --test` (`pnpm test`).
 
 ## Analytics
 
@@ -184,6 +186,6 @@ With Amplitude built in, the homepage keeps its 100 in Performance (no added Tot
 
 The rules are the same as for [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web#keeping-100s-as-the-site-grows): no render-blocking resources, heavy code behind dynamic `import()`, images through `@nuxt/image`, and a title, meta description, canonical link and single `<h1>` on every page.
 
-`lighthouserc.json` audits the homepage and five docs pages. Each fails below 0.95 in accessibility and best practices and below 1 in SEO, and the homepage also fails below 0.95 in performance. The docs pages are Docus's theme, which scores lower in performance on phones, so they don't assert it yet.
+`lighthouserc.mjs` audits the homepage, five docs pages and two changelog pages, with the thresholds of the shared preset, `lighthouseConfig` from `@uxfront/site-checks/lighthouse`. Each fails below 0.95 in accessibility and best practices and below 1 in SEO, and the homepage also fails below 0.95 in performance. The docs pages are Docus's theme, which scores lower in performance on phones, so they and the changelog pages don't assert it yet.
 
 Lighthouse CI serves `dist` with `wrangler dev`, which reads `wrangler.jsonc` and serves `/docs/<path>` from `<path>.html` and unknown paths with `404.html`, as Cloudflare does. Keep it: Lighthouse CI's own static server answers 404 for every docs page.

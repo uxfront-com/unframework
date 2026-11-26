@@ -26,6 +26,6 @@ jobs:
     uses: uxfront-com/.github/.github/workflows/lighthouse.yml@d2f86bc4b9602818601b0415509c5be0348bb8bc # main
     with:
       build: pnpm build
-      # The pages and thresholds are in apps/web/lighthouserc.json (apps/web/README.md, "Keeping 100s").
+      # The pages and thresholds are in apps/web/lighthouserc.mjs (apps/web/README.md, "Keeping 100s").
       audit: pnpm --filter web lighthouse
       reports: apps/web/.lighthouseci
