@@ -8,9 +8,9 @@ import { parseArgs } from "node:util";
 
 /** The paths that can change a canary's answer, as globs: `*` within a segment, `**` across them. */
 export const CANARY_PATHS: ReadonlyArray<string> = [
-	// The job that runs them, and the action that installs their dependencies.
+	// The job that runs them, with the pinned commit of the shared action that installs their
+	// dependencies.
 	".github/workflows/ci.yml",
-	".github/actions/setup/**",
 	// The harness, with its runner and the files at the package's root that the projects load.
 	"tests/integration/harness/**",
 	"tests/integration/scripts/**",
@@ -46,7 +46,6 @@ export const CANARY_PATHS: ReadonlyArray<string> = [
  */
 export const HARNESS_PATHS: ReadonlyArray<string> = [
 	".github/workflows/ci.yml",
-	".github/actions/setup/**",
 	"tests/integration/harness/**",
 	"tests/integration/scripts/**",
 	"tests/integration/*.ts",
