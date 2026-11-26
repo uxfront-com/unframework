@@ -1,15 +1,15 @@
 import { queryCollection } from "@nuxt/content/server";
 
 import { rawMarkdown } from "../utils/raw-markdown";
-import type { DocsPage } from "../utils/raw-markdown";
+import type { RawPage } from "../utils/raw-markdown";
 
 /**
- * Serves `/raw/<path>.md`, the markdown copy of a docs page, from the page's own
- * source file (`rawMarkdown`). Agents read these files (so does "Copy page"),
- * so they get the markdown as written.
+ * Serves `/raw/<path>.md`, the markdown copy of a docs page or a changelog
+ * entry, from the page's own source file (`rawMarkdown`). Agents read these
+ * files (so does "Copy page"), so they get the markdown as written.
  *
- * Runs before Nuxt Content's route, which still answers for anything that isn't
- * a docs page (returning `undefined` hands the request on).
+ * Runs before Nuxt Content's route, which still answers for anything that is
+ * neither (returning `undefined` hands the request on).
  */
 export default defineEventHandler(async (event) => {
 	const match = event.path.match(/^\/raw(\/.+?)(?:\/index)?\.md$/);
@@ -17,9 +17,14 @@ export default defineEventHandler(async (event) => {
 		return undefined;
 	}
 
-	const page = (await queryCollection(event, "docs" as never)
-		.path(match[1])
-		.first()) as DocsPage | null;
+	const path = match[1];
+	const page = (
+		path.startsWith("/changelog/")
+			? await queryCollection(event, "changelog").path(path).first()
+			: await queryCollection(event, "docs" as never)
+					.path(path)
+					.first()
+	) as RawPage | null;
 	if (!page) {
 		return undefined;
 	}

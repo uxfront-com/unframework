@@ -1,7 +1,7 @@
 import { queryCollection } from "@nuxt/content/server";
 
 import { rawMarkdown } from "../utils/raw-markdown";
-import type { DocsPage } from "../utils/raw-markdown";
+import type { RawPage } from "../utils/raw-markdown";
 
 /**
  * Serves `/llms-full.txt` in place of nuxt-llms's route, from the same source
@@ -14,7 +14,7 @@ import type { DocsPage } from "../utils/raw-markdown";
  * prerendered ones.
  */
 export default defineEventHandler(async (event) => {
-	const pages = (await queryCollection(event, "docs" as never).all()) as Array<DocsPage>;
+	const pages = (await queryCollection(event, "docs" as never).all()) as Array<RawPage>;
 	const documents = await Promise.all(
 		pages.filter((page) => !isNavigationPath(page.path)).map((page) => rawMarkdown(page)),
 	);

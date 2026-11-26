@@ -3,7 +3,7 @@ import { hold } from "@uxfront/scene";
 import { corridor, prism, stack, threshold } from "@uxfront/scene/formations";
 import { FRAMEWORKS } from "@uxfront/ui/frameworks";
 
-import { DOCS_URL, GITHUB_URL, UXFRONT_URL } from "~/data/site";
+import { CHANGELOG_URL, DOCS_URL, GITHUB_URL, UXFRONT_URL } from "~/data/site";
 import { spotlight } from "~/lib/formations";
 
 useUxHead({
@@ -201,7 +201,8 @@ const family = [
 					</a>
 				</template>
 				<template #actions>
-					<NuxtLink class="header-docs" :to="DOCS_URL">Documentation</NuxtLink>
+					<NuxtLink class="header-page" :to="CHANGELOG_URL">Changelog</NuxtLink>
+					<NuxtLink class="header-page" :to="DOCS_URL">Documentation</NuxtLink>
 				</template>
 			</UxHeader>
 		</template>
@@ -284,10 +285,10 @@ const family = [
 	margin-top: 2rem;
 }
 
-/* Phones can't fit the byline beside both header links. The hero links to the
-   docs just below. */
+/* Phones can't fit the byline beside the header links. The hero links to the
+   docs just below, and the docs header links to the changelog. */
 @media (max-width: 639px) {
-	.header-docs {
+	.header-page {
 		display: none;
 	}
 }
