@@ -471,7 +471,7 @@ describe("canaries", () => {
 	it("leave out the test jobs only when the changes job says so, and run them if it fails (ADR-0084)", () => {
 		const ids = workflowJobIds("ci.yml");
 		// Merge gate reports on a docs-only pull request too, or the required check stays pending.
-		const ungated = new Set(["changes", "check", "build", "lighthouse", "canaries", "gate"]);
+		const ungated = new Set(["changes", "check", "build", "canaries", "gate"]);
 		expect(ids).toEqual(expect.arrayContaining([...ungated]));
 		const gated = ids.filter((id) => !ungated.has(id));
 		expect(gated.length).toBeGreaterThan(0);
@@ -483,7 +483,7 @@ describe("canaries", () => {
 			expect(condition, id).toMatch(/^!cancelled\(\) && /);
 			expect(condition, id).toContain("needs.changes.outputs.tests != 'false'");
 		}
-		for (const id of ["check", "build", "lighthouse"]) {
+		for (const id of ["check", "build"]) {
 			expect(workflowJob("ci.yml", id), id).not.toContain("needs.changes");
 		}
 	});

@@ -68,8 +68,7 @@ export function globToRegExp(glob: string): RegExp {
 
 /**
  * The documentation: what a pull request that changes nothing else need not test (ADR-0084). The
- * docs site is built from these files, so `Build` and `Lighthouse`, which are never gated, still
- * check them.
+ * docs site is built from these files, so `Build`, which is never gated, still checks them.
  */
 export const DOCS_PATHS: ReadonlyArray<string> = ["**/*.md", "docs/**", "apps/web/content/**"];
 
