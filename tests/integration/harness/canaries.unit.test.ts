@@ -369,6 +369,9 @@ describe("canaries", () => {
 		expect(runs.get("L10-root-hidden")).toHaveLength(3);
 		// One job of L12-unwired-listener's whole corpus took 470 to 540 s of the 600 (ADR-0115).
 		expect(runs.get("L12-unwired-listener")).toHaveLength(2);
+		// L13-console-warn's two shards took 300 to 535 s of the 600 with 389 cases, and every shard
+		// runs the ssr projects whole (ADR-0052): it runs in three.
+		expect(runs.get("L13-console-warn")).toHaveLength(3);
 		// A canary whose specs run, in the browser or the hydrate projects, waits out a timeout at
 		// most of their failures, on every target: one job of the whole corpus outgrew the ten
 		// minutes (ADR-0052, ADR-0115). The golden guard's specs fail to load, so they run no test
