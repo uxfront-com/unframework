@@ -144,3 +144,5 @@ baseline.
 ## Releases
 
 Published packages are versioned and released with [Changesets](https://github.com/changesets/changesets). See [`.changeset/README.md`](../.changeset/README.md).
+
+Once a release of `@uxfront/unframework` is published, add its entry to the changelog at unframework.dev/changelog, in a pull request of its own, since the GitHub release it links doesn't exist until then. A release that only bumps dependencies gets an entry when the packages it pulls in change something a reader notices, and is folded into the next entry otherwise. [The changelog](../apps/web/README.md#the-changelog) says how to write one.

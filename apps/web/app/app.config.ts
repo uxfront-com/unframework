@@ -1,4 +1,4 @@
-import { GITHUB_URL } from "./data/site";
+import { CHANGELOG_URL, DOCS_URL, GITHUB_URL } from "./data/site";
 
 export default defineAppConfig({
 	// The docs' GitHub, "Edit this page" and "Report an issue" links. Docus reads
@@ -13,6 +13,13 @@ export default defineAppConfig({
 		// Signs the header's site name "by UXFront", like the homepage header. With
 		// no wordmark, the name stays Docus's plain title, as the homepage writes it.
 		byline: true,
+		// The links beside the docs header's search, each marked current on its
+		// section's pages.
+		headerLinks: [
+			{ label: "Changelog", to: CHANGELOG_URL, activeFor: CHANGELOG_URL },
+			// The introduction, rather than /docs, which only redirects to it.
+			{ label: "Documentation", to: DOCS_URL, activeFor: "/docs" },
+		],
 		// The frameworks the docs' examples come in, in the order the Framework
 		// select shows them. The first is the default, and a page that skips the
 		// reader's framework (`::framework-switcher` in content) shows the first one

@@ -158,7 +158,8 @@ export default defineNuxtConfig({
 		prerender: {
 			crawlLinks: true,
 			// /docs only redirects, so crawling the docs starts from the introduction.
-			routes: ["/", "/docs", "/docs/getting-started/introduction"],
+			// The crawler finds each changelog entry's page from /changelog.
+			routes: ["/", "/docs", "/docs/getting-started/introduction", "/changelog"],
 			failOnError: true,
 		},
 	},
