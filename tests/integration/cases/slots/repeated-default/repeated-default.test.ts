@@ -87,10 +87,9 @@ describeTargets("slots/repeated-default", () => {
 			await expect.element(action).toBeVisible();
 			expect(action.getByText(name).elements()).toHaveLength(1);
 		}
-		await expect.element(view.getByRole("link", { name: "Open once" })).toHaveAttribute(
-			"href",
-			"#once",
-		);
+		await expect
+			.element(view.getByRole("link", { name: "Open once" }))
+			.toHaveAttribute("href", "#once");
 	});
 
 	it("renders the fill in every row of a scoped fill its child renders per row", async () => {
