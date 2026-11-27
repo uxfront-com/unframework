@@ -23,6 +23,7 @@
           {
             "name": "row",
             "optional": true,
+            "repeated": true,
             "span": {
               "start": 304,
               "end": 319
@@ -126,7 +127,8 @@
             "slots": [
               {
                 "name": "row",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],

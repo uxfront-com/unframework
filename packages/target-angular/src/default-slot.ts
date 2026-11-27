@@ -6,7 +6,8 @@
 // the source may render the slot in each branch of a conditional. Where those places render one at
 // a time, the template declares the `<ng-content>` once, in an `<ng-template>` before the
 // outermost `@switch` or `@if` that holds them, and each place renders it with `ngTemplateOutlet`.
-// Places that render together, like the rows of a list, stay as they are.
+// A slot the component may render more than once at a time, like in the rows of a list, is the
+// analyser's `repeated` (ADR-0126): it is a template its consumer passes, and none of this applies.
 import { referencedBindings } from "@unframework.dev/codegen";
 import type {
 	DynamicNode,
@@ -32,18 +33,19 @@ export interface HoistedSlot {
 	/**
 	 * Whether each place declares its fallback in an `<ng-template>` of its own, which the one
 	 * `<ng-content>` renders: where the fallbacks differ, or one reads a name a conditional between
-	 * the anchor and the place may narrow. Otherwise the fallback is the `<ng-content>`'s own.
+	 * the anchor and the place may narrow, or a scoped fill there declares. Otherwise the fallback
+	 * is the `<ng-content>`'s own.
 	 */
 	fallbackTemplates: boolean;
 }
 
-/** A block around an outlet, from the root in: what decides where and how often it renders. */
+/** A block around an outlet, from the root in: what decides where it renders. */
 type Step =
-	| { kind: "If"; node: IfNode; branch: number; animated: boolean }
+	| { kind: "If"; node: IfNode; branch: number }
 	/** A `<component is>` of two or more candidates, which prints its children once per case. */
 	| { kind: "Dynamic"; node: DynamicNode }
-	/** A list, or a fill with a parameter, which may render the outlet more than once at a time. */
-	| { kind: "Repeated" };
+	/** A fill with a parameter, whose `let-` names a fallback in it may read. */
+	| { kind: "Scoped"; fill: SlotFill };
 
 interface Place {
 	outlet: SlotOutletNode;
@@ -52,20 +54,19 @@ interface Place {
 
 /**
  * The default slot the template declares once (ADR-0124, ADR-0125), when Angular would print more
- * than one `<ng-content>` for it, and every place renders one at a time:
- *
- * - One outlet inside a `<component is>` of two or more candidates, with no list or scoped fill
- *   between them: each case prints it, and one case renders at a time (ADR-0124's form).
- * - Two or more outlets, none under a list or in a scoped fill, where every two sit in different
- *   branches of the conditional nearest to both, which no `<Transition>` animates: a transition
- *   keeps the leaving branch in the document while the entering one renders.
- *
- * A teleport, a transition around one element and another slot's fallback render their content
- * once, so they don't stop it. Otherwise the template is as before: a place under a list, in a
- * scoped fill or beside another place renders the slot more than once at a time, which one
- * `<ng-content>` cannot.
+ * than one `<ng-content>` for it: one outlet inside a `<component is>` of two or more candidates,
+ * which each case prints, or two or more outlets. `repeated` is the slot's own
+ * (`SlotDeclaration.repeated`, ADR-0126): a slot the component may render more than once at a
+ * time is a template, and its places render that. Otherwise its places render one at a time, so
+ * every two sit in different branches of a conditional, and they share one `<ng-content>`.
  */
-export function hoistedDefaultSlot(render: ElementNode | FragmentNode): HoistedSlot | undefined {
+export function hoistedDefaultSlot(
+	render: ElementNode | FragmentNode,
+	repeated: boolean,
+): HoistedSlot | undefined {
+	if (repeated) {
+		return undefined;
+	}
 	const places: Array<Place> = [];
 	const visit = (nodes: ReadonlyArray<RenderNode>, path: ReadonlyArray<Step>): void => {
 		for (const node of nodes) {
@@ -79,10 +80,13 @@ export function hoistedDefaultSlot(render: ElementNode | FragmentNode): HoistedS
 			if (fill.forward !== undefined) {
 				continue;
 			}
-			visit(fill.children, fill.parameter === undefined ? path : [...path, { kind: "Repeated" }]);
+			visit(
+				fill.children,
+				fill.parameter === undefined ? path : [...path, { kind: "Scoped", fill }],
+			);
 		}
 	};
-	const visitNode = (node: RenderNode, path: ReadonlyArray<Step>, animated = false): void => {
+	const visitNode = (node: RenderNode, path: ReadonlyArray<Step>): void => {
 		switch (node.kind) {
 			case "Text":
 			case "Interpolation":
@@ -104,19 +108,14 @@ export function hoistedDefaultSlot(render: ElementNode | FragmentNode): HoistedS
 				return visit(node.fallback, path);
 			case "If":
 				for (const [branch, { children }] of node.branches.entries()) {
-					visit(children, [...path, { kind: "If", node, branch, animated }]);
+					visit(children, [...path, { kind: "If", node, branch }]);
 				}
 				return;
 			case "For":
-				return visitNode(node.body, [...path, { kind: "Repeated" }]);
+				return visitNode(node.body, path);
 			case "Teleport":
-				return visit(node.children, path);
 			case "Transition":
-				// Its child is one element, or one conditional, whose branches it animates (ADR-0100).
-				for (const child of node.children) {
-					visitNode(child, path, child.kind === "If");
-				}
-				return;
+				return visit(node.children, path);
 			default:
 				return unreachable(node);
 		}
@@ -133,15 +132,14 @@ export function hoistedDefaultSlot(render: ElementNode | FragmentNode): HoistedS
 		rest.some(({ outlet }) => !sameNodes(outlet.fallback, first!.outlet.fallback)) ||
 		places.some(
 			({ outlet, path }) =>
-				path.slice(from).some((step) => step.kind === "If") && readsBinding(outlet.fallback),
+				path.slice(from).some((step) => step.kind !== "Dynamic") && readsBinding(outlet.fallback),
 		);
 	return { anchor, outlets, fallbackTemplates };
 }
 
 /**
  * The block before which the template declares the slot, and the index of its step in every
- * place's path, when the places render one at a time and Angular would print more than one
- * `<ng-content>` for them.
+ * place's path, when Angular would print more than one `<ng-content>` for the places.
  */
 function placed(
 	places: ReadonlyArray<Place>,
@@ -152,37 +150,16 @@ function placed(
 	}
 	if (rest.length === 0) {
 		// ADR-0124's form: the outermost `<component is>` of two or more candidates prints it once
-		// per case. A list or a scoped fill above it repeats the whole `@switch`, and one inside it
-		// repeats the place.
+		// per case.
 		const from = first.path.findIndex((step) => step.kind === "Dynamic");
 		const step = first.path[from];
-		if (
-			step?.kind !== "Dynamic" ||
-			first.path.slice(from).some((each) => each.kind === "Repeated")
-		) {
-			return undefined;
-		}
-		return { anchor: step.node, from };
+		return step?.kind === "Dynamic" ? { anchor: step.node, from } : undefined;
 	}
-	if (places.some(({ path }) => path.some((step) => step.kind === "Repeated"))) {
-		return undefined;
-	}
-	// Every two places part at a conditional, in different branches, that no transition animates.
+	// The slot isn't `repeated`, so every two places part at a conditional, in different branches.
 	let common = Infinity;
 	for (const [index, place] of places.entries()) {
 		for (const other of places.slice(index + 1)) {
-			const at = parting(place.path, other.path);
-			const step = place.path[at];
-			const otherStep = other.path[at];
-			if (
-				step?.kind !== "If" ||
-				otherStep?.kind !== "If" ||
-				step.node !== otherStep.node ||
-				step.animated
-			) {
-				return undefined;
-			}
-			common = Math.min(common, at);
+			common = Math.min(common, parting(place.path, other.path));
 		}
 	}
 	// Every place shares the steps before the first parting, and that conditional at it. The
@@ -191,8 +168,14 @@ function placed(
 	const shared = first.path.slice(0, common);
 	const dynamic = shared.findIndex((step) => step.kind === "Dynamic");
 	const from = dynamic === -1 ? common : dynamic;
-	const step = first.path[from]!;
-	return { anchor: (step as Extract<Step, { node: unknown }>).node, from };
+	const step = first.path[from];
+	if (step?.kind !== "Dynamic" && step?.kind !== "If") {
+		// The analyser's `repeated` says otherwise: places that render together (ADR-0126).
+		throw new Error(
+			"The default slot's places render together, and its declaration isn't `repeated`.",
+		);
+	}
+	return { anchor: step.node, from };
 }
 
 /** The index of the first step two paths don't share: a block, or a branch of one. */
@@ -208,6 +191,9 @@ function sameStep(a: Step, b: Step): boolean {
 	if (a.kind === "If" && b.kind === "If") {
 		return a.node === b.node && a.branch === b.branch;
 	}
+	if (a.kind === "Scoped" && b.kind === "Scoped") {
+		return a.fill === b.fill;
+	}
 	return a.kind === "Dynamic" && b.kind === "Dynamic" && a.node === b.node;
 }
 
@@ -220,7 +206,10 @@ function withoutSpans(key: string, value: unknown): unknown {
 	return key === "span" ? undefined : value;
 }
 
-/** Whether nodes read a binding, which a conditional around them may narrow. */
+/**
+ * Whether nodes read a binding, which a conditional around them may narrow, or a scoped fill
+ * around them declares.
+ */
 function readsBinding(nodes: ReadonlyArray<RenderNode>): boolean {
 	return nodes.some((node) => referencedBindings(node).size > 0);
 }

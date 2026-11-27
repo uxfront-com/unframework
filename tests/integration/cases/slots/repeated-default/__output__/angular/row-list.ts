@@ -1,11 +1,32 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
-import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
+import { NgTemplateOutlet } from "@angular/common";
+import {
+  Component,
+  Directive,
+  ElementRef,
+  TemplateRef,
+  contentChild,
+  inject,
+  input,
+  viewChild,
+} from "@angular/core";
+
+/** A template of `RowList`'s `default` slot, which takes no `let-` variable (ADR-0056). */
+@Directive({ selector: "ng-template[ufRowListDefault]" })
+export class RowListDefault {
+  static ngTemplateContextGuard(
+    _directive: RowListDefault,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 @Component({
   selector: "uf-row-list",
-  imports: [ScopeAttributes, Fallthrough],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -21,9 +42,12 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
       #ufElement
     >
       @for (item of items; track item) {
-        <li>{{ item }}&ngsp;<ng-content /></li>
+        <li>{{ item }}&ngsp;@if (this.defaultTemplate(); as template) {<ng-container
+          [ngTemplateOutlet]="template"
+        />}</li>
       }
     </ul>
+    <ng-content select="[ufRowListDefault]" />
   `,
 })
 export default class RowList {
@@ -33,6 +57,7 @@ export default class RowList {
   readonly style = input<Record<string, string | null | undefined>>();
   readonly ufAttributes = input<Record<string, unknown>>();
   readonly ufListeners = input<Listeners>();
+  private readonly defaultTemplate = contentChild(RowListDefault, { read: TemplateRef });
   readonly ufElement = viewChild<ElementRef<HTMLUListElement>>("ufElement");
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

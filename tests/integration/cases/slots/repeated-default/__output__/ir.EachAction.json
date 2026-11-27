@@ -70,6 +70,7 @@
           {
             "name": "default",
             "optional": true,
+            "repeated": true,
             "span": {
               "start": 419,
               "end": 438
@@ -354,7 +355,8 @@
               {
                 "name": "row",
                 "optional": true,
-                "props": "{ item: string }"
+                "props": "{ item: string }",
+                "repeated": true
               }
             ],
             "exposes": [],

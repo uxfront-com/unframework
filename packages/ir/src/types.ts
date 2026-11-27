@@ -636,6 +636,12 @@ export interface ApiSlot {
 	props?: string;
 	/** The names its props' type references, as `ApiMember.references`. */
 	references?: Array<string>;
+	/**
+	 * Whether the component may render the slot more than once at a time (ADR-0126): under a
+	 * list, in two places that render together, or in a fill a child renders more than once at a
+	 * time, as `SlotDeclaration.repeated`. Absent when it renders the slot once at most.
+	 */
+	repeated?: true;
 }
 
 /** An injection key of a child module's API. */
@@ -1506,6 +1512,14 @@ export interface SlotDeclaration {
 	 * parameter a slot passes is seen (`generic-slot-props`). Absent when it references none.
 	 */
 	references?: Array<string>;
+	/**
+	 * Whether the component may render the slot more than once at a time (ADR-0126): an outlet
+	 * under a list; two outlets that are not in different branches of one conditional, or are in
+	 * branches a `<Transition>` animates; or an outlet in a fill of a child's slot that is itself
+	 * `repeated`, or of a child whose API cannot be read. Angular renders such a default slot
+	 * through a directive, since projected nodes exist once. Absent otherwise.
+	 */
+	repeated?: true;
 	span: Span;
 }
 

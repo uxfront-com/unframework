@@ -54,6 +54,7 @@
           {
             "name": "default",
             "optional": true,
+            "repeated": true,
             "span": {
               "start": 280,
               "end": 299

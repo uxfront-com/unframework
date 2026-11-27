@@ -758,7 +758,8 @@
             "slots": [
               {
                 "name": "default",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],
@@ -821,7 +822,8 @@
             "slots": [
               {
                 "name": "default",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],
@@ -884,7 +886,8 @@
             "slots": [
               {
                 "name": "default",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],
@@ -1016,7 +1019,8 @@
             "slots": [
               {
                 "name": "default",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],
@@ -1088,7 +1092,8 @@
             "slots": [
               {
                 "name": "default",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],

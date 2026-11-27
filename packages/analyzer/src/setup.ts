@@ -1202,6 +1202,12 @@ export function declareSetup(context: SetupContext): Setup {
 		}
 		const declarations: Array<SlotDeclaration> = [];
 		const seen = new Set<string>();
+		// Whether it renders a slot more than once at a time is the API's (ADR-0126), read once
+		// for a parent in another file and for the component itself.
+		const own = context.component.id ? context.components?.get(context.component.id) : undefined;
+		const repeatedSlots = new Set(
+			own?.api.slots.flatMap((slot) => (slot.repeated ? [slot.name] : [])),
+		);
 		for (const member of members) {
 			const shape = slotShape(member);
 			if (!shape) {
@@ -1259,6 +1265,7 @@ export function declareSetup(context: SetupContext): Setup {
 					{ start: member.start, end: member.end },
 					props,
 					props && withReferences(props.code).references,
+					repeatedSlots.has(name),
 				),
 			);
 		}

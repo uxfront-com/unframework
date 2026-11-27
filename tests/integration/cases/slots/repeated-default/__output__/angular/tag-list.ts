@@ -1,11 +1,32 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
-import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
+import { NgTemplateOutlet } from "@angular/common";
+import {
+  Component,
+  Directive,
+  ElementRef,
+  TemplateRef,
+  contentChild,
+  inject,
+  input,
+  viewChild,
+} from "@angular/core";
+
+/** A template of `TagList`'s `default` slot, which takes no `let-` variable (ADR-0056). */
+@Directive({ selector: "ng-template[ufTagListDefault]" })
+export class TagListDefault {
+  static ngTemplateContextGuard(
+    _directive: TagListDefault,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 @Component({
   selector: "uf-tag-list",
-  imports: [ScopeAttributes, Fallthrough],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -25,7 +46,9 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
         >
           @for (item of items; track item) {
             <li>
-              <ng-content>{{ item }}</ng-content>
+              @if (this.defaultTemplate(); as template) {<ng-container
+                [ngTemplateOutlet]="template"
+              />} @else {{{ item }}}
             </li>
           }
         </ol>
@@ -41,12 +64,15 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
         >
           @for (item of items; track item) {
             <li>
-              <ng-content>{{ item }}</ng-content>
+              @if (this.defaultTemplate(); as template) {<ng-container
+                [ngTemplateOutlet]="template"
+              />} @else {{{ item }}}
             </li>
           }
         </ul>
       }
     }
+    <ng-content select="[ufTagListDefault]" />
   `,
 })
 export default class TagList {
@@ -57,6 +83,7 @@ export default class TagList {
   readonly style = input<Record<string, string | null | undefined>>();
   readonly ufAttributes = input<Record<string, unknown>>();
   readonly ufListeners = input<Listeners>();
+  private readonly defaultTemplate = contentChild(TagListDefault, { read: TemplateRef });
   readonly ufElement = viewChild<ElementRef<HTMLOListElement | HTMLUListElement>>("ufElement");
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

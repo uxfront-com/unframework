@@ -2,16 +2,22 @@ import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
 import OnceSlot, { OnceSlotText } from "./once-slot";
+import { NgTemplateOutlet } from "@angular/common";
 import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-once-action",
-  imports: [OnceSlot, OnceSlotText, ScopeAttributes, Fallthrough],
+  imports: [OnceSlot, OnceSlotText, NgTemplateOutlet, ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let href = this.href();
     @let label = this.label();
+    <ng-template #defaultSlot let-fallback>
+      <ng-content>
+        <ng-container [ngTemplateOutlet]="fallback" />
+      </ng-content>
+    </ng-template>
     @switch (href ? "a" : "button") {
       @case ("a") {
         <a
@@ -25,7 +31,11 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
           <uf-once-slot [label]="label">
             <ng-template ufOnceSlotText let-shown>
               <span class="once-fill">
-                <ng-content>{{ shown.label }}</ng-content>
+                <ng-template #defaultSlotFallback>{{ shown.label }}</ng-template>
+                <ng-container
+                  [ngTemplateOutlet]="defaultSlot"
+                  [ngTemplateOutletContext]="{ $implicit: defaultSlotFallback }"
+                />
               </span>
             </ng-template>
           </uf-once-slot>
@@ -41,7 +51,11 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
           <uf-once-slot [label]="label">
             <ng-template ufOnceSlotText let-shown>
               <span class="once-fill">
-                <ng-content>{{ shown.label }}</ng-content>
+                <ng-template #defaultSlotFallback>{{ shown.label }}</ng-template>
+                <ng-container
+                  [ngTemplateOutlet]="defaultSlot"
+                  [ngTemplateOutletContext]="{ $implicit: defaultSlotFallback }"
+                />
               </span>
             </ng-template>
           </uf-once-slot>

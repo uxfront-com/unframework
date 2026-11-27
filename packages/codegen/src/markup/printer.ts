@@ -193,6 +193,12 @@ export interface PrintedFill {
 	forwardsProps?: boolean;
 	/** The forwarded slot's presence, `slots.title`, as the rules spell it. */
 	presence?: string;
+	/**
+	 * Whether a target passes a default fill without a parameter as a template, as it passes a
+	 * named one: Angular's, for a child that renders its default slot more than once at a time
+	 * (ADR-0126). A target sets it in its `fills` hook.
+	 */
+	template?: boolean;
 }
 
 /**
@@ -305,6 +311,12 @@ export interface PrintedTransitionElement {
 export interface PrintedSlotOutlet {
 	node: SlotOutletNode;
 	props?: { code: string; entries?: Array<{ key: string; value: string }> };
+	/**
+	 * Whether a target renders the default slot without props from a template, as a named one:
+	 * Angular's, for a slot the component renders more than once at a time (ADR-0126). A target
+	 * sets it in its `slotOutlet` hook.
+	 */
+	template?: boolean;
 }
 
 /** A branch of a conditional, with its condition as code: absent on the final else. */

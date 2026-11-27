@@ -1635,7 +1635,8 @@
               {
                 "name": "option",
                 "optional": true,
-                "props": "{ option: { id: string; label: string } }"
+                "props": "{ option: { id: string; label: string } }",
+                "repeated": true
               }
             ],
             "exposes": [],

@@ -70,6 +70,7 @@
           {
             "name": "default",
             "optional": true,
+            "repeated": true,
             "span": {
               "start": 267,
               "end": 286

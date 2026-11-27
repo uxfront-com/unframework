@@ -1,6 +1,7 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { NgTemplateOutlet } from "@angular/common";
 import {
   type AnimationCallbackEvent,
   Component,
@@ -8,12 +9,25 @@ import {
   Directive,
   ElementRef,
   type OnInit,
+  TemplateRef,
   ViewEncapsulation,
   afterNextRender,
+  contentChild,
   inject,
   input,
   viewChild,
 } from "@angular/core";
+
+/** A template of `FadeFace`'s `default` slot, which takes no `let-` variable (ADR-0056). */
+@Directive({ selector: "ng-template[ufFadeFaceDefault]" })
+export class FadeFaceDefault {
+  static ngTemplateContextGuard(
+    _directive: FadeFaceDefault,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 /** A transition's conditional: the branch it shows, and whether it has rendered once. */
 @Directive({ selector: "ng-container[ufTransitionRegion]" })
@@ -124,7 +138,7 @@ export class Transition implements OnInit {
 
 @Component({
   selector: "uf-fade-face",
-  imports: [ScopeAttributes, Fallthrough, Transition, TransitionRegion],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough, Transition, TransitionRegion],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -148,7 +162,9 @@ export class Transition implements OnInit {
             class="face"
             data-uf-c9301a2a=""
           >
-            <ng-content />
+            @if (this.defaultTemplate(); as template) {
+              <ng-container [ngTemplateOutlet]="template" />
+            }
           </b>
         } @else {
           <i
@@ -159,11 +175,14 @@ export class Transition implements OnInit {
             class="face"
             data-uf-c9301a2a=""
           >
-            <ng-content />
+            @if (this.defaultTemplate(); as template) {
+              <ng-container [ngTemplateOutlet]="template" />
+            }
           </i>
         }
       </ng-container>
     </div>
+    <ng-content select="[ufFadeFaceDefault]" />
   `,
   styleUrl: "./FadeFace.uf.tsx.css",
   encapsulation: ViewEncapsulation.None,
@@ -174,6 +193,7 @@ export default class FadeFace {
   readonly style = input<Record<string, string | null | undefined>>();
   readonly ufAttributes = input<Record<string, unknown>>();
   readonly ufListeners = input<Listeners>();
+  private readonly defaultTemplate = contentChild(FadeFaceDefault, { read: TemplateRef });
   readonly ufElement = viewChild<ElementRef<HTMLDivElement>>("ufElement");
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }
