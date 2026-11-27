@@ -256,15 +256,14 @@ const REFERENCE_SYNTAX = /&#x?[+-][0-9a-fA-F]*;?|&#x([0-9a-fA-F]+);|&#([0-9]+);/
 
 /**
  * Numeric references the implementations decode differently: a signed one (`&#+65;`, which
- * esbuild, and oxc with a plus sign, decode and the others leave as text), one past U+10FFFF
- * (Babel and TypeScript fail, oxc leaves it as text, esbuild wraps it into another character)
- * and a UTF-16 surrogate (oxc leaves it as text, the others decode it).
+ * esbuild, and oxc with a plus sign, decode and the others leave as text) and one past
+ * U+10FFFF (Babel and TypeScript fail, oxc leaves it as text, esbuild wraps it into another
+ * character). A UTF-16 surrogate is no longer one: since oxc 0.155 every implementation decodes
+ * it, so a pair reads as its character and a lone half is UF3010, like a raw one (ADR-0127).
  */
 function referenceDivergences(raw: string): Array<Divergence> {
 	const divergences: Array<Divergence> = [];
-	const matches = [...raw.matchAll(REFERENCE_SYNTAX)];
-	for (let index = 0; index < matches.length; index++) {
-		const match = matches[index]!;
+	for (const match of raw.matchAll(REFERENCE_SYNTAX)) {
 		const [written, hex, decimal] = match;
 		const start = match.index;
 		const end = start + written.length;
@@ -285,36 +284,7 @@ function referenceDivergences(raw: string): Array<Divergence> {
 				message: `\`${written}\` names no Unicode character: Babel's and TypeScript's JSX fail on it, oxc's keeps it as text and esbuild's reads another character.`,
 				help: "Write the character you mean, or `&amp;` for a literal `&`.",
 			});
-			continue;
 		}
-		if (codePoint < 0xd800 || codePoint > 0xdfff) {
-			continue;
-		}
-		const next = matches[index + 1];
-		const low =
-			next && next.index === end
-				? Number.parseInt(next[1] ?? next[2] ?? "", next[1] === undefined ? 10 : 16)
-				: Number.NaN;
-		if (codePoint <= 0xdbff && low >= 0xdc00 && low <= 0xdfff) {
-			const combined = (codePoint - 0xd800) * 0x400 + (low - 0xdc00) + 0x10000;
-			const pair = `${written}${next![0]}`;
-			const code = combined.toString(16).toUpperCase();
-			divergences.push({
-				start,
-				end: end + next![0].length,
-				message: `\`${pair}\` is a UTF-16 surrogate pair: oxc's JSX keeps it as text, and the others read U+${code}.`,
-				help: "Write the character's code point.",
-				replacement: `&#x${code};`,
-			});
-			index++;
-			continue;
-		}
-		divergences.push({
-			start,
-			end,
-			message: `\`${written}\` is half of a UTF-16 surrogate pair, not a character: oxc's JSX keeps it as text, and the others decode it alone, which HTML cannot encode.`,
-			help: "Write the character's code point, such as `&#x1F600;`.",
-		});
 	}
 	return divergences;
 }

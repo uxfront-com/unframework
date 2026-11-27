@@ -41,8 +41,15 @@ export function unportableCharacters(
 	});
 	const found = new Map<number, UnportableCharacter>();
 	for (let unit = 0; unit < value.length;) {
-		const codePoint = value.codePointAt(unit)!;
 		const piece = pieces[origin[unit]!]!;
+		// Two halves make one character only where the source writes them side by side. The
+		// whitespace JSX trims between lines, a `class`'s dropped spaces or a range already
+		// reported can leave two lone halves next to each other here (ADR-0127).
+		const next = pieces[origin[unit + 1] ?? -1];
+		const codePoint =
+			next && next !== piece && next.start !== piece.end
+				? value.charCodeAt(unit)
+				: value.codePointAt(unit)!;
 		const problem = problemOf(codePoint, piece.reference);
 		if (problem && !found.has(origin[unit]!)) {
 			found.set(origin[unit]!, {

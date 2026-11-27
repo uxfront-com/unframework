@@ -1,6 +1,6 @@
 # ADR-0030: JSX text means what every JSX implementation agrees on, and a bare attribute means "true"
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0127
 - **Date:** 2026-10-01
 - **Plan:** §4.3 (whitespace follows JSX rules; elements use HTML names), §4.6, P2, P3; refines
   ADR-0017
