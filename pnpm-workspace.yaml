@@ -140,8 +140,8 @@ catalog:
   "@qwik.dev/core": 2.0.0-rc.5
   "@qwik.dev/optimizer": 2.1.0-rc.11
   "@standard-schema/spec": ^1.1.0
-  "@styleframe/runtime": 3.2.2
-  "@styleframe/theme": 3.10.0
+  "@styleframe/runtime": 3.2.3
+  "@styleframe/theme": 3.11.0
   "@sveltejs/package": 3.0.2
   "@sveltejs/vite-plugin-svelte": 7.3.1
   "@types/babel__core": ^7.20.5
@@ -151,7 +151,7 @@ catalog:
   "@types/react-dom": 19.3.0
   "@typescript-eslint/scope-manager": 8.71.0
   "@uxfront/site-checks": 0.1.0
-  "@uxfront/typescript-config": ^0.1.0
+  "@uxfront/typescript-config": ^0.2.0
   "@vitejs/plugin-react": 6.1.1
   "@vitejs/plugin-vue": 6.0.9
   "@vitest/browser-playwright": 5.0.3
