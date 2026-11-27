@@ -1,5 +1,48 @@
 # @unframework.dev/compiler
 
+## 0.4.0
+
+### Minor Changes
+
+- bde7690: Add `isDev`, for code that runs only in a development build. Import it from `@uxfront/unframework` and write `if (isDev) { … }` at the top of the setup or in client code, to warn a component's author without shipping the warning: `if (isDev) { if (!label) console.warn("IconButton has no accessible name."); }`. Each target writes its framework's own check, which a production build drops: `process.env.NODE_ENV !== "production"` on React, Vue and Svelte, `isDev` from `solid-js/web`, `@solidjs/web` or `@qwik.dev/core/build` on Solid, Solid 2 and Qwik, `ngDevMode` on Angular and `import.meta.env.DEV` on Astro. Any other read of `isDev` is the new error UF2040. A React, Vue or Svelte server reads `process.env.NODE_ENV` as it runs, so start a production server with `NODE_ENV=production`.
+
+  `ToolchainContext` takes an optional `mode`, `"production"` or `"development"`, which Qwik's `frameworkEmit` reads.
+
+- bde7690: Pass a consumer's attributes, listeners and ref through to a component's root on every target. An attribute or a DOM listener a component doesn't declare now lands on its root element, or passes on to its root component, where it used to be UF3035 or UF3036: `<SaveButton id="save" aria-describedby="hint" type="submit" onFocus={track} />`. The consumer's value wins over the root's own, and `class` and `style` merge as before. A `ref` on a component that doesn't call `defineExpose` holds its root element, typed as that element: `useTemplateRef<HTMLButtonElement>()`. To put what a consumer passes on another element, set `defineOptions({ inheritAttrs: false })` and spread the props' rest on it, `function Field({ label, ...rest }: FieldProps)` with `<input {...rest} />`.
+
+  Each target writes it its own way, which ADR-0118 records. Two changes to what the outputs declare:
+
+  - React's `<Name>Attributes` is now a type alias of the root element's props, without the component's own.
+  - Angular reserves `ufAttributes`, `ufListeners` and `ufElement` as prop names (UF2003), since a component that takes fallthrough declares them. A hand-written Angular consumer passes an attribute in `[ufAttributes]`, since one written on the host stays on the host.
+
+- 487bad7: Helpers live in shared modules (ADR-0121). A target puts each helper it emits for a missing primitive through `EmitContext.helper` into one module per helper, `_unframework/<file>` at the root of the output tree, which every output imports. React shares its helpers this way, so a tree holds each once. `compile()` now returns the helper modules beside the components, lists their paths in `CompileResult.helpers`, and takes a `helperRoot` option. A caller that writes only the component files must write the helper modules too. The CLI writes each once per tree, `--package` carries them, and the unplugin loads each from one virtual id per graph, with a `helperRoot` option. UF1104 also covers a shared module that would take a helper module's place.
+
+### Patch Changes
+
+- bde7690: Read each file once while a compile, an update, a `resolve()` or a `resolve.cycle()` is in flight. A project read a file again for every path that reached it: as a child, in each import cycle search and in the compile itself, so a page with five imports in cycles read some files seven times. Each file's text is now kept until the work in flight ends, so `readFile` runs once per file, a slow disk costs one wait per file, and one compile sees one version of each file. The next compile or update reads the files again.
+- Updated dependencies [bde7690]
+- Updated dependencies [03b6dab]
+- Updated dependencies [bde7690]
+- Updated dependencies [bde7690]
+- Updated dependencies [18cd60b]
+- Updated dependencies [f29ccaa]
+- Updated dependencies [3c69c42]
+- Updated dependencies [487bad7]
+- Updated dependencies [0932da7]
+- Updated dependencies [d051eaa]
+  - @unframework.dev/ir@0.4.0
+  - @unframework.dev/diagnostics@0.5.0
+  - @unframework.dev/analyzer@0.4.0
+  - @unframework.dev/codegen@0.4.0
+  - @unframework.dev/target-react@0.4.0
+  - @unframework.dev/target-vue@0.3.0
+  - @unframework.dev/target-svelte@0.4.0
+  - @unframework.dev/target-solid@0.4.0
+  - @unframework.dev/target-solid2@0.3.0
+  - @unframework.dev/target-angular@0.4.0
+  - @unframework.dev/target-qwik@0.4.0
+  - @unframework.dev/target-astro@0.4.0
+
 ## 0.3.2
 
 ### Patch Changes

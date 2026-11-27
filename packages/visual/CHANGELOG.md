@@ -1,5 +1,24 @@
 # @unframework.dev/visual
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [bde7690]
+- Updated dependencies [03b6dab]
+- Updated dependencies [bde7690]
+- Updated dependencies [bde7690]
+- Updated dependencies [bde7690]
+- Updated dependencies [18cd60b]
+- Updated dependencies [f29ccaa]
+- Updated dependencies [487bad7]
+  - @unframework.dev/ir@0.4.0
+  - @unframework.dev/diagnostics@0.5.0
+  - @unframework.dev/codegen@0.4.0
+  - @unframework.dev/compiler@0.4.0
+  - @unframework.dev/unplugin@0.4.0
+  - @unframework.dev/testing@0.3.3
+
 ## 0.5.1
 
 ### Patch Changes
