@@ -1,5 +1,44 @@
 # @unframework.dev/target-angular
 
+## 0.4.0
+
+### Minor Changes
+
+- bde7690: Add `isDev`, for code that runs only in a development build. Import it from `@uxfront/unframework` and write `if (isDev) { … }` at the top of the setup or in client code, to warn a component's author without shipping the warning: `if (isDev) { if (!label) console.warn("IconButton has no accessible name."); }`. Each target writes its framework's own check, which a production build drops: `process.env.NODE_ENV !== "production"` on React, Vue and Svelte, `isDev` from `solid-js/web`, `@solidjs/web` or `@qwik.dev/core/build` on Solid, Solid 2 and Qwik, `ngDevMode` on Angular and `import.meta.env.DEV` on Astro. Any other read of `isDev` is the new error UF2040. A React, Vue or Svelte server reads `process.env.NODE_ENV` as it runs, so start a production server with `NODE_ENV=production`.
+
+  `ToolchainContext` takes an optional `mode`, `"production"` or `"development"`, which Qwik's `frameworkEmit` reads.
+
+- 03b6dab: Name the shared helpers in two messages. Angular's `child-root-scope` reason, which UF4003 prints, now says each root node binds the shared `ScopeAttributes` directive (`[ufScope]`), where it said "an inline attribute directive". UF4001's description now says a target emulates a feature "with a helper", since most helpers live in the tree's `_unframework/` directory rather than inline.
+- bde7690: Pass a consumer's attributes, listeners and ref through to a component whose root is a `<component is>` over tags, on whichever tag renders. An attribute that every tag takes, like `id`, `title`, `aria-*` or `data-*`, and a DOM listener now land on the element that renders, where they used to be UF1002: `<Button href="#docs" id="docs" aria-describedby="hint" onClick={track} />`. An attribute that only some tags take is still UF1002, as `disabled` is on `<component is={href ? "a" : "button"}>`, since `<a>` doesn't take it: declare it as a prop and set it on the `<component is>`. A `ref` on such a component holds the element that renders, typed as the union of the tags' elements: `useTemplateRef<HTMLAnchorElement | HTMLButtonElement>()`.
+
+  `ComponentApi` has a new field, `refTags`, the tags a ref may hold. Each target writes the rest its own way, which ADR-0122 records.
+
+  On Angular, an element with a static attribute holding `{{` is printed where Angular binds nothing, so a child whose root is one takes nothing that falls through. A parent that passes it an attribute, a listener, `class` or `style` now gets UF1002 on Angular, where the Angular output used to drop it.
+
+- bde7690: Pass a consumer's attributes, listeners and ref through to a component's root on every target. An attribute or a DOM listener a component doesn't declare now lands on its root element, or passes on to its root component, where it used to be UF3035 or UF3036: `<SaveButton id="save" aria-describedby="hint" type="submit" onFocus={track} />`. The consumer's value wins over the root's own, and `class` and `style` merge as before. A `ref` on a component that doesn't call `defineExpose` holds its root element, typed as that element: `useTemplateRef<HTMLButtonElement>()`. To put what a consumer passes on another element, set `defineOptions({ inheritAttrs: false })` and spread the props' rest on it, `function Field({ label, ...rest }: FieldProps)` with `<input {...rest} />`.
+
+  Each target writes it its own way, which ADR-0118 records. Two changes to what the outputs declare:
+
+  - React's `<Name>Attributes` is now a type alias of the root element's props, without the component's own.
+  - Angular reserves `ufAttributes`, `ufListeners` and `ufElement` as prop names (UF2003), since a component that takes fallthrough declares them. A hand-written Angular consumer passes an attribute in `[ufAttributes]`, since one written on the host stays on the host.
+
+- 18cd60b: Angular shares its helpers in `_unframework/` (ADR-0121). `ScopeAttributes`, `TextCaret`, `TrustedHtmlPipe`, `styleObject`, the model helpers, `queueHook` and one directive per listener event and option are modules of their own, which every component imports and lists in its `imports`. `Transition` and `TransitionRegion` stay inline, because `inject` finds a region across component hosts. `api.getCompiled` in the unplugin now also gives a shared helper module's text, so Angular's ngtsc reads each one and compiles it ahead of time.
+- f29ccaa: A shared helper module's id in the unplugin now names its target: `<helper root>/_unframework/<target>/<file>`. Two plugins for different targets in one Vite server, like React and Solid islands in one Astro app, no longer share one module where both emit a helper of one name, such as `cx.ts`. Outputs still import `_unframework/<file>`, and `api.getCompiled` takes that path or the new id. Angular's ngtsc step and Astro's render server read the new ids.
+
+  Angular shares its `Fallthrough` directive in `_unframework/` (ADR-0121), with the types of its listeners' record in `Listeners.ts`: `Listeners`, and `SvgListeners` for an SVG element. Each component that takes what its consumer passes imports them, the types with `import type`.
+
+  `lintWithEslint` in `@unframework.dev/codegen/toolchain-node` sends ESLint its request on standard input, not as one command-line argument. A large file list no longer fails with `spawn E2BIG` on Linux.
+
+### Patch Changes
+
+- Updated dependencies [bde7690]
+- Updated dependencies [bde7690]
+- Updated dependencies [bde7690]
+- Updated dependencies [f29ccaa]
+- Updated dependencies [487bad7]
+  - @unframework.dev/ir@0.4.0
+  - @unframework.dev/codegen@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

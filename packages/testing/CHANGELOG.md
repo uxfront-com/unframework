@@ -1,5 +1,33 @@
 # @unframework.dev/testing
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [bde7690]
+- Updated dependencies [03b6dab]
+- Updated dependencies [bde7690]
+- Updated dependencies [bde7690]
+- Updated dependencies [bde7690]
+- Updated dependencies [18cd60b]
+- Updated dependencies [f29ccaa]
+- Updated dependencies [3c69c42]
+- Updated dependencies [487bad7]
+- Updated dependencies [0932da7]
+- Updated dependencies [d051eaa]
+  - @unframework.dev/ir@0.4.0
+  - @unframework.dev/codegen@0.4.0
+  - @unframework.dev/compiler@0.4.0
+  - @unframework.dev/target-react@0.4.0
+  - @unframework.dev/target-vue@0.3.0
+  - @unframework.dev/target-svelte@0.4.0
+  - @unframework.dev/target-solid@0.4.0
+  - @unframework.dev/target-solid2@0.3.0
+  - @unframework.dev/target-angular@0.4.0
+  - @unframework.dev/target-qwik@0.4.0
+  - @unframework.dev/target-astro@0.4.0
+  - @unframework.dev/unplugin@0.4.0
+
 ## 0.3.2
 
 ### Patch Changes
