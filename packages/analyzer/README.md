@@ -168,7 +168,10 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     the members of their types' shapes (ADR-0067), so a type the module imports, extends or builds
     with a utility type reaches it; a prop, a model, a scoped slot's props and a key name what
     their types reference (`references`), and a prop typed by an alias of a union of literals
-    holds them (`literals`).
+    holds them (`literals`). A slot the component may render more than once at a time, under a
+    list, in two places that render together or in a fill its child repeats, is `repeated`
+    (`repeated.ts`, ADR-0126), read once every component's API is known. The lowering copies it
+    onto the slot's declaration.
   - `analyze(parsed, { imports })` takes the API of each `.uf.tsx` module the source imports,
     and of each `.uf.ts` module whose composables a `.uf.tsx` imports (ADR-0069), by specifier
     (`componentImports(parsed)` lists them, and a `.uf.ts` module asks for none): an import the

@@ -1,6 +1,6 @@
 # ADR-0125: On Angular, places that render one at a time share the default slot
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0126
 - **Date:** 2026-11-27
 - **Plan:** §4.3 (Slots, Composition), §6 (Angular), §9 M3; P1, P2, P4, P6, P7; ADR-0054, ADR-0056,
   ADR-0098, ADR-0100; amends ADR-0124 (a default slot renders in every case of a `<component is>`)
