@@ -1,0 +1,1139 @@
+{
+  "irVersion": 1,
+  "file": "slots/repeated-default/Shelf.uf.tsx",
+  "components": [
+    {
+      "name": "Shelf",
+      "span": {
+        "start": 306,
+        "end": 1319
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "bold@348",
+          "name": "bold",
+          "kind": "state",
+          "span": {
+            "start": 348,
+            "end": 352
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "bold@348",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 359,
+              "end": 363
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 342,
+            "end": 365
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "shelf",
+            "span": {
+              "start": 390,
+              "end": 403
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "RowList",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Produce\"",
+                  "span": {
+                    "start": 426,
+                    "end": 435
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 420,
+                  "end": 435
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "[\"Apples\", \"Pears\", \"Plums\"]",
+                  "span": {
+                    "start": 443,
+                    "end": 471
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 436,
+                  "end": 472
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "em",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "fresh",
+                        "span": {
+                          "start": 486,
+                          "end": 491
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 482,
+                      "end": 496
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 482,
+                  "end": 496
+                }
+              }
+            ],
+            "span": {
+              "start": 411,
+              "end": 513
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "FramedNote",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "title",
+                "value": {
+                  "code": "\"Release notes\"",
+                  "span": {
+                    "start": 538,
+                    "end": 553
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 532,
+                  "end": 553
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "strong",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Draft",
+                        "span": {
+                          "start": 571,
+                          "end": 576
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 563,
+                      "end": 585
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 563,
+                  "end": 585
+                }
+              }
+            ],
+            "span": {
+              "start": 520,
+              "end": 605
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "TagList",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "ordered",
+                "value": {
+                  "code": "true",
+                  "span": {
+                    "start": 630,
+                    "end": 634
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 621,
+                  "end": 635
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Ranked\"",
+                  "span": {
+                    "start": 642,
+                    "end": 650
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 636,
+                  "end": 650
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "[\"gold\", \"silver\"]",
+                  "span": {
+                    "start": 658,
+                    "end": 676
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 651,
+                  "end": 677
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Medal",
+                        "span": {
+                          "start": 693,
+                          "end": 698
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 687,
+                      "end": 705
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 687,
+                  "end": 705
+                }
+              }
+            ],
+            "span": {
+              "start": 612,
+              "end": 722
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "TagList",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "ordered",
+                "value": {
+                  "code": "false",
+                  "span": {
+                    "start": 747,
+                    "end": 752
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 738,
+                  "end": 753
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Unranked\"",
+                  "span": {
+                    "start": 760,
+                    "end": 770
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 754,
+                  "end": 770
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "[\"red\", \"blue\"]",
+                  "span": {
+                    "start": 778,
+                    "end": 793
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 771,
+                  "end": 794
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Colour",
+                        "span": {
+                          "start": 810,
+                          "end": 816
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 804,
+                      "end": 823
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 804,
+                  "end": 823
+                }
+              }
+            ],
+            "span": {
+              "start": 729,
+              "end": 840
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "OnceAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#once\"",
+                  "span": {
+                    "start": 864,
+                    "end": 871
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 859,
+                  "end": 871
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Once\"",
+                  "span": {
+                    "start": 878,
+                    "end": 884
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 872,
+                  "end": 884
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Open once",
+                    "span": {
+                      "start": 885,
+                      "end": 910
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 885,
+                  "end": 910
+                }
+              }
+            ],
+            "span": {
+              "start": 847,
+              "end": 923
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "OnceAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Single\"",
+                  "span": {
+                    "start": 948,
+                    "end": 956
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 942,
+                  "end": 956
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Press once",
+                    "span": {
+                      "start": 957,
+                      "end": 967
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 957,
+                  "end": 967
+                }
+              }
+            ],
+            "span": {
+              "start": 930,
+              "end": 980
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "EachAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#each\"",
+                  "span": {
+                    "start": 1004,
+                    "end": 1011
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 999,
+                  "end": 1011
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "[\"one\", \"two\"]",
+                  "span": {
+                    "start": 1019,
+                    "end": 1033
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1012,
+                  "end": 1034
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Open each",
+                    "span": {
+                      "start": 1035,
+                      "end": 1060
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1035,
+                  "end": 1060
+                }
+              }
+            ],
+            "span": {
+              "start": 987,
+              "end": 1073
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "EachAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "[\"three\", \"four\"]",
+                  "span": {
+                    "start": 1099,
+                    "end": 1116
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1092,
+                  "end": 1117
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Press each",
+                    "span": {
+                      "start": 1118,
+                      "end": 1128
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1118,
+                  "end": 1128
+                }
+              }
+            ],
+            "span": {
+              "start": 1080,
+              "end": 1141
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "FadeFace",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "bold",
+                "value": {
+                  "code": "bold.value",
+                  "span": {
+                    "start": 1164,
+                    "end": 1174
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "bold@348",
+                      "span": {
+                        "start": 1164,
+                        "end": 1174
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1158,
+                  "end": 1175
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Face",
+                    "span": {
+                      "start": 1176,
+                      "end": 1180
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1176,
+                  "end": 1180
+                }
+              }
+            ],
+            "span": {
+              "start": 1148,
+              "end": 1191
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1206,
+                  "end": 1219
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(bold.value = !bold.value)",
+                      "span": {
+                        "start": 1235,
+                        "end": 1261
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "bold@348",
+                          "operator": "=",
+                          "span": {
+                            "start": 1235,
+                            "end": 1261
+                          },
+                          "target": {
+                            "start": 1236,
+                            "end": 1246
+                          },
+                          "value": {
+                            "start": 1249,
+                            "end": 1260
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "bold@348",
+                          "span": {
+                            "start": 1250,
+                            "end": 1260
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1229,
+                      "end": 1261
+                    }
+                  },
+                  "span": {
+                    "start": 1229,
+                    "end": 1261
+                  }
+                },
+                "span": {
+                  "start": 1220,
+                  "end": 1262
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Swap face",
+                "span": {
+                  "start": 1263,
+                  "end": 1288
+                }
+              }
+            ],
+            "span": {
+              "start": 1198,
+              "end": 1297
+            }
+          }
+        ],
+        "span": {
+          "start": 381,
+          "end": 1312
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Shelf",
+      "span": {
+        "start": 306,
+        "end": 1319
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./EachAction.uf.tsx",
+      "file": "EachAction.uf.tsx",
+      "api": {
+        "file": "EachAction.uf.tsx",
+        "components": [
+          {
+            "name": "EachAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "items",
+                "optional": false,
+                "type": "string[]"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true,
+                "repeated": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "EachAction",
+          "span": {
+            "start": 52,
+            "end": 62
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 90
+      }
+    },
+    {
+      "specifier": "./FadeFace.uf.tsx",
+      "file": "FadeFace.uf.tsx",
+      "api": {
+        "file": "FadeFace.uf.tsx",
+        "components": [
+          {
+            "name": "FadeFace",
+            "export": "default",
+            "props": [
+              {
+                "name": "bold",
+                "optional": false,
+                "type": "boolean"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true,
+                "repeated": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "fade-face"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "FadeFace",
+          "span": {
+            "start": 98,
+            "end": 106
+          }
+        }
+      ],
+      "span": {
+        "start": 91,
+        "end": 132
+      }
+    },
+    {
+      "specifier": "./FramedNote.uf.tsx",
+      "file": "FramedNote.uf.tsx",
+      "api": {
+        "file": "FramedNote.uf.tsx",
+        "components": [
+          {
+            "name": "FramedNote",
+            "export": "default",
+            "props": [
+              {
+                "name": "title",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true,
+                "repeated": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "article",
+            "fallthroughTag": "article",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "framed-note"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "article"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "FramedNote",
+          "span": {
+            "start": 140,
+            "end": 150
+          }
+        }
+      ],
+      "span": {
+        "start": 133,
+        "end": 178
+      }
+    },
+    {
+      "specifier": "./OnceAction.uf.tsx",
+      "file": "OnceAction.uf.tsx",
+      "api": {
+        "file": "OnceAction.uf.tsx",
+        "components": [
+          {
+            "name": "OnceAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "OnceAction",
+          "span": {
+            "start": 186,
+            "end": 196
+          }
+        }
+      ],
+      "span": {
+        "start": 179,
+        "end": 224
+      }
+    },
+    {
+      "specifier": "./RowList.uf.tsx",
+      "file": "RowList.uf.tsx",
+      "api": {
+        "file": "RowList.uf.tsx",
+        "components": [
+          {
+            "name": "RowList",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "items",
+                "optional": false,
+                "type": "string[]"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true,
+                "repeated": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "ul",
+            "fallthroughTag": "ul",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "row-list"
+                },
+                {
+                  "name": "aria-label"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "ul"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "RowList",
+          "span": {
+            "start": 232,
+            "end": 239
+          }
+        }
+      ],
+      "span": {
+        "start": 225,
+        "end": 264
+      }
+    },
+    {
+      "specifier": "./TagList.uf.tsx",
+      "file": "TagList.uf.tsx",
+      "api": {
+        "file": "TagList.uf.tsx",
+        "components": [
+          {
+            "name": "TagList",
+            "export": "default",
+            "props": [
+              {
+                "name": "ordered",
+                "optional": false,
+                "type": "boolean"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "items",
+                "optional": false,
+                "type": "string[]"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true,
+                "repeated": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "tag-list"
+                },
+                {
+                  "name": "aria-label"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "ol",
+              "ul"
+            ],
+            "rootTags": [
+              "ol",
+              "ul"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "TagList",
+          "span": {
+            "start": 272,
+            "end": 279
+          }
+        }
+      ],
+      "span": {
+        "start": 265,
+        "end": 304
+      }
+    }
+  ]
+}

@@ -30,6 +30,7 @@
                 "end": 400
               }
             },
+            "repeated": true,
             "span": {
               "start": 344,
               "end": 411

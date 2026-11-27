@@ -20,7 +20,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   it from its parts. A ref's value is read as `count.value`, which its reference spans.
 - **Composition (ADR-0055):** a module's `imports` of other `.uf.tsx` modules, each with the
   `ModuleApi` the compiler's resolver returned (ADR-0053), and its injection `keys`; a
-  component's `slots`, `exposes` and `inheritAttrs`; the render nodes `Component`, `SlotOutlet`
+  component's `slots`, `exposes` and `inheritAttrs`, a slot `repeated` where the component may
+  render it more than once at a time, in its declaration and its API (ADR-0126); the render nodes `Component`, `SlotOutlet`
   and `Dynamic` (`<component is>`, with `only`, the attributes only some of its tags take,
   ADR-0119), a `ComponentApi.root` of `"dynamic"` with its `rootTags`, the render node `Teleport` (`<Teleport to>`, one element
   mounted elsewhere, ADR-0098), the render node `Transition` (`<Transition name appear>`, Vue's

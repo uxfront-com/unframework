@@ -39,6 +39,7 @@ import {
 	keyOf,
 	planComposition,
 	refObjectCode,
+	repeatsDefaultSlot,
 	slotDirectiveCode,
 	tokenType,
 } from "./composition.ts";
@@ -461,7 +462,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
 		: undefined;
 	// The default slot its places render from one template, by its reference, with the fallback
 	// template each place declares where the places don't share one (ADR-0124, ADR-0125).
-	const hoistedSlot = hoistedDefaultSlot(component.render);
+	const hoistedSlot = hoistedDefaultSlot(component.render, repeatsDefaultSlot(component));
 	const defaultSlot = hoistedSlot && {
 		ref: plan.members.claim("defaultSlot"),
 		fallback: hoistedSlot.fallbackTemplates ? plan.members.claim("fallback") : "",

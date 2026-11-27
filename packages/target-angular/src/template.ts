@@ -31,7 +31,7 @@ import type {
 	StyleDeclaration,
 } from "@unframework.dev/ir";
 
-import { selectorOf } from "./composition.ts";
+import { childRepeats, repeatsDefaultSlot, selectorOf } from "./composition.ts";
 import type { Composition } from "./composition.ts";
 import { hoistedDefaultSlot } from "./default-slot.ts";
 import {
@@ -155,7 +155,8 @@ export function template(
 		: models.render;
 	// The default slot its places render from one template (ADR-0124, ADR-0125): the tree printed
 	// is a copy, so the nodes are found in it, in the order `defaultSlot.fallbacks` names them.
-	const found = defaultSlot && hoistedDefaultSlot(render);
+	const repeated = repeatsDefaultSlot(component);
+	const found = defaultSlot && hoistedDefaultSlot(render, repeated);
 	const hoisted = found && { ...found, ...defaultSlot };
 	/** The template, before the `@switch` or the `@if` that holds every place. */
 	const declaration = (slot: NonNullable<typeof hoisted>): MarkupPiece => {
@@ -242,10 +243,25 @@ export function template(
 				? [declaration(hoisted!), ...pieces]
 				: pieces;
 		},
+		// A default slot it renders more than once at a time is its consumer's template, rendered in
+		// each place as a named slot's is (ADR-0126).
 		slotOutlet: (outlet) =>
 			hoisted?.outlets.includes(outlet.node)
 				? renderSlot(hoisted, outlet.node)
-				: angularDialect.slotOutlet!(outlet),
+				: angularDialect.slotOutlet!(
+						repeated && outlet.node.slot === "default" ? { ...outlet, template: true } : outlet,
+					),
+		// And a child's that it fills is a template its directive selects.
+		fills: (fills, context) =>
+			angularDialect.fills!(
+				fills.map((each) =>
+					each.fill.slot === "default" &&
+					childRepeats(plan.module, context.component.component, "default")
+						? { ...each, template: true }
+						: each,
+				),
+				context,
+			),
 		// `<ng-template ufTeleport="body">`, whose directive mounts it into `to` (ADR-0098).
 		teleport: ({ node }) => [
 			{

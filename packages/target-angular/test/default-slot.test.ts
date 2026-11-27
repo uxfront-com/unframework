@@ -117,9 +117,8 @@ export default function Panel() {
 		expect(contents).not.toContain("NgTemplateOutlet");
 	});
 
-	it("keeps an outlet the component renders in two places at once", () => {
-		const twice = templateOf(
-			emitted(`${HEADER}
+	it("renders a template in each place where the component renders it in two at once", () => {
+		const contents = emitted(`${HEADER}
 export default function Action({ href }: { href?: string }) {
   const slots = defineSlots<{ default?(): Element }>();
   return (
@@ -128,10 +127,13 @@ export default function Action({ href }: { href?: string }) {
       <p>{slots.default?.()}</p>
     </div>
   );
-}`),
-		);
+}`);
+		const twice = templateOf(contents);
 		expect(twice).not.toContain("defaultSlot");
-		expect(count(twice, "<ng-content />")).toBe(3);
+		expect(twice).not.toMatch(/<ng-content( \/>|>)/);
+		expect(count(twice, `@if (this.defaultTemplate(); as template)`)).toBe(3);
+		expect(twice).toContain(`<ng-content select="[ufActionDefault]" />`);
+		expect(contents).toContain(`@Directive({ selector: "ng-template[ufActionDefault]" })`);
 	});
 });
 
@@ -292,29 +294,73 @@ export default function Greeting({ fallback, defaultSlotFallback }: { fallback?:
 		);
 	});
 
-	// Places that render together stay as before, until the default slot rendered more than once
-	// at a time becomes a template slot (UXF-1157's part of the plan).
-	it("keeps an outlet under a list", () => {
-		const template = templateOf(
-			emitted(tags("{[1, 2].map((item) => <span key={item}>{slots.default?.() ?? item}</span>)}")),
+	it("declares the outlet once where a scoped fill of a child that renders it once holds it", () => {
+		const output = fileOf(
+			lower(`${HEADER}
+function Names({ name }: { name: string }) {
+  const slots = defineSlots<{ default?(props: { item: string }): Element }>();
+  return <p>{slots.default?.({ item: name })}</p>;
+}
+export default function Tag({ compact }: { compact: boolean }) {
+  const slots = defineSlots<{ default?(): Element }>();
+  return (
+    <component is={compact ? "b" : "i"}>
+      <Names name="a">{{ default: ({ item }) => <span>{slots.default?.() ?? item}</span> }}</Names>
+    </component>
+  );
+}`),
 		);
+		const template = templateOf(output);
+		expect(wildcards(template)).toBe(1);
+		expect(output).not.toContain("TagDefault");
+		// The fallback reads the fill's `let-` name, so it stays in the fill.
+		expect(template).toContain("<ng-template #defaultSlot let-fallback>");
+		expect(template).toMatch(
+			/<ng-template ufNamesDefault let-item="item">\s*<span>\s*<ng-template #defaultSlotFallback>\{\{ item \}\}<\/ng-template>/,
+		);
+	});
+});
+
+// Places that render together (ADR-0126): the slot is `repeated`, so the component reads it as
+// a template its consumer passes, through a directive as a named slot's, and renders it in each
+// place. No wildcard `<ng-content>` is left.
+describe("a default slot rendered more than once at a time", () => {
+	const wildcards = (template: string) => template.match(/<ng-content( \/>|>)/g)?.length ?? 0;
+	/** What a template slot prints: the directive's template in each place, and its own select. */
+	const expectTemplateSlot = (contents: string, component: string, places: number) => {
+		const template = templateOf(contents);
 		expect(template).not.toContain("defaultSlot");
-		expect(wildcards(template)).toBe(2);
+		expect(wildcards(template)).toBe(0);
+		expect(count(template, "@if (this.defaultTemplate(); as template) {")).toBe(places);
+		expect(template).toContain(`<ng-content select="[uf${component}Default]" />`);
+		expect(contents).toContain(`@Directive({ selector: "ng-template[uf${component}Default]" })`);
+		expect(contents).toContain(`export class ${component}Default {`);
+		expect(contents).toMatch(
+			/readonly defaultTemplate = contentChild\(\w+Default, \{ read: TemplateRef \}\)/,
+		);
+	};
+
+	it("renders it under a list", () => {
+		const contents = emitted(
+			tags("{[1, 2].map((item) => <span key={item}>{slots.default?.() ?? item}</span>)}"),
+		);
+		expectTemplateSlot(contents, "Action", 2);
+		expect(templateOf(contents)).toContain("} @else {{{ item }}}");
 	});
 
-	it("keeps outlets of which one is under a list", () => {
-		const template = templateOf(
+	it("renders it in each place where one of them is under a list", () => {
+		expectTemplateSlot(
 			emitted(`${HEADER}
 export default function Rows({ rows }: { rows: string[] }) {
   const slots = defineSlots<{ default?(): Element }>();
   return <ul>{rows.length ? rows.map((row) => <li key={row}>{slots.default?.()}</li>) : <li>{slots.default?.()}</li>}</ul>;
 }`),
+			"Rows",
+			2,
 		);
-		expect(template).not.toContain("defaultSlot");
-		expect(wildcards(template)).toBe(2);
 	});
 
-	it("keeps an outlet in a scoped fill", () => {
+	it("renders it in a scoped fill of a child that renders the fill per row", () => {
 		const output = fileOf(
 			lower(`${HEADER}
 function Names({ names }: { names: string[] }) {
@@ -330,33 +376,55 @@ export default function Tag({ compact }: { compact: boolean }) {
   );
 }`),
 		);
-		const template = templateOf(output);
-		expect(template).not.toContain("#defaultSlot");
-		expect(wildcards(template)).toBe(2);
+		expectTemplateSlot(output, "Tag", 2);
 	});
 
-	it("keeps outlets in one branch", () => {
-		const template = templateOf(
+	it("renders it in each of two places in one branch", () => {
+		expectTemplateSlot(
 			emitted(`${HEADER}
 export default function Pair({ open }: { open: boolean }) {
   const slots = defineSlots<{ default?(): Element }>();
   return <div>{open ? <p><b>{slots.default?.()}</b><i>{slots.default?.()}</i></p> : null}</div>;
 }`),
+			"Pair",
+			2,
 		);
-		expect(template).not.toContain("defaultSlot");
-		expect(wildcards(template)).toBe(2);
 	});
 
-	it("keeps outlets in the branches of a conditional a transition animates", () => {
-		const template = templateOf(
+	it("renders it in the branches of a conditional a transition animates", () => {
+		expectTemplateSlot(
 			emitted(`import { Transition, defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 export default function Swap({ first }: { first: boolean }) {
   const slots = defineSlots<{ default?(): Element }>();
   return <div><Transition name="fade">{first ? <b>{slots.default?.()}</b> : <i>{slots.default?.()}</i>}</Transition></div>;
 }`),
+			"Swap",
+			2,
 		);
-		expect(template).not.toContain("defaultSlot");
-		expect(wildcards(template)).toBe(2);
+	});
+
+	it("is filled through the directive by a parent, which keeps a child's other default slot", () => {
+		const output = fileOf(
+			lower(`${HEADER}
+function Rows({ rows }: { rows: string[] }) {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <ul>{rows.map((row) => <li key={row}>{slots.default?.()}</li>)}</ul>;
+}
+function Once() {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <p>{slots.default?.()}</p>;
+}
+export default function Tag() {
+  return <div><Rows rows={["a", "b"]}><b>Row</b></Rows><Once><i>Once</i></Once></div>;
+}`),
+		);
+		const template = templateOf(output);
+		expect(template).toMatch(
+			/<uf-rows[^>]*>\s*<ng-template ufRowsDefault>\s*<b>Row<\/b>\s*<\/ng-template>\s*<\/uf-rows>/,
+		);
+		expect(template).toMatch(/<uf-once[^>]*>\s*<i>Once<\/i>\s*<\/uf-once>/);
+		expect(output).toMatch(/imports: \[[^\]]*\bRowsDefault\b/);
+		expect(output).not.toContain("OnceDefault");
 	});
 });

@@ -1,0 +1,18 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"span">, "items" | "row"> {
+  items: string[];
+  row?: (props: { item: string }) => unknown;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { items, row, class: className, style, ...attrs } = Astro.props;
+---
+
+<span class:list={["each-slot", className]} style={style} {...attrs}>
+  {items.map((item) => (
+    <span class="each-row">{row?.({ item })}</span>
+  ))}
+</span>

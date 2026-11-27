@@ -7545,6 +7545,43 @@
         }
       }
     },
+    "slots/repeated-default": {
+      "time": 35.08,
+      "sizes": {
+        "react": {
+          "raw": 12328,
+          "gzip": 6716
+        },
+        "vue": {
+          "raw": 5241,
+          "gzip": 3284
+        },
+        "svelte": {
+          "raw": 9441,
+          "gzip": 5151
+        },
+        "solid": {
+          "raw": 8043,
+          "gzip": 4649
+        },
+        "solid2": {
+          "raw": 7907,
+          "gzip": 4606
+        },
+        "angular": {
+          "raw": 32520,
+          "gzip": 12176
+        },
+        "qwik": {
+          "raw": 10222,
+          "gzip": 6701
+        },
+        "astro": {
+          "raw": 5513,
+          "gzip": 3400
+        }
+      }
+    },
     "slots/scoped": {
       "time": 6.62,
       "sizes": {

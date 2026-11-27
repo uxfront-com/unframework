@@ -467,12 +467,14 @@ export function createSlotDeclaration(
 	at: Span,
 	props?: TypeText,
 	references: Array<string> = [],
+	repeated = false,
 ): SlotDeclaration {
 	return {
 		name,
 		optional,
 		...(props ? { props } : {}),
 		...(references.length ? { references } : {}),
+		...(repeated ? { repeated: true as const } : {}),
 		span: at,
 	};
 }

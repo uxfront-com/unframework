@@ -1,0 +1,21 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"article">, "title"> {
+  title: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, class: className, style, ...attrs } = Astro.props;
+---
+
+<article class:list={["framed-note", className]} style={style} {...attrs}>
+  <header>
+    <slot />
+  </header>
+  <p>{title}</p>
+  <footer>
+    <slot />
+  </footer>
+</article>
