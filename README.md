@@ -45,7 +45,7 @@
 - [How it works](#how-it-works)
 - [The eighth framework](#the-eighth-framework)
 - [Status](#status)
-- [Part of UXFront](#part-of-uxfront)
+- [Where this fits](#where-this-fits)
 - [Bugs and feature requests](#bugs-and-feature-requests)
 - [Contributing](#contributing)
 - [Creator](#creator)
@@ -89,13 +89,16 @@ seven frameworks, from golden output and each framework's own compiler and type 
 HTML, the DOM, the accessibility tree and pixels in a real browser. Watch this repository to hear
 about each release, and read the [documentation](https://unframework.dev/docs) as it grows.
 
-## Part of UXFront
+## Where this fits
 
-Unframework is one of the [UXFront](https://uxfront.com) projects, which share one foundation:
-
-- [Open Components](https://opencomponents.dev): the standard for perfect UI components.
-- [Styleframe](https://styleframe.dev): the styling engine.
-- [Inkline](https://inkline.io): the UI library.
+Unframework is the compiler in the [UXFront vision](https://github.com/uxfront-com/.github/blob/main/VISION.md):
+the layer that makes one component work in every framework, without a rewrite for each. It builds
+on UXFront's shared site kit and configs, and ships no design system or styling engine of its own.
+[Inkline](https://inkline.io), the UI library, builds on it: each Inkline component follows its
+[Open Components](https://opencomponents.dev) standard, takes its look from a recipe written with
+[Styleframe](https://styleframe.dev) and is written once as a `.uf.tsx` file that Unframework
+compiles to every framework. The vision says how the five projects fit together, and which one
+to read for what.
 
 ## Bugs and feature requests
 
