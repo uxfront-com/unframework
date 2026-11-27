@@ -2619,6 +2619,43 @@
         }
       }
     },
+    "dynamic/default-slot": {
+      "time": 14.49,
+      "sizes": {
+        "react": {
+          "raw": 2751,
+          "gzip": 1536
+        },
+        "vue": {
+          "raw": 1360,
+          "gzip": 840
+        },
+        "svelte": {
+          "raw": 2231,
+          "gzip": 1215
+        },
+        "solid": {
+          "raw": 1515,
+          "gzip": 897
+        },
+        "solid2": {
+          "raw": 1676,
+          "gzip": 984
+        },
+        "angular": {
+          "raw": 7386,
+          "gzip": 2846
+        },
+        "qwik": {
+          "raw": 2173,
+          "gzip": 1525
+        },
+        "astro": {
+          "raw": 1392,
+          "gzip": 820
+        }
+      }
+    },
     "dynamic/forwarding": {
       "time": 11.42,
       "sizes": {
