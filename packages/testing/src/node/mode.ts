@@ -14,7 +14,7 @@ import type { QuarantineEntry } from "../layers.ts";
  * `UF_BASELINE_ENVIRONMENT`. Only a run in it writes them. The image follows the playwright
  * version of the catalog, which ships its browsers.
  */
-export const BASELINE_ENVIRONMENT = "mcr.microsoft.com/playwright:v1.63.0-noble linux/amd64";
+export const BASELINE_ENVIRONMENT = "mcr.microsoft.com/playwright:v1.65.1-noble linux/amd64";
 
 /** How this run treats artefacts. */
 export interface HarnessMode {

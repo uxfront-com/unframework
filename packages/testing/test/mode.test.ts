@@ -127,7 +127,7 @@ describe("resolveHarnessMode", () => {
 			[
 				{
 					UF_UPDATE: "1",
-					UF_BASELINE_ENVIRONMENT: "mcr.microsoft.com/playwright:v1.63.0-noble linux/arm64",
+					UF_BASELINE_ENVIRONMENT: "mcr.microsoft.com/playwright:v1.65.1-noble linux/arm64",
 				},
 				"linux",
 				"arm64",

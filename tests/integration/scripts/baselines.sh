@@ -28,9 +28,9 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 MODE="${1:-update}"
 shift || true
 PLATFORM="${UF_BASELINE_PLATFORM:-linux/amd64}"
-# Keep in lockstep with the playwright catalog version (1.63.0 ↔ chromium-1243): the image ships
+# Keep in lockstep with the playwright catalog version (1.65.1 ↔ chromium-1255): the image ships
 # the browsers. CI's browser jobs run in the same image.
-IMAGE="mcr.microsoft.com/playwright:v1.63.0-noble"
+IMAGE="mcr.microsoft.com/playwright:v1.65.1-noble"
 STORE_VOLUME="uf-pnpm-store-${PLATFORM//\//-}"
 # A case's area and name and a scenario are kebab-case: KEBAB_CASE in @unframework.dev/testing/node,
 # which harness/cases.ts, expectParity and the visual command check. This must accept exactly
