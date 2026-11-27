@@ -86,19 +86,6 @@ minimumReleaseAgeExclude:
   - "@vitest/pretty-format@5.0.3"
   - "@vitest/ui@5.0.3"
   - "@vitest/utils@5.0.3"
-  # Solid 2.0.0 and its Vite plugin 3.0.0 were published on 2026-11-17, under pnpm's 24-hour
-  # minimum release age (ADR-0102). The compiler's native builds are its optional dependencies.
-  - "@solidjs/compiler@2.0.0"
-  - "@solidjs/compiler-darwin-arm64@2.0.0"
-  - "@solidjs/compiler-darwin-x64@2.0.0"
-  - "@solidjs/compiler-linux-arm64-gnu@2.0.0"
-  - "@solidjs/compiler-linux-x64-gnu@2.0.0"
-  - "@solidjs/compiler-wasm32-wasi@2.0.0"
-  - "@solidjs/compiler-win32-x64-msvc@2.0.0"
-  - "@solidjs/signals@2.0.0"
-  - "@solidjs/vite-plugin@3.0.0"
-  - "@solidjs/web@2.0.0"
-  - solid-js@2.0.0
 # The version baseline (plan, Appendix C). Every package takes its tooling from
 # here, so one line moves a version for the whole repo. Compiler dependencies
 # that shape the output (oxc, oxfmt) are exact: the same input and the same
@@ -154,7 +141,7 @@ catalog:
   astro-eslint-parser: 3.2.0
   axe-core: 4.14.1
   babel-plugin-react-compiler: 1.0.0
-  babel-preset-solid: 1.9.15
+  babel-preset-solid: 1.9.19
   csstype: ^3.2.4
   eslint: 10.15.0
   eslint-plugin-astro: 3.2.1
@@ -181,7 +168,7 @@ catalog:
   react-dom: 19.3.1
   rolldown: 1.3.3
   rxjs: ^7.8.2
-  solid-js: 1.9.15
+  solid-js: 1.9.20
   styleframe: 3.9.2
   svelte: 5.59.1
   svelte-check: 4.7.8
@@ -192,7 +179,7 @@ catalog:
   typescript-eslint: 8.74.0
   unplugin: ^3.7.0
   vite: 8.3.8
-  vite-plugin-solid: 2.11.14
+  vite-plugin-solid: 2.11.17
   vitest: 5.0.3
   vue: 3.5.43
   vue-eslint-parser: 10.4.2
@@ -202,11 +189,11 @@ catalog:
 # solid2 e2e app take it, so no package installs both Solid majors.
 catalogs:
   solid2:
-    "@solidjs/compiler": 2.0.0
-    "@solidjs/vite-plugin": 3.0.0
-    "@solidjs/web": 2.0.0
+    "@solidjs/compiler": 2.0.2
+    "@solidjs/vite-plugin": 3.0.1
+    "@solidjs/web": 2.0.3
     eslint-plugin-solid: 0.19.0
-    solid-js: 2.0.0
+    solid-js: 2.0.3
 patchedDependencies:
   # TypeScript 7.1 reports its self-referencing `Selector` type as infinitely circular
   # (TS5115, microsoft/TypeScript#64605), so codegen's scoper fails check-types. The patch writes

@@ -53,21 +53,21 @@ afterAll(async () => {
 });
 
 describe("the solid2 fragment's resolution of Solid 2", () => {
-	it("resolves Solid 2's packages to 2.0.0 from the corpus, which holds Solid 1", async () => {
+	it("resolves Solid 2's packages to 2.0.3 from the corpus, which holds Solid 1", async () => {
 		// Node, from the corpus: Solid 1.
-		expect(versionOf(createRequire(importer).resolve("solid-js"))).toBe("1.9.15");
+		expect(versionOf(createRequire(importer).resolve("solid-js"))).toBe("1.9.20");
 		// The fragment, from the same importer: Solid 2's browser builds.
 		const container = server.environments.client.pluginContainer;
 		for (const name of ["solid-js", "@solidjs/web"]) {
 			const resolved = await container.resolveId(name, importer);
 			expect(resolved, name).not.toBeNull();
-			expect(versionOf(resolved!.id.split("?")[0]!), name).toBe("2.0.0");
+			expect(versionOf(resolved!.id.split("?")[0]!), name).toBe("2.0.3");
 		}
 		const solid = await container.resolveId("solid-js", importer);
 		expect(solid!.id).not.toContain("server");
-		// Solid's own dependency resolves from Solid, 2.0.0 too.
+		// Solid's own dependency resolves from Solid: solid-js 2.0.3 takes @solidjs/signals ^2.0.3.
 		const signals = await container.resolveId("@solidjs/signals", solid!.id.split("?")[0]);
-		expect(versionOf(signals!.id.split("?")[0]!)).toBe("2.0.0");
+		expect(versionOf(signals!.id.split("?")[0]!)).toBe("2.0.4");
 	});
 
 	it("resolves Solid 2 the same as the toolchain directory's own install", async () => {
