@@ -205,10 +205,11 @@ export function template(
 		],
 	});
 	/** Where a place renders the slot: the template, with the place's own fallback if it has one. */
-	const renderSlot = (slot: NonNullable<typeof hoisted>, node: SlotOutletNode): Array<MarkupPiece> => {
-		const name = slot.fallbackTemplates
-			? slot.fallbacks[slot.outlets.indexOf(node)]
-			: undefined;
+	const renderSlot = (
+		slot: NonNullable<typeof hoisted>,
+		node: SlotOutletNode,
+	): Array<MarkupPiece> => {
+		const name = slot.fallbackTemplates ? slot.fallbacks[slot.outlets.indexOf(node)] : undefined;
 		if (name === undefined) {
 			return [renderTemplate(slot.ref)];
 		}
@@ -236,7 +237,8 @@ export function template(
 		conditional: (branches) => {
 			const pieces = angularDialect.conditional(branches);
 			const anchor = hoisted?.anchor;
-			return anchor?.kind === "If" && branches.some(({ branch }) => anchor.branches.includes(branch))
+			return anchor?.kind === "If" &&
+				branches.some(({ branch }) => anchor.branches.includes(branch))
 				? [declaration(hoisted!), ...pieces]
 				: pieces;
 		},

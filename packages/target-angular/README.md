@@ -272,7 +272,12 @@ parent, so the composable's effects stay the component's view effects.
   props has an empty context, so a `let-` variable on its template is an error. The template
   ends with `<ng-content select="[ufListItem]" />` per directive, so a slot's template never counts
   as the default slot's content. A forwarded named slot re-declares the child's template under
-  `@if (this.titleTemplate(); as template)`.
+  `@if (this.titleTemplate(); as template)`. Angular projects a parent's content into one
+  `<ng-content>` only, so where the default slot renders in more than one place, one at a time
+  (each `@case` of a `<component is>`, or each branch of a conditional), the template declares it
+  once, in `<ng-template #defaultSlot>`, and each place renders it with `ngTemplateOutlet`. A
+  place whose fallback differs from the others', or reads a name a conditional narrows, declares
+  it in an `<ng-template>` of its own and passes it as the context (ADR-0124, ADR-0125).
 - **Models.** A text field, a text area and a select write the state through a template variable
   of the control, which types its value. Vue's `vModelText` (trim, lazy, a number's cast) goes
   through `modelText`, which keeps the field's own text where it already means the value

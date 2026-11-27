@@ -156,7 +156,10 @@ function placed(
 		// repeats the place.
 		const from = first.path.findIndex((step) => step.kind === "Dynamic");
 		const step = first.path[from];
-		if (step?.kind !== "Dynamic" || first.path.slice(from).some((each) => each.kind === "Repeated")) {
+		if (
+			step?.kind !== "Dynamic" ||
+			first.path.slice(from).some((each) => each.kind === "Repeated")
+		) {
 			return undefined;
 		}
 		return { anchor: step.node, from };
