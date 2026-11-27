@@ -74,20 +74,23 @@ describe("controlOf", () => {
 		});
 	});
 
+	// The reason is a short phrase for what the type is: the panel prints the type after it.
 	it.each([
-		"() => void",
-		"string[]",
-		"Record<string, number>",
-		"{ a: string }",
-		"Tone",
-		"1 | 2",
-		`"a" | number`,
-		"string | number",
-		"`x-${string}`",
-		`"a|b`,
-		"null",
-	])("names %s as not controllable", (type) => {
-		expect(controlOf(member(type))).toEqual(expect.stringContaining(type));
+		["() => void", "a function"],
+		["string[]", "an array"],
+		["ReadonlyArray<string>", "an array"],
+		["Record<string, number>", "an object"],
+		["{ a: string }", "an object"],
+		["{ pick: () => void }", "an object"],
+		["Tone", "a type the preview can't set"],
+		["1 | 2", "a union of numbers"],
+		[`"a" | number`, "a type the preview can't set"],
+		["string | number", "a type the preview can't set"],
+		["`x-${string}`", "a type the preview can't set"],
+		[`"a|b`, "a type the preview can't set"],
+		["null", "a type the preview can't set"],
+	])("names %s as not controllable: %s", (type, reason) => {
+		expect(controlOf(member(type))).toBe(reason);
 	});
 
 	it("splits a union only at its top level, and keeps a literal's own bar", () => {
@@ -106,14 +109,17 @@ describe("controlOf", () => {
 			{ name: "label", optional: false, type: "string" },
 			{ name: "onPick", optional: true, type: "(id: string) => void" },
 			{ name: "size", optional: true, type: `"s" | "m"` },
+			{ name: "meta", optional: true, type: "{ id: string }" },
+			{ name: "steps", optional: true, type: "1 | 2 | 3" },
+			{ name: "anchor", optional: true, type: "Element" },
 		]);
 		expect(controls.map((each) => each.name)).toEqual(["label", "size"]);
+		// A short phrase for what the type is: the panel prints the type after it.
 		expect(uncontrolled).toEqual([
-			{
-				name: "onPick",
-				type: "(id: string) => void",
-				reason: expect.stringContaining("(id: string) => void"),
-			},
+			{ name: "onPick", type: "(id: string) => void", reason: "a function" },
+			{ name: "meta", type: "{ id: string }", reason: "an object" },
+			{ name: "steps", type: "1 | 2 | 3", reason: "a union of numbers" },
+			{ name: "anchor", type: "Element", reason: "a type the preview can't set" },
 		]);
 	});
 });
@@ -319,7 +325,7 @@ describe("an example's controls", () => {
 					{
 						name: "tags",
 						type: "string[]",
-						reason: "its type, string[], is not one the preview can set",
+						reason: "an array",
 					},
 				],
 			},

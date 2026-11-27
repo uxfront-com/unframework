@@ -181,12 +181,21 @@ ${PALETTE}  font: 13px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; col
 :host([data-theme="light"]) { color-scheme: light; }
 :host([data-theme="dark"]) { color-scheme: dark; }
 * { box-sizing: border-box; }
-input, select { font: inherit; color: inherit; }
+input, select, button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-${CONTROL_STYLES}.controls { overflow: visible; border-inline-start: 0; border-top: 1px solid var(--line); padding: 6px 12px 10px; }
-.controls h2 { margin: 0 0 4px; }
-.controls [data-uf-group] > h3:first-child { margin: 0 0 4px; }
-.controls input:not([type="checkbox"]), .controls select { padding: 2px 6px; }
+${CONTROL_STYLES}.controls { overflow: visible; border-inline-start: 0; border-top: 1px solid var(--line); padding: 4px 12px 10px; line-height: 1.2; }
+.controls .uf-head { margin: 0 0 2px; }
+.controls h2 { line-height: 16px; }
+.controls [data-uf-status-line] { flex-basis: auto; margin: 0; }
+.controls summary, .controls .uf-name, .controls .uf-type, .controls .uf-link { line-height: 14px; }
+.controls .chevron { margin-top: 1px; }
+.controls [data-uf-group] > .uf-link { margin-top: 0; }
+.controls [data-uf-group] > details > summary { padding: 0; }
+.controls details > form { padding-top: 2px; gap: 6px; }
+.controls .uf-field-head { margin-bottom: 2px; }
+.controls legend.uf-name { margin-bottom: 2px; }
+.controls input:not([type="checkbox"], [type="radio"]), .controls select { padding: 1px 6px; }
+.controls .uf-segments label { padding: 0 6px; line-height: 16px; }
 `;
 
 /**
@@ -226,6 +235,7 @@ function embedPage(
 	const groups = Object.hasOwn(options.controls ?? {}, entry) ? options.controls![entry]! : [];
 	const controls = groups.flatMap((group) => group.controls);
 	let section: HTMLElement | undefined;
+	let line: HTMLElement | undefined;
 	if (embed.controls) {
 		host = document.createElement("uf-embed-controls");
 		const shadow = host.attachShadow({ mode: "open" });
@@ -234,16 +244,23 @@ function embedPage(
 		section = document.createElement("section");
 		section.className = "controls";
 		section.setAttribute("aria-labelledby", "uf-controls-label");
+		const head = document.createElement("div");
+		head.className = "uf-head";
 		const heading = document.createElement("h2");
 		heading.id = "uf-controls-label";
+		heading.tabIndex = -1;
 		heading.textContent = "Controls";
-		section.append(heading);
+		const panel = section;
+		line = kit.statusLine(() => panel, heading);
+		head.append(heading, line);
+		section.append(head);
 		if (!groups.length) {
 			const none = document.createElement("p");
 			none.textContent = "This example has no controls.";
 			section.append(none);
 		}
 		section.append(...kit.exampleGroups(groups));
+		kit.refresh(section, line);
 		// A field's Enter submits its form, which would load the frame again.
 		section.addEventListener("submit", (event) => event.preventDefault());
 		shadow.append(sheet, section);
@@ -258,6 +275,7 @@ function embedPage(
 			return;
 		}
 		const fields = section;
+		const status = line!;
 		// Renders run in order, as the shell's do: a rerender must finish before the next.
 		let queue: Promise<void> = Promise.resolve();
 		const attempt = async (props: Record<string, unknown>) => {
@@ -267,7 +285,7 @@ function embedPage(
 				delete area.dataset.failed;
 			} catch (error) {
 				// Only the example's area says why: the panel stays, so another value can render again,
-				// as "(default)" does on a static Astro frame (ADR-0111).
+				// as "Default" does on a static Astro frame (ADR-0111).
 				let failure = area.querySelector<HTMLElement>("[data-uf-embed-failure]");
 				if (!failure) {
 					failure = document.createElement("p");
@@ -279,9 +297,8 @@ function embedPage(
 			}
 		};
 		fields.addEventListener("input", () => {
-			const props = kit.exampleProps(controls, (key) =>
-				fields.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${key}"]`)!,
-			);
+			const props = kit.exampleProps(controls, (key) => kit.field(fields, key));
+			kit.refresh(fields, status);
 			queue = queue.then(() => attempt(props));
 		});
 	};
