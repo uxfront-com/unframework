@@ -5,7 +5,9 @@
 // its API (AGENTS.md). Wherever the three agree, the analyser must accept the text with their
 // value; wherever they disagree, it must report UF3009; and its fixes must make them agree on
 // what Babel read. A character HTML does not keep is UF3010 instead, wherever it is, so text
-// that holds one is compared as if it held another character there.
+// that holds one is compared as if it held another character there. Before oxc 0.155, oxc's JSX
+// kept a surrogate reference (`&#xD83D;`) as text; since oxc-project/oxc#26712 it decodes it as
+// Babel and esbuild do, so a pair reads as its character and a lone half is UF3010 (ADR-0127).
 import { parseSync, types } from "@babel/core";
 import type { Node } from "@babel/core";
 import { unkeptCharacter } from "@unframework.dev/ir";
@@ -288,7 +290,6 @@ describe("JSX text", () => {
 		["a&#9;b", "a referenced tab"],
 		["Hello&#32;\n  ", "a referenced space before a line break"],
 		["&#+65;", "a signed reference"],
-		["&#xD83D;&#xDE00;", "a surrogate pair"],
 		["&#1114112;", "a reference past U+10FFFF"],
 	])("reports %j, %s", async (raw) => {
 		const [reading] = await readings([raw], "text");
@@ -308,6 +309,7 @@ describe("JSX text", () => {
 		"\u00a0",
 		"a\u00a0b",
 		"a&#32;b",
+		"&#xD83D;&#xDE00;",
 	])("accepts %j, which every implementation reads alike", async (raw) => {
 		const [reading] = await readings([raw], "text");
 		expect(new Set(Object.values(reading!)).size).toBe(1);
@@ -356,9 +358,6 @@ describe("JSX attribute strings", () => {
 		["&#+65;", undefined],
 		["&#x-1;", undefined],
 		["&#1114112;", undefined],
-		["a&#xD83D;b", undefined],
-		["&#xD83D;&#xDE00;", "&#x1F600;"],
-		["&#55357;&#56832;!", "&#x1F600;!"],
 	])("reports %j, and fixes it to %j", async (raw, fix) => {
 		const reading = readJsxAttribute(raw);
 		expect(reading.divergences).toHaveLength(1);
@@ -375,6 +374,9 @@ describe("JSX attribute strings", () => {
 		"a\u2028b",
 		"&amp;&nbsp;&#x41;",
 		"&lbrace;",
+		"a&#xD83D;b",
+		"&#xD83D;&#xDE00;",
+		"&#55357;&#56832;!",
 	])("reads %j as every implementation does", async (raw) => {
 		const [reading] = await readings([raw], "attribute");
 		expect(new Set(Object.values(reading!)).size).toBe(1);
@@ -387,8 +389,9 @@ describe("JSX attribute strings", () => {
 		expect(await conformance(randomSamples(2, 1000, PIECES), "attribute", tally)).toEqual([]);
 		expect(tally.agreed).toBeGreaterThan(300);
 		expect(tally.reported).toBeGreaterThan(100);
-		// Only a surrogate pair has a fix in an attribute string; the cases below cover more.
-		expect(tally.fixed).toBeGreaterThan(0);
+		// No divergence in an attribute string has a fix: a surrogate pair had one until oxc 0.155
+		// read it as the others do (oxc-project/oxc#26712).
+		expect(tally.fixed).toBe(0);
 	}, 60_000);
 });
 

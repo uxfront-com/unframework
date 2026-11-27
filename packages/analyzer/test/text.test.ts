@@ -173,11 +173,19 @@ describe("readJsxAttribute", () => {
 	it.each([
 		["&#+65;", "a signed character reference"],
 		["&#99999999;", "names no Unicode character"],
-		["&#xD800;", "half of a UTF-16 surrogate pair"],
-		["&#xD83D;&#xDE00;", "a UTF-16 surrogate pair"],
 	])("reports %j, which the implementations decode differently", (raw, message) => {
 		const { divergences } = readJsxAttribute(raw);
 		expect(divergences).toHaveLength(1);
 		expect(divergences[0]!.message).toContain(message);
+	});
+
+	// Every implementation decodes surrogate references since oxc 0.155 (oxc-project/oxc#26712,
+	// ADR-0127): a pair reads as its character, and a lone half is left to UF3010.
+	it.each([
+		["&#xD83D;&#xDE00;", "😀"],
+		["&#55357;&#56832;", "😀"],
+		["&#xD800;", "\ud800"],
+	])("reads %j as every implementation does", (raw, value) => {
+		expect(readJsxAttribute(raw)).toMatchObject({ value, divergences: [] });
 	});
 });

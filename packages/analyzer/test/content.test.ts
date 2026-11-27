@@ -104,6 +104,20 @@ describe("characters HTML would not keep, in text", () => {
 	it("accepts characters HTML keeps", () => {
 		expect(textsOf("<p>a&#12;b\u00a0c&#xFFFD;😀&#x1F600;</p>")).toEqual(["a\fb\u00a0c\ufffd😀😀"]);
 	});
+
+	// Every JSX implementation decodes surrogate references since oxc 0.155
+	// (oxc-project/oxc#26712, ADR-0127): a pair is the character it names, and a lone half is a
+	// character HTML cannot encode.
+	it("reads a surrogate pair of references as its character", () => {
+		expect(textsOf("<p>&#xD83D;&#xDE00;</p>")).toEqual(textsOf("<p>&#x1F600;</p>"));
+		expect(textsOf("<p>a&#55357;&#56832;b</p>")).toEqual(["a😀b"]);
+	});
+
+	it("reports a lone surrogate reference as UF3010", () => {
+		const { source, diagnostics } = component("<p>a&#xD83D;b</p>");
+		expect(codes(diagnostics)).toEqual(["UF3010"]);
+		expect(slices(source, diagnostics)).toEqual(["&#xD83D;"]);
+	});
 });
 
 describe("the fixes of random text", () => {
