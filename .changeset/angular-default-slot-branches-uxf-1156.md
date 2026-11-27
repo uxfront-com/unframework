@@ -7,4 +7,4 @@ Render a default slot on Angular in whichever place renders it, where its places
 
 Angular projects a parent's content into one `<ng-content>` only, so the template now declares it once, before the `@switch` or the `@if` that holds every place, and each place renders it with `ngTemplateOutlet`. A place whose fallback reads a name its conditional narrows keeps that fallback where it is, in an `<ng-template>` it passes on.
 
-ADR-0125 records it. The other six targets' outputs don't change, and a default slot under a list still renders in one place only on Angular.
+ADR-0125 records it.
