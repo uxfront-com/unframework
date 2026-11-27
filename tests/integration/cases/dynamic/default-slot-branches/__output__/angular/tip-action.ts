@@ -1,6 +1,7 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { NgTemplateOutlet } from "@angular/common";
 import {
   ApplicationRef,
   Component,
@@ -78,12 +79,15 @@ export class Teleport implements OnInit {
 
 @Component({
   selector: "uf-tip-action",
-  imports: [ScopeAttributes, Fallthrough, Teleport],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough, Teleport],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let href = this.href();
     @let label = this.label();
+    <ng-template #defaultSlot>
+      <ng-content>{{ label }}</ng-content>
+    </ng-template>
     @switch (href ? "a" : "button") {
       @case ("a") {
         <a
@@ -95,7 +99,11 @@ export class Teleport implements OnInit {
           #ufElement
         >{{ label }}<ng-template
           ufTeleport="body"
-        ><p data-teleported="true" class="tip" role="note"><ng-content>{{ label }}</ng-content></p></ng-template></a>
+        ><p
+          data-teleported="true"
+          class="tip"
+          role="note"
+        ><ng-container [ngTemplateOutlet]="defaultSlot" /></p></ng-template></a>
       } @case ("button") {
         <button
           [class]="this.class()"
@@ -105,7 +113,11 @@ export class Teleport implements OnInit {
           #ufElement
         >{{ label }}<ng-template
           ufTeleport="body"
-        ><p data-teleported="true" class="tip" role="note"><ng-content>{{ label }}</ng-content></p></ng-template></button>
+        ><p
+          data-teleported="true"
+          class="tip"
+          role="note"
+        ><ng-container [ngTemplateOutlet]="defaultSlot" /></p></ng-template></button>
       }
     }
   `,

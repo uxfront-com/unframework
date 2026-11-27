@@ -1,15 +1,19 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { NgTemplateOutlet } from "@angular/common";
 import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-switch-action",
-  imports: [ScopeAttributes, Fallthrough],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let href = this.href();
+    <ng-template #defaultSlot>
+      <ng-content />
+    </ng-template>
     @switch (href ? "a" : "button") {
       @case ("a") {
         <a
@@ -22,11 +26,11 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
         >
           @if (href) {
             <b>
-              <ng-content />
+              <ng-container [ngTemplateOutlet]="defaultSlot" />
             </b>
           } @else {
             <i>
-              <ng-content />
+              <ng-container [ngTemplateOutlet]="defaultSlot" />
             </i>
           }
         </a>
@@ -40,11 +44,11 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
         >
           @if (href) {
             <b>
-              <ng-content />
+              <ng-container [ngTemplateOutlet]="defaultSlot" />
             </b>
           } @else {
             <i>
-              <ng-content />
+              <ng-container [ngTemplateOutlet]="defaultSlot" />
             </i>
           }
         </button>

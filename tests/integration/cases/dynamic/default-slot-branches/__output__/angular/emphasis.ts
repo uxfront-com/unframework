@@ -1,11 +1,12 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { NgTemplateOutlet } from "@angular/common";
 import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-emphasis",
-  imports: [ScopeAttributes, Fallthrough],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -18,13 +19,16 @@ import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
       [ufScope]="this.host"
       #ufElement
     >
+      <ng-template #defaultSlot>
+        <ng-content />
+      </ng-template>
       @if (strong) {
         <b>
-          <ng-content />
+          <ng-container [ngTemplateOutlet]="defaultSlot" />
         </b>
       } @else {
         <i>
-          <ng-content />
+          <ng-container [ngTemplateOutlet]="defaultSlot" />
         </i>
       }
     </p>

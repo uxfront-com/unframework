@@ -1,6 +1,7 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { NgTemplateOutlet } from "@angular/common";
 import { Component, ElementRef, inject, input, viewChild } from "@angular/core";
 
 export interface User {
@@ -9,7 +10,7 @@ export interface User {
 
 @Component({
   selector: "uf-greeting",
-  imports: [ScopeAttributes, Fallthrough],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -22,13 +23,26 @@ export interface User {
       [ufScope]="this.host"
       #ufElement
     >
+      <ng-template #defaultSlot let-fallback>
+        <ng-content>
+          <ng-container [ngTemplateOutlet]="fallback" />
+        </ng-content>
+      </ng-template>
       @if (user) {
         <b>
-          <ng-content>{{ user.name }}</ng-content>
+          <ng-template #defaultSlotFallback>{{ user.name }}</ng-template>
+          <ng-container
+            [ngTemplateOutlet]="defaultSlot"
+            [ngTemplateOutletContext]="{ $implicit: defaultSlotFallback }"
+          />
         </b>
       } @else {
         <i>
-          <ng-content>Guest</ng-content>
+          <ng-template #defaultSlotFallback_1>Guest</ng-template>
+          <ng-container
+            [ngTemplateOutlet]="defaultSlot"
+            [ngTemplateOutletContext]="{ $implicit: defaultSlotFallback_1 }"
+          />
         </i>
       }
     </p>

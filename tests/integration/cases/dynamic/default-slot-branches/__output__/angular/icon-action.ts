@@ -32,6 +32,9 @@ export class IconActionIcon {
   template: `
     @let href = this.href();
     @let label = this.label();
+    <ng-template #defaultSlot>
+      <ng-content>{{ label }}</ng-content>
+    </ng-template>
     @switch (href ? "a" : "button") {
       @case ("a") {
         <a
@@ -46,7 +49,7 @@ export class IconActionIcon {
             <ng-container [ngTemplateOutlet]="template" />
           } @else {
             <span>
-              <ng-content>{{ label }}</ng-content>
+              <ng-container [ngTemplateOutlet]="defaultSlot" />
             </span>
           }
         </a>
@@ -62,7 +65,7 @@ export class IconActionIcon {
             <ng-container [ngTemplateOutlet]="template" />
           } @else {
             <span>
-              <ng-content>{{ label }}</ng-content>
+              <ng-container [ngTemplateOutlet]="defaultSlot" />
             </span>
           }
         </button>

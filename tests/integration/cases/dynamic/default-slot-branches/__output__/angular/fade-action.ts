@@ -1,6 +1,7 @@
 import { Fallthrough } from "./_unframework/Fallthrough";
 import type { Listeners } from "./_unframework/Listeners";
 import { ScopeAttributes } from "./_unframework/ScopeAttributes";
+import { NgTemplateOutlet } from "@angular/common";
 import {
   type AnimationCallbackEvent,
   Component,
@@ -123,12 +124,15 @@ export class Transition implements OnInit {
 
 @Component({
   selector: "uf-fade-action",
-  imports: [ScopeAttributes, Fallthrough, Transition],
+  imports: [NgTemplateOutlet, ScopeAttributes, Fallthrough, Transition],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let href = this.href();
     @let label = this.label();
+    <ng-template #defaultSlot>
+      <ng-content>{{ label }}</ng-content>
+    </ng-template>
     @switch (href ? "a" : "button") {
       @case ("a") {
         <a
@@ -140,7 +144,7 @@ export class Transition implements OnInit {
           #ufElement
         >
           <span [ufTransition]="'fade'">
-            <ng-content>{{ label }}</ng-content>
+            <ng-container [ngTemplateOutlet]="defaultSlot" />
           </span>
         </a>
       } @case ("button") {
@@ -152,7 +156,7 @@ export class Transition implements OnInit {
           #ufElement
         >
           <span [ufTransition]="'fade'">
-            <ng-content>{{ label }}</ng-content>
+            <ng-container [ngTemplateOutlet]="defaultSlot" />
           </span>
         </button>
       }
