@@ -43,6 +43,7 @@ import {
 	tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
+import { hoistedDefaultSlot } from "./default-slot.ts";
 import {
 	directiveClassCode,
 	directiveClassName,
@@ -458,6 +459,11 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
 				ref: plan.members.claim("transition"),
 			}
 		: undefined;
+	// The default slot a `<component is>`'s cases render from one template, by its reference
+	// (ADR-0124).
+	const defaultSlot = hoistedDefaultSlot(component.render)
+		? { ref: plan.members.claim("defaultSlot") }
+		: undefined;
 	// The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
 	// and its module's own as classes of this file, with the runner and queue their hooks run through.
 	const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>
@@ -592,7 +598,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
 		[
 			"template",
 			js.templateLiteral(
-				`\n${template(plan, listeners, reads, composition, models, { ...(fallthrough === undefined ? {} : { plan: fallthrough }), ...(rootElement === undefined ? {} : { rootElement }) }, scope && { roots, host: scope.host }, teleportHost, transition)}\n  `,
+				`\n${template(plan, listeners, reads, composition, models, { ...(fallthrough === undefined ? {} : { plan: fallthrough }), ...(rootElement === undefined ? {} : { rootElement }) }, scope && { roots, host: scope.host }, teleportHost, transition, defaultSlot)}\n  `,
 			),
 		],
 		// The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own

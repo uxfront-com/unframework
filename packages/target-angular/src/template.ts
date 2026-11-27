@@ -10,7 +10,12 @@ import {
 	test,
 	vueClassValue,
 } from "@unframework.dev/codegen";
-import type { ClassPart, MarkupDialect, PrintedAttribute } from "@unframework.dev/codegen";
+import type {
+	ClassPart,
+	MarkupDialect,
+	MarkupPiece,
+	PrintedAttribute,
+} from "@unframework.dev/codegen";
 import { BINDABLE_BOOLEAN_ATTRIBUTES, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
 	Attribute,
@@ -27,6 +32,7 @@ import type {
 
 import { selectorOf } from "./composition.ts";
 import type { Composition } from "./composition.ts";
+import { hoistedDefaultSlot } from "./default-slot.ts";
 import {
 	TELEPORT_ATTRIBUTE,
 	TELEPORT_HOST_INPUT,
@@ -101,6 +107,7 @@ export function template(
 	scope?: { roots: ReadonlySet<string>; host: string },
 	teleportHost?: string,
 	transition?: { ref: string },
+	defaultSlot?: { ref: string },
 ): string {
 	const { component } = plan;
 	// A setup that awaits renders its template, `@let`s included, once it resolves (ADR-0101).
@@ -130,8 +137,42 @@ export function template(
 			}
 		}
 	}
+	const render = fallthrough.plan
+		? withFallthrough(models.render, fallthrough.plan)
+		: models.render;
+	// The default slot a `<component is>`'s cases render from one template (ADR-0124): the tree
+	// printed is a copy, so the nodes are found in it.
+	const found = defaultSlot && hoistedDefaultSlot(render);
+	const hoisted = found && { ...found, ref: defaultSlot.ref };
+	/** Where a case renders the slot: the template, through `ngTemplateOutlet`. */
+	const renderSlot = (ref: string): MarkupPiece => ({
+		kind: "tag",
+		tag: "ng-container",
+		attributes: [{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${ref}"` }],
+	});
 	const dialect: MarkupDialect = {
 		...angularDialect,
+		// `<ng-template #defaultSlot><ng-content>…</ng-content></ng-template>` before the `@switch`:
+		// Angular projects into one `<ng-content>` alone, chosen as it compiles the template.
+		dynamic: (printed) => {
+			const pieces = angularDialect.dynamic!(printed);
+			if (printed.node !== hoisted?.dynamic) {
+				return pieces;
+			}
+			return [
+				{
+					kind: "tag",
+					tag: "ng-template",
+					attributes: [{ name: `#${hoisted.ref}`, text: `#${hoisted.ref}` }],
+					content: angularDialect.slotOutlet!({ node: hoisted.outlet }),
+				},
+				...pieces,
+			];
+		},
+		slotOutlet: (outlet) =>
+			hoisted && outlet.node === hoisted.outlet
+				? [renderSlot(hoisted.ref)]
+				: angularDialect.slotOutlet!(outlet),
 		// `<ng-template ufTeleport="body">`, whose directive mounts it into `to` (ADR-0098).
 		teleport: ({ node }) => [
 			{
@@ -271,9 +312,6 @@ export function template(
 			return angularDialect.styleAttribute(parts, context);
 		},
 	};
-	const render = fallthrough.plan
-		? withFallthrough(models.render, fallthrough.plan)
-		: models.render;
 	const markup = printMarkup(render, dialect, {
 		indent: INDENT,
 		level,
