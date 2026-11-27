@@ -459,11 +459,18 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
 				ref: plan.members.claim("transition"),
 			}
 		: undefined;
-	// The default slot a `<component is>`'s cases render from one template, by its reference
-	// (ADR-0124).
-	const defaultSlot = hoistedDefaultSlot(component.render)
-		? { ref: plan.members.claim("defaultSlot") }
-		: undefined;
+	// The default slot its places render from one template, by its reference, with the fallback
+	// template each place declares where the places don't share one (ADR-0124, ADR-0125).
+	const hoistedSlot = hoistedDefaultSlot(component.render);
+	const defaultSlot = hoistedSlot && {
+		ref: plan.members.claim("defaultSlot"),
+		fallback: hoistedSlot.fallbackTemplates ? plan.members.claim("fallback") : "",
+		fallbacks: hoistedSlot.outlets.map((outlet) =>
+			hoistedSlot.fallbackTemplates && outlet.fallback.length
+				? plan.members.claim("defaultSlotFallback")
+				: undefined,
+		),
+	};
 	// The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
 	// and its module's own as classes of this file, with the runner and queue their hooks run through.
 	const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>

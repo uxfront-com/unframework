@@ -2656,6 +2656,43 @@
         }
       }
     },
+    "dynamic/default-slot-branches": {
+      "time": 31.21,
+      "sizes": {
+        "react": {
+          "raw": 12775,
+          "gzip": 6783
+        },
+        "vue": {
+          "raw": 5884,
+          "gzip": 3302
+        },
+        "svelte": {
+          "raw": 10255,
+          "gzip": 4940
+        },
+        "solid": {
+          "raw": 8078,
+          "gzip": 4349
+        },
+        "solid2": {
+          "raw": 8299,
+          "gzip": 4372
+        },
+        "angular": {
+          "raw": 31155,
+          "gzip": 11253
+        },
+        "qwik": {
+          "raw": 10836,
+          "gzip": 6383
+        },
+        "astro": {
+          "raw": 5112,
+          "gzip": 2918
+        }
+      }
+    },
     "dynamic/forwarding": {
       "time": 11.42,
       "sizes": {
