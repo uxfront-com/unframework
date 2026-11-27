@@ -1,0 +1,4 @@
+{
+	"description": "A component whose root is a <component is> over tags renders its default slot, or the slot's fallback, in whichever tag renders, with a named slot beside it, and keeps the fill as the tag changes.",
+	"main": "Page.uf.tsx"
+}

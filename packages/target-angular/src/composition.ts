@@ -22,6 +22,7 @@ import type {
 	UfComponent,
 } from "@unframework.dev/ir";
 
+import { hoistedDefaultSlot } from "./default-slot.ts";
 import type { Plan } from "./plan.ts";
 import { atConstraints } from "./types.ts";
 
@@ -223,6 +224,10 @@ export function planComposition(plan: Plan): Composition {
 			}
 		},
 	});
+	// The default slot a `<component is>`'s cases render from one template (ADR-0124).
+	if (hoistedDefaultSlot(component.render)) {
+		outlet = true;
+	}
 	if (outlet) {
 		classes.push(imports.add("@angular/common", "NgTemplateOutlet"));
 	}

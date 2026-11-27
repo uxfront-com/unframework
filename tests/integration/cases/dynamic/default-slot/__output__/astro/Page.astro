@@ -1,0 +1,25 @@
+---
+import Action from "./Action.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, ...attrs } = Astro.props;
+
+const linked = true as boolean;
+---
+
+<section class:list={["page", className]} style={style} {...attrs}>
+  <Action href="#docs" label="Docs">Read the docs</Action>
+  <Action label="Save">Save the draft</Action>
+  <Action href="#home" label="Home" />
+  <Action label="Close" />
+  <Action
+    href={linked ? "#more" : undefined}
+    label="More"
+  >Learn more<Fragment slot="icon"><i aria-hidden="true">+</i></Fragment></Action>
+  <button type="button">Toggle</button>
+</section>

@@ -1,5 +1,27 @@
 # @uxfront/unframework
 
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [8b4ec12]
+  - @unframework.dev/visual@0.6.0
+
+## 0.6.1
+
+### Patch Changes
+
+- d3925a2: Render a default slot in every case of a `<component is>` on Angular. A component like `<component is={href ? "a" : "button"}>{slots.default?.() ?? label}</component>` used to render the parent's content in one tag only, and the other tags rendered the slot empty, without its fallback.
+
+  Angular projects a parent's content into one `<ng-content>` only, so the template now declares the slot once, in an `<ng-template>` before its `@switch`, and each `@case` renders it with `ngTemplateOutlet`.
+
+  ADR-0124 records it. The other six targets' outputs don't change.
+
+- @unframework.dev/compiler@0.4.1
+  - @unframework.dev/testing@0.3.4
+  - @unframework.dev/cli@0.3.1
+  - @unframework.dev/visual@0.5.3
+
 ## 0.6.0
 
 ### Minor Changes

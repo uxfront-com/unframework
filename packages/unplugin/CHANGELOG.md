@@ -1,5 +1,11 @@
 # @unframework.dev/unplugin
 
+## 0.4.1
+
+### Patch Changes
+
+- @unframework.dev/compiler@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes

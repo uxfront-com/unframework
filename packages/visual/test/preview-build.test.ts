@@ -51,6 +51,7 @@ import {
 	expectFilled,
 	expectNoScroll,
 	fieldPlace,
+	segment,
 	framing,
 	hostPage,
 	panel,
@@ -285,7 +286,7 @@ describe("unframework preview build", () => {
 			await frame(page, "astro").locator('button[data-variant="primary"]').waitFor();
 			// Other props: every target with a client runtime renders them, and Astro's frame says why
 			// it can't.
-			await page.getByLabel("variant").selectOption("secondary");
+			await segment(page, "variant", "secondary").check();
 			for (const target of TARGETS.filter((each) => each !== "astro")) {
 				await frame(page, target).locator('button[data-variant="secondary"]').waitFor();
 			}
@@ -294,7 +295,7 @@ describe("unframework preview build", () => {
 				.toBe(`failed: ${STATIC_RENDER_MESSAGE}`);
 			expect(await status(page, "astro").getAttribute("data-state")).toBe("failed");
 			// Back to the initial props, which it renders again.
-			await page.getByLabel("variant").selectOption("");
+			await segment(page, "variant", "Default").check();
 			await expect.poll(() => status(page, "astro").textContent()).toBe("rendered");
 			await frame(page, "astro").locator('button[data-variant="primary"]').waitFor();
 		},
@@ -524,10 +525,11 @@ describe("unframework preview build", () => {
 						.toBe("rendered");
 				}
 				for (const value of ["secondary", "primary"]) {
-					await shell
-						.getByRole("group", { name: "Button", exact: true })
-						.getByLabel("variant", { exact: true })
-						.selectOption(value);
+					await segment(
+						shell.getByRole("group", { name: "Button", exact: true }),
+						"variant",
+						value,
+					).check();
 					for (const target of clients) {
 						await expect
 							.poll(() => status(shell, target).textContent(), { timeout: 60_000, message: target })
@@ -547,8 +549,8 @@ describe("unframework preview build", () => {
 					return [style.color, style.backgroundColor, style.fontFamily];
 				});
 			const root = () => page.locator("[data-uf-preview-root]").evaluate((each) => each.innerHTML);
-			const variant = () =>
-				page.getByRole("region", { name: "Controls" }).getByLabel("variant", { exact: true });
+			const variant = (choice: string) =>
+				segment(page.getByRole("region", { name: "Controls" }), "variant", choice);
 			try {
 				for (const target of TARGETS) {
 					const embed = `${site.url}${EMBED_FILE}?example=examples/Buttons&target=${target}`;
@@ -572,18 +574,18 @@ describe("unframework preview build", () => {
 					if (target === "astro") {
 						// Astro's static frame renders only what the build rendered: the panel stays, and
 						// the area says why (ADR-0111).
-						await variant().selectOption("secondary");
+						await variant("secondary").check();
 						const failure = page.locator("[data-uf-embed-failure]");
 						await expect.poll(() => failure.textContent()).toBe(STATIC_RENDER_MESSAGE);
 						await expect.poll(() => save().count()).toBe(0);
-						await expect(variant().isVisible()).resolves.toBe(true);
-						await variant().selectOption("");
+						await expect(variant("secondary").isVisible()).resolves.toBe(true);
+						await variant("Default").check();
 						await expect.poll(() => failure.count()).toBe(0);
 						await expect.poll(root).toBe(plain.html);
 						continue;
 					}
 					for (const value of ["secondary", "primary"]) {
-						await variant().selectOption(value);
+						await variant(value).check();
 						await expect
 							.poll(root, { timeout: 30_000, message: `${value} on ${target}` })
 							.toBe(shown[value]![target]);
@@ -592,7 +594,7 @@ describe("unframework preview build", () => {
 					await expect
 						.poll(() => page.getByRole("button", { name: "Cancel" }).getAttribute("data-variant"))
 						.toBe("secondary");
-					await variant().selectOption("");
+					await variant("Default").check();
 					await expect.poll(root, { message: `default on ${target}` }).toBe(plain.html);
 				}
 			} finally {
@@ -662,10 +664,11 @@ describe("unframework preview build", () => {
 				await frame.getByRole("button", { name: "Save" }).waitFor({ timeout: 60_000 });
 				await plain.getByRole("button", { name: "Save" }).waitFor({ timeout: 60_000 });
 				const theme = () => frame.locator("html").getAttribute("data-theme");
-				await frame
-					.getByRole("region", { name: "Controls" })
-					.getByLabel("variant", { exact: true })
-					.selectOption("secondary");
+				await segment(
+					frame.getByRole("region", { name: "Controls" }),
+					"variant",
+					"secondary",
+				).check();
 				await expect
 					.poll(() => frame.getByRole("button", { name: "Save" }).getAttribute("data-variant"))
 					.toBe("secondary");
@@ -715,12 +718,15 @@ describe("unframework preview build", () => {
 				expect(await frame.getByRole("button", { name: "Save" }).getAttribute("data-variant")).toBe(
 					"secondary",
 				);
-				expect(
-					await frame
-						.getByRole("region", { name: "Controls" })
-						.getByLabel("variant", { exact: true })
-						.inputValue(),
-				).toBe("secondary");
+				await expect
+					.poll(() =>
+						segment(
+							frame.getByRole("region", { name: "Controls" }),
+							"variant",
+							"secondary",
+						).isChecked(),
+					)
+					.toBe(true);
 				// Nothing reports a height, since neither embed asked to.
 				expect(await reports(page)).toEqual([]);
 			} finally {
@@ -897,10 +903,11 @@ describe("buildPreview of an example's controls", () => {
 						.toBe("rendered");
 					expect(await tone(target, "bare"), target).toBe("info");
 				}
-				const flagTone = page
-					.getByRole("group", { name: "Flag", exact: true })
-					.getByLabel("tone", { exact: true });
-				await flagTone.selectOption("error");
+				await segment(
+					page.getByRole("group", { name: "Flag", exact: true }),
+					"tone",
+					"error",
+				).check();
 				for (const target of targets.filter((each) => each !== "astro")) {
 					await expect.poll(() => tone(target, "bare"), { message: target }).toBe("error");
 					await expect.poll(() => tone(target, "nested"), { message: target }).toBe("error");
@@ -909,8 +916,12 @@ describe("buildPreview of an example's controls", () => {
 				await expect
 					.poll(() => status(page, "astro").textContent())
 					.toBe(`failed: ${STATIC_RENDER_MESSAGE}`);
-				// Every control back at "(default)": the props it was built with, which it renders.
-				await flagTone.selectOption("");
+				// Reset all puts every control back at "Default": the props it was built with, which it
+				// renders.
+				await page
+					.getByRole("region", { name: "Controls" })
+					.getByRole("button", { name: "Reset all" })
+					.click();
 				await expect.poll(() => status(page, "astro").textContent()).toBe("rendered");
 				expect(await tone("astro", "bare")).toBe("info");
 			} finally {
