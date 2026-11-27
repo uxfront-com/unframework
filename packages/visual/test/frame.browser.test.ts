@@ -153,7 +153,7 @@ describe("startFrame, standalone with an embed's options", () => {
 		]);
 		expect(radios[0]!.checked).toBe(true);
 		const status = () => shadow().querySelector("[role='status']")!;
-		expect(status().textContent).toBe("Every control at its default");
+		expect(status().textContent).toBe("Nothing changed");
 		const choose = (value: string) => radios.find((radio) => radio.value === value)!.click();
 
 		choose("primary");
@@ -177,7 +177,7 @@ describe("startFrame, standalone with an embed's options", () => {
 		expect(calls.rerenders.at(-1)).toEqual({});
 		expect(area().querySelector("[data-uf-embed-failure]")).toBeNull();
 		expect(area().querySelector("[data-uf-preview-root]")!.textContent).toBe("{}");
-		expect(status().textContent).toBe("Every control at its default");
+		expect(status().textContent).toBe("Nothing changed");
 
 		// Reset all, beside the count, renders the example as written again.
 		choose("primary");
@@ -190,7 +190,7 @@ describe("startFrame, standalone with an embed's options", () => {
 		resetAll.click();
 		await vi.waitFor(() => expect(calls.rerenders.at(-1)).toEqual({}));
 		expect(radios[0]!.checked).toBe(true);
-		expect(status().textContent).toBe("Every control at its default");
+		expect(status().textContent).toBe("Nothing changed");
 		expect(resetAll.checkVisibility()).toBe(false);
 		expect(shadow().activeElement).toBe(shadow().querySelector("h2"));
 
