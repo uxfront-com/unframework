@@ -32,8 +32,10 @@ tar -C "$REPO" \
   -cf - . | tar -C "$WORK" -xf -
 cd "$WORK"
 
-export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-corepack enable pnpm
+# Playwright's image ships Node 26 from 1.65, and Node 26 no longer bundles corepack, so the
+# pnpm that `packageManager` names is installed from npm instead.
+npm install --global --no-audit --no-fund "$(node -p 'require("./package.json").packageManager')" \
+  >/tmp/pnpm-install.log 2>&1 || { cat /tmp/pnpm-install.log; exit 1; }
 pnpm --version
 # The harness, its workspace dependencies and the target toolchains (Analog and TypeScript 6
 # for Angular's browser project); not the docs site.
