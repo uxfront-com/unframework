@@ -19,10 +19,14 @@ function fake(project: string, moduleId: string, groupOrder: number, isolate = f
 	};
 }
 
-/** A Vitest with no cached results or stats, so `BaseSequencer` keeps each project's order. */
+/**
+ * A Vitest whose cache holds the same passed result for every spec, so `BaseSequencer` keeps each
+ * project's order. Vitest 5.1 sorts a spec with no cached result by its size on disk, which would
+ * order the real specs above by their size.
+ */
 const ctx = {
 	config: { root: ROOT },
-	cache: { getFileTestResults: () => undefined, getFileStats: () => undefined },
+	cache: { getTestSpecificationResult: () => ({ failed: false, duration: 0 }) },
 } as unknown as Vitest;
 
 const names = (
