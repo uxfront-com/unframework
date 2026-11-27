@@ -329,8 +329,11 @@ describe("startPreview", () => {
 					Column: {
 						display: "flex",
 						flexDirection: "column",
-						justifyContent: "flex-start",
-						alignItems: "safe flex-end",
+						// Chromium 159 serialises the computed `flex-start` and `flex-end` as `flow-start`
+						// and `flow-end` (blink-dev, "Intent to Ship: CSS flow-start and flow-end alignment
+						// keywords"). The layout still writes `flex-start` and `safe flex-end`.
+						justifyContent: "flow-start",
+						alignItems: "safe flow-end",
 						flexWrap: "wrap",
 						// A bare `gap` is the scale's middle, `1rem`.
 						gap: "16px",

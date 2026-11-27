@@ -424,9 +424,9 @@
     "section[0]/details[0]/label[0]": {
       "box": [
         8,
-        112,
-        0,
-        0
+        114,
+        200,
+        44
       ],
       "style": {
         "display": "inline",

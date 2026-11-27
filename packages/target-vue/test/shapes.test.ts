@@ -153,6 +153,8 @@ describe("vue output shapes (L3, L4, L5)", { timeout: 60_000 }, () => {
 		const codes = ((await toolchain.typecheck([path!], context)).get(path!) ?? []).map(
 			({ code }) => code,
 		);
-		expect(codes).toContain("TS2451");
+		// vue-tsc 3.3.12 declares only the macros a setup doesn't bind (vuejs/language-tools#6191), so
+		// the local's own initializer calls it before its declaration.
+		expect(codes).toContain("TS2448");
 	});
 });

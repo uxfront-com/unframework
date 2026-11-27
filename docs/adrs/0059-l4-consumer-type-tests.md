@@ -136,40 +136,40 @@ correct consumer, checked clean on every target. Errors as each checker printed 
 
 - **Vue** (vue-tsc 3.3.11):
   - `MisuseProp.vue`: `TS2322 Type 'number' is not assignable to type 'string'. (line 6, column
-11)`; `TS2322 Type '"loud"' is not assignable to type '"info" | "warn" | undefined'. (line 6,
-column 22)`
+    11)`; `TS2322 Type '"loud"' is not assignable to type '"info" | "warn" | undefined'. (line 6,
+    column 22)`
   - `MisuseEvent.vue`: `TS2322 Type '(reason: number) => number' is not assignable to type
-'(reason: string) => any'.`
+    '(reason: string) => any'.`
   - `MisuseModel.vue`: `TS2322 Type 'number' is not assignable to type 'string'. (line 10, column
-18)` and `TS2322 Type 'string' is not assignable to type 'number'. (line 10, column 25)`
+    18)` and `TS2322 Type 'string' is not assignable to type 'number'. (line 10, column 25)`
   - `MisuseSlot.vue`: `TS2339 Property 'size' does not exist on type '{ length: number; }'. (line
-7, column 24)`
+    7, column 24)`
 - **React** (tsgo 7.0.2): `MisuseProp.tsx:4:17` and `:4:28` TS2322 as Vue's;
   `MisuseEvent.tsx:8:31` `TS2322 Type '(reason: number) => number' is not assignable to type
-'(reason: string) => void'.`; `MisuseModel.tsx:8:17` TS2322 and `:8:31` `TS2322 Type
-'Dispatch<SetStateAction<number>>' is not assignable to type '(value: string) => void'.`;
+  '(reason: string) => void'.`; `MisuseModel.tsx:8:17` TS2322 and `:8:31` `TS2322 Type
+  'Dispatch<SetStateAction<number>>' is not assignable to type '(value: string) => void'.`;
   `MisuseSlot.tsx:4:45` `TS2339 Property 'size' does not exist on type '{ length: number; }'.`
 - **Solid** (tsgo): as React, except that `MisuseModel.tsx` reports only the value
   (`8:17 TS2322 Type 'number' is not assignable to type 'string'.`); `onValueChange={setCount}`
   passes.
 - **Qwik** (tsgo): `MisuseEvent.tsx:10:31` `TS2322 Type 'QRL<(reason: number) => number>' is not
-assignable to type '((reason: string) => void) | QRL<(reason: string) => void> | undefined'.`;
+  assignable to type '((reason: string) => void) | QRL<(reason: string) => void> | undefined'.`;
   `MisuseModel.tsx:9:12` and `:9:60` TS2322 both ways; `MisuseProp.tsx:6:17`, `:6:28` TS2322;
   `MisuseSlot.tsx:6:40` TS2339.
 - **Svelte** (svelte-check 4.7.6): `MisuseEvent.svelte` `TS2322 Type '(reason: number) => number'
-is not assignable to type '(reason: string) => void'. (line 11, column 22)`; `MisuseModel.svelte`
+  is not assignable to type '(reason: string) => void'. (line 11, column 22)`; `MisuseModel.svelte`
   `TS2322 … (line 9, column 13)`, one direction; `MisuseProp.svelte` both TS2322 (line 7);
   `MisuseSlot.svelte` `TS2339 Property 'size' does not exist on type '{ length: number; }'. (line
-8, column 20)`.
+  8, column 20)`.
 - **Angular** (ngc 22.2.1, the same at L3): `misuse-prop.ts` TS2322 at line 10, columns 25 and 38;
   `misuse-event.ts` `TS2345 Argument of type 'string' is not assignable to parameter of type
-'number'.` (line 10, column 59); `misuse-model.ts` TS2322 (line 10, column 26), once;
+  'number'.` (line 10, column 59); `misuse-model.ts` TS2322 (line 10, column 26), once;
   `misuse-slot.ts` `TS2339 Property 'size' does not exist on type 'FieldHintContext'.` (line 12,
   column 42), with the slot directive; with a `#hint` template reference, no error.
 - **Astro** (`astro check`, `@astrojs/check` 0.9.10): `MisuseProp.astro` both TS2322 (line 5);
   `MisuseModel.astro` TS2322 (line 7); `MisuseSlot.astro` `TS2339 Property 'size' does not exist
-on type '{ length: number; }'.` (line 5, column 30) with the render prop, and `TS7031 Binding
-element 'size' implicitly has an 'any' type.` with `Astro.slots.render`; `MisuseEvent.astro`
+  on type '{ length: number; }'.` (line 5, column 30) with the render prop, and `TS7031 Binding
+  element 'size' implicitly has an 'any' type.` with `Astro.slots.render`; `MisuseEvent.astro`
   only an excess-property TS2322 (`Property 'onclear' does not exist on type …`), since Astro has
   no events. `astro check` reported errors in a consumer against an imported output's `Props`,
   because the harness lists every file (ADR-0028's limit did not apply).

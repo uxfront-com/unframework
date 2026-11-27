@@ -91,7 +91,7 @@ From ADR-0053's spike worktree (React 19.3.0, Qwik 2.0.0-beta.47, `@qwik.dev/opt
 2.1.0-beta.9), with `UF_TARGETS=vue,<t>`:
 
 - `ssr:qwik -t 'spike/'`: `form` fails L6 on `<q:template aria-hidden="true"
-hidden=""><span>"No details"</span></q:template>` alone, for every slot candidate tried;
+  hidden=""><span>"No details"</span></q:template>` alone, for every slot candidate tried;
   `hazard`, `list` and `table` pass. `browser:qwik` passes every cell of all four.
 - `browser:react cases/spike`: `form` and `hazard` fail L7 and L9 on `- <input uf:value="hi">` /
   `+ <input uf:value="hi" value="hi">` alone; L8, L10, L11 and L13 pass, as do `list` and

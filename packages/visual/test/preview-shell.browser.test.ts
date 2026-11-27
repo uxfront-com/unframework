@@ -42,10 +42,9 @@ async function open(name: ShellFixture, targets?: Array<string>, hash = ""): Pro
 
 /** The names of a tree's or a group's own items, in order. */
 function names(list: Element): Array<string> {
-	return [...list.querySelectorAll(":scope > [role='treeitem']")].map((item) => {
-		const label = item.getAttribute("aria-labelledby");
-		return (label ? document.getElementById(label)! : item).textContent.trim();
-	});
+	return [...list.querySelectorAll(":scope > [role='treeitem']")].map((item) =>
+		item.querySelector(":scope > .row")!.textContent.trim(),
+	);
 }
 
 /** The group of the item named `name` among a list's own items. */

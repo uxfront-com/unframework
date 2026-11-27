@@ -588,6 +588,11 @@ describe("characters HTML would not keep", () => {
 		['<p title="a&#xFFFE;b">x</p>', "&#xFFFE;"],
 		['<p title="a&#xFDD0;b">x</p>', "&#xFDD0;"],
 		['<p data-x="a&#x10FFFF;b">x</p>', "&#x10FFFF;"],
+		// Every JSX implementation decodes a lone surrogate reference since oxc 0.155
+		// (oxc-project/oxc#26712), so it is the character it names, which HTML cannot encode
+		// (ADR-0127).
+		['<p title="a&#xD83D;b">x</p>', "&#xD83D;"],
+		['<p title="&#xD800;">x</p>', "&#xD800;"],
 	])("reports %s, without a fix", (jsx, at) => {
 		const { source, diagnostics } = component(jsx);
 		expect(codes(diagnostics)).toEqual(["UF3010"]);
@@ -603,17 +608,30 @@ describe("characters HTML would not keep", () => {
 });
 
 describe("references JSX implementations decode differently", () => {
-	it.each(['<p title="&#+65;">x</p>', '<p title="&#99999999;">x</p>', '<p title="&#xD800;">x</p>'])(
-		"reports %s",
-		(jsx) => {
-			expect(only(jsx).code).toBe("UF3009");
-		},
-	);
+	it.each(['<p title="&#+65;">x</p>', '<p title="&#99999999;">x</p>'])("reports %s", (jsx) => {
+		expect(only(jsx).code).toBe("UF3009");
+	});
 
-	it("fixes a surrogate pair to its code point, and still checks the attribute", () => {
-		const { source, diagnostics } = component('<p title="&#xD83D;&#xDE00;" TITLE="x">x</p>');
-		expect(codes(diagnostics)).toEqual(["UF3009", "UF3007"]);
-		expect(applyAndRecheck(source, diagnostics)).toContain('title="&#x1F600;"');
+	// Every implementation reads a surrogate pair as its character since oxc 0.155
+	// (oxc-project/oxc#26712, ADR-0127), so only the attribute named twice is reported.
+	// Two halves make one character only where the source writes them side by side: a `class`
+	// drops the whitespace between them, and a reference already reported stands between them.
+	it.each([
+		['<p class="&#xD83D; &#xDE00;">x</p>', ["UF3010", "UF3010"], ["&#xD83D;", "&#xDE00;"]],
+		[
+			'<p title="&#xD83D;&#1114112;&#xDE00;">x</p>',
+			["UF3009", "UF3010", "UF3010"],
+			["&#1114112;", "&#xD83D;", "&#xDE00;"],
+		],
+	])("reports each lone half in %s at its own place", (jsx, expected, at) => {
+		const { source, diagnostics } = component(jsx);
+		expect(codes(diagnostics).toSorted()).toEqual(expected);
+		expect(slices(source, diagnostics).toSorted()).toEqual(at.toSorted());
+	});
+
+	it("accepts a surrogate pair, and still checks the attribute", () => {
+		const { diagnostics } = component('<p title="&#xD83D;&#xDE00;" TITLE="x">x</p>');
+		expect(codes(diagnostics)).toEqual(["UF3007"]);
 	});
 });
 

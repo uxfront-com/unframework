@@ -296,9 +296,14 @@ describe("scopeStylesheet", () => {
 		);
 	});
 
-	// postcss reads only a lower-case `url(` to its `)`, as Vue's `compileStyle`, which fails too.
+	// postcss reads `url(` to its `)` only where the name has no escape, as Vue's `compileStyle`,
+	// which fails too. CSS reads `\75rl(` as `url(`, so lightningcss accepts the sheet.
 	it("reports a sheet postcss cannot read as UF5002, rather than scoping part of it", () => {
-		const result = scopeStylesheet("Card.css", ".a { background: URL(/*.png) } .b {}", ID);
+		const result = scopeStylesheet(
+			"Card.css",
+			String.raw`.a { background: \75rl(/*.png) } .b {}`,
+			ID,
+		);
 		expect(result.code).toBe("");
 		expect(result.diagnostics.map(({ code }) => code)).toEqual(["UF5002"]);
 	});
@@ -443,7 +448,7 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
 	});
 
 	it("points postcss's UF5002 into the sheet after a byte-order mark", () => {
-		const source = "\ufeff.a { background: URL(/*.png) } .b {}";
+		const source = "\ufeff.a { background: \\75rl(/*.png) } .b {}";
 		const { diagnostics } = scopeStylesheet("Card.css", source, ID);
 		expect(diagnostics.map(({ code, span }) => [code, span.start])).toEqual([
 			["UF5002", source.indexOf("/*")],

@@ -83,7 +83,7 @@ jobs:
           - group: solid2
             filter: --filter=@unframework.dev/target-solid2
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -202,7 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     strategy:
       fail-fast: false
       matrix:
@@ -254,7 +254,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     strategy:
       fail-fast: false
       matrix:
@@ -299,7 +299,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -399,7 +399,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     strategy:
       fail-fast: false
       matrix:
@@ -619,7 +619,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     env:
       UF_E2E_WORK_DIR: /tmp/unframework-e2e
     steps:
@@ -666,7 +666,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     env:
       UF_E2E_WORK_DIR: /tmp/unframework-e2e
     steps:

@@ -27,22 +27,22 @@ invariants, `portability.ts` and the schema):
 
 - **Module.**
   - `UfModule.imports?: ModuleImport[]`, absent when empty, as `emits` is: `{ specifier, file, api: ModuleApi, names: ImportedName[],
-span }`. `file` is the resolved `.uf.tsx`, relative to the importer, with forward slashes.
+    span }`. `file` is the resolved `.uf.tsx`, relative to the importer, with forward slashes.
     `ImportedName` is `{ kind: "Component" | "Key", imported, local, span }`.
   - `UfModule.keys?: InjectionKeyDeclaration[]`, absent when empty: `{ name, description, type:
-TypeText, ref?, span }`, each exported. `ref` is `"Ref"`, `"ComputedRef"` or `"ModelRef"` for a
+    TypeText, ref?, span }`, each exported. `ref` is `"Ref"`, `"ComputedRef"` or `"ModelRef"` for a
     key that holds a ref, read from the key's type as written: such a key is provided the ref whole,
     a `ComputedRef` key a `computed`, a `ModelRef` key a model and a `Ref` key any of the three, and
     its injection is read as `x.value`, with a ref as its fallback (UF2032 otherwise).
   - `ModuleApi` is what the resolver returns (ADR-0053): `{ file, components: ComponentApi[], keys:
-KeyApi[] }`. `ComponentApi` is `{ name, export: "default" | "named" | "local", props, events,
-models, slots, exposes, inheritAttrs, root, rootTag? }`: each prop, event, model and slot by
+    KeyApi[] }`. `ComponentApi` is `{ name, export: "default" | "named" | "local", props, events,
+    models, slots, exposes, inheritAttrs, root, rootTag? }`: each prop, event, model and slot by
     name, with its optionality and its type as written (for layer 2's literal unions); `exposes` the
     exposed names; `root` is `"element"`, `"component"` or `"other"`, and `rootTag` the root
     element's tag. `KeyApi` is `{ name, description, type, ref? }`.
 - **Component.** `UfComponent.slots?: Slots` (`{ binding, type, slots: SlotDeclaration[], span }`,
   each `{ name, optional, props?: TypeText, span }`), `UfComponent.exposes?: { functions:
-BindingId[], span }` and `UfComponent.inheritAttrs?: false`.
+  BindingId[], span }` and `UfComponent.inheritAttrs?: false`.
 - **Bindings.** `BindingKind` adds `model` (read and written as `x.value`, like `state`), `slots`,
   `slotScope` (a scoped fill's parameter), `context` (an injected value, read-only) and `component`
   (a component named in `<component is>`).
@@ -56,8 +56,8 @@ BindingId[], span }` and `UfComponent.inheritAttrs?: false`.
     `component` is the local name of an imported component or of one of the module's own;
   - `SlotOutlet { slot, props?: Expression, fallback: RenderNode[], span }`;
   - `Dynamic { is: Expression, candidates: ({ kind: "Tag", tag } | { kind: "Component", component
-})[], attributes: (Attribute | ComponentAttribute)[], children: RenderNode[], fills?: SlotFill[],
-span }`. Tag candidates take element attributes and children; component candidates take
+    })[], attributes: (Attribute | ComponentAttribute)[], children: RenderNode[], fills?: SlotFill[],
+    span }`. Tag candidates take element attributes and children; component candidates take
     component attributes and fills, each declared by every candidate (UF3035 and UF3038 otherwise).
 
   `ForNode.body` becomes `ElementNode | ComponentNode`.
@@ -66,11 +66,11 @@ span }`. Tag candidates take element attributes and children; component candidat
   (a static value is a literal expression), `Listener { event, handler: Handler, span }`,
   `ModelBinding { model, value: Expression, span }`, and the existing `Class`, `Style` and `Ref`.
 - **Fills.** `SlotFill { slot, parameter?: Parameter, children: RenderNode[], forward?: string,
-span }`: the default slot's fill is the children; `forward` names the parent's own slot a fill
+  span }`: the default slot's fill is the children; `forward` names the parent's own slot a fill
   passes on, with no children.
 - **An element's `v-model`.** `Model { value: Expression, control: "text" | "number" | "textarea" |
-"select" | "select-multiple" | "checkbox" | "checkbox-group" | "radio", trim?: true, lazy?: true,
-number?: true, span }`, an `Attribute`.
+  "select" | "select-multiple" | "checkbox" | "checkbox-group" | "radio", trim?: true, lazy?: true,
+  number?: true, span }`, an `Attribute`.
 - **Invariants** (ADR-0032) check that a `Component` names exactly one imported or local component,
   that each prop, listener, model and fill names a declaration of its `api`, that a `ModelBinding`
   or `Model` value is a `state` or `model` binding's `.value`, that a `context` binding is never

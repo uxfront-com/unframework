@@ -53,7 +53,7 @@ options need; the component.
   named tuple of exactly the arguments given otherwise (`output<[path: string, note?: string]>()`,
   `emit([path])`), which the mount adapter spreads back (ADR-0047). The output keeps the event's
   name, which is the component's API, also where a setup binding has it (`function save() {
-emit("save") }`): the class's own member takes another name instead (`src/plan.ts`,
+  emit("save") }`): the class's own member takes another name instead (`src/plan.ts`,
   `withOutputNames`), `onSave` for a local function, `fieldElement` for a template ref and
   `currentPage` for any other value, since angular-eslint's `no-output-rename` rejects an alias.
 - **Template.** One `@let name = this.name();` per signal the template reads (an input, a
@@ -340,8 +340,8 @@ is written through `set`), so a listener is (`src/listeners.ts`):
   `return;`, `return save();` is `this.save(); return;` (a value would prevent the event, and a
   value on some paths only fails `noImplicitReturns`). Only what changes something stays
   (`src/statements.ts`): a read of a signal (`this.count()`) is no change, so `return
-count.value > 0;` is `return;`, and a branch or a side that changes nothing goes (`c ? save() :
-false` is `if (c) this.save();`).
+  count.value > 0;` is `return;`, and a branch or a side that changes nothing goes (`c ? save() :
+  false` is `if (c) this.save();`).
 - `(ufClickCapture)="record('capture')"`: a listener with an option. Templates have no syntax for
   one, so the file declares an exported attribute directive per event and option
   (`[ufClickCapture]`, `[ufClickOnce]`, `[ufWheelPassive]`, emulated), which listens to its element

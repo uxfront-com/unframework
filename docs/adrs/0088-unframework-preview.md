@@ -26,7 +26,7 @@ The other six adapters import no Vitest. ADR-0083 kept an earlier preview on a S
 ## Decision
 
 - **One Vite dev server per target, and a shell server.** `startPreview({ root, targets?, port?,
-toolchainDirs? })` in `@unframework.dev/visual` starts a dev server for each of the project's
+  toolchainDirs? })` in `@unframework.dev/visual` starts a dev server for each of the project's
   targets, or the ones asked for: the unframework plugin with that target, the target's
   `vite("browser")` fragment, and the preview's own plugin. Each listens on `127.0.0.1` on a port
   the system picks, so each frame has an origin of its own, and keeps its dependency cache in

@@ -79,6 +79,7 @@ export default {
 
 ```tsx
 import { button } from "virtual:styleframe";
+
 import "virtual:styleframe.css";
 ```
 
@@ -333,8 +334,8 @@ A package can ship its `.uf.tsx` and `.uf.ts` files for its consumers to compile
 ```
 
 ```ts
-import Button from "@acme/ui/source/Button.uf.tsx";
 import Same from "@acme/ui/button";
+import Button from "@acme/ui/source/Button.uf.tsx";
 ```
 
 Both imports load one module, on Vite and Rollup's family. What decides is the file a bare specifier

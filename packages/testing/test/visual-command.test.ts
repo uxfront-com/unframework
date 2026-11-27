@@ -470,7 +470,7 @@ describe("ufVisualCapture with baseline pixels", () => {
 	it("refuses to write the committed baselines outside the baseline environment", async () => {
 		for (const baselineEnvironment of [
 			null,
-			"mcr.microsoft.com/playwright:v1.63.0-noble linux/arm64",
+			"mcr.microsoft.com/playwright:v1.65.1-noble linux/arm64",
 		]) {
 			const result = await ufVisualCapture(
 				context(
