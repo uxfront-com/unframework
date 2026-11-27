@@ -14,7 +14,9 @@ describeTargets("dynamic/default-slot", () => {
 		const docs = view.getByRole("link", { name: "Read the docs" });
 		await expect.element(docs).toHaveAttribute("href", "#docs");
 		await expect.element(docs.getByText("Read the docs")).toHaveAttribute("data-slot", "label");
-		await expect.element(view.getByRole("button", { name: "Save the draft" })).toHaveClass("action");
+		await expect
+			.element(view.getByRole("button", { name: "Save the draft" }))
+			.toHaveClass("action");
 		// The parent leaves the slot empty: the label renders as its fallback.
 		await expect.element(view.getByRole("link", { name: "Home" })).toHaveAttribute("href", "#home");
 		await expect.element(view.getByRole("button", { name: "Close" })).toHaveClass("action");

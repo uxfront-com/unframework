@@ -142,12 +142,14 @@ export function template(
 		: models.render;
 	// The default slot a `<component is>`'s cases render from one template (ADR-0124): the tree
 	// printed is a copy, so the nodes are found in it.
-	const hoisted = defaultSlot && hoistedDefaultSlot(render);
-	const slotTemplate: MarkupPiece | undefined = hoisted && {
+	const found = defaultSlot && hoistedDefaultSlot(render);
+	const hoisted = found && { ...found, ref: defaultSlot.ref };
+	/** Where a case renders the slot: the template, through `ngTemplateOutlet`. */
+	const renderSlot = (ref: string): MarkupPiece => ({
 		kind: "tag",
 		tag: "ng-container",
-		attributes: [{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${defaultSlot!.ref}"` }],
-	};
+		attributes: [{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${ref}"` }],
+	});
 	const dialect: MarkupDialect = {
 		...angularDialect,
 		// `<ng-template #defaultSlot><ng-content>…</ng-content></ng-template>` before the `@switch`:
@@ -164,17 +166,21 @@ export function template(
 				{
 					kind: "tag",
 					tag: "ng-template",
-					attributes: [{ name: `#${defaultSlot!.ref}`, text: `#${defaultSlot!.ref}` }],
+					attributes: [{ name: `#${hoisted.ref}`, text: `#${hoisted.ref}` }],
 					content,
 				},
 				...pieces,
 			];
 		},
 		slotOutlet: (outlet) =>
-			outlet.node === hoisted?.outlet ? [slotTemplate!] : angularDialect.slotOutlet!(outlet),
+			hoisted && outlet.node === hoisted.outlet
+				? [renderSlot(hoisted.ref)]
+				: angularDialect.slotOutlet!(outlet),
 		fills: (fills, context) =>
 			fills.flatMap((each) =>
-				each.fill === hoisted?.forward ? [slotTemplate!] : angularDialect.fills!([each], context),
+				hoisted && each.fill === hoisted.forward
+					? [renderSlot(hoisted.ref)]
+					: angularDialect.fills!([each], context),
 			),
 		// `<ng-template ufTeleport="body">`, whose directive mounts it into `to` (ADR-0098).
 		teleport: ({ node }) => [
