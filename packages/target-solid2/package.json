@@ -1,6 +1,6 @@
 {
 	"name": "@unframework.dev/target-solid2",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "The Solid 2 target of the Unframework compiler, selected as solid@2: emits idiomatic Solid 2 components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
 	"keywords": [
 		"compiler",

@@ -1,6 +1,6 @@
 {
 	"name": "@unframework.dev/cli",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "The `unframework` command line: `build`, `check`, `explain` and `init`.",
 	"keywords": [
 		"unframework"

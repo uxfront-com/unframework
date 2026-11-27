@@ -1,5 +1,11 @@
 # @unframework.dev/cli
 
+## 0.3.2
+
+### Patch Changes
+
+- @unframework.dev/compiler@0.4.2
+
 ## 0.3.1
 
 ### Patch Changes

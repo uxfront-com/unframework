@@ -1,5 +1,24 @@
 # @unframework.dev/compiler
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [5b03f5d]
+- Updated dependencies [5b03f5d]
+- Updated dependencies [5b03f5d]
+  - @unframework.dev/target-angular@0.5.0
+  - @unframework.dev/ir@0.5.0
+  - @unframework.dev/analyzer@0.5.0
+  - @unframework.dev/codegen@0.5.0
+  - @unframework.dev/target-solid@0.4.1
+  - @unframework.dev/target-solid2@0.3.1
+  - @unframework.dev/target-astro@0.4.2
+  - @unframework.dev/target-qwik@0.4.1
+  - @unframework.dev/target-react@0.4.1
+  - @unframework.dev/target-svelte@0.4.1
+  - @unframework.dev/target-vue@0.3.1
+
 ## 0.4.1
 
 ### Patch Changes
