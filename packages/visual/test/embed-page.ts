@@ -4,7 +4,7 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import type { Frame, FrameLocator, Page } from "playwright";
+import type { Frame, FrameLocator, Locator, Page } from "playwright";
 import { expect } from "vitest";
 
 import type { ExampleControlGroup } from "../src/preview/instrument.ts";
@@ -74,7 +74,7 @@ export function expectedPanel(groups: ReadonlyArray<ExampleControlGroup>): Array
 		name: group.name,
 		controls: group.controls.map((control) => control.name),
 		setByExample: group.setByExample,
-		uncontrolled: group.uncontrolled.map((each) => `${each.name}: ${each.reason}.`),
+		uncontrolled: group.uncontrolled.map((each) => `${each.name}: ${each.reason}, ${each.type}`),
 	}));
 }
 
@@ -86,19 +86,47 @@ export function panel(frame: FrameLocator | Page | Frame): Promise<Array<PanelGr
 			return null;
 		}
 		const list = (group: Element, title: string) => {
-			const heading = [...group.querySelectorAll("h4")].find((each) => each.textContent === title);
+			const heading = [...group.querySelectorAll("h3")].find((each) => each.textContent === title);
 			return heading
 				? [...heading.nextElementSibling!.querySelectorAll("li")].map((each) => each.textContent)
 				: [];
 		};
+		// A group's name is the text of what its `aria-labelledby` names, as its accessible name is.
+		const name = (group: Element) =>
+			group
+				.getAttribute("aria-labelledby")!
+				.split(" ")
+				.map((id) => root.getElementById(id)!.textContent)
+				.join(" ");
+		// One entry per field: its prop name as the panel shows it, without " (changed)" or the
+		// type, and once for a row of segments, never its choices.
+		const prop = (field: Element) =>
+			[...field.querySelector(".uf-name")!.childNodes]
+				.filter((node) => !(node instanceof Element && node.matches(".visually-hidden")))
+				.map((node) => node.textContent)
+				.join("");
 		return [...root.querySelectorAll<HTMLElement>("[data-uf-group]")].map((group) => ({
 			component: group.dataset.ufGroup!,
-			name: group.querySelector("h3")!.textContent,
-			controls: [...group.querySelectorAll("label")].map((each) => each.textContent),
+			name: name(group),
+			controls: [...group.querySelectorAll("[data-uf-field]")].map(prop),
 			setByExample: list(group, "Set by the example"),
 			uncontrolled: list(group, "Not controllable"),
 		}));
 	});
+}
+
+/**
+ * The segment `choice` of the control for the prop `name` in `scope`, changed or not: "Default"
+ * for its unset choice. A short choice is a row of radios, which a test checks.
+ */
+export function segment(
+	scope: Locator | Page | FrameLocator,
+	name: string,
+	choice: string,
+): Locator {
+	return scope
+		.getByRole("group", { name: new RegExp(`^${name}( \\(changed\\))?$`) })
+		.getByRole("radio", { name: choice, exact: true });
 }
 
 /** Where the example's `Save`, the panel and its first field sit in a frame, with the panel at its top. */
@@ -112,9 +140,13 @@ export interface FieldPlace {
 	field: { top: number; bottom: number };
 }
 
-/** Reads where the first field of an embed's panel sits. */
-export function fieldPlace(frame: FrameLocator | Page | Frame): Promise<FieldPlace> {
-	return frame.locator("body").evaluate(() => {
+/**
+ * Reads where the first field of an embed's panel sits: its name (a `label` or a `legend`) and its
+ * whole visible control (an input, a select, or the row that holds every segment), which must be
+ * visible and never a radio, so a hidden radio can't stand in for the control.
+ */
+export async function fieldPlace(frame: FrameLocator | Page | Frame): Promise<FieldPlace> {
+	const { control, ...place } = await frame.locator("body").evaluate(() => {
 		const host = document.querySelector<HTMLElement>("uf-embed-controls")!;
 		const root = host.shadowRoot!;
 		const box = (element: Element) => {
@@ -124,15 +156,21 @@ export function fieldPlace(frame: FrameLocator | Page | Frame): Promise<FieldPla
 		const save = [...document.querySelectorAll("button")].find(
 			(each) => each.textContent?.trim() === "Save",
 		)!;
+		const first = root.querySelector("[data-uf-field]")!;
+		const field = first.querySelector(".uf-segments, input, select")!;
 		return {
 			innerHeight,
 			area: box(document.querySelector("[data-uf-embed-example]")!),
 			save: box(save),
 			panel: { ...box(host), scrollTop: host.scrollTop },
-			label: box(root.querySelector("label")!),
-			field: box(root.querySelector("input, select")!),
+			label: box(first.querySelector(".uf-name")!),
+			field: box(field),
+			control: { visible: field.checkVisibility(), radio: field.matches("input[type='radio']") },
 		};
 	});
+	expect(control.visible, "the first field's control is visible").toBe(true);
+	expect(control.radio, "the first field's control is not a radio").toBe(false);
+	return place;
 }
 
 /** Asserts the first field's whole box is in the frame's viewport and in the panel's visible box. */

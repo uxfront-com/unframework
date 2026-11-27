@@ -2,14 +2,15 @@
 // shell's browser test see them: `shell-fixture.ts` implements the commands in Node.
 
 /**
- * The design system's catalogue, a project whose examples nest and order by metadata, and two
- * whose examples have controls (ADR-0113).
+ * The design system's catalogue, a project whose examples nest and order by metadata, two whose
+ * examples have controls (ADR-0113), and a component with the controls panel's edge cases.
  */
 export const SHELL_FIXTURES = [
 	"design-system",
 	"shell-tree",
 	"example-controls",
 	"example-twins",
+	"panel-controls",
 ] as const;
 export type ShellFixture = (typeof SHELL_FIXTURES)[number];
 

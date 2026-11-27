@@ -126,25 +126,42 @@ describe("startFrame, standalone with an embed's options", () => {
 		expect(shadow().querySelector("[data-uf-group]")!.getAttribute("aria-labelledby")).toBe(
 			"uf-controls-0",
 		);
+		const name = (each: Element) =>
+			each.classList.contains("uf-name")
+				? [...each.childNodes]
+						.filter((node) => !(node instanceof Element && node.matches(".visually-hidden")))
+						.map((node) => node.textContent)
+						.join("")
+				: each.textContent;
 		expect(
-			[...shadow().querySelectorAll("h3, h4, label, li")].map((each) => each.textContent),
+			[...shadow().querySelectorAll(".uf-title, .uf-name, h3, li")].map((each) => name(each)),
 		).toEqual([
 			"Button",
 			"variant",
 			"Set by the example",
 			"size",
 			"Not controllable",
-			"icon: its type is not one.",
+			"icon: its type is not one, Element",
 		]);
-		const select = shadow().querySelector("select")!;
-		const choose = (value: string) => {
-			select.value = value;
-			select.dispatchEvent(new Event("input", { bubbles: true }));
-		};
+		// `variant` is a row of segments, "Default" first and checked.
+		const variant = shadow().querySelector("fieldset")!;
+		const radios = [...variant.querySelectorAll<HTMLInputElement>("input[type='radio']")];
+		expect(radios.map((radio) => radio.parentElement!.textContent)).toEqual([
+			"Default",
+			"primary",
+			"secondary",
+		]);
+		expect(radios[0]!.checked).toBe(true);
+		const status = () => shadow().querySelector("[role='status']")!;
+		expect(status().textContent).toBe("Every control at its default");
+		const choose = (value: string) => radios.find((radio) => radio.value === value)!.click();
 
 		choose("primary");
 		await vi.waitFor(() => expect(calls.rerenders).toEqual([{ ufControl0: "primary" }]));
 		expect(area().textContent).toBe('{"ufControl0":"primary"}');
+		expect(status().textContent).toBe("1 changed");
+		expect(variant.hasAttribute("data-changed")).toBe(true);
+		expect(variant.querySelector("legend")!.textContent).toBe("variant (changed)");
 
 		choose("secondary");
 		await vi.waitFor(() => expect(area().dataset.failed).toBe(""));
@@ -154,12 +171,28 @@ describe("startFrame, standalone with an embed's options", () => {
 		expect(getComputedStyle(area().querySelector("[data-uf-preview-root]")!).display).toBe("none");
 		expect(document.querySelector("uf-embed-controls")).not.toBeNull();
 
-		// "(default)" sends no props, and the example comes back.
+		// "Default" sends no props, and the example comes back.
 		choose("");
 		await vi.waitFor(() => expect(area().dataset.failed).toBeUndefined());
 		expect(calls.rerenders.at(-1)).toEqual({});
 		expect(area().querySelector("[data-uf-embed-failure]")).toBeNull();
 		expect(area().querySelector("[data-uf-preview-root]")!.textContent).toBe("{}");
+		expect(status().textContent).toBe("Every control at its default");
+
+		// Reset all, beside the count, renders the example as written again.
+		choose("primary");
+		await vi.waitFor(() => expect(calls.rerenders.at(-1)).toEqual({ ufControl0: "primary" }));
+		const resetAll = [...shadow().querySelectorAll("button")].find(
+			(each) => each.textContent === "Reset all",
+		)!;
+		expect(resetAll.type).toBe("button");
+		expect(resetAll.checkVisibility()).toBe(true);
+		resetAll.click();
+		await vi.waitFor(() => expect(calls.rerenders.at(-1)).toEqual({}));
+		expect(radios[0]!.checked).toBe(true);
+		expect(status().textContent).toBe("Every control at its default");
+		expect(resetAll.checkVisibility()).toBe(false);
+		expect(shadow().activeElement).toBe(shadow().querySelector("h2"));
 
 		// A field's Enter submits its form, which must not load the page again.
 		const submitted = new SubmitEvent("submit", { bubbles: true, cancelable: true });
@@ -172,7 +205,11 @@ describe("startFrame, standalone with an embed's options", () => {
 		const calls: Calls = { mounts: [], rerenders: [] };
 		startFrame({ ...frameOptions(calls), controls: {} });
 		await vi.waitFor(() => expect(calls.mounts).toHaveLength(1));
-		expect(shadow().querySelector("p")!.textContent).toBe("This example has no controls.");
+		expect(shadow().querySelector(".controls > p")!.textContent).toBe(
+			"This example has no controls.",
+		);
+		// The message shows alone, with no status line.
+		expect(shadow().querySelector("[data-uf-status-line]")!.checkVisibility()).toBe(false);
 		expect(shadow().querySelectorAll("[data-uf-group], input, select")).toHaveLength(0);
 		expect(area().textContent).toBe("Save");
 	});

@@ -1,7 +1,8 @@
 // The preview's prop controls (ADR-0088, A4 of the M7 plan): a prop gets one when its type is
 // `boolean`, `string`, `number` or a union of string literals, read from the component's API as
 // the resolver reports it (`ApiMember.type` and its resolved `literals`). Any other type is named
-// as not controllable, with the type as written, so the shell says why.
+// as not controllable, with the type as written and a short phrase for what it is, so the panel
+// says why.
 import type { ApiMember } from "@unframework.dev/ir";
 
 /** A prop the shell can set, and the value it starts with. */
@@ -49,7 +50,7 @@ export function controlOf(member: ApiMember): PropControl | string {
 	// The literals an alias resolves to come first: the text as written (`Tone`) names none.
 	const members = member.literals?.length ? member.literals : unionMembers(member.type);
 	if (!members) {
-		return `its type, ${member.type}, is not one the preview can set`;
+		return reasonOf(member.type);
 	}
 	// `undefined` in a union only says the prop may be left out, which an optional control does.
 	const values = members.filter((each) => each !== "undefined");
@@ -80,7 +81,25 @@ export function controlOf(member: ApiMember): PropControl | string {
 			initial: options[0]!,
 		};
 	}
-	return `its type, ${member.type}, is not boolean, string, number or a union of string literals`;
+	return values.every((each) => /^-?\d/.test(each)) ? "a union of numbers" : reasonOf(member.type);
+}
+
+/**
+ * A short phrase for what a type the preview can't set is, without the type itself, which the
+ * panel prints after it (`meta: an object, { id: string }`).
+ */
+function reasonOf(type: string): string {
+	const text = type.trim();
+	if (text.startsWith("{") || text.startsWith("Record<")) {
+		return "an object";
+	}
+	if (text.includes("=>")) {
+		return "a function";
+	}
+	if (text.endsWith("[]") || /^(Readonly)?Array</.test(text) || text.startsWith("[")) {
+		return "an array";
+	}
+	return "a type the preview can't set";
 }
 
 /**

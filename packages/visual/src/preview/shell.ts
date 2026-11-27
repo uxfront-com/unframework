@@ -270,12 +270,11 @@ export function shellPage(data: ShellData): string {
       <div class="frames" data-view="${single ? "one" : "all"}"></div>
     </main>
     <section class="controls" aria-labelledby="uf-controls-label">
-      <h2 id="uf-controls-label">Controls</h2>
+      <div class="uf-head"><h2 id="uf-controls-label" tabindex="-1">Controls</h2></div>
       <p data-uf-no-controls>Select an example or a component to set its props.</p>
       <div data-uf-example-controls hidden></div>
       <form data-uf-controls aria-labelledby="uf-controls-label" hidden></form>
-      <h3 id="uf-uncontrolled-label" hidden>Not controllable</h3>
-      <ul data-uf-uncontrolled aria-labelledby="uf-uncontrolled-label" hidden></ul>
+      <div data-uf-component-reference hidden></div>
     </section>
     <dialog aria-labelledby="uf-shortcuts-label">
       <h2 id="uf-shortcuts-label">Keyboard shortcuts</h2>
@@ -329,13 +328,19 @@ function shellScript(
 	const form = $<HTMLFormElement>("[data-uf-controls]");
 	const exampleBox = $<HTMLElement>("[data-uf-example-controls]");
 	const noControls = $<HTMLElement>("[data-uf-no-controls]");
-	const uncontrolled = $<HTMLElement>("[data-uf-uncontrolled]");
-	const uncontrolledLabel = $<HTMLElement>("#uf-uncontrolled-label");
+	const componentReference = $<HTMLElement>("[data-uf-component-reference]");
+	const controlsHeading = $<HTMLElement>("#uf-controls-label");
 	const themeButton = $<HTMLButtonElement>("[data-uf-theme]");
 	const dialog = $<HTMLDialogElement>("dialog");
 	const chevron = $<HTMLTemplateElement>("#uf-chevron");
 	// The fields and the props rule, shared with an embed's controls (ADR-0116).
 	const kit = makeKit();
+	// The panel's line: how many controls changed, and Reset all for the selection's fields.
+	const statusLine = kit.statusLine(
+		() => (current ? form : currentExample ? exampleBox : undefined),
+		controlsHeading,
+	);
+	controlsHeading.after(statusLine);
 	let selected: string | undefined;
 	// The component whose controls the form shows: one listener reads it on each input.
 	let current: Component | undefined;
@@ -465,14 +470,11 @@ function shellScript(
 
 	// Controls.
 	const propsOf = (controls: ReadonlyArray<Control>): Record<string, unknown> =>
-		kit.componentProps(
-			controls,
-			(name) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement,
-		);
+		kit.componentProps(controls, (name) => kit.field(form, name));
 	const exampleProps = (example: Example): Record<string, unknown> =>
 		kit.exampleProps(
 			example.controls.flatMap((group) => group.controls),
-			(key) => exampleBox.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${key}"]`)!,
+			(key) => kit.field(exampleBox, key),
 		);
 
 	form.addEventListener("input", () => {
@@ -480,6 +482,7 @@ function shellScript(
 			return;
 		}
 		props = propsOf(current.controls);
+		kit.refresh(form, statusLine);
 		sendAll();
 	});
 	form.addEventListener("submit", (event) => event.preventDefault());
@@ -488,6 +491,7 @@ function shellScript(
 			return;
 		}
 		props = exampleProps(currentExample);
+		kit.refresh(exampleBox, statusLine);
 		sendAll();
 	});
 	exampleBox.addEventListener("submit", (event) => event.preventDefault());
@@ -505,14 +509,16 @@ function shellScript(
 		noControls.hidden = groups.length > 0;
 		noControls.textContent = "This example has no controls.";
 		exampleBox.append(...kit.exampleGroups(groups));
+		kit.refresh(exampleBox, statusLine);
 	};
 
 	const showControls = (component: Component | undefined) => {
 		current = component;
 		form.replaceChildren();
-		uncontrolled.replaceChildren();
+		componentReference.replaceChildren();
 		form.hidden = !component?.controls.length;
-		uncontrolled.hidden = uncontrolledLabel.hidden = !component?.uncontrolled.length;
+		componentReference.hidden = !component?.uncontrolled.length;
+		kit.refresh(undefined, statusLine);
 		// The message depends on the selection, so it is set on every call: a component
 		// with no props must not leave its text behind for the example selected next.
 		const bare =
@@ -525,15 +531,13 @@ function shellScript(
 			return;
 		}
 		for (const control of component.controls) {
-			form.append(...kit.controlField(control, control.name, `uf-prop-${control.name}`));
+			form.append(kit.controlField(control, control.name, `uf-prop-${control.name}`));
 		}
-		for (const each of component.uncontrolled) {
-			const item = document.createElement("li");
-			const name = document.createElement("code");
-			name.textContent = each.name;
-			item.append(name, `: ${each.reason}.`);
-			uncontrolled.append(item);
+		const lists = kit.reference("uf-component", [], component.uncontrolled);
+		if (lists) {
+			componentReference.append(lists);
 		}
+		kit.refresh(form, statusLine);
 	};
 
 	// The trees. Each item is a `treeitem`; a group holds its children in a `group` list.
@@ -791,7 +795,7 @@ function shellScript(
 				`Open ${example.title} on ${frame.target} in a new tab`,
 			);
 		}
-		// An example starts as written: every control at "(default)", so it takes no props.
+		// An example starts as written: every control at "Default", so it takes no props.
 		props = component ? propsOf(component.controls) : {};
 		if (location.hash !== `#${key}`) {
 			history.replaceState(null, "", `#${key}`);
