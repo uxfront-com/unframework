@@ -1,5 +1,13 @@
 # @unframework.dev/visual
 
+## 0.5.3
+
+### Patch Changes
+
+- @unframework.dev/compiler@0.4.1
+  - @unframework.dev/testing@0.3.4
+  - @unframework.dev/unplugin@0.4.1
+
 ## 0.5.2
 
 ### Patch Changes
