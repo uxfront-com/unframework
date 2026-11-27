@@ -238,7 +238,7 @@
         "flex-direction": "row",
         "flex-wrap": "nowrap",
         "justify-content": "normal",
-        "align-items": "flex-start",
+        "align-items": "flow-start",
         "row-gap": "normal",
         "column-gap": "normal",
         "grid-template-columns": "none",

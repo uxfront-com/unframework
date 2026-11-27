@@ -546,7 +546,6 @@ function shellScript(
 	}
 	const items = new Map<HTMLElement, Item>();
 	const entries = new Map<string, HTMLElement>();
-	let idCount = 0;
 	const makeItem = (
 		list: HTMLElement,
 		parent: Item | undefined,
@@ -567,9 +566,9 @@ function shellScript(
 		row.append(text);
 		element.append(row);
 		if (key === undefined) {
-			// A group's name is its label alone, not its children's text.
-			text.id = `uf-group-${(idCount += 1)}`;
-			element.setAttribute("aria-labelledby", text.id);
+			// A group's name comes from its row alone: browsers leave the nested group out of a tree
+			// item's name. An `aria-labelledby` here would make axe-core's
+			// `label-content-name-mismatch` fail the item, because its visible text includes the group.
 			element.setAttribute("aria-expanded", "true");
 			const group = document.createElement("ul");
 			group.setAttribute("role", "group");

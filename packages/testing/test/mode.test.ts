@@ -127,14 +127,14 @@ describe("resolveHarnessMode", () => {
 			[
 				{
 					UF_UPDATE: "1",
-					UF_BASELINE_ENVIRONMENT: "mcr.microsoft.com/playwright:v1.63.0-noble linux/arm64",
+					UF_BASELINE_ENVIRONMENT: "mcr.microsoft.com/playwright:v1.65.1-noble linux/arm64",
 				},
 				"linux",
 				"arm64",
 			],
 		] as const) {
 			expect(() => resolve(env, platform, [], arch)).toThrow(
-				/would write the committed Linux baselines, which only mcr\.microsoft\.com\/playwright:v1\.63\.0-noble linux\/amd64 writes/,
+				/would write the committed Linux baselines, which only mcr\.microsoft\.com\/playwright:v1\.65\.1-noble linux\/amd64 writes/,
 			);
 		}
 		// A plain update elsewhere writes everything but the visual baselines.
@@ -143,7 +143,7 @@ describe("resolveHarnessMode", () => {
 
 	it("refuses a baseline environment the platform contradicts", () => {
 		expect(() => resolve(container, "darwin", [], "arm64")).toThrow(
-			/says mcr\.microsoft\.com\/playwright:v1\.63\.0-noble linux\/amd64, but this run is on darwin\/arm64/,
+			/says mcr\.microsoft\.com\/playwright:v1\.65\.1-noble linux\/amd64, but this run is on darwin\/arm64/,
 		);
 	});
 
