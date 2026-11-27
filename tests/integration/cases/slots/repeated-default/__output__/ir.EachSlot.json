@@ -1,0 +1,230 @@
+{
+  "irVersion": 1,
+  "file": "slots/repeated-default/EachSlot.uf.tsx",
+  "components": [
+    {
+      "name": "EachSlot",
+      "span": {
+        "start": 146,
+        "end": 478
+      },
+      "props": [
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 199,
+              "end": 207
+            }
+          },
+          "binding": "items@181",
+          "span": {
+            "start": 192,
+            "end": 207
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ items: string[] }",
+          "span": {
+            "start": 190,
+            "end": 209
+          }
+        },
+        "span": {
+          "start": 179,
+          "end": 209
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@221",
+        "type": {
+          "code": "{ row?(props: { item: string }): Element }",
+          "span": {
+            "start": 241,
+            "end": 283
+          }
+        },
+        "slots": [
+          {
+            "name": "row",
+            "optional": true,
+            "props": {
+              "code": "{ item: string }",
+              "span": {
+                "start": 255,
+                "end": 271
+              }
+            },
+            "span": {
+              "start": 243,
+              "end": 281
+            }
+          }
+        ],
+        "span": {
+          "start": 215,
+          "end": 287
+        }
+      },
+      "bindings": [
+        {
+          "id": "items@181",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 181,
+            "end": 186
+          }
+        },
+        {
+          "id": "slots@221",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 221,
+            "end": 226
+          }
+        },
+        {
+          "id": "item@346",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 346,
+            "end": 350
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "each-slot",
+            "span": {
+              "start": 309,
+              "end": 326
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "items",
+              "span": {
+                "start": 335,
+                "end": 340
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@181",
+                  "span": {
+                    "start": 335,
+                    "end": 340
+                  }
+                }
+              ]
+            },
+            "item": "item@346",
+            "key": {
+              "code": "item",
+              "span": {
+                "start": 376,
+                "end": 380
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "item@346",
+                  "span": {
+                    "start": 376,
+                    "end": 380
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "span",
+              "attributes": [
+                {
+                  "kind": "Static",
+                  "name": "class",
+                  "value": "each-row",
+                  "span": {
+                    "start": 382,
+                    "end": 398
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "kind": "SlotOutlet",
+                  "slot": "row",
+                  "props": {
+                    "code": "{ item }",
+                    "span": {
+                      "start": 423,
+                      "end": 431
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "item@346",
+                        "span": {
+                          "start": 425,
+                          "end": 429
+                        },
+                        "shorthand": true
+                      }
+                    ]
+                  },
+                  "fallback": [],
+                  "span": {
+                    "start": 410,
+                    "end": 433
+                  }
+                }
+              ],
+              "span": {
+                "start": 365,
+                "end": 449
+              }
+            },
+            "span": {
+              "start": 335,
+              "end": 458
+            }
+          }
+        ],
+        "span": {
+          "start": 303,
+          "end": 471
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "EachSlot",
+      "span": {
+        "start": 146,
+        "end": 478
+      }
+    }
+  ],
+  "types": []
+}

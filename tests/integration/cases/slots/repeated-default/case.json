@@ -1,0 +1,4 @@
+{
+	"description": "A default slot the component renders more than once at a time: in each row of a list, in a header and a footer at once, under a list inside a <component is>, in both branches of a conditional a <Transition> animates while one leaves, and in a scoped fill inside a <component is> of a child that renders the fill once per row, renders the fill in each place. In a scoped fill of a child that renders it once, it renders once.",
+	"main": "Shelf.uf.tsx"
+}

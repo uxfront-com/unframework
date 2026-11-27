@@ -1,0 +1,396 @@
+{
+  "irVersion": 1,
+  "file": "slots/repeated-default/EachAction.uf.tsx",
+  "components": [
+    {
+      "name": "EachAction",
+      "span": {
+        "start": 299,
+        "end": 675
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 360,
+              "end": 366
+            }
+          },
+          "binding": "href@336",
+          "span": {
+            "start": 353,
+            "end": 367
+          }
+        },
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 375,
+              "end": 383
+            }
+          },
+          "binding": "items@342",
+          "span": {
+            "start": 368,
+            "end": 383
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ href?: string; items: string[] }",
+          "span": {
+            "start": 351,
+            "end": 385
+          }
+        },
+        "span": {
+          "start": 334,
+          "end": 385
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@397",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 417,
+            "end": 440
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 419,
+              "end": 438
+            }
+          }
+        ],
+        "span": {
+          "start": 391,
+          "end": 444
+        }
+      },
+      "bindings": [
+        {
+          "id": "href@336",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 336,
+            "end": 340
+          }
+        },
+        {
+          "id": "items@342",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 342,
+            "end": 347
+          }
+        },
+        {
+          "id": "slots@397",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 397,
+            "end": 402
+          }
+        },
+        {
+          "id": "item@561",
+          "name": "item",
+          "kind": "slotScope",
+          "span": {
+            "start": 561,
+            "end": 565
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "href ? \"a\" : \"button\"",
+              "span": {
+                "start": 475,
+                "end": 496
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@336",
+                  "span": {
+                    "start": 475,
+                    "end": 479
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "a"
+              },
+              {
+                "kind": "Tag",
+                "tag": "button"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 504,
+                    "end": 508
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@336",
+                      "span": {
+                        "start": 504,
+                        "end": 508
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 498,
+                  "end": 509
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Component",
+                "component": "EachSlot",
+                "attributes": [
+                  {
+                    "kind": "Prop",
+                    "name": "items",
+                    "value": {
+                      "code": "items",
+                      "span": {
+                        "start": 534,
+                        "end": 539
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "items@342",
+                          "span": {
+                            "start": 534,
+                            "end": 539
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 527,
+                      "end": 540
+                    }
+                  }
+                ],
+                "fills": [
+                  {
+                    "slot": "row",
+                    "parameter": {
+                      "pattern": {
+                        "code": "{ item }",
+                        "names": [
+                          "item"
+                        ],
+                        "span": {
+                          "start": 559,
+                          "end": 567
+                        }
+                      },
+                      "span": {
+                        "start": 559,
+                        "end": 567
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "span",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "each-fill",
+                            "span": {
+                              "start": 578,
+                              "end": 595
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "SlotOutlet",
+                            "slot": "default",
+                            "fallback": [
+                              {
+                                "kind": "Interpolation",
+                                "value": {
+                                  "code": "item",
+                                  "span": {
+                                    "start": 618,
+                                    "end": 622
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "item@561",
+                                      "span": {
+                                        "start": 618,
+                                        "end": 622
+                                      }
+                                    }
+                                  ]
+                                },
+                                "span": {
+                                  "start": 618,
+                                  "end": 622
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 596,
+                              "end": 623
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 572,
+                          "end": 630
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 553,
+                      "end": 630
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 517,
+                  "end": 651
+                }
+              }
+            ],
+            "only": [
+              {
+                "name": "href",
+                "tags": [
+                  "a"
+                ]
+              }
+            ],
+            "span": {
+              "start": 460,
+              "end": 668
+            }
+          }
+        ],
+        "span": {
+          "start": 460,
+          "end": 668
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "EachAction",
+      "span": {
+        "start": 299,
+        "end": 675
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./EachSlot.uf.tsx",
+      "file": "EachSlot.uf.tsx",
+      "api": {
+        "file": "EachSlot.uf.tsx",
+        "components": [
+          {
+            "name": "EachSlot",
+            "export": "default",
+            "props": [
+              {
+                "name": "items",
+                "optional": false,
+                "type": "string[]"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "row",
+                "optional": true,
+                "props": "{ item: string }"
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span",
+            "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "each-slot"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "span"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "EachSlot",
+          "span": {
+            "start": 113,
+            "end": 121
+          }
+        }
+      ],
+      "span": {
+        "start": 106,
+        "end": 147
+      }
+    }
+  ]
+}

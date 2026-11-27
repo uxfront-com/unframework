@@ -1,0 +1,26 @@
+---
+import EachSlot from "./EachSlot.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"a"> & HTMLAttributes<"button">, "href" | "items"> {
+  href?: string;
+  items: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { href, items, class: className, style, ...attrs } = Astro.props;
+
+const Tag = href ? "a" : "button";
+---
+
+<Tag href={Tag === "a" ? href : undefined} class:list={[className]} style={style} {...attrs}>
+  <EachSlot
+    items={items}
+    row={({ item }) => (
+      <span class="each-fill">
+        <slot>{item}</slot>
+      </span>
+    )}
+  />
+</Tag>

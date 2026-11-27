@@ -1,0 +1,247 @@
+{
+  "irVersion": 1,
+  "file": "slots/repeated-default/FadeFace.uf.tsx",
+  "components": [
+    {
+      "name": "FadeFace",
+      "span": {
+        "start": 293,
+        "end": 619
+      },
+      "props": [
+        {
+          "name": "bold",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 344,
+              "end": 351
+            }
+          },
+          "binding": "bold@328",
+          "span": {
+            "start": 338,
+            "end": 351
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ bold: boolean }",
+          "span": {
+            "start": 336,
+            "end": 353
+          }
+        },
+        "span": {
+          "start": 326,
+          "end": 353
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@365",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 385,
+            "end": 408
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 387,
+              "end": 406
+            }
+          }
+        ],
+        "span": {
+          "start": 359,
+          "end": 412
+        }
+      },
+      "bindings": [
+        {
+          "id": "bold@328",
+          "name": "bold",
+          "kind": "prop",
+          "span": {
+            "start": 328,
+            "end": 332
+          }
+        },
+        {
+          "id": "slots@365",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 365,
+            "end": 370
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "fade-face",
+            "span": {
+              "start": 433,
+              "end": 450
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Transition",
+            "name": "face",
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "bold",
+                      "span": {
+                        "start": 492,
+                        "end": 496
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "bold@328",
+                          "span": {
+                            "start": 492,
+                            "end": 496
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "b",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "face",
+                            "span": {
+                              "start": 502,
+                              "end": 514
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "SlotOutlet",
+                            "slot": "default",
+                            "fallback": [],
+                            "span": {
+                              "start": 515,
+                              "end": 534
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 499,
+                          "end": 538
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 492,
+                      "end": 538
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "i",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "face",
+                            "span": {
+                              "start": 544,
+                              "end": 556
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "SlotOutlet",
+                            "slot": "default",
+                            "fallback": [],
+                            "span": {
+                              "start": 557,
+                              "end": 576
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 541,
+                          "end": 580
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 541,
+                      "end": 580
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 492,
+                  "end": 580
+                }
+              }
+            ],
+            "span": {
+              "start": 458,
+              "end": 601
+            }
+          }
+        ],
+        "span": {
+          "start": 428,
+          "end": 612
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./FadeFace.css",
+          "source": ".face-enter-active,\n.face-leave-active {\n  transition: opacity 80ms ease;\n}\n\n.face-enter-from,\n.face-leave-to {\n  opacity: 0;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 24
+          }
+        }
+      ],
+      "scopeId": "c9301a2a"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "FadeFace",
+      "span": {
+        "start": 293,
+        "end": 619
+      }
+    }
+  ],
+  "types": []
+}
