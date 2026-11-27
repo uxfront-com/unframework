@@ -1,0 +1,39 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<
+  HTMLAttributes<"ol"> & HTMLAttributes<"ul">,
+  "ordered" | "label" | "items"
+> {
+  ordered: boolean;
+  label: string;
+  items: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const {
+  ordered,
+  label,
+  items,
+  class: className,
+  style,
+  "aria-label": ariaLabel,
+  ...attrs
+} = Astro.props;
+
+const Tag = ordered ? "ol" : "ul";
+---
+
+<Tag
+  class:list={["tag-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
+  style={style}
+  {...attrs}
+>
+  {items.map((item) => (
+    <li>
+      <slot>{item}</slot>
+    </li>
+  ))}
+</Tag>

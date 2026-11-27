@@ -27,10 +27,11 @@ import type {
 	ElementNode,
 	Expression,
 	FragmentNode,
+	SlotOutletNode,
 	StyleDeclaration,
 } from "@unframework.dev/ir";
 
-import { selectorOf } from "./composition.ts";
+import { childRepeats, repeatsDefaultSlot, selectorOf } from "./composition.ts";
 import type { Composition } from "./composition.ts";
 import { hoistedDefaultSlot } from "./default-slot.ts";
 import {
@@ -65,6 +66,18 @@ const CONSUMER_LISTENERS = `this.${LISTENERS_INPUT}()`;
 /** The template's indentation: two levels, inside the decorator's object. */
 const INDENT = "  ";
 const LEVEL = 2;
+
+/**
+ * The names the template declares the default slot with, where its places render it from one
+ * template (ADR-0124, ADR-0125), claimed from the component's members: the template's reference,
+ * its fallback's `let-` variable, and each place's fallback template, by the place's index, where
+ * it declares one.
+ */
+export interface DefaultSlotNames {
+	ref: string;
+	fallback: string;
+	fallbacks: ReadonlyArray<string | undefined>;
+}
 
 /** What the template reads, which decides its `@let` declarations and the class's visibility. */
 export interface TemplateReads {
@@ -107,7 +120,7 @@ export function template(
 	scope?: { roots: ReadonlySet<string>; host: string },
 	teleportHost?: string,
 	transition?: { ref: string },
-	defaultSlot?: { ref: string },
+	defaultSlot?: DefaultSlotNames,
 ): string {
 	const { component } = plan;
 	// A setup that awaits renders its template, `@let`s included, once it resolves (ADR-0101).
@@ -140,39 +153,115 @@ export function template(
 	const render = fallthrough.plan
 		? withFallthrough(models.render, fallthrough.plan)
 		: models.render;
-	// The default slot a `<component is>`'s cases render from one template (ADR-0124): the tree
-	// printed is a copy, so the nodes are found in it.
-	const found = defaultSlot && hoistedDefaultSlot(render);
-	const hoisted = found && { ...found, ref: defaultSlot.ref };
-	/** Where a case renders the slot: the template, through `ngTemplateOutlet`. */
-	const renderSlot = (ref: string): MarkupPiece => ({
-		kind: "tag",
-		tag: "ng-container",
-		attributes: [{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${ref}"` }],
-	});
-	const dialect: MarkupDialect = {
-		...angularDialect,
-		// `<ng-template #defaultSlot><ng-content>…</ng-content></ng-template>` before the `@switch`:
-		// Angular projects into one `<ng-content>` alone, chosen as it compiles the template.
-		dynamic: (printed) => {
-			const pieces = angularDialect.dynamic!(printed);
-			if (printed.node !== hoisted?.dynamic) {
-				return pieces;
-			}
-			return [
+	// The default slot its places render from one template (ADR-0124, ADR-0125): the tree printed
+	// is a copy, so the nodes are found in it, in the order `defaultSlot.fallbacks` names them.
+	const repeated = repeatsDefaultSlot(component);
+	const found = defaultSlot && hoistedDefaultSlot(render, repeated);
+	const hoisted = found && { ...found, ...defaultSlot };
+	/** The template, before the `@switch` or the `@if` that holds every place. */
+	const declaration = (slot: NonNullable<typeof hoisted>): MarkupPiece => {
+		if (!slot.fallbackTemplates) {
+			return {
+				kind: "tag",
+				tag: "ng-template",
+				attributes: [{ name: `#${slot.ref}`, text: `#${slot.ref}` }],
+				content: angularDialect.slotOutlet!({ node: slot.outlets[0]! }),
+			};
+		}
+		// `<ng-template #defaultSlot let-fallback><ng-content><ng-container
+		// [ngTemplateOutlet]="fallback" /></ng-content></ng-template>`: the `<ng-content>` renders the
+		// fallback the place passes, declared where the place is, which sees its names as narrowed.
+		const variable = `let-${slot.fallback}`;
+		return {
+			kind: "tag",
+			tag: "ng-template",
+			attributes: [
+				{ name: `#${slot.ref}`, text: `#${slot.ref}` },
+				{ name: variable, text: variable },
+			],
+			content: [
 				{
 					kind: "tag",
-					tag: "ng-template",
-					attributes: [{ name: `#${hoisted.ref}`, text: `#${hoisted.ref}` }],
-					content: angularDialect.slotOutlet!({ node: hoisted.outlet }),
+					tag: "ng-content",
+					attributes: [],
+					content: [renderTemplate(slot.fallback)],
 				},
-				...pieces,
-			];
+			],
+		};
+	};
+	/** A template rendered through `ngTemplateOutlet`, with its context when it takes one. */
+	const renderTemplate = (ref: string, context?: string): MarkupPiece => ({
+		kind: "tag",
+		tag: "ng-container",
+		attributes: [
+			{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${ref}"` },
+			...(context === undefined
+				? []
+				: [
+						{
+							name: "[ngTemplateOutletContext]",
+							text: `[ngTemplateOutletContext]="${context}"`,
+						},
+					]),
+		],
+	});
+	/** Where a place renders the slot: the template, with the place's own fallback if it has one. */
+	const renderSlot = (
+		slot: NonNullable<typeof hoisted>,
+		node: SlotOutletNode,
+	): Array<MarkupPiece> => {
+		const name = slot.fallbackTemplates ? slot.fallbacks[slot.outlets.indexOf(node)] : undefined;
+		if (name === undefined) {
+			return [renderTemplate(slot.ref)];
+		}
+		return [
+			{
+				kind: "tag",
+				tag: "ng-template",
+				attributes: [{ name: `#${name}`, text: `#${name}` }],
+				content: [{ kind: "nodes", nodes: node.fallback, container: node }],
+			},
+			renderTemplate(slot.ref, `{ $implicit: ${name} }`),
+		];
+	};
+	const dialect: MarkupDialect = {
+		...angularDialect,
+		// `<ng-template #defaultSlot><ng-content>…</ng-content></ng-template>` before the `@switch`
+		// or the `@if`: Angular projects into one `<ng-content>` alone, chosen as it compiles the
+		// template.
+		dynamic: (printed) => {
+			const pieces = angularDialect.dynamic!(printed);
+			return hoisted && printed.node === hoisted.anchor
+				? [declaration(hoisted), ...pieces]
+				: pieces;
 		},
+		conditional: (branches) => {
+			const pieces = angularDialect.conditional(branches);
+			const anchor = hoisted?.anchor;
+			return anchor?.kind === "If" &&
+				branches.some(({ branch }) => anchor.branches.includes(branch))
+				? [declaration(hoisted!), ...pieces]
+				: pieces;
+		},
+		// A default slot it renders more than once at a time is its consumer's template, rendered in
+		// each place as a named slot's is (ADR-0126).
 		slotOutlet: (outlet) =>
-			hoisted && outlet.node === hoisted.outlet
-				? [renderSlot(hoisted.ref)]
-				: angularDialect.slotOutlet!(outlet),
+			hoisted?.outlets.includes(outlet.node)
+				? renderSlot(hoisted, outlet.node)
+				: angularDialect.slotOutlet!(
+						repeated && outlet.node.slot === "default" ? { ...outlet, template: true } : outlet,
+					),
+		// And a child's that it fills is a template its directive selects.
+		fills: (fills, context) =>
+			angularDialect.fills!(
+				fills.map((each) =>
+					each.fill.slot === "default" &&
+					childRepeats(plan.module, context.component.component, "default")
+						? { ...each, template: true }
+						: each,
+				),
+				context,
+			),
 		// `<ng-template ufTeleport="body">`, whose directive mounts it into `to` (ADR-0098).
 		teleport: ({ node }) => [
 			{

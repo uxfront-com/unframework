@@ -1,0 +1,23 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"ul">, "label" | "items"> {
+  label: string;
+  items: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, items, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
+---
+
+<ul
+  class:list={["row-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
+  style={style}
+  {...attrs}
+>
+  {items.map((item) => (
+    <li>{item} <slot /></li>
+  ))}
+</ul>

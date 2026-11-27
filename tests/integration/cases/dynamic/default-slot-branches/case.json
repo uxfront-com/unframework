@@ -1,0 +1,4 @@
+{
+	"description": "A default slot that renders in one place at a time, in more than one place in the source: under a conditional, a teleport, a transition and another slot's fallback inside a <component is>, and in both branches of a conditional, with and without a <component is> and with a fallback in each branch, renders the fill, or its fallback, in whichever place renders.",
+	"main": "Page.uf.tsx"
+}

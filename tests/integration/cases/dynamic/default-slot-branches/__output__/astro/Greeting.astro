@@ -1,0 +1,27 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+export interface User {
+  name: string;
+}
+
+interface Props extends Omit<HTMLAttributes<"p">, "user"> {
+  user?: User;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { user, class: className, style, ...attrs } = Astro.props;
+---
+
+<p class:list={["greeting", className]} style={style} {...attrs}>
+  {user ? (
+    <b>
+      <slot>{user.name}</slot>
+    </b>
+  ) : (
+    <i>
+      <slot>Guest</slot>
+    </i>
+  )}
+</p>

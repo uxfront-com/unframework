@@ -61,6 +61,7 @@
                 "end": 232
               }
             },
+            "repeated": true,
             "span": {
               "start": 200,
               "end": 242

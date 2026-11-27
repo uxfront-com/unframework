@@ -630,6 +630,24 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
 		);
 	});
 
+	it("gives a branch the value its test holds where a slot's fallback reads it", async () => {
+		const output = await emitSource(`import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
+
+${USER}export default function Probe({ user }: { user?: User }) {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <p>{user ? <b>{slots.default?.() ?? user.name}</b> : <i>{slots.default?.() ?? "Guest"}</i>}</p>;
+}
+`);
+		expect(component(output)).toContain(
+			[
+				'      <Show when={props.user} fallback={<i>{props.children ?? "Guest"}</i>}>',
+				"        {(user) => <b>{props.children ?? user().name}</b>}",
+				"      </Show>",
+			].join("\n"),
+		);
+	});
+
 	it("reads a value plainly where no test can narrow it: a comparison, a type with no union", async () => {
 		const output = await emitSource(
 			probe(

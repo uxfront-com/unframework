@@ -1,0 +1,23 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"p">, "strong"> {
+  strong: boolean;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { strong, class: className, style, ...attrs } = Astro.props;
+---
+
+<p class:list={["emphasis", className]} style={style} {...attrs}>
+  {strong ? (
+    <b>
+      <slot />
+    </b>
+  ) : (
+    <i>
+      <slot />
+    </i>
+  )}
+</p>

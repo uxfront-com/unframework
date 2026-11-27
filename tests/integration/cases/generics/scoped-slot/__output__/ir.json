@@ -255,7 +255,8 @@
                 "props": "{ item: T }",
                 "references": [
                   "T"
-                ]
+                ],
+                "repeated": true
               }
             ],
             "exposes": [],

@@ -23,6 +23,7 @@
           {
             "name": "row",
             "optional": true,
+            "repeated": true,
             "span": {
               "start": 273,
               "end": 288

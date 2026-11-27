@@ -54,6 +54,7 @@
           {
             "name": "marker",
             "optional": true,
+            "repeated": true,
             "span": {
               "start": 200,
               "end": 218

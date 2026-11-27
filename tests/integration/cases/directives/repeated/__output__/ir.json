@@ -751,7 +751,8 @@
               {
                 "name": "item",
                 "optional": true,
-                "props": "{ item: string }"
+                "props": "{ item: string }",
+                "repeated": true
               }
             ],
             "exposes": [],
@@ -828,7 +829,8 @@
             "slots": [
               {
                 "name": "row",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],

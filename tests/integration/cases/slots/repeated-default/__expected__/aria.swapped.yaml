@@ -1,0 +1,28 @@
+- list "Produce":
+  - listitem:
+    - text: Apples
+    - emphasis: fresh
+  - listitem:
+    - text: Pears
+    - emphasis: fresh
+  - listitem:
+    - text: Plums
+    - emphasis: fresh
+- article:
+  - strong: Draft
+  - paragraph: Release notes
+  - strong: Draft
+- list "Ranked":
+  - listitem: Medal
+  - listitem: Medal
+- list "Unranked":
+  - listitem: Colour
+  - listitem: Colour
+- link "Open once":
+  - /url: "#once"
+- button "Press once"
+- link "Open eachOpen each":
+  - /url: "#each"
+- button "Press eachPress each"
+- text: Face
+- button "Swap face"

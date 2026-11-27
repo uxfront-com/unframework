@@ -20,6 +20,7 @@ import type {
 	Span,
 	TypeParameter,
 	UfComponent,
+	UfModule,
 } from "@unframework.dev/ir";
 
 import { hoistedDefaultSlot } from "./default-slot.ts";
@@ -87,9 +88,39 @@ function slotAttribute(name: string, slot: string): string {
 	return `${component}${pascalCase(slot)}`;
 }
 
-/** Whether a slot is written through a directive: any but the default slot without props. */
-export function usesDirective(slot: string, scoped: boolean): boolean {
-	return slot !== "default" || scoped;
+/**
+ * Whether a slot is written through a directive: any but the default slot without props that the
+ * component renders once at a time. A `repeated` one is a template too (ADR-0126): projected
+ * nodes exist once, and a template renders in each place.
+ */
+export function usesDirective(slot: string, scoped: boolean, repeated = false): boolean {
+	return slot !== "default" || scoped || repeated;
+}
+
+/** Whether the component may render its own default slot more than once at a time (ADR-0126). */
+export function repeatsDefaultSlot(component: UfComponent): boolean {
+	return component.slots?.slots.find((slot) => slot.name === "default")?.repeated === true;
+}
+
+/**
+ * Whether the component a template renders by its local name may render a slot more than once at
+ * a time (ADR-0126): from its import's API, or from the module's own component's declaration.
+ */
+export function childRepeats(module: UfModule, local: string, slot: string): boolean {
+	for (const entry of module.imports ?? []) {
+		const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+		if (!imported) {
+			continue;
+		}
+		const api = entry.api.components.find((each) =>
+			imported.imported === "default"
+				? each.export === "default"
+				: each.export === "named" && each.name === imported.imported,
+		);
+		return api?.slots.find((each) => each.name === slot)?.repeated === true;
+	}
+	const own = module.components.find((each) => each.name === local);
+	return own?.slots?.slots.find((each) => each.name === slot)?.repeated === true;
 }
 
 /** Where the template first renders a child, by its local name: the component's span if nowhere. */
@@ -163,7 +194,7 @@ export function planComposition(plan: Plan): Composition {
 	// name they compute (`CardTitleContext` for a `titleContext` slot), and nothing imports a
 	// context type, so a context takes the name a directive leaves it.
 	const slots: Array<SlotDirective> = (component.slots?.slots ?? [])
-		.filter((slot) => usesDirective(slot.name, slot.props !== undefined))
+		.filter((slot) => usesDirective(slot.name, slot.props !== undefined, slot.repeated))
 		.map((slot) => {
 			const exported = `${component.name}${pascalCase(slot.name)}`;
 			return {
@@ -188,7 +219,13 @@ export function planComposition(plan: Plan): Composition {
 			if (fill.forward !== undefined && fill.slot !== "default") {
 				outlet = true;
 			}
-			if (!usesDirective(fill.slot, fill.parameter !== undefined)) {
+			if (
+				!usesDirective(
+					fill.slot,
+					fill.parameter !== undefined,
+					childRepeats(module, local, fill.slot),
+				)
+			) {
 				continue;
 			}
 			const name = `${child.name}${pascalCase(fill.slot)}`;
@@ -219,13 +256,20 @@ export function planComposition(plan: Plan): Composition {
 					}
 				}
 			}
-			if (node.kind === "SlotOutlet" && usesDirective(node.slot, node.props !== undefined)) {
+			if (
+				node.kind === "SlotOutlet" &&
+				usesDirective(
+					node.slot,
+					node.props !== undefined,
+					node.slot === "default" && repeatsDefaultSlot(component),
+				)
+			) {
 				outlet = true;
 			}
 		},
 	});
 	// The default slot a `<component is>`'s cases render from one template (ADR-0124).
-	if (hoistedDefaultSlot(component.render)) {
+	if (hoistedDefaultSlot(component.render, repeatsDefaultSlot(component))) {
 		outlet = true;
 	}
 	if (outlet) {

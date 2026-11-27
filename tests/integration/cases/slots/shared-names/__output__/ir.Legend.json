@@ -77,6 +77,7 @@
                 "end": 258
               }
             },
+            "repeated": true,
             "span": {
               "start": 227,
               "end": 269
@@ -92,6 +93,7 @@
                 "end": 306
               }
             },
+            "repeated": true,
             "span": {
               "start": 274,
               "end": 317

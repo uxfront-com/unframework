@@ -250,7 +250,7 @@ parent, so the composable's effects stay the component's view effects.
 | `import Field from "./Field.uf.tsx"`, `<Field>` | `import Field from "./field"`, `imports: [Field]`, `<uf-field>`; a component that renders itself uses its own selector; two children of one name, or two children's slots of one directive attribute, are UF1104; a prop, model, event or exposed function whose Angular name another member, input or output takes is UF2003 |
 | `label="Name"`, `tone={tone.value}`             | `[label]="'Name'"`, `[tone]="tone"`: a static prop is bound too, so the host keeps no attribute                                                                                                                                                                                                                               |
 | `onClear={clear}`                               | `(clear)="clear($event)"`, the payload spread by the tuple rule; any other handler a method (`onPickedURL($event)`)                                                                                                                                                                                                           |
-| `{slots.default?.()}`, with fallback            | `<ng-content />`, `<ng-content>fallback</ng-content>`                                                                                                                                                                                                                                                                         |
+| `{slots.default?.()}`, with fallback            | `<ng-content />`, `<ng-content>fallback</ng-content>`, and a `repeated` one, `@if (this.defaultTemplate(); as template) { <ng-container [ngTemplateOutlet]="template" /> } @else { fallback }` (ADR-0126)                                                                                                                     |
 | `{slots.title?.()}`, `{slots.item?.({ item })}` | `@if (this.itemTemplate(); as template) { <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="…" /> }`, the alias a name the context reads none of                                                                                                                                                         |
 | `defineSlots<…>()`                              | a directive per named or scoped slot, `ng-template[ufListItem]`, with `ngTemplateContextGuard`, read by `contentChild`, and exported as `ListItem` even where an import takes that name                                                                                                                                       |
 | a fill, `{{ item: ({ item }) => … }}`           | `<ng-template ufListItem let-item="item">`, its directive in `imports`                                                                                                                                                                                                                                                        |
@@ -265,14 +265,24 @@ parent, so the composable's effects stay the component's view effects.
 | `inject(LocaleKey, "en")`                       | `computed(() => untracked(() => this.injector.get(LocaleKey, null, { optional: true, skipSelf: true }) ?? "en"))`                                                                                                                                                                                                             |
 | `<component is={nested.value ? "h3" : "h2"}>`   | `@switch (nested ? 'h3' : 'h2') { @case ('h2') { <h2>…</h2> } … }`; a component candidate is matched by its name                                                                                                                                                                                                              |
 
-- **Slots.** The default slot without props is `<ng-content>`; every other slot is a directive the
-  file exports, `<Component><Slot>` with the selector `ng-template[uf<Component><Slot>]`, whose
+- **Slots.** The default slot without props is `<ng-content>`, unless the component may render it
+  more than once at a time (its declaration's `repeated`, ADR-0126); every other slot, and that
+  one, is a directive the file exports, `<Component><Slot>` with the selector `ng-template[uf<Component><Slot>]`, whose
   context guard types the consumer's `let-` variables (its props by name, and whole as
   `$implicit`; a prop no template variable can read, `"data-id"`, also as `dataId`). A slot without
   props has an empty context, so a `let-` variable on its template is an error. The template
   ends with `<ng-content select="[ufListItem]" />` per directive, so a slot's template never counts
   as the default slot's content. A forwarded named slot re-declares the child's template under
-  `@if (this.titleTemplate(); as template)`.
+  `@if (this.titleTemplate(); as template)`. Angular projects a parent's content into one
+  `<ng-content>` only, so where the default slot renders in more than one place, one at a time
+  (each `@case` of a `<component is>`, or each branch of a conditional), the template declares it
+  once, in `<ng-template #defaultSlot>`, and each place renders it with `ngTemplateOutlet`. A
+  place whose fallback differs from the others', or reads a name a conditional narrows, declares
+  it in an `<ng-template>` of its own and passes it as the context (ADR-0124, ADR-0125). A
+  `repeated` default slot renders in each place from its directive's template, under
+  `@if (this.defaultTemplate(); as template)`, and a parent fills a child's `repeated` default slot
+  with `<ng-template uf<Child>Default>`, so a hand-written consumer passes its content in that
+  template too (ADR-0126).
 - **Models.** A text field, a text area and a select write the state through a template variable
   of the control, which types its value. Vue's `vModelText` (trim, lazy, a number's cast) goes
   through `modelText`, which keeps the field's own text where it already means the value

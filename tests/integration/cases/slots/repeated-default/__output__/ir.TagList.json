@@ -1,0 +1,331 @@
+{
+  "irVersion": 1,
+  "file": "slots/repeated-default/TagList.uf.tsx",
+  "components": [
+    {
+      "name": "TagList",
+      "span": {
+        "start": 202,
+        "end": 595
+      },
+      "props": [
+        {
+          "name": "ordered",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 281,
+              "end": 288
+            }
+          },
+          "binding": "ordered@238",
+          "span": {
+            "start": 272,
+            "end": 289
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 299,
+              "end": 305
+            }
+          },
+          "binding": "label@249",
+          "span": {
+            "start": 292,
+            "end": 306
+          }
+        },
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 316,
+              "end": 324
+            }
+          },
+          "binding": "items@258",
+          "span": {
+            "start": 309,
+            "end": 325
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{\n  ordered: boolean;\n  label: string;\n  items: string[];\n}",
+          "span": {
+            "start": 268,
+            "end": 327
+          }
+        },
+        "span": {
+          "start": 234,
+          "end": 327
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@339",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 359,
+            "end": 382
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "repeated": true,
+            "span": {
+              "start": 361,
+              "end": 380
+            }
+          }
+        ],
+        "span": {
+          "start": 333,
+          "end": 386
+        }
+      },
+      "bindings": [
+        {
+          "id": "ordered@238",
+          "name": "ordered",
+          "kind": "prop",
+          "span": {
+            "start": 238,
+            "end": 245
+          }
+        },
+        {
+          "id": "label@249",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 249,
+            "end": 254
+          }
+        },
+        {
+          "id": "items@258",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 258,
+            "end": 263
+          }
+        },
+        {
+          "id": "slots@339",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 339,
+            "end": 344
+          }
+        },
+        {
+          "id": "item@495",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 495,
+            "end": 499
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "ordered ? \"ol\" : \"ul\"",
+              "span": {
+                "start": 417,
+                "end": 438
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "ordered@238",
+                  "span": {
+                    "start": 417,
+                    "end": 424
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "ol"
+              },
+              {
+                "kind": "Tag",
+                "tag": "ul"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "tag-list",
+                "span": {
+                  "start": 440,
+                  "end": 456
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-label",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 469,
+                    "end": 474
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@249",
+                      "span": {
+                        "start": 469,
+                        "end": 474
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 457,
+                  "end": 475
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "items",
+                  "span": {
+                    "start": 484,
+                    "end": 489
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "items@258",
+                      "span": {
+                        "start": 484,
+                        "end": 489
+                      }
+                    }
+                  ]
+                },
+                "item": "item@495",
+                "key": {
+                  "code": "item",
+                  "span": {
+                    "start": 523,
+                    "end": 527
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "item@495",
+                      "span": {
+                        "start": 523,
+                        "end": 527
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "SlotOutlet",
+                      "slot": "default",
+                      "fallback": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "item",
+                            "span": {
+                              "start": 551,
+                              "end": 555
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "item@495",
+                                "span": {
+                                  "start": 551,
+                                  "end": 555
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 551,
+                            "end": 555
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 529,
+                        "end": 556
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 514,
+                    "end": 561
+                  }
+                },
+                "span": {
+                  "start": 484,
+                  "end": 570
+                }
+              }
+            ],
+            "span": {
+              "start": 402,
+              "end": 588
+            }
+          }
+        ],
+        "span": {
+          "start": 402,
+          "end": 588
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TagList",
+      "span": {
+        "start": 202,
+        "end": 595
+      }
+    }
+  ],
+  "types": []
+}
