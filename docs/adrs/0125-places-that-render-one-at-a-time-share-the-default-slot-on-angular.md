@@ -42,7 +42,7 @@ places part. A template declared there reads every name the places read from out
 conditional between the template and a place may narrow what the fallback reads, the fallback is
 the `<ng-content>`'s own, as in ADR-0124, whose outputs don't change. Otherwise each place declares
 its fallback in an `<ng-template>` of its own, where it sees the block's names as narrowed, and
-passes it as the context. The `<ng-content>` renders it with `ngTemplateOutlet` when the parent
+passes it as the context, which the `<ng-content>` renders with `ngTemplateOutlet` when the parent
 passes nothing. A place without a fallback passes none.
 
 **D5. Names.** The template's reference, its `let-` variable and each place's fallback template are
