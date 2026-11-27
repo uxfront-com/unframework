@@ -118,7 +118,9 @@ describe("frameworkCompile (L3)", () => {
 		);
 		const results = await toolchain.frameworkCompile([{ path, contents }], context);
 		expect(results.get(path)!.errors).toEqual([]);
-		expect(codes(results.get(path)!.warnings).toSorted()).toEqual(["NG8109", "NG8111", "NG8117"]);
+		// Angular 22.3 removed NG8117, the uninvoked function in a text interpolation (angular/angular
+		// 13627163fd), so the uninvoked signal reports NG8109 alone.
+		expect(codes(results.get(path)!.warnings).toSorted()).toEqual(["NG8109", "NG8111"]);
 	});
 
 	// ngc skips every semantic check of a program in which any file fails to parse.
