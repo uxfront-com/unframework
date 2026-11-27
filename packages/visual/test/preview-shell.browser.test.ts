@@ -216,9 +216,7 @@ describe("the layout", () => {
 		// A component with props shows its form, the status line and no message.
 		(item("src/Button").element() as HTMLElement).click();
 		await expect.element(controls.getByRole("group", { name: "variant" })).toBeVisible();
-		await expect
-			.element(controls.getByRole("status"))
-			.toHaveTextContent("Nothing changed");
+		await expect.element(controls.getByRole("status")).toHaveTextContent("Nothing changed");
 		expect(controls.getByText(example).query()?.checkVisibility() ?? false).toBe(false);
 		expect(controls.getByText(component).query()).toBeNull();
 	});
