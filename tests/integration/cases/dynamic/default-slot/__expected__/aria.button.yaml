@@ -1,0 +1,8 @@
+- link "Read the docs":
+  - /url: "#docs"
+- button "Save the draft"
+- link "Home":
+  - /url: "#home"
+- button "Close"
+- button "Learn more"
+- button "Toggle"
