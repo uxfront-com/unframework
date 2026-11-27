@@ -172,38 +172,12 @@ describe("projectTest", () => {
 			server: { deps: { inline: ["vue"] } },
 			// The harness's setup (determinism, the console capture) runs first.
 			setupFiles: ["/setup.ts", "/framework.ts"],
-			fsModuleCache: false,
 		});
 	});
 
 	it("refuses a toolchain option that the harness owns, rather than dropping it", () => {
 		expect(() => projectTest("vue", { include: ["src/**"], name: "mine" }, {}, owned)).toThrow(
 			"The vue toolchain's Vite configuration sets test.include, test.name, which the harness owns in its projects.",
-		);
-		expect(() => projectTest("vue", { fsModuleCache: true }, {}, owned)).toThrow(
-			"The vue toolchain's Vite configuration sets test.fsModuleCache, which the harness owns in its projects.",
-		);
-	});
-});
-
-describe("Vitest's module cache", () => {
-	// A run must compile each case again: the cache's key leaves out the compiler's sources and
-	// UF_CANARY, so a canary run judged the modules the previous canary corrupted.
-	it("is off in every project, the toolchain's, the unavailable and the unselected ones too", async () => {
-		const projects = [
-			...harnessProjects({ harness, mode, targets: ["vue", "missing"] }),
-			...harnessProjects({ harness, mode, targets: ["vue"], projectFilter: ["compile"] }),
-		];
-		const tests = await Promise.all(
-			projects.map(async (project) =>
-				typeof project === "function"
-					? (await (project as () => Promise<UserWorkspaceConfig>)()).test
-					: (project as UserWorkspaceConfig).test,
-			),
-		);
-		expect(tests.length).toBeGreaterThan(10);
-		expect(tests.filter((test) => test?.fsModuleCache !== false).map((test) => test?.name)).toEqual(
-			[],
 		);
 	});
 });

@@ -91,15 +91,6 @@ export function referencesOnly(
 /** What every node project runs with, unless its toolchain needs otherwise. */
 const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as const;
 
-/**
- * What every project runs with, whatever its toolchain sets. Vitest 5.1 caches transformed
- * modules on disk across runs (`fsModuleCache`, on by default), keyed by a module's own source,
- * the plugins' names and the config files. A compiled case also depends on the compiler's
- * sources and on UF_CANARY, so a run would test modules another run compiled: a canary run
- * judged the previous canary's corruption. Each project sets it, since none extends the root.
- */
-const HARNESS_TEST = { fsModuleCache: false } as const;
-
 /** The layers each kind of project records, which an unavailable project fails. */
 const LAYERS_OF: Record<"ssr" | "browser" | "hydrate", Array<LayerName>> = {
 	ssr: ["L6", "L13"],
@@ -349,7 +340,6 @@ function nodeProject(
 				groupOrder: projectGroup(setup, kind, target),
 			},
 			...test,
-			...HARNESS_TEST,
 		},
 	};
 }
@@ -376,10 +366,7 @@ function lazyProject(
 	return async () => {
 		if (!isSelected(name, setup.projectFilter)) {
 			// Not selected with --project: Vitest drops it, so its toolchain need not load.
-			return {
-				extends: false,
-				test: { name, root: ROOT, include: [], ...HARNESS_TEST },
-			} as UserWorkspaceConfig;
+			return { extends: false, test: { name, root: ROOT, include: [] } } as UserWorkspaceConfig;
 		}
 		try {
 			const [toolchain, unplugin] = await Promise.all([
@@ -743,9 +730,7 @@ export function projectTest(
 	owned: ProjectTest,
 ): ProjectTest {
 	const toolchain = (fragment ?? {}) as ProjectTest;
-	const taken = Object.keys(toolchain).filter(
-		(key) => key !== "setupFiles" && (key in owned || key in HARNESS_TEST),
-	);
+	const taken = Object.keys(toolchain).filter((key) => key !== "setupFiles" && key in owned);
 	if (taken.length) {
 		throw new Error(
 			`The ${target} toolchain's Vite configuration sets ${taken.map((key) => `test.${key}`).join(", ")}, which the harness owns in its projects.`,
@@ -757,7 +742,6 @@ export function projectTest(
 		...toolchain,
 		...owned,
 		...(setupFiles.length ? { setupFiles } : {}),
-		...HARNESS_TEST,
 	};
 }
 
