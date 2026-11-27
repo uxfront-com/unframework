@@ -72,7 +72,7 @@
         "flex-direction": "column",
         "flex-wrap": "nowrap",
         "justify-content": "normal",
-        "align-items": "flex-start",
+        "align-items": "flow-start",
         "row-gap": "8px",
         "column-gap": "normal",
         "grid-template-columns": "none",
