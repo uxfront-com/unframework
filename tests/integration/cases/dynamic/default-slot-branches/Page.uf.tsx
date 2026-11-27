@@ -38,7 +38,8 @@ export default function Page() {
       <SwitchAction href={linked.value ? "#more" : undefined}>Learn more</SwitchAction>
       <Emphasis strong={strong.value}>Mind the gap</Emphasis>
       <Greeting user={signedIn.value ? ada : undefined}>Welcome back</Greeting>
-      <Greeting user={signedIn.value ? grace : undefined} />
+      <Greeting user={grace} />
+      <Greeting />
       {tips.value && (
         <div class="tips">
           <TipAction href="#tips" label="Tips">

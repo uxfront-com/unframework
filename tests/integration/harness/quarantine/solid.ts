@@ -19,4 +19,12 @@ export const QUARANTINE: ReadonlyArray<QuarantineEntry> = [
 			"As L8: Solid calls a scoped slot inside the row's JSX, so a new props object for one row runs the fill again and replaces its element: the element is a new one, and its directive runs `unmounted` and `mounted` where every other target keeps the element and runs `updated`.",
 		issue: "UXF-827",
 	},
+	{
+		case: "dynamic/default-slot-branches",
+		target: "solid",
+		layer: "L4",
+		reason:
+			"`Greeting`'s default slot fallback reads the user its conditional narrows, `slots.default?.() ?? user.name`, and the output reads it as `props.user.name` inside `<Show when={props.user}>` with no `!`, which TypeScript doesn't narrow (TS18048 at `Greeting.tsx:20`).",
+		issue: "UXF-1165",
+	},
 ];

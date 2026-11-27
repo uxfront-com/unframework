@@ -49,7 +49,8 @@ export default function Page(
       <SwitchAction href={linked() ? "#more" : undefined}>Learn more</SwitchAction>
       <Emphasis strong={strong()}>Mind the gap</Emphasis>
       <Greeting user={signedIn() ? ada : undefined}>Welcome back</Greeting>
-      <Greeting user={signedIn() ? grace : undefined} />
+      <Greeting user={grace} />
+      <Greeting />
       <Show when={tips()}>
         <div class="tips">
           <TipAction href="#tips" label="Tips">

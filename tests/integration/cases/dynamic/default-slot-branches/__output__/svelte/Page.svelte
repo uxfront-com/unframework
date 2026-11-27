@@ -36,8 +36,8 @@
   /><IconAction label="Reset"
   /><SwitchAction href={linked ? "#more" : undefined}>Learn more</SwitchAction
   ><Emphasis {strong}>Mind the gap</Emphasis
-  ><Greeting user={signedIn ? ada : undefined}>Welcome back</Greeting
-  ><Greeting user={signedIn ? grace : undefined}
+  ><Greeting user={signedIn ? ada : undefined}>Welcome back</Greeting><Greeting user={grace}
+  /><Greeting
   />{#if tips}
     <div class="tips">
       <TipAction href="#tips" label="Tips">Linked tip</TipAction

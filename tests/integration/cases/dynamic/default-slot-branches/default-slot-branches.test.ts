@@ -39,8 +39,11 @@ describeTargets("dynamic/default-slot-branches", () => {
 		expect(more.getByText("Learn more").element().tagName).toBe("B");
 		expect(view.getByText("Mind the gap").element().tagName).toBe("B");
 		expect(view.getByText("Welcome back").element().tagName).toBe("B");
+		// Each branch's own fallback, where the parent leaves the slot empty: the first reads the
+		// user its condition narrows.
 		expect(view.getByText("Grace").element().tagName).toBe("B");
-		for (const text of ["Learn more", "Mind the gap", "Welcome back", "Grace"]) {
+		expect(view.getByText("Guest").element().tagName).toBe("I");
+		for (const text of ["Learn more", "Mind the gap", "Welcome back", "Grace", "Guest"]) {
 			expect(view.getByText(text).elements()).toHaveLength(1);
 		}
 	});
@@ -57,10 +60,7 @@ describeTargets("dynamic/default-slot-branches", () => {
 		await expect.element(view.getByRole("link", { name: "Learn more" })).not.toBeInTheDocument();
 		expect(view.getByText("Mind the gap").element().tagName).toBe("I");
 		expect(view.getByText("Welcome back").element().tagName).toBe("I");
-		// The branch's own fallback, where the parent leaves the slot empty.
-		expect(view.getByText("Guest").element().tagName).toBe("I");
-		await expect.element(view.getByText("Grace")).not.toBeInTheDocument();
-		for (const text of ["Learn more", "Mind the gap", "Welcome back", "Guest"]) {
+		for (const text of ["Learn more", "Mind the gap", "Welcome back"]) {
 			expect(view.getByText(text).elements()).toHaveLength(1);
 		}
 		await view.user.click(view.getByRole("button", { name: "Toggle link" }));
@@ -72,9 +72,7 @@ describeTargets("dynamic/default-slot-branches", () => {
 		).toBe("B");
 		expect(view.getByText("Mind the gap").element().tagName).toBe("B");
 		expect(view.getByText("Welcome back").element().tagName).toBe("B");
-		expect(view.getByText("Grace").element().tagName).toBe("B");
-		await expect.element(view.getByText("Guest")).not.toBeInTheDocument();
-		for (const text of ["Learn more", "Mind the gap", "Welcome back", "Grace"]) {
+		for (const text of ["Learn more", "Mind the gap", "Welcome back"]) {
 			expect(view.getByText(text).elements()).toHaveLength(1);
 		}
 	});

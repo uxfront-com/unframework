@@ -53,7 +53,8 @@ import { Component, ElementRef, inject, input, signal, viewChild } from "@angula
       <uf-switch-action [href]="linked ? '#more' : undefined">Learn more</uf-switch-action>
       <uf-emphasis [strong]="strong">Mind the gap</uf-emphasis>
       <uf-greeting [user]="signedIn ? ada : undefined">Welcome back</uf-greeting>
-      <uf-greeting [user]="signedIn ? grace : undefined" />
+      <uf-greeting [user]="grace" />
+      <uf-greeting />
       @if (tips) {
         <div class="tips">
           <uf-tip-action [href]="'#tips'" [label]="'Tips'">Linked tip</uf-tip-action>

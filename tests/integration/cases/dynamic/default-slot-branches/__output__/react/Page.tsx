@@ -47,7 +47,8 @@ export default function Page({ className, style, ...attributes }: PageAttributes
       <SwitchAction href={linked ? "#more" : undefined}>Learn more</SwitchAction>
       <Emphasis strong={strong}>Mind the gap</Emphasis>
       <Greeting user={signedIn ? ada : undefined}>Welcome back</Greeting>
-      <Greeting user={signedIn ? grace : undefined} />
+      <Greeting user={grace} />
+      <Greeting />
       {tips ? (
         <div className="tips">
           <TipAction href="#tips" label="Tips">

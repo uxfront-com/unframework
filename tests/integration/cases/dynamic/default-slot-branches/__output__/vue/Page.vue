@@ -33,7 +33,8 @@ const grace = { name: "Grace" };
     <SwitchAction :href="linked ? '#more' : undefined">Learn more</SwitchAction>
     <Emphasis :strong="strong">Mind the gap</Emphasis>
     <Greeting :user="signedIn ? ada : undefined">Welcome back</Greeting>
-    <Greeting :user="signedIn ? grace : undefined" />
+    <Greeting :user="grace" />
+    <Greeting />
     <div v-if="tips" class="tips">
       <TipAction href="#tips" label="Tips">Linked tip</TipAction>
       <TipAction label="Help">Button tip</TipAction>
