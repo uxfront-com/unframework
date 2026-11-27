@@ -81,12 +81,6 @@ minimumReleaseAgeExclude:
   - "@vitest/mocker@5.0.3"
   - "@vitest/spy@5.0.3"
   - vitest@5.0.3
-  - "@angular/common@22.2.1"
-  - "@angular/compiler-cli@22.2.1"
-  - "@angular/compiler@22.2.1"
-  - "@angular/core@22.2.1"
-  - "@angular/platform-browser@22.2.1"
-  - "@angular/platform-server@22.2.1"
   - "@vitest/browser-playwright@5.0.3"
   - "@vitest/browser@5.0.3"
   - "@vitest/pretty-format@5.0.3"
@@ -110,18 +104,18 @@ minimumReleaseAgeExclude:
 # that shape the output (oxc, oxfmt) are exact: the same input and the same
 # versions give byte-identical output (P8).
 catalog:
-  "@analogjs/vite-plugin-angular": 2.7.5
+  "@analogjs/vite-plugin-angular": 2.9.8
   "@angular-eslint/eslint-plugin": 22.5.0
   "@angular-eslint/eslint-plugin-template": 22.5.0
   "@angular-eslint/template-parser": 22.5.0
-  "@angular/build": 22.2.0
-  "@angular/cli": 22.2.0
-  "@angular/common": 22.2.1
-  "@angular/compiler": 22.2.1
-  "@angular/compiler-cli": 22.2.1
-  "@angular/core": 22.2.1
-  "@angular/platform-browser": 22.2.1
-  "@angular/platform-server": 22.2.1
+  "@angular/build": 22.3.0
+  "@angular/cli": 22.3.0
+  "@angular/common": 22.3.0
+  "@angular/compiler": 22.3.0
+  "@angular/compiler-cli": 22.3.0
+  "@angular/core": 22.3.0
+  "@angular/platform-browser": 22.3.0
+  "@angular/platform-server": 22.3.0
   "@astrojs/check": 0.9.12
   "@astrojs/compiler-rs": 0.5.3
   "@babel/core": 7.29.7
@@ -170,7 +164,7 @@ catalog:
   eslint-plugin-vue: 10.12.1
   lightningcss: 1.33.0
   magic-string: ^1.4.5
-  ng-packagr: 22.2.1
+  ng-packagr: 22.3.0
   oxc-codegen: 0.160.0
   oxc-parser: 0.160.0
   oxc-resolver: 11.24.2
