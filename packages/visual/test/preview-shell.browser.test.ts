@@ -218,7 +218,7 @@ describe("the layout", () => {
 		await expect.element(controls.getByRole("group", { name: "variant" })).toBeVisible();
 		await expect
 			.element(controls.getByRole("status"))
-			.toHaveTextContent("Every control at its default");
+			.toHaveTextContent("Nothing changed");
 		expect(controls.getByText(example).query()?.checkVisibility() ?? false).toBe(false);
 		expect(controls.getByText(component).query()).toBeNull();
 	});
@@ -336,7 +336,7 @@ describe("an example's controls", () => {
 		await expect.element(group("Flag")).toBeVisible();
 		expect(location.hash).toBe(`#${flags}`);
 		expect(fieldValues()).toEqual(["", "", "", ""]);
-		expect(statusText()).toBe("Every control at its default");
+		expect(statusText()).toBe("Nothing changed");
 		await expect.poll(() => renders.at(-1)).toStrictEqual({ entry: flags, props: {} });
 
 		// Another entry, then the example again.
@@ -349,7 +349,7 @@ describe("an example's controls", () => {
 		await expect.element(group("Flag")).toBeVisible();
 		expect(location.hash).toBe(`#${flags}`);
 		expect(fieldValues()).toEqual(["", "", "", ""]);
-		expect(statusText()).toBe("Every control at its default");
+		expect(statusText()).toBe("Nothing changed");
 		await expect.poll(() => renders.at(-1)).toStrictEqual({ entry: flags, props: {} });
 	});
 
@@ -377,7 +377,7 @@ describe("an example's controls", () => {
 			expect(count(each).checkVisibility()).toBe(false);
 		}
 		expect(page.getByRole("button", { name: /^Reset/ }).query()).toBeNull();
-		expect(statusText()).toBe("Every control at its default");
+		expect(statusText()).toBe("Nothing changed");
 
 		// One change in each group.
 		await choose("Flag", "tone", "error");
@@ -435,7 +435,7 @@ describe("an example's controls", () => {
 		await userEvent.click(resetAll);
 		await expect.poll(() => renders.at(-1)?.props).toStrictEqual({});
 		expect(fieldValues()).toEqual(["", "", "", ""]);
-		expect(statusText()).toBe("Every control at its default");
+		expect(statusText()).toBe("Nothing changed");
 		expect(page.getByRole("button", { name: /^Reset/ }).query()).toBeNull();
 		expect(focused()).not.toBe(document.body);
 		expect(focused()).toBe(document.getElementById("uf-controls-label"));
@@ -540,11 +540,11 @@ describe("a component's controls", () => {
 		// A required number starts at 0, with no placeholder: it has no default.
 		await expect.element(value).not.toHaveAttribute("placeholder");
 		await expect.element(value).toHaveAccessibleDescription("number · required");
-		expect(statusText()).toBe("Every control at its default");
+		expect(statusText()).toBe("Nothing changed");
 		// Cleared, it still sends 0: not a change.
 		await userEvent.fill(value, "");
 		await expect.poll(() => renders.at(-1)?.props).toStrictEqual({ value: 0 });
-		expect(statusText()).toBe("Every control at its default");
+		expect(statusText()).toBe("Nothing changed");
 		expect(meter().getByLabelText("value (changed)").query()).toBeNull();
 		await userEvent.fill(value, "7");
 		await expect.poll(() => renders.at(-1)?.props).toStrictEqual({ value: 7 });
@@ -555,7 +555,7 @@ describe("a component's controls", () => {
 		await userEvent.click(region().getByRole("button", { name: "Reset all" }));
 		await expect.poll(() => renders.at(-1)?.props).toStrictEqual({ value: 0 });
 		await expect.element(value).toHaveValue(0);
-		expect(statusText()).toBe("Every control at its default");
+		expect(statusText()).toBe("Nothing changed");
 		expect(focused()).toBe(document.getElementById("uf-controls-label"));
 	});
 

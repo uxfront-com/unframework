@@ -553,7 +553,7 @@ export function controlKit(): ControlKit {
 		}
 		line.hidden = !wrappers.length;
 		const [status, separator, button] = [...line.children] as Array<HTMLElement>;
-		const text = total ? `${total} changed` : "Every control at its default";
+		const text = total ? `${total} changed` : "Nothing changed";
 		// The same text again would be announced again.
 		if (status!.textContent !== text) {
 			status!.textContent = text;
