@@ -146,9 +146,7 @@ export function template(
 	const slotTemplate: MarkupPiece | undefined = hoisted && {
 		kind: "tag",
 		tag: "ng-container",
-		attributes: [
-			{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${defaultSlot!.ref}"` },
-		],
+		attributes: [{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${defaultSlot!.ref}"` }],
 	};
 	const dialect: MarkupDialect = {
 		...angularDialect,
