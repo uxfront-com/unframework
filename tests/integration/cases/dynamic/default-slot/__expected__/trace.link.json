@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Toggle' })",
+      "dom": [
+        "<section class=\"page\">",
+        "  <a class=\"action\" href=\"#docs\">",
+        "    <span data-slot=\"label\">",
+        "      \"Read the docs\"",
+        "    </span>",
+        "  </a>",
+        "  <button class=\"action\">",
+        "    <span data-slot=\"label\">",
+        "      \"Save the draft\"",
+        "    </span>",
+        "  </button>",
+        "  <a class=\"action\" href=\"#home\">",
+        "    <span data-slot=\"label\">",
+        "      \"Home\"",
+        "    </span>",
+        "  </a>",
+        "  <button class=\"action\">",
+        "    <span data-slot=\"label\">",
+        "      \"Close\"",
+        "    </span>",
+        "  </button>",
+        "  <a class=\"action\" href=\"#more\">",
+        "    <i aria-hidden=\"true\">",
+        "      \"+\"",
+        "    </i>",
+        "    <span data-slot=\"label\">",
+        "      \"Learn more\"",
+        "    </span>",
+        "  </a>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- link \"Read the docs\":",
+        "  - /url: \"#docs\"",
+        "- button \"Save the draft\"",
+        "- link \"Home\":",
+        "  - /url: \"#home\"",
+        "- button \"Close\"",
+        "- link \"Learn more\":",
+        "  - /url: \"#more\"",
+        "- button \"Toggle\""
+      ],
+      "events": {}
+    }
+  ]
+}
