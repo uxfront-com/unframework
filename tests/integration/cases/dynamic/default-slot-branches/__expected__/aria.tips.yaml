@@ -1,0 +1,37 @@
+- link "Read the docs":
+  - /url: "#docs"
+- button "Save the draft"
+- link "Home":
+  - /url: "#home"
+- button "Close"
+- link "Read the guide":
+  - /url: "#guide"
+- button "Send the draft"
+- link "Blog":
+  - /url: "#blog"
+- button "Undo"
+- link "Read the FAQ":
+  - /url: "#faq"
+- button "Print the draft"
+- link "News":
+  - /url: "#news"
+- button "Reset"
+- link "Learn more":
+  - /url: "#more"
+- paragraph: Mind the gap
+- paragraph: Welcome back
+- paragraph: Grace
+- link "Tips":
+  - /url: "#tips"
+- button "Help"
+- link "About":
+  - /url: "#about"
+- button "Hint"
+- button "Toggle link"
+- button "Toggle emphasis"
+- button "Toggle user"
+- button "Show tips"
+- note: Linked tip
+- note: Button tip
+- note: About
+- note: Hint

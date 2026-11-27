@@ -1,0 +1,271 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/default-slot-branches/IconAction.uf.tsx",
+  "components": [
+    {
+      "name": "IconAction",
+      "span": {
+        "start": 183,
+        "end": 502
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 244,
+              "end": 250
+            }
+          },
+          "binding": "href@220",
+          "span": {
+            "start": 237,
+            "end": 251
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 259,
+              "end": 265
+            }
+          },
+          "binding": "label@226",
+          "span": {
+            "start": 252,
+            "end": 265
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ href?: string; label: string }",
+          "span": {
+            "start": 235,
+            "end": 267
+          }
+        },
+        "span": {
+          "start": 218,
+          "end": 267
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@279",
+        "type": {
+          "code": "{ default?(): Element; icon?(): Element }",
+          "span": {
+            "start": 299,
+            "end": 340
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 301,
+              "end": 321
+            }
+          },
+          {
+            "name": "icon",
+            "optional": true,
+            "span": {
+              "start": 322,
+              "end": 338
+            }
+          }
+        ],
+        "span": {
+          "start": 273,
+          "end": 344
+        }
+      },
+      "bindings": [
+        {
+          "id": "href@220",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 220,
+            "end": 224
+          }
+        },
+        {
+          "id": "label@226",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 226,
+            "end": 231
+          }
+        },
+        {
+          "id": "slots@279",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 279,
+            "end": 284
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "href ? \"a\" : \"button\"",
+              "span": {
+                "start": 375,
+                "end": 396
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@220",
+                  "span": {
+                    "start": 375,
+                    "end": 379
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "a"
+              },
+              {
+                "kind": "Tag",
+                "tag": "button"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 404,
+                    "end": 408
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@220",
+                      "span": {
+                        "start": 404,
+                        "end": 408
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 398,
+                  "end": 409
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "SlotOutlet",
+                "slot": "icon",
+                "fallback": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "default",
+                        "fallback": [
+                          {
+                            "kind": "Interpolation",
+                            "value": {
+                              "code": "label",
+                              "span": {
+                                "start": 464,
+                                "end": 469
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "label@226",
+                                  "span": {
+                                    "start": 464,
+                                    "end": 469
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 464,
+                              "end": 469
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 442,
+                          "end": 470
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 436,
+                      "end": 477
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 417,
+                  "end": 478
+                }
+              }
+            ],
+            "only": [
+              {
+                "name": "href",
+                "tags": [
+                  "a"
+                ]
+              }
+            ],
+            "span": {
+              "start": 360,
+              "end": 495
+            }
+          }
+        ],
+        "span": {
+          "start": 360,
+          "end": 495
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "IconAction",
+      "span": {
+        "start": 183,
+        "end": 502
+      }
+    }
+  ],
+  "types": []
+}

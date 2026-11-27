@@ -1,0 +1,263 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/default-slot-branches/FadeAction.uf.tsx",
+  "components": [
+    {
+      "name": "FadeAction",
+      "span": {
+        "start": 191,
+        "end": 525
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 252,
+              "end": 258
+            }
+          },
+          "binding": "href@228",
+          "span": {
+            "start": 245,
+            "end": 259
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 267,
+              "end": 273
+            }
+          },
+          "binding": "label@234",
+          "span": {
+            "start": 260,
+            "end": 273
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ href?: string; label: string }",
+          "span": {
+            "start": 243,
+            "end": 275
+          }
+        },
+        "span": {
+          "start": 226,
+          "end": 275
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@287",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 307,
+            "end": 330
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 309,
+              "end": 328
+            }
+          }
+        ],
+        "span": {
+          "start": 281,
+          "end": 334
+        }
+      },
+      "bindings": [
+        {
+          "id": "href@228",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 228,
+            "end": 232
+          }
+        },
+        {
+          "id": "label@234",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 234,
+            "end": 239
+          }
+        },
+        {
+          "id": "slots@287",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 287,
+            "end": 292
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "href ? \"a\" : \"button\"",
+              "span": {
+                "start": 365,
+                "end": 386
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@228",
+                  "span": {
+                    "start": 365,
+                    "end": 369
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "a"
+              },
+              {
+                "kind": "Tag",
+                "tag": "button"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 394,
+                    "end": 398
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@228",
+                      "span": {
+                        "start": 394,
+                        "end": 398
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 388,
+                  "end": 399
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Transition",
+                "name": "fade",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "default",
+                        "fallback": [
+                          {
+                            "kind": "Interpolation",
+                            "value": {
+                              "code": "label",
+                              "span": {
+                                "start": 468,
+                                "end": 473
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "label@234",
+                                  "span": {
+                                    "start": 468,
+                                    "end": 473
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 468,
+                              "end": 473
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 446,
+                          "end": 474
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 440,
+                      "end": 481
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 407,
+                  "end": 501
+                }
+              }
+            ],
+            "only": [
+              {
+                "name": "href",
+                "tags": [
+                  "a"
+                ]
+              }
+            ],
+            "span": {
+              "start": 350,
+              "end": 518
+            }
+          }
+        ],
+        "span": {
+          "start": 350,
+          "end": 518
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "FadeAction",
+      "span": {
+        "start": 191,
+        "end": 525
+      }
+    }
+  ],
+  "types": []
+}
