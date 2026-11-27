@@ -46,7 +46,7 @@ Vue's rule, for components with one root:
   safe fix adds the call. `rest` holds exactly what D1 would put on the root, its `class` and
   `style` included, and never a declared prop or a scope attribute (`data-uf-*` stays on the
   root, ADR-0063). Its one use is a whole spread on one element outside any list, `<input
-{...rest} />`, which becomes the fallthrough element. Any other use is UF2001: a member read, a
+  {...rest} />`, which becomes the fallthrough element. Any other use is UF2001: a member read, a
   second spread, a spread in a list or a slot's fill, or on a component or `<component is>`.
 - **Refs (D4).** A `ref` on a component that does not call `defineExpose` holds its root element,
   through a chain of root components, as Vue's `$el` does, whatever `inheritAttrs` says. Its type

@@ -16,11 +16,11 @@ setup as written, `.value` included (ADR-0045 to ADR-0049). In order:
    `onMounted`, `onUnmounted`, `useTemplateRef`, `useId`, `nextTick`), each under a name no
    source name takes, and the source's `import type` names the script reads, by name
    (ADR-0067): from a `.ts` module or a package as written, `import type { BadgeProps } from
-"./types"`, and from a child's output, `import Field, { type FieldProps } from "./Field.vue"`.
+   "./types"`, and from a child's output, `import Field, { type FieldProps } from "./Field.vue"`.
    Then the values it reads of its module (ADR-0070), imported as the source imports them,
    `import { sizes } from "./tokens"` from the copy of the `.ts` module beside the outputs, and
    each composable it calls from the composable's own output, `import { useToggle } from
-"./useToggle"` (ADR-0069).
+   "./useToggle"` (ADR-0069).
 2. **The type declarations** the component reaches (its props, its events and its setup code),
    copied as written, and in the output of the module's main component its other type exports,
    an exported type no component reaches and a re-export (`export type { Tone } from "./types"`),
@@ -32,7 +32,7 @@ setup as written, `.value` included (ADR-0045 to ADR-0049). In order:
    TypeScript's classic API, which TypeScript 7 lacks, so the props are printed as a type literal
    of their members, `defineProps<{ closed: boolean; label: string }>()` (ADR-0067). A generic
    component's block takes its type parameters, `<script setup lang="ts" generic="T extends
-Item">` (ADR-0068). An attribute cannot hold its own quote, so each string literal there is
+   Item">` (ADR-0068). An attribute cannot hold its own quote, so each string literal there is
    double-quoted, a `'` inside one written `\u0027`, and the attribute single-quoted around them:
    `generic='T extends "a" | "b"'`.
    - Destructured props use Vue 3.5's reactive destructure:

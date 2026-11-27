@@ -60,9 +60,9 @@ changing ADR-0031's unwrapping rule.
 - The default slot is `<ng-content />`, with its fallback as `<ng-content>`'s content.
 - Each slot but a default slot without props is a directive the component's file exports, a scoped
   default slot included, `@Directive({ selector: "ng-template[ufFieldTitle]" })`, with `static
-ngTemplateContextGuard` so strict templates type the consumer's `let-` variables; a slot without
+  ngTemplateContextGuard` so strict templates type the consumer's `let-` variables; a slot without
   props has a guard to an empty context. The component reads it with `contentChild(FieldTitle, {
-read: TemplateRef })` and renders it with `ngTemplateOutlet` under `@if`, which gives presence and
+  read: TemplateRef })` and renders it with `ngTemplateOutlet` under `@if`, which gives presence and
   fallback. It also writes `<ng-content select="[ufFieldTitle]" />` for each, so a slot's template
   never counts as default-slot content.
 - A consumer writes `<ng-template ufFieldTitle let-item="item">…</ng-template>` and lists the
@@ -169,13 +169,13 @@ parse5 8.0.1.
   the hosts out of the table, empty:
   `<uf-table …><uf-row …></uf-row><uf-row …></uf-row><table>…<tbody><tr>…</tr></tbody></table>`.
   The normaliser rejects it at L6 and in the browser (`normalizeHtml: the HTML parser had to repair
-this markup … moved "<uf-row style=\"display: contents;\">" before "<table>"`). On the
+  this markup … moved "<uf-row style=\"display: contents;\">" before "<table>"`). On the
   un-normalised client DOM, axe's table rules pass and `th-has-data-cells` is incomplete.
 - **Attribute-selector probe** (`tr[ufRow]`): no repair; L10, L11 and L13 pass; L6 and L7 differ
   only by `<tr ufrow="">`; L5 fails `@angular-eslint/component-selector The selector should start
-with one of these prefixes: "uf"`.
+  with one of these prefixes: "uf"`.
 - **Static props:** `label="Name"` rendered `<uf-field label="Name" style="display: contents;"
-tone="warn">` at L6; bound props leave the host bare.
+  tone="warn">` at L6; bound props leave the host bare.
 - **Fallthrough:** with `class` and `style` inputs and the host bindings above, the parent's
   `class="wide"` and `[class]="extra()"` render `<div class="bold field wide" …>` with no
   `<uf-field>` wrapper in SSR and in the browser; inputs named `class` and `style` pass L3 to L5.
@@ -191,11 +191,11 @@ tone="warn">` at L6; bound props leave the host bare.
   `<ng-content />` hid the inner component's fallback when the outer one received nothing.
 - **The hazard (`spike/hazard`).** With an output named `change`, the test "hears only the
   component's change event" fails L7, L8 and L9: `Expected element to have text content: (empty)
-Received: [object Event]`, while strict templates type `$event` as `string`, so L4 is clean.
+  Received: [object Event]`, while strict templates type `$event` as `string`, so L4 is clean.
   With `no-output-native` on, L5 reports `@angular-eslint/no-output-native Output bindings,
-including aliases, should not be named as standard DOM events (line 16, column 12)`. A renamed
+  including aliases, should not be named as standard DOM events (line 16, column 12)`. A renamed
   output passes every layer with the rule on; so does stopping the event at the root. An inline
   guard fails L3 and L4 (`TS2358 The left-hand side of an 'instanceof' expression must be of type
-'any', an object type or a type parameter.`).
+  'any', an object type or a type parameter.`).
 - **Recursion:** `Tree` with `<uf-tree [depth]="depth - 1" />` under `@if`, no `imports`, passes
   L3 to L5 and renders three levels in `ssr:angular`.

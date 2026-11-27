@@ -85,7 +85,7 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   a type import too. Both are module-level errors. The module records its value imports
   (`moduleImports`) and the constants its components read, with those they read in turn
   (`constants`). A constant is a plain value (`lowerConstants`): a function, `const f = (…) =>
-…`, whose body runs once called, or any other value, which runs as the module loads, but for
+  …`, whose body runs once called, or any other value, which runs as the module loads, but for
   the arrows it holds.
   - It reads the module's other constants, its value imports and the pure globals (UF3020). As
     the module loads it reads no constant declared after it, itself or through the functions it
@@ -201,7 +201,7 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     twice; on a slot object's shorthand or method member, whose key is more than a name; or on
     `<component is>`, whose candidates may each mean another name.
   - A string, number or boolean literal passed to a prop typed by a union of literals (`tone?:
-"info" | "warning"`) that is none of them is UF3039, with the closest string literal or the one
+    "info" | "warning"`) that is none of them is UF3039, with the closest string literal or the one
     it begins alone (`"warn"` for `"warning"`), and a likely fix that writes it. The fix is
     withheld on `<component is>`, and in a JSX string for a literal holding `"`, `\`, `&` or a
     line break, which the string cannot hold as written. The union is read from the type as the
@@ -209,7 +209,7 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     (`ApiMember.literals`, ADR-0067). A union with a wider member is not checked, and the
     outputs' type checks (L4) catch the rest.
 - **Models** (`setup.ts`, `models.ts`, ADR-0054): `const value = defineModel<T>("value", { default,
-required })` declares a `model` binding, read and written as `value.value`, as state is; the
+  required })` declares a `model` binding, read and written as `value.value`, as state is; the
   name is a camelCase string literal apart from the props, the other models and an event's
   change callback (`valueChange`), and the options static (UF2028, with a safe fix that names a
   nameless model `"value"`). `v-model={text.value}` on a form control binds the value or checked
@@ -234,7 +234,7 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   (whose attributes and fills each must declare), each a `component` binding. Anything else is
   UF3044.
 - **Stylesheets** (`styles.ts`, ADR-0063): a relative `.css` side-effect import, `import
-"./Card.css"`, is the sheet of the module's one component. `analyze(parsed, { stylesheets })`
+  "./Card.css"`, is the sheet of the module's one component. `analyze(parsed, { stylesheets })`
   takes each sheet the resolver read, by specifier (`stylesheetImports(parsed)` lists them), with
   its file and whether the codegen scoper found `:slotted()` in it. The component gets the sheets
   in source order (`styles`) and their scope id (`scopeIdOf`: FNV-1a over its name and the sheets'

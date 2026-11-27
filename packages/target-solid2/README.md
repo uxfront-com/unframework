@@ -7,10 +7,11 @@ It is a fork of `@unframework.dev/target-solid`, the Solid 1.9 target, moved to 
 opts in.
 
 ```tsx
-import { createState } from "./_unframework/createState";
-import { scopeAttributes } from "./_unframework/scopeAttributes";
 import type { JSX } from "@solidjs/web";
 import { Show, merge, untrack } from "solid-js";
+
+import { createState } from "./_unframework/createState";
+import { scopeAttributes } from "./_unframework/scopeAttributes";
 
 export interface CounterProps {
 	initial?: number;
@@ -86,7 +87,7 @@ Everything `@unframework.dev/target-solid`'s README says holds here, but for wha
 - **Hooks.** `onMounted` is `onSettled` with a block body, and `onUnmounted` is the cleanup an
   `onSettled` returns. Solid 2 refuses any other value an `onSettled` callback returns.
 - **Props.** Defaults are getters in `merge`, `get step() { return rawProps.step === undefined ? 1
-: rawProps.step; }`: Solid 2's `merge` takes a prop passed as `undefined` for a value.
+  : rawProps.step; }`: Solid 2's `merge` takes a prop passed as `undefined` for a value.
 - **Context.** A key is `createContext<T | null>(null)`, its own provider, `<Key value={…}>`, and
   `inject` is `useContext(Key) ?? fallback`, or `?? undefined`: Solid 2's context without a
   default throws where nothing provides it.

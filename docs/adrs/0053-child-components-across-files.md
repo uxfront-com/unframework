@@ -29,7 +29,7 @@ hazard to M3. ADR-0027 recorded that `ngtscVirtual` cannot see a child it has no
 **The resolver.**
 
 - `CompileOptions` gains `resolve?: (request: { specifier: string; importer: string }) =>
-Promise<ModuleApi | undefined>`. `importer` is the compiling file's `filename`. The result is the
+  Promise<ModuleApi | undefined>`. `importer` is the compiling file's `filename`. The result is the
   public API of the imported module: its file (relative to the importer, forward slashes), each
   component's API and each injection key it declares (ADR-0055 gives the shape).
 - **It is pure and deterministic (P8).** `compile()`'s output depends only on the source, the
@@ -198,8 +198,8 @@ svelte-check 4.7.6, Solid 1.9.15, Angular 22.2.1 (compiler-cli on `@typescript/t
     compiles only the module a spec imports. ADR-0057 gives it the unplugin's resolution.
   - Angular, without the `ngtscVirtual` change, in both the SSR and the browser project:
     `List.uf.tsx.ts(3,18): error TS2307: Cannot find module './item' or its corresponding type
-declarations.` and `error NG1010: 'imports' must be an array of components, directives, pipes,
-or NgModules. Value could not be determined statically.` Mapping the import alone gives the
+    declarations.` and `error NG1010: 'imports' must be an array of components, directives, pipes,
+    or NgModules. Value could not be determined statically.` Mapping the import alone gives the
     same error when the parent compiles first. With `this.resolve` and `this.load` of each child
     before the parent's compile, both projects compile every case (what they render is ADR-0056's),
     and `toolchain:angular` passes L3 to L5.

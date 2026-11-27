@@ -60,7 +60,7 @@ The frames already mount a component with props and update them in place on ever
   rewrite finds the empty parameter list in the text. The panel says it has no controls, and the real compile reports the real error at its real
   span.
 - **The plugin takes the rewrite.** `@unframework.dev/unplugin` gains `transformSource(file,
-source)`, which gives the text to compile for a `.uf.tsx` or `.uf.ts` file, or `undefined` for
+  source)`, which gives the text to compile for a `.uf.tsx` or `.uf.ts` file, or `undefined` for
   the file as written. The plugin calls it on each read, on the first load and on a hot update
   alike, and compares what it returns, so a hot update compares like with like. The preview's
   servers, its static build and Astro's build-time renders pass it. Nothing else does.

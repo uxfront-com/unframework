@@ -173,7 +173,7 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   capability. Every test of a case the target has no output for (`test.provide.ufNoOutput`, by
   case id, with the errors it expects for the target; the harness gives its spec a stand-in for
   the component) is skipped there the same way, whatever it requires, with `no output: <the
-errors>` on every layer, and the summary excuses it on that target alone. A case the target
+  errors>` on every layer, and the summary excuses it on that target alone. A case the target
   cannot compile yet gets a stand-in too (`test.provide.ufStandIn`, by case id, with the cause,
   ADR-0068). Its tests are not skipped: the setup first records L7, L8, L9, L10, L11, L13 and L14 as
   failed with the cause (`recordStandIn`), and `standIn` on the test's record. The summary
@@ -299,7 +299,7 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   reports one problem for that project, with the errors Vitest reported outside every test, in
   place of one per cell (ADR-0091).
 - **L10 is one code path for cases and examples (ADR-0087).** `captureAt(context, request,
-location)` in `./node` runs the font audit, the capture, the policy and the comparison at a
+  location)` in `./node` runs the font audit, the capture, the policy and the comparison at a
   `CaptureLocation`: the baselines, where the reference publishes its live capture, where a
   failure's images go, where every capture goes (none for a case) and the command that writes the
   baselines. `ufVisualCapture` builds a case's location (`caseCaptureLocation`), and
@@ -407,7 +407,7 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   A case's `case.json` may name its own reference (`reference`, ADR-0057): that target writes
   the case's shared artefacts and its pixels, publishes its live capture, and its scenarios are
   the ones every target's must check (`caseReference`, `sharedArtefactContext(harness, target,
-case)`); its projects run after the run's reference and before every other target
+  case)`); its projects run after the run's reference and before every other target
   (`groupOrder`'s `caseReferences`).
 - **The run:** `resolveHarnessMode` (`UF_UPDATE`, `UF_PIXELS`, `UF_CANARY`,
   `UF_BASELINE_ENVIRONMENT`, `UF_BROWSER`; it refuses writing in CI, and writing the visual

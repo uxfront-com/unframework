@@ -174,7 +174,7 @@ catalog:
   oxc-codegen: 0.152.0
   oxc-parser: 0.152.0
   oxc-resolver: 11.24.2
-  oxfmt: 0.71.0
+  oxfmt: 0.80.0
   oxlint: 1.95.0
   oxlint-tsgolint: 7.0.2008
   parse5: ^8.1.1
