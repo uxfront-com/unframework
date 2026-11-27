@@ -118,6 +118,19 @@ describe("characters HTML would not keep, in text", () => {
 		expect(codes(diagnostics)).toEqual(["UF3010"]);
 		expect(slices(source, diagnostics)).toEqual(["&#xD83D;"]);
 	});
+
+	// Two halves make one character only where the source writes them side by side: the
+	// whitespace JSX trims between lines, or a reference already reported, keeps them apart.
+	it.each([
+		["(\n  <p>\n    &#xD83D;\n    &#xDE00;\n  </p>\n)", ["&#xD83D;", "&#xDE00;"]],
+		["<p>&#xD83D;&#+65;&#xDE00;</p>", ["&#xD83D;", "&#+65;", "&#xDE00;"]],
+	])("reports each lone half in %j at its own place", (jsx, at) => {
+		const { source, diagnostics } = component(jsx);
+		expect(codes(diagnostics).filter((code) => code !== "UF3009")).toEqual(
+			at.filter((text) => text !== "&#+65;").map(() => "UF3010"),
+		);
+		expect(slices(source, diagnostics).toSorted()).toEqual(at.toSorted());
+	});
 });
 
 describe("the fixes of random text", () => {

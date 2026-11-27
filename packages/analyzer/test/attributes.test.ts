@@ -614,6 +614,21 @@ describe("references JSX implementations decode differently", () => {
 
 	// Every implementation reads a surrogate pair as its character since oxc 0.155
 	// (oxc-project/oxc#26712, ADR-0127), so only the attribute named twice is reported.
+	// Two halves make one character only where the source writes them side by side: a `class`
+	// drops the whitespace between them, and a reference already reported stands between them.
+	it.each([
+		['<p class="&#xD83D; &#xDE00;">x</p>', ["UF3010", "UF3010"], ["&#xD83D;", "&#xDE00;"]],
+		[
+			'<p title="&#xD83D;&#1114112;&#xDE00;">x</p>',
+			["UF3009", "UF3010", "UF3010"],
+			["&#1114112;", "&#xD83D;", "&#xDE00;"],
+		],
+	])("reports each lone half in %s at its own place", (jsx, expected, at) => {
+		const { source, diagnostics } = component(jsx);
+		expect(codes(diagnostics).toSorted()).toEqual(expected);
+		expect(slices(source, diagnostics).toSorted()).toEqual(at.toSorted());
+	});
+
 	it("accepts a surrogate pair, and still checks the attribute", () => {
 		const { diagnostics } = component('<p title="&#xD83D;&#xDE00;" TITLE="x">x</p>');
 		expect(codes(diagnostics)).toEqual(["UF3007"]);
