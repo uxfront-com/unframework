@@ -38,7 +38,7 @@ running needs a change to Vitest's pool.
   finish the case. Two cases still fail with `missing-reference-capture`: a reference left out of
   the run with `--project`, and a reference that finished the case without capturing the scenario.
 - `expectParity` records `reference-not-run` as L10 `skip(reference not run: <project> did not
-finish this case's spec file in this run)`. The test doesn't fail at L10. Of a cell's records,
+  finish this case's spec file in this run)`. The test doesn't fail at L10. Of a cell's records,
   this skip ranks above a pass and above every other skip, so it is never hidden.
 - The summary never accepts that skip. It folds everything a drop causes into one problem per
   reference project, listed first: the blocked follower cells, the reference's missing browser
@@ -54,7 +54,7 @@ finish this case's spec file in this run)`. The test doesn't fail at L10. Of a c
 
 - A dropped reference reads as one problem that names the project and Vitest's error, such as
   `browser:vue did not finish 76 of its spec files in this run (…); 444 follower cell(s) could not
-be compared at L10. Vitest reported: … Browser connection was closed …`.
+  be compared at L10. Vitest reported: … Browser connection was closed …`.
 - The followers' other layers still run, and their results are real.
 - The matrix gets no new cell status, so `MATRIX_VERSION` stays at 5. `errors` is optional.
 

@@ -46,7 +46,7 @@ type to other files and packages. Several forces shape how:
   child `.uf.tsx`, a `.uf.ts` or a package (through its `types` and `exports`), `extends` chains,
   intersections, unions, literal unions, the instantiation of generic declarations, and the five
   utility types of §5.5: `Partial`, `Required`, `Pick`, `Omit` and `Readonly`. `localShapes(parsed,
-filename)` is its synchronous in-module path, which reads no file.
+  filename)` is its synchronous in-module path, which reads no file.
 - **tsgo, opt-in.** `@unframework/type-oracle-tsgo`, on `typescript/unstable/sync`, pinned exactly
   at 7.0.2. Conditional and mapped types, `infer`, `keyof` and `typeof`, and template-literal holes
   resolve only here. It and the test toolchains are the only code that loads TypeScript's API.

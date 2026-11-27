@@ -160,7 +160,7 @@ example's doc comment, which the command prints to stderr:
   docked panel holds the controls. It keeps the selection in the URL's hash, follows
   `prefers-color-scheme`, and keeps a theme the reader picks in `localStorage`.
 - **The protocol** (`src/preview/protocol.ts`): the shell sends `render` messages, `{ seq, entry,
-props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on load and
+  props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on load and
   `rendered` or `failed` with the `seq`. Each side checks the other's origin and window.
 - **Embeds** (ADR-0112): the shell's server also serves `embedPage` (`src/preview/embed.ts`) at
   `/embed.html`, and 404s every other path. `embed.html?example=<id>&target=<target>` checks both

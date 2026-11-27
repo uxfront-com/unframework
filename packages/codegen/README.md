@@ -55,7 +55,7 @@ framework-specific.
   them, the rules of grouping at-rules and nested rules are scoped in place, and `@keyframes`
   names take the id as a suffix, with `animation` and `animation-name` rewritten to match. Its
   tests compare each rewrite, byte for byte, with `@vue/compiler-sfc`'s `compileStyle({ scoped:
-true })`, but where Vue's own output doesn't parse. It reports UF5004 where Vue would scope a
+  true })`, but where Vue's own output doesn't parse. It reports UF5004 where Vue would scope a
   selector into one that matches nothing, or drop part of it: `:root`, `html` and `body` outside
   `:global()`, `:host`, a namespace prefix, a misused or empty scoping pseudo-class (`:slotted()`
   in a rule with nested rules or under `:deep()`, and a selector beside a `:deep()` one in a rule
@@ -94,12 +94,12 @@ true })`, but where Vue's own output doesn't parse. It reports UF5004 where Vue 
   code keeps its source text, and a target prints it by splicing its own spelling of each
   reference (`RewriteRules`: Solid's `props.label`, and Angular's `this.label()` in a list's
   `track`, which reads no template variable; elsewhere Angular reads the `@let label =
-this.label();` it declares, as written) at the reference's span, expanding a shorthand property
+  this.label();` it declares, as written) at the reference's span, expanding a shorthand property
   whose spelling changes. Each rule gets the site the code is printed for (`render`, `key`, `pure`
   or `client`) and the reference, a local function's call flag included. Setup code adds
   structural references: a `write` or an `emit` hook replaces a whole write or call of `emit`
   once the references in its value or arguments are rewritten, nested ones first (`timer =
-setInterval(() => count.value++, 1000)`), and its replacement is parenthesised where it could
+  setInterval(() => count.value++, 1000)`), and its replacement is parenthesised where it could
   not stand as a statement or an arrow's body; without the hook the write keeps its form with its
   target spelled as a read (`count += step`). `writtenValue` gives the value a write stores, with
   the operands parenthesised as its operator needs (`count * (a + b)`), for a setter. `api` and
@@ -186,7 +186,7 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   fallback as `""`, and nothing for a value that always renders nothing (`isAlwaysNullish`).
   Which parts to join and which values are already text stay the target's.
 - **Markup** (`src/markup/`, plan §5.8, ADR-0026): `printMarkup(render, dialect, { component,
-rewrite })` prints a component's root element or fragment, every node and attribute kind, with a
+  rewrite })` prints a component's root element or fragment, every node and attribute kind, with a
   dialect per template language (`vueDialect`, `svelteDialect`, `angularDialect`, `astroDialect`,
   and `htmlDialect` for static HTML). The generic printer (`markup/printer.ts`) walks the IR, spells
   each expression with the target's `RewriteRules` (a list's key for the `key` site, a handler for

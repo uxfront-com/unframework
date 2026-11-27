@@ -186,6 +186,7 @@ From the v1 source, its ADRs and the Inkline monorepo (`~/Workspace/inkline`):
 ```tsx
 // Counter.uf.tsx
 import { computed, defineEmits, ref } from "@uxfront/unframework";
+
 import "./Counter.css";
 
 export interface CounterProps {
@@ -782,6 +783,7 @@ tests/integration/cases/state/counter/
 ```ts
 // counter.test.ts: written once, runs on every target
 import { describeTargets, mount } from "@unframework.dev/testing";
+
 import Counter from "./Counter.uf.tsx";
 
 describeTargets("counter", () => {
@@ -1461,6 +1463,7 @@ the next render.
 
 ```tsx
 import { useMemo, useState } from "react";
+
 import "./Counter.css";
 
 export interface CounterProps {

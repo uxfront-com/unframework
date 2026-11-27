@@ -95,12 +95,12 @@ A scratch project with tsgo 7.0.2 and `@types/react` 19.3.0 held `Greeting.uf.ts
 - **The example above:** `tsc -p tsconfig.uf.json` exits 0, with no declaration for the `.css`
   import. It leaves out a `.uf.tsx` planted in `dist` and one planted in `node_modules`.
 - **A misuse:** `<Greeting name={1} />` in a `.uf.tsx` gives `TS2322: Type 'number' is not
-assignable to type 'string'.` and exit 1.
+  assignable to type 'string'.` and exit 1.
 - **The root config, with no host import:** `tsc -p tsconfig.json` exits 0.
 - **An `extends` without its own `exclude`:** `TS18003: No inputs were found in config file`, with
   the same list as `include` and `exclude`.
 - **A host import under the scoped config:** the root check exits 1 with `TS2322 … Property 'class'
-does not exist on type 'DetailedHTMLProps<…>'. Did you mean 'className'?` at `Greeting.uf.tsx`.
+  does not exist on type 'DetailedHTMLProps<…>'. Did you mean 'className'?` at `Greeting.uf.tsx`.
   `tsc --listFilesOnly` lists the file despite `exclude`.
 - **A host import under the pragma, in one config:** `Greeting.uf.tsx` is clean, and `App.tsx`
   gives `TS2786: 'Greeting' cannot be used as a JSX component.`

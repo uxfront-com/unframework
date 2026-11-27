@@ -32,7 +32,7 @@ The spikes found why:
 - **React** rejects a render prop named like a slot: oxlint's `react/no-unstable-nested-components`
   flags `hint={({ length }) => …}` in the parent (L5) and exempts props named `render…`.
 - **Qwik** cannot serialise a function prop at SSR (`Code(Q3): Only primitive and object literals
-can be serialized … because it's a function named "hint"`), and its `<Slot>` takes no props
+  can be serialized … because it's a function named "hint"`), and its `<Slot>` takes no props
   and has no presence API. A QRL render prop (`hint$`) serialises and re-renders.
 - **Astro** loses a slot's arguments behind the `<Fragment slot>` its compiler writes
   (`Cannot destructure property 'length' of 'undefined'`), and `set:html` fails
@@ -51,7 +51,7 @@ children or a slot object, and a component the content mapper has typed accepts 
 **Slots.**
 
 - A component declares its slots with `defineSlots<{ default?(): Element; title?(): Element;
-item?(props: { item: Item }): Element }>()`, bound to a `const` (UF2006 otherwise). A slot with
+  item?(props: { item: Item }): Element }>()`, bound to a `const` (UF2006 otherwise). A slot with
   a parameter is scoped. A slot may not share a name with a prop, an event's callback or a model
   on any target (UF2029), because React, Solid, Qwik and Astro spell slots as props.
 - It renders a slot as a child: `{slots.title?.()}`, `{slots.item?.({ item })}`, with fallback
@@ -105,7 +105,7 @@ item?(props: { item: Item }): Element }>()`, bound to a `const` (UF2006 otherwis
 - **Controls as built.** Solid, Qwik and Angular bind a `<select>` by marking each option `selected`
   (Angular `[selected]`, with `[defaultSelected]` on the server), not by the select's `value`:
   Solid's server writes `value` as an attribute, and the expectations need the server's `<option
-selected>`. Solid selects options a component, a slot or an interpolation renders through an
+  selected>`. Solid selects options a component, a slot or an interpolation renders through an
   inline helper, `selectOptions`, and holds a `<textarea>`'s text as its children on the server.
   Qwik reads every control's model through a local in render, for `checked` and `selected` as for
   `value`, since it writes a prop bound to a signal as an attribute when it creates the element. Vue
@@ -342,24 +342,24 @@ to the shared baseline (ADR-0042); the rule stays on for the six other targets.
 The spikes are ADR-0053's (the same worktree, cases, commands and versions). Per cell:
 
 - **Slots, default with fallback:** passes on every target: React `children ?? <span>No
-details</span>`, Svelte `{#if children}`, Solid `children()`, Angular `<ng-content><span>No
-details</span></ng-content>`, Qwik `<Slot>` (with ADR-0058's `q:template`), Astro `<slot>`.
+  details</span>`, Svelte `{#if children}`, Solid `children()`, Angular `<ng-content><span>No
+  details</span></ng-content>`, Qwik `<Slot>` (with ADR-0058's `q:template`), Astro `<slot>`.
 - **Scoped slot `hint` with `{ length }`:**
   - React: `renderHint` passes L3 to L13; `hint` fails L5 with `react/no-unstable-nested-components
-Do not define components during render. … If you want to allow component creation in props,
-set allowAsProps option to true. (line 22, column 15)`.
+    Do not define components during render. … If you want to allow component creation in props,
+    set allowAsProps option to true. (line 22, column 15)`.
   - Solid: `hint?: (props: { length: number }) => JSX.Element` under `<Show>`; passes, and re-renders
     `5 chars` after typing.
   - Svelte: `Snippet<[{ length: number }]>`; passes every layer.
   - Angular: a directive `ng-template[ufFieldHint]` with `static ngTemplateContextGuard` and
     `contentChild(FieldHint, { read: TemplateRef })` passes, with `<ng-content
-select="[ufFieldHint]" />` so the template does not count as default-slot content. A plain
+    select="[ufFieldHint]" />` so the template does not count as default-slot content. A plain
     `#hint` template types `let-length` as `any`: a misuse passes L3 and L4 silently.
   - Qwik: a render function prop fails SSR with Q3 (above); a `component$` prop and a
     `hint$?: QRL<(props) => JSXOutput>` pass, the QRL one written inline in the parent.
   - Astro: `<Fragment slot="hint">{(p) => …}</Fragment>` with `Astro.slots.render` fails L6
     (`Cannot destructure property 'length' of 'undefined' as it is undefined.`); `<template
-slot>` fails L5 (`astro/no-set-html-directive`); the render prop passes L3 to L6.
+    slot>` fails L5 (`astro/no-set-html-directive`); the render prop passes L3 to L6.
 - **Default-slot presence:** Angular has no API for whether `<ng-content>` received content, and
   Qwik exposes none (`_hasSlotProps` is internal). An Angular `<uf-outer>` that re-projects
   `<ng-content />` into an inner component always counts as content, so the inner fallback never
@@ -377,7 +377,7 @@ slot>` fails L5 (`astro/no-set-html-directive`); the render prop passes L3 to L6
   `class:list` render `class="field wide"`. Svelte's and Astro's rest types must
   `Omit<HTMLAttributes<…>, keyof OwnProps>`, or an event named like a DOM event intersects with the
   DOM handler's type (`TS2322 Type '(value: number) => number' is not assignable to type
-'((value: string) => void) & FormEventHandler<HTMLDivElement>'`). Angular's cell is ADR-0056's.
+  '((value: string) => void) & FormEventHandler<HTMLDivElement>'`). Angular's cell is ADR-0056's.
 - **Events named like DOM events (`change`):** React, Vue, Svelte, Solid and Qwik pass
   `spike/hazard`: the native `change` from the child's `<input>` never reaches the consumer's
   handler. Angular's is ADR-0056's.
