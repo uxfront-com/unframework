@@ -1,5 +1,16 @@
 # @unframework.dev/visual
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [5b03f5d]
+  - @unframework.dev/ir@0.5.0
+  - @unframework.dev/codegen@0.5.0
+  - @unframework.dev/compiler@0.4.2
+  - @unframework.dev/testing@0.3.5
+  - @unframework.dev/unplugin@0.4.2
+
 ## 0.6.0
 
 ### Minor Changes

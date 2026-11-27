@@ -1,5 +1,30 @@
 # @uxfront/unframework
 
+## 0.7.0
+
+### Minor Changes
+
+- 5b03f5d: Render a default slot on Angular in each place where a component renders it more than once at a time: in each row of a list, in two places at once like a header and a footer, in both branches of a `<Transition>` while one leaves, or in a fill its child renders per row. Angular used to render the parent's content in one of those places only, and the others rendered the slot empty.
+
+  The analyser now marks such a slot `repeated`, on `SlotDeclaration` and on `ApiSlot`, so a parent in another file reads it too. On Angular, a `repeated` default slot is a directive the component's file exports, `<Component>Default` with the selector `ng-template[uf<Component>Default]`, as a scoped default slot is, and each place renders the template the parent passes.
+
+  `PrintedFill` and `PrintedSlotOutlet` take a `template` flag, which the Angular dialect reads. ADR-0126 records it. The other six targets' outputs don't change.
+
+  **Breaking:** a hand-written Angular consumer of a component whose default slot is `repeated` now passes its content in `<ng-template uf<Component>Default>`, and imports the directive, since children passed as they are render nothing. A component that renders its default slot one place at a time keeps `<ng-content>`.
+
+### Patch Changes
+
+- 5b03f5d: Render a default slot on Angular in whichever place renders it, where its places render one at a time. A default slot under a conditional, a teleport, a transition or another slot's fallback inside a `<component is>`, or one in both branches of a conditional, like `{href ? <b>{slots.default?.()}</b> : <i>{slots.default?.()}</i>}`, used to render the parent's content in one place only, and the other places rendered the slot empty, without its fallback.
+
+  Angular projects a parent's content into one `<ng-content>` only, so the template now declares it once, before the `@switch` or the `@if` that holds every place, and each place renders it with `ngTemplateOutlet`. A place whose fallback reads a name its conditional narrows keeps that fallback where it is, in an `<ng-template>` it passes on.
+
+  ADR-0125 records it.
+
+- @unframework.dev/compiler@0.4.2
+  - @unframework.dev/testing@0.3.5
+  - @unframework.dev/visual@0.6.1
+  - @unframework.dev/cli@0.3.2
+
 ## 0.6.2
 
 ### Patch Changes

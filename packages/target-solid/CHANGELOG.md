@@ -1,5 +1,14 @@
 # @unframework.dev/target-solid
 
+## 0.4.1
+
+### Patch Changes
+
+- 5b03f5d: Read a value a conditional narrows through the branch's accessor where a slot's fallback reads it, on Solid and Solid 2. A fallback like `{user ? <b>{slots.default?.() ?? user.name}</b> : null}` used to read `props.user.name` inside `<Show when={props.user}>`, which fails the type check (TS18048), and now reads `user().name` from `<Show>`'s callback.
+- Updated dependencies [5b03f5d]
+  - @unframework.dev/ir@0.5.0
+  - @unframework.dev/codegen@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
