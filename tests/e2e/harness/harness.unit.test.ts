@@ -271,8 +271,8 @@ describe("the design system's copy", () => {
 
 	it("reads a named catalog, which the solid2 app pins exactly (ADR-0102)", () => {
 		const solid2 = readCatalog(rootWorkspace, "solid2");
-		expect(solid2["solid-js"]).toBe("2.0.0");
-		expect(solid2["@solidjs/web"]).toBe("2.0.0");
+		expect(solid2["solid-js"]).toBe("2.0.3");
+		expect(solid2["@solidjs/web"]).toBe("2.0.3");
 		// The flat catalog keeps Solid 1.
 		expect(catalog["solid-js"]).toMatch(/^1\./);
 		const app = readManifest(join(e2eRoot, "apps/solid2"));
