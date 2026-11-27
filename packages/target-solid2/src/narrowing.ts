@@ -232,8 +232,11 @@ function expressionsIn(nodes: ReadonlyArray<RenderNode>): Array<Expression | Cod
 				found.push(node.source);
 				visit(node.body);
 				return;
-			case "Component":
+			// A slot's fallback renders in the branch, so what it reads is the branch's too.
 			case "SlotOutlet":
+				node.fallback.forEach(visit);
+				return;
+			case "Component":
 			case "Dynamic":
 				return;
 			case "Teleport":

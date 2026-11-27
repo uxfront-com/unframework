@@ -21,7 +21,7 @@ export default function Greeting(
   return (
     <p class={props.class ? `greeting ${props.class}` : "greeting"} {...others}>
       <Show when={props.user} fallback={<i>{props.children ?? "Guest"}</i>}>
-        <b>{props.children ?? props.user.name}</b>
+        {(user) => <b>{props.children ?? user().name}</b>}
       </Show>
     </p>
   );
