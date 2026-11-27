@@ -1,8 +1,9 @@
+import type { ToolchainContext } from "@unframework.dev/codegen";
 // Vitest's `Plugin` is Vite's, with the `configureVitest` hook declared.
 import type { Plugin } from "vitest/config";
 
 import { ASTRO_VIRTUAL_ID, astroComponentRef } from "./protocol.ts";
-import { closeAstroRenderServers } from "./render.ts";
+import { closeAstroRenderServers, startAstroRenderServer } from "./render.ts";
 import { recordAstroSource } from "./sources.ts";
 
 /**
@@ -12,9 +13,12 @@ import { recordAstroSource } from "./sources.ts";
  *
  * It records the Astro source the unframework plugin loaded for each virtual id, then replaces
  * the module with a serialisable reference (`AstroComponentRef`) that the mount adapter sends to
- * `ufAstroRender`. When Vitest closes, it closes the render servers.
+ * `ufAstroRender`. When Vitest configures the project, it starts the render server for the
+ * context's root, with the context's plugins, so no test waits for the start (UXF-916); without
+ * a context, the first render starts it. When Vitest closes, it closes the render servers.
+ * Outside Vitest, as in the preview (ADR-0088), the hook never runs, and nothing starts early.
  */
-export function astroBrowserRef(): Plugin {
+export function astroBrowserRef(context?: Pick<ToolchainContext, "root" | "plugins">): Plugin {
 	return {
 		name: "unframework:astro-browser-ref",
 		enforce: "pre",
@@ -28,6 +32,9 @@ export function astroBrowserRef(): Plugin {
 		},
 		configureVitest({ vitest }) {
 			vitest.onClose(closeAstroRenderServers);
+			if (context) {
+				startAstroRenderServer(context.root, context.plugins);
+			}
 		},
 	};
 }
