@@ -195,7 +195,7 @@ ${CONTROL_STYLES}.controls { overflow: visible; border-inline-start: 0; border-t
 .controls .uf-field-head { margin-bottom: 2px; }
 .controls legend.uf-name { margin-bottom: 2px; }
 .controls input:not([type="checkbox"], [type="radio"]), .controls select { padding: 1px 6px; }
-.controls .uf-segments label { padding: 0 8px; line-height: 16px; }
+.controls .uf-segments label { padding: 0 6px; line-height: 16px; }
 `;
 
 /**

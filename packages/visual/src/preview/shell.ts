@@ -96,7 +96,7 @@ ${PALETTE}  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
 * { box-sizing: border-box; }
 body {
   margin: 0; height: 100vh; display: grid; background: var(--bg); color: var(--fg);
-  grid-template-columns: 15rem minmax(0, 1fr) 17rem;
+  grid-template-columns: 15rem minmax(0, 1fr) 19rem;
 }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

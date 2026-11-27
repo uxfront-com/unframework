@@ -81,7 +81,7 @@ export const CONTROL_STYLES = `.controls { min-height: 0; overflow: auto; backgr
 .controls .uf-field[data-changed] :is(input:not([type="checkbox"], [type="radio"]), select, .uf-segments) { border-color: var(--accent); }
 .controls .uf-segments { clear: both; display: flex; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--raised); }
 .controls .uf-segments label {
-  position: relative; flex: 1 1 auto; padding: 2px 8px; text-align: center; white-space: nowrap; color: var(--muted); cursor: pointer;
+  position: relative; flex: 1 1 auto; padding: 2px 6px; text-align: center; white-space: nowrap; color: var(--muted); cursor: pointer;
 }
 .controls .uf-segments label:first-child { border-start-start-radius: 4px; border-end-start-radius: 4px; }
 .controls .uf-segments label:last-child { border-start-end-radius: 4px; border-end-end-radius: 4px; }
