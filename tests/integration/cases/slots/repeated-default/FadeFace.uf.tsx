@@ -1,4 +1,3 @@
-import "./FadeFace.css";
 import { Transition, defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 

@@ -840,11 +840,7 @@
               ],
               "listeners": []
             },
-            "refTag": "div",
-            "styles": {
-              "scopeId": "c9301a2a",
-              "slotted": false
-            }
+            "refTag": "div"
           }
         ],
         "keys": []

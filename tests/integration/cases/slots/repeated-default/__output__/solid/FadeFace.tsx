@@ -1,6 +1,5 @@
 import { Transition } from "./_unframework/Transition";
 import { type ComponentProps, type JSX, Show, splitProps } from "solid-js";
-import "./FadeFace.uf.tsx.css";
 
 export interface FadeFaceSlots {
   children?: JSX.Element;
@@ -13,23 +12,10 @@ export default function FadeFace(
   const [, others] = splitProps(props, ["bold", "children", "class"]);
 
   return (
-    <div
-      class={props.class ? `fade-face ${props.class}` : "fade-face"}
-      data-uf-c9301a2a=""
-      {...others}
-    >
+    <div class={props.class ? `fade-face ${props.class}` : "fade-face"} {...others}>
       <Transition name="face">
-        <Show
-          when={props.bold}
-          fallback={
-            <i class="face" data-uf-c9301a2a="">
-              {props.children}
-            </i>
-          }
-        >
-          <b class="face" data-uf-c9301a2a="">
-            {props.children}
-          </b>
+        <Show when={props.bold} fallback={<i class="face">{props.children}</i>}>
+          <b class="face">{props.children}</b>
         </Show>
       </Transition>
     </div>

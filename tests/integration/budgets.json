@@ -7546,39 +7546,39 @@
       }
     },
     "slots/repeated-default": {
-      "time": 45.37,
+      "time": 35.08,
       "sizes": {
         "react": {
-          "raw": 12424,
-          "gzip": 6760
+          "raw": 12328,
+          "gzip": 6716
         },
         "vue": {
-          "raw": 5337,
-          "gzip": 3325
+          "raw": 5241,
+          "gzip": 3284
         },
         "svelte": {
-          "raw": 9533,
-          "gzip": 5194
+          "raw": 9441,
+          "gzip": 5151
         },
         "solid": {
-          "raw": 8124,
-          "gzip": 4680
+          "raw": 8043,
+          "gzip": 4649
         },
         "solid2": {
-          "raw": 7993,
-          "gzip": 4647
+          "raw": 7907,
+          "gzip": 4606
         },
         "angular": {
-          "raw": 32776,
-          "gzip": 12264
+          "raw": 32520,
+          "gzip": 12176
         },
         "qwik": {
-          "raw": 10468,
-          "gzip": 6862
+          "raw": 10222,
+          "gzip": 6701
         },
         "astro": {
-          "raw": 5603,
-          "gzip": 3442
+          "raw": 5513,
+          "gzip": 3400
         }
       }
     },

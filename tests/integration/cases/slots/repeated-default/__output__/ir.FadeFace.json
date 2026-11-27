@@ -5,8 +5,8 @@
     {
       "name": "FadeFace",
       "span": {
-        "start": 293,
-        "end": 619
+        "start": 268,
+        "end": 594
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "boolean",
             "span": {
-              "start": 344,
-              "end": 351
+              "start": 319,
+              "end": 326
             }
           },
-          "binding": "bold@328",
+          "binding": "bold@303",
           "span": {
-            "start": 338,
-            "end": 351
+            "start": 313,
+            "end": 326
           }
         }
       ],
@@ -31,23 +31,23 @@
         "type": {
           "code": "{ bold: boolean }",
           "span": {
-            "start": 336,
-            "end": 353
+            "start": 311,
+            "end": 328
           }
         },
         "span": {
-          "start": 326,
-          "end": 353
+          "start": 301,
+          "end": 328
         }
       },
       "types": [],
       "slots": {
-        "binding": "slots@365",
+        "binding": "slots@340",
         "type": {
           "code": "{ default?(): Element }",
           "span": {
-            "start": 385,
-            "end": 408
+            "start": 360,
+            "end": 383
           }
         },
         "slots": [
@@ -56,33 +56,33 @@
             "optional": true,
             "repeated": true,
             "span": {
-              "start": 387,
-              "end": 406
+              "start": 362,
+              "end": 381
             }
           }
         ],
         "span": {
-          "start": 359,
-          "end": 412
+          "start": 334,
+          "end": 387
         }
       },
       "bindings": [
         {
-          "id": "bold@328",
+          "id": "bold@303",
           "name": "bold",
           "kind": "prop",
           "span": {
-            "start": 328,
-            "end": 332
+            "start": 303,
+            "end": 307
           }
         },
         {
-          "id": "slots@365",
+          "id": "slots@340",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 365,
-            "end": 370
+            "start": 340,
+            "end": 345
           }
         }
       ],
@@ -96,8 +96,8 @@
             "name": "class",
             "value": "fade-face",
             "span": {
-              "start": 433,
-              "end": 450
+              "start": 408,
+              "end": 425
             }
           }
         ],
@@ -113,16 +113,16 @@
                     "condition": {
                       "code": "bold",
                       "span": {
-                        "start": 492,
-                        "end": 496
+                        "start": 467,
+                        "end": 471
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "bold@328",
+                          "binding": "bold@303",
                           "span": {
-                            "start": 492,
-                            "end": 496
+                            "start": 467,
+                            "end": 471
                           }
                         }
                       ]
@@ -137,8 +137,8 @@
                             "name": "class",
                             "value": "face",
                             "span": {
-                              "start": 502,
-                              "end": 514
+                              "start": 477,
+                              "end": 489
                             }
                           }
                         ],
@@ -148,20 +148,20 @@
                             "slot": "default",
                             "fallback": [],
                             "span": {
-                              "start": 515,
-                              "end": 534
+                              "start": 490,
+                              "end": 509
                             }
                           }
                         ],
                         "span": {
-                          "start": 499,
-                          "end": 538
+                          "start": 474,
+                          "end": 513
                         }
                       }
                     ],
                     "span": {
-                      "start": 492,
-                      "end": 538
+                      "start": 467,
+                      "end": 513
                     }
                   },
                   {
@@ -175,8 +175,8 @@
                             "name": "class",
                             "value": "face",
                             "span": {
-                              "start": 544,
-                              "end": 556
+                              "start": 519,
+                              "end": 531
                             }
                           }
                         ],
@@ -186,51 +186,40 @@
                             "slot": "default",
                             "fallback": [],
                             "span": {
-                              "start": 557,
-                              "end": 576
+                              "start": 532,
+                              "end": 551
                             }
                           }
                         ],
                         "span": {
-                          "start": 541,
-                          "end": 580
+                          "start": 516,
+                          "end": 555
                         }
                       }
                     ],
                     "span": {
-                      "start": 541,
-                      "end": 580
+                      "start": 516,
+                      "end": 555
                     }
                   }
                 ],
                 "span": {
-                  "start": 492,
-                  "end": 580
+                  "start": 467,
+                  "end": 555
                 }
               }
             ],
             "span": {
-              "start": 458,
-              "end": 601
+              "start": 433,
+              "end": 576
             }
           }
         ],
         "span": {
-          "start": 428,
-          "end": 612
+          "start": 403,
+          "end": 587
         }
-      },
-      "styles": [
-        {
-          "specifier": "./FadeFace.css",
-          "source": ".face-enter-active,\n.face-leave-active {\n  transition: opacity 80ms ease;\n}\n\n.face-enter-from,\n.face-leave-to {\n  opacity: 0;\n}\n",
-          "span": {
-            "start": 0,
-            "end": 24
-          }
-        }
-      ],
-      "scopeId": "c9301a2a"
+      }
     }
   ],
   "exports": [
@@ -239,8 +228,8 @@
       "name": "default",
       "local": "FadeFace",
       "span": {
-        "start": 293,
-        "end": 619
+        "start": 268,
+        "end": 594
       }
     }
   ],

@@ -12,10 +12,8 @@ import {
   component$,
   useConstant,
   useSignal,
-  useStyles$,
   useVisibleTask$,
 } from "@qwik.dev/core";
-import styles from "./FadeFace.uf.tsx.css?inline";
 
 export default component$<
   { bold: boolean } & Omit<PropsOf<"div">, "bold" | "class" | "style"> & {
@@ -23,8 +21,6 @@ export default component$<
       style?: CSSProperties;
     }
 >(({ bold, class: className, style, ...attributes }) => {
-  useStyles$(styles);
-
   const faceState = useConstant((): TransitionState => ({
     current: bold ? 0 : 1,
     elements: [],
@@ -67,15 +63,15 @@ export default component$<
   );
 
   return (
-    <div class={["fade-face", className]} data-uf-c9301a2a="" style={style} {...attributes}>
+    <div class={["fade-face", className]} style={style} {...attributes}>
       <>
         {faceShown.value.includes(0) && (
-          <b class="face" data-uf-c9301a2a="" ref={transition(faceState, "face", 0, false)}>
+          <b class="face" ref={transition(faceState, "face", 0, false)}>
             <Slot />
           </b>
         )}
         {faceShown.value.includes(1) && (
-          <i class="face" data-uf-c9301a2a="" ref={transition(faceState, "face", 1, false)}>
+          <i class="face" ref={transition(faceState, "face", 1, false)}>
             <Slot />
           </i>
         )}

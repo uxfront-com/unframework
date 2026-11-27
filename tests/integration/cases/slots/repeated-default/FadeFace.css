@@ -1,9 +1,0 @@
-.face-enter-active,
-.face-leave-active {
-  transition: opacity 80ms ease;
-}
-
-.face-enter-from,
-.face-leave-to {
-  opacity: 0;
-}

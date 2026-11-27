@@ -10,7 +10,6 @@ import {
   ElementRef,
   type OnInit,
   TemplateRef,
-  ViewEncapsulation,
   afterNextRender,
   contentChild,
   inject,
@@ -148,7 +147,6 @@ export class Transition implements OnInit {
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"
-      data-uf-c9301a2a=""
       [ufScope]="this.host"
       #ufElement
     >
@@ -160,7 +158,6 @@ export class Transition implements OnInit {
             #transition="ufTransition"
             (animate.leave)="transition.leave($event)"
             class="face"
-            data-uf-c9301a2a=""
           >
             @if (this.defaultTemplate(); as template) {
               <ng-container [ngTemplateOutlet]="template" />
@@ -173,7 +170,6 @@ export class Transition implements OnInit {
             #transition="ufTransition"
             (animate.leave)="transition.leave($event)"
             class="face"
-            data-uf-c9301a2a=""
           >
             @if (this.defaultTemplate(); as template) {
               <ng-container [ngTemplateOutlet]="template" />
@@ -184,8 +180,6 @@ export class Transition implements OnInit {
     </div>
     <ng-content select="[ufFadeFaceDefault]" />
   `,
-  styleUrl: "./FadeFace.uf.tsx.css",
-  encapsulation: ViewEncapsulation.None,
 })
 export default class FadeFace {
   readonly bold = input.required<boolean>();

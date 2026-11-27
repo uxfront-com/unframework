@@ -1,6 +1,5 @@
 ---
 import type { HTMLAttributes } from "astro/types";
-import "./FadeFace.uf.tsx.css";
 
 interface Props extends Omit<HTMLAttributes<"div">, "bold"> {
   bold: boolean;
@@ -11,13 +10,13 @@ interface Props extends Omit<HTMLAttributes<"div">, "bold"> {
 const { bold, class: className, style, ...attrs } = Astro.props;
 ---
 
-<div class:list={["fade-face", className]} style={style} data-uf-c9301a2a="" {...attrs}>
+<div class:list={["fade-face", className]} style={style} {...attrs}>
   {bold ? (
-    <b class="face" data-uf-c9301a2a="">
+    <b class="face">
       <slot />
     </b>
   ) : (
-    <i class="face" data-uf-c9301a2a="">
+    <i class="face">
       <slot />
     </i>
   )}

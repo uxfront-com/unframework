@@ -1,9 +1,0 @@
-.face-enter-active[data-uf-c9301a2a],
-.face-leave-active[data-uf-c9301a2a] {
-  transition: opacity 80ms ease;
-}
-
-.face-enter-from[data-uf-c9301a2a],
-.face-leave-to[data-uf-c9301a2a] {
-  opacity: 0;
-}

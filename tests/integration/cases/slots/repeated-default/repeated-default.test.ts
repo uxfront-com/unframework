@@ -36,11 +36,14 @@ function everyFrame(root: Element): { stop: () => Array<string> } {
 	};
 }
 
-/** Gives the `-active` classes of `name` a duration of their own, until the returned removal. */
+/**
+ * Gives the `-active` classes of `name` a duration of their own, and its `-from` and `-to` an
+ * opacity to run it on, until the returned removal: a capture waits for a transition that runs.
+ */
 function slowDown(name: string): () => void {
 	const style = document.createElement("style");
 	// A class beats the harness's `*` among `!important` declarations.
-	style.textContent = `.${name}-enter-active, .${name}-leave-active { transition: all 200ms linear !important; }`;
+	style.textContent = `.${name}-enter-active, .${name}-leave-active { transition: opacity 200ms linear !important; } .${name}-enter-from, .${name}-leave-to { opacity: 0; }`;
 	document.head.append(style);
 	return () => style.remove();
 }
