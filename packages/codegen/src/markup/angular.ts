@@ -757,12 +757,12 @@ function slotAttribute(tag: string, slot: string): string {
 
 /**
  * A fill of a child's slot (ADR-0056): the default slot's content as it is, projected into the
- * child's `<ng-content>`; any other slot, or a scoped one, an `<ng-template>` its directive
- * selects, with a `let-` variable per name its parameter declares (`let-item="item"`, the whole
+ * child's `<ng-content>`; any other slot, a scoped one, or a default one the child renders more
+ * than once at a time (`template`, ADR-0126), an `<ng-template>` its directive selects, with a `let-` variable per name its parameter declares (`let-item="item"`, the whole
  * props as `let-entry`); a forwarded slot, the parent's own template re-declared for the child
  * under its presence, `@if (this.titleTemplate(); as template)`.
  */
-function fillPiece({ fill, parameter, presence }: PrintedFill, tag: string): MarkupPiece {
+function fillPiece({ fill, parameter, presence, template }: PrintedFill, tag: string): MarkupPiece {
 	const directive = slotAttribute(tag, fill.slot);
 	// The default slot forwarded re-projects the parent's own, which Angular counts as content
 	// whether or not it got any: `default-slot-presence` declares it unsupported (ADR-0056).
@@ -792,7 +792,7 @@ function fillPiece({ fill, parameter, presence }: PrintedFill, tag: string): Mar
 			close: "}",
 		};
 	}
-	if (fill.slot === "default" && parameter === undefined) {
+	if (fill.slot === "default" && parameter === undefined && !template) {
 		return { kind: "nodes", nodes: fill.children, container: fill };
 	}
 	return {
@@ -835,13 +835,14 @@ function letVariables(parameter: string | undefined): Array<PrintedAttribute> {
 
 /**
  * A slot outlet (ADR-0056): the default slot without props is `<ng-content>`, its fallback as
- * its content; any other renders the template its directive's query holds (`this.titleTemplate()`,
+ * its content, unless the component renders it more than once at a time (`template`, ADR-0126);
+ * any other renders the template its directive's query holds (`this.titleTemplate()`,
  * read from the class so that no template variable of its name hides it),
  * with the props as its context (each by name, and whole as `$implicit`), or the fallback.
  */
-function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
+function slotOutletPiece({ node, props, template }: PrintedSlotOutlet): MarkupPiece {
 	const fallback: MarkupPiece = { kind: "nodes", nodes: node.fallback, container: node };
-	if (node.slot === "default" && props === undefined) {
+	if (node.slot === "default" && props === undefined && !template) {
 		return {
 			kind: "tag",
 			tag: "ng-content",

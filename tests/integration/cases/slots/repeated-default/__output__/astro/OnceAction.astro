@@ -1,0 +1,26 @@
+---
+import OnceSlot from "./OnceSlot.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends Omit<HTMLAttributes<"a"> & HTMLAttributes<"button">, "href" | "label"> {
+  href?: string;
+  label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { href, label, class: className, style, ...attrs } = Astro.props;
+
+const Tag = href ? "a" : "button";
+---
+
+<Tag href={Tag === "a" ? href : undefined} class:list={[className]} style={style} {...attrs}>
+  <OnceSlot
+    label={label}
+    text={(shown) => (
+      <span class="once-fill">
+        <slot>{shown.label}</slot>
+      </span>
+    )}
+  />
+</Tag>

@@ -1,6 +1,6 @@
 # ADR-0124: On Angular, a default slot renders in every case of a `<component is>`
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0125 and ADR-0126
 - **Date:** 2026-11-27
 - **Plan:** §4.3 (Slots, Composition), §6 (Angular), §9 M3; P1, P2, P4, P6, P7; ADR-0010,
   ADR-0053, ADR-0122; amends ADR-0054 (Angular's `<component is>` is one `@case` per candidate) and

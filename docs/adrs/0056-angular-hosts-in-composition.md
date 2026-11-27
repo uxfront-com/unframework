@@ -1,6 +1,6 @@
 # ADR-0056: Angular composition: roots, fallthrough, slots, event names
 
-- **Status:** Accepted, amended by ADR-0118 and ADR-0124
+- **Status:** Accepted, amended by ADR-0118, ADR-0124 and ADR-0126
 - **Date:** 2026-10-18
 - **Plan:** §6 (Angular), §7.5, §9 M3; P2, P4, P6; R5; ADR-0010, ADR-0012, ADR-0027, ADR-0031,
   ADR-0042, ADR-0047, ADR-0053, ADR-0054; amends ADR-0010, ADR-0012 (an output named like a DOM

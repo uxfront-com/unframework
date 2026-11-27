@@ -1,0 +1,265 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/default-slot-branches/SwitchAction.uf.tsx",
+  "components": [
+    {
+      "name": "SwitchAction",
+      "span": {
+        "start": 187,
+        "end": 471
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 243,
+              "end": 249
+            }
+          },
+          "binding": "href@226",
+          "span": {
+            "start": 236,
+            "end": 249
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ href?: string }",
+          "span": {
+            "start": 234,
+            "end": 251
+          }
+        },
+        "span": {
+          "start": 224,
+          "end": 251
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@263",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 283,
+            "end": 306
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 285,
+              "end": 304
+            }
+          }
+        ],
+        "span": {
+          "start": 257,
+          "end": 310
+        }
+      },
+      "bindings": [
+        {
+          "id": "href@226",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 226,
+            "end": 230
+          }
+        },
+        {
+          "id": "slots@263",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 263,
+            "end": 268
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "href ? \"a\" : \"button\"",
+              "span": {
+                "start": 341,
+                "end": 362
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@226",
+                  "span": {
+                    "start": 341,
+                    "end": 345
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "a"
+              },
+              {
+                "kind": "Tag",
+                "tag": "button"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 370,
+                    "end": 374
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@226",
+                      "span": {
+                        "start": 370,
+                        "end": 374
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 364,
+                  "end": 375
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "href",
+                      "span": {
+                        "start": 384,
+                        "end": 388
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "href@226",
+                          "span": {
+                            "start": 384,
+                            "end": 388
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "b",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "SlotOutlet",
+                            "slot": "default",
+                            "fallback": [],
+                            "span": {
+                              "start": 394,
+                              "end": 413
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 391,
+                          "end": 417
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 384,
+                      "end": 417
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "i",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "SlotOutlet",
+                            "slot": "default",
+                            "fallback": [],
+                            "span": {
+                              "start": 423,
+                              "end": 442
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 420,
+                          "end": 446
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 420,
+                      "end": 446
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 384,
+                  "end": 446
+                }
+              }
+            ],
+            "only": [
+              {
+                "name": "href",
+                "tags": [
+                  "a"
+                ]
+              }
+            ],
+            "span": {
+              "start": 326,
+              "end": 464
+            }
+          }
+        ],
+        "span": {
+          "start": 326,
+          "end": 464
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SwitchAction",
+      "span": {
+        "start": 187,
+        "end": 471
+      }
+    }
+  ],
+  "types": []
+}

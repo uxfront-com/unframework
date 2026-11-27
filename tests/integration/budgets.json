@@ -2656,6 +2656,43 @@
         }
       }
     },
+    "dynamic/default-slot-branches": {
+      "time": 31.21,
+      "sizes": {
+        "react": {
+          "raw": 12775,
+          "gzip": 6783
+        },
+        "vue": {
+          "raw": 5884,
+          "gzip": 3302
+        },
+        "svelte": {
+          "raw": 10255,
+          "gzip": 4940
+        },
+        "solid": {
+          "raw": 8078,
+          "gzip": 4349
+        },
+        "solid2": {
+          "raw": 8299,
+          "gzip": 4372
+        },
+        "angular": {
+          "raw": 31155,
+          "gzip": 11253
+        },
+        "qwik": {
+          "raw": 10836,
+          "gzip": 6383
+        },
+        "astro": {
+          "raw": 5112,
+          "gzip": 2918
+        }
+      }
+    },
     "dynamic/forwarding": {
       "time": 11.42,
       "sizes": {
@@ -7505,6 +7542,43 @@
         "astro": {
           "raw": 1006,
           "gzip": 690
+        }
+      }
+    },
+    "slots/repeated-default": {
+      "time": 35.08,
+      "sizes": {
+        "react": {
+          "raw": 12328,
+          "gzip": 6716
+        },
+        "vue": {
+          "raw": 5241,
+          "gzip": 3284
+        },
+        "svelte": {
+          "raw": 9441,
+          "gzip": 5151
+        },
+        "solid": {
+          "raw": 8043,
+          "gzip": 4649
+        },
+        "solid2": {
+          "raw": 7907,
+          "gzip": 4606
+        },
+        "angular": {
+          "raw": 32520,
+          "gzip": 12176
+        },
+        "qwik": {
+          "raw": 10222,
+          "gzip": 6701
+        },
+        "astro": {
+          "raw": 5513,
+          "gzip": 3400
         }
       }
     },

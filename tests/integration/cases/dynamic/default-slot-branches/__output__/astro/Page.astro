@@ -1,0 +1,56 @@
+---
+import Emphasis from "./Emphasis.astro";
+import FadeAction from "./FadeAction.astro";
+import Greeting from "./Greeting.astro";
+import IconAction from "./IconAction.astro";
+import LabelAction from "./LabelAction.astro";
+import SwitchAction from "./SwitchAction.astro";
+import TipAction from "./TipAction.astro";
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style, ...attrs } = Astro.props;
+
+const linked = true as boolean;
+const strong = true as boolean;
+const signedIn = true as boolean;
+const tips = false as boolean;
+const ada = { name: "Ada" };
+const grace = { name: "Grace" };
+---
+
+<section class:list={["page", className]} style={style} {...attrs}>
+  <LabelAction href="#docs" label="Docs">Read the docs</LabelAction>
+  <LabelAction label="Save">Save the draft</LabelAction>
+  <LabelAction href="#home" label="Home" />
+  <LabelAction label="Close" />
+  <FadeAction href="#guide" label="Guide">Read the guide</FadeAction>
+  <FadeAction label="Send">Send the draft</FadeAction>
+  <FadeAction href="#blog" label="Blog" />
+  <FadeAction label="Undo" />
+  <IconAction href="#faq" label="FAQ">Read the FAQ</IconAction>
+  <IconAction label="Print">Print the draft</IconAction>
+  <IconAction href="#news" label="News" />
+  <IconAction label="Reset" />
+  <SwitchAction href={linked ? "#more" : undefined}>Learn more</SwitchAction>
+  <Emphasis strong={strong}>Mind the gap</Emphasis>
+  <Greeting user={signedIn ? ada : undefined}>Welcome back</Greeting>
+  <Greeting user={grace} />
+  <Greeting />
+  {tips ? (
+    <div class="tips">
+      <TipAction href="#tips" label="Tips">Linked tip</TipAction>
+      <TipAction label="Help">Button tip</TipAction>
+      <TipAction href="#about" label="About" />
+      <TipAction label="Hint" />
+    </div>
+  ) : null}
+  <button type="button">Toggle link</button>
+  <button type="button">Toggle emphasis</button>
+  <button type="button">Toggle user</button>
+  <button type="button">Show tips</button>
+</section>

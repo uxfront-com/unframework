@@ -1,0 +1,315 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/default-slot-branches/TipAction.uf.tsx",
+  "components": [
+    {
+      "name": "TipAction",
+      "span": {
+        "start": 205,
+        "end": 600
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 265,
+              "end": 271
+            }
+          },
+          "binding": "href@241",
+          "span": {
+            "start": 258,
+            "end": 272
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 280,
+              "end": 286
+            }
+          },
+          "binding": "label@247",
+          "span": {
+            "start": 273,
+            "end": 286
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ href?: string; label: string }",
+          "span": {
+            "start": 256,
+            "end": 288
+          }
+        },
+        "span": {
+          "start": 239,
+          "end": 288
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@300",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 320,
+            "end": 343
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 322,
+              "end": 341
+            }
+          }
+        ],
+        "span": {
+          "start": 294,
+          "end": 347
+        }
+      },
+      "bindings": [
+        {
+          "id": "href@241",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 241,
+            "end": 245
+          }
+        },
+        {
+          "id": "label@247",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 247,
+            "end": 252
+          }
+        },
+        {
+          "id": "slots@300",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 300,
+            "end": 305
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "href ? \"a\" : \"button\"",
+              "span": {
+                "start": 378,
+                "end": 399
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@241",
+                  "span": {
+                    "start": 378,
+                    "end": 382
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "a"
+              },
+              {
+                "kind": "Tag",
+                "tag": "button"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 407,
+                    "end": 411
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@241",
+                      "span": {
+                        "start": 407,
+                        "end": 411
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 401,
+                  "end": 412
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 421,
+                    "end": 426
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@247",
+                      "span": {
+                        "start": 421,
+                        "end": 426
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 420,
+                  "end": 427
+                }
+              },
+              {
+                "kind": "Teleport",
+                "to": "body",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "data-teleported",
+                        "value": "true",
+                        "span": {
+                          "start": 466,
+                          "end": 481
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "tip",
+                        "span": {
+                          "start": 482,
+                          "end": 493
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "role",
+                        "value": "note",
+                        "span": {
+                          "start": 494,
+                          "end": 505
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "default",
+                        "fallback": [
+                          {
+                            "kind": "Interpolation",
+                            "value": {
+                              "code": "label",
+                              "span": {
+                                "start": 539,
+                                "end": 544
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "label@247",
+                                  "span": {
+                                    "start": 539,
+                                    "end": 544
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 539,
+                              "end": 544
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 517,
+                          "end": 545
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 463,
+                      "end": 558
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 434,
+                  "end": 576
+                }
+              }
+            ],
+            "only": [
+              {
+                "name": "href",
+                "tags": [
+                  "a"
+                ]
+              }
+            ],
+            "span": {
+              "start": 363,
+              "end": 593
+            }
+          }
+        ],
+        "span": {
+          "start": 363,
+          "end": 593
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TipAction",
+      "span": {
+        "start": 205,
+        "end": 600
+      }
+    }
+  ],
+  "types": []
+}

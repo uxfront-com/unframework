@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support transition: A `<Transition>`'s classes never run: its child renders settled on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "dynamic/default-slot-branches/FadeAction.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 7,
+      "offset": 407
+    },
+    "end": {
+      "line": 11,
+      "column": 20,
+      "offset": 501
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "dynamic/default-slot-branches/Page.uf.tsx",
+    "start": {
+      "line": 53,
+      "column": 29,
+      "offset": 1928
+    },
+    "end": {
+      "line": 53,
+      "column": 75,
+      "offset": 1974
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "dynamic/default-slot-branches/TipAction.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 434
+    },
+    "end": {
+      "line": 14,
+      "column": 18,
+      "offset": 576
+    },
+    "target": "astro"
+  }
+]

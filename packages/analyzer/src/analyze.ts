@@ -96,6 +96,7 @@ import type { PassThrough } from "./pass-through.ts";
 import { analyzeProps, checkTypeParameters, shapeReading } from "./props.ts";
 import type { RestProps } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
+import { fillRepeatedSlots } from "./repeated.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
@@ -460,16 +461,18 @@ export function analyzeModule(
 			: undefined;
 	// A root component's fallthrough and ref tags are its own (ADR-0118), now that every
 	// component's API, the imported ones included, is known.
-	fillRootComponents(
-		[...apis].map(([candidate, api]) => ({ node: candidate.node, api })),
-		(name) => {
-			const resolution = scopes.resolve(name as unknown as AST.IdentifierReference);
-			if (resolution.kind !== "import" && resolution.kind !== "variable") {
-				return undefined;
-			}
-			return components.get(resolution.declaration)?.api;
-		},
-	);
+	const childApi = (name: AST.JSXIdentifier) => {
+		const resolution = scopes.resolve(name as unknown as AST.IdentifierReference);
+		if (resolution.kind !== "import" && resolution.kind !== "variable") {
+			return undefined;
+		}
+		return components.get(resolution.declaration)?.api;
+	};
+	const ownApis = [...apis].map(([candidate, api]) => ({ node: candidate.node, api }));
+	fillRootComponents(ownApis, childApi);
+	// And so are the slots each renders more than once at a time, through its children's
+	// (ADR-0126): the lowering copies them onto the slots' declarations.
+	fillRepeatedSlots(ownApis, { scopes, authoring }, childApi);
 	const ownerApi = sheetOwner && apis.get(sheetOwner);
 	if (styles && ownerApi) {
 		ownerApi.styles = { scopeId: styles.scopeId, slotted: styles.slotted };

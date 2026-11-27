@@ -1,0 +1,1995 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/default-slot-branches/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Page",
+      "span": {
+        "start": 364,
+        "end": 2364
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "linked@405",
+          "name": "linked",
+          "kind": "state",
+          "span": {
+            "start": 405,
+            "end": 411
+          }
+        },
+        {
+          "id": "strong@433",
+          "name": "strong",
+          "kind": "state",
+          "span": {
+            "start": 433,
+            "end": 439
+          }
+        },
+        {
+          "id": "signedIn@461",
+          "name": "signedIn",
+          "kind": "state",
+          "span": {
+            "start": 461,
+            "end": 469
+          }
+        },
+        {
+          "id": "tips@491",
+          "name": "tips",
+          "kind": "state",
+          "span": {
+            "start": 491,
+            "end": 495
+          }
+        },
+        {
+          "id": "ada@518",
+          "name": "ada",
+          "kind": "localConst",
+          "span": {
+            "start": 518,
+            "end": 521
+          }
+        },
+        {
+          "id": "grace@549",
+          "name": "grace",
+          "kind": "localConst",
+          "span": {
+            "start": 549,
+            "end": 554
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "linked@405",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 418,
+              "end": 422
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 399,
+            "end": 424
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "strong@433",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 446,
+              "end": 450
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 427,
+            "end": 452
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "signedIn@461",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 476,
+              "end": 480
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 455,
+            "end": 482
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "tips@491",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 502,
+              "end": 507
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 485,
+            "end": 509
+          }
+        },
+        {
+          "kind": "Const",
+          "binding": "ada@518",
+          "value": {
+            "code": "{ name: \"Ada\" }",
+            "span": {
+              "start": 524,
+              "end": 539
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 512,
+            "end": 540
+          }
+        },
+        {
+          "kind": "Const",
+          "binding": "grace@549",
+          "value": {
+            "code": "{ name: \"Grace\" }",
+            "span": {
+              "start": 557,
+              "end": 574
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 543,
+            "end": 575
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "page",
+            "span": {
+              "start": 600,
+              "end": 612
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "LabelAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#docs\"",
+                  "span": {
+                    "start": 638,
+                    "end": 645
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 633,
+                  "end": 645
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Docs\"",
+                  "span": {
+                    "start": 652,
+                    "end": 658
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 646,
+                  "end": 658
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Read the docs",
+                    "span": {
+                      "start": 659,
+                      "end": 688
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 659,
+                  "end": 688
+                }
+              }
+            ],
+            "span": {
+              "start": 620,
+              "end": 702
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "LabelAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Save\"",
+                  "span": {
+                    "start": 728,
+                    "end": 734
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 722,
+                  "end": 734
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Save the draft",
+                    "span": {
+                      "start": 735,
+                      "end": 749
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 735,
+                  "end": 749
+                }
+              }
+            ],
+            "span": {
+              "start": 709,
+              "end": 763
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "LabelAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#home\"",
+                  "span": {
+                    "start": 788,
+                    "end": 795
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 783,
+                  "end": 795
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Home\"",
+                  "span": {
+                    "start": 802,
+                    "end": 808
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 796,
+                  "end": 808
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 770,
+              "end": 811
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "LabelAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Close\"",
+                  "span": {
+                    "start": 837,
+                    "end": 844
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 831,
+                  "end": 844
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 818,
+              "end": 847
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "FadeAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#guide\"",
+                  "span": {
+                    "start": 871,
+                    "end": 879
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 866,
+                  "end": 879
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Guide\"",
+                  "span": {
+                    "start": 886,
+                    "end": 893
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 880,
+                  "end": 893
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Read the guide",
+                    "span": {
+                      "start": 894,
+                      "end": 924
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 894,
+                  "end": 924
+                }
+              }
+            ],
+            "span": {
+              "start": 854,
+              "end": 937
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "FadeAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Send\"",
+                  "span": {
+                    "start": 962,
+                    "end": 968
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 956,
+                  "end": 968
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Send the draft",
+                    "span": {
+                      "start": 969,
+                      "end": 983
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 969,
+                  "end": 983
+                }
+              }
+            ],
+            "span": {
+              "start": 944,
+              "end": 996
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "FadeAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#blog\"",
+                  "span": {
+                    "start": 1020,
+                    "end": 1027
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1015,
+                  "end": 1027
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Blog\"",
+                  "span": {
+                    "start": 1034,
+                    "end": 1040
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1028,
+                  "end": 1040
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 1003,
+              "end": 1043
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "FadeAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Undo\"",
+                  "span": {
+                    "start": 1068,
+                    "end": 1074
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1062,
+                  "end": 1074
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 1050,
+              "end": 1077
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "IconAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#faq\"",
+                  "span": {
+                    "start": 1101,
+                    "end": 1107
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1096,
+                  "end": 1107
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"FAQ\"",
+                  "span": {
+                    "start": 1114,
+                    "end": 1119
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1108,
+                  "end": 1119
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Read the FAQ",
+                    "span": {
+                      "start": 1120,
+                      "end": 1148
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1120,
+                  "end": 1148
+                }
+              }
+            ],
+            "span": {
+              "start": 1084,
+              "end": 1161
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "IconAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Print\"",
+                  "span": {
+                    "start": 1186,
+                    "end": 1193
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1180,
+                  "end": 1193
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Print the draft",
+                    "span": {
+                      "start": 1194,
+                      "end": 1209
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1194,
+                  "end": 1209
+                }
+              }
+            ],
+            "span": {
+              "start": 1168,
+              "end": 1222
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "IconAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "\"#news\"",
+                  "span": {
+                    "start": 1246,
+                    "end": 1253
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1241,
+                  "end": 1253
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"News\"",
+                  "span": {
+                    "start": 1260,
+                    "end": 1266
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1254,
+                  "end": 1266
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 1229,
+              "end": 1269
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "IconAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Reset\"",
+                  "span": {
+                    "start": 1294,
+                    "end": 1301
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 1288,
+                  "end": 1301
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 1276,
+              "end": 1304
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "SwitchAction",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "href",
+                "value": {
+                  "code": "linked.value ? \"#more\" : undefined",
+                  "span": {
+                    "start": 1331,
+                    "end": 1365
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "linked@405",
+                      "span": {
+                        "start": 1331,
+                        "end": 1343
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "undefined",
+                      "span": {
+                        "start": 1356,
+                        "end": 1365
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1325,
+                  "end": 1366
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Learn more",
+                    "span": {
+                      "start": 1367,
+                      "end": 1377
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1367,
+                  "end": 1377
+                }
+              }
+            ],
+            "span": {
+              "start": 1311,
+              "end": 1392
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Emphasis",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "strong",
+                "value": {
+                  "code": "strong.value",
+                  "span": {
+                    "start": 1417,
+                    "end": 1429
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "strong@433",
+                      "span": {
+                        "start": 1417,
+                        "end": 1429
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1409,
+                  "end": 1430
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Mind the gap",
+                    "span": {
+                      "start": 1431,
+                      "end": 1443
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1431,
+                  "end": 1443
+                }
+              }
+            ],
+            "span": {
+              "start": 1399,
+              "end": 1454
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Greeting",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "user",
+                "value": {
+                  "code": "signedIn.value ? ada : undefined",
+                  "span": {
+                    "start": 1477,
+                    "end": 1509
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "signedIn@461",
+                      "span": {
+                        "start": 1477,
+                        "end": 1491
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "ada@518",
+                      "span": {
+                        "start": 1494,
+                        "end": 1497
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "undefined",
+                      "span": {
+                        "start": 1500,
+                        "end": 1509
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1471,
+                  "end": 1510
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Welcome back",
+                    "span": {
+                      "start": 1511,
+                      "end": 1523
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1511,
+                  "end": 1523
+                }
+              }
+            ],
+            "span": {
+              "start": 1461,
+              "end": 1534
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Greeting",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "user",
+                "value": {
+                  "code": "grace",
+                  "span": {
+                    "start": 1557,
+                    "end": 1562
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "grace@549",
+                      "span": {
+                        "start": 1557,
+                        "end": 1562
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1551,
+                  "end": 1563
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 1541,
+              "end": 1566
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Greeting",
+            "attributes": [],
+            "fills": [],
+            "span": {
+              "start": 1573,
+              "end": 1585
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "tips.value",
+                  "span": {
+                    "start": 1593,
+                    "end": 1603
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tips@491",
+                      "span": {
+                        "start": 1593,
+                        "end": 1603
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "tips",
+                        "span": {
+                          "start": 1622,
+                          "end": 1634
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Component",
+                        "component": "TipAction",
+                        "attributes": [
+                          {
+                            "kind": "Prop",
+                            "name": "href",
+                            "value": {
+                              "code": "\"#tips\"",
+                              "span": {
+                                "start": 1662,
+                                "end": 1669
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 1657,
+                              "end": 1669
+                            }
+                          },
+                          {
+                            "kind": "Prop",
+                            "name": "label",
+                            "value": {
+                              "code": "\"Tips\"",
+                              "span": {
+                                "start": 1676,
+                                "end": 1682
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 1670,
+                              "end": 1682
+                            }
+                          }
+                        ],
+                        "fills": [
+                          {
+                            "slot": "default",
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Linked tip",
+                                "span": {
+                                  "start": 1683,
+                                  "end": 1717
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 1683,
+                              "end": 1717
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 1646,
+                          "end": 1729
+                        }
+                      },
+                      {
+                        "kind": "Component",
+                        "component": "TipAction",
+                        "attributes": [
+                          {
+                            "kind": "Prop",
+                            "name": "label",
+                            "value": {
+                              "code": "\"Help\"",
+                              "span": {
+                                "start": 1757,
+                                "end": 1763
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 1751,
+                              "end": 1763
+                            }
+                          }
+                        ],
+                        "fills": [
+                          {
+                            "slot": "default",
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Button tip",
+                                "span": {
+                                  "start": 1764,
+                                  "end": 1774
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 1764,
+                              "end": 1774
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 1740,
+                          "end": 1786
+                        }
+                      },
+                      {
+                        "kind": "Component",
+                        "component": "TipAction",
+                        "attributes": [
+                          {
+                            "kind": "Prop",
+                            "name": "href",
+                            "value": {
+                              "code": "\"#about\"",
+                              "span": {
+                                "start": 1813,
+                                "end": 1821
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 1808,
+                              "end": 1821
+                            }
+                          },
+                          {
+                            "kind": "Prop",
+                            "name": "label",
+                            "value": {
+                              "code": "\"About\"",
+                              "span": {
+                                "start": 1828,
+                                "end": 1835
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 1822,
+                              "end": 1835
+                            }
+                          }
+                        ],
+                        "fills": [],
+                        "span": {
+                          "start": 1797,
+                          "end": 1838
+                        }
+                      },
+                      {
+                        "kind": "Component",
+                        "component": "TipAction",
+                        "attributes": [
+                          {
+                            "kind": "Prop",
+                            "name": "label",
+                            "value": {
+                              "code": "\"Hint\"",
+                              "span": {
+                                "start": 1866,
+                                "end": 1872
+                              },
+                              "refs": []
+                            },
+                            "span": {
+                              "start": 1860,
+                              "end": 1872
+                            }
+                          }
+                        ],
+                        "fills": [],
+                        "span": {
+                          "start": 1849,
+                          "end": 1875
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1617,
+                      "end": 1890
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1593,
+                  "end": 1898
+                }
+              }
+            ],
+            "span": {
+              "start": 1593,
+              "end": 1898
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1914,
+                  "end": 1927
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(linked.value = !linked.value)",
+                      "span": {
+                        "start": 1943,
+                        "end": 1973
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "linked@405",
+                          "operator": "=",
+                          "span": {
+                            "start": 1943,
+                            "end": 1973
+                          },
+                          "target": {
+                            "start": 1944,
+                            "end": 1956
+                          },
+                          "value": {
+                            "start": 1959,
+                            "end": 1972
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "linked@405",
+                          "span": {
+                            "start": 1960,
+                            "end": 1972
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1937,
+                      "end": 1973
+                    }
+                  },
+                  "span": {
+                    "start": 1937,
+                    "end": 1973
+                  }
+                },
+                "span": {
+                  "start": 1928,
+                  "end": 1974
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle link",
+                "span": {
+                  "start": 1975,
+                  "end": 2002
+                }
+              }
+            ],
+            "span": {
+              "start": 1906,
+              "end": 2011
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2026,
+                  "end": 2039
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(strong.value = !strong.value)",
+                      "span": {
+                        "start": 2055,
+                        "end": 2085
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "strong@433",
+                          "operator": "=",
+                          "span": {
+                            "start": 2055,
+                            "end": 2085
+                          },
+                          "target": {
+                            "start": 2056,
+                            "end": 2068
+                          },
+                          "value": {
+                            "start": 2071,
+                            "end": 2084
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "strong@433",
+                          "span": {
+                            "start": 2072,
+                            "end": 2084
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2049,
+                      "end": 2085
+                    }
+                  },
+                  "span": {
+                    "start": 2049,
+                    "end": 2085
+                  }
+                },
+                "span": {
+                  "start": 2040,
+                  "end": 2086
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle emphasis",
+                "span": {
+                  "start": 2087,
+                  "end": 2118
+                }
+              }
+            ],
+            "span": {
+              "start": 2018,
+              "end": 2127
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2142,
+                  "end": 2155
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(signedIn.value = !signedIn.value)",
+                      "span": {
+                        "start": 2171,
+                        "end": 2205
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "signedIn@461",
+                          "operator": "=",
+                          "span": {
+                            "start": 2171,
+                            "end": 2205
+                          },
+                          "target": {
+                            "start": 2172,
+                            "end": 2186
+                          },
+                          "value": {
+                            "start": 2189,
+                            "end": 2204
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "signedIn@461",
+                          "span": {
+                            "start": 2190,
+                            "end": 2204
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2165,
+                      "end": 2205
+                    }
+                  },
+                  "span": {
+                    "start": 2165,
+                    "end": 2205
+                  }
+                },
+                "span": {
+                  "start": 2156,
+                  "end": 2206
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle user",
+                "span": {
+                  "start": 2207,
+                  "end": 2234
+                }
+              }
+            ],
+            "span": {
+              "start": 2134,
+              "end": 2243
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2258,
+                  "end": 2271
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(tips.value = true)",
+                      "span": {
+                        "start": 2287,
+                        "end": 2306
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "tips@491",
+                          "operator": "=",
+                          "span": {
+                            "start": 2287,
+                            "end": 2306
+                          },
+                          "target": {
+                            "start": 2288,
+                            "end": 2298
+                          },
+                          "value": {
+                            "start": 2301,
+                            "end": 2305
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2281,
+                      "end": 2306
+                    }
+                  },
+                  "span": {
+                    "start": 2281,
+                    "end": 2306
+                  }
+                },
+                "span": {
+                  "start": 2272,
+                  "end": 2307
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Show tips",
+                "span": {
+                  "start": 2308,
+                  "end": 2333
+                }
+              }
+            ],
+            "span": {
+              "start": 2250,
+              "end": 2342
+            }
+          }
+        ],
+        "span": {
+          "start": 591,
+          "end": 2357
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Page",
+      "span": {
+        "start": 364,
+        "end": 2364
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Emphasis.uf.tsx",
+      "file": "Emphasis.uf.tsx",
+      "api": {
+        "file": "Emphasis.uf.tsx",
+        "components": [
+          {
+            "name": "Emphasis",
+            "export": "default",
+            "props": [
+              {
+                "name": "strong",
+                "optional": false,
+                "type": "boolean"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "emphasis"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Emphasis",
+          "span": {
+            "start": 52,
+            "end": 60
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 86
+      }
+    },
+    {
+      "specifier": "./FadeAction.uf.tsx",
+      "file": "FadeAction.uf.tsx",
+      "api": {
+        "file": "FadeAction.uf.tsx",
+        "components": [
+          {
+            "name": "FadeAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "FadeAction",
+          "span": {
+            "start": 94,
+            "end": 104
+          }
+        }
+      ],
+      "span": {
+        "start": 87,
+        "end": 132
+      }
+    },
+    {
+      "specifier": "./Greeting.uf.tsx",
+      "file": "Greeting.uf.tsx",
+      "api": {
+        "file": "Greeting.uf.tsx",
+        "components": [
+          {
+            "name": "Greeting",
+            "export": "default",
+            "props": [
+              {
+                "name": "user",
+                "optional": true,
+                "type": "User",
+                "references": [
+                  "User"
+                ]
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "greeting"
+                }
+              ],
+              "listeners": []
+            },
+            "refTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Greeting",
+          "span": {
+            "start": 140,
+            "end": 148
+          }
+        }
+      ],
+      "span": {
+        "start": 133,
+        "end": 174
+      }
+    },
+    {
+      "specifier": "./IconAction.uf.tsx",
+      "file": "IconAction.uf.tsx",
+      "api": {
+        "file": "IconAction.uf.tsx",
+        "components": [
+          {
+            "name": "IconAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              },
+              {
+                "name": "icon",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "IconAction",
+          "span": {
+            "start": 182,
+            "end": 192
+          }
+        }
+      ],
+      "span": {
+        "start": 175,
+        "end": 220
+      }
+    },
+    {
+      "specifier": "./LabelAction.uf.tsx",
+      "file": "LabelAction.uf.tsx",
+      "api": {
+        "file": "LabelAction.uf.tsx",
+        "components": [
+          {
+            "name": "LabelAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "LabelAction",
+          "span": {
+            "start": 228,
+            "end": 239
+          }
+        }
+      ],
+      "span": {
+        "start": 221,
+        "end": 268
+      }
+    },
+    {
+      "specifier": "./SwitchAction.uf.tsx",
+      "file": "SwitchAction.uf.tsx",
+      "api": {
+        "file": "SwitchAction.uf.tsx",
+        "components": [
+          {
+            "name": "SwitchAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "SwitchAction",
+          "span": {
+            "start": 276,
+            "end": 288
+          }
+        }
+      ],
+      "span": {
+        "start": 269,
+        "end": 318
+      }
+    },
+    {
+      "specifier": "./TipAction.uf.tsx",
+      "file": "TipAction.uf.tsx",
+      "api": {
+        "file": "TipAction.uf.tsx",
+        "components": [
+          {
+            "name": "TipAction",
+            "export": "default",
+            "props": [
+              {
+                "name": "href",
+                "optional": true,
+                "type": "string"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "dynamic",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "href"
+                }
+              ],
+              "listeners": []
+            },
+            "refTags": [
+              "a",
+              "button"
+            ],
+            "rootTags": [
+              "a",
+              "button"
+            ]
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "TipAction",
+          "span": {
+            "start": 326,
+            "end": 335
+          }
+        }
+      ],
+      "span": {
+        "start": 319,
+        "end": 362
+      }
+    }
+  ]
+}
