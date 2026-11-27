@@ -71,28 +71,6 @@ export default function Tag({ compact }: { compact: boolean }) {
 		);
 	});
 
-	it("declares a forwarded default slot once for each component candidate", () => {
-		const output = fileOf(
-			lower(`${HEADER}
-function Chip() {
-  const slots = defineSlots<{ default?(): Element }>();
-  return <span class="chip">{slots.default?.()}</span>;
-}
-function Card() {
-  const slots = defineSlots<{ default?(): Element }>();
-  return <div class="card">{slots.default?.()}</div>;
-}
-export default function Tag({ compact }: { compact: boolean }) {
-  const slots = defineSlots<{ default?(): Element }>();
-  return <component is={compact ? Chip : Card}>{{ default: slots.default }}</component>;
-}`),
-		);
-		const template = templateOf(output);
-		expect(count(template, "<ng-content")).toBe(1);
-		expect(template).toContain("<ng-template #defaultSlot>\n      <ng-content />");
-		expect(count(template, `[ngTemplateOutlet]="defaultSlot"`)).toBe(2);
-	});
-
 	it("takes a reference apart from a prop or a setup binding of its name", () => {
 		const prop = emitted(tags("{slots.default?.() ?? defaultSlot}", "defaultSlot"));
 		expect(prop).toContain("@let defaultSlot = this.defaultSlot();");

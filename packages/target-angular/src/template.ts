@@ -159,15 +159,12 @@ export function template(
 			if (printed.node !== hoisted?.dynamic) {
 				return pieces;
 			}
-			const content = hoisted.outlet
-				? angularDialect.slotOutlet!({ node: hoisted.outlet })
-				: [{ kind: "tag", tag: "ng-content", attributes: [] } as const];
 			return [
 				{
 					kind: "tag",
 					tag: "ng-template",
 					attributes: [{ name: `#${hoisted.ref}`, text: `#${hoisted.ref}` }],
-					content,
+					content: angularDialect.slotOutlet!({ node: hoisted.outlet }),
 				},
 				...pieces,
 			];
@@ -176,12 +173,6 @@ export function template(
 			hoisted && outlet.node === hoisted.outlet
 				? [renderSlot(hoisted.ref)]
 				: angularDialect.slotOutlet!(outlet),
-		fills: (fills, context) =>
-			fills.flatMap((each) =>
-				hoisted && each.fill === hoisted.forward
-					? [renderSlot(hoisted.ref)]
-					: angularDialect.fills!([each], context),
-			),
 		// `<ng-template ufTeleport="body">`, whose directive mounts it into `to` (ADR-0098).
 		teleport: ({ node }) => [
 			{

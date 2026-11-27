@@ -38,10 +38,10 @@ candidates, the template declares that `<ng-content>`, with its fallback, once, 
 component imports `NgTemplateOutlet`.
 
 **D2. What it covers.** The outlet may sit in a tag candidate's children or in a component
-candidate's default fill, under elements, components and other `<component is>`s. A component
-candidate's default fill that forwards the parent's own default slot is one `<ng-content />` too,
-and D1 declares it the same way. Where `<component is>`s nest, the outermost one of two or more
-candidates takes the template.
+candidate's default fill, under elements, components and other `<component is>`s. Where
+`<component is>`s nest, the outermost one of two or more candidates takes the template. A fill
+that forwards the default slot is out of its reach, since forwarding the default slot is UF4001 on
+Angular (`default-slot-presence`, ADR-0056).
 
 **D3. What it leaves as it is.** D1 doesn't apply where a list, a conditional, a teleport, a
 transition, a scoped fill or another slot's fallback lies between the `<component is>` and the

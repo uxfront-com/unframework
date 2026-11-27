@@ -17,20 +17,17 @@ import { unreachable } from "./plan.ts";
 
 /**
  * Where the template declares the default slot once (ADR-0124): the `<component is>` whose cases
- * render it, and its outlet, or the fill that forwards the parent's default slot to a component.
+ * render it, and its outlet.
  */
 export interface HoistedSlot {
 	dynamic: DynamicNode;
 	/** The default slot outlet without props, `{slots.default?.() ?? label}`. */
-	outlet?: SlotOutletNode;
-	/** A component candidate's default fill that forwards the parent's own default slot. */
-	forward?: SlotFill;
+	outlet: SlotOutletNode;
 }
 
-/** Where a `<ng-content>` of the default slot is in the tree, and what it passes through. */
+/** Where a default slot outlet is in the tree, and what lies around it. */
 interface Projection {
-	outlet?: SlotOutletNode;
-	forward?: SlotFill;
+	outlet: SlotOutletNode;
 	/** The outermost `<component is>` with two or more candidates around it. */
 	dynamic?: DynamicNode;
 	/**
@@ -59,11 +56,9 @@ export function hoistedDefaultSlot(render: ElementNode | FragmentNode): HoistedS
 	};
 	const visitFills = (fills: ReadonlyArray<SlotFill>, around: Around): void => {
 		for (const fill of fills) {
+			// A forwarded slot holds no outlet. Forwarding the default slot is UF4001 on Angular
+			// (`default-slot-presence`, ADR-0056).
 			if (fill.forward !== undefined) {
-				// The default slot forwarded re-projects the parent's own as `<ng-content />` (ADR-0056).
-				if (fill.slot === "default") {
-					projections.push({ forward: fill, ...around });
-				}
 				continue;
 			}
 			visit(fill.children, fill.parameter === undefined ? around : { ...around, direct: false });
@@ -111,9 +106,5 @@ export function hoistedDefaultSlot(render: ElementNode | FragmentNode): HoistedS
 	if (only?.dynamic === undefined || !only.direct || more.length) {
 		return undefined;
 	}
-	return {
-		dynamic: only.dynamic,
-		...(only.outlet ? { outlet: only.outlet } : {}),
-		...(only.forward ? { forward: only.forward } : {}),
-	};
+	return { dynamic: only.dynamic, outlet: only.outlet };
 }
