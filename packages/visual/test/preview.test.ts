@@ -717,7 +717,8 @@ describe("an embed's options in development (ADR-0116)", () => {
 					`${preview.url}${EMBED_FILE}?example=examples/${example}&target=${target}${query}`;
 				const panelStyle = () =>
 					page.locator("uf-embed-controls").evaluate((host) =>
-						["label", "select"].map((selector) => {
+						// The field's name and a segment of `lines`, the control a short union takes.
+						["legend", ".uf-segments label"].map((selector) => {
 							const style = getComputedStyle(host.shadowRoot!.querySelector(selector)!);
 							return [style.color, style.fontFamily, style.fontSize, style.lineHeight];
 						}),
