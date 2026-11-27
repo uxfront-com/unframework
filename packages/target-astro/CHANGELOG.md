@@ -1,5 +1,13 @@
 # @unframework.dev/target-astro
 
+## 0.4.1
+
+### Patch Changes
+
+- dd73170: Start the render server when Vitest configures an Astro browser project, before any test runs. A host outside Vitest, like the preview, still starts it on the first render.
+
+  The server used to start on the first render, so the first test of each spec file waited for it. In a busy run, that start took up to 75 seconds, and those tests timed out.
+
 ## 0.4.0
 
 ### Minor Changes

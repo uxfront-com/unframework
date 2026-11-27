@@ -1,5 +1,14 @@
 # @unframework.dev/compiler
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [dd73170]
+- Updated dependencies [d3925a2]
+  - @unframework.dev/target-astro@0.4.1
+  - @unframework.dev/target-angular@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes
