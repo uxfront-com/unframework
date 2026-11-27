@@ -2,7 +2,7 @@
 "@unframework.dev/visual": minor
 ---
 
-Show what changed in the preview's controls panel, and put it back in one click. The panel is the same in `unframework preview`, a static preview build and an embed with `controls=true`.
+Show what changed in the preview's controls panel, and put it back in one click. The panel is the same in `unframework preview`, a static preview build and an embed with `controls=true`, and it changes in five ways:
 
 - A control that left its first value shows a dot, and its name reads "(changed)". Each group shows how many of its controls changed, with a **Reset** button, and the panel's status line shows the count for all of them, with **Reset all**.
 - The unset choice reads "Default", and an optional text or number field shows "Default" as its placeholder.
