@@ -31,6 +31,7 @@ import {
 	expectFilled,
 	expectNoScroll,
 	fieldPlace,
+	segment,
 	framing,
 	hostPage,
 	panel,
@@ -153,8 +154,8 @@ describe("startPreview", () => {
 				}
 
 				await page.getByRole("treeitem", { name: "src/Button", exact: true }).click();
-				const variant = page.getByLabel("variant");
-				await variant.selectOption("primary");
+				const variant = (choice: string) => segment(page, "variant", choice);
+				await variant("primary").check();
 				for (const target of TARGETS) {
 					// The example's Save is `primary` too: the frame has the component once it rendered the
 					// last change and shows its one button.
@@ -168,14 +169,14 @@ describe("startPreview", () => {
 					expect(layout, target).toMatchObject(CENTRED);
 					expect(centred(layout), `${target}: ${JSON.stringify(layout)}`).toBe(true);
 				}
-				await variant.selectOption("secondary");
+				await variant("secondary").check();
 				for (const target of TARGETS) {
 					await frame(target).locator('button[data-variant="secondary"]').waitFor();
 					expect(await frame(target).locator("button[data-variant]").count(), target).toBe(1);
 					await expect.poll(() => status(target).textContent()).toBe("rendered");
 				}
 				// Back to its default: the prop is left out, and every target applies its own default.
-				await variant.selectOption("");
+				await variant("Default").check();
 				for (const target of TARGETS) {
 					await frame(target).locator('button[data-variant="primary"]').waitFor();
 				}
@@ -466,7 +467,11 @@ describe("an example's controls", () => {
 				const badge = (target: string, text: string) =>
 					frame(target).locator(`[data-badge="${text}"]`);
 				const control = (group: string, name: string) =>
-					page.getByRole("group", { name: group, exact: true }).getByLabel(name, { exact: true });
+					page
+						.getByRole("group", { name: group, exact: true })
+						.getByLabel(new RegExp(`^${name}( \\(changed\\))?$`));
+				const choose = (group: string, name: string, choice: string) =>
+					segment(page.getByRole("group", { name: group, exact: true }), name, choice).check();
 				/** Waits until every frame has rendered the last change, then checks each. */
 				const each = async (check: (target: string) => Promise<void>) => {
 					for (const target of EIGHT) {
@@ -493,7 +498,7 @@ describe("an example's controls", () => {
 				});
 
 				// Flag's tone alone: every unset Flag, nested too, and no Badge.
-				await control("Flag", "tone").selectOption("error");
+				await choose("Flag", "tone", "error");
 				await each(async (target) => {
 					for (const label of ["bare", "nested"]) {
 						await attribute(flag(target, label), "data-tone").toBe("error");
@@ -506,9 +511,9 @@ describe("an example's controls", () => {
 					}
 				});
 
-				await control("Flag", "on").selectOption("true");
+				await choose("Flag", "on", "true");
 				await control("Flag", "size").fill("3");
-				await control("Badge", "tone").selectOption("warn");
+				await choose("Badge", "tone", "warn");
 				await each(async (target) => {
 					for (const label of ["bare", "nested", "warned"]) {
 						await attribute(flag(target, label), "data-on").toBe("yes");
@@ -524,9 +529,9 @@ describe("an example's controls", () => {
 					}
 				});
 
-				// Back to "(default)" one at a time, Flag's tone first: Badge's alone leaves every Flag's.
-				await control("Flag", "tone").selectOption("");
-				await control("Flag", "on").selectOption("");
+				// Back to "Default" one at a time, Flag's tone first: Badge's alone leaves every Flag's.
+				await choose("Flag", "tone", "Default");
+				await choose("Flag", "on", "Default");
 				await control("Flag", "size").fill("");
 				await each(async (target) => {
 					for (const label of ["bare", "nested", "dynamic"]) {
@@ -537,15 +542,15 @@ describe("an example's controls", () => {
 					await attribute(flag(target, "warned"), "data-tone").toBe("warn");
 					await attribute(badge(target, "first"), "data-tone").toBe("warn");
 				});
-				await control("Badge", "tone").selectOption("");
-				// Every control at "(default)": each frame shows the example as it first did.
+				await choose("Badge", "tone", "Default");
+				// Every control at "Default": each frame shows the example as it first did.
 				await each(async (target) => {
 					await attribute(badge(target, "second"), "data-tone").toBe("info");
 					expect(await frameRoot(page, target), target).toBe(written_.get(target));
 				});
 
 				// An instance an edit adds takes the controls of its component (A8).
-				await control("Flag", "tone").selectOption("error");
+				await choose("Flag", "tone", "error");
 				writeFileSync(example, written.replace("<Plain />", '<Plain />\n      <Flag label="d" />'));
 				await each(async (target) => {
 					await flag(target, "d").waitFor({ timeout: 120_000 });
@@ -633,10 +638,11 @@ describe("an embed's options in development (ADR-0116)", () => {
 					await frame(target).getByRole("button", { name: "Save" }).waitFor({ timeout: 180_000 });
 				}
 				for (const value of ["secondary", "primary"]) {
-					await shell
-						.getByRole("group", { name: "Button", exact: true })
-						.getByLabel("variant", { exact: true })
-						.selectOption(value);
+					await segment(
+						shell.getByRole("group", { name: "Button", exact: true }),
+						"variant",
+						value,
+					).check();
 					for (const target of TARGETS) {
 						await expect
 							.poll(() => status(target).textContent(), { timeout: 60_000, message: target })
@@ -650,8 +656,8 @@ describe("an embed's options in development (ADR-0116)", () => {
 
 				const page = await browser.newPage();
 				const root = () => page.locator("[data-uf-preview-root]").innerHTML();
-				const variant = () =>
-					page.getByRole("region", { name: "Controls" }).getByLabel("variant", { exact: true });
+				const variant = (choice: string) =>
+					segment(page.getByRole("region", { name: "Controls" }), "variant", choice);
 				for (const target of TARGETS) {
 					const embed = `${preview.url}${EMBED_FILE}?example=examples/Buttons&target=${target}`;
 					await page.goto(embed);
@@ -662,7 +668,7 @@ describe("an embed's options in development (ADR-0116)", () => {
 					expect(await panel(page), target).toEqual(expectedPanel(groups));
 					expect(await root(), target).toBe(plain);
 					for (const value of ["secondary", "primary"]) {
-						await variant().selectOption(value);
+						await variant(value).check();
 						await expect
 							.poll(root, { timeout: 60_000, message: `${value} on ${target}` })
 							.toBe(shown[value]![target]);
@@ -670,7 +676,7 @@ describe("an embed's options in development (ADR-0116)", () => {
 					await expect
 						.poll(() => page.getByRole("button", { name: "Cancel" }).getAttribute("data-variant"))
 						.toBe("secondary");
-					await variant().selectOption("");
+					await variant("Default").check();
 					await expect.poll(root, { timeout: 60_000, message: `default on ${target}` }).toBe(plain);
 					expect(await page.locator("[data-uf-embed-failure]").count(), target).toBe(0);
 				}
@@ -711,7 +717,8 @@ describe("an embed's options in development (ADR-0116)", () => {
 					`${preview.url}${EMBED_FILE}?example=examples/${example}&target=${target}${query}`;
 				const panelStyle = () =>
 					page.locator("uf-embed-controls").evaluate((host) =>
-						["label", "select"].map((selector) => {
+						// The field's name and a segment of `lines`, the control a short union takes.
+						["legend", ".uf-segments label"].map((selector) => {
 							const style = getComputedStyle(host.shadowRoot!.querySelector(selector)!);
 							return [style.color, style.fontFamily, style.fontSize, style.lineHeight];
 						}),
@@ -763,10 +770,11 @@ describe("an embed's options in development (ADR-0116)", () => {
 							expect(first, at).toBeLessThanOrEqual(Math.ceil(boxes.example) + 2);
 							continue;
 						}
-						await framed
-							.getByRole("region", { name: "Controls" })
-							.getByLabel("lines", { exact: true })
-							.selectOption("three");
+						await segment(
+							framed.getByRole("region", { name: "Controls" }),
+							"lines",
+							"three",
+						).check();
 						await framed.getByText("Third line").waitFor({ timeout: 60_000 });
 						const second = await settled(page, `${at}, three lines`);
 						expect(second, at).toBeGreaterThan(first);

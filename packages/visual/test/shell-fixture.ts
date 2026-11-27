@@ -21,6 +21,7 @@ const ROOTS: Record<ShellFixture, string> = {
 	"shell-tree": fileURLToPath(new URL("fixtures/shell-tree", import.meta.url)),
 	"example-controls": fileURLToPath(new URL("fixtures/example-controls", import.meta.url)),
 	"example-twins": fileURLToPath(new URL("fixtures/example-twins", import.meta.url)),
+	"panel-controls": fileURLToPath(new URL("fixtures/panel-controls", import.meta.url)),
 };
 const TARGETS = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
 

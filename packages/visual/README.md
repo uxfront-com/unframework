@@ -157,7 +157,9 @@ example's doc comment, which the command prints to stderr:
   by default, with no build and no dependency. Its sidebar holds two ARIA trees with a filter: the
   examples by category and the components (`readCatalogue`: the default export of each `.uf.tsx`
   under `srcDir`). Its canvas shows one labelled iframe per target, all or one at a time, and a
-  docked panel holds the controls. It keeps the selection in the URL's hash, follows
+  docked panel holds the controls: each prop's name above its field, a short choice as a row of
+  segments, a dot and " (changed)" on a field that left its first value, a count and a **Reset**
+  on each group, and a status line with **Reset all**. It keeps the selection in the URL's hash, follows
   `prefers-color-scheme`, and keeps a theme the reader picks in `localStorage`.
 - **The protocol** (`src/preview/protocol.ts`): the shell sends `render` messages, `{ seq, entry,
 props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on load and
@@ -178,7 +180,8 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
   frame checks them again. With `controls`, the frame draws the example's groups below it in a
   shadow root (`<uf-embed-controls>`, `:host { all: initial }`), from `FrameOptions.controls`,
   which each frame module carries by entry key, and rerenders on each input through the same
-  `render`. `controlKit` (`src/preview/panel.ts`) holds the fields and the props rule, and the shell
+  `render`. `controlKit` (`src/preview/panel.ts`) holds the fields, the segment rule, the changed
+  state, **Reset** and **Reset all**, the reference disclosure and the props rule, and the shell
   writes it into its page with `toString()`, so the shell's frames and an embed take the same
   props. A failed rerender shows its message in the example's area (`[data-uf-embed-example]`)
   only. With `controls` and no `resize`, the page fits the iframe: the area takes the space above
@@ -196,7 +199,10 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
   container fills the iframe.
 - **Controls** (`src/preview/controls.ts`, `propControls`): `boolean`, `string`, `number` and a
   union of string literals, as written or resolved from an alias (`ApiMember.literals`), with
-  `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
+  `| undefined` read as optional. Any other prop is listed as not controllable, with a short
+  phrase for what its type is ("an object") and the type. An optional boolean or a union with at
+  most 4 choices of at most 24 characters together, "Default" counted, is a row of segments
+  (`controlKit().segmented`), a longer union a list, and a required boolean a checkbox.
 - **An example's controls** (`src/preview/instrument.ts`, ADR-0113): the catalogue gives each
   example one group per listed component it renders that has a controllable prop, in the order of
   its first instance, with a prop every instance sets named "Set by the example". Each live
@@ -232,7 +238,7 @@ target is built and every render server closed (ADR-0111):
 - **The embed page** is `embedPage` written as `<out>/embed.html`, beside `index.html`, with the
   same relative frame URLs (ADR-0112). An embed with `controls=true` on Astro shows
   `STATIC_RENDER_MESSAGE` in its example's area for a changed control, and renders again at
-  "(default)" (ADR-0116).
+  "Default", or after **Reset all** (ADR-0116).
 - **Astro** (a target with a `renderCommandName`) is rendered at build time by
   `renderTargetEntries`, through a server in middleware mode, with each entry's initial props
   (`initialProps`: none for an example, a component's required props at their controls' initial
@@ -277,7 +283,8 @@ shell's frame, Astro's included, checks the first field shows whole in an iframe
 that the reported height settles with nothing scrolling, before and after a control changes it.
 
 `preview-catalogue.test.ts` covers the catalogue, the controls and the command's arguments.
-`embed-options.test.ts` covers `embedOptions` and `controlKit`'s props rule, and
+`embed-options.test.ts` covers `embedOptions` and `controlKit`'s props rule,
+`preview-panel.test.ts` its segment rule, and
 `frame.browser.test.ts` runs `startFrame` standalone with a recording mount: the mode set before
 the first mount, the panel's rerenders and a failure in the area alone, the theme message's filter,
 and a value the frame doesn't take.
