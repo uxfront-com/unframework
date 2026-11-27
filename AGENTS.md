@@ -9,6 +9,10 @@ through as written. Every output is verified by executed tests, from golden
 files and each framework's own compiler to server HTML, the DOM, the accessibility tree and pixels
 in a real browser.
 
+Read the [UXFront vision](https://raw.githubusercontent.com/uxfront-com/.github/main/VISION.md)
+before you plan, build or write docs here. It says how Unframework, Open Components, Styleframe
+and Inkline fit together, and why all compiler work belongs here, never in a library that uses it.
+
 ## Where the project is
 
 - **M0, the walking skeleton, is done:** the whole pipeline and the verification machine, around
