@@ -1,5 +1,12 @@
 # @uxfront/unframework
 
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [8b4ec12]
+  - @unframework.dev/visual@0.6.0
+
 ## 0.6.1
 
 ### Patch Changes
